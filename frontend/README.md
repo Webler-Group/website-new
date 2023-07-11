@@ -11,4 +11,4 @@ Use <code>npm run build</code> to deploy production build, and <code>npm run pre
 There may be missing images in "dev mode" preview of react page, and this can be overcome by running the preview of the production build instead, as long as the <code>/dist</code> folder contains the folder <code>/resources/images/</code> and the required image files insde.
 
 <br>
-Live preview here: https://webler-react-demo.netlify.app/ <br>
+Live preview here: https://webler-site.web.app/ <br>
