@@ -11,7 +11,7 @@ app.get("/", (req, res) => res.type('html').send(html));
 
 app.use(cors());
 app.use(express.json());
-app.use("/api/v1/sample", sample);
+app.use("/v1/sample", sample);
 app.use("*", (req, res)=> res.status(404).json({error:"not found"}));
 
 const server = app.listen(port, () => console.log(`Webler app listening on port ${port}!`));
