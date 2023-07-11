@@ -7,7 +7,7 @@ Front End: React<br/>
 Authorization: JSW tokens<br/>
 
 
-Hosting on: www.render.com
+Hosting services provided by: www.render.com
 
 Live preview at: https://webler.onrender.com/
 
