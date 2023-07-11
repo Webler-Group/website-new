@@ -1,4 +1,4 @@
-# webler-site-demo <br />
+# webler-front-end <br />
 This is a draft version of the Webler Group's official website. This website uses React JS library as it's front-end.<br />
 <br />
 <hr/><br />
