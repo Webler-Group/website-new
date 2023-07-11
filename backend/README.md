@@ -2,7 +2,7 @@
 
 This is the backend for Webler.
 
-The app in this repo is deployed at _______________.
+The app in this repo is deployed at www.render.com as a Web service.
 
 Some quick tests:
 https://api-39hq.onrender.com/api/v1/sample ... returns a JSON
