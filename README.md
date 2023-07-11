@@ -6,3 +6,8 @@ Back End: Nodejs + Express + mongoDB<br/>
 Front End: React<br/>
 Authorization: JSW tokens<br/>
 
+
+Hosting on: www.render.com
+
+Live preview at: https://webler.onrender.com/
+
