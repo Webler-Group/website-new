@@ -11,6 +11,6 @@ Some quick tests for the API's and backend: <br/>
 
 <br/>
 <h5>MongoDB</h5>
-The database connector <code>mongoDBconnector</code> currently performs a find query based on this tutorial: https://www.mongodb.com/docs/drivers/node/current/usage-examples/findOne/
+The database connector <code>mongoDBconnector.js</code> currently performs a DB query based on this tutorial: https://www.mongodb.com/docs/drivers/node/current/usage-examples/findOne/
 <br>
 Sample Data has also been fed to the database.
