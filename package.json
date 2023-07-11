@@ -1,0 +1,19 @@
+{
+  "name": "webler",
+  "version": "1.0.0",
+  "description": "Hello! Welcome to the full-stack web app project by Webler, for Webler.<br/><br/>",
+  "main": "server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "keywords": [],
+  "author": "Webler",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
