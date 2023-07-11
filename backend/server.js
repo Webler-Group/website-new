@@ -23,7 +23,7 @@ const html = `
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Webler API</title>
+    <title>Webler Backend Test</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script>
       setTimeout(() => {
