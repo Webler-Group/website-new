@@ -1,5 +1,5 @@
 # webler-front-end <br />
-This is a draft version of the Webler Group's official website. This website uses React JS library as it's front-end.<br />
+This is a draft version of the Webler Group's official website. This website uses React as it's front-end. You're mostly likely to edit more TypeScript files in <code>.tsx</code> <br />
 <br />
 <hr/><br />
 <br />
