@@ -1,0 +1,7 @@
+POST http://localhost:5500/users
+Content-Type: application/json
+
+{
+    "email": "agent007@webler.com",
+    "password": "a1b2c3"
+}

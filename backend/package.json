@@ -1,22 +1,36 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "This is the backend for Webler",
-  "main": "server.js",
-  "repository": "https://github.com/Webler-Group/website-new/tree/main/backend",
-  "author": "Webler group members",
-  "license": "MIT",
-  "private": false,
+  "description": "",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node dist/server.js",
+    "dev": "nodemon src/server.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/cookie-parser": "^1.4.3",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/mongoose-sequence": "^3.0.7",
+    "@types/uuid": "^9.0.2",
+    "nodemon": "^3.0.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.6"
   },
   "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mongodb": "^5.7.0"
-  },
-  "engines": {
-    "node": ">=14"
+    "express-async-handler": "^1.2.0",
+    "mongoose": "^7.3.3",
+    "mongoose-sequence": "^5.3.1",
+    "uuid": "^9.0.0"
   }
 }
