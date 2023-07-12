@@ -1,7 +1,46 @@
-POST http://localhost:5500/users
+POST http://localhost:5500/Auth/Register
 Content-Type: application/json
 
 {
-    "email": "agent007@webler.com",
+    "email": "agent001@webler.com",
+    "password": "a1b2c3",
+    "name": "Agent001"
+}
+
+###
+
+POST http://localhost:5500/Auth/Login
+Content-Type: application/json
+
+{
+    "email": "agent001@webler.com",
     "password": "a1b2c3"
 }
+
+###
+
+POST http://localhost:5500/Profile/GetProfile
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mbyI6eyJ1c2VySWQiOiI2NGFmMjJlM2M0ZmM0YTA5OTJmZWI2NDMiLCJuaWNrbmFtZSI6IkFnZW50MDAxIiwicm9sZXMiOltdfSwiaWF0IjoxNjg5MjAwNjEzLCJleHAiOjE2ODkyMDA2NzN9.vYfWZ68U6u6XGmTxyZGLKdIxhBB7u-O13-AnMI1hMOM
+
+{
+    "id": "64af22e3c4fc4a0992feb643"
+}
+
+
+###
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NGFmMjJlM2M0ZmM0YTA5OTJmZWI2NDMiLCJpYXQiOjE2ODkyMDA1MzgsImV4cCI6MTY4OTgwNTMzOH0.-A5mCFe4TK2jfRy90iDqOeoLQ_YDo2SM4xBh5QEe4Ug
+
+fetch("http://localhost:5500/", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer "
+    },
+    body: JSON.stringify({
+
+    })
+})
+.then(e=>e.json())
+.then(e=>console.log(e))

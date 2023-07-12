@@ -1,4 +1,5 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -14,24 +15,23 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: "Weblerian"
     },
-    country: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Country'
+    countryCode: {
+        type: String
     },
     bio: {
         type: String
     },
-    accessLevel: {
-        type: Number,
-        default: 0
+    roles: {
+        type: [String],
+        default: []
     },
-    activated: {
+    emailVerified: {
         type: Boolean,
         default: false
     },
-    blocked: {
+    active: {
         type: Boolean,
-        default: false
+        default: true
     },
     level: {
         type: Number,
@@ -49,6 +49,23 @@ const userSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const User = mongoose.model('User', userSchema);
+userSchema.methods.matchPassword = async function(inputPassword: string) {
+    return await bcrypt.compare(inputPassword, this.password);
+}
+
+userSchema.pre('save', async function (next) {
+    if(!this.isModified("password")) {
+        return next();
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+})
+
+declare interface IUser extends InferSchemaType<typeof userSchema> {
+    matchPassword(inputPassword: string): Promise<boolean>
+}
+
+const User = mongoose.model<IUser>('User', userSchema);
 
 export default User;

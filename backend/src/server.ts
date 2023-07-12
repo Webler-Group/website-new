@@ -8,7 +8,8 @@ import corsOptions from "./config/corsOptions";
 import path from "path";
 import connectDB from "./config/dbConn";
 import mongoose from "mongoose";
-import userRoutes from "./routes/userRoutes";
+import profileRoutes from "./routes/profileRoutes";
+import authRoutes from "./routes/authRoutes";
 
 dotenv.config();
 
@@ -28,7 +29,8 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-app.use("/users", userRoutes);
+app.use("/Auth", authRoutes);
+app.use("/Profile", profileRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);
