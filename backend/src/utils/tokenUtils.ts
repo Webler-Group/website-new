@@ -16,7 +16,7 @@ const generateRefreshToken = (res: Response, payload: IRefreshTokenPayload) => {
     res.cookie("jwt", refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV !== "development",
-        sameSite: "strict",
+        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 }
@@ -34,7 +34,7 @@ const signAccessToken = (payload: IAccessTokenPayload) => {
     const accessToken = jwt.sign(
         payload,
         process.env.ACCESS_TOKEN_SECRET as string,
-        { expiresIn: "1m" }
+        { expiresIn: "15m" }
     );
     return accessToken;
 }
