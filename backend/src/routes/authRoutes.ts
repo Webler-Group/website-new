@@ -11,7 +11,7 @@ router.route("/Register")
     .post(authController.register);
 
 router.route("/Logout")
-    .post(authController.login);
+    .post(authController.logout);
 
 router.route("/Refresh")
     .get(authController.refresh);

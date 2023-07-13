@@ -12,7 +12,7 @@ router.route("/Login")
 router.route("/Register")
     .post(authController_1.default.register);
 router.route("/Logout")
-    .post(authController_1.default.login);
+    .post(authController_1.default.logout);
 router.route("/Refresh")
     .get(authController_1.default.refresh);
 exports.default = router;
