@@ -1,11 +1,17 @@
 import mongoose, { InferSchemaType } from "mongoose";
 import bcrypt from "bcrypt";
+import countryCodesEnum from "../enums/countryCodes";
+import isEmail from "validator/lib/isEmail";
+import rolesEnum from "../enums/roles";
 
 const userSchema = new mongoose.Schema({
     email: {
         required: true,
         type: String,
-        unique: true
+        unique: true,
+        trim: true,
+        lowercase: true,
+        validate: [ isEmail, 'invalid email' ]
     },
     password: {
         required: true,
@@ -13,17 +19,24 @@ const userSchema = new mongoose.Schema({
     },
     name: {
         type: String,
-        default: "Weblerian"
+        trim: true,
+        default: "Weblerian",
+        minLength: 3,
+        maxLength: 20
     },
     countryCode: {
-        type: String
+        type: String,
+        enum: countryCodesEnum
     },
     bio: {
-        type: String
+        type: String,
+        trim: true,
+        maxLength: 120
     },
     roles: {
         type: [String],
-        default: []
+        default: [],
+        enum: rolesEnum
     },
     emailVerified: {
         type: Boolean,
@@ -43,6 +56,14 @@ const userSchema = new mongoose.Schema({
     },
     avatarUrl: {
         type: String
+    },
+    followers: {
+        type: Number,
+        default: 0
+    },
+    following: {
+        type: Number,
+        default: 0
     }
 },
 {

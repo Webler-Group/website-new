@@ -17,7 +17,7 @@ const User_1 = __importDefault(require("../models/User"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
-    if (!email || !password) {
+    if (typeof email == "undefined" || typeof password === "undefined") {
         return res.status(400).json({ message: "Some fields are missing" });
     }
     const user = yield User_1.default.findOne({ email });
@@ -35,7 +35,18 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         res.json({
             accessToken,
-            user
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                roles: user.roles,
+                emailVerified: user.emailVerified,
+                countryCode: user.countryCode,
+                registerDate: user.createdAt,
+                level: user.level,
+                xp: user.xp
+            }
         });
     }
     else {
@@ -44,7 +55,7 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, name, password } = req.body;
-    if (!email || !password) {
+    if (typeof email == "undefined" || typeof password === "undefined") {
         return res.status(400).json({ message: "Some fields are missing" });
     }
     const userExists = yield User_1.default.findOne({ email });
@@ -67,7 +78,18 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         res.json({
             accessToken,
-            user
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                avatarUrl: user.avatarUrl,
+                roles: user.roles,
+                emailVerified: user.emailVerified,
+                countryCode: user.countryCode,
+                registerDate: user.createdAt,
+                level: user.level,
+                xp: user.xp
+            }
         });
     }
     else {
@@ -76,23 +98,21 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const cookies = req.cookies;
-    if (!cookies.hasOwnProperty("jwt")) {
+    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.jwt)) {
         return res.sendStatus(204);
     }
-    res.cookie("jwt", "", {
-        httpOnly: true,
-        expires: new Date(0)
-    });
+    (0, tokenUtils_1.clearRefreshToken)(res);
     res.json({});
 });
 const refresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const cookies = req.cookies;
-    if (cookies === null || cookies === void 0 ? void 0 : cookies.jwt) {
-        return res.sendStatus(401).json({ message: "Unauthorized" });
+    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.jwt)) {
+        return res.status(401).json({ message: "Unauthorized" });
     }
     const refreshToken = cookies.jwt;
     jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
+            console.log(err);
             return res.status(403).json({ message: "Forbidden" });
         }
         const user = yield User_1.default.findById(decoded.userId);

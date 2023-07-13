@@ -6,7 +6,8 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.route("/GetProfile")
-    .post(profileController.getProfile);
+router.route("/:userId")
+    .get(profileController.getProfile)
+    .put(profileController.updateProfile);
 
 export default router;

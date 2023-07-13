@@ -14,11 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const countryCodes_1 = __importDefault(require("../enums/countryCodes"));
+const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
+const roles_1 = __importDefault(require("../enums/roles"));
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
         type: String,
-        unique: true
+        unique: true,
+        trim: true,
+        lowercase: true,
+        validate: [isEmail_1.default, 'invalid email']
     },
     password: {
         required: true,
@@ -26,17 +32,24 @@ const userSchema = new mongoose_1.default.Schema({
     },
     name: {
         type: String,
-        default: "Weblerian"
+        trim: true,
+        default: "Weblerian",
+        minLength: 3,
+        maxLength: 20
     },
     countryCode: {
-        type: String
+        type: String,
+        enum: countryCodes_1.default
     },
     bio: {
-        type: String
+        type: String,
+        trim: true,
+        maxLength: 120
     },
     roles: {
         type: [String],
-        default: []
+        default: [],
+        enum: roles_1.default
     },
     emailVerified: {
         type: Boolean,
@@ -56,6 +69,14 @@ const userSchema = new mongoose_1.default.Schema({
     },
     avatarUrl: {
         type: String
+    },
+    followers: {
+        type: Number,
+        default: 0
+    },
+    following: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

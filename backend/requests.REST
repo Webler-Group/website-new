@@ -32,14 +32,17 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mbyI6eyJ1c
 
 eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2NGFmMjJlM2M0ZmM0YTA5OTJmZWI2NDMiLCJpYXQiOjE2ODkyMDA1MzgsImV4cCI6MTY4OTgwNTMzOH0.-A5mCFe4TK2jfRy90iDqOeoLQ_YDo2SM4xBh5QEe4Ug
 
-fetch("http://localhost:5500/", {
-    method: "POST",
+fetch("https://api2.sololearn.com/v2/userinfo/v3/profile/29619878", {
+    method: "PUT",
     headers: {
         "Content-Type": "application/json",
-        "Authorization": "Bearer "
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzaWQiOiJ7XCJJbnN0YW5jZUlkXCI6Mjg1MDExNTIsXCJVc2VySWRcIjoyOTYxOTg3OCxcIk5pY2tuYW1lXCI6XCJmZGhkXCIsXCJEZXZpY2VJZFwiOjczOTQ4ODAzLFwiQ2xpZW50SWRcIjoxMTQzLFwiTG9jYWxlSWRcIjoxLFwiQXBwVmVyc2lvblwiOlwiMC4wLjAuMFwiLFwiSXNQcm9cIjpmYWxzZSxcIkdlbmVyYXRpb25cIjpcIjhlZTZmNWFjLWVjODctNDU4YS1iYzcwLTkwZWY4MmMzNGM3MlwifSIsImp0aSI6IjAzYmUzMjA5LTk1MjYtNGIzNi1iOTY1LTNlOGVlMmFiMTQwNCIsImh0dHA6Ly9zY2hlbWFzLm1pY3Jvc29mdC5jb20vd3MvMjAwOC8wNi9pZGVudGl0eS9jbGFpbXMvcm9sZSI6IlVzZXIiLCJuYmYiOjE2ODkyNDIzNDcsImV4cCI6MTY4OTI0NTk0NywiaXNzIjoiU29sb0xlYXJuLlNlY3VyaXR5LkJlYXJlciIsImF1ZCI6IlNvbG9MZWFybi5TZWN1cml0eS5CZWFyZXIifQ.EAQAz9fO5hVkyO28ZW9eJg7HiIblszGZYka4mjeNias"
     },
     body: JSON.stringify({
-
+        "name": "fdhd",
+        "email": "info@sololearn.com",
+        "bio": null,
+        "countryCode": "nl"
     })
 })
 .then(e=>e.json())

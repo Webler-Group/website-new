@@ -15,7 +15,7 @@ const generateRefreshToken = (res: Response, payload: IRefreshTokenPayload) => {
 
     res.cookie("jwt", refreshToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV !== "development",
+        secure: true,
         sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
@@ -27,6 +27,14 @@ interface IAccessTokenPayload {
         nickname: string;
         roles: string[]; 
     }
+}
+
+const clearRefreshToken = (res: Response) => {
+    res.clearCookie("jwt", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none"
+    });
 }
 
 const signAccessToken = (payload: IAccessTokenPayload) => {
@@ -43,5 +51,6 @@ export {
     IAccessTokenPayload,
     IRefreshTokenPayload,
     generateRefreshToken,
-    signAccessToken
+    signAccessToken,
+    clearRefreshToken
 };
