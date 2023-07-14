@@ -79,7 +79,7 @@ function ChatMessage({ item, scrollToBottom }: any) {
                 {item.user && <Link to={"/member/" + item.user.username} ><img width={34} height={34} className="rounded-circle" src={item.user.avatarUrl ? item.user.avatarUrl : "/resources/images/user.svg"} /></Link>}
             </div>
             <div>
-                <div>{item.user && <Link className="NavLink" to={"/member/" + item.user.username}>{item.user.username}</Link>} <small>{date}</small></div>
+                <div>{item.user && <Link className="linksNoDecor" style={{fontWeight:"bold"}} to={"/member/" + item.user.username}>{item.user.username}</Link>} <small>{date}</small></div>
                 <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{parse(message.text)}</p>
                 {
                 (footer) && 
