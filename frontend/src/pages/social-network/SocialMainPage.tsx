@@ -1,4 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
 import PageTitle from "../../partials/PageTitle";
 import { useState, useEffect } from "react";
 import DatabaseClient from "../../api/DatabaseClient";
