@@ -1,14 +1,9 @@
-import MenuNavBar from "../partials/MenuNavBar";
-import Footer from "../partials/Footer";
 import PageTitle from "../partials/PageTitle";
 
 function PrivacyPolicy() {
   PageTitle("Privacy Policy | Webler")
   return (
     <>
-        {/* Header */}
-        <MenuNavBar pageName={"PrivacyPolicy"} />
-
         {/* Main */}
         <main>
             <div className="pageNameBannerTop">
@@ -356,9 +351,6 @@ function PrivacyPolicy() {
                 <br />
             </div>
         </main>
-            
-        {/* Footer */}
-        <Footer />
     </>
   );
 };

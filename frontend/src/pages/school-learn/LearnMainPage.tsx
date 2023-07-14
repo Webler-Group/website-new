@@ -1,6 +1,4 @@
 import Button from 'react-bootstrap/Button';
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 /*
@@ -15,9 +13,6 @@ function Learn() {
     PageTitle("Learn | Webler");
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"Learn"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -111,9 +106,6 @@ function Learn() {
                 </div>
 
             </main>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

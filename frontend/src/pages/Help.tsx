@@ -1,14 +1,9 @@
-import MenuNavBar from "../partials/MenuNavBar";
-import Footer from "../partials/Footer";
 import PageTitle from "../partials/PageTitle";
 
 function Help() {
     PageTitle("Help | Webler")
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"Help"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -36,9 +31,6 @@ function Help() {
                 <p>Question 8?</p>
                 <p>Answer 8</p>
             </main>
-                
-            {/* Footer */}
-            <Footer/>
         </>
     );
 }

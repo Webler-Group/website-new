@@ -1,14 +1,9 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 function News() {
     PageTitle("NewsList[index] | Webler")
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"News Title"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -24,9 +19,6 @@ function News() {
                 <p>News text here ..... blah blah blah yita yata yipee kiyay </p>
                 
             </main>
-
-            {/* Footer*/}
-            <Footer />
         </>
     );
 }

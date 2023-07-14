@@ -1,15 +1,10 @@
 import Button from 'react-bootstrap/Button';
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 function CodePlayGrondMainScreen() {
     PageTitle("Code Playground | Webler");
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"Code Playground"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -113,9 +108,6 @@ function CodePlayGrondMainScreen() {
                 </div>
 
             </main>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

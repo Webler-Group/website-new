@@ -1,5 +1,3 @@
-import MenuNavBar from "../partials/MenuNavBar";
-import Footer from "../partials/Footer";
 import PageTitle from "../partials/PageTitle";
 
 function TermsAndConditions() {
@@ -7,7 +5,7 @@ function TermsAndConditions() {
   return (
     <>
         {/* Header */}
-        <MenuNavBar pageName={"TermsAndConditions"} />
+        
 
         {/* Main */}
         <main>
@@ -247,9 +245,6 @@ function TermsAndConditions() {
               <p id="bottom-of-page">Except as expressly set forth in the section(s) above regarding the Apple Application and the arbitration agreement, you and Webler agree there are no third-party beneficiaries intended under these Terms</p>
             </div>
         </main>
-
-        {/* Footer */}
-        <Footer />
     </>
   );
 };

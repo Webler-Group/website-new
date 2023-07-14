@@ -1,5 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 import Button from 'react-bootstrap/Button';
 import { SyntheticEvent, useEffect, useState } from "react";
@@ -246,9 +244,6 @@ function EditMember() {
 
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"EditMember"} />
-
             {/* Main */}
             <main>
                 {loading && <Loader />}
@@ -356,9 +351,6 @@ function EditMember() {
                 }
 
             </main>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

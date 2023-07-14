@@ -76,6 +76,13 @@ a {
 .NavLink {
     font-weight: 700;
     color: var(--fontColor);
+    padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
+}
+
+Link{
+    text-decoration: none;
 }
 
 .dropdown-toggle .nav-link {
@@ -159,6 +166,10 @@ a {
     color: var(--fontColor);
 }
 
+.dropdown-menu{
+    padding:10px;
+}
+
 .dropdown-menu,
 .dropdown-item {
     background-color: var(--bGcolor);
@@ -185,6 +196,9 @@ a {
 }
 
 .bannerImagePropsFore {
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: -apple-sticky;
     position: sticky;
     top: 123px;
     height: 84vh;
@@ -235,8 +249,8 @@ a {
 
     .bannerGitHubAdv {
         font-size: 0.51em;
+        width: moz-fit-content;
         width: fit-content;
-        width: moz-fit-content;   
     }
 }
 
@@ -257,8 +271,8 @@ a {
 
     .bannerGitHubAdv {
         font-size: 0.56em;
-        width: fit-content;
-        width: moz-fit-content;   
+        width: moz-fit-content;
+        width: fit-content;   
     }
 }
 
@@ -279,8 +293,8 @@ a {
 
     .bannerGitHubAdv {
         font-size: 0.64em;
-        width: fit-content;
         width: moz-fit-content;
+        width: fit-content;
     }
 }
 
@@ -301,8 +315,8 @@ a {
 
     .bannerGitHubAdv {
         font-size: 0.81em;
-        width: fit-content;
         width: moz-fit-content;
+        width: fit-content;
     }
 }
 
@@ -323,8 +337,8 @@ a {
 
     .bannerGitHubAdv {
         font-size: 0.89em;
-        width: fit-content;
         width: moz-fit-content;
+        width: fit-content;
     }
 }
 
@@ -419,6 +433,7 @@ a {
     content: "";
     clear: both;
     display: block;
+    height: moz-fit-content;
     height: fit-content;
 }
 
@@ -460,6 +475,7 @@ a {
 
 .col-7 {
     width: 50%;
+    height: moz-fit-content;
     height: fit-content;
     border: var(--bGcolor) solid 21px;
     border-radius: 40px;
@@ -812,8 +828,10 @@ main {
 
 .pageNameBannerTop{
     position: -webkit-sticky;
+    position: -moz-sticky;
+    position: -apple-sticky;
     position: sticky;
-    top:76px;
+    top:65px;
     background-color: var(--bGcolor);
     z-index: 9;
     padding-bottom: 10px;
@@ -976,6 +994,7 @@ svg {
 .stickySocial{
     position: -webkit-sticky;
     position: -moz-sticky;
+    position: -apple-sticky;
     position: sticky;
     top:0px;
 }

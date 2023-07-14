@@ -5,6 +5,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import NavDropdown from 'react-bootstrap/NavDropdown';
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import User from "../pages/account-profile/views/User";
 import { useAuth } from '../context/AuthContext';
 import { NavItem } from 'react-bootstrap';
@@ -133,7 +134,7 @@ function MenuNavBar({ pageName }: Props) {
     <>
       <Navbar expand="lg" className="navBarBG" data-bs-theme={moodtheme} onLoad={scrollFunction}>
         <Container fluid >
-          <Navbar.Brand href="/"><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand>
+        <Link style={{textDecoration: "none"}}  to="/"><Navbar.Brand><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand></Link>
           <Navbar.Toggle aria-controls="navbarScroll" />
           <Navbar.Collapse id="navbarScroll">
             <Nav
@@ -141,18 +142,18 @@ function MenuNavBar({ pageName }: Props) {
               style={{ maxHeight: '370px', alignItems: 'center' , alignContent:'center', justifyContent:'center'}}
               navbarScroll
             >
-              <Nav.Link href="/" className="NavLink" >Home</Nav.Link>
-              <Nav.Link href="/social" className="NavLink" >Social</Nav.Link>
-              <Nav.Link href="/learn" className="NavLink" >Learn</Nav.Link>
-              <Nav.Link href="/discuss" className="NavLink" >Q&A</Nav.Link>
-              <Nav.Link href="/code" className="NavLink" >Code Playground</Nav.Link>
+              <Link style={{textDecoration: "none"}}  to="/"><NavItem className="NavLink" >Home</NavItem></Link>
+              <Link style={{textDecoration: "none"}}  to="/social"><Nav className="NavLink" >Social</Nav></Link>
+              <Link style={{textDecoration: "none"}}  to="/learn"><Nav className="NavLink" >Learn</Nav></Link>
+              <Link style={{textDecoration: "none"}}  to="/discuss"><Nav className="NavLink" >Q&A</Nav></Link>
+              <Link style={{textDecoration: "none"}}  to="/code"><Nav className="NavLink" >Code Playground</Nav></Link>
               <NavDropdown title="More" style={{ color: "var(--fontColor)", alignItems:"center", alignSelf:"center"}} >
-                <NavDropdown.Item href="/about-us">About Us</NavDropdown.Item >
+              <Link style={{textDecoration: "none"}}  to="/about-us"><NavItem>About Us</NavItem></Link>
                 <NavDropdown.Divider />
-                <NavDropdown.Item href="/contact-us">Contact Us</NavDropdown.Item >
-                <NavDropdown.Item href="/help">Help Center - FAQ's</NavDropdown.Item >
+                <Link style={{textDecoration: "none"}}  to="/contact-us"><NavItem>Contact Us</NavItem></Link>
+                <Link style={{textDecoration: "none"}}  to="/help"><NavItem>Help Center - FAQ's</NavItem></Link>
                 <NavDropdown.Divider />
-                <NavDropdown.Item href="/news">News (Blog)</NavDropdown.Item >
+                <Link style={{textDecoration: "none"}}  to="/news"><NavItem>News (Blog)</NavItem></Link>
               </NavDropdown >
               <Nav.Item>
               <Form style={{ alignSelf: "center" , display:'inline'}}>
@@ -174,18 +175,18 @@ function MenuNavBar({ pageName }: Props) {
                   <>
                     <i className="fa fa-bell p-2 pointerHere"></i>
                     <NavDropdown align="end" title={<><img width={34} height={34} className="rounded-circle" src={user.avatarUrl ? user.avatarUrl : "/resources/images/user.svg"} /> {(user.username)} </>} id="navbarScrollingDropdownUser">
-                      <NavDropdown.Item href={"/member/" + user.username}>Profile</NavDropdown.Item>
+                      <Link style={{textDecoration: "none"}}  to={"/member/" + user.username}><Nav>Profile</Nav></Link>
                       <NavDropdown.Divider />
-                      <NavDropdown.Item href="/edit-member">Edit Profile</NavDropdown.Item>
-                      <NavDropdown.Item href="/messages">Messages</NavDropdown.Item>
-                      <NavDropdown.Item onClick={handleLogout}>Logout</NavDropdown.Item>
+                      <Link style={{textDecoration: "none"}}  to="/edit-member"><Nav>Edit Profile</Nav></Link>
+                      <Link style={{textDecoration: "none"}}  to="/messages"><Nav>Messages</Nav></Link>
+                      <Nav onClick={handleLogout}>Logout</Nav>
                     </NavDropdown>
                   </>
                   :
                   <>
                     <NavItem>
-                      <Button href="/login" size="lg" className="smallnavform navButton"><strong>Login</strong></Button>
-                      <Button href="/signup" size="lg" className="smallnavform navButton" variant="success">Sign-up</Button>
+                      <Link style={{textDecoration: "none"}}  to="/login"><Button size="lg" className="smallnavform navButton"><strong>Login</strong></Button></Link>
+                      <Link style={{textDecoration: "none"}}  to="/signup"><Button size="lg" className="smallnavform navButton" variant="success">Sign-up</Button></Link>
                     </NavItem>
                   </>
               }

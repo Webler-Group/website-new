@@ -1,5 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 import { useParams } from "react-router-dom";
 import { SyntheticEvent, useEffect, useState } from "react";
@@ -66,9 +64,6 @@ function Member() {
 
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"Member"} />
-
             {/* Main */}
             <main>
                 {
@@ -110,11 +105,6 @@ function Member() {
                         </>
                 }
             </main>
-
-
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

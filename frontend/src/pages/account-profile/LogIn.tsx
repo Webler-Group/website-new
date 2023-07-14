@@ -1,7 +1,4 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
-
 import { SyntheticEvent, useState } from 'react';
 import { Alert, Button } from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
@@ -62,9 +59,6 @@ function LogIn() {
 
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"Login"} />
-
             {/* Main */}
             <main>
                 <div className="d-flex flex-column justify-content-center" >
@@ -126,9 +120,6 @@ function LogIn() {
                     </div>
                 </div>
             </main>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

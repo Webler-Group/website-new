@@ -41,7 +41,7 @@ function SocialMainPage() {
     return (
         <>
             {/* Header */}
-            <MenuNavBar pageName={"SocialMainPage"} />
+            
 
             {/* Main */}
             <main style={{margin:"0px",padding:"0px", display:"block", minHeight:"fit-content", minWidth:"100vw", overflowX:"hidden" }}>

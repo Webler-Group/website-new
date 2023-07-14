@@ -1,5 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 import { SyntheticEvent, useState } from 'react';
@@ -37,9 +35,6 @@ function ResetPassword() {
 
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"ResetPassword"} />
-
             {/* Main */}
             <div className="d-flex flex-column justify-content-center" style={{ height: "100vh" }}>
                 <div className="d-flex justify-content-center">
@@ -66,9 +61,6 @@ function ResetPassword() {
                     </div>
                 </div>
             </div>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 };

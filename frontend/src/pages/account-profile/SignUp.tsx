@@ -1,5 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 import { SyntheticEvent, useState } from 'react';
@@ -61,9 +59,6 @@ function SignUp() {
 
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"SignUp"} />
-
             {/* Main */}
             <main>
                 <div className="d-flex flex-column justify-content-center" >
@@ -132,8 +127,6 @@ function SignUp() {
                     </div>
                 </div>
             </main>
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

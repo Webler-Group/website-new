@@ -1,5 +1,3 @@
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 import { Button } from "react-bootstrap";
 
@@ -7,9 +5,6 @@ function News() {
     PageTitle("News (Edit) | Webler")
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"News Editor"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -23,9 +18,6 @@ function News() {
                     <Button>Save news</Button><Button>Cancel</Button>
                 </form>
             </main>
-
-            {/* Footer*/}
-            <Footer />
         </>
     );
 }

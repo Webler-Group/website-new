@@ -1,14 +1,9 @@
-import MenuNavBar from "../partials/MenuNavBar";
-import Footer from "../partials/Footer";
 import PageTitle from "../partials/PageTitle";
 
 function ContactUs() {
     PageTitle("Contact Us | Webler")
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"ContactUs"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -357,8 +352,6 @@ function ContactUs() {
                 <br />
                 <p style={{alignSelf:"center", textAlign:"center"}}>Alternatively, you can contact us via email: <a href="mailto:info@webler.com">info@webler.com</a>. You can also contact us by following us through our Social Networks below:</p>
             </main>
-            {/* Footer */}
-            <Footer />
         </>
     );
 }

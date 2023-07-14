@@ -22,36 +22,37 @@ import { AuthProvider } from './context/AuthContext';
 import EditMember from './pages/account-profile/EditMember';
 import Messaging from './pages/social-network/chat/Messaging';
 import QnA from './pages/discuss-forum/QAMainPage';
-
+import MenuNavBar from './partials/MenuNavBar';
+import Footer from './partials/Footer';
 
 function App(){
-
   return (
     <AuthProvider>
+      <MenuNavBar pageName=''/>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/home" element={<Home />} />
-        <Route path="/contact-us" element={<ContactUs />} />
-        <Route path="/code" element={<CodePlayground />} />
-        <Route path="/learn" element={<Learn />} />
-        <Route path="/news" element={<News />} />
-        <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/help" element={<Help />} />
-        <Route path="/discuss" element={<QnA />} />
-        <Route path="/member/:username" element={<Member />} />
-        <Route path="/edit-member" element={<EditMember />} />
-        <Route path="/social" element={<SocialNetwork />} />
-        <Route path="/reset-password" element={<ResetPassword />} />
-        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-        <Route path="/terms-and-conditions" element={<TermsAndConditions />} />
-        <Route path="/signup" element={<SignUp />} />
-        <Route path="/login" element={<LogIn />} />
-        <Route path="/messages" element={<Messaging pageName={""}/>} />
-        <Route path="/*" element={<Error404 />} />
+        <Route path="/" Component={Home} />
+        <Route path="/home" Component={Home} />
+        <Route path="/contact-us" Component={ContactUs} />
+        <Route path="/code" Component={CodePlayground} />
+        <Route path="/learn" Component={Learn} />
+        <Route path="/news" Component={News} />
+        <Route path="/about-us" Component={AboutUs} />
+        <Route path="/help" Component={Help} />
+        <Route path="/discuss" Component={QnA} />
+        <Route path="/member/:username" Component={Member} />
+        <Route path="/edit-member" Component={EditMember} />
+        <Route path="/social" Component={SocialNetwork} />
+        <Route path="/reset-password" Component={ResetPassword} />
+        <Route path="/privacy-policy" Component={PrivacyPolicy} />
+        <Route path="/terms-and-conditions" Component={TermsAndConditions} />
+        <Route path="/signup" Component={SignUp} />
+        <Route path="/login" Component={LogIn} />
+        <Route path="/messages" element={<Messaging pageName='' />} />
+        <Route path="/*" Component={Error404} />
       </Routes>
+       <Footer/>
     </AuthProvider>
   );
-
 };
 
 export default App;

@@ -1,15 +1,10 @@
 import Button from 'react-bootstrap/Button';
-import MenuNavBar from "../../partials/MenuNavBar";
-import Footer from "../../partials/Footer";
 import PageTitle from "../../partials/PageTitle";
 
 function QAMainPage() {
     PageTitle("Q&A | Webler");
     return (
         <>
-            {/* Header */}
-            <MenuNavBar pageName={"QAMainPage"} />
-
             {/* Main */}
             <main>
                 <div className="pageNameBannerTop">
@@ -110,11 +105,7 @@ function QAMainPage() {
                         <Button variant="primary">View discussion</Button><span style={{float:"right", fontSize:"12px"}}> 96 likes - 69 answers - 403 views</span>
                     </div>
                 </div>
-
             </main>
-
-            {/* Footer */}
-            <Footer />
         </>
     );
 }
