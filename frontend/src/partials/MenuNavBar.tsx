@@ -10,12 +10,15 @@ import User from "../pages/account-profile/views/User";
 import { useAuth } from '../context/AuthContext';
 import { NavItem } from 'react-bootstrap';
 import DatabaseClient from "../api/DatabaseClient";
+import { useLocation } from 'react-router-dom'
 
 interface Props {
   pageName: string;
 }
 
 function MenuNavBar({ pageName }: Props) {
+
+  let location = useLocation();
 
   const { signout, getUserDetails, setUserDetails } = useAuth();
 
@@ -129,8 +132,8 @@ function MenuNavBar({ pageName }: Props) {
     }
   }
 
-
   return (
+    location.pathname !== '/messages' &&
     <>
       <Navbar expand="lg" className="navBarBG" data-bs-theme={moodtheme} onLoad={scrollFunction}>
         <Container fluid >
@@ -151,7 +154,10 @@ function MenuNavBar({ pageName }: Props) {
               <Link style={{textDecoration: "none"}}  to="/about-us"><NavItem>About Us</NavItem></Link>
                 <NavDropdown.Divider />
                 <Link style={{textDecoration: "none"}}  to="/contact-us"><NavItem>Contact Us</NavItem></Link>
+                <NavDropdown.Divider />
                 <Link style={{textDecoration: "none"}}  to="/help"><NavItem>Help Center - FAQ's</NavItem></Link>
+                <NavDropdown.Divider />
+                <Link style={{textDecoration: "none"}}  to="/products"><NavItem>Our Products</NavItem></Link>
                 <NavDropdown.Divider />
                 <Link style={{textDecoration: "none"}}  to="/news"><NavItem>News (Blog)</NavItem></Link>
               </NavDropdown >

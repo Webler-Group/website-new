@@ -1,8 +1,12 @@
+import { useLocation } from 'react-router-dom'
 import { Link } from "react-router-dom";
 
 function Footer() {
+
+  let location = useLocation();
+
   return (
-    <>
+    !(location.pathname == '/messages' || location.pathname == '/social') ? <>
       <footer>
         <div className="footer">
           <div className="row socialIcons">
@@ -53,6 +57,8 @@ function Footer() {
         </div>
       </footer>
     </>
+    :
+    null
   )
 }
 

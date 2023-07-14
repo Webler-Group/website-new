@@ -24,6 +24,7 @@ import Messaging from './pages/social-network/chat/Messaging';
 import QnA from './pages/discuss-forum/QAMainPage';
 import MenuNavBar from './partials/MenuNavBar';
 import Footer from './partials/Footer';
+import Products from './pages/Products';
 
 function App(){
   return (
@@ -47,6 +48,7 @@ function App(){
         <Route path="/terms-and-conditions" Component={TermsAndConditions} />
         <Route path="/signup" Component={SignUp} />
         <Route path="/login" Component={LogIn} />
+        <Route path="/products" Component={Products} />
         <Route path="/messages" element={<Messaging pageName='' />} />
         <Route path="/*" Component={Error404} />
       </Routes>
