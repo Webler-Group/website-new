@@ -179,7 +179,7 @@ function MenuNavBar({ pageName }: Props) {
                       <NavDropdown.Divider />
                       <Link style={{textDecoration: "none"}}  to="/edit-member"><Nav>Edit Profile</Nav></Link>
                       <Link style={{textDecoration: "none"}}  to="/messages"><Nav>Messages</Nav></Link>
-                      <Nav onClick={handleLogout}>Logout</Nav>
+                      <Nav.Link onClick={handleLogout}>Logout</Nav.Link>
                     </NavDropdown>
                   </>
                   :

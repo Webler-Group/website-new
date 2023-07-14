@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react"
-import DateUtils from "../../../../utils/DateUtils"
-import TextUtils from "../../../../utils/TextUtils"
-import parse from "html-react-parser"
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import DateUtils from "../../../../utils/DateUtils";
+import TextUtils from "../../../../utils/TextUtils";
+import parse from "html-react-parser";
 
 function textToMessage(text: string) {
     const processWord = () => {
@@ -75,10 +76,10 @@ function ChatMessage({ item, scrollToBottom }: any) {
     return (
         <div className="d-flex" style={{ gap: 12 }}>
             <div>
-                {item.user && <a href={"/member/" + item.user.username} ><img width={34} height={34} className="rounded-circle" src={item.user.avatarUrl ? item.user.avatarUrl : "/resources/images/user.svg"} /></a>}
+                {item.user && <Link to={"/member/" + item.user.username} ><img width={34} height={34} className="rounded-circle" src={item.user.avatarUrl ? item.user.avatarUrl : "/resources/images/user.svg"} /></Link>}
             </div>
             <div>
-                <div>{item.user && <a className="NavLink" href={"/member/" + item.user.username}>{item.user.username}</a>} <small>{date}</small></div>
+                <div>{item.user && <Link className="NavLink" to={"/member/" + item.user.username}>{item.user.username}</Link>} <small>{date}</small></div>
                 <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-all" }}>{parse(message.text)}</p>
                 {
                 (footer) && 

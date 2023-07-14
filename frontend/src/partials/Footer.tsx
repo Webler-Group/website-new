@@ -1,52 +1,54 @@
+import { Link } from "react-router-dom";
+
 function Footer() {
   return (
     <>
       <footer>
         <div className="footer">
           <div className="row socialIcons">
-            <a href="#weblerBook">
+            <Link to="#weblerBook">
               <i className="fa fa-facebook"></i>
-            </a>
-            <a href="#weblerGram">
+            </Link>
+            <Link to="#weblerGram">
               <i className="fa fa-instagram"></i>
-            </a>
-            <a href="#weblerTube">
+            </Link>
+            <Link to="#weblerTube">
               <i className="fa fa-youtube"></i>
-            </a>
-            <a href="#weblerTweet">
+            </Link>
+            <Link to="#weblerTweet">
               <i className="fa fa-twitter"></i>
-            </a>
-            <a href="https://github.com/WeblerGroup">
+            </Link>
+            <Link to="https://github.com/WeblerGroup">
               <i className="fa fa-github"></i>
-            </a>
-            <a href="#weblerTwitch">
+            </Link>
+            <Link to="#weblerTwitch">
               <i className="fa fa-twitch"></i>
-            </a>
-            <a href="#weblerLinkedin">
+            </Link>
+            <Link to="#weblerLinkedin">
               <i className="fa fa-linkedin"></i>
-            </a>
+            </Link>
           </div>
           <div className="row">
             <ul>
               <li>
-                <a href="/contact-us">Contact us</a>
+                <Link to="/contact-us">Contact us</Link>
               </li>
               <li>
-                <a href="/products">Our Products</a>
+                <Link to="/products">Our Products</Link>
               </li>
               <li>
-                <a href="/privacy-policy">Privacy Policy</a>
+                <Link to="/privacy-policy">Privacy Policy</Link>
               </li>
               <li>
-                <a href="/terms-and-conditions">Terms & Conditions</a>
+                <Link to="/terms-and-conditions">Terms & Conditions</Link>
               </li>
               <li>
-                <a href="/news">News</a>
+                <Link to="/news">News</Link>
               </li>
             </ul>
           </div>
           <div>
-            WEBLER - Copyright © {new Date().getFullYear()} Webler Group - All rights reserved <br/><code style={{fontSize: "x-small"}}>Web Development by: <a className="linksNoDecor" style={{textDecoration: "underline", fontWeight:"bold"}} href="member/SolomoniRailoa">Solomoni Railoa</a></code>
+            WEBLER - Copyright © {new Date().getFullYear()} Webler Group - All rights reserved <br/><code style={{fontSize: "x-small"}}>Web Development by: <Link className="linksNoDecor" style={{textDecoration: "underline", fontWeight:"bold"}} to="member/SolomoniRailoa">Solomoni Railoa</Link></code>
           </div>
         </div>
       </footer>

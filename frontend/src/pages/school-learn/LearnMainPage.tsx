@@ -104,7 +104,6 @@ function Learn() {
                         <Button variant="primary">Take this course</Button><span style={{float:"right", fontSize:"12px"}}> 96 likes - 69 comments - 403 views</span>
                     </div>
                 </div>
-
             </main>
         </>
     );

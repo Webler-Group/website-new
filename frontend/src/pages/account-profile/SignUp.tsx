@@ -1,5 +1,5 @@
 import PageTitle from "../../partials/PageTitle";
-
+import { Link } from "react-router-dom";
 import { SyntheticEvent, useState } from 'react';
 import { useAuth } from "../../context/AuthContext";
 import { Alert, Button } from "react-bootstrap";
@@ -120,7 +120,7 @@ function SignUp() {
                             <div className="mt-4">
                                 <p className="text-center">
                                     <span>Already have an account?</span>
-                                    <a className="ms-2" href="/login">Log in</a>
+                                    <Link to="/login" style={{textDecoration:"none"}} className="ms-2">Log in</Link>
                                 </p>
                             </div>
                         </div>

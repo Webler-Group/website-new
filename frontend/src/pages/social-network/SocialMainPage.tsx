@@ -1,5 +1,6 @@
 import PageTitle from "../../partials/PageTitle";
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import DatabaseClient from "../../api/DatabaseClient";
 import User from "../account-profile/views/User";
 import { useAuth } from '../../context/AuthContext';
@@ -57,7 +58,7 @@ function SocialMainPage() {
                                     memberList.map((item: User, key) => {
                                         return (
                                             <div className="memberListItem" key={key}> {/* This was previously <li> */}
-                                                <a href={"/member/" + item.username}><img width={32} height={32} className="rounded-circle" src={item.avatarUrl ? item.avatarUrl : "/resources/images/user.svg"} /><div className="listItemNameUser">{item.username}</div></a>
+                                                <Link to={"/member/"+item.username} style={{textDecoration:"none"}} ><img width={32} height={32} className="rounded-circle" src={item.avatarUrl ? item.avatarUrl : "/resources/images/user.svg"} /><div className="listItemNameUser">{item.username}</div></Link>
                                             </div>
                                         )
                                     })
@@ -91,7 +92,7 @@ function SocialMainPage() {
                                         memberList.map((item: User, key) => {
                                             return (
                                                 <div className="memberListItem" key={key}> {/* This was previously <li> */}
-                                                    <a href={"/member/" + item.username}><img width={32} height={32} className="rounded-circle" src={item.avatarUrl ? item.avatarUrl : "/resources/images/user.svg"} /><div className="listItemNameUser">{item.username}</div></a>
+                                                    <Link to={"/member/"+item.username} style={{textDecoration:"none"}} ><img width={32} height={32} className="rounded-circle" src={item.avatarUrl ? item.avatarUrl : "/resources/images/user.svg"} /><div className="listItemNameUser">{item.username}</div></Link>
                                                 </div>
                                             )
                                         })

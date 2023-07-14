@@ -1,5 +1,6 @@
 import { SyntheticEvent, useEffect, useRef, useState } from "react";
 import { Alert } from "react-bootstrap";
+import { Link } from "react-router-dom";
 import Form from 'react-bootstrap/Form';
 import DatabaseClient from "../../../../api/DatabaseClient";
 import { useAuth } from "../../../../context/AuthContext";
@@ -233,10 +234,10 @@ function EditChat({ conversation }: any) {
                                                 return (
                                                     <li className="list-group-item d-flex justify-content-between flex-wrap" style={{ gap: 6, background: "var(--chatGroupMembersListColor)" , border: "solid 1px var(--authFormBGcolor)"}} key={participant.uid}>
                                                         <div className="d-flex align-items-center">
-                                                            <a className="d-flex  align-items-center me-2 NavLink" href={"/member/" + participant.username}>
+                                                            <Link className="d-flex  align-items-center me-2 NavLink" to={"/member/" + participant.username}>
                                                                 <img width={34} height={34} className="rounded-circle me-2" src={participant.avatarUrl ? participant.avatarUrl : "/resources/images/user.svg"} />
                                                                 <span>{participant.username}</span>
-                                                            </a>
+                                                            </Link>
                                                             <span style={{color:"grey"}}>
                                                                 {
                                                                     (conversation.ownerId == participant.uid) ? "Owner" : "Member"

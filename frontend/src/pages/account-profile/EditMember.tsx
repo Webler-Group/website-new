@@ -3,6 +3,7 @@ import Button from 'react-bootstrap/Button';
 import { SyntheticEvent, useEffect, useState } from "react";
 import { Alert, Form } from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
+import { Link } from "react-router-dom";
 import Reauntheticate from "./Reauntheticate";
 import Loader from "../../partials/Loader";
 import DatabaseClient from "../../api/DatabaseClient";
@@ -320,7 +321,7 @@ function EditMember() {
                                         </div>
                                         <div>
                                             <button onClick={saveAccountSettings} className="btn btn-primary" >Save</button>
-                                            <Button href = {"/member/"+username} variant="secondary" style={{marginLeft:"20px"}}>Back to profile</Button>
+                                            <Link to={"/member/"+username} style={{textDecoration:"none"}}><Button variant="secondary" style={{marginLeft:"20px"}}>Back to profile</Button></Link>
                                         </div>
                                     </div>
                                     <div className="tab-pane fade" id="password-tabpanel" role="tabpanel" aria-labelledby="password-tab" style={{backgroundColor:"var(--authFormBGcolor)",padding:"20px", borderRadius:"20px"}} >

@@ -5,6 +5,7 @@ import User from "./views/User";
 import Loader from "../../partials/Loader";
 import { useAuth } from "../../context/AuthContext";
 import DatabaseClient from "../../api/DatabaseClient";
+import { Link } from "react-router-dom";
 //import UserConversation from "../views/UserConversation";
 //import UserMinimal from "../views/UserMinimal";
 
@@ -86,7 +87,7 @@ function Member() {
                                                 user.username == getUserDetails()?.username ?
                                                     <>
                                                         <a href="#" onClick={handleLogout} className="btn btn-secondary">Logout</a>
-                                                        <a href="/edit-member" className="btn btn-primary">Edit Profile</a>
+                                                        <Link to="/edit-member" style={{textDecoration:"none"}} className="btn btn-primary">Edit Profile</Link>
                                                     </>
                                                     :
                                                     <>

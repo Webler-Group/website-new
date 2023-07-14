@@ -2,7 +2,7 @@ import PageTitle from "../../partials/PageTitle";
 import { SyntheticEvent, useState } from 'react';
 import { Alert, Button } from "react-bootstrap";
 import { useAuth } from "../../context/AuthContext";
-
+import { Link } from "react-router-dom";
 
 function LogIn() {
 
@@ -78,7 +78,7 @@ function LogIn() {
                                 </div>
                                 <div className="pt-2" >
                                     <Button disabled={loading} type="submit" className="w-100">Log In</Button>
-                                    <a href="/reset-password" className="text-center small">Forgot password?</a>
+                                    <Link to="/reset-password" style={{textDecoration:"none"}} className="text-center small">Forgot password?</Link>
                                 </div>
                             </form>
                             <p className="text-divider">
@@ -113,7 +113,7 @@ function LogIn() {
                             <div className="mt-4">
                                 <p className="text-center">
                                     <span>Don't have an account?</span>
-                                    <a className="ms-2" href="/signup">Sign up</a>
+                                    <Link to="/signup" style={{textDecoration:"none"}} className="ms-2" >Sign up</Link>
                                 </p>
                             </div>
                         </div>

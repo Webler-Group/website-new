@@ -1,14 +1,15 @@
-import { useState, useEffect, SetStateAction } from "react"
-import DatabaseClient from "../../../api/DatabaseClient"
-import { useAuth } from "../../../context/AuthContext"
+import { useState, useEffect, SetStateAction } from "react";
+import DatabaseClient from "../../../api/DatabaseClient";
+import { useAuth } from "../../../context/AuthContext";
+import { Link } from "react-router-dom";
 
-import UserConversation from "../../account-profile/views/UserConversation"
-import UserMinimal from "../../account-profile/views/UserMinimal"
+import UserConversation from "../../account-profile/views/UserConversation";
+import UserMinimal from "../../account-profile/views/UserMinimal";
 
-import Chat from "./chat-components/Chat"
-import ChatListItem from "./chat-components/ChatListItem"
-import CreateConversationPopup from "./chat-components/CreateConversationPopup"
-import ConversationInvite from "./views/ConversationInvite"
+import Chat from "./chat-components/Chat";
+import ChatListItem from "./chat-components/ChatListItem";
+import CreateConversationPopup from "./chat-components/CreateConversationPopup";
+import ConversationInvite from "./views/ConversationInvite";
 
 interface Props {
     pageName: string;
@@ -152,11 +153,11 @@ function Messaging({ pageName }: Props) {
                                 {
                                     pageName==="SocialMainPage"?
                                         <>
-                                            <a href="/messages">
+                                            <Link to="/messages">
                                                 <button className="btn" style={{ color: "var(--fontColor)", backgroundColor: pageName === "SocialMainPage"?"var(--chatSideBarColor)":"var(--navBarBgColor)" }}>
                                                     <i className="fa fa-external-link"></i>
                                                 </button>
-                                            </a>
+                                            </Link>
                                         </>
                                     :
                                         <>
