@@ -1,4 +1,4 @@
-import UserConversation from "../../../account-profile/views/UserConversation";
+import { UserConversation } from "../../member/index";
 
 class ConversationInvite {
     id: string;
