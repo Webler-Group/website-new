@@ -4,10 +4,8 @@ import verifyJWT from "../middleware/verifyJWT";
 
 const router = express.Router();
 
-router.use(verifyJWT);
-
 router.route("/:userId")
     .get(profileController.getProfile)
-    .put(profileController.updateProfile);
+    .put(verifyJWT, profileController.updateProfile);
 
 export default router;

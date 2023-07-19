@@ -1,8 +1,8 @@
 import mongoose, { InferSchemaType } from "mongoose";
 import bcrypt from "bcrypt";
-import countryCodesEnum from "../enums/countryCodes";
+import countryCodesEnum from "../config/countryCodes";
 import isEmail from "validator/lib/isEmail";
-import rolesEnum from "../enums/roles";
+import rolesEnum from "../config/roles";
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -11,7 +11,8 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [ isEmail, 'invalid email' ]
+        validate: [isEmail, 'invalid email'],
+        maxLength: 60
     },
     password: {
         required: true,
@@ -35,7 +36,7 @@ const userSchema = new mongoose.Schema({
     },
     roles: {
         type: [String],
-        default: [],
+        default: ["User"],
         enum: rolesEnum
     },
     emailVerified: {
@@ -66,17 +67,21 @@ const userSchema = new mongoose.Schema({
         default: 0
     }
 },
-{
-    timestamps: true
-});
+    {
+        timestamps: true
+    });
 
-userSchema.methods.matchPassword = async function(inputPassword: string) {
+userSchema.methods.matchPassword = async function (inputPassword: string) {
     return await bcrypt.compare(inputPassword, this.password);
 }
 
 userSchema.pre('save', async function (next) {
-    if(!this.isModified("password")) {
+    if (!this.isModified("password")) {
         return next();
+    }
+
+    if (this.password.length < 6) {
+        return next(new Error("Password must contain at least 6 characters"));
     }
 
     const salt = await bcrypt.genSalt(10);

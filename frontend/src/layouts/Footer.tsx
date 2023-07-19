@@ -52,13 +52,13 @@ function Footer() {
             </ul>
           </div>
           <div>
-            WEBLER - Copyright © {new Date().getFullYear()} Webler Group - All rights reserved <br/><code style={{fontSize: "x-small"}}>Web Development by: <Link className="linksNoDecor" style={{textDecoration: "underline", fontWeight:"bold"}} to="member/SolomoniRailoa">Solomoni Railoa</Link></code>
+            WEBLER - Copyright © {new Date().getFullYear()} Webler Group - All rights reserved <br /><code style={{ fontSize: "x-small" }}>Web Development by: <Link className="linksNoDecor" style={{ textDecoration: "underline", fontWeight: "bold" }} to="member/SolomoniRailoa">Solomoni Railoa</Link></code>
           </div>
         </div>
       </footer>
     </>
-    :
-    null
+      :
+      null
   )
 }
 

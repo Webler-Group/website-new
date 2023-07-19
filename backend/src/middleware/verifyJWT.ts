@@ -1,6 +1,6 @@
 import jwt, { VerifyErrors } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { IAccessTokenPayload } from "../utils/tokenUtils";
+import { AccessTokenPayload } from "../utils/tokenUtils";
 
 interface IAuthRequest extends Request {
     userId?: string;
@@ -10,8 +10,8 @@ interface IAuthRequest extends Request {
 const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
 
-    if(!(typeof authHeader === "string" && authHeader.startsWith("Bearer "))) {
-        
+    if (!(typeof authHeader === "string" && authHeader.startsWith("Bearer "))) {
+
         return res.status(401).json({ message: "Unauthorized" });
     }
 
@@ -21,11 +21,11 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
         token,
         process.env.ACCESS_TOKEN_SECRET as string,
         (err: VerifyErrors | null, decoded: any) => {
-            if(err) {
+            if (err) {
                 return res.status(403).json({ message: "Forbidden" });
             }
 
-            const userInfo = (decoded as IAccessTokenPayload).userInfo;
+            const userInfo = (decoded as AccessTokenPayload).userInfo;
 
             req.userId = userInfo.userId;
             req.roles = userInfo.roles;

@@ -1,11 +1,11 @@
 import { Response } from "express";
 import jwt from "jsonwebtoken";
 
-interface IRefreshTokenPayload {
+interface RefreshTokenPayload {
     userId: string;
 }
 
-const generateRefreshToken = (res: Response, payload: IRefreshTokenPayload) => {
+const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {
 
     const refreshToken = jwt.sign(
         payload,
@@ -13,7 +13,7 @@ const generateRefreshToken = (res: Response, payload: IRefreshTokenPayload) => {
         { expiresIn: "7d" }
     );
 
-    res.cookie("jwt", refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
@@ -21,35 +21,34 @@ const generateRefreshToken = (res: Response, payload: IRefreshTokenPayload) => {
     });
 }
 
-interface IAccessTokenPayload {
-    userInfo: { 
+interface AccessTokenPayload {
+    userInfo: {
         userId: string;
-        nickname: string;
-        roles: string[]; 
+        roles: string[];
     }
 }
 
 const clearRefreshToken = (res: Response) => {
-    res.clearCookie("jwt", {
+    res.clearCookie("refreshToken", {
         httpOnly: true,
         secure: true,
         sameSite: "none"
     });
 }
 
-const signAccessToken = (payload: IAccessTokenPayload) => {
+const signAccessToken = (payload: AccessTokenPayload) => {
 
     const accessToken = jwt.sign(
         payload,
         process.env.ACCESS_TOKEN_SECRET as string,
-        { expiresIn: "15m" }
+        { expiresIn: "1m" }
     );
     return accessToken;
 }
 
 export {
-    IAccessTokenPayload,
-    IRefreshTokenPayload,
+    AccessTokenPayload,
+    RefreshTokenPayload,
     generateRefreshToken,
     signAccessToken,
     clearRefreshToken

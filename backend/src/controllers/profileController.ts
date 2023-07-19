@@ -1,18 +1,21 @@
+import mongoose from "mongoose";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import User from "../models/User";
 import { Response } from "express";
+import asyncHandler from "express-async-handler";
 
-const getProfile = async (req: IAuthRequest, res: Response) => {
+const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const userId = req.params.userId;
 
-    const user = await User.findById(userId).select("-password");
+    const user = await User.findById(userId);
 
-    if(!user) {
-        return res.status(404).json({ message: "Profile not found" });
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
     }
 
-    res.json({ 
+    res.json({
         userDetails: {
             id: user._id,
             name: user.name,
@@ -28,39 +31,41 @@ const getProfile = async (req: IAuthRequest, res: Response) => {
             registerDate: user.createdAt,
             level: user.level,
             xp: user.xp
-        } 
+        }
     });
-    
-}
 
-const updateProfile = async (req: IAuthRequest, res: Response) => {
+})
+
+const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const userId = req.params.userId;
     const { email, name, bio, countryCode } = req.body;
 
-    if(currentUserId !== userId) {
-        return res.status(401).json({ message: "Not authorized for this action" });
+    if (currentUserId !== userId) {
+        res.status(401).json({ message: "Not authorized for this action" });
+        return
     }
 
     const user = await User.findById(userId);
 
-    if(!user) {
-        return res.status(404).json({ message: "Profile not found" }); 
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
     }
 
-    if(typeof email !== "undefined") {
+    if (typeof email !== "undefined") {
         user.email = email;
     }
 
-    if(typeof name !== "undefined") {
+    if (typeof name !== "undefined") {
         user.name = name;
     }
 
-    if(typeof bio !== "undefined") {
+    if (typeof bio !== "undefined") {
         user.bio = bio;
     }
 
-    if(typeof countryCode !== "undefined") {
+    if (typeof countryCode !== "undefined") {
         user.countryCode = countryCode;
     }
 
@@ -79,15 +84,15 @@ const updateProfile = async (req: IAuthRequest, res: Response) => {
             }
         })
     }
-    catch(err: any) {
+    catch (err: any) {
         res.json({
             success: false,
             errors: Object.values(err.errors),
             data: null
         })
     }
-    
-}
+
+})
 
 export default {
     getProfile,
