@@ -35,13 +35,13 @@ const Login = () => {
                     <h2>Login</h2>
                     <FormGroup>
                         <FormLabel>Email</FormLabel>
-                        <FormControl type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <FormControl type="email" placeholder="Enter email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Password</FormLabel>
-                        <FormControl type="password" placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <FormControl type="password" placeholder="Enter password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
                     </FormGroup>
-                    <Button type="submit">Login</Button>
+                    <Button className="mt-2" type="submit">Login</Button>
                 </Form>
             </Container>
         </>

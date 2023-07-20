@@ -36,17 +36,17 @@ const Register = () => {
                     <h2>Register</h2>
                     <FormGroup>
                         <FormLabel>Email</FormLabel>
-                        <FormControl type="email" placeholder="Enter email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                        <FormControl type="email" placeholder="Enter email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Name</FormLabel>
-                        <FormControl minLength={3} maxLength={20} type="text" placeholder="Enter name" value={name} onChange={(e) => setName(e.target.value)} />
+                        <FormControl minLength={3} maxLength={20} type="text" placeholder="Enter name" required value={name} onChange={(e) => setName(e.target.value)} />
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Password</FormLabel>
-                        <FormControl type="password" minLength={6} placeholder="Enter password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                        <FormControl type="password" minLength={6} placeholder="Enter password" required value={password} onChange={(e) => setPassword(e.target.value)} />
                     </FormGroup>
-                    <Button type="submit">Register</Button>
+                    <Button className="mt-2" type="submit">Register</Button>
                 </Form>
             </Container>
         </>
