@@ -1,5 +1,5 @@
 import { BASE_URL } from "../config/config";
-import { authenticate } from "../features/auth/authContext";
+import { authenticate } from "../features/auth/context/authContext";
 
 class ApiCommunication {
     static #instance: ApiCommunication | null = null;
@@ -23,7 +23,7 @@ class ApiCommunication {
         this.#get().accessToken = accessToken;
     }
 
-    async fetchQuery(path: string, options: { method: string; headers: { contentType: string; }; body?: any }) {
+    async fetchQuery(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
         return await fetch(this.baseUrl + path, {
             method: options.method,
             credentials: "include",
@@ -32,11 +32,12 @@ class ApiCommunication {
                 "Content-Type": options.headers.contentType,
                 "Authorization": this.accessToken ? "Bearer " + this.accessToken : ""
             },
-            body: options.method != "GET" ? JSON.stringify(options.body) : undefined
+            body: options.method != "GET" ? JSON.stringify(options.body) : undefined,
+            signal: options.signal
         });
     }
 
-    static async sendJsonRequest(path: string, method: string, body: any = {}) {
+    static async sendJsonRequest(path: string, method: string, body: any = {}, options = {}) {
         const _this = this.#get();
 
         let response = await _this.fetchQuery(path, {
@@ -55,7 +56,8 @@ class ApiCommunication {
                         contentType: "application/json"
                     },
                     method,
-                    body
+                    body,
+                    ...options
                 });
             }
         }

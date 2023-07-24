@@ -156,9 +156,11 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     );
 })
 
-export default {
+const controller = {
     login,
     register,
     logout,
     refresh
 };
+
+export default controller;

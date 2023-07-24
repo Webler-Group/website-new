@@ -1,5 +1,5 @@
 import { useLocation, Navigate, Outlet } from "react-router-dom"
-import { useAuth } from "./authContext"
+import { useAuth } from "../context/authContext"
 
 interface RequireAuthProps {
     allowedRoles: string[];

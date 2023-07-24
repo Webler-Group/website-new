@@ -1,0 +1,101 @@
+ul,
+p {
+    margin: 0;
+}
+
+ul {
+    list-style: none;
+}
+
+.webler-login-wrapper {
+    padding: 55px 0;
+}
+
+.webler-login-container {
+    width: 392px;
+}
+
+.webler-user__image {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+@media(max-width: 449px) {
+    .webler-login-container {
+        width: 100%;
+        padding: 32px 24px;
+    }
+}
+
+.webler-p-details__row {
+    margin-bottom: 8px;
+}
+
+.webler-p-details__avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 0 24px;
+}
+
+@media(min-width: 576px) {
+    .webler-p-details__avatar {
+        margin: 0 32px;
+    }
+}
+
+.webler-p-details__avatar-image {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+}
+
+.webler-p-details__name {
+    font-size: 26px;
+    font-weight: 600;
+    line-height: 120%;
+}
+
+.webler-p-details__follows__button {
+    background: none;
+    border: none;
+    font-size: 16px;
+    padding: 0;
+}
+
+.webler-p-details__follows__button:hover {
+    background: none;
+    text-shadow: -0.025rem -0.012rem 0 currentcolor, .025rem .012rem currentcolor;
+}
+
+.webler-p-follow-item__avatar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-right: 20px;
+}
+
+.webler-p-follow-item__avatar-image {
+    border-radius: 50%;
+    height: 56px;
+    width: 56px;
+}
+
+.webler-p-follow-item__name {
+    font-weight: 600;
+    line-height: 120%;
+    word-break: break-all;
+}
+
+@media(min-width: 576px) {
+    .webler-modal__container.edit-profile {
+        width: 567px;
+        min-height: 544px;
+    }
+
+    .webler-modal__container.follows {
+        width: 367px;
+        max-height: 80vh;
+    }
+}

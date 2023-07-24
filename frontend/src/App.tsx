@@ -1,14 +1,15 @@
 import { Routes, Route } from 'react-router-dom';
 
-import Error404 from './pages/Error404';
+import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
-import Login from './features/auth/Login';
-import Register from './features/auth/Register';
-import RequireAuth from './features/auth/RequireAuth';
+import Login from './features/auth/pages/Login';
+import Register from './features/auth/pages/Register';
+import RequireAuth from './features/auth/components/RequireAuth';
 import roles from './config/roles';
 import Home from './pages/Home';
-import { ProfileFromParams, ProfileFromAuth } from './features/profile/Profile';
-import NoAuth from './features/auth/NoAuth';
+import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
+import NoAuth from './features/auth/components/NoAuth';
+import TermsOfUse from './pages/TermsOfUse';
 
 function App() {
   return (
@@ -22,19 +23,19 @@ function App() {
         </Route>
 
         {/* public routes */}
-        <Route path="Profile">
-          <Route path=":userId" element={<ProfileFromParams />} />
-          <Route index element={<ProfileFromAuth />} />
-        </Route>
+        <Route path="Terms-of-use" element={<TermsOfUse />} />
 
         {/* protected routes */}
         <Route element={<RequireAuth allowedRoles={[...Object.values(roles)]} />}>
-
+          <Route path="Profile">
+            <Route path=":userId" element={<Profile />} />
+            <Route index element={<ProfileFromAuth />} />
+          </Route>
         </Route>
 
       </Route>
 
-      <Route path="/*" element={<Error404 />} />
+      <Route path="/*" element={<NotFound />} />
     </Routes>
   );
 };

@@ -1,10 +1,10 @@
 import { Nav, NavDropdown, Button } from "react-bootstrap";
-import { FaUser, FaQuestion, FaSignOutAlt } from "react-icons/fa";
+import { FaQuestion, FaSignOutAlt } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
-import ApiCommunication from "../../helpers/apiCommunication";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "./authContext";
+import ApiCommunication from "../../../app/apiCommunication";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
 
 const AuthNavigation = () => {
 
@@ -25,16 +25,16 @@ const AuthNavigation = () => {
                 (userInfo) ?
                     <>
                         <Nav.Item>
-                            <NavDropdown align="end" title={<> <FaUser /> <b>{userInfo.name}</b></>} menuVariant="light">
+                            <NavDropdown align="end" title={<> <img className="webler-user__image" src="/resources/images/user.svg" /> <b>{userInfo.name}</b></>} menuVariant="light">
                                 <LinkContainer to="/Profile">
                                     <NavDropdown.Item>
                                         Go to profile
                                     </NavDropdown.Item>
                                 </LinkContainer>
                                 <NavDropdown.Divider />
-                                <NavDropdown.Item>
-                                    <FaGear /> Setting
-                                </NavDropdown.Item>
+                                <Link className="dropdown-item" to={"/Profile/" + userInfo.id + "?settings=true"}>
+                                    <FaGear /> Settings
+                                </Link>
                                 <NavDropdown.Item>
                                     <FaQuestion /> Help
                                 </NavDropdown.Item>

@@ -1,5 +1,5 @@
 import React, { ReactNode, useContext, useState } from "react"
-import ApiCommunication from "../../helpers/apiCommunication";
+import ApiCommunication from "../../../app/apiCommunication";
 
 interface UserInfo {
     id: string;
@@ -48,6 +48,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const updateUser = (userInfo: UserInfo) => {
         setUserInfo(userInfo);
+
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
     }
 

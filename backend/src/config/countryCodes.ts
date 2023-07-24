@@ -1,4 +1,5 @@
 const countryCodes: string[] = [
+    "",
     "AF",
     "AX",
     "AL",

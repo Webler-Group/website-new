@@ -27,12 +27,14 @@ const userSchema = new mongoose.Schema({
     },
     countryCode: {
         type: String,
-        enum: countryCodesEnum
+        enum: countryCodesEnum,
+        default: ""
     },
     bio: {
         type: String,
         trim: true,
-        maxLength: 120
+        maxLength: 120,
+        default: ""
     },
     roles: {
         type: [String],
@@ -57,14 +59,6 @@ const userSchema = new mongoose.Schema({
     },
     avatarUrl: {
         type: String
-    },
-    followers: {
-        type: Number,
-        default: 0
-    },
-    following: {
-        type: Number,
-        default: 0
     }
 },
     {
