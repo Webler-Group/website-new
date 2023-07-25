@@ -14,8 +14,8 @@ const Register = () => {
     return (
         <>
             <Header />
-            <div className="webler-login-wrapper">
-                <Container className="webler-login-container">
+            <div className="wb-login-wrapper">
+                <Container className="wb-login-container">
                     <RegisterForm onToggleClick={toggle} />
                 </Container>
             </div>
