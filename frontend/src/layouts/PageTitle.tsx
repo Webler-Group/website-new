@@ -1,6 +1,6 @@
 import { useRef, useEffect } from 'react';
 
-function PageTitle(title:string, prevailOnUnmount = false) {
+function PageTitle(title: string, prevailOnUnmount = false) {
     const defaultTitle = useRef(document.title);
 
     useEffect(() => {
@@ -9,9 +9,9 @@ function PageTitle(title:string, prevailOnUnmount = false) {
 
     useEffect(() => () => {
         if (!prevailOnUnmount) {
-        document.title = defaultTitle.current;
+            document.title = defaultTitle.current;
         }
-    }, [])
+    }, []);
 }
 
 export default PageTitle;
