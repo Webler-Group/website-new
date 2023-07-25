@@ -1,4 +1,4 @@
-import jwt, { VerifyErrors } from "jsonwebtoken";
+import jwt, { JwtPayload, VerifyErrors } from "jsonwebtoken";
 import User from "../models/User";
 import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
@@ -21,17 +21,21 @@ const login = asyncHandler(async (req, res) => {
             return
         }
 
-        const accessToken = signAccessToken({
+        const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
                 roles: user.roles
             }
         })
 
+        const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
+            (tokenInfo as JwtPayload).exp! * 1000 : 0;
+
         generateRefreshToken(res, { userId: user._id.toString() });
 
         res.json({
             accessToken,
+            expiresIn,
             user: {
                 id: user._id,
                 name: user.name,
@@ -76,17 +80,21 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
     if (user) {
 
-        const accessToken = signAccessToken({
+        const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
                 roles: user.roles
             }
         })
 
+        const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
+            (tokenInfo as JwtPayload).exp! * 1000 : 0;
+
         generateRefreshToken(res, { userId: user._id.toString() });
 
         res.json({
             accessToken,
+            expiresIn,
             user: {
                 id: user._id,
                 name: user.name,
@@ -144,14 +152,20 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
                 return
             }
 
-            const accessToken = signAccessToken({
+            const { accessToken, data: tokenInfo } = signAccessToken({
                 userInfo: {
                     userId: user._id.toString(),
                     roles: user.roles
                 }
             })
 
-            res.json({ accessToken })
+            const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
+                (tokenInfo as JwtPayload).exp! * 1000 : 0;
+
+            res.json({
+                accessToken,
+                expiresIn
+            })
         }
     );
 })

@@ -13,14 +13,18 @@ class ApiCommunication {
 
     baseUrl: string;
     accessToken: string | null;
+    expiresIn: number;
 
     constructor() {
         this.baseUrl = BASE_URL;
         this.accessToken = null;
+        this.expiresIn = 0;
     }
 
-    static setAccessToken(accessToken: string | null) {
-        this.#get().accessToken = accessToken;
+    static setAccessToken(accessToken: string | null, expiresIn: number) {
+        const _this = this.#get();
+        _this.accessToken = accessToken;
+        _this.expiresIn = expiresIn;
     }
 
     async fetchQuery(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
@@ -37,30 +41,37 @@ class ApiCommunication {
         });
     }
 
+    async fetchQueryWithReauthentication(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
+        if (!path.startsWith("/Auth") && this.accessToken && this.expiresIn <= Date.now()) {
+            const result = await this.fetchQuery("/Auth/Refresh", {
+                method: "GET",
+                headers: {
+                    contentType: "application/json"
+                }
+            })
+                .then(response => response.json());
+            if (result && result.accessToken && result.expiresIn) {
+                authenticate(result.accessToken, result.expiresIn);
+            }
+        }
+
+        return await this.fetchQuery(path, {
+            ...options
+        });
+
+    }
+
     static async sendJsonRequest(path: string, method: string, body: any = {}, options = {}) {
         const _this = this.#get();
 
-        let response = await _this.fetchQuery(path, {
+        const response = await _this.fetchQueryWithReauthentication(path, {
             headers: {
                 contentType: "application/json"
             },
             method,
-            body
+            body,
+            ...options
         });
-        if (response.status === 403 && _this.accessToken) {
-            const data = await this.sendJsonRequest("/Auth/Refresh", "GET");
-            if (data?.accessToken) {
-                authenticate(data.accessToken);
-                response = await _this.fetchQuery(path, {
-                    headers: {
-                        contentType: "application/json"
-                    },
-                    method,
-                    body,
-                    ...options
-                });
-            }
-        }
 
         const data = await response.json();
 
