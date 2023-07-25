@@ -1,4 +1,4 @@
-import { Container } from "react-bootstrap";
+
 import Header from "../layouts/Header";
 
 function Home() {
@@ -30,7 +30,7 @@ function Home() {
             </div>
             <div className="col">
               <div className="card">
-                <img src="resources\images\CardImage.jpg" className="card-img-top" alt="..." />
+                <img src="resources\images\pctemplate.png" className="card-img-top" alt="..." />
                 <div className="card-body">
                   <h5 className="card-title">Card title</h5>
                   <p className="card-text">
@@ -44,7 +44,7 @@ function Home() {
             </div>
             <div className="col">
               <div className="card">
-                <img src="resources\images\CardImage.jpg" className="card-img-top" alt="..." />
+                <img src="resources\images\placeHolderImage.jpg" className="card-img-top" alt="..." />
                 <div className="card-body">
                   <h5 className="card-title">Card title</h5>
                   <p className="card-text">
