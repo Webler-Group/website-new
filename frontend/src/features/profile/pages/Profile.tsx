@@ -121,12 +121,12 @@ const Profile = () => {
                     <Container>
                         <Card className="mt-4 p-2">
                             <div className="d-block d-sm-flex">
-                                <div className="webler-p-details__avatar">
-                                    <img className="webler-p-details__avatar-image" src="/resources/images/user.svg" />
+                                <div className="wb-p-details__avatar">
+                                    <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
                                 </div>
                                 <div className="d-flex flex-column align-items-center align-items-sm-start">
-                                    <div className="d-flex webler-p-details__row">
-                                        <p className="webler-p-details__name">{userDetails.name}</p>
+                                    <div className="d-flex wb-p-details__row">
+                                        <p className="wb-p-details__name">{userDetails.name}</p>
                                         {
                                             userInfo && userDetails.id !== userInfo.id
                                             &&
@@ -138,27 +138,27 @@ const Profile = () => {
                                             )
                                         }
                                     </div>
-                                    <div className="webler-p-details__row">
+                                    <div className="wb-p-details__row">
                                         {
                                             userDetails.following > 0 ?
-                                                <button className="webler-p-details__follows__button" onClick={showFollowing}>{userDetails.following} Following</button>
+                                                <button className="wb-p-details__follows__button" onClick={showFollowing}>{userDetails.following} Following</button>
                                                 :
                                                 <span>{userDetails.following} Following</span>
                                         }
                                         {
                                             userDetails.followers ?
-                                                <button className="webler-p-details__follows__button ms-2" onClick={showFollowers}>{userDetails.followers} Followers</button>
+                                                <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{userDetails.followers} Followers</button>
                                                 :
                                                 <span className="ms-2">{userDetails.followers} Followers</span>
                                         }
 
                                     </div>
-                                    <p className="webler-p-details__row">
+                                    <p className="wb-p-details__row">
                                         <FaStar style={{ color: "gold" }} />
                                         <b>{userDetails.xp} XP</b>
                                     </p>
-                                    <p className="text-secondary webler-p-details__row">{userDetails.bio}</p>
-                                    <div className="webler-p-details__row">
+                                    <p className="text-secondary wb-p-details__row">{userDetails.bio}</p>
+                                    <div className="wb-p-details__row">
                                         {
                                             userDetails.countryCode &&
                                             <>

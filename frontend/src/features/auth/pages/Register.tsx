@@ -42,8 +42,8 @@ const Register = () => {
     return (
         <>
             <Header />
-            <div className="webler-login-wrapper">
-                <Container className="webler-login-container">
+            <div className="wb-login-wrapper">
+                <Container className="wb-login-container">
                     <h1 className="text-center mb-4">Sign Up</h1>
                     <Form onSubmit={(e) => handleSubmit(e)}>
                         {error && <Alert variant="danger">{error}</Alert>}

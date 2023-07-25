@@ -44,11 +44,11 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
 
     const body = (
         <div className="d-flex">
-            <div className="webler-p-follow-item__avatar">
-                <img className="webler-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+            <div className="wb-p-follow-item__avatar">
+                <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
             </div>
             <div>
-                <Link to={"/Profile/" + user.id} className="webler-p-follow-item__name">{user.name}</Link>
+                <Link to={"/Profile/" + user.id} className="wb-p-follow-item__name">{user.name}</Link>
                 <div>
                     {
                         user.countryCode &&
