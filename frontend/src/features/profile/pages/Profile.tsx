@@ -7,7 +7,7 @@ import { Button, Card, Container } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
 import countries from "../../../config/countries";
 import { FaStar } from "react-icons/fa6";
-import CountryUtils from "../../../utils/countryUtils";
+import Country from "../../../components/Country";
 import FollowList from "./FollowList";
 
 export interface UserDetails {
@@ -162,7 +162,7 @@ const Profile = () => {
                                         {
                                             userDetails.countryCode &&
                                             <>
-                                                {CountryUtils.getCountryString(countries.find(country => country.code === userDetails.countryCode)!)}
+                                                {<Country country={countries.find(country => country.code === userDetails.countryCode)!} />}
                                                 <span className="mx-2">·</span>
                                             </>
                                         }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { UserMinimal } from '../pages/Profile'
-import CountryUtils from '../../../utils/countryUtils';
+import Country from '../../../components/Country';
 import countries from '../../../config/countries';
 import { Button } from 'react-bootstrap';
 import ApiCommunication from '../../../app/apiCommunication';
@@ -53,7 +53,7 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
                     {
                         user.countryCode &&
                         <>
-                            {CountryUtils.getCountryString(countries.find(country => country.code === user.countryCode)!)}
+                            {<Country country={countries.find(country => country.code === user.countryCode)!} />}
                             <span className="mx-2">·</span>
                         </>
                     }

@@ -6,7 +6,6 @@ import { UserDetails } from "./Profile";
 import ApiCommunication from "../../../app/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import PasswordFormControl from "../../../components/PasswordFormControl";
-import CountryUtils from "../../../utils/countryUtils";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -33,10 +32,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     useEffect(() => {
         if (userDetails) {
-            setUsername(userDetails.name);
-            setEmail(userDetails.email);
-            setBio(userDetails.bio);
-            setCountryCode(userDetails.countryCode);
+            setUsername(userDetails.name || "");
+            setEmail(userDetails.email || "");
+            setBio(userDetails.bio || "");
+            setCountryCode(userDetails.countryCode || "");
         }
     }, [userDetails]);
 
@@ -91,10 +90,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     const resetInfo = () => {
         if (userDetails) {
-            setUsername(userDetails.name);
-            setEmail(userDetails.email);
-            setBio(userDetails.bio);
-            setCountryCode(userDetails.countryCode);
+            setUsername(userDetails.name || "");
+            setEmail(userDetails.email || "");
+            setBio(userDetails.bio || "");
+            setCountryCode(userDetails.countryCode || "");
         }
         setInfoMessage([true, ""])
     }
@@ -157,7 +156,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                     {
                                         countries.map((country, idx) => {
                                             return (
-                                                <option key={idx} value={country.code}>{CountryUtils.getCountryString(country)}</option>
+                                                <option key={idx} value={country.code}>{country.name}</option>
                                             )
                                         })
                                     }

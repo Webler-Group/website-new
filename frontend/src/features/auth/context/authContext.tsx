@@ -16,7 +16,7 @@ interface UserInfo {
 
 interface AuthState {
     userInfo: UserInfo | null;
-    authenticate: (accessToken: string) => void;
+    authenticate: (accessToken: string, expiresIn: number) => void;
     updateUser: (userInfo: UserInfo) => void;
     logout: () => void;
 }
@@ -29,9 +29,10 @@ interface AuthProviderProps {
 
 export const useAuth = () => useContext(AuthContext);
 
-export const authenticate = (accessToken: string) => {
-    ApiCommunication.setAccessToken(accessToken);
+export const authenticate = (accessToken: string, expiresIn: number) => {
+    ApiCommunication.setAccessToken(accessToken, expiresIn);
     localStorage.setItem("accessToken", accessToken);
+    localStorage.setItem("expiresIn", expiresIn.toString());
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -39,7 +40,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const accessToken = localStorage.getItem("accessToken") ?
         localStorage.getItem("accessToken") :
         null;
-    ApiCommunication.setAccessToken(accessToken);
+    const expiresIn = localStorage.getItem("expiresIn") ?
+        Number(localStorage.getItem("expiresIn")) :
+        0;
+    ApiCommunication.setAccessToken(accessToken, expiresIn);
 
     const defaultUserInfo = localStorage.getItem("userInfo") ?
         JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo :
@@ -53,8 +57,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
 
     const logout = () => {
-        ApiCommunication.setAccessToken(null);
+        ApiCommunication.setAccessToken(null, 0);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("expiresIn");
         setUserInfo(null);
         localStorage.removeItem("userInfo");
     }
