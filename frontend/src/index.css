@@ -109,8 +109,9 @@ ul {
     color: aliceblue;
 }
 
-.wb-home .header {
+.wb-home .header p {
     font-size: 60px;
+
 }
 
 
@@ -156,4 +157,66 @@ ul {
         max-width: 424px;
         margin: 0 32px;
     }
+}
+
+.wb-home-why-wb {
+    width: 100%;
+    height: auto;
+    background-color: rgb(247, 247, 247);
+    padding: 100px;
+}
+
+
+.wb-home-why-wb .card {
+
+    margin-top: 50px;
+    border: none;
+    max-width: 500px;
+    background-color: rgb(255, 255, 255);
+    color: rgb(64, 85, 104);
+    /* box-shadow: 0px 0px 10px  rgb(224, 224, 224); */
+}
+
+
+.wb-home-why-wb img {
+    width: 100%;
+    height: 100%;
+}
+
+
+@media(max-width: 500px) {
+    .wb-home-why-wb .card {
+        width: 300px;
+        transform: scale(1.2);
+        margin-top: 50px;
+        border: none;
+        color: rgb(64, 85, 104);
+        box-shadow: 0px 0px 10px rgb(233, 233, 233);
+    }
+}
+
+
+.wb-home-perfect-platform {
+    color: rgb(64, 85, 104);
+    width: 100%;
+    height: auto;
+}
+
+.wb-home-perfect-platform .card {
+    margin-top: 20px;
+    transform: scale(0.8);
+    font-size: 30px;
+    border: none;
+    max-width: 1000px;
+    color: rgb(64, 85, 104);
+}
+
+.wb-home-perfect-platform .card-title {
+    font-size: larger;
+}
+
+
+.wb-home-perfect-platform h1 {
+    margin-top: 50px;
+    width: 100%;
 }
