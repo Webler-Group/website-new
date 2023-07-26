@@ -21,7 +21,9 @@ function Header() {
             <Nav.Link>Catalog</Nav.Link>
             <Nav.Link>Leaderboard</Nav.Link>
             <Nav.Link>Code Bits</Nav.Link>
-            <Nav.Link>Discuss</Nav.Link>
+            <LinkContainer to="/Discuss">
+              <Nav.Link>Discuss</Nav.Link>
+            </LinkContainer>
             <Nav.Link>Blog</Nav.Link>
           </Nav>
 

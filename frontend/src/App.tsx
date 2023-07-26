@@ -10,6 +10,7 @@ import Home from './pages/Home';
 import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
 import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
+import Discuss from './features/discuss/pages/Discuss';
 
 function App() {
   return (
@@ -30,6 +31,9 @@ function App() {
           <Route path="Profile">
             <Route path=":userId" element={<Profile />} />
             <Route index element={<ProfileFromAuth />} />
+          </Route>
+          <Route path="Discuss">
+            <Route index element={<Discuss />} />
           </Route>
         </Route>
 
