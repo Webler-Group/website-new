@@ -8,7 +8,10 @@ ul {
 }
 
 .wb-login-wrapper {
-    padding: 55px 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .wb-login-container {
@@ -121,18 +124,9 @@ ul {
     background-color: aliceblue;
 }
 
-.wb-home-why-wb .card {
-    width: 500px;
-    height: 500px;
-    margin-top: 50px;
-    border: none;
-    box-shadow: 0px 0px 10px rgb(233, 233, 233);
-}
-
 
 .wb-home-why-wb img {
     width: 100%;
-    height: 300px;
 }
 
 
@@ -180,19 +174,7 @@ ul {
 
 .wb-home-why-wb img {
     width: 100%;
-    height: 100%;
-}
 
-
-@media(max-width: 500px) {
-    .wb-home-why-wb .card {
-        width: 300px;
-        transform: scale(1.2);
-        margin-top: 50px;
-        border: none;
-        color: rgb(64, 85, 104);
-        box-shadow: 0px 0px 10px rgb(233, 233, 233);
-    }
 }
 
 
@@ -204,7 +186,6 @@ ul {
 
 .wb-home-perfect-platform .card {
     margin-top: 20px;
-    transform: scale(0.8);
     font-size: 30px;
     border: none;
     max-width: 1000px;
@@ -219,4 +200,65 @@ ul {
 .wb-home-perfect-platform h1 {
     margin-top: 50px;
     width: 100%;
+}
+
+.wb-home-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wb-home-header__container {
+    padding: 32px 28px 64px 28px;
+    margin-bottom: 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.wb-home-header__title {
+    font-size: 80px;
+    font-weight: 700;
+    line-height: 100%;
+    margin-bottom: 16px;
+    text-align: center;
+}
+
+.wb-home-header__info {
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 150%;
+    margin-bottom: 24px;
+    max-width: 657px;
+    text-align: center;
+}
+
+@media (max-width: 1023px) and (min-width: 600px) {
+
+    .wb-home-header__title {
+        font-size: 50px;
+    }
+
+    .wb-home-header__info {
+        font-size: 16px;
+        max-width: 416px;
+    }
+}
+
+@media (max-width: 599px) {
+
+    .wb-home-header__title {
+        font-size: 50px;
+        margin-bottom: 36px;
+        min-width: 295px;
+        padding: 0 32px;
+    }
+
+    .wb-home-header__info {
+        font-size: 16px;
+        line-height: 120%;
+        margin-bottom: 34px;
+        max-width: 295px;
+    }
 }

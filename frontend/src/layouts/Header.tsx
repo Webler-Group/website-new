@@ -4,12 +4,14 @@ import Navbar from 'react-bootstrap/Navbar';
 import { LinkContainer } from 'react-router-bootstrap';
 import AuthNavigation from '../features/auth/components/AuthNavigation';
 
-function Header() {
+interface HeaderProps {
+  variant: string;
+}
 
-
+function Header({ variant }: HeaderProps) {
 
   return (
-    <Navbar expand="lg" bg="light" variant="light" className="border-bottom">
+    <Navbar expand="lg" bg={variant} variant={variant}>
       <Container fluid>
         <LinkContainer to="/">
           <Navbar.Brand><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand>

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 
-const discussQuestionSchema = new mongoose.Schema({
+const questionSchema = new mongoose.Schema({
     title: {
         type: String,
         required: true,
@@ -29,6 +29,6 @@ const discussQuestionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const DiscussQuestion = mongoose.model("DiscussQuestion", discussQuestionSchema);
+const Question = mongoose.model("Question", questionSchema);
 
-export default DiscussQuestion;
+export default Question;

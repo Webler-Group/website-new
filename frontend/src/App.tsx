@@ -26,14 +26,15 @@ function App() {
         {/* public routes */}
         <Route path="Terms-of-use" element={<TermsOfUse />} />
 
+        <Route path="Discuss">
+          <Route index element={<Discuss />} />
+        </Route>
+
         {/* protected routes */}
         <Route element={<RequireAuth allowedRoles={[...Object.values(roles)]} />}>
           <Route path="Profile">
             <Route path=":userId" element={<Profile />} />
             <Route index element={<ProfileFromAuth />} />
-          </Route>
-          <Route path="Discuss">
-            <Route index element={<Discuss />} />
           </Route>
         </Route>
 

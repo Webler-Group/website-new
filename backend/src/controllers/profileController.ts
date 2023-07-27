@@ -226,13 +226,13 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const query = req.query;
     const currentUserId = req.userId;
 
-    const page = parseInt(query.page as string);
-    const count = parseInt(query.count as string);
-
-    if (typeof page === "undefined" || typeof count === "undefined") {
+    if (typeof query.page !== "string" || typeof query.count !== "string") {
         res.status(400).json({ message: "Invalid query params" });
         return
     }
+
+    const page = parseInt(query.page);
+    const count = parseInt(query.count);
 
     const result = await UserFollowing.find({ following: userId })
         .sort({ createdAt: "desc" })
@@ -276,13 +276,13 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const query = req.query;
     const currentUserId = req.userId;
 
-    const page = parseInt(query.page as string);
-    const count = parseInt(query.count as string);
-
-    if (typeof page === "undefined" || typeof count === "undefined") {
+    if (typeof query.page !== "string" || typeof query.count !== "string") {
         res.status(400).json({ message: "Invalid query params" });
         return
     }
+
+    const page = parseInt(query.page);
+    const count = parseInt(query.count);
 
     const result = await UserFollowing.find({ user: userId })
         .sort({ createdAt: "desc" })
