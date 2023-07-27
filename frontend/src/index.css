@@ -262,3 +262,48 @@ ul {
         max-width: 295px;
     }
 }
+
+
+/*Why code*/
+
+.wb-home-why-code{
+    background-color:rgb(247, 247, 247);
+    width: 100%;height: auto;
+    margin-top: 50px;
+}
+
+.wb-home-why-code .wb_card{
+    margin-top: -20px;
+    transform: scale(0.8);
+    font-size: 30px;
+    border: none;
+    max-width: 1000px;
+    color: rgb(64, 85, 104);
+}
+
+
+.wb-home-why-code h1{
+    margin-top: 100px;
+    width: 100%;
+}
+
+.wb-home-why-code .card-title{
+    font-size: 40px;
+}
+
+/* wb join us */
+
+.wb-home-joinus{
+    background-color: rgb(34, 34, 34);;
+    height: auto;
+    padding: 150px;
+}
+
+.wb-home-signup-form{
+    padding: 20px;
+    color: rgb(61, 76, 88);
+    background-color: rgb(236, 236, 236);
+    border-radius: 5px;
+    
+}
+

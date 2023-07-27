@@ -1,8 +1,14 @@
 import { Button, Container } from "react-bootstrap";
 import Header from "../layouts/Header";
 import { LinkContainer } from "react-router-bootstrap";
+import { useState } from "react";
+import LoginForm from "../features/auth/components/LoginForm";
+import RegisterForm from "../features/auth/components/RegisterForm";
 
 function Home() {
+
+  const [isUserRegistering, setUserAuthPage] = useState(true);
+
   return (
     <>
       <Header variant="dark" />
@@ -119,6 +125,83 @@ function Home() {
           </Container>
 
         </div>
+
+
+        <section className="wb-home-why-code d-flex">
+        <div className="row row-cols-2 row-cols-md-3 g-5 text-center align-self-center">
+          <h1>Why Code?</h1>
+          <div className="col">
+            <div className="card wb_card">
+              <img
+                src="resources\images\pctemplate.png"
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <h5 className="card-title">Card title</h5>
+                <p className="card-text">
+                  This is a longer card with supporting text below as a natural
+                  lead-in to additional content. This content is a little bit
+                  longer.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="col">
+            <div className="card wb_card">
+              <img
+                src="resources\images\pctemplate.png"
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <h5 className="card-title">Card title</h5>
+                <p className="card-text">
+                  This is a longer card with supporting text below as a natural
+                  lead-in to additional content. This content is a little bit
+                  longer.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="col">
+            <div className="card wb_card">
+              <img
+                src="resources\images\pctemplate.png"
+                className="card-img-top"
+                alt="..."
+              />
+              <div className="card-body">
+                <h5 className="card-title">Card title</h5>
+                <p className="card-text">
+                  This is a longer card with supporting text below as a natural
+                  lead-in to additional content. This content is a little bit
+                  longer.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sign up section */}
+      <section className="wb-home-joinus ">
+        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-2 gx-2 gy-5 container">
+          <div className="col">
+            <h1 className="text-center text-white">Join us right now!</h1>
+          </div>
+          <div className="col">
+            <div className="wb-home-signup-form">
+              {isUserRegistering == true ? (
+                <RegisterForm onToggleClick={() => setUserAuthPage(false)} />
+              ) : (
+                <LoginForm onToggleClick={() => setUserAuthPage(true)} />
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       </div>
     </>
   );
