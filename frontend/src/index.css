@@ -1,3 +1,4 @@
+
 ul,
 p {
     margin: 0;
@@ -161,22 +162,21 @@ ul {
 }
 
 
-.wb-home-why-wb .card {
-
-    margin-top: 50px;
+.wb-home-why_wb_card{
     border: none;
-    max-width: 500px;
-    background-color: rgb(255, 255, 255);
-    color: rgb(64, 85, 104);
-    /* box-shadow: 0px 0px 10px  rgb(224, 224, 224); */
+    box-shadow: 0px 0px 10px  rgb(224, 224, 224);
 }
-
 
 .wb-home-why-wb img {
     width: 100%;
 
 }
 
+.wb-home-platform_header{
+    margin-top: 80px;
+    margin-bottom: 80px;
+    color: rgb(57, 57, 57);
+}
 
 .wb-home-perfect-platform {
     color: rgb(64, 85, 104);
@@ -184,23 +184,12 @@ ul {
     height: auto;
 }
 
-.wb-home-perfect-platform .card {
-    margin-top: 20px;
-    font-size: 30px;
-    border: none;
-    max-width: 1000px;
-    color: rgb(64, 85, 104);
-}
-
-.wb-home-perfect-platform .card-title {
-    font-size: larger;
+.wb-home-perfect-platform_card{
+      border: none;
+      box-shadow: 0px 0px 10px  rgb(224, 224, 224);
 }
 
 
-.wb-home-perfect-platform h1 {
-    margin-top: 50px;
-    width: 100%;
-}
 
 .wb-home-container {
     display: flex;
@@ -269,41 +258,42 @@ ul {
 .wb-home-why-code{
     background-color:rgb(247, 247, 247);
     width: 100%;height: auto;
-    margin-top: 50px;
+    margin-bottom: 80px;
+
 }
 
 .wb-home-why-code .wb_card{
     margin-top: -20px;
     transform: scale(0.8);
-    font-size: 30px;
     border: none;
-    max-width: 1000px;
+    max-width: 600px;
     color: rgb(64, 85, 104);
 }
 
-
-.wb-home-why-code h1{
-    margin-top: 100px;
+.wb-why-code_header{
     width: 100%;
-}
-
-.wb-home-why-code .card-title{
-    font-size: 40px;
+    margin-top: 80px;
+    margin-bottom: 50px;
+    color: rgb(57, 57, 57);
 }
 
 /* wb join us */
 
-.wb-home-joinus{
-    background-color: rgb(34, 34, 34);;
-    height: auto;
-    padding: 150px;
+.wb-home-join-us_header{
+     width: 100%;
+     margin-top: 100px;
 }
 
-.wb-home-signup-form{
+.wb-home-join-us{
+    background-color: rgb(34, 34, 34);
+    height: auto;
+}
+
+.wb-home-sign-up-form{
     padding: 20px;
     color: rgb(61, 76, 88);
     background-color: rgb(236, 236, 236);
     border-radius: 5px;
-    
+    transform: scale(0.9);
 }
 

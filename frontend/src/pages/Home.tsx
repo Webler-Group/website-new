@@ -27,7 +27,7 @@ function Home() {
         <Container>
           <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-5 text-center ">
             <div className="col">
-              <div className="card w-100 h-100">
+              <div className="card w-100 h-100 wb-home-why_wb_card">
                 <img
                   width={"100%"}
                   src="resources\images\placeHolderImage.jpg"
@@ -45,7 +45,7 @@ function Home() {
               </div>
             </div>
             <div className="col">
-              <div className="card w-100 h-100">
+              <div className="card w-100 h-100 wb-home-why_wb_card">
                 <img
                   width={"100%"}
                   src="resources\images\placeHolderImage.jpg"
@@ -63,7 +63,7 @@ function Home() {
               </div>
             </div>
             <div className="col">
-              <div className="card w-100 h-100">
+              <div className="card w-100 h-100 wb-home-why_wb_card">
                 <img
                   width={"100%"}
                   src="resources\images\placeHolderImage.jpg"
@@ -84,11 +84,11 @@ function Home() {
 
         <div className="bg-white">
           <Container>
-            <h1 className="text-center">Perfect platform for you</h1>
-            <div className="row row-cols-2 row-cols-md-2 text-center">
+            <h1 className="text-center wb-home-platform_header">Perfect platform for you</h1>
+            <div className="row row-cols-1 row-cols-md-2 g-5 text-center">
 
               <div className="col">
-                <div className="card">
+                <div className="card wb-home-perfect-platform_card">
                   <img
                     src="resources\images\placeholderImage1.png"
                     className="card-img-top"
@@ -105,7 +105,7 @@ function Home() {
                 </div>
               </div>
               <div className="col">
-                <div className="card">
+                <div className="card wb-home-perfect-platform_card">
                   <img
                     src="resources\images\placeholderImage1.png"
                     className="card-img-top"
@@ -128,8 +128,9 @@ function Home() {
 
 
         <section className="wb-home-why-code d-flex">
-        <div className="row row-cols-2 row-cols-md-3 g-5 text-center align-self-center">
-          <h1>Why Code?</h1>
+          <Container>
+        <div className="row row-cols-1 row-cols-md-3 gy-1  text-center align-self-center">
+          <h1 className="wb-why-code_header">Why Code?</h1>
           <div className="col">
             <div className="card wb_card">
               <img
@@ -182,16 +183,19 @@ function Home() {
             </div>
           </div>
         </div>
+        </Container>
       </section>
 
+
       {/* Sign up section */}
-      <section className="wb-home-joinus ">
+      <section className="wb-home-join-us ">
+        <Container>
         <div className="row row-cols-1 row-cols-md-2 row-cols-lg-2 gx-2 gy-5 container">
           <div className="col">
-            <h1 className="text-center text-white">Join us right now!</h1>
+            <h1 className="text-center text-white wb-home-join-us_header">Join us right now!</h1>
           </div>
           <div className="col">
-            <div className="wb-home-signup-form">
+            <div className="wb-home-sign-up-form">
               {isUserRegistering == true ? (
                 <RegisterForm onToggleClick={() => setUserAuthPage(false)} />
               ) : (
@@ -200,6 +204,7 @@ function Home() {
             </div>
           </div>
         </div>
+        </Container>
       </section>
 
       </div>
