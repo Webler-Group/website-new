@@ -19,6 +19,8 @@ ul {
     width: 392px;
 }
 
+
+
 .wb-user__image {
     width: 32px;
     height: 32px;
@@ -154,16 +156,9 @@ ul {
     }
 }
 
-.wb-home-why-wb {
-    width: 100%;
-    height: auto;
-    background-color: rgb(247, 247, 247);
-    padding: 100px;
-}
-
-
 .wb-home-why_wb_card{
     border: none;
+    color: rgb(57, 57, 57);
     box-shadow: 0px 0px 10px  rgb(224, 224, 224);
 }
 
@@ -179,14 +174,18 @@ ul {
 }
 
 .wb-home-perfect-platform {
-    color: rgb(64, 85, 104);
+    
     width: 100%;
     height: auto;
+    
 }
 
 .wb-home-perfect-platform_card{
       border: none;
       box-shadow: 0px 0px 10px  rgb(224, 224, 224);
+      color: rgb(64, 85, 104);
+      margin-bottom: 80px;
+
 }
 
 
@@ -263,17 +262,16 @@ ul {
 }
 
 .wb-home-why-code .wb_card{
-    margin-top: -20px;
-    transform: scale(0.8);
     border: none;
     max-width: 600px;
     color: rgb(64, 85, 104);
+    box-shadow: 0px 0px 10px  rgb(224, 224, 224);
 }
 
 .wb-why-code_header{
     width: 100%;
     margin-top: 80px;
-    margin-bottom: 50px;
+    margin-bottom: 20px;
     color: rgb(57, 57, 57);
 }
 
@@ -285,7 +283,6 @@ ul {
 }
 
 .wb-home-join-us{
-    background-color: rgb(34, 34, 34);
     height: auto;
 }
 
@@ -297,3 +294,19 @@ ul {
     transform: scale(0.9);
 }
 
+
+.wb-home-footer{
+    margin-top: 40px;
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+}
+
+.wb-made-by{
+    color: rgb(121, 121, 121);
+    font-weight:bolder;
+    margin-right: 50px;
+}
+
+.wb-made-by b{
+    color:#fff;
+}

@@ -59,6 +59,20 @@ const LoginForm = ({ onToggleClick }: LoginFormProps) => {
                 </FormGroup>
                 <Button className="mt-2 w-100" type="submit" disabled={loading}>Sign in</Button>
             </Form>
+            <br />
+            <div className="container text-center">
+                  <div className="row row-cols-1 row-cols-lg-3  gy-3">
+                    <div className="col">
+                      <button type="button" className="btn btn-light p-3 w-100">Google</button>
+                    </div>
+                    <div className="col">
+                      <button type="button" className="btn btn-dark p-3 w-100">Apple</button>
+                    </div>
+                    <div className="col">
+                      <button type="button" className="btn btn-primary p-3 w-100">Facebook</button>
+                    </div>
+                  </div>
+            </div>
             <p className="text-center mt-5">New to Webler? <Button variant="link" onClick={onToggleClick}>Create an account</Button></p>
         </>
     );
