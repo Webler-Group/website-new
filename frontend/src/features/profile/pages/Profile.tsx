@@ -9,6 +9,7 @@ import countries from "../../../config/countries";
 import { FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";
+import PageTitle from "../../../layouts/PageTitle";
 
 export interface UserDetails {
     id: string;
@@ -32,6 +33,7 @@ export interface UserMinimal {
 }
 
 const Profile = () => {
+
     const { userId } = useParams();
 
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
@@ -103,9 +105,13 @@ const Profile = () => {
         setFollowListVisible(2);
     }
 
+    const setPageTitle =(userName:string)=>{
+        {document.title=userName + " | Webler"}
+    }
+
     return (
         <>
-            <Header />
+            <Header variant="light"/>
             {
                 userDetails &&
                 <>
@@ -117,6 +123,7 @@ const Profile = () => {
                         followListVisible == 2 &&
                         <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/${userId}/following` }} />
                     }
+                    {setPageTitle(userDetails.name)}
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                     <Container>
                         <Card className="mt-4 p-2">

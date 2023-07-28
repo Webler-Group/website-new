@@ -1,13 +1,17 @@
 import { Button, Container } from "react-bootstrap";
 import Header from "../layouts/Header";
+import Footer from '../layouts/Footer';
 import { LinkContainer } from "react-router-bootstrap";
 import { useState } from "react";
 import LoginForm from "../features/auth/components/LoginForm";
 import RegisterForm from "../features/auth/components/RegisterForm";
+import PageTitle from "../layouts/PageTitle";
 
 function Home() {
+  
   const [isUserRegistering, setUserAuthPage] = useState(true);
-
+  PageTitle("Webler - Home", false);
+  
   return (
     <>
       <Header variant="dark" />
@@ -213,25 +217,7 @@ function Home() {
           </Container>
         </section>
 
-        <footer className="bg-black ">
-          <Container>
-            <div className="row row-cols-4 row-cols-6 d-flex wb-home-footer">
-            <div className="p-2">Home</div>
-              <div className="p-2">Pro</div>
-              <div className="p-2">FAQ</div>
-              <div className="p-2">Contact</div>
-              
-              <div className="p-2">Terms of Use</div>
-              <div className="me-auto p-2">Privacy Policy</div>
-              < br/>< br/>< br/>
-              <div className="p-2 w-100">
-                <div className="text-center wb-made-by">
-                  Made with :heart: by <b>Webler</b>
-                </div>
-              </div>
-            </div>
-          </Container>
-        </footer>
+        <Footer />
       </div>
     </>
   );

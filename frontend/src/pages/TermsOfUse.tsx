@@ -1,6 +1,10 @@
 import Header from "../layouts/Header";
+import PageTitle from "../layouts/PageTitle";
 
 const TermsOfUse = () => {
+    
+    PageTitle("Webler - Terms of Use", false);
+
     return (
         <>
             {/* Header */}

@@ -1,5 +1,6 @@
 import { Button, Container, Form, FormControl, Pagination } from "react-bootstrap";
 import Header from "../../../layouts/Header";
+import PageTitle from "../../../layouts/PageTitle";
 
 const Discuss = () => {
 
@@ -12,6 +13,8 @@ const Discuss = () => {
             </Pagination.Item>,
         );
     }
+    
+    PageTitle("Webler - Discuss", false);
 
     return (
         <>

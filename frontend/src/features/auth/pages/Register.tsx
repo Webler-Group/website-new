@@ -1,10 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import { Container } from "react-bootstrap";
+import PageTitle from "../../../layouts/PageTitle";
 
 const Register = () => {
 
     const navigate = useNavigate();
+    PageTitle("Webler - Register", false);
 
     const toggle = () => {
         navigate("/Login");
