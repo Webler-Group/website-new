@@ -24,7 +24,7 @@ const Login = () => {
                 </Container>
             </div>
 
-            <Footer />
+            {/* <Footer /> */}
         </>
     );
 }

@@ -24,7 +24,7 @@ const Register = () => {
                 </Container>
             </div>
 
-            <Footer />
+            {/* <Footer /> */}
         </>
     );
 }
