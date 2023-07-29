@@ -1,5 +1,6 @@
 import { Button, Container, Form, FormControl, Pagination } from "react-bootstrap";
 import Header from "../../../layouts/Header";
+import Footer from "../../../layouts/Footer";
 import PageTitle from "../../../layouts/PageTitle";
 
 const Discuss = () => {
@@ -18,7 +19,7 @@ const Discuss = () => {
 
     return (
         <>
-            <Header />
+            <Header variant="light"/>
             <Container>
                 <div className="d-block d-lg-flex p-4">
                     <div className="wb-discuss-questions-list-page__questions-section">
@@ -51,6 +52,8 @@ const Discuss = () => {
                     </div>
                 </div>
             </Container>
+
+            <Footer />
         </>
     )
 }

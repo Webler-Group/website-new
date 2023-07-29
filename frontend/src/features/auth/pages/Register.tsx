@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
 import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
+import Header from "../../../layouts/Header";
+import Footer from "../../../layouts/Footer";
 
 const Register = () => {
 
@@ -14,11 +16,15 @@ const Register = () => {
 
     return (
         <>
+            <Header variant="light"/>
+
             <div className="wb-login-wrapper">
                 <Container className="wb-login-container">
                     <RegisterForm onToggleClick={toggle} />
                 </Container>
             </div>
+
+            <Footer />
         </>
     );
 }

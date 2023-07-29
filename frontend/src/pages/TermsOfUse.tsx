@@ -1,7 +1,8 @@
 import { Container } from "react-bootstrap";
 import Header from "../layouts/Header";
-import PageTitle from "../layouts/PageTitle";
 import Footer from "../layouts/Footer";
+import PageTitle from "../layouts/PageTitle";
+
 
 const TermsOfUse = () => {
     
@@ -10,7 +11,7 @@ const TermsOfUse = () => {
     return (
         <>
             {/* Header */}
-            <Header />
+            <Header variant="light"/>
 
             {/* Main */}
             <main className="wb-term-conditions-container">
