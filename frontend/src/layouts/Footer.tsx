@@ -1,6 +1,7 @@
 import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
+import { Link } from 'react-router-dom';
 
 function Footer() {
   return (
@@ -9,11 +10,11 @@ function Footer() {
             <Container>
                 <div className="wb-home-footer">
                     <Row>
-                        <Col className='p-3'><a href="/">Home</a></Col>
+                        <Col className='p-3'><Link to={"/"}>Home</Link></Col>
                         <Col className='p-3'>Pro</Col>
                         <Col className='p-3'>FAQ</Col>
-                        <Col className='p-3'><a href="/Contact">Contact</a></Col>
-                        <Col className='p-3'><a href="/Terms-of-use">Terms of Use</a></Col>
+                        <Col className='p-3'><Link to={"/Contact"}>Contact</Link></Col>
+                        <Col className='p-3'><Link to={"/Terms-of-use"}>Terms of Use</Link></Col>
                         <Col className='p-3'>Privacy Policy</Col>
                     </Row>
                     <Row  className='p-2 w-100'>
