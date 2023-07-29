@@ -5,7 +5,7 @@ import { LinkContainer } from 'react-router-bootstrap';
 import AuthNavigation from '../features/auth/components/AuthNavigation';
 
 interface HeaderProps {
-  variant: string;
+  variant?: string;
 }
 
 function Header({ variant }: HeaderProps) {

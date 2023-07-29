@@ -299,6 +299,13 @@ ul {
     margin-top: 40px;
     color: rgb(121, 121, 121);
     font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-home-footer a{
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
 }
 
 .wb-made-by{
