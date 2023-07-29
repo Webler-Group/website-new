@@ -11,6 +11,7 @@ import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
 import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
+import Contact from './pages/Contact';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
 
         {/* public routes */}
         <Route path="Terms-of-use" element={<TermsOfUse />} />
+        <Route path="Contact" element={<Contact />} />
 
         <Route path="Discuss">
           <Route index element={<Discuss />} />
