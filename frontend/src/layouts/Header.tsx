@@ -11,7 +11,7 @@ interface HeaderProps {
 function Header({ variant }: HeaderProps) {
 
   return (
-    <Navbar expand="lg" bg={variant} variant={variant}>
+    <Navbar expand="lg" bg={variant} variant={variant} className='makeNavBarSticky'>
       <Container fluid>
         <LinkContainer to="/">
           <Navbar.Brand><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand>

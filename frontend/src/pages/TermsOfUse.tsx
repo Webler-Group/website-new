@@ -1,4 +1,5 @@
 import Header from "../layouts/Header";
+import Footer from "../layouts/Footer";
 import PageTitle from "../layouts/PageTitle";
 
 const TermsOfUse = () => {
@@ -8,12 +9,12 @@ const TermsOfUse = () => {
     return (
         <>
             {/* Header */}
-            <Header />
+            <Header variant="light"/>
 
             {/* Main */}
             <main>
                 <div>
-                    <h1>Terms & Conditions</h1>
+                    <h1>Terms of Use</h1>
                 </div>
                 <hr />
                 <div>
@@ -248,6 +249,8 @@ const TermsOfUse = () => {
                     <p>Except as expressly set forth in the section(s) above regarding the Apple Application and the arbitration agreement, you and Webler agree there are no third-party beneficiaries intended under these Terms</p>
                 </div>
             </main>
+
+            <Footer />
         </>
     );
 }
