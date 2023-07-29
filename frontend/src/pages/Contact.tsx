@@ -6,7 +6,7 @@ const Contact = () => {
   PageTitle("Webler - Contact", false);
   return (
     <>
-      <Header />
+      <Header variant="light"/>
       <div className="wb-contact-page">
         <div className="wb-contact-form container">
             <h3 className="mb-4">Email us</h3>
