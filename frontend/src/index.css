@@ -296,7 +296,6 @@ ul {
 
 
 .wb-home-footer{
-    margin-top: 40px;
     color: rgb(121, 121, 121);
     font-weight: 700;
     text-decoration: none;
@@ -323,10 +322,7 @@ ul {
 .wb-contact-page{
     width: 100%;
     height: 100vh;
-    padding: 50px
-    
-    
-    ;
+    padding: 30px;
     background-color:#f2f2f2;
 }
 
@@ -335,8 +331,22 @@ ul {
     max-width: 800px;
     font-weight: 600;
     padding:20px;
-    transform: translate(0 , 150px);
+    transform: translate(0 , 10px);
     background-color: rgb(255, 255, 255);
-    box-shadow: 0 0 10px 1px #e0e0e0;
-    border-radius: 10px;
+    box-shadow: 0 0 10px 0px #c6c6c6;
+    border-radius: 5px;
+}
+
+/* Webler Terms of use page */
+
+.wb-term-conditions-container{
+    background-color: #f2f2f2;
+    padding: 10px;height:100%;
+}
+.wb-term-conditions{
+    padding: 40px;border-radius: 5px;
+    color: rgb(61, 76, 88);height: auto;
+    margin-top: 50px;margin-bottom: 50px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgb(231, 229, 229);
 }

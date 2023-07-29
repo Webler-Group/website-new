@@ -1,3 +1,4 @@
+import Footer from "../layouts/Footer";
 import Header from "../layouts/Header";
 import PageTitle from "../layouts/PageTitle";
 
@@ -44,6 +45,7 @@ const Contact = () => {
           <button className="btn btn-primary btn-lg" type="submit">Submit</button>
         </div>
       </div>
+      <Footer/>
     </>
   );
 };

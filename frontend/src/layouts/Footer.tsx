@@ -9,12 +9,12 @@ function Footer() {
             <Container>
                 <div className="wb-home-footer">
                     <Row>
-                        <Col className='p-2'><a href="/">Home</a></Col>
-                        <Col className='p-2'>Pro</Col>
-                        <Col className='p-2'>FAQ</Col>
-                        <Col className='p-2'><a href="/Contact">Contact</a></Col>
-                        <Col className='p-2'><a href="/Terms-of-use">Terms of Use</a></Col>
-                        <Col className='p-2'>Privacy Policy</Col>
+                        <Col className='p-3'><a href="/">Home</a></Col>
+                        <Col className='p-3'>Pro</Col>
+                        <Col className='p-3'>FAQ</Col>
+                        <Col className='p-3'><a href="/Contact">Contact</a></Col>
+                        <Col className='p-3'><a href="/Terms-of-use">Terms of Use</a></Col>
+                        <Col className='p-3'>Privacy Policy</Col>
                     </Row>
                     <Row  className='p-2 w-100'>
                     <div className="text-center wb-made-by">
