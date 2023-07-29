@@ -357,4 +357,5 @@ ul {
     position: -moz-sticky;
     position: sticky;
     top: 0px;
+    z-index: 245;
 }
