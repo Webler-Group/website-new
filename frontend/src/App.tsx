@@ -12,6 +12,8 @@ import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
 import Contact from './pages/Contact';
+import Feed from './features/feed/pages/feed';
+
 
 function App() {
   return (
@@ -30,6 +32,10 @@ function App() {
 
         <Route path="Discuss">
           <Route index element={<Discuss />} />
+        </Route>
+
+        <Route path="feed">
+          <Route index element={<Feed/>} />
         </Route>
 
         {/* protected routes */}

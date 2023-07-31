@@ -94,6 +94,12 @@ ul {
     word-break: break-all;
 }
 
+.wb-feature-posts{
+max-width: 600px;
+background-color: rgb(238, 238, 238);
+padding: 10px;
+}
+
 @media(min-width: 576px) {
     .wb-modal__container.edit-profile {
         width: 567px;

@@ -26,6 +26,9 @@ function Header({ variant }: HeaderProps) {
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>
             </LinkContainer>
+            <LinkContainer to="/feed">
+              <Nav.Link>Feed</Nav.Link>
+            </LinkContainer>
             <Nav.Link>Blog</Nav.Link>
           </Nav>
 
