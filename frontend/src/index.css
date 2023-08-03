@@ -94,11 +94,7 @@ ul {
     word-break: break-all;
 }
 
-.wb-feature-posts{
-max-width: 600px;
-background-color: rgb(238, 238, 238);
-padding: 10px;
-}
+
 
 @media(min-width: 576px) {
     .wb-modal__container.edit-profile {
@@ -364,4 +360,24 @@ padding: 10px;
     position: sticky;
     top: 0px;
     z-index: 245;
+}
+
+.wb-feature-create_posts{
+    max-width: 700px;
+    background-color: rgb(255, 255, 255);
+    padding: 20px;
+    }
+
+.wb-feed-posts-container{
+    width: 100%;
+    padding: 10px;
+    background-color: #e8eaf0;
+}
+
+.wb-feed-posts{
+    max-width: 800px;
+}
+
+.wb-post{
+    border: none;
 }
