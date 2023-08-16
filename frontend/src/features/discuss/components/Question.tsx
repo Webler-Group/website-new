@@ -2,6 +2,7 @@ import { FaComment } from "react-icons/fa6";
 import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
+import { FaThumbsUp } from "react-icons/fa";
 
 interface IQuestion {
     id: string;
@@ -38,7 +39,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
         <div className="rounded border p-2 mb-2 bg-white">
             <div>
                 <Link to={"/Discuss/" + question.id}>
-                    <h3>{title}</h3>
+                    <h4>{title}</h4>
                 </Link>
                 <div className="d-flex flex-wrap">
                     {
@@ -51,11 +52,15 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                 </div>
             </div>
             <div className="d-flex justify-content-between align-items-end">
-                <div>
-                    <small>
+                <div className="d-flex">
+                    <div className="me-3">
+                        <FaThumbsUp />
+                        <span className="ms-2">{question.votes} Votes</span>
+                    </div>
+                    <div>
                         <FaComment />
                         <span className="ms-2">{question.answers} Answers</span>
-                    </small>
+                    </div>
                 </div>
 
                 <div className="d-flex">

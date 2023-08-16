@@ -1,7 +1,6 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Question from "../models/Question";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
@@ -28,7 +27,8 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     await Promise.all(promises);
 
-    const question = await Question.create({
+    const question = await Post.create({
+        _type: 1,
         title,
         message,
         tags: tagIds,
@@ -43,7 +43,10 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
                 message: question.message,
                 tags: question.tags,
                 date: question.createdAt,
-                userId: question.user
+                userId: question.user,
+                isAccepted: question.isAccepted,
+                votes: question.votes,
+                answers: question.answers
             }
         });
     }
@@ -68,7 +71,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return
     }
 
-    let dbQuery = Question.find()
+    let dbQuery = Post.find({ _type: 1 })
 
     if (searchQuery.length) {
         const tagIds = (await Tag.find({ name: searchQuery }))
@@ -88,8 +91,15 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 .sort({ createdAt: "desc" })
             break;
         }
-        // My Questions
+        // Unanswered
         case 2: {
+            dbQuery = dbQuery
+                .where({ answers: 0 })
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        // My Questions
+        case 3: {
             if (userId === null) {
                 res.status(400).json({ message: "Invalid query params" });
                 return
@@ -97,6 +107,14 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             dbQuery = dbQuery
                 .where("user").equals(userId)
                 .sort({ createdAt: "desc" })
+            break;
+        }
+        // Hot Today
+        case 5: {
+            let dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            dbQuery = dbQuery
+                .where({ createdAt: { $gt: dayAgo } })
+                .sort({ votes: "desc" })
             break;
         }
         default:
@@ -124,20 +142,21 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             countryCode: x.user.countryCode,
             level: x.user.level,
             roles: x.user.roles,
-            answers: 0,
-            votes: 0,
-            isUpvoted: false
+            answers: x.answers,
+            votes: x.votes,
+            isUpvoted: false,
+            isAccepted: x.isAccepted
         }));
 
         let promises = [];
 
         for (let i = 0; i < data.length; ++i) {
-            promises.push(Post.countDocuments({ parentId: data[i].id }).then(count => {
+            /*promises.push(Post.countDocuments({ parentId: data[i].id }).then(count => {
                 data[i].answers = count;
-            }));
-            promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+            }));*/
+            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
                 data[i].votes = count;
-            }));
+            }));*/
             if (currentUserId) {
                 promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                     data[i].isUpvoted = !(upvote === null);
@@ -159,14 +178,14 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const questionId = req.params.questionId;
 
-    const question = await Question.findById(questionId)
+    const question = await Post.findById(questionId)
         .populate("user", "name avatarUrl countryCode level roles")
         .populate("tags", "name") as any;
 
     if (question) {
 
-        const answers = await Post.countDocuments({ parentId: questionId });
-        const votes = await Upvote.countDocuments({ parentId: questionId });
+        //const answers = await Post.countDocuments({ parentId: questionId });
+        //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? await Upvote.findOne({ parentId: questionId, user: currentUserId }) : false;
 
         res.json({
@@ -182,9 +201,10 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 countryCode: question.user.countryCode,
                 level: question.user.level,
                 roles: question.user.roles,
-                answers,
-                votes,
-                isUpvoted
+                answers: question.answers,
+                votes: question.votes,
+                isUpvoted,
+                isAccepted: question.isAccepted
             }
         });
     }
@@ -197,13 +217,24 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { message, questionId } = req.body;
 
+    const question = await Post.findById(questionId);
+    if (question === null) {
+        res.status(404).json({ message: "Question not found" });
+        return
+    }
+
     const reply = await Post.create({
+        _type: 2,
         message,
         parentId: questionId,
         user: currentUserId
     })
 
     if (reply) {
+
+        question.answers += 1;
+        await question.save();
+
         res.json({
             post: {
                 id: reply._id,
@@ -211,7 +242,9 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 date: reply.createdAt,
                 userId: reply.user,
                 parentId: reply.parentId,
-                isAccepted: reply.isAccepted
+                isAccepted: reply.isAccepted,
+                votes: reply.votes,
+                answers: reply.answers
             }
         })
     }
@@ -234,11 +267,17 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    let dbQuery = Post.find({ parentId: questionId });
+    let dbQuery = Post.find({ parentId: questionId, _type: 2 });
 
     switch (filter) {
-        // Oldest first
+        // Most popular
         case 1: {
+            dbQuery = dbQuery
+                .sort({ votes: "desc" })
+            break;
+        }
+        // Oldest first
+        case 2: {
             dbQuery = dbQuery
                 .sort({ createdAt: "asc" })
             break;
@@ -264,17 +303,18 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             countryCode: x.user.countryCode,
             level: x.user.level,
             roles: x.user.roles,
-            votes: 0,
+            votes: x.votes,
             isUpvoted: false,
-            isAccepted: x.isAccepted
+            isAccepted: x.isAccepted,
+            answers: x.answers
         }))
 
         let promises = [];
 
         for (let i = 0; i < data.length; ++i) {
-            promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
                 data[i].votes = count;
-            }));
+            }));*/
             if (currentUserId) {
                 promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                     data[i].isUpvoted = !(upvote === null);
@@ -322,16 +362,27 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
         return
     }
 
+    const question = await Post.findById(post.parentId);
+    if (question === null) {
+        res.status(404).json({ message: "Question not found" })
+        return
+    }
+
+    if (accepted || post.isAccepted) {
+        question.isAccepted = accepted;
+        await question.save();
+    }
+
     post.isAccepted = accepted;
 
     await post.save();
 
     if (accepted) {
-        const prevAccepted = await Post.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
-        if (prevAccepted) {
-            prevAccepted.isAccepted = false;
+        const currentAcceptedPost = await Post.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
+        if (currentAcceptedPost) {
+            currentAcceptedPost.isAccepted = false;
 
-            await prevAccepted.save();
+            await currentAcceptedPost.save();
         }
     }
 
@@ -352,7 +403,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const question = await Question.findById(questionId);
+    const question = await Post.findById(questionId);
 
     if (question === null) {
         res.status(404).json({ message: "Question not found" })
@@ -408,7 +459,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const currentUserId = req.userId;
     const { questionId } = req.body;
 
-    const question = await Question.findById(questionId);
+    const question = await Post.findById(questionId);
 
     if (question === null) {
         res.status(404).json({ message: "Question not found" })
@@ -421,7 +472,9 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     try {
-        await Question.deleteOne({ _id: questionId });
+        await Post.deleteOne({ _id: questionId });
+        await Post.deleteMany({ parentId: questionId });
+        await Upvote.deleteMany({ parentId: questionId });
 
         res.json({ success: true });
     }
@@ -433,9 +486,6 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { replyId, message } = req.body;
-
-    console.log(replyId, message);
-
 
     if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" })
@@ -493,8 +543,19 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
+    const question = await Post.findById(reply.parentId);
+    if (question === null) {
+        res.status(404).json({ message: "Question not found" })
+        return
+    }
+
     try {
+        question.answers -= 1;
+        await question.save();
+
         await Post.deleteOne({ _id: replyId });
+        await Post.deleteMany({ parentId: replyId });
+        await Upvote.deleteMany({ parentId: replyId });
 
         res.json({ success: true });
     }
@@ -512,18 +573,28 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
+    const post = await Post.findById(postId);
+    if (post === null) {
+        res.status(404).json({ message: "Post not found" })
+        return
+    }
+
     let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: postId })
+            post.votes += 1;
         }
     }
     else if (vote === 0) {
         if (upvote) {
             await Upvote.deleteOne({ _id: upvote._id });
             upvote = null;
+            post.votes -= 1;
         }
     }
+
+    await post.save();
 
     res.json({ vote: upvote ? 1 : 0 });
 

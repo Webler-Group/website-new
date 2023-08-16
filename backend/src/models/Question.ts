@@ -6,7 +6,7 @@ const questionSchema = new mongoose.Schema({
         required: true,
         trim: true,
         minLength: 1,
-        maxLength: 60
+        maxLength: 120
     },
     message: {
         type: String,
@@ -25,6 +25,14 @@ const questionSchema = new mongoose.Schema({
         ref: "User",
         required: true
     },
+    isAccepted: {
+        type: Boolean,
+        default: false
+    },
+    votes: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 });

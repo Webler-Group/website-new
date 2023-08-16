@@ -1,13 +1,17 @@
 import mongoose, { InferSchemaType } from "mongoose";
 
 const postSchema = new mongoose.Schema({
+    _type: {
+        type: Number,
+        required: true
+    },
     isAccepted: {
         type: Boolean,
         default: false
     },
     parentId: {
         type: mongoose.Types.ObjectId,
-        required: true
+        default: null
     },
     message: {
         type: String,
@@ -20,6 +24,24 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: "User",
         required: true
+    },
+    votes: {
+        type: Number,
+        default: 0
+    },
+    answers: {
+        type: Number,
+        default: 0
+    },
+    title: {
+        type: String,
+        trim: true,
+        minLength: 1,
+        maxLength: 120
+    },
+    tags: {
+        type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
+        validate: [(val: mongoose.Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"]
     },
 }, {
     timestamps: true

@@ -91,7 +91,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     return (
         <>
-            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal}>
+            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>

@@ -31,6 +31,7 @@ const DiscussPost = () => {
     const [acceptedAnswer, setAcceptedAnswer] = useState<string | null>(null);
     const [editedAnswer, setEditedAnswer] = useState<string | null>(null);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
+    const [filter, setFilter] = useState(1);
 
     useEffect(() => {
         getQuestion();
@@ -38,7 +39,11 @@ const DiscussPost = () => {
 
     useEffect(() => {
         getAnswers();
-    }, [currentPage]);
+    }, [currentPage, filter]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [filter]);
 
     const getQuestion = async () => {
         setLoading(true);
@@ -51,7 +56,7 @@ const DiscussPost = () => {
 
     const getAnswers = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?page=${currentPage}&count=${answersPerPage}&filter=${1}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?page=${currentPage}&count=${answersPerPage}&filter=${filter}`, "GET");
         if (result && result.posts) {
             setAnswers(result.posts);
             let accepted = null;
@@ -209,7 +214,7 @@ const DiscussPost = () => {
     return (
         question !== null &&
         <>
-            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal}>
+            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -293,8 +298,12 @@ const DiscussPost = () => {
                 <div>
                     <h2>{question.answers} Answers</h2>
                 </div>
-                <div>
-                    <Button variant="primary" onClick={() => showAnswerForm("", null)}>Answer</Button>
+                <div className="d-flex">
+                    <Form.Select value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
+                        <option value="1">Sort by: Votes</option>
+                        <option value="2">Sort by: Date</option>
+                    </Form.Select>
+                    <Button variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
                 </div>
             </div>
             <div className="mt-2">
