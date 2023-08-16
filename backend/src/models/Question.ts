@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 
 const questionSchema = new mongoose.Schema({
     title: {
@@ -16,9 +16,8 @@ const questionSchema = new mongoose.Schema({
         maxLength: 1000
     },
     tags: {
-        type: [String],
+        type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
         required: true,
-        validate: (v: any) => Array.isArray(v) && v.length > 0 && v.every(x => typeof x === "string" && x.length > 0 && x.length <= 20)
     },
     user: {
         type: mongoose.Types.ObjectId,
@@ -29,6 +28,6 @@ const questionSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Question = mongoose.model("Question", questionSchema);
+const Question = mongoose.model<InferSchemaType<typeof questionSchema>>("Question", questionSchema);
 
 export default Question;

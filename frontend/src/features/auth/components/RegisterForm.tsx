@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useState } from "react";
@@ -61,20 +61,6 @@ const RegisterForm = ({ onToggleClick }: RegisterFormProps) => {
                 </FormGroup>
                 <Button className="mt-4 w-100" type="submit" disabled={loading}>Sign up</Button>
             </Form>
-            <br />
-            <div className="container text-center">
-                  <div className="row row-cols-1 row-cols-lg-3  gy-3">
-                    <div className="col">
-                      <button type="button" className="btn btn-light p-3 w-100">Google</button>
-                    </div>
-                    <div className="col">
-                      <button type="button" className="btn btn-dark p-3 w-100">Apple</button>
-                    </div>
-                    <div className="col">
-                      <button type="button" className="btn btn-primary p-3 w-100">Facebook</button>
-                    </div>
-                  </div>
-            </div>
             <p className="text-center mt-5">Already have an account? <Button variant="link" onClick={onToggleClick}>Sign in</Button></p>
             <p className="text-center mt-2">By signing up you agree to our <Link to="/Terms-of-use">Terms of Use</Link></p>
         </>

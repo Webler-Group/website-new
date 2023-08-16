@@ -16,7 +16,6 @@ const Register = () => {
 
     return (
         <>
-            <Header variant="light"/>
 
             <div className="wb-login-wrapper">
                 <Container className="wb-login-container">

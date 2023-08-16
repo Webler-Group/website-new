@@ -11,13 +11,13 @@ interface HeaderProps {
 function Header({ variant }: HeaderProps) {
 
   return (
-    <Navbar expand="lg" bg={variant} variant={variant} className='stickyNavbarOnTop'>
+    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom">
       <Container fluid>
         <LinkContainer to="/">
           <Navbar.Brand><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand>
         </LinkContainer>
         <Navbar.Toggle aria-controls="navbarScroll" />
-        <Navbar.Collapse id="navbarScroll">
+        <Navbar.Collapse id="navbarScroll" className="text-center">
 
           <Nav className="me-auto">
             <Nav.Link>Catalog</Nav.Link>

@@ -12,39 +12,49 @@ import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
 import Contact from './pages/Contact';
-import Feed from './features/feed/pages/feed';
+import Feed from './features/feed/pages/Feed';
+import QuestionList from './features/discuss/pages/DiscussList';
+import AskQuestion from './features/discuss/pages/DiscussAsk';
+import DiscussPost from './features/discuss/pages/DiscussPost';
+import DiscussEdit from './features/discuss/pages/DiscussEdit';
 
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Layout />}>
-        {/* no-auth routes */}
-        <Route element={<NoAuth />}>
+      {/* no-auth routes */}
+      <Route element={<NoAuth />}>
+        <Route path="Login" element={<Login />} />
+        <Route path="Register" element={<Register />} />
+        <Route element={<Layout header="dark" footer={true} />}>
           <Route index element={<Home />} />
-          <Route path="Login" element={<Login />} />
-          <Route path="Register" element={<Register />} />
         </Route>
+      </Route>
 
-        {/* public routes */}
+      {/* public routes */}
+      <Route element={<Layout header={"light"} footer={true} />}>
         <Route path="Terms-of-use" element={<TermsOfUse />} />
         <Route path="Contact" element={<Contact />} />
 
         <Route path="Discuss">
-          <Route index element={<Discuss />} />
+          <Route index element={<Discuss MainPage={<QuestionList />} />} />
+          <Route path="New" element={<Discuss MainPage={<AskQuestion questionId={null} />} />} />
+          <Route path=":questionId" element={<Discuss MainPage={<DiscussPost />} />} />
+          <Route path="Edit/:questionId" element={<Discuss MainPage={<DiscussEdit />} />} />
         </Route>
 
-        <Route path="feed">
-          <Route index element={<Feed/>} />
+        <Route path="Feed">
+          <Route index element={<Feed />} />
         </Route>
 
-        {/* protected routes */}
-        <Route element={<RequireAuth allowedRoles={[...Object.values(roles)]} />}>
-          <Route path="Profile">
-            <Route path=":userId" element={<Profile />} />
-            <Route index element={<ProfileFromAuth />} />
-          </Route>
+        <Route path="Profile">
+          <Route path=":userId" element={<Profile />} />
+          <Route index element={<ProfileFromAuth />} />
         </Route>
+      </Route>
+
+      {/* protected routes */}
+      <Route element={<RequireAuth allowedRoles={[...Object.values(roles)]} />}>
 
       </Route>
 

@@ -10,6 +10,7 @@ import connectDB from "./config/dbConn";
 import mongoose from "mongoose";
 import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
+import discussionRoutes from "./routes/discussionRoutes";
 
 dotenv.config();
 
@@ -29,8 +30,9 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-app.use("/Auth", authRoutes);
-app.use("/Profile", profileRoutes);
+app.use("/auth", authRoutes);
+app.use("/profile", profileRoutes);
+app.use("/discussion", discussionRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);

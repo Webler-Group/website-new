@@ -1,4 +1,3 @@
-
 ul,
 p {
     margin: 0;
@@ -158,10 +157,10 @@ ul {
     }
 }
 
-.wb-home-why_wb_card{
+.wb-home-why_wb_card {
     border: none;
     color: rgb(57, 57, 57);
-    box-shadow: 0px 0px 10px  rgb(224, 224, 224);
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
 }
 
 .wb-home-why-wb img {
@@ -169,24 +168,24 @@ ul {
 
 }
 
-.wb-home-platform_header{
+.wb-home-platform_header {
     margin-top: 80px;
     margin-bottom: 80px;
     color: rgb(57, 57, 57);
 }
 
 .wb-home-perfect-platform {
-    
+
     width: 100%;
     height: auto;
-    
+
 }
 
-.wb-home-perfect-platform_card{
-      border: none;
-      box-shadow: 0px 0px 10px  rgb(224, 224, 224);
-      color: rgb(64, 85, 104);
-      margin-bottom: 80px;
+.wb-home-perfect-platform_card {
+    border: none;
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
+    color: rgb(64, 85, 104);
+    margin-bottom: 80px;
 
 }
 
@@ -256,21 +255,22 @@ ul {
 
 /*Why code*/
 
-.wb-home-why-code{
-    background-color:rgb(247, 247, 247);
-    width: 100%;height: auto;
+.wb-home-why-code {
+    background-color: rgb(247, 247, 247);
+    width: 100%;
+    height: auto;
     margin-bottom: 80px;
 
 }
 
-.wb-home-why-code .wb_card{
+.wb-home-why-code .wb_card {
     border: none;
     max-width: 600px;
     color: rgb(64, 85, 104);
-    box-shadow: 0px 0px 10px  rgb(224, 224, 224);
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
 }
 
-.wb-why-code_header{
+.wb-why-code_header {
     width: 100%;
     margin-top: 80px;
     margin-bottom: 20px;
@@ -279,16 +279,16 @@ ul {
 
 /* wb join us */
 
-.wb-home-join-us_header{
-     width: 100%;
-     margin-top: 100px;
+.wb-home-join-us_header {
+    width: 100%;
+    margin-top: 100px;
 }
 
-.wb-home-join-us{
+.wb-home-join-us {
     height: auto;
 }
 
-.wb-home-sign-up-form{
+.wb-home-sign-up-form {
     padding: 20px;
     color: rgb(61, 76, 88);
     background-color: rgb(236, 236, 236);
@@ -297,43 +297,43 @@ ul {
 }
 
 
-.wb-home-footer{
+.wb-home-footer {
     color: rgb(121, 121, 121);
     font-weight: 700;
     text-decoration: none;
 }
 
-.wb-home-footer a{
+.wb-home-footer a {
     color: rgb(121, 121, 121);
     font-weight: 700;
     text-decoration: none;
 }
 
-.wb-made-by{
+.wb-made-by {
     color: rgb(121, 121, 121);
-    font-weight:bolder;
+    font-weight: bolder;
     margin-right: 50px;
 }
 
-.wb-made-by b{
-    color:#fff;
+.wb-made-by b {
+    color: #fff;
 }
 
 /* Webler Contact Page */
 
-.wb-contact-page{
+.wb-contact-page {
     width: 100%;
     height: 100vh;
     padding: 30px;
-    background-color:#f2f2f2;
+    background-color: #f2f2f2;
 }
 
-.wb-contact-form{
+.wb-contact-form {
     color: rgb(61, 76, 88);
     max-width: 800px;
     font-weight: 600;
-    padding:20px;
-    transform: translate(0 , 10px);
+    padding: 20px;
+    transform: translate(0, 10px);
     background-color: rgb(255, 255, 255);
     box-shadow: 0 0 10px 0px #c6c6c6;
     border-radius: 5px;
@@ -341,20 +341,25 @@ ul {
 
 /* Webler Terms of use page */
 
-.wb-term-conditions-container{
+.wb-term-conditions-container {
     background-color: #f2f2f2;
-    padding: 10px;height:100%;
+    padding: 10px;
+    height: 100%;
 }
-.wb-term-conditions{
-    padding: 40px;border-radius: 5px;
-    color: rgb(61, 76, 88);height: auto;
-    margin-top: 50px;margin-bottom: 50px;
+
+.wb-term-conditions {
+    padding: 40px;
+    border-radius: 5px;
+    color: rgb(61, 76, 88);
+    height: auto;
+    margin-top: 50px;
+    margin-bottom: 50px;
     background-color: #ffffff;
     box-shadow: 0 0 10px rgb(231, 229, 229);
 }
 
 /* Make the Header NavBar to be sticky on the top of screen always */
-.stickyNavbarOnTop{
+.stickyNavbarOnTop {
     position: -webkit-sticky;
     position: -moz-sticky;
     position: sticky;
@@ -362,22 +367,42 @@ ul {
     z-index: 245;
 }
 
-.wb-feature-create_posts{
+.wb-feature-create_posts {
     max-width: 700px;
     background-color: rgb(255, 255, 255);
     padding: 20px;
-    }
+}
 
-.wb-feed-posts-container{
+.wb-feed-posts-container {
     width: 100%;
     padding: 10px;
     background-color: #e8eaf0;
 }
 
-.wb-feed-posts{
+.wb-feed-posts {
     max-width: 800px;
 }
 
-.wb-post{
+.wb-post {
     border: none;
+}
+
+.wb-discuss-question__main {
+    max-width: 80%;
+    width: 649px;
+}
+
+.wb-discuss-question__description {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.3;
+    width: 100%;
+}
+
+.wb-discuss-reply__edit-button {
+    cursor: pointer;
+    position: absolute;
+    right: 16px;
+    top: 16px;
 }

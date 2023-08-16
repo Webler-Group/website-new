@@ -3,7 +3,7 @@ import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tab
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../config/countries";
 import { UserDetails } from "./Profile";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 
@@ -128,7 +128,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     }
 
     return (
-        <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="webler-modal__container edit-profile">
+        <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
             <Modal.Header closeButton>
                 <Modal.Title>Edit Profile</Modal.Title>
             </Modal.Header>

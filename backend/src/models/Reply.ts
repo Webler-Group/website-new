@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 
-const commentSchema = new mongoose.Schema({
+const replySchema = new mongoose.Schema({
     isAccepted: {
         type: Boolean,
         default: false
@@ -25,6 +25,6 @@ const commentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Comment = mongoose.model("Comment", commentSchema);
+const Reply = mongoose.model<InferSchemaType<typeof replySchema>>("Reply", replySchema);
 
-export default Comment;
+export default Reply;

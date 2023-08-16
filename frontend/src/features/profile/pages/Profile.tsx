@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import Header from "../../../layouts/Header";
 import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
@@ -105,13 +105,12 @@ const Profile = () => {
         setFollowListVisible(2);
     }
 
-    const setPageTitle =(userName:string)=>{
-        {document.title=userName + " | Webler"}
+    const setPageTitle = (userName: string) => {
+        { document.title = userName + " | Webler" }
     }
 
     return (
         <>
-            <Header variant="light"/>
             {
                 userDetails &&
                 <>

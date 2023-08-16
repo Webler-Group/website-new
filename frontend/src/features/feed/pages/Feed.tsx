@@ -4,8 +4,6 @@ import Header from '../../../layouts/Header';
 
 const Feed = () => (
     <>
-        <Header variant="light" />
-
         <Post />
     </>
 )

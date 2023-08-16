@@ -1,10 +1,12 @@
-POST http://localhost:5500/Auth/Register
+
+POST http://localhost:5500/Discussions
 Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mbyI6eyJ1c2VySWQiOiI2NGJhYmRmMjY2M2VlMDUzMjc5YTI4NmQiLCJyb2xlcyI6WyJVc2VyIl19LCJpYXQiOjE2OTE1Mjg3OTgsImV4cCI6MTY5MTUyODg1OH0.5m_OUgln8ozD8urcDK50enQygrwa8G2f47KdIAE4c1U
 
 {
-    "email": "agent001@webler.com",
-    "password": "a1b2c3",
-    "name": "Agent001"
+    "title": "Post Title",
+    "message": "test123",
+    "tags": ["Tag A"]
 }
 
 ###

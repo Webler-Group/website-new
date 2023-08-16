@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useState } from "react";
@@ -45,8 +45,8 @@ const LoginForm = ({ onToggleClick }: LoginFormProps) => {
         <>
             <h1 className="text-center mb-4">Sign In</h1>
             <Form onSubmit={(e) => handleSubmit(e)}>
+                {error && <Alert variant="danger">{error}</Alert>}
                 <FormGroup>
-                    {error && <Alert variant="danger">{error}</Alert>}
                     <FormLabel>Email</FormLabel>
                     <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </FormGroup>
@@ -59,20 +59,6 @@ const LoginForm = ({ onToggleClick }: LoginFormProps) => {
                 </FormGroup>
                 <Button className="mt-2 w-100" type="submit" disabled={loading}>Sign in</Button>
             </Form>
-            <br />
-            <div className="container text-center">
-                  <div className="row row-cols-1 row-cols-lg-3  gy-3">
-                    <div className="col">
-                      <button type="button" className="btn btn-light p-3 w-100">Google</button>
-                    </div>
-                    <div className="col">
-                      <button type="button" className="btn btn-dark p-3 w-100">Apple</button>
-                    </div>
-                    <div className="col">
-                      <button type="button" className="btn btn-primary p-3 w-100">Facebook</button>
-                    </div>
-                  </div>
-            </div>
             <p className="text-center mt-5">New to Webler? <Button variant="link" onClick={onToggleClick}>Create an account</Button></p>
         </>
     );

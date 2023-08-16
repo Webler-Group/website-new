@@ -16,8 +16,7 @@ const Login = () => {
 
     return (
         <>
-            <Header variant="light"/>
-            
+
             <div className="wb-login-wrapper">
                 <Container className="wb-login-container">
                     <LoginForm onToggleClick={toggle} />

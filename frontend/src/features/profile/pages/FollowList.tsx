@@ -48,7 +48,7 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
     })
 
     return (
-        <Modal show={true} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="webler-modal__container follows">
+        <Modal show={true} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
             <Modal.Header closeButton>
                 <Modal.Title>{options.title}</Modal.Title>
             </Modal.Header>

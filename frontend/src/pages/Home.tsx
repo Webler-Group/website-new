@@ -13,7 +13,6 @@ function Home() {
 
   return (
     <>
-      <Header variant="dark" />
 
       <div className="wb-home-container bg-light">
         <div className="wb-home-header__container bg-dark text-white">
@@ -64,7 +63,7 @@ function Home() {
 
             <Col>
               <Card className="w-100 wb-home-why_wb_card">
-              <CardImg src="resources\images\placeHolderImage.jpg" alt="..."></CardImg>
+                <CardImg src="resources\images\placeHolderImage.jpg" alt="..."></CardImg>
                 <div className="card-body">
                   <h5 className="card-title">Card title</h5>
                   <p className="card-text">
@@ -192,12 +191,11 @@ function Home() {
                   )}
                 </div>
               </Col>
-              
+
             </div>
           </Container>
         </section>
 
-        <Footer />
       </div>
     </>
   );
