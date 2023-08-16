@@ -17,6 +17,7 @@ const questionSchema = new mongoose.Schema({
     },
     tags: {
         type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
+        validate: [(val: mongoose.Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"],
         required: true,
     },
     user: {

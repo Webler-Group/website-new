@@ -88,7 +88,7 @@ const DiscussPost = () => {
             setMessage(["success", "Your answer was posted successfully"])
         }
         else {
-            setMessage(["danger", result.message]);
+            setMessage(["danger", result.error ? result.error.message : result.message]);
         }
         setLoading(false);
     }
@@ -117,7 +117,7 @@ const DiscussPost = () => {
             setMessage(["success", "Your answer was updated successfully"]);
         }
         else {
-            setMessage(["danger", result.error]);
+            setMessage(["danger", result.error ? result.error.message : result.message]);
         }
         setLoading(false);
     }
@@ -184,7 +184,7 @@ const DiscussPost = () => {
             })
         }
         else {
-            setMessage(["danger", result.error]);
+            setMessage(["danger", result.error ? result.error._message : result.message]);
         }
         setLoading(false);
     }

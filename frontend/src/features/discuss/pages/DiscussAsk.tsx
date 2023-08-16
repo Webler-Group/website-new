@@ -55,7 +55,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
             navigate("/Discuss");
         }
         else {
-            setError(result.message);
+            setError(result.error ? result.error.message : result.message);
         }
     }
 
@@ -66,7 +66,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
             navigate("/Discuss");
         }
         else {
-            setError(result.error);
+            setError(result.error ? result.error.message : result.message);
         }
     }
 
@@ -84,7 +84,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
             navigate("/Discuss")
         }
         else {
-            setError(result.error);
+            setError(result.error ? result.error.message : result.message);
         }
         setLoading(false);
     }

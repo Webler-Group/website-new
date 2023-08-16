@@ -4,7 +4,6 @@ import asyncHandler from "express-async-handler";
 import Question from "../models/Question";
 import Reply from "../models/Reply";
 import Tag from "../models/Tag";
-import mongoose, { Types } from "mongoose";
 import Upvote from "../models/Upvote";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -16,17 +15,11 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return
     }
 
-    const tagIds: Types.ObjectId[] = [];
+    const tagIds: any[] = [];
     let promises: Promise<void>[] = [];
 
     for (let tagName of tags) {
-        promises.push(Tag.findOne({ name: tagName })
-            .then(async (tag) => {
-                if (tag === null) {
-                    tag = await Tag.create({ name: tagName })
-                }
-                return tag;
-            })
+        promises.push(Tag.getOrCreateTagByName(tagName)
             .then(tag => {
                 tagIds.push(tag._id);
             })
@@ -78,7 +71,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     let dbQuery = Question.find()
 
     if (searchQuery.length) {
-        const tagIds = (await Tag.find({ name: new RegExp("^" + searchQuery, "i") }))
+        const tagIds = (await Tag.find({ name: searchQuery }))
             .map(x => x._id);
         dbQuery.where({
             $or: [
@@ -355,9 +348,22 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
+    const tagIds: any[] = [];
+    let promises: Promise<void>[] = [];
+
+    for (let tagName of tags) {
+        promises.push(Tag.getOrCreateTagByName(tagName)
+            .then(tag => {
+                tagIds.push(tag._id);
+            })
+        )
+    }
+
+    await Promise.all(promises);
+
     question.title = title;
     question.message = message;
-    question.tags = tags;
+    question.tags = tagIds;
 
     try {
         await question.save();

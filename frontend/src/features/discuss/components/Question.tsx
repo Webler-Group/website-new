@@ -16,21 +16,33 @@ interface IQuestion {
 
 interface QuestionProps {
     question: IQuestion;
+    searchQuery: string;
 }
 
-const Question = ({ question }: QuestionProps) => {
+const Question = ({ question, searchQuery }: QuestionProps) => {
+
+    let titleMatch = question.title.match(new RegExp("^" + searchQuery, "i"));
+    let title = titleMatch && titleMatch.length ?
+        <>
+            <span className="bg-warning">{titleMatch[0]}</span>
+            {question.title.slice(titleMatch[0].length)}
+        </>
+        :
+        <>
+            {question.title}
+        </>
 
     return (
         <div className="rounded border p-2 mb-2 bg-white">
             <div>
                 <Link to={"/Discuss/" + question.id}>
-                    <h3>{question.title}</h3>
+                    <h3>{title}</h3>
                 </Link>
                 <div className="d-flex flex-wrap">
                     {
                         question.tags.map((tag, idx) => {
                             return (
-                                <small key={idx} className="rounded bg-light p-1 me-2 border">{tag}</small>
+                                <small key={idx} className={"rounded p-1 me-2 border" + (tag === searchQuery ? " bg-warning" : " bg-light")}>{tag}</small>
                             )
                         })
                     }

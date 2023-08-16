@@ -31,7 +31,7 @@ const QuestionList = () => {
         e.preventDefault();
 
         if (searchInputElement.current) {
-            setSearchQuery(searchInputElement.current.value);
+            setSearchQuery(searchInputElement.current.value.trim());
         }
     }
 
@@ -81,7 +81,7 @@ const QuestionList = () => {
                             :
                             questions.map(question => {
                                 return (
-                                    <Question question={question} key={question.id} />
+                                    <Question question={question} searchQuery={searchQuery} key={question.id} />
                                 )
                             })
 
