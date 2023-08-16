@@ -406,3 +406,24 @@ ul {
     right: 16px;
     top: 16px;
 }
+
+.wb-discuss-voting {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-discuss-voting__button {
+    cursor: pointer;
+    color: silver;
+}
+
+.wb-discuss-voting__button:hover {
+    color: gray;
+}
+
+.wb-discuss-reply__actions__best-answer-button {
+    cursor: pointer;
+    font-size: 22px;
+}

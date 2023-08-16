@@ -10,6 +10,7 @@ import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
 import { FaPencil } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
+import { FaThumbsUp } from "react-icons/fa";
 
 
 const DiscussPost = () => {
@@ -145,7 +146,6 @@ const DiscussPost = () => {
     }
 
     const toggleAcceptedAnswer = async (postId: string) => {
-        setLoading(true);
         const result = await ApiCommunication.sendJsonRequest("/Discussion/ToggleAcceptedAnswer", "POST", {
             postId,
             accepted: !(postId === acceptedAnswer)
@@ -153,7 +153,6 @@ const DiscussPost = () => {
         if (result && result.success) {
             setAcceptedAnswer(postId === acceptedAnswer ? null : postId);
         }
-        setLoading(false);
     }
 
     const showEditAnswer = (postId: string) => {
@@ -189,6 +188,22 @@ const DiscussPost = () => {
         setLoading(false);
     }
 
+    const voteQuestion = async () => {
+        if (!question) {
+            return
+        }
+        const vote = question.isUpvoted ? 0 : 1;
+        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: questionId, vote });
+        if (result.vote === vote) {
+            setQuestion(question => {
+                if (question) {
+                    return { ...question, votes: question.votes + (vote ? 1 : -1), isUpvoted: vote === 1 }
+                }
+                return null
+            });
+        }
+    }
+
     let charactersRemaining = maxCharacters - formInput.length;
 
     return (
@@ -214,7 +229,15 @@ const DiscussPost = () => {
                     </LinkContainer>
                 }
                 <div className="d-flex">
-                    <div className="wb-discuss-question__main">
+                    <div>
+                        <div className="wb-discuss-voting">
+                            <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
+                                <FaThumbsUp />
+                            </span>
+                            <b>{question.votes}</b>
+                        </div>
+                    </div>
+                    <div className="wb-discuss-question__main ms-2">
                         <h3>{question.title}</h3>
                         <p className="wb-discuss-question__description mt-2">{question.message}</p>
                         <div className="d-flex mt-4 flex-wrap">

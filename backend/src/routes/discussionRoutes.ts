@@ -32,5 +32,7 @@ router.route("/DeleteReply")
     .delete(discussionController.deleteReply);
 router.route("/ToggleAcceptedAnswer")
     .post(discussionController.toggleAcceptedAnswer);
+router.route("/VotePost")
+    .post(discussionController.votePost);
 
 export default router;

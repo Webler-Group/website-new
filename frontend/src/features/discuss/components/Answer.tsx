@@ -1,7 +1,9 @@
 import { FaPencil } from "react-icons/fa6";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { FaCheckCircle } from "react-icons/fa";
+import { FaCheckCircle, FaThumbsUp } from "react-icons/fa";
+import { useState } from "react";
+import ApiCommunication from "../../../helpers/apiCommunication";
 
 interface IAnswer {
     id: string;
@@ -11,6 +13,8 @@ interface IAnswer {
     message: string;
     isAccepted: boolean;
     parentId: string;
+    votes: number;
+    isUpvoted: boolean;
 }
 
 interface AnswerProps {
@@ -24,6 +28,18 @@ interface AnswerProps {
 
 const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, isOwner, showEditAnswer }: AnswerProps) => {
 
+    const [upvoted, setUpvoted] = useState(answer.isUpvoted);
+    const [votes, setVotes] = useState(answer.votes);
+
+    const voteAnswer = async () => {
+        const vote = upvoted ? 0 : 1;
+        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: answer.id, vote });
+        if (result.vote === vote) {
+            setUpvoted(vote === 1);
+            setVotes(votes + (vote ? 1 : -1));
+        }
+    }
+
     let isAccepted = acceptedAnswer === answer.id;
 
     return (
@@ -35,15 +51,19 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
                 </span>
             }
             <div className="d-flex">
-                <div>
+                <div className="text-center">
                     {
                         isQuestionOwner &&
-                        <button onClick={() => toggleAcceptedAnswer(answer.id)} className="bg-transparent border-0 h3">
-                            <span className={isAccepted ? "text-success" : "text-secondary"}>
-                                <FaCheckCircle />
-                            </span>
-                        </button>
+                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")}>
+                            <FaCheckCircle />
+                        </div>
                     }
+                    <div className="wb-discuss-voting mt-2">
+                        <span onClick={voteAnswer} className={"wb-discuss-voting__button" + (upvoted ? " text-black" : "")}>
+                            <FaThumbsUp />
+                        </span>
+                        <b>{votes}</b>
+                    </div>
                 </div>
                 <p className="wb-discuss-question__description mt-2 ms-4">{answer.message}</p>
             </div>

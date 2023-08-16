@@ -1,6 +1,6 @@
 import mongoose, { InferSchemaType } from "mongoose";
 
-const replySchema = new mongoose.Schema({
+const postSchema = new mongoose.Schema({
     isAccepted: {
         type: Boolean,
         default: false
@@ -25,6 +25,6 @@ const replySchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Reply = mongoose.model<InferSchemaType<typeof replySchema>>("Reply", replySchema);
+const Post = mongoose.model<InferSchemaType<typeof postSchema>>("Post", postSchema);
 
-export default Reply;
+export default Post;

@@ -12,6 +12,8 @@ interface IQuestion {
     date: string;
     message: string;
     answers: number;
+    votes: number;
+    isUpvoted: boolean;
 }
 
 interface QuestionProps {
