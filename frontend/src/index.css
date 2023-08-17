@@ -423,7 +423,12 @@ ul {
     color: gray;
 }
 
+.wb-discuss-reply__actions {
+    width: 50px;
+    text-align: center;
+}
+
 .wb-discuss-reply__actions__best-answer-button {
     cursor: pointer;
-    font-size: 22px;
+    font-size: 26px;
 }

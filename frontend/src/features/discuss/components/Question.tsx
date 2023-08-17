@@ -36,37 +36,36 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
         </>
 
     return (
-        <div className="rounded border p-2 mb-2 bg-white">
-            <div>
+        <div className="rounded border p-2 mb-2 bg-white d-md-flex">
+            <div className="flex-grow-1">
                 <Link to={"/Discuss/" + question.id}>
                     <h4>{title}</h4>
                 </Link>
-                <div className="d-flex flex-wrap">
+                <div className="d-flex flex-wrap mt-3">
                     {
                         question.tags.map((tag, idx) => {
                             return (
-                                <small key={idx} className={"rounded p-1 me-2 border" + (tag === searchQuery ? " bg-warning" : " bg-light")}>{tag}</small>
+                                <small key={idx} className={"rounded px-2 me-2 mb-1 border" + (tag === searchQuery ? " bg-warning" : " bg-light")}>{tag}</small>
                             )
                         })
                     }
                 </div>
-            </div>
-            <div className="d-flex justify-content-between align-items-end">
-                <div className="d-flex">
-                    <div className="me-3">
+                <div className="d-flex small mt-3">
+                    <div className="me-3 d-flex align-items-center">
                         <FaThumbsUp />
                         <span className="ms-2">{question.votes} Votes</span>
                     </div>
-                    <div>
+                    <div className="d-flex align-items-center">
                         <FaComment />
                         <span className="ms-2">{question.answers} Answers</span>
                     </div>
                 </div>
-
+            </div>
+            <div className="d-flex justify-content-end align-items-end">
                 <div className="d-flex">
                     <div>
                         <div>
-                            <small>{DateUtils.format(new Date(question.date))}</small>
+                            <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
                             <ProfileName userId={question.userId} userName={question.userName} />

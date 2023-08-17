@@ -62,14 +62,20 @@ const QuestionList = () => {
                     <Form.Select value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
                         <option value="1">Most Recent</option>
                         <option value="2">Unanswered</option>
-                        {userInfo && <option value="3">My Questions</option>}
+                        {
+                            userInfo &&
+                            <>
+                                <option value="3">My Questions</option>
+                                <option value="4">My Answers</option>
+                            </>
+                        }
                     </Form.Select>
                 </div>
                 <LinkContainer to={userInfo ? "/Discuss/New" : "/Login"}>
                     <Button className="col-6 col-sm-4">Ask a question</Button>
                 </LinkContainer>
             </div>
-            <div className="my-4">
+            <div className="my-3">
                 {
                     loading ?
                         placeholders

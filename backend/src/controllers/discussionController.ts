@@ -105,7 +105,20 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 return
             }
             dbQuery = dbQuery
-                .where("user").equals(userId)
+                .where({ user: userId })
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        // My Replies
+        case 4: {
+            if (userId === null) {
+                res.status(400).json({ message: "Invalid query params" });
+                return
+            }
+            const replies = await Post.find({ user: userId, _type: 2 }).select("parentId");
+            const questionIds = [...new Set(replies.map(x => x.parentId))];
+            dbQuery = dbQuery
+                .where({ _id: { $in: questionIds } })
                 .sort({ createdAt: "desc" })
             break;
         }

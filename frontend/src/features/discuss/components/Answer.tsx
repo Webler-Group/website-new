@@ -51,7 +51,7 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
                 </span>
             }
             <div className="d-flex">
-                <div className="text-center">
+                <div className="wb-discuss-reply__actions">
                     {
                         isQuestionOwner &&
                         <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")}>
@@ -65,13 +65,15 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
                         <b>{votes}</b>
                     </div>
                 </div>
-                <p className="wb-discuss-question__description mt-2 ms-4">{answer.message}</p>
+                <div className="wb-discuss-question__main ms-2">
+                    <p className="wb-discuss-question__description mt-2 ms-4">{answer.message}</p>
+                </div>
             </div>
             <div className="d-flex justify-content-end align-items-end">
                 <div className="d-flex">
                     <div>
                         <div>
-                            <small>{DateUtils.format(new Date(answer.date))}</small>
+                            <small className="text-secondary">{DateUtils.format(new Date(answer.date))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
                             <ProfileName userId={answer.userId} userName={answer.userName} />

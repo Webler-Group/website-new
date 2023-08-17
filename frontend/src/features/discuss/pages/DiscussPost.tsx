@@ -244,7 +244,7 @@ const DiscussPost = () => {
                     </div>
                     <div className="wb-discuss-question__main ms-2">
                         <h3>{question.title}</h3>
-                        <p className="wb-discuss-question__description mt-2">{question.message}</p>
+                        <p className="wb-discuss-question__description mt-4">{question.message}</p>
                         <div className="d-flex mt-4 flex-wrap">
                             {
                                 question.tags.map((tag, idx) => {
