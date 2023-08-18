@@ -49,7 +49,7 @@ const DiscussPost = () => {
 
     useEffect(() => {
         getAnswers();
-    }, [currentPage, filter, questionId]);
+    }, [searchParams, questionId]);
 
     useEffect(() => {
         handlePageChange(1);
@@ -79,7 +79,9 @@ const DiscussPost = () => {
 
     const getAnswers = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?page=${currentPage}&count=${answersPerPage}&filter=${filter}`, "GET");
+        const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
+        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?page=${page}&count=${answersPerPage}&filter=${filter}`, "GET");
         if (result && result.posts) {
             setAnswers(result.posts);
             let accepted = null;

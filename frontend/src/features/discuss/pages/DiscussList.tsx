@@ -23,7 +23,7 @@ const QuestionList = () => {
 
     useEffect(() => {
         getQuestions();
-    }, [currentPage, filter, searchQuery]);
+    }, [searchParams]);
 
     useEffect(() => {
         handlePageChange(1);
@@ -60,7 +60,10 @@ const QuestionList = () => {
 
     const getQuestions = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${currentPage}&count=${questionsPerPage}&filter=${filter}&query=${searchQuery}` + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
+        const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
+        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
+        const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${page}&count=${questionsPerPage}&filter=${filter}&query=${searchQuery}` + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
         if (result && result.questions) {
             setQuestions(result.questions);
             setQuestionCount(result.count);
