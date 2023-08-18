@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom"
+import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
@@ -32,18 +32,41 @@ const DiscussPost = () => {
     const [editedAnswer, setEditedAnswer] = useState<string | null>(null);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const [filter, setFilter] = useState(1);
+    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
-        getQuestion();
+        if (searchParams.has("page")) {
+            setCurrentPage(Number(searchParams.get("page")))
+        }
+        if (searchParams.has("filter")) {
+            setFilter(Number(searchParams.get("filter")))
+        }
     }, []);
 
     useEffect(() => {
-        getAnswers();
-    }, [currentPage, filter]);
+        getQuestion();
+    }, [questionId]);
 
     useEffect(() => {
-        setCurrentPage(1);
+        getAnswers();
+    }, [currentPage, filter, questionId]);
+
+    useEffect(() => {
+        handlePageChange(1);
     }, [filter]);
+
+    const handlePageChange = (page: number) => {
+        searchParams.set("page", page.toString());
+        setSearchParams(searchParams, { replace: true })
+        setCurrentPage(page);
+    }
+
+    const handleFilterSelect = (e: ChangeEvent) => {
+        const value = Number((e.target as HTMLSelectElement).selectedOptions[0].value)
+        searchParams.set("filter", value.toString())
+        setSearchParams(searchParams, { replace: true })
+        setFilter(value)
+    }
 
     const getQuestion = async () => {
         setLoading(true);
@@ -299,7 +322,7 @@ const DiscussPost = () => {
                     <h2>{question.answers} Answers</h2>
                 </div>
                 <div className="d-flex">
-                    <Form.Select value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
+                    <Form.Select value={filter} onChange={handleFilterSelect}>
                         <option value="1">Sort by: Votes</option>
                         <option value="2">Sort by: Date</option>
                     </Form.Select>
@@ -315,7 +338,6 @@ const DiscussPost = () => {
                                 acceptedAnswer={acceptedAnswer}
                                 toggleAcceptedAnswer={toggleAcceptedAnswer}
                                 isQuestionOwner={userInfo?.id === question.userId}
-                                isOwner={userInfo?.id === answer.userId}
                                 key={answer.id}
                                 showEditAnswer={showEditAnswer} />
                         )
@@ -328,9 +350,7 @@ const DiscussPost = () => {
                     between={3}
                     total={question.answers}
                     limit={answersPerPage}
-                    changePage={(page) => {
-                        setCurrentPage(page);
-                    }}
+                    changePage={handlePageChange}
                     ellipsis={1}
                 />
             </div>

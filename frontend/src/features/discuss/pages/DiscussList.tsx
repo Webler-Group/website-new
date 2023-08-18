@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Form, FormControl } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
@@ -6,6 +6,7 @@ import Question from '../components/Question';
 import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
 import QuestionPlaceholder from '../components/QuestionPlaceholder';
+import { useSearchParams } from 'react-router-dom';
 
 const QuestionList = () => {
 
@@ -18,20 +19,42 @@ const QuestionList = () => {
     const [filter, setFilter] = useState(1);
     const searchInputElement = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
+    const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
         getQuestions();
     }, [currentPage, filter, searchQuery]);
 
     useEffect(() => {
-        setCurrentPage(1);
+        handlePageChange(1);
     }, [filter, searchQuery]);
+
+    useEffect(() => {
+        if (searchParams.has("page")) {
+            setCurrentPage(Number(searchParams.get("page")))
+        }
+        if (searchParams.has("filter")) {
+            setFilter(Number(searchParams.get("filter")))
+        }
+        if (searchParams.has("query")) {
+            setSearchQuery(searchParams.get("query")!)
+        }
+    }, []);
+
+    const handlePageChange = (page: number) => {
+        searchParams.set("page", page.toString());
+        setSearchParams(searchParams, { replace: true })
+        setCurrentPage(page);
+    }
 
     const handleSearch = (e: FormEvent) => {
         e.preventDefault();
 
         if (searchInputElement.current) {
-            setSearchQuery(searchInputElement.current.value.trim());
+            const value = searchInputElement.current.value.trim()
+            searchParams.set("query", value);
+            setSearchParams(searchParams, { replace: true });
+            setSearchQuery(value);
         }
     }
 
@@ -43,6 +66,13 @@ const QuestionList = () => {
             setQuestionCount(result.count);
         }
         setLoading(false);
+    }
+
+    const handleFilterSelect = (e: ChangeEvent) => {
+        const value = Number((e.target as HTMLSelectElement).selectedOptions[0].value)
+        searchParams.set("filter", value.toString())
+        setSearchParams(searchParams, { replace: true })
+        setFilter(value)
     }
 
     let placeholders = [];
@@ -59,7 +89,7 @@ const QuestionList = () => {
             </Form>
             <div className="mt-4 row justify-content-between">
                 <div className="col-6 col-sm-4">
-                    <Form.Select value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
+                    <Form.Select value={filter} onChange={handleFilterSelect}>
                         <option value="1">Most Recent</option>
                         <option value="2">Unanswered</option>
                         {
@@ -99,9 +129,7 @@ const QuestionList = () => {
                     between={3}
                     total={questionCount}
                     limit={questionsPerPage}
-                    changePage={(page) => {
-                        setCurrentPage(page);
-                    }}
+                    changePage={handlePageChange}
                     ellipsis={1}
                 />
             </div>
