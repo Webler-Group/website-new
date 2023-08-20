@@ -84,7 +84,7 @@ const QuestionList = () => {
     }
 
     return (
-        <>
+        <div className="d-flex flex-column">
             <h2>Q&A Discussions</h2>
             <Form className="d-flex mt-4" onSubmit={handleSearch}>
                 <FormControl type="search" placeholder="Search..." ref={searchInputElement} />
@@ -104,7 +104,7 @@ const QuestionList = () => {
                         }
                     </Form.Select>
                 </div>
-                <LinkContainer to={userInfo ? "/Discuss/New" : "/Login"}>
+                <LinkContainer to="/Discuss/New">
                     <Button className="col-6 col-sm-4">Ask a question</Button>
                 </LinkContainer>
             </div>
@@ -114,7 +114,7 @@ const QuestionList = () => {
                         placeholders
                         :
                         questionCount == 0 ?
-                            <div className="d-flex flex-column align-items-center justify-content-center h-100">
+                            <div className="wb-discuss-empty-questions">
                                 <h3>Nothing to show</h3>
                             </div>
                             :
@@ -136,7 +136,7 @@ const QuestionList = () => {
                     ellipsis={1}
                 />
             </div>
-        </>
+        </div>
     )
 }
 

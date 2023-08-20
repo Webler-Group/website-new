@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
+import { useEffect, useState } from 'react'
+import { Alert, Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
 import { InputTags } from 'react-bootstrap-tagsinput';
 import { LinkContainer } from 'react-router-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
@@ -36,8 +36,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         setLoading(false);
     }
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async () => {
 
         setLoading(true);
         questionId ?
@@ -102,7 +101,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                 </Modal.Footer>
             </Modal>
             {questionId === null && <h2 className="mb-4">Ask the community a question</h2>}
-            <Form onSubmit={(e) => handleSubmit(e)}>
+            <div>
                 {error && <Alert variant="danger">{error}</Alert>}
                 <FormGroup>
                     <FormLabel>Your question</FormLabel>
@@ -126,15 +125,15 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                         questionId ?
                             <>
                                 <Button variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                <Button variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
+                                <Button variant="primary" className="ms-2" onClick={handleSubmit} disabled={loading}>Save changes</Button>
                             </>
                             :
                             <>
-                                <Button className="ms-2" type="submit" variant="primary" disabled={loading}>Post question</Button>
+                                <Button className="ms-2" variant="primary" onClick={handleSubmit} disabled={loading}>Post question</Button>
                             </>
                     }
                 </div>
-            </Form>
+            </div>
         </>
     )
 }

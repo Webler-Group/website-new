@@ -1,20 +1,19 @@
 import { Outlet } from 'react-router-dom';
-import Header from '../layouts/Header';
-import Footer from '../layouts/Footer';
+import { ReactNode } from 'react';
 
 interface LayoutProps {
-    header: string | null;
-    footer: boolean;
+    Header: ReactNode | null;
+    Footer: ReactNode | null;
 }
 
-const Layout = ({ header, footer }: LayoutProps) => {
+const Layout = ({ Header, Footer }: LayoutProps) => {
     return (
         <>
-            {header !== null && <Header variant={header} />}
-            <main style={{ minHeight: "calc(100vh)" }} className="bg-light">
+            {Header !== null && Header}
+            <main className="bg-light">
                 <Outlet />
             </main>
-            {footer && <Footer />}
+            {Footer !== null && Footer}
         </>
     )
 }

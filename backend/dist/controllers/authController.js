@@ -15,26 +15,31 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const tokenUtils_1 = require("../utils/tokenUtils");
-const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     if (typeof email == "undefined" || typeof password === "undefined") {
-        return res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
     }
     const user = yield User_1.default.findOne({ email });
     if (user && (yield user.matchPassword(password))) {
         if (!user.active) {
-            return res.status(401).json({ message: "Account is deactivated" });
+            res.status(401).json({ message: "Account is deactivated" });
+            return;
         }
-        const accessToken = (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
             userInfo: {
                 userId: user._id.toString(),
-                nickname: user.name,
                 roles: user.roles
             }
         });
+        const expiresIn = typeof tokenInfo.exp == "number" ?
+            tokenInfo.exp * 1000 : 0;
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         res.json({
             accessToken,
+            expiresIn,
             user: {
                 id: user._id,
                 name: user.name,
@@ -52,32 +57,36 @@ const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     else {
         res.status(401).json({ message: "Invalid email or password" });
     }
-});
-const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+}));
+const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, name, password } = req.body;
-    if (typeof email == "undefined" || typeof password === "undefined") {
-        return res.status(400).json({ message: "Some fields are missing" });
+    if (typeof email !== "string" || typeof password !== "string") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
     }
     const userExists = yield User_1.default.findOne({ email });
     if (userExists) {
-        return res.status(400).json({ message: "Email is already registered" });
+        res.status(400).json({ message: "Email is already registered" });
+        return;
     }
     const user = yield User_1.default.create({
         email,
         name,
-        password
+        password,
     });
     if (user) {
-        const accessToken = (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
             userInfo: {
                 userId: user._id.toString(),
-                nickname: user.name,
                 roles: user.roles
             }
         });
+        const expiresIn = typeof tokenInfo.exp == "number" ?
+            tokenInfo.exp * 1000 : 0;
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         res.json({
             accessToken,
+            expiresIn,
             user: {
                 id: user._id,
                 name: user.name,
@@ -95,43 +104,51 @@ const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     else {
         res.status(401).json({ message: "Invalid email or password" });
     }
-});
-const logout = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+}));
+const logout = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const cookies = req.cookies;
-    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.jwt)) {
-        return res.sendStatus(204);
+    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken)) {
+        res.status(204).json({});
+        return;
     }
     (0, tokenUtils_1.clearRefreshToken)(res);
     res.json({});
-});
-const refresh = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+}));
+const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const cookies = req.cookies;
-    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.jwt)) {
-        return res.status(401).json({ message: "Unauthorized" });
+    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken)) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
     }
-    const refreshToken = cookies.jwt;
+    const refreshToken = cookies.refreshToken;
     jsonwebtoken_1.default.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
-            console.log(err);
-            return res.status(403).json({ message: "Forbidden" });
+            res.status(403).json({ message: "Forbidden" });
+            return;
         }
         const user = yield User_1.default.findById(decoded.userId);
         if (!user) {
-            return res.status(401).json({ message: "Unauthorized" });
+            res.status(401).json({ message: "Unauthorized" });
+            return;
         }
-        const accessToken = (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
             userInfo: {
                 userId: user._id.toString(),
-                nickname: user.name,
                 roles: user.roles
             }
         });
-        res.json({ accessToken });
+        const expiresIn = typeof tokenInfo.exp == "number" ?
+            tokenInfo.exp * 1000 : 0;
+        res.json({
+            accessToken,
+            expiresIn
+        });
     }));
-});
-exports.default = {
+}));
+const controller = {
     login,
     register,
     logout,
     refresh
 };
+exports.default = controller;

@@ -26,10 +26,12 @@ const AuthNavigation = () => {
                     (userInfo) ?
                         <>
                             <Nav.Item>
-                                <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> <b>{userInfo.name}</b></>} menuVariant="light">
+                                <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> </>} menuVariant="light">
                                     <LinkContainer to="/Profile">
                                         <NavDropdown.Item>
-                                            Go to profile
+                                            <b>{userInfo.name}</b>
+                                            <br />
+                                            <span className="text-secondary">Go to profile</span>
                                         </NavDropdown.Item>
                                     </LinkContainer>
                                     <NavDropdown.Divider />

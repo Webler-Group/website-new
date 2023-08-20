@@ -2,8 +2,6 @@ import { useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
-import Header from "../../../layouts/Header";
-import Footer from "../../../layouts/Footer";
 
 const Login = () => {
 

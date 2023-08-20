@@ -41,7 +41,7 @@ const signAccessToken = (payload: AccessTokenPayload) => {
     const accessToken = jwt.sign(
         payload,
         process.env.ACCESS_TOKEN_SECRET as string,
-        { expiresIn: "1m" }
+        { expiresIn: "15m" }
     );
 
     const data = jwt.decode(accessToken);

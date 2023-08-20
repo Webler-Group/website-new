@@ -15,6 +15,7 @@ const dbConn_1 = __importDefault(require("./config/dbConn"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const discussionRoutes_1 = __importDefault(require("./routes/discussionRoutes"));
 dotenv_1.default.config();
 const PORT = process.env.PORT || 5500;
 const app = (0, express_1.default)();
@@ -24,8 +25,9 @@ app.use(logger_1.logger);
 app.use((0, cors_1.default)(corsOptions_1.default));
 app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
-app.use("/Auth", authRoutes_1.default);
-app.use("/Profile", profileRoutes_1.default);
+app.use("/auth", authRoutes_1.default);
+app.use("/profile", profileRoutes_1.default);
+app.use("/discussion", discussionRoutes_1.default);
 app.all("*", (req, res) => {
     res.status(404);
     if (req.accepts('html')) {

@@ -5,7 +5,6 @@ import countries from '../../../config/countries';
 import { Button } from 'react-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
-import { Link } from 'react-router-dom';
 import ProfileName from '../../../components/ProfileName';
 
 interface FollowListProfileProps {

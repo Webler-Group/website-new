@@ -14,9 +14,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const countryCodes_1 = __importDefault(require("../enums/countryCodes"));
+const countryCodes_1 = __importDefault(require("../config/countryCodes"));
 const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
-const roles_1 = __importDefault(require("../enums/roles"));
+const roles_1 = __importDefault(require("../config/roles"));
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
@@ -39,16 +39,18 @@ const userSchema = new mongoose_1.default.Schema({
     },
     countryCode: {
         type: String,
-        enum: countryCodes_1.default
+        enum: countryCodes_1.default,
+        default: ""
     },
     bio: {
         type: String,
         trim: true,
-        maxLength: 120
+        maxLength: 120,
+        default: ""
     },
     roles: {
         type: [String],
-        default: [],
+        default: ["User"],
         enum: roles_1.default
     },
     emailVerified: {
@@ -69,14 +71,6 @@ const userSchema = new mongoose_1.default.Schema({
     },
     avatarUrl: {
         type: String
-    },
-    followers: {
-        type: Number,
-        default: 0
-    },
-    following: {
-        type: Number,
-        default: 0
     }
 }, {
     timestamps: true
@@ -90,6 +84,9 @@ userSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!this.isModified("password")) {
             return next();
+        }
+        if (this.password.length < 6) {
+            return next(new Error("Password must contain at least 6 characters"));
         }
         const salt = yield bcrypt_1.default.genSalt(10);
         this.password = yield bcrypt_1.default.hash(this.password, salt);

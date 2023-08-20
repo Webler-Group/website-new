@@ -222,6 +222,10 @@ const DiscussPost = () => {
         if (!question) {
             return
         }
+        if (!userInfo) {
+            navigate("/Login");
+            return;
+        }
         const vote = question.isUpvoted ? 0 : 1;
         const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: questionId, vote });
         if (result.vote === vote) {

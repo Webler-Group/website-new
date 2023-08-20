@@ -11,7 +11,7 @@ interface HeaderProps {
 function Header({ variant }: HeaderProps) {
 
   return (
-    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom">
+    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom" collapseOnSelect>
       <Container fluid>
         <LinkContainer to="/">
           <Navbar.Brand><img src="/resources/images/logo.png" height="50px" width="150px" /></Navbar.Brand>
@@ -22,7 +22,9 @@ function Header({ variant }: HeaderProps) {
           <Nav className="me-auto">
             <Nav.Link>Catalog</Nav.Link>
             <Nav.Link>Leaderboard</Nav.Link>
-            <Nav.Link>Code Bits</Nav.Link>
+            <LinkContainer to="/Compiler-Playground/Web">
+              <Nav.Link>Online Compiler</Nav.Link>
+            </LinkContainer>
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>
             </LinkContainer>

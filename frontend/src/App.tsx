@@ -17,48 +17,71 @@ import QuestionList from './features/discuss/pages/DiscussList';
 import AskQuestion from './features/discuss/pages/DiscussAsk';
 import DiscussPost from './features/discuss/pages/DiscussPost';
 import DiscussEdit from './features/discuss/pages/DiscussEdit';
+import PlaygroundEditor from './features/compiler-playground/pages/PlaygroundEditor';
+import PlaygroundMenu from './features/compiler-playground/pages/PlaygroundMenu';
+import Header from './layouts/Header';
+import Footer from './layouts/Footer';
 
 
 function App() {
+
+  const allRoles = [...Object.values(roles)];
+
   return (
     <Routes>
-      {/* no-auth routes */}
+
       <Route element={<NoAuth />}>
-        <Route path="Login" element={<Login />} />
-        <Route path="Register" element={<Register />} />
-        <Route element={<Layout header="dark" footer={true} />}>
+        <Route element={<Layout Header={null} Footer={null} />}>
+          <Route path="Login" element={<Login />} />
+          <Route path="Register" element={<Register />} />
+        </Route>
+        <Route element={<Layout Header={<Header variant="dark" />} Footer={<Footer />} />}>
           <Route index element={<Home />} />
         </Route>
       </Route>
 
-      {/* public routes */}
-      <Route element={<Layout header={"light"} footer={true} />}>
+      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route path="Terms-of-use" element={<TermsOfUse />} />
         <Route path="Contact" element={<Contact />} />
+      </Route>
 
-        <Route path="Discuss">
+
+      <Route path="Discuss">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<Discuss MainPage={<QuestionList />} />} />
-          <Route path="New" element={<Discuss MainPage={<AskQuestion questionId={null} />} />} />
           <Route path=":questionId" element={<Discuss MainPage={<DiscussPost />} />} />
-          <Route path="Edit/:questionId" element={<Discuss MainPage={<DiscussEdit />} />} />
+          <Route element={<RequireAuth allowedRoles={allRoles} />}>
+            <Route path="New" element={<Discuss MainPage={<AskQuestion questionId={null} />} />} />
+            <Route path="Edit/:questionId" element={<Discuss MainPage={<DiscussEdit />} />} />
+          </Route>
         </Route>
+      </Route>
 
-        <Route path="Feed">
+      <Route path="Compiler-Playground">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<PlaygroundMenu />} />
+        </Route>
+        <Route path="Web" element={<PlaygroundEditor type="web" />} />
+        <Route path=":codeId" element={<PlaygroundEditor type="" />} />
+      </Route>
+
+      <Route path="Feed">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<Feed />} />
         </Route>
+      </Route>
 
-        <Route path="Profile">
+      <Route path="Profile">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route path=":userId" element={<Profile />} />
           <Route index element={<ProfileFromAuth />} />
         </Route>
       </Route>
 
-      {/* protected routes */}
-      <Route element={<RequireAuth allowedRoles={[...Object.values(roles)]} />}>
 
+      <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+        <Route path="/*" element={<NotFound />} />
       </Route>
-
-      <Route path="/*" element={<NotFound />} />
     </Routes>
   );
 };

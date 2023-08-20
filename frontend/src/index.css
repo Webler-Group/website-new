@@ -33,6 +33,10 @@ ul {
     }
 }
 
+.wb-p-container {
+    min-height: 100vh;
+}
+
 .wb-p-details__row {
     margin-bottom: 8px;
 }
@@ -105,6 +109,10 @@ ul {
         width: 367px;
         max-height: 80vh;
     }
+
+    .wb-modal__container.console {
+        height: 60vh;
+    }
 }
 
 /*Webler home page*/
@@ -135,6 +143,18 @@ ul {
 
 
 /*Webler discuss page*/
+
+.wb-discuss-questions-list-page {
+    min-height: 100vh;
+}
+
+.wb-discuss-empty-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}
 
 .wb-discuss-questions-list-page__questions-section {
     max-width: 100%;
@@ -431,4 +451,19 @@ ul {
 .wb-discuss-reply__actions__best-answer-button {
     cursor: pointer;
     font-size: 26px;
+}
+
+.wb-playground-wrapper {
+    position: fixed;
+    width: 100%;
+}
+
+.wb-playground-container__content {
+    height: calc(100dvh - 40px);
+}
+
+.wb-web-wrapper__frame-wrapper__console-btn {
+    position: absolute;
+    right: 32px;
+    bottom: 24px;
 }
