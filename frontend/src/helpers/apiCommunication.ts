@@ -1,4 +1,3 @@
-import { BASE_URL } from "../config/config";
 import { authenticate } from "../features/auth/context/authContext";
 
 class ApiCommunication {
@@ -16,7 +15,7 @@ class ApiCommunication {
     expiresIn: number;
 
     constructor() {
-        this.baseUrl = BASE_URL;
+        this.baseUrl = "/api";
         this.accessToken = null;
         this.expiresIn = 0;
     }

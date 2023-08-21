@@ -30,9 +30,9 @@ app.use(express.json());
 
 app.use(cookieParser());
 
-app.use("/auth", authRoutes);
-app.use("/profile", profileRoutes);
-app.use("/discussion", discussionRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
+app.use("/api/discussion", discussionRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);

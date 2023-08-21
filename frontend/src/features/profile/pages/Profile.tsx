@@ -4,7 +4,7 @@ import { Navigate, useLocation, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
 import { Button, Card, Container } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
-import countries from "../../../config/countries";
+import countries from "../../../data/countries";
 import { FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";

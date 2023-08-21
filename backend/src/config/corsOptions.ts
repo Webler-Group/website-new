@@ -4,8 +4,8 @@ import allowedOrigins from "./allowedOrigins";
 const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
         origin = origin ? origin : "";
-        
-        if(allowedOrigins.includes(origin)) {
+
+        if (allowedOrigins.includes(origin)) {
             callback(null, true);
         }
         else {

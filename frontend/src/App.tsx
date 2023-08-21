@@ -5,7 +5,7 @@ import Layout from './components/Layout';
 import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import RequireAuth from './features/auth/components/RequireAuth';
-import roles from './config/roles';
+import roles from './data/roles';
 import Home from './pages/Home';
 import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
 import NoAuth from './features/auth/components/NoAuth';

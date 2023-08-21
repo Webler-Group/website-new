@@ -1,4 +1,4 @@
-import countries from "../config/countries"
+import countries from "../data/countries"
 
 interface CountryProps {
     country: typeof countries[0]

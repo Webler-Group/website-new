@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { UserMinimal } from '../pages/Profile'
 import Country from '../../../components/Country';
-import countries from '../../../config/countries';
+import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
