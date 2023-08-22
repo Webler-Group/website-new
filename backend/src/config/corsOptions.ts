@@ -9,7 +9,7 @@ const corsOptions: CorsOptions = {
             callback(null, true);
         }
         else {
-            callback(new Error('Not allowed by CORS\nAllowed origins: ' + allowedOrigins.join(", ")));
+            callback(new Error('Not allowed by CORS\nOrigin: ' + origin + '\nAllowed origins: ' + allowedOrigins.join(", ")));
         }
     },
     credentials: true,
