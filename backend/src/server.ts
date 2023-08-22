@@ -24,7 +24,7 @@ app.use(express.static("public"));
 
 app.use(logger);
 
-app.use(cors(corsOptions));
+//app.use(cors(corsOptions));
 
 app.use(express.json());
 
