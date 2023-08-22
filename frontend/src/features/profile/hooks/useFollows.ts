@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import ApiCommunication from "../../../app/apiCommunication"
+import ApiCommunication from "../../../helpers/apiCommunication"
 
 const useFollows = (loadUrlPath: string, count: number, pageNum = 1) => {
     const [results, setResults] = useState<any[]>([])

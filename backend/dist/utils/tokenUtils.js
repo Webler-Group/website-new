@@ -7,7 +7,7 @@ exports.clearRefreshToken = exports.signAccessToken = exports.generateRefreshTok
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const generateRefreshToken = (res, payload) => {
     const refreshToken = jsonwebtoken_1.default.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
-    res.cookie("jwt", refreshToken, {
+    res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: true,
         sameSite: "none",
@@ -16,7 +16,7 @@ const generateRefreshToken = (res, payload) => {
 };
 exports.generateRefreshToken = generateRefreshToken;
 const clearRefreshToken = (res) => {
-    res.clearCookie("jwt", {
+    res.clearCookie("refreshToken", {
         httpOnly: true,
         secure: true,
         sameSite: "none"
@@ -25,6 +25,10 @@ const clearRefreshToken = (res) => {
 exports.clearRefreshToken = clearRefreshToken;
 const signAccessToken = (payload) => {
     const accessToken = jsonwebtoken_1.default.sign(payload, process.env.ACCESS_TOKEN_SECRET, { expiresIn: "15m" });
-    return accessToken;
+    const data = jsonwebtoken_1.default.decode(accessToken);
+    return {
+        accessToken,
+        data
+    };
 };
 exports.signAccessToken = signAccessToken;

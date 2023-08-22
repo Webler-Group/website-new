@@ -60,7 +60,7 @@ const login = asyncHandler(async (req, res) => {
 const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, name, password } = req.body;
 
-    if (typeof email == "undefined" || typeof password === "undefined") {
+    if (typeof email !== "string" || typeof password !== "string") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
@@ -75,7 +75,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const user = await User.create({
         email,
         name,
-        password
+        password,
     });
 
     if (user) {

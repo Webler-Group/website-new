@@ -1,11 +1,7 @@
-POST http://localhost:5500/Auth/Register
-Content-Type: application/json
 
-{
-    "email": "agent001@webler.com",
-    "password": "a1b2c3",
-    "name": "Agent001"
-}
+GET http://localhost:5500/api/Discussion?page=1&count=10&filter=1&query=&profileId=64ddc0a1dc3f66e24ec34c91
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mbyI6eyJ1c2VySWQiOiI2NGJhYmRmMjY2M2VlMDUzMjc5YTI4NmQiLCJyb2xlcyI6WyJVc2VyIl19LCJpYXQiOjE2OTE1Mjg3OTgsImV4cCI6MTY5MTUyODg1OH0.5m_OUgln8ozD8urcDK50enQygrwa8G2f47KdIAE4c1U
 
 ###
 

@@ -2,7 +2,7 @@ import { Nav, NavDropdown, Button } from "react-bootstrap";
 import { FaQuestion, FaSignOutAlt } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 
@@ -20,43 +20,47 @@ const AuthNavigation = () => {
     }
 
     return (
-        <Nav>
-            {
-                (userInfo) ?
-                    <>
-                        <Nav.Item>
-                            <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> <b>{userInfo.name}</b></>} menuVariant="light">
-                                <LinkContainer to="/Profile">
+        <div className="d-sm-flex justify-content-center">
+            <Nav>
+                {
+                    (userInfo) ?
+                        <>
+                            <Nav.Item>
+                                <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> </>} menuVariant="light">
+                                    <LinkContainer to="/Profile">
+                                        <NavDropdown.Item>
+                                            <b>{userInfo.name}</b>
+                                            <br />
+                                            <span className="text-secondary">Go to profile</span>
+                                        </NavDropdown.Item>
+                                    </LinkContainer>
+                                    <NavDropdown.Divider />
+                                    <Link className="dropdown-item" to={"/Profile/" + userInfo.id + "?settings=true"}>
+                                        <FaGear /> Settings
+                                    </Link>
                                     <NavDropdown.Item>
-                                        Go to profile
+                                        <FaQuestion /> Help
                                     </NavDropdown.Item>
+                                    <NavDropdown.Item onClick={handleLogout}>
+                                        <FaSignOutAlt /> Logout
+                                    </NavDropdown.Item>
+                                </NavDropdown>
+                            </Nav.Item>
+                        </>
+                        :
+                        <>
+                            <Nav.Item>
+                                <LinkContainer to="/Login">
+                                    <Button variant="primary" className="me-2">Log in</Button>
                                 </LinkContainer>
-                                <NavDropdown.Divider />
-                                <Link className="dropdown-item" to={"/Profile/" + userInfo.id + "?settings=true"}>
-                                    <FaGear /> Settings
-                                </Link>
-                                <NavDropdown.Item>
-                                    <FaQuestion /> Help
-                                </NavDropdown.Item>
-                                <NavDropdown.Item onClick={handleLogout}>
-                                    <FaSignOutAlt /> Logout
-                                </NavDropdown.Item>
-                            </NavDropdown>
-                        </Nav.Item>
-                    </>
-                    :
-                    <>
-                        <Nav.Item>
-                            <LinkContainer to="/Login">
-                                <Button variant="primary" className="me-2">Log in</Button>
-                            </LinkContainer>
-                            <LinkContainer to="/Register">
-                                <Button variant="primary">Register</Button>
-                            </LinkContainer>
-                        </Nav.Item>
-                    </>
-            }
-        </Nav>
+                                <LinkContainer to="/Register">
+                                    <Button variant="primary">Register</Button>
+                                </LinkContainer>
+                            </Nav.Item>
+                        </>
+                }
+            </Nav>
+        </div>
     )
 }
 

@@ -1,5 +1,5 @@
 import React, { ReactNode, useContext, useState } from "react"
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 
 interface UserInfo {
     id: string;

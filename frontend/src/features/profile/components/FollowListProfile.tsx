@@ -1,11 +1,11 @@
 import React, { useState } from 'react'
 import { UserMinimal } from '../pages/Profile'
 import Country from '../../../components/Country';
-import countries from '../../../config/countries';
+import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
-import ApiCommunication from '../../../app/apiCommunication';
+import ApiCommunication from '../../../helpers/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
-import { Link } from 'react-router-dom';
+import ProfileName from '../../../components/ProfileName';
 
 interface FollowListProfileProps {
     user: UserMinimal;
@@ -48,7 +48,7 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
                 <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
             </div>
             <div>
-                <Link to={"/Profile/" + user.id} className="wb-p-follow-item__name">{user.name}</Link>
+                <ProfileName userId={user.id} userName={user.name} />
                 <div>
                     {
                         user.countryCode &&
@@ -59,16 +59,19 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
                     }
                     Lvl {user.level}
                 </div>
-                <div>
-                    {
-                        userInfo?.id != user.id && (
-                            following ?
-                                <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Following</Button>
-                                :
-                                <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
-                        )
-                    }
-                </div>
+                {
+                    userInfo &&
+                    <div>
+                        {
+                            userInfo.id != user.id && (
+                                following ?
+                                    <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Following</Button>
+                                    :
+                                    <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                            )
+                        }
+                    </div>
+                }
             </div>
         </div>
     )

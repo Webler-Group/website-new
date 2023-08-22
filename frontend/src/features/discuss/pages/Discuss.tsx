@@ -1,54 +1,64 @@
-import { Button, Container, Form, FormControl, Pagination } from "react-bootstrap";
-import Header from "../../../layouts/Header";
+import { Container } from "react-bootstrap";
+import PageTitle from "../../../layouts/PageTitle";
+import { ReactNode, useEffect, useState } from "react";
+import { IQuestion } from "../components/Question";
+import ApiCommunication from "../../../helpers/apiCommunication";
+import { FaComment, FaThumbsUp } from "react-icons/fa";
+import { Link } from "react-router-dom";
 
-const Discuss = () => {
+interface DiscussProps {
+    MainPage: ReactNode
+}
 
-    let active = 2;
-    let items = [];
-    for (let number = 1; number <= 5; number++) {
-        items.push(
-            <Pagination.Item key={number} active={number === active}>
-                {number}
-            </Pagination.Item>,
-        );
+const Discuss = ({ MainPage }: DiscussProps) => {
+
+    PageTitle("Webler - Discuss", false);
+
+    const [questions, setQuestions] = useState<IQuestion[]>([]);
+
+    useEffect(() => {
+        getQuestions();
+    }, []);
+
+    const getQuestions = async () => {
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${1}&count=${10}&filter=${5}`, "GET");
+        if (result && result.questions) {
+            setQuestions(result.questions);
+        }
     }
 
     return (
-        <>
-            <Header />
-            <Container>
-                <div className="d-block d-lg-flex p-4">
-                    <div className="wb-discuss-questions-list-page__questions-section">
-                        <h2>Q&A Discussions</h2>
-                        <Form className="d-flex mt-4">
-                            <FormControl type="search" placeholder="Search..." />
-                            <Button className="ms-2" type="submit">Search</Button>
-                        </Form>
-                        <div className="mt-4 row justify-content-between">
-                            <div className="col-6 col-sm-4">
-                                <Form.Select>
-                                    <option value="1">Most Recent</option>
-                                    <option value="2">Unanswered</option>
-                                    <option value="3">My Questions</option>
-                                </Form.Select>
-                            </div>
-                            <Button className="col-6 col-sm-4">Ask a question</Button>
-                        </div>
-                        <div className="my-4">
-
-                        </div>
-                        <div>
-                            <Pagination>
-                                {items}
-                            </Pagination>
-                        </div>
-                    </div>
-                    <div className="wb-discuss-hot-today">
-                        <h2>Hot today</h2>
+        <Container>
+            <div className="wb-discuss-questions-list-page d-block d-lg-flex p-4">
+                <div className="wb-discuss-questions-list-page__questions-section mb-5">{MainPage}</div>
+                <div className="wb-discuss-hot-today">
+                    <h2>Hot today</h2>
+                    <div className="mt-4">
+                        {
+                            questions.map(question => {
+                                return (
+                                    <div key={question.id} className="rounded border bg-white p-2 mb-2">
+                                        <Link to={"/Discuss/" + question.id}>
+                                            <h5>{question.title}</h5>
+                                        </Link>
+                                        <div className="d-flex small">
+                                            <div className="me-3 d-flex align-items-center">
+                                                <FaThumbsUp />
+                                                <span className="ms-2">{question.votes} Votes</span>
+                                            </div>
+                                            <div className="d-flex align-items-center">
+                                                <FaComment />
+                                                <span className="ms-2">{question.answers} Answers</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        }
                     </div>
                 </div>
-            </Container>
-        </>
+            </div>
+        </Container>
     )
 }
 

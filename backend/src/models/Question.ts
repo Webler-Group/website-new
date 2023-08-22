@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { InferSchemaType } from "mongoose";
 
 const questionSchema = new mongoose.Schema({
     title: {
@@ -6,7 +6,7 @@ const questionSchema = new mongoose.Schema({
         required: true,
         trim: true,
         minLength: 1,
-        maxLength: 60
+        maxLength: 120
     },
     message: {
         type: String,
@@ -16,19 +16,27 @@ const questionSchema = new mongoose.Schema({
         maxLength: 1000
     },
     tags: {
-        type: [String],
+        type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
+        validate: [(val: mongoose.Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"],
         required: true,
-        validate: (v: any) => Array.isArray(v) && v.length > 0 && v.every(x => typeof x === "string" && x.length > 0 && x.length <= 20)
     },
     user: {
         type: mongoose.Types.ObjectId,
         ref: "User",
         required: true
     },
+    isAccepted: {
+        type: Boolean,
+        default: false
+    },
+    votes: {
+        type: Number,
+        default: 0
+    }
 }, {
     timestamps: true
 });
 
-const Question = mongoose.model("Question", questionSchema);
+const Question = mongoose.model<InferSchemaType<typeof questionSchema>>("Question", questionSchema);
 
 export default Question;

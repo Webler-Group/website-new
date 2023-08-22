@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import ApiCommunication from "../../../app/apiCommunication";
+import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useState } from "react";

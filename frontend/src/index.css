@@ -1,4 +1,3 @@
-
 ul,
 p {
     margin: 0;
@@ -19,6 +18,8 @@ ul {
     width: 392px;
 }
 
+
+
 .wb-user__image {
     width: 32px;
     height: 32px;
@@ -30,6 +31,10 @@ ul {
         width: 100%;
         padding: 32px 24px;
     }
+}
+
+.wb-p-container {
+    min-height: 100vh;
 }
 
 .wb-p-details__row {
@@ -92,6 +97,8 @@ ul {
     word-break: break-all;
 }
 
+
+
 @media(min-width: 576px) {
     .wb-modal__container.edit-profile {
         width: 567px;
@@ -101,6 +108,10 @@ ul {
     .wb-modal__container.follows {
         width: 367px;
         max-height: 80vh;
+    }
+
+    .wb-modal__container.console {
+        height: 60vh;
     }
 }
 
@@ -133,6 +144,18 @@ ul {
 
 /*Webler discuss page*/
 
+.wb-discuss-questions-list-page {
+    min-height: 100vh;
+}
+
+.wb-discuss-empty-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}
+
 .wb-discuss-questions-list-page__questions-section {
     max-width: 100%;
     width: 872px;
@@ -154,17 +177,10 @@ ul {
     }
 }
 
-.wb-home-why-wb {
-    width: 100%;
-    height: auto;
-    background-color: rgb(247, 247, 247);
-    padding: 100px;
-}
-
-
-.wb-home-why_wb_card{
+.wb-home-why_wb_card {
     border: none;
-    box-shadow: 0px 0px 10px  rgb(224, 224, 224);
+    color: rgb(57, 57, 57);
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
 }
 
 .wb-home-why-wb img {
@@ -172,21 +188,25 @@ ul {
 
 }
 
-.wb-home-platform_header{
+.wb-home-platform_header {
     margin-top: 80px;
     margin-bottom: 80px;
     color: rgb(57, 57, 57);
 }
 
 .wb-home-perfect-platform {
-    color: rgb(64, 85, 104);
+
     width: 100%;
     height: auto;
+
 }
 
-.wb-home-perfect-platform_card{
-      border: none;
-      box-shadow: 0px 0px 10px  rgb(224, 224, 224);
+.wb-home-perfect-platform_card {
+    border: none;
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
+    color: rgb(64, 85, 104);
+    margin-bottom: 80px;
+
 }
 
 
@@ -255,41 +275,40 @@ ul {
 
 /*Why code*/
 
-.wb-home-why-code{
-    background-color:rgb(247, 247, 247);
-    width: 100%;height: auto;
+.wb-home-why-code {
+    background-color: rgb(247, 247, 247);
+    width: 100%;
+    height: auto;
     margin-bottom: 80px;
 
 }
 
-.wb-home-why-code .wb_card{
-    margin-top: -20px;
-    transform: scale(0.8);
+.wb-home-why-code .wb_card {
     border: none;
     max-width: 600px;
     color: rgb(64, 85, 104);
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
 }
 
-.wb-why-code_header{
+.wb-why-code_header {
     width: 100%;
     margin-top: 80px;
-    margin-bottom: 50px;
+    margin-bottom: 20px;
     color: rgb(57, 57, 57);
 }
 
 /* wb join us */
 
-.wb-home-join-us_header{
-     width: 100%;
-     margin-top: 100px;
+.wb-home-join-us_header {
+    width: 100%;
+    margin-top: 100px;
 }
 
-.wb-home-join-us{
-    background-color: rgb(34, 34, 34);
+.wb-home-join-us {
     height: auto;
 }
 
-.wb-home-sign-up-form{
+.wb-home-sign-up-form {
     padding: 20px;
     color: rgb(61, 76, 88);
     background-color: rgb(236, 236, 236);
@@ -297,3 +316,154 @@ ul {
     transform: scale(0.9);
 }
 
+
+.wb-home-footer {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-home-footer a {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-made-by {
+    color: rgb(121, 121, 121);
+    font-weight: bolder;
+    margin-right: 50px;
+}
+
+.wb-made-by b {
+    color: #fff;
+}
+
+/* Webler Contact Page */
+
+.wb-contact-page {
+    width: 100%;
+    height: 100vh;
+    padding: 30px;
+    background-color: #f2f2f2;
+}
+
+.wb-contact-form {
+    color: rgb(61, 76, 88);
+    max-width: 800px;
+    font-weight: 600;
+    padding: 20px;
+    transform: translate(0, 10px);
+    background-color: rgb(255, 255, 255);
+    box-shadow: 0 0 10px 0px #c6c6c6;
+    border-radius: 5px;
+}
+
+/* Webler Terms of use page */
+
+.wb-term-conditions-container {
+    background-color: #f2f2f2;
+    padding: 10px;
+    height: 100%;
+}
+
+.wb-term-conditions {
+    padding: 40px;
+    border-radius: 5px;
+    color: rgb(61, 76, 88);
+    height: auto;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgb(231, 229, 229);
+}
+
+/* Make the Header NavBar to be sticky on the top of screen always */
+.stickyNavbarOnTop {
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: sticky;
+    top: 0px;
+    z-index: 245;
+}
+
+.wb-feature-create_posts {
+    max-width: 700px;
+    background-color: rgb(255, 255, 255);
+    padding: 20px;
+}
+
+.wb-feed-posts-container {
+    width: 100%;
+    padding: 10px;
+    background-color: #e8eaf0;
+}
+
+.wb-feed-posts {
+    max-width: 800px;
+}
+
+.wb-post {
+    border: none;
+}
+
+.wb-discuss-question__main {
+    max-width: 80%;
+    width: 649px;
+}
+
+.wb-discuss-question__description {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.3;
+    width: 100%;
+}
+
+.wb-discuss-reply__edit-button {
+    cursor: pointer;
+    position: absolute;
+    right: 16px;
+    top: 16px;
+}
+
+.wb-discuss-voting {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-discuss-voting__button {
+    cursor: pointer;
+    color: silver;
+}
+
+.wb-discuss-voting__button:hover {
+    color: gray;
+}
+
+.wb-discuss-reply__actions {
+    width: 50px;
+    text-align: center;
+}
+
+.wb-discuss-reply__actions__best-answer-button {
+    cursor: pointer;
+    font-size: 26px;
+}
+
+.wb-playground-wrapper {
+    position: fixed;
+    width: 100%;
+}
+
+.wb-playground-container__content {
+    height: calc(100dvh - 40px);
+}
+
+.wb-web-wrapper__frame-wrapper__console-btn {
+    position: absolute;
+    right: 32px;
+    bottom: 24px;
+}

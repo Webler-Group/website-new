@@ -15,13 +15,12 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const isFollowing = await UserFollowing.findOne({ user: currentUserId, following: userId }) !== null;
+    const isFollowing = currentUserId ?
+        await UserFollowing.findOne({ user: currentUserId, following: userId }) !== null :
+        false;
 
     const followers = await UserFollowing.countDocuments({ following: userId });
     const following = await UserFollowing.countDocuments({ user: userId });
-
-    console.log(followers, following, userId);
-
 
     res.json({
         userDetails: {
@@ -59,7 +58,7 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (currentUserId !== userId) {
-        res.status(401).json({ message: "Not authorized for this action" });
+        res.status(401).json({ message: "Unauthorized" });
         return
     }
 
@@ -80,7 +79,6 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         res.json({
             success: true,
-            errors: [],
             data: {
                 id: updatedUser._id,
                 email: updatedUser.email,
@@ -226,13 +224,13 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const query = req.query;
     const currentUserId = req.userId;
 
-    if (typeof query.page !== "string" || typeof query.count !== "string") {
+    const page = Number(query.page);
+    const count = Number(query.count);
+
+    if (!Number.isInteger(page) || !Number.isInteger(count)) {
         res.status(400).json({ message: "Invalid query params" });
         return
     }
-
-    const page = parseInt(query.page);
-    const count = parseInt(query.count);
 
     const result = await UserFollowing.find({ following: userId })
         .sort({ createdAt: "desc" })
@@ -276,13 +274,13 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const query = req.query;
     const currentUserId = req.userId;
 
-    if (typeof query.page !== "string" || typeof query.count !== "string") {
+    const page = Number(query.page);
+    const count = Number(query.count);
+
+    if (!Number.isInteger(page) || !Number.isInteger(count)) {
         res.status(400).json({ message: "Invalid query params" });
         return
     }
-
-    const page = parseInt(query.page);
-    const count = parseInt(query.count);
 
     const result = await UserFollowing.find({ user: userId })
         .sort({ createdAt: "desc" })
