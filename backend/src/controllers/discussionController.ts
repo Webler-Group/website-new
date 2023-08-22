@@ -179,7 +179,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
         await Promise.all(promises);
 
-        res.json({ count: questionCount, questions: data });
+        res.status(200).json({ count: questionCount, questions: data });
     }
     else {
         res.status(500).json({ message: "Error" });
@@ -337,7 +337,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         await Promise.all(promises);
 
-        res.json({ posts: data })
+        res.status(200).json({ posts: data })
     }
     else {
         res.status(500).json({ message: "Error" });
