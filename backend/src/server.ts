@@ -11,6 +11,7 @@ import mongoose from "mongoose";
 import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
+import codesRoutes from "./routes/codesRoutes";
 
 dotenv.config();
 
@@ -33,6 +34,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/discussion", discussionRoutes);
+app.use("/api/codes", codesRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);

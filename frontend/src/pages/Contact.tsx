@@ -1,15 +1,13 @@
-import Footer from "../layouts/Footer";
-import Header from "../layouts/Header";
+
 import PageTitle from "../layouts/PageTitle";
 
 const Contact = () => {
   PageTitle("Webler - Contact", false);
   return (
     <>
-      <Header variant="light"/>
       <div className="wb-contact-page">
         <div className="wb-contact-form container">
-            <h3 className="mb-4">Email us</h3>
+          <h3 className="mb-4">Email us</h3>
           <div className="mb-3 ">
             <label htmlFor="exampleFormControlInput2" className="form-label">
               Your name
@@ -45,7 +43,6 @@ const Contact = () => {
           <button className="btn btn-primary btn-lg" type="submit">Submit</button>
         </div>
       </div>
-      <Footer/>
     </>
   );
 };

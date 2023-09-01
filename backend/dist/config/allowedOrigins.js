@@ -6,7 +6,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const allowedOrigins = process.env.NODE_ENV === "production" ?
-    [] :
+    [
+        "https://chillpillcoding.com"
+    ] :
     [
         "http://localhost:5500",
         "http://localhost:5173",

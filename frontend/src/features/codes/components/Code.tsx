@@ -4,60 +4,51 @@ import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 
-interface IQuestion {
-    id: string;
-    title: string;
-    tags: string[];
-    userName: string;
-    userId: string;
-    date: string;
-    message: string;
-    answers: number;
+interface ICode {
+    id?: string;
+    name?: string;
+    language: string;
+    userName?: string;
+    userId?: string;
+    date?: string;
+    comments: number;
     votes: number;
     isUpvoted: boolean;
+    isPublic: boolean;
 }
 
-interface QuestionProps {
-    question: IQuestion;
+interface CodeProps {
+    code: ICode;
     searchQuery: string;
 }
 
-const Question = ({ question, searchQuery }: QuestionProps) => {
+const Code = ({ code, searchQuery }: CodeProps) => {
 
-    let titleMatch = question.title.match(new RegExp("^" + searchQuery, "i"));
+    let titleMatch = code.name!.match(new RegExp("^" + searchQuery, "i"));
     let title = titleMatch && titleMatch.length ?
         <>
             <span className="bg-warning">{titleMatch[0]}</span>
-            {question.title.slice(titleMatch[0].length)}
+            {code.name!.slice(titleMatch[0].length)}
         </>
         :
         <>
-            {question.title}
+            {code.name}
         </>
 
     return (
         <div className="rounded border p-2 mb-2 bg-white d-md-flex">
             <div className="flex-grow-1">
-                <Link to={"/Discuss/" + question.id}>
+                <Link to={"/Compiler-Playground/" + code.id}>
                     <h4>{title}</h4>
                 </Link>
-                <div className="d-flex flex-wrap mt-3">
-                    {
-                        question.tags.map((tag, idx) => {
-                            return (
-                                <small key={idx} className={"rounded px-2 me-2 mb-1 border" + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")}>{tag}</small>
-                            )
-                        })
-                    }
-                </div>
                 <div className="d-flex small mt-3">
                     <div className="me-3 d-flex align-items-center">
                         <FaThumbsUp />
-                        <span className="ms-2">{question.votes} Votes</span>
+                        <span className="ms-2">{code.votes} Votes</span>
                     </div>
                     <div className="d-flex align-items-center">
                         <FaComment />
-                        <span className="ms-2">{question.answers} Answers</span>
+                        <span className="ms-2">{code.comments} Answers</span>
                     </div>
                 </div>
             </div>
@@ -65,10 +56,10 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                 <div className="d-flex">
                     <div>
                         <div>
-                            <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
+                            <small className="text-secondary">{DateUtils.format(new Date(code.date!))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
-                            <ProfileName userId={question.userId} userName={question.userName} />
+                            <ProfileName userId={code.userId!} userName={code.userName!} />
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
@@ -80,6 +71,6 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
     )
 }
 
-export type { IQuestion }
+export type { ICode }
 
-export default Question
+export default Code

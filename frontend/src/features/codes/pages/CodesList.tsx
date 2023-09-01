@@ -2,27 +2,28 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Form, FormControl } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
-import Question from '../components/Question';
+import Code from '../components/Code';
 import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
-import QuestionPlaceholder from '../components/QuestionPlaceholder';
+import QuestionPlaceholder from '../../discuss/components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 
-const QuestionList = () => {
+const CodesList = () => {
 
     const { userInfo } = useAuth();
-    const [questions, setQuestions] = useState<any[]>([]);
-    const questionsPerPage = 10;
+    const [codes, setCodes] = useState<any[]>([]);
+    const codesPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
-    const [questionCount, setQuestionCount] = useState(0);
+    const [codesCount, setCodesCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState(1);
+    const [language, setLanguage] = useState("all");
     const searchInputElement = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
 
     useEffect(() => {
-        getQuestions();
+        getCodes();
     }, [searchParams]);
 
     useEffect(() => {
@@ -61,15 +62,16 @@ const QuestionList = () => {
         }
     }
 
-    const getQuestions = async () => {
+    const getCodes = async () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${page}&count=${questionsPerPage}&filter=${filter}&query=${searchQuery}` + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
-        if (result && result.questions) {
-            setQuestions(result.questions);
-            setQuestionCount(result.count);
+        const language = searchParams.has("language") ? searchParams.get("language")! : "all";
+        const result = await ApiCommunication.sendJsonRequest(`/Codes?page=${page}&count=${codesPerPage}&filter=${filter}&query=${searchQuery}` + (language !== "all" ? `&language=${language}` : "") + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
+        if (result && result.codes) {
+            setCodes(result.codes);
+            setCodesCount(result.count);
         }
         setLoading(false);
     }
@@ -81,49 +83,66 @@ const QuestionList = () => {
         setFilter(value)
     }
 
+    const handleLanguageSelect = (e: ChangeEvent) => {
+        const value = (e.target as HTMLSelectElement).selectedOptions[0].value
+        if (value === "all") {
+            searchParams.delete("language");
+        }
+        else {
+            searchParams.set("language", value)
+        }
+        setSearchParams(searchParams, { replace: true })
+        setLanguage(value)
+    }
+
     let placeholders = [];
-    for (let i = 0; i < questionsPerPage; ++i) {
+    for (let i = 0; i < codesPerPage; ++i) {
         placeholders.push(<QuestionPlaceholder key={i} />);
     }
 
     return (
         <div className="d-flex flex-column">
-            <h2>Q&A Discussions</h2>
+            <h2>Codes</h2>
             <Form className="d-flex mt-4" onSubmit={handleSearch}>
                 <FormControl type="search" placeholder="Search..." ref={searchInputElement} />
                 <Button className="ms-2" type="submit">Search</Button>
             </Form>
-            <div className="mt-4 row justify-content-between">
-                <div className="col-6 col-sm-4">
+            <div className="mt-4 d-sm-flex flex-row-reverse justify-content-between">
+                <div className="mb-4 mb-sm-0 d-flex justify-content-end">
+                    <LinkContainer to="/Compiler-Playground">
+                        <Button>New code</Button>
+                    </LinkContainer>
+                </div>
+                <div className="d-flex">
                     <Form.Select value={filter} onChange={handleFilterSelect}>
                         <option value="1">Most Recent</option>
-                        <option value="2">Unanswered</option>
+                        <option value="2">Most Popular</option>
                         {
                             userInfo &&
                             <>
-                                <option value="3">My Questions</option>
-                                <option value="4">My Answers</option>
+                                <option value="3">My Codes</option>
                             </>
                         }
                     </Form.Select>
+                    <Form.Select className="ms-2" value={language} onChange={handleLanguageSelect}>
+                        <option value="all">All</option>
+                        <option value="web">Web</option>
+                    </Form.Select>
                 </div>
-                <LinkContainer to="/Discuss/New">
-                    <Button className="col-6 col-sm-4">Ask a question</Button>
-                </LinkContainer>
             </div>
             <div className="my-3">
                 {
                     loading ?
                         placeholders
                         :
-                        questionCount == 0 ?
+                        codesCount == 0 ?
                             <div className="wb-discuss-empty-questions">
                                 <h3>Nothing to show</h3>
                             </div>
                             :
-                            questions.map(question => {
+                            codes.map(code => {
                                 return (
-                                    <Question question={question} searchQuery={searchQuery} key={question.id} />
+                                    <Code code={code} searchQuery={searchQuery} key={code.id} />
                                 )
                             })
 
@@ -133,8 +152,8 @@ const QuestionList = () => {
                 <PaginationControl
                     page={currentPage}
                     between={3}
-                    total={questionCount}
-                    limit={questionsPerPage}
+                    total={codesCount}
+                    limit={codesPerPage}
                     changePage={handlePageChange}
                     ellipsis={1}
                 />
@@ -143,4 +162,4 @@ const QuestionList = () => {
     )
 }
 
-export default QuestionList
+export default CodesList

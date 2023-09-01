@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
@@ -7,12 +7,12 @@ import PasswordFormControl from "../../../components/PasswordFormControl";
 
 interface LoginFormProps {
     onToggleClick: () => void;
+    onLogin: () => void;
 }
 
-const LoginForm = ({ onToggleClick }: LoginFormProps) => {
+const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
 
     const { authenticate, updateUser } = useAuth();
-    const navigate = useNavigate();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -34,7 +34,7 @@ const LoginForm = ({ onToggleClick }: LoginFormProps) => {
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);
-            navigate("/Profile");
+            onLogin();
         }
         else {
             setError(result.message);

@@ -74,10 +74,10 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
                     </div>
                 </div>
                 <div className="wb-discuss-question__main ms-2">
-                    <p className="wb-discuss-question__description mt-2 ms-4">{answer.message}</p>
+                    <p className="wb-discuss-question__description mt-2">{answer.message}</p>
                 </div>
             </div>
-            <div className="d-flex justify-content-end align-items-end">
+            <div className="d-flex justify-content-end align-items-end mt-3">
                 <div className="d-flex">
                     <div>
                         <div>

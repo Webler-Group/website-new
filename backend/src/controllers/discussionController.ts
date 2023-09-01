@@ -4,6 +4,7 @@ import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
+import Code from "../models/Code";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -139,6 +140,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const result = await dbQuery
         .skip((page - 1) * count)
         .limit(count)
+        .select("-message")
         .populate("user", "name avatarUrl countryCode level roles")
         .populate("tags", "name") as any[];
 
@@ -146,7 +148,6 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         const data = result.map(x => ({
             id: x._id,
             title: x.title,
-            message: x.message,
             tags: x.tags.map((y: any) => y.name),
             date: x.createdAt,
             userId: x.user._id,
@@ -293,6 +294,12 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         case 2: {
             dbQuery = dbQuery
                 .sort({ createdAt: "asc" })
+            break;
+        }
+        // Newest first
+        case 3: {
+            dbQuery = dbQuery
+                .sort({ createdAt: "desc" })
             break;
         }
         default:
@@ -485,9 +492,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     try {
-        await Post.deleteOne({ _id: questionId });
-        await Post.deleteMany({ parentId: questionId });
-        await Upvote.deleteMany({ parentId: questionId });
+        await Post.deleteAndCleanup({ _id: questionId });
 
         res.json({ success: true });
     }
@@ -563,12 +568,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     try {
-        question.answers -= 1;
-        await question.save();
-
-        await Post.deleteOne({ _id: replyId });
-        await Post.deleteMany({ parentId: replyId });
-        await Upvote.deleteMany({ parentId: replyId });
+        await Post.deleteAndCleanup({ _id: replyId });
 
         res.json({ success: true });
     }
@@ -613,6 +613,220 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 })
 
+const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const query = req.query;
+    const { codeId, parentId, page, count, filter } = req.body;
+
+    if (typeof filter === "undefined" || typeof page === "undefined" || typeof count === "undefined") {
+        res.status(400).json({ message: "Some fileds are missing" });
+        return
+    }
+
+    let dbQuery = Post.find({ codeId, parentId, _type: 3 });
+
+    switch (filter) {
+        // Most popular
+        case 1: {
+            dbQuery = dbQuery
+                .sort({ votes: "desc", createdAt: "desc" })
+            break;
+        }
+        // Oldest first
+        case 2: {
+            dbQuery = dbQuery
+                .sort({ createdAt: "asc" })
+            break;
+        }
+        // Newest first
+        case 3: {
+            dbQuery = dbQuery
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        default:
+            throw new Error("Unknown filter");
+    }
+
+    const result = await dbQuery
+        .skip((page - 1) * count)
+        .limit(count)
+        .populate("user", "name avatarUrl countryCode level roles") as any[];
+
+    if (result) {
+        const data = result.map(x => ({
+            id: x._id,
+            parentId: x.parentId,
+            codeId: x.codeId,
+            message: x.message,
+            date: x.createdAt,
+            userId: x.user._id,
+            userName: x.user.name,
+            avatarUrl: x.user.avatarUrl,
+            countryCode: x.user.countryCode,
+            level: x.user.level,
+            roles: x.user.roles,
+            votes: x.votes,
+            isUpvoted: false,
+            isAccepted: x.isAccepted,
+            answers: x.answers
+        }))
+
+        let promises = [];
+
+        for (let i = 0; i < data.length; ++i) {
+            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+                data[i].votes = count;
+            }));*/
+            if (currentUserId) {
+                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                    data[i].isUpvoted = !(upvote === null);
+                }));
+            }
+        }
+
+        await Promise.all(promises);
+
+        res.status(200).json({ posts: data })
+    }
+    else {
+        res.status(500).json({ message: "Error" });
+    }
+});
+
+const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { codeId, message, parentId } = req.body;
+
+    const code = await Code.findById(codeId);
+    if (code === null) {
+        res.status(404).json({ message: "Code not found" });
+        return
+    }
+
+    let parentPost = null;
+    if (parentId !== null) {
+        parentPost = await Post.findById(parentId);
+        if (parentPost === null) {
+            res.status(404).json({ message: "Parent post not found" });
+            return
+        }
+    }
+
+    const reply = await Post.create({
+        _type: 3,
+        message,
+        codeId,
+        parentId,
+        user: currentUserId
+    })
+
+    if (reply) {
+
+        code.comments += 1;
+        await code.save();
+
+        if (parentPost) {
+            parentPost.answers += 1;
+            await parentPost.save();
+        }
+
+        res.json({
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                codeId: reply.codeId,
+                parentId: reply.parentId,
+                isAccepted: reply.isAccepted,
+                votes: reply.votes,
+                answers: reply.answers
+            }
+        })
+    }
+    else {
+        res.status(500).json({ message: "error" });
+    }
+});
+
+const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { commentId, message } = req.body;
+
+    if (typeof message === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" })
+        return
+    }
+
+    const comment = await Post.findById(commentId);
+
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" })
+        return
+    }
+
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    comment.message = message;
+
+    try {
+        await comment.save();
+
+        res.json({
+            success: true,
+            data: {
+                id: comment._id,
+                message: comment.message
+            }
+        })
+    }
+    catch (err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        })
+    }
+
+});
+
+const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { commentId } = req.body;
+
+    const comment = await Post.findById(commentId);
+
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" })
+        return
+    }
+
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    const code = await Code.findById(comment.codeId);
+    if (code === null) {
+        res.status(404).json({ message: "Code not found" })
+        return
+    }
+
+    try {
+
+        await Post.deleteAndCleanup({ _id: commentId });
+
+        res.json({ success: true });
+    }
+    catch (err: any) {
+        res.json({ success: false, error: err })
+    }
+})
+
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -625,7 +839,11 @@ const discussController = {
     deleteQuestion,
     editReply,
     deleteReply,
-    votePost
+    votePost,
+    createCodeComment,
+    getCodeComments,
+    editCodeComment,
+    deleteCodeComment
 }
 
 export default discussController;

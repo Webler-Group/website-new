@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button, Modal } from "react-bootstrap";
 
 interface WebOutputProps {
@@ -11,21 +11,20 @@ interface WebOutputProps {
 const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => {
 
     const [consoleVisible, setConsoleVisible] = useState(false);
-    const [consoleMessages, setConsoleLogs] = useState<{ message: string | null; type: number; }[]>([]);
-    const [output, setOutput] = useState("");
+    const [consoleMessages, setConsoleLogs] = useState<{ message: string; method: string; }[]>([]);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
         const callback: (this: Window, ev: MessageEvent<any>) => void = function (response: any) {
-            if (response.data && response.data.source === "iframe") {
-                switch (response.data.type) {
-                    case 1: case 2: case 3: case 4:
-                        if (response.data.message) {
-                            setConsoleLogs(logs => [...logs, { message: response.data.message, type: response.data.type }])
-                        }
+            console.log(response);
+            if (response.data && response.data.console) {
+                const console = response.data.console;
+                switch (console.method) {
+                    case "clear":
+                        setConsoleLogs([]);
                         break;
-                    case 5:
-                        setConsoleLogs([])
-                        break;
+                    default:
+                        setConsoleLogs(logs => [...logs, { message: console.data.join(" "), method: console.method }]);
                 }
             }
         }
@@ -34,14 +33,18 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
     }, []);
 
     useEffect(() => {
-        if (tabOpen) {
-            setOutput(genOutput())
+        if (iframeRef.current && iframeRef.current.contentWindow) {
+            if (tabOpen) {
+
+                const output = genOutput()
+                setConsoleLogs([]);
+                iframeRef.current.contentWindow.postMessage(output, "*");
+            }
+            else {
+                iframeRef.current.contentWindow.postMessage("", "*");
+            }
         }
     }, [tabOpen]);
-
-    useEffect(() => {
-        setConsoleLogs([]);
-    }, [output])
 
     const genOutput = () => {
         const parser = new DOMParser();
@@ -53,89 +56,6 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
         const style = document.createElement("style");
         style.appendChild(document.createTextNode(cssSource));
         head.appendChild(style);
-
-        const stdoutScript = document.createElement("script");
-        stdoutScript.text = `const _log = console.log;
-console.log = function(...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: args.join(" "),
-            type: 1
-        },
-        "*"
-    );
-}
-console.warn = function(...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: args.join(" "),
-            type: 2
-        },
-        "*"
-    );
-}
-console.error = function(...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: args.join(" "),
-            type: 3
-        },
-        "*"
-    );
-}
-console.info = function(...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: args.join(" "),
-            type: 4
-        },
-        "*"
-    );
-}
-console.debug = function(...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: args.join(" "),
-            type: 1
-        },
-        "*"
-    );
-}
-console.assert = function(assertion, ...args) {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: assertion ? null : args.jsoin(" "),
-            type: 3
-        },
-        "*"
-    );
-}
-console.clear = function() {
-    window.parent.postMessage(
-        {
-            source: "iframe",
-            message: null,
-            type: 5
-        },
-        "*"
-    );
-}
-window.onerror = function(message, url, line, column) {
-    console.error("[" + line + ":" + column + "] " + message);
-}`;
-        const firstScript = head.getElementsByClassName("script")[0];
-        if (firstScript) {
-            head.insertBefore(firstScript, stdoutScript);
-        }
-        else {
-            head.appendChild(stdoutScript)
-        }
 
         const script = document.createElement("script");
         script.text = jsSource;
@@ -164,17 +84,17 @@ window.onerror = function(message, url, line, column) {
                     {
                         consoleMessages.map((item, idx) => {
                             let colorClass = "";
-                            switch (item.type) {
-                                case 1:
+                            switch (item.method) {
+                                case "log":
                                     colorClass = "text-light";
                                     break;
-                                case 2:
+                                case "warn":
                                     colorClass = "text-warning";
                                     break;
-                                case 3:
+                                case "error":
                                     colorClass = "text-danger";
                                     break;
-                                case 4:
+                                case "info":
                                     colorClass = "text-info";
                             }
                             return (<div className={"border-bottom text-small p-1 " + colorClass} key={idx}>{item.message}</div>)
@@ -182,7 +102,7 @@ window.onerror = function(message, url, line, column) {
                     }
                 </Modal.Body>
             </Modal>
-            <iframe width="100%" height="100%" srcDoc={output}></iframe>
+            <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/"></iframe>
             <div className="wb-web-wrapper__frame-wrapper__console-btn">
                 <Button variant="secondary" onClick={onConsoleShow}>Console</Button>
             </div>

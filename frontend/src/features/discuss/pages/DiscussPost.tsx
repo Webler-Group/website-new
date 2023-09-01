@@ -56,6 +56,9 @@ const DiscussPost = () => {
     }, [filter]);
 
     const handlePageChange = (page: number) => {
+        if (page === currentPage) {
+            return
+        }
         searchParams.set("page", page.toString());
         setSearchParams(searchParams, { replace: true })
         setCurrentPage(page);
@@ -272,7 +275,7 @@ const DiscussPost = () => {
                         </div>
                     </div>
                     <div className="wb-discuss-question__main ms-2">
-                        <h3>{question.title}</h3>
+                        <h3 className="wb-discuss-question__title">{question.title}</h3>
                         <p className="wb-discuss-question__description mt-4">{question.message}</p>
                         <div className="d-flex mt-4 flex-wrap">
                             {
@@ -285,7 +288,7 @@ const DiscussPost = () => {
                         </div>
                     </div>
                 </div>
-                <div className="d-flex justify-content-end">
+                <div className="d-flex justify-content-end mt-3">
                     <div>
                         <div>
                             <small>{DateUtils.format(new Date(question.date))}</small>

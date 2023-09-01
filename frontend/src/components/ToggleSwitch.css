@@ -1,0 +1,44 @@
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.toggle-switch__input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-switch__span {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: gray;
+    transition: 0.3s;
+    border-radius: 20px;
+}
+
+.toggle-switch__span:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 0px;
+    bottom: 0px;
+    background-color: white;
+    border-radius: 50%;
+    transition: 0.3s;
+}
+
+.toggle-switch__input:checked+.toggle-switch__span {
+    background-color: dodgerblue;
+}
+
+.toggle-switch__input:checked+.toggle-switch__span:before {
+    transform: translateX(20px);
+}

@@ -16,7 +16,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const countryCodes_1 = __importDefault(require("../config/countryCodes"));
 const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
-const roles_1 = __importDefault(require("../config/roles"));
+const roles_1 = __importDefault(require("../data/roles"));
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
