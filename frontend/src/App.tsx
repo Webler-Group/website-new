@@ -17,6 +17,8 @@ import QuestionList from './features/discuss/pages/DiscussList';
 import AskQuestion from './features/discuss/pages/DiscussAsk';
 import DiscussPost from './features/discuss/pages/DiscussPost';
 import DiscussEdit from './features/discuss/pages/DiscussEdit';
+import Blog from './features/blog/pages/Blog';
+import Entry from './features/blog/pages/Entry';
 import PlaygroundEditor from './features/compiler-playground/pages/PlaygroundEditor';
 import PlaygroundMenu from './features/compiler-playground/pages/PlaygroundMenu';
 import Header from './layouts/Header';
@@ -71,13 +73,19 @@ function App() {
         </Route>
       </Route>
 
+      <Route path="Blog">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<Blog />} />
+          <Route path=":entryName" element={<Entry />} />
+        </Route>
+      </Route>
+
       <Route path="Profile">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route path=":userId" element={<Profile />} />
           <Route index element={<ProfileFromAuth />} />
         </Route>
       </Route>
-
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
         <Route path="/*" element={<NotFound />} />

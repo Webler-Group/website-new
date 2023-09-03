@@ -31,7 +31,9 @@ function Header({ variant }: HeaderProps) {
             <LinkContainer to="/feed">
               <Nav.Link>Feed</Nav.Link>
             </LinkContainer>
-            <Nav.Link>Blog</Nav.Link>
+            <LinkContainer to="/blog">
+              <Nav.Link>Blog</Nav.Link>
+            </LinkContainer>
           </Nav>
 
           <AuthNavigation />
