@@ -4,8 +4,11 @@ import { useState } from "react";
 import LoginForm from "../features/auth/components/LoginForm";
 import RegisterForm from "../features/auth/components/RegisterForm";
 import PageTitle from "../layouts/PageTitle";
+import { useNavigate } from "react-router-dom";
 
 function Home() {
+
+  const navigate = useNavigate();
   const [isUserRegistering, setUserAuthPage] = useState(true);
   PageTitle("Webler - Home", false);
 
@@ -183,9 +186,10 @@ function Home() {
                   {isUserRegistering == true ? (
                     <RegisterForm
                       onToggleClick={() => setUserAuthPage(false)}
+                      onRegister={() => navigate("/Profile")}
                     />
                   ) : (
-                    <LoginForm onToggleClick={() => setUserAuthPage(true)} />
+                    <LoginForm onToggleClick={() => setUserAuthPage(true)} onLogin={() => navigate("/Profile")} />
                   )}
                 </div>
               </Col>

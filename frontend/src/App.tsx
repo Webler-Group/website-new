@@ -23,6 +23,8 @@ import PlaygroundEditor from './features/compiler-playground/pages/PlaygroundEdi
 import PlaygroundMenu from './features/compiler-playground/pages/PlaygroundMenu';
 import Header from './layouts/Header';
 import Footer from './layouts/Footer';
+import Codes from './features/codes/pages/Codes';
+import CodesList from './features/codes/pages/CodesList';
 
 
 function App() {
@@ -59,12 +61,18 @@ function App() {
         </Route>
       </Route>
 
+      <Route path="Codes">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<Codes MainPage={<CodesList />} />} />
+        </Route>
+      </Route>
+
       <Route path="Compiler-Playground">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<PlaygroundMenu />} />
         </Route>
-        <Route path="Web" element={<PlaygroundEditor type="web" />} />
-        <Route path=":codeId" element={<PlaygroundEditor type="" />} />
+        <Route path="Web" element={<PlaygroundEditor language="web" />} />
+        <Route path=":codeId" element={<PlaygroundEditor language="" />} />
       </Route>
 
       <Route path="Feed">

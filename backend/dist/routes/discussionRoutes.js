@@ -17,6 +17,8 @@ router.route("/:questionId/GetReplies")
     .get(discussionController_1.default.getReplies);
 router.route("/GetTags")
     .get(discussionController_1.default.getTags);
+router.route("/GetCodeComments")
+    .post(discussionController_1.default.getCodeComments);
 router.use(protectRoute_1.default);
 router.route("/CreateQuestion")
     .post(discussionController_1.default.createQuestion);
@@ -34,4 +36,10 @@ router.route("/ToggleAcceptedAnswer")
     .post(discussionController_1.default.toggleAcceptedAnswer);
 router.route("/VotePost")
     .post(discussionController_1.default.votePost);
+router.route("/CreateCodeComment")
+    .post(discussionController_1.default.createCodeComment);
+router.route("/EditCodeComment")
+    .put(discussionController_1.default.editCodeComment);
+router.route("/DeleteCodeComment")
+    .delete(discussionController_1.default.deleteCodeComment);
 exports.default = router;

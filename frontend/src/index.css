@@ -87,14 +87,13 @@ ul {
 
 .wb-p-follow-item__avatar-image {
     border-radius: 50%;
-    height: 56px;
-    width: 56px;
+    height: 42px;
+    width: 42px;
 }
 
 .wb-p-follow-item__name {
     font-weight: 600;
     line-height: 120%;
-    word-break: break-all;
 }
 
 
@@ -112,6 +111,12 @@ ul {
 
     .wb-modal__container.console {
         height: 60vh;
+    }
+
+    .wb-modal__container.comments {
+        height: 796px;
+        max-height: 80vh;
+        position: relative;
     }
 }
 
@@ -420,6 +425,16 @@ ul {
     width: 100%;
 }
 
+@media (max-width: 767px) {
+    .wb-discuss-question__description {
+        width: 80%;
+    }
+
+    .wb-discuss-question__title {
+        width: 80%;
+    }
+}
+
 .wb-discuss-reply__edit-button {
     cursor: pointer;
     position: absolute;
@@ -454,16 +469,109 @@ ul {
 }
 
 .wb-playground-wrapper {
+    min-height: 100vh;
+}
+
+.wb-playground-container {
     position: fixed;
     width: 100%;
 }
 
 .wb-playground-container__content {
-    height: calc(100dvh - 40px);
+    height: calc(100vh - 168px);
 }
 
 .wb-web-wrapper__frame-wrapper__console-btn {
     position: absolute;
     right: 32px;
     bottom: 24px;
+}
+
+.wb-language-types__item {
+    display: flex;
+    justify-content: center;
+}
+
+.wb-language-types__language-button {
+    width: 364px;
+    max-width: 100%;
+    border-radius: 8px;
+    border-style: solid;
+    border-width: 1px;
+    box-shadow: 0 4px 0;
+}
+
+.wb-language-types__language-button:hover {
+    box-shadow: 0 10px 0;
+    transform: translateY(-6px);
+}
+
+.wb-language-types__language-button a {
+    font-size: 24px;
+    height: 100%;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    padding: 24px;
+    width: 100%;
+    display: block;
+    text-decoration: none;
+    color: #fff;
+}
+
+.wb-playground-voting {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-playground-voting__button {
+    cursor: pointer;
+    color: silver;
+}
+
+.wb-playground-voting__button:hover {
+    color: gray;
+}
+
+.wb-playground-comments {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-playground-comments__button {
+    cursor: pointer;
+}
+
+.wb-playground-output-web {
+    display: flex;
+    font-family: Fira Mono;
+    height: 100%;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    white-space: pre;
+    width: 100%;
+}
+
+.wb-user-comment__options {
+    position: absolute;
+    right: 8px;
+    top: 5px;
+}
+
+.wb-user-comment-footer__reply {
+    cursor: pointer;
+}
+
+.wb-user-comment-footer__replies {
+    cursor: pointer;
+}
+
+.wb-user-comment__thread {
+    margin-left: 56px;
+    margin-top: 24px
 }

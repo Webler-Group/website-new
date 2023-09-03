@@ -11,7 +11,7 @@ const corsOptions = {
             callback(null, true);
         }
         else {
-            callback(new Error('Not allowed by CORS'));
+            callback(new Error('Not allowed by CORS\nOrigin: ' + origin + '\nAllowed origins: ' + allowedOrigins_1.default.join(", ")));
         }
     },
     credentials: true,

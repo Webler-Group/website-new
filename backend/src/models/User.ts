@@ -2,7 +2,7 @@ import mongoose, { InferSchemaType } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import isEmail from "validator/lib/isEmail";
-import rolesEnum from "../config/roles";
+import rolesEnum from "../data/roles";
 
 const userSchema = new mongoose.Schema({
     email: {

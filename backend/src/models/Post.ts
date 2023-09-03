@@ -1,6 +1,13 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import mongoose, { InferSchemaType, Model } from "mongoose";
+import Upvote from "./Upvote";
+import Code from "./Code";
 
 const postSchema = new mongoose.Schema({
+    /*
+    * 1 - question
+    * 2 - answer
+    * 3 - comment
+    */
     _type: {
         type: Number,
         required: true
@@ -8,6 +15,11 @@ const postSchema = new mongoose.Schema({
     isAccepted: {
         type: Boolean,
         default: false
+    },
+    codeId: {
+        type: mongoose.Types.ObjectId,
+        ref: "Code",
+        default: null
     },
     parentId: {
         type: mongoose.Types.ObjectId,
@@ -47,6 +59,56 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 
-const Post = mongoose.model<InferSchemaType<typeof postSchema>>("Post", postSchema);
+
+postSchema.statics.deleteAndCleanup = async function (filter: any) {
+    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");
+
+    for (let i = 0; i < postsToDelete.length; ++i) {
+        const post = postsToDelete[i]
+        switch (post._type) {
+            case 1: {
+                await Post.deleteAndCleanup({ parentId: post._id });
+                break;
+            }
+            case 2: {
+                const question = await Post.findById(post.parentId);
+                if (question === null) {
+                    throw new Error("Question not found");
+                }
+                question.answers -= 1;
+                await question.save();
+                break;
+            }
+            case 3: {
+                const code = await Code.findById(post.codeId);
+                if (code === null) {
+                    throw new Error("Code not found");
+                }
+                code.comments -= 1;
+                await code.save();
+                const parentComment = await Post.findById(post.parentId);
+                if (parentComment) {
+                    parentComment.answers -= 1;
+                    await parentComment.save();
+                }
+                else {
+                    await Post.deleteAndCleanup({ parentId: post._id });
+                }
+                break;
+            }
+        }
+        await Upvote.deleteMany({ parentId: post._id });
+    }
+
+    await Post.deleteMany(filter);
+}
+
+declare interface IPost extends InferSchemaType<typeof postSchema> { }
+
+interface PostModel extends Model<IPost> {
+    deleteAndCleanup(filter: any): Promise<any>
+}
+
+const Post = mongoose.model<IPost, PostModel>("Post", postSchema);
 
 export default Post;

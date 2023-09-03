@@ -22,8 +22,8 @@ function Header({ variant }: HeaderProps) {
           <Nav className="me-auto">
             <Nav.Link>Catalog</Nav.Link>
             <Nav.Link>Leaderboard</Nav.Link>
-            <LinkContainer to="/Compiler-Playground/Web">
-              <Nav.Link>Online Compiler</Nav.Link>
+            <LinkContainer to="/Codes">
+              <Nav.Link>Codes</Nav.Link>
             </LinkContainer>
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>

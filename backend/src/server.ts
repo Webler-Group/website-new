@@ -12,6 +12,7 @@ import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
 import blogRoutes from "./routes/blogRoutes";
+import codesRoutes from "./routes/codesRoutes";
 
 dotenv.config();
 
@@ -35,6 +36,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/discussion", discussionRoutes);
 app.use("/api/blog", blogRoutes);
+app.use("/api/codes", codesRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);
