@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+dotenv.config();
 import { logEvents, logger } from "./middleware/logger";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
@@ -14,7 +15,7 @@ import discussionRoutes from "./routes/discussionRoutes";
 import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
 
-dotenv.config();
+const rootDir = process.env.ROOT_DIR as string;
 
 const PORT = process.env.PORT || 5500;
 
@@ -23,6 +24,8 @@ const app = express();
 connectDB();
 
 app.use(express.static("public"));
+
+app.use("/uploads", express.static(rootDir));
 
 app.use(logger);
 

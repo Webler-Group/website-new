@@ -110,11 +110,11 @@ const CodesList = () => {
             <div className="mt-4 d-sm-flex flex-row-reverse justify-content-between">
                 <div className="mb-4 mb-sm-0 d-flex justify-content-end">
                     <LinkContainer to="/Compiler-Playground">
-                        <Button>New code</Button>
+                        <Button size='sm'>New code</Button>
                     </LinkContainer>
                 </div>
-                <div className="d-flex">
-                    <Form.Select value={filter} onChange={handleFilterSelect}>
+                <div className="d-flex justify-content-between">
+                    <Form.Select size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
                         <option value="1">Most Recent</option>
                         <option value="2">Most Popular</option>
                         {
@@ -124,7 +124,7 @@ const CodesList = () => {
                             </>
                         }
                     </Form.Select>
-                    <Form.Select className="ms-2" value={language} onChange={handleLanguageSelect}>
+                    <Form.Select size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
                         <option value="all">All</option>
                         <option value="web">Web</option>
                     </Form.Select>

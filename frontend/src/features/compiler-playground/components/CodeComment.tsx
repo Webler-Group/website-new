@@ -158,7 +158,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
                 <div className="wb-user-comment__options">
                     <div className="d-flex gap-2">
                         {
-                            userInfo &&
+                            (userInfo && userInfo.id === data.userId) &&
                             <>
                                 <span onClick={handleEdit}>
                                     <FaPencil />
@@ -183,20 +183,20 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
                         <p className="wb-discuss-question__description mt-2">{data.message}</p>
                     </div>
                     <div className="d-flex justify-content-between">
-                        <div className="d-flex gap-2">
-                            <div>
+                        <div className="d-flex gap-2 align-items-center">
+                            <div className="small">
                                 <span onClick={voteAnswer} className={"wb-discuss-voting__button" + (data.isUpvoted ? " text-black" : "")}>
                                     <FaThumbsUp />
                                 </span>
                                 <span className="ms-1">{data.votes}</span>
                             </div>
-                            <span onClick={handleReply} className="wb-user-comment-footer__reply">
+                            <span onClick={handleReply} className="small wb-user-comment-footer__reply">
                                 Reply
                             </span>
                             {
                                 (parentId === null && replyCount > 0) &&
                                 <>
-                                    <span className="wb-user-comment-footer__replies" onClick={() => setRepliesVisible(!repliesVisible)}>
+                                    <span className="small wb-user-comment-footer__replies" onClick={() => setRepliesVisible(!repliesVisible)}>
                                         {replyCount} replies
                                     </span>
                                 </>

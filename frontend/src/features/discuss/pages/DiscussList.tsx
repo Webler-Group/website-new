@@ -93,22 +93,20 @@ const QuestionList = () => {
                 <FormControl type="search" placeholder="Search..." ref={searchInputElement} />
                 <Button className="ms-2" type="submit">Search</Button>
             </Form>
-            <div className="mt-4 row justify-content-between">
-                <div className="col-6 col-sm-4">
-                    <Form.Select value={filter} onChange={handleFilterSelect}>
-                        <option value="1">Most Recent</option>
-                        <option value="2">Unanswered</option>
-                        {
-                            userInfo &&
-                            <>
-                                <option value="3">My Questions</option>
-                                <option value="4">My Answers</option>
-                            </>
-                        }
-                    </Form.Select>
-                </div>
+            <div className="mt-4 d-flex justify-content-between">
+                <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
+                    <option value="1">Most Recent</option>
+                    <option value="2">Unanswered</option>
+                    {
+                        userInfo &&
+                        <>
+                            <option value="3">My Questions</option>
+                            <option value="4">My Answers</option>
+                        </>
+                    }
+                </Form.Select>
                 <LinkContainer to="/Discuss/New">
-                    <Button className="col-6 col-sm-4">Ask a question</Button>
+                    <Button size='sm'>Ask a question</Button>
                 </LinkContainer>
             </div>
             <div className="my-3">

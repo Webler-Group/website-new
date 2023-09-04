@@ -37,6 +37,41 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [authModalVisible, setAuthModalVisible] = useState(false);
     const [isUserRegistering, setUserAuthPage] = useState(true);
+    const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
+    const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
+
+    useEffect(() => {
+        if (codeId) {
+            getCode()
+        }
+        else {
+            getCodeByTemplate()
+        }
+    }, [codeId])
+
+    useEffect(() => {
+        let editorValue = localStorage.getItem("editor");;
+        if (editorValue !== null) {
+            setEditorOptions(JSON.parse(editorValue));
+        }
+    }, [])
+
+    const updateEditorOptions = (options: any) => {
+        setEditorOptions(options);
+        localStorage.setItem("editor", JSON.stringify(options));
+    }
+
+    const zoomIn = () => {
+        let currentIdx = scaleValues.indexOf(editorOptions.scale);
+        const scale = currentIdx === -1 ? 1.0 : scaleValues[Math.min(currentIdx + 1, scaleValues.length - 1)];
+        updateEditorOptions({ ...editorOptions, scale })
+    }
+
+    const zoomOut = () => {
+        let currentIdx = scaleValues.indexOf(editorOptions.scale);
+        const scale = currentIdx === -1 ? 1.0 : scaleValues[Math.max(currentIdx - 1, 0)];
+        updateEditorOptions({ ...editorOptions, scale })
+    }
 
     const openCommentModal = () => {
         setCommentModalVisible(true)
@@ -62,15 +97,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const closeAuthModal = () => {
         setAuthModalVisible(false);
     }
-
-    useEffect(() => {
-        if (codeId) {
-            getCode()
-        }
-        else {
-            getCodeByTemplate()
-        }
-    }, [codeId])
 
     const getCode = async () => {
         const result = await ApiCommunication.sendJsonRequest(`/codes/${codeId}`, "GET");
@@ -322,7 +348,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                     <Button variant="primary" onClick={saveCode} disabled={codeName.length === 0}>Save</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="d-flex align-items-center justify-content-between p-2 border-bottom">
+            <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "60px" }}>
                 <div>
                     <Link to="/">
                         <img src="/resources/images/logo.png" height="50px" width="150px" />
@@ -371,7 +397,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         <div>
                             <Dropdown>
                                 <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
-                                <Dropdown.Menu>
+                                <Dropdown.Menu style={{ width: "200px" }}>
                                     <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
                                     <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
                                     {
@@ -395,6 +421,14 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                             }
                                         </>
                                     }
+                                    <Dropdown.ItemText className="border d-flex justify-content-between">
+                                        <div>Font</div>
+                                        <div className="d-flex gap-1">
+                                            <span className="wb-playground-options__button" onClick={zoomOut}>-</span>
+                                            <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
+                                            <span className="wb-playground-options__button" onClick={zoomIn}>+</span>
+                                        </div>
+                                    </Dropdown.ItemText>
                                     {
                                         (code && code.id) &&
                                         <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
@@ -412,6 +446,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         setCss={(value: string) => setCss(value)}
                         js={js}
                         setJs={(value: string) => setJs(value)}
+                        options={editorOptions}
                     />
                 </div>
             }

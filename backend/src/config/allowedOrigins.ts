@@ -1,5 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
 
 const allowedOrigins =
     process.env.NODE_ENV === "production" ?

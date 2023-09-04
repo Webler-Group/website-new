@@ -162,7 +162,9 @@ const Profile = () => {
                                             <FaStar style={{ color: "gold" }} />
                                             <b>{userDetails.xp} XP</b>
                                         </p>
-                                        <p className="text-secondary wb-p-details__row">{userDetails.bio}</p>
+                                        <div className="wb-p-details__row">
+                                            <p className="text-secondary wb-p-details__bio">{userDetails.bio}</p>
+                                        </div>
                                         <div className="wb-p-details__row">
                                             {
                                                 userDetails.countryCode &&

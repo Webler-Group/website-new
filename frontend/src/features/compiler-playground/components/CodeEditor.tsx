@@ -16,8 +16,9 @@ interface CodeEditorProps {
     js: string;
     setJs: (value: string) => void;
     loading: boolean;
+    options: { scale: number };
 }
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
 
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
 
@@ -61,7 +62,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs }: CodeEdi
                                         onChange={value => editorStates[idx].setValue(value)}
                                         width="100%"
                                         height="100%"
-                                        style={{ height: "100%" }}
+                                        style={{ height: "100%", fontSize: `${options.scale * 100}%` }}
                                         theme={vscodeDark}
                                         extensions={code ? [loadLanguage(lang) as any] : []} />
                                 </Tab>

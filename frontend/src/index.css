@@ -96,7 +96,10 @@ ul {
     line-height: 120%;
 }
 
-
+.wb-p-details__bio {
+    text-align: center;
+    word-break: break-all;
+}
 
 @media(min-width: 576px) {
     .wb-modal__container.edit-profile {
@@ -117,6 +120,10 @@ ul {
         height: 796px;
         max-height: 80vh;
         position: relative;
+    }
+
+    .wb-p-details__bio {
+        text-align: left;
     }
 }
 
@@ -478,7 +485,7 @@ ul {
 }
 
 .wb-playground-container__content {
-    height: calc(100vh - 168px);
+    height: calc(100dvh - 162px);
 }
 
 .wb-web-wrapper__frame-wrapper__console-btn {
@@ -518,6 +525,7 @@ ul {
     color: #fff;
 }
 
+
 .wb-playground-voting {
     min-width: 35px;
     display: flex;
@@ -547,7 +555,6 @@ ul {
 
 .wb-playground-output-web {
     display: flex;
-    font-family: Fira Mono;
     height: 100%;
     -webkit-user-select: none;
     -ms-user-select: none;
@@ -555,6 +562,17 @@ ul {
     user-select: none;
     white-space: pre;
     width: 100%;
+}
+
+.wb-playground-options__button {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
 }
 
 .wb-user-comment__options {
@@ -574,4 +592,14 @@ ul {
 .wb-user-comment__thread {
     margin-left: 56px;
     margin-top: 24px
+}
+
+.wb-blog {
+    min-height: 100vh;
+    margin: 0 auto;
+    max-width: 720px;
+}
+
+.wb-blog__content-item__title {
+    cursor: pointer;
 }

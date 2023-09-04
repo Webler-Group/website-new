@@ -326,17 +326,15 @@ const DiscussPost = () => {
                     </div>
                 </Form>
             </div>
-            <div className="d-flex justify-content-between mt-4">
-                <div>
-                    <h2>{question.answers} Answers</h2>
-                </div>
-                <div className="d-flex">
-                    <Form.Select value={filter} onChange={handleFilterSelect}>
-                        <option value="1">Sort by: Votes</option>
-                        <option value="2">Sort by: Date</option>
-                    </Form.Select>
-                    <Button variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
-                </div>
+            <div className="d-flex">
+                <h2>{question.answers} Answers</h2>
+            </div>
+            <div className="d-flex justify-content-between">
+                <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                    <option value="1">Sort by: Votes</option>
+                    <option value="2">Sort by: Date</option>
+                </Form.Select>
+                <Button size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
             </div>
             <div className="mt-2">
                 {
