@@ -15,6 +15,7 @@ interface IQuestion {
     answers: number;
     votes: number;
     isUpvoted: boolean;
+    isFollowed: boolean;
 }
 
 interface QuestionProps {

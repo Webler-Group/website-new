@@ -5,6 +5,8 @@ import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
 import Code from "../models/Code";
+import PostFollowing from "../models/PostFollowing";
+import Notification from "../models/Notification";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -37,6 +39,12 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     })
 
     if (question) {
+
+        await PostFollowing.create({
+            user: currentUserId,
+            following: question._id
+        });
+
         res.json({
             question: {
                 id: question._id,
@@ -200,7 +208,8 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         //const answers = await Post.countDocuments({ parentId: questionId });
         //const votes = await Upvote.countDocuments({ parentId: questionId });
-        const isUpvoted = currentUserId ? await Upvote.findOne({ parentId: questionId, user: currentUserId }) : false;
+        const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
+        const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
 
         res.json({
             question: {
@@ -218,7 +227,8 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 answers: question.answers,
                 votes: question.votes,
                 isUpvoted,
-                isAccepted: question.isAccepted
+                isAccepted: question.isAccepted,
+                isFollowed
             }
         });
     }
@@ -246,6 +256,35 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (reply) {
 
+        const questionFollowed = await PostFollowing.findOne({
+            user: currentUserId,
+            following: question._id
+        })
+
+        if (questionFollowed === null) {
+            await PostFollowing.create({
+                user: currentUserId,
+                following: question._id
+            });
+        }
+
+        const followers = new Set(((await PostFollowing.find({ following: question._id })) as any[]).map(x => x.user.toString()));
+        followers.add(question.user.toString())
+        followers.delete(currentUserId?.toString())
+
+        for (let userToNotify of followers) {
+            console.log(userToNotify);
+
+            await Notification.create({
+                _type: 201,
+                user: userToNotify,
+                actionUser: currentUserId,
+                message: "{action_user} posted in \"" + question.title + "\"",
+                questionId: question._id,
+                postId: reply._id
+            })
+        }
+
         question.answers += 1;
         await question.save();
 
@@ -272,47 +311,69 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const query = req.query;
     const questionId = req.params.questionId;
 
-    const page = Number(query.page);
+    const index = Number(query.index);
     const count = Number(query.count);
     const filter = Number(query.filter);
+    const replyId = query.findPostId;
 
-    if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger(filter)) {
+    if (!Number.isInteger(index) || !Number.isInteger(count) || !Number.isInteger(filter)) {
         res.status(400).json({ message: "Invalid query params" });
         return
     }
 
     let dbQuery = Post.find({ parentId: questionId, _type: 2 });
 
-    switch (filter) {
-        // Most popular
-        case 1: {
-            dbQuery = dbQuery
-                .sort({ votes: "desc" })
-            break;
+    let skipCount = index;
+
+    if (replyId) {
+
+        const reply = await Post.findById(replyId);
+
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" })
+            return
         }
-        // Oldest first
-        case 2: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "asc" })
-            break;
+
+        skipCount = Math.floor((await dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()) / count) * count;
+
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" })
+    }
+    else {
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc" })
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" })
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" })
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
         }
-        // Newest first
-        case 3: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "desc" })
-            break;
-        }
-        default:
-            throw new Error("Unknown filter");
     }
 
     const result = await dbQuery
-        .skip((page - 1) * count)
+        .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles") as any[];
 
     if (result) {
-        const data = result.map(x => ({
+        const data = result.map((x, offset) => ({
             id: x._id,
             parentId: x.parentId,
             message: x.message,
@@ -326,7 +387,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             votes: x.votes,
             isUpvoted: false,
             isAccepted: x.isAccepted,
-            answers: x.answers
+            answers: x.answers,
+            index: skipCount + offset
         }))
 
         let promises = [];
@@ -570,6 +632,13 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await Post.deleteAndCleanup({ _id: replyId });
 
+        await Notification.deleteMany({
+            _type: 201,
+            actionUser: currentUserId,
+            questionId: question._id,
+            postId: reply._id
+        })
+
         res.json({ success: true });
     }
     catch (err: any) {
@@ -616,9 +685,9 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const query = req.query;
-    const { codeId, parentId, page, count, filter } = req.body;
+    const { codeId, parentId, index, count, filter } = req.body;
 
-    if (typeof filter === "undefined" || typeof page === "undefined" || typeof count === "undefined") {
+    if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
         return
     }
@@ -649,7 +718,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     const result = await dbQuery
-        .skip((page - 1) * count)
+        .skip(index)
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles") as any[];
 
@@ -827,6 +896,82 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 })
 
+const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { postId } = req.body;
+
+    if (typeof postId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    const postExists = await Post.findOne({ _id: postId })
+    if (!postExists) {
+        res.status(404).json({ message: "Post not found" });
+        return
+    }
+
+    if (postExists._type !== 1) {
+        res.status(405).json({ message: "Post is not a question" });
+        return
+    }
+
+    const exists = await PostFollowing.findOne({ user: currentUserId, following: postId });
+    if (exists) {
+        res.status(204).json({ success: true })
+        return
+    }
+
+    const postFollowing = await PostFollowing.create({
+        user: currentUserId,
+        following: postId
+    });
+
+    if (postFollowing) {
+
+        res.json({ success: true })
+        return
+    }
+
+    res.status(500).json({ success: false });
+});
+
+const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { postId } = req.body;
+
+    if (typeof postId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    const postExists = await Post.findOne({ _id: postId })
+    if (!postExists) {
+        res.status(404).json({ message: "Post not found" });
+        return
+    }
+
+    if (postExists._type !== 1) {
+        res.status(405).json({ message: "Post is not a question" });
+        return
+    }
+
+    const postFollowing = await PostFollowing.findOne({ user: currentUserId, following: postId });
+    if (postFollowing === null) {
+        res.status(204).json({ success: true })
+        return
+    }
+
+    const result = await PostFollowing.deleteOne({ user: currentUserId, following: postId })
+    if (result.deletedCount == 1) {
+
+        res.json({ success: true })
+        return
+    }
+
+    res.status(500).json({ success: false });
+});
+
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -843,7 +988,9 @@ const discussController = {
     createCodeComment,
     getCodeComments,
     editCodeComment,
-    deleteCodeComment
+    deleteCodeComment,
+    followQuestion,
+    unfollowQuestion
 }
 
 export default discussController;

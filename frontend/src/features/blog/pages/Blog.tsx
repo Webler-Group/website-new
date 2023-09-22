@@ -90,8 +90,8 @@ const Blog = () => {
                 :
                 blogEntries.map((blogEntry) => {
                   return (
-                    <div className="col">
-                      <BlogEntry key={blogEntry.name} entry={blogEntry} searchQuery={searchQuery} />
+                    <div className="col" key={blogEntry.name}>
+                      <BlogEntry entry={blogEntry} searchQuery={searchQuery} />
                     </div>
                   )
                 })

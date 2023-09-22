@@ -1,6 +1,7 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import Upvote from "./Upvote";
 import Code from "./Code";
+import PostFollowing from "./PostFollowing";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -68,6 +69,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
         switch (post._type) {
             case 1: {
                 await Post.deleteAndCleanup({ parentId: post._id });
+                await PostFollowing.deleteMany({ following: post._id });
                 break;
             }
             case 2: {

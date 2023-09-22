@@ -20,6 +20,7 @@
     "@types/showdown": "^2.0.1",
     "@types/uuid": "^9.0.2",
     "@types/validator": "^13.7.17",
+    "@types/ws": "^8.5.5",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
@@ -38,6 +39,7 @@
     "mongoose-sequence": "^5.3.1",
     "showdown": "^2.1.0",
     "uuid": "^9.0.0",
-    "validator": "^13.9.0"
+    "validator": "^13.9.0",
+    "ws": "^8.14.1"
   }
 }

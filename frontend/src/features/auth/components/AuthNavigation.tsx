@@ -29,7 +29,7 @@ const AuthNavigation = () => {
                                 <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> </>} menuVariant="light">
                                     <LinkContainer to="/Profile">
                                         <NavDropdown.Item>
-                                            <b>{userInfo.name}</b>
+                                            <b style={{ fontFamily: "monospace" }}>{userInfo.name}</b>
                                             <br />
                                             <span className="text-secondary">Go to profile</span>
                                         </NavDropdown.Item>

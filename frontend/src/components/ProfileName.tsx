@@ -7,7 +7,7 @@ interface ProfileNameProps {
 
 const ProfileName = ({ userId, userName }: ProfileNameProps) => {
     return (
-        <Link to={"/Profile/" + userId} className="wb-p-follow-item__name">{userName}</Link>
+        <Link to={"/Profile/" + userId} className="wb-p-follow-item__name" style={{ fontFamily: "monospace" }}>{userName}</Link>
     )
 }
 

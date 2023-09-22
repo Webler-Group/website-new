@@ -48,7 +48,7 @@ const Code = ({ code, searchQuery }: CodeProps) => {
                     </div>
                     <div className="d-flex align-items-center">
                         <FaComment />
-                        <span className="ms-2">{code.comments} Answers</span>
+                        <span className="ms-2">{code.comments} Comments</span>
                     </div>
                 </div>
             </div>

@@ -1,16 +1,17 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
+import { Alert, Button, Dropdown, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
-import { FaPencil } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
 import { FaThumbsUp } from "react-icons/fa";
+import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
+import { FaStar } from "react-icons/fa6";
 
 
 const DiscussPost = () => {
@@ -33,6 +34,16 @@ const DiscussPost = () => {
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const [filter, setFilter] = useState(1);
     const [searchParams, setSearchParams] = useSearchParams();
+    const location = useLocation();
+    const [postId, setPostId] = useState<string | null>(null);
+    const findPostRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (location.state && location.state.postId) {
+            setPostId(location.state.postId)
+            setFilter(2);
+        }
+    }, [location])
 
     useEffect(() => {
         if (searchParams.has("page")) {
@@ -49,7 +60,7 @@ const DiscussPost = () => {
 
     useEffect(() => {
         getAnswers();
-    }, [searchParams, questionId]);
+    }, [searchParams, questionId, postId]);
 
     useEffect(() => {
         handlePageChange(1);
@@ -59,6 +70,7 @@ const DiscussPost = () => {
         if (page === currentPage) {
             return
         }
+        setPostId(null)
         searchParams.set("page", page.toString());
         setSearchParams(searchParams, { replace: true })
         setCurrentPage(page);
@@ -69,6 +81,7 @@ const DiscussPost = () => {
         searchParams.set("filter", value.toString())
         setSearchParams(searchParams, { replace: true })
         setFilter(value)
+        setPostId(null)
     }
 
     const getQuestion = async () => {
@@ -84,9 +97,17 @@ const DiscussPost = () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?page=${page}&count=${answersPerPage}&filter=${filter}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?index=${(page - 1) * answersPerPage}&count=${answersPerPage}&filter=${filter}` + (postId ? "&findPostId=" + postId : ""), "GET");
         if (result && result.posts) {
             setAnswers(result.posts);
+            if (postId) {
+                setCurrentPage(result.posts.length > 0 ? Math.floor(result.posts[0].index / answersPerPage) + 1 : 1);
+                setTimeout(() => {
+                    if (findPostRef.current) {
+                        findPostRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+                    }
+                });
+            }
             let accepted = null;
             for (let i = 0; i < result.posts.length; ++i) {
                 if (result.posts[i].isAccepted) {
@@ -164,7 +185,7 @@ const DiscussPost = () => {
             setEditedAnswer(editedAnswer);
             setTimeout(() => {
                 if (form.current) {
-                    form.current.scrollIntoView({ behavior: "smooth" });
+                    form.current.scrollIntoView({ behavior: "smooth", block: "end" });
                 }
             })
         }
@@ -241,6 +262,26 @@ const DiscussPost = () => {
         }
     }
 
+    const handleFollowQuestion = async () => {
+        if (!question) {
+            return
+        }
+        if (!userInfo) {
+            navigate("/Login");
+            return;
+        }
+        const isFollowed = question.isFollowed;
+        const result = await ApiCommunication.sendJsonRequest(isFollowed ? "/Discussion/UnfollowQuestion" : "/Discussion/FollowQuestion", "POST", { postId: questionId });
+        if (result && result.success) {
+            setQuestion(question => {
+                if (question) {
+                    return { ...question, isFollowed: !isFollowed }
+                }
+                return null
+            })
+        }
+    }
+
     let charactersRemaining = maxCharacters - formInput.length;
 
     return (
@@ -256,22 +297,48 @@ const DiscussPost = () => {
                     <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <div className="d-flex gap-2 py-2">
+                <Link to="/Discuss">Q&A Discussions</Link>
+                <span>&rsaquo;</span>
+                <span>{question.title}</span>
+            </div>
             <div className="p-2 bg-white rounded border mb-3 position-relative">
                 {
-                    (question && question.userId === userInfo?.id) &&
-                    <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                        <span className="wb-discuss-reply__edit-button">
-                            <FaPencil />
-                        </span>
-                    </LinkContainer>
+                    userInfo &&
+                    <div className="wb-discuss-reply__edit-button">
+                        <Dropdown>
+                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                            <Dropdown.Menu>
+                                {
+                                    (question && question.userId === userInfo.id) &&
+                                    <LinkContainer to={"/Discuss/Edit/" + questionId}>
+                                        <Dropdown.Item>Edit</Dropdown.Item>
+                                    </LinkContainer>
+                                }
+                                <Dropdown.Item onClick={handleFollowQuestion}>
+                                    {
+                                        question.isFollowed ?
+                                            "Unfollow"
+                                            :
+                                            "Follow"
+                                    }
+                                </Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
+                    </div>
                 }
                 <div className="d-flex">
-                    <div>
+                    <div className="d-flex flex-column justify-content-between align-items-center">
                         <div className="wb-discuss-voting">
                             <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
                                 <FaThumbsUp />
                             </span>
                             <b>{question.votes}</b>
+                        </div>
+                        <div>
+                            <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
+                                <FaStar />
+                            </span>
                         </div>
                     </div>
                     <div className="wb-discuss-question__main ms-2">
@@ -311,16 +378,16 @@ const DiscussPost = () => {
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">
-                        <Button variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
+                        <Button size="sm" variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
                         {
                             editedAnswer === null ?
                                 <>
-                                    <Button variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading}>Post</Button>
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading}>Post</Button>
                                 </>
                                 :
                                 <>
-                                    <Button variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                    <Button variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading}>Save changes</Button>
+                                    <Button size="sm" variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading}>Save</Button>
                                 </>
                         }
                     </div>
@@ -339,15 +406,25 @@ const DiscussPost = () => {
             <div className="mt-2">
                 {
                     answers.map(answer => {
-                        return (
-                            <Answer
+                        if (postId === answer.id) {
+                            return <Answer
+                                ref={findPostRef}
                                 answer={answer}
                                 acceptedAnswer={acceptedAnswer}
                                 toggleAcceptedAnswer={toggleAcceptedAnswer}
                                 isQuestionOwner={userInfo?.id === question.userId}
                                 key={answer.id}
-                                showEditAnswer={showEditAnswer} />
-                        )
+                                showEditAnswer={showEditAnswer}
+                                newlyCreatedAnswer={postId} />
+                        }
+                        return <Answer
+                            answer={answer}
+                            acceptedAnswer={acceptedAnswer}
+                            toggleAcceptedAnswer={toggleAcceptedAnswer}
+                            isQuestionOwner={userInfo?.id === question!.userId}
+                            key={answer.id}
+                            showEditAnswer={showEditAnswer}
+                            newlyCreatedAnswer={postId} />
                     })
                 }
             </div>

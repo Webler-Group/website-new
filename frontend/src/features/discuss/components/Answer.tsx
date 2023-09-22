@@ -6,6 +6,7 @@ import { useState } from "react";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
+import React from "react";
 
 interface IAnswer {
     id: string;
@@ -25,9 +26,10 @@ interface AnswerProps {
     toggleAcceptedAnswer: (postId: string) => void;
     isQuestionOwner: boolean;
     showEditAnswer: (postId: string) => void;
+    newlyCreatedAnswer: string | null;
 }
 
-const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer }: AnswerProps) => {
+const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
     const { userInfo } = useAuth();
     const [upvoted, setUpvoted] = useState(answer.isUpvoted);
@@ -49,9 +51,12 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
     }
 
     let isAccepted = acceptedAnswer === answer.id;
+    let isNewlyCreated = newlyCreatedAnswer === answer.id;
+    let borderClassName = (isAccepted || isNewlyCreated) ?
+        " border-2 border-" + (isAccepted ? "success" : "warning") : ""
 
-    return (
-        <div className={"rounded border p-2 mb-2 bg-white position-relative" + (isAccepted ? " border-success border-2" : "")}>
+    let body = (
+        <div className={"rounded border p-2 mb-2 bg-white position-relative" + borderClassName}>
             {
                 isOwner &&
                 <span className="wb-discuss-reply__edit-button" onClick={() => showEditAnswer(answer.id)}>
@@ -94,7 +99,14 @@ const Answer = ({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner,
             </div>
         </div>
     )
-}
+
+    let content = ref ?
+        <div ref={ref}>{body}</div>
+        :
+        <div>{body}</div>
+
+    return content
+})
 
 export type {
     IAnswer

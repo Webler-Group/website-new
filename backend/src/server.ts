@@ -14,12 +14,22 @@ import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
 import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
+import http from "http";
+import WebSocket from 'ws';
 
 const rootDir = process.env.ROOT_DIR as string;
 
 const PORT = process.env.PORT || 5500;
 
 const app = express();
+const server = http.createServer(app);
+
+const wss = new WebSocket.Server({ server });
+
+wss.on("connection", (ws) => {
+    console.log("A new client connected!");
+    ws.send("Welcome New Client!");
+})
 
 connectDB();
 

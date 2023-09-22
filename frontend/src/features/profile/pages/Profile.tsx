@@ -125,21 +125,27 @@ const Profile = () => {
                     <Container>
                         <div className="wb-p-container">
                             <Card className="mt-4 p-2">
-                                <div className="d-block d-sm-flex">
+                                <div className="d-block d-md-flex gap-3">
                                     <div className="wb-p-details__avatar">
                                         <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
                                     </div>
-                                    <div className="d-flex flex-column align-items-center align-items-sm-start">
+                                    <div className="d-flex flex-column align-items-center align-items-md-start">
                                         <div className="d-flex wb-p-details__row">
-                                            <p className="wb-p-details__name">{userDetails.name}</p>
+                                            <p className="wb-p-details__name" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
+                                        </div>
+                                        <div>
                                             {
                                                 userInfo && userDetails.id !== userInfo.id
                                                 &&
                                                 (
-                                                    userDetails.isFollowing ?
-                                                        <Button className="ms-2" variant="primary" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
-                                                        :
-                                                        <Button className="ms-2" variant="primary" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                                                    <div className="d-flex wb-p-details__row">
+                                                        {
+                                                            userDetails.isFollowing ?
+                                                                <Button variant="primary" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
+                                                                :
+                                                                <Button variant="primary" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                                                        }
+                                                    </div>
                                                 )
                                             }
                                         </div>

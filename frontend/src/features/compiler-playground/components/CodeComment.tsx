@@ -204,7 +204,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
                         </div>
                         <div>
                             <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(data.date))}</small>
+                                <small className="text-secondary">{DateUtils.format2(new Date(data.date), true)}</small>
                             </div>
                         </div>
                     </div>

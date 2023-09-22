@@ -48,7 +48,7 @@ ul {
     margin: 0 0 24px;
 }
 
-@media(min-width: 576px) {
+@media(min-width: 767) {
     .wb-p-details__avatar {
         margin: 0 32px;
     }
@@ -61,7 +61,7 @@ ul {
 }
 
 .wb-p-details__name {
-    font-size: 26px;
+    font-size: 24px;
     font-weight: 600;
     line-height: 120%;
 }

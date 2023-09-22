@@ -289,6 +289,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
+    const formatTitle = (title: string) => {
+        return title.length > 16 ? title.slice(0, 16) + "..." : title;
+    }
+
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -372,7 +376,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         </div>
                                         <div>
                                             <div>
-                                                <b>{code.name}</b>
+                                                <b>{formatTitle(code.name!)}</b>
                                             </div>
                                             <div className="d-flex justify-content-start small">
                                                 <ProfileName userId={code.userId!} userName={code.userName!} />

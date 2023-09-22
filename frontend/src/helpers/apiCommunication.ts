@@ -52,6 +52,10 @@ class ApiCommunication {
             if (result && result.accessToken && result.expiresIn) {
                 authenticate(result.accessToken, result.expiresIn);
             }
+            else {
+                authenticate(null);
+                location.href = "/Login?returnUrl=" + location.pathname;
+            }
         }
 
         return await this.fetchQuery(path, {

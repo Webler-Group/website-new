@@ -3,6 +3,7 @@ import User from "../models/User";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import UserFollowing from "../models/UserFollowing";
+import Notification from "../models/Notification";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -183,6 +184,13 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     if (userFollowing) {
+        await Notification.create({
+            user: userId,
+            actionUser: currentUserId,
+            _type: 101,
+            message: "{action_user} followed you"
+        })
+
         res.json({ success: true })
         return
     }
@@ -212,6 +220,13 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const result = await UserFollowing.deleteOne({ user: currentUserId, following: userId })
     if (result.deletedCount == 1) {
+
+        await Notification.deleteOne({
+            user: userId,
+            actionUser: currentUserId,
+            _type: 101
+        })
+
         res.json({ success: true })
         return
     }
@@ -319,6 +334,108 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 });
 
+const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { count, fromId } = req.body;
+
+    if (typeof count === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    let dbQuery = Notification
+        .find({ user: currentUserId })
+        .sort({ createdAt: "desc" });
+
+    if (typeof fromId !== "undefined") {
+        const prevNotification = await Notification.findById(fromId);
+
+        if (prevNotification !== null) {
+            dbQuery = dbQuery
+                .where({ createdAt: { $lt: prevNotification.createdAt } });
+        }
+    }
+
+    const result = await dbQuery
+        .limit(count)
+        .populate("user", "name avatarUrl countryCode level roles")
+        .populate("actionUser", "name avatarUrl countryCode level roles") as any[];
+
+
+    if (result) {
+
+        const data = result.map(x => ({
+            id: x._id,
+            type: x._type,
+            message: x.message,
+            date: x.createdAt,
+            user: {
+                id: x.user._id,
+                name: x.user.name,
+                countryCode: x.user.countryCode,
+                level: x.user.level,
+                roles: x.user.roles
+            },
+            actionUser: {
+                id: x.actionUser._id,
+                name: x.actionUser.name,
+                countryCode: x.actionUser.countryCode,
+                level: x.actionUser.level,
+                roles: x.actionUser.roles
+            },
+            isSeen: x.isSeen,
+            isClicked: x.isClicked,
+            codeId: x.codeId,
+            postId: x.postId,
+            questionId: x.questionId
+        }));
+
+        res.json({
+            notifications: data
+        });
+    }
+    else {
+        res.status(500).json({ message: "error" });
+    }
+})
+
+const getUnseenNotificationCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+
+    const count = await Notification.countDocuments({ user: currentUserId, isClicked: false })
+
+    res.json({ count });
+})
+
+const markNotificationsSeen = asyncHandler(async (req: IAuthRequest, res: Response) => {
+
+    const { fromId } = req.body;
+
+    if (typeof fromId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    // TODO
+
+    res.json({});
+})
+
+const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+
+    const { ids } = req.body;
+
+    if (typeof ids !== "undefined") {
+        await Notification.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } })
+    }
+    else {
+        await Notification.updateMany({ user: currentUserId, isClicked: false }, { $set: { isClicked: true } })
+    }
+
+    res.json({});
+})
+
 const controller = {
     getProfile,
     updateProfile,
@@ -326,7 +443,11 @@ const controller = {
     follow,
     unfollow,
     getFollowers,
-    getFollowing
+    getFollowing,
+    getNotifications,
+    getUnseenNotificationCount,
+    markNotificationsSeen,
+    markNotificationsClicked
 };
 
 export default controller;

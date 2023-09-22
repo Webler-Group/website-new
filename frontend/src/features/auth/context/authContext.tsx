@@ -29,10 +29,17 @@ interface AuthProviderProps {
 
 export const useAuth = () => useContext(AuthContext);
 
-export const authenticate = (accessToken: string, expiresIn: number) => {
+export const authenticate = (accessToken: string | null, expiresIn: number = 0) => {
     ApiCommunication.setAccessToken(accessToken, expiresIn);
-    localStorage.setItem("accessToken", accessToken);
-    localStorage.setItem("expiresIn", expiresIn.toString());
+    if (accessToken) {
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("expiresIn", expiresIn.toString());
+    }
+    else {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("expiresIn");
+        localStorage.removeItem("userInfo");
+    }
 }
 
 export const AuthProvider = ({ children }: AuthProviderProps) => {
@@ -45,7 +52,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         0;
     ApiCommunication.setAccessToken(accessToken, expiresIn);
 
-    const defaultUserInfo = localStorage.getItem("userInfo") ?
+    const defaultUserInfo = (accessToken && localStorage.getItem("userInfo")) ?
         JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo :
         null;
     const [userInfo, setUserInfo] = useState(defaultUserInfo);

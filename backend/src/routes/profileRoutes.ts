@@ -25,5 +25,13 @@ router.route("/Follow/:userId")
     .post(profileController.follow);
 router.route("/Unfollow/:userId")
     .post(profileController.unfollow);
+router.route("/GetNotifications")
+    .post(profileController.getNotifications)
+router.route("/GetUnseenNotificationCount")
+    .post(profileController.getUnseenNotificationCount)
+router.route("/MarkNotificationsSeen")
+    .post(profileController.markNotificationsSeen)
+router.route("/MarkNotificationsClicked")
+    .post(profileController.markNotificationsClicked)
 
 export default router;
