@@ -127,6 +127,7 @@ const CodesList = () => {
                     <Form.Select size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
                         <option value="all">All</option>
                         <option value="web">Web</option>
+                        <option value="c">C</option>
                     </Form.Select>
                 </div>
             </div>

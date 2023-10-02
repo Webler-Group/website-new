@@ -1,5 +1,5 @@
 const compilerLanguages: string[] = [
-    "web"
+    "web", "c", "cpp"
 ];
 
 export default compilerLanguages;
