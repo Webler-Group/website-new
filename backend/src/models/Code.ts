@@ -44,19 +44,6 @@ const codeSchema = new mongoose.Schema({
         default: ""
     },
 
-    //emscripten stuff
-    compiledHTML: {
-        type: String,
-        default: ""
-    },
-    compiledJS: {
-        type: String,
-        default: ""
-    },
-    compiledWASM: {
-        type: Buffer,
-        default: []
-    },
 
 }, {
     timestamps: true
