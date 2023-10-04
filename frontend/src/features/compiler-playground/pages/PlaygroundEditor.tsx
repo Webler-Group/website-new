@@ -151,6 +151,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 "/* " + message + " */",
                 "// " + message
             ]
+            case "c": return [
+                "// " + message ,
+                "// " + message,
+                "// " + message
+            ]
             default:
                 throw new Error("Unknown language");
         }
