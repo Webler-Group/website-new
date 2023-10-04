@@ -13,6 +13,7 @@ import CommentList from "./CommentList";
 import LoginForm from "../../auth/components/LoginForm";
 import RegisterForm from "../../auth/components/RegisterForm";
 import ToggleSwitch from "../../../components/ToggleSwitch";
+import CommentList2 from "./CommentList2";
 
 interface PlaygroundEditorProps {
     language: string;
@@ -312,7 +313,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             {
                 (code && code.id) &&
                 <>
-                    <CommentList visible={commentModalVisible} onHide={closeCommentModal} code={code} />
+                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} />
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>Code details</Modal.Title>
