@@ -72,6 +72,8 @@ function App() {
           <Route index element={<PlaygroundMenu />} />
         </Route>
         <Route path="Web" element={<PlaygroundEditor language="web" />} />
+        <Route path="C" element={<PlaygroundEditor language="c" />} />
+        <Route path="CPP" element={<PlaygroundEditor language="cpp" />} />
         <Route path=":codeId" element={<PlaygroundEditor language="" />} />
       </Route>
 

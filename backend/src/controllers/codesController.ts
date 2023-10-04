@@ -5,6 +5,9 @@ import Code from "../models/Code";
 import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import Post from "../models/Post";
+import fs from 'fs';
+import { execSync } from 'child_process';
+import { bundle } from "../utils/bundler";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -331,6 +334,125 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 })
 
+const compile = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const fileSuffixes: {[index: string]: string} = {
+      c: "c",
+      cpp: "cpp",
+    };
+
+    const { source, language } = req.body;
+
+
+    const fileSuffix = fileSuffixes[language];
+    if(!fileSuffix){
+      res.json({compiledHTML: "err"});
+      return;
+    }
+
+    const subDir = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+    const dirPath = `./compiler/${subDir}`;
+    fs.mkdirSync(dirPath);
+
+    //create main source file
+    const sourceFileName = `main.${fileSuffix}`;
+    const sourcePath = `${dirPath}/${sourceFileName}`;
+    fs.writeFileSync(sourcePath, source);
+
+    //creat htmlTemplate file
+    const templatePath = `${dirPath}/main.html`;
+    const templateContent = `
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <style>
+#output{
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    color: lime;
+    background-color: black;
+    width: 80ch;
+}
+canvas {
+    padding-left: 0;
+    padding-right: 0;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    width: 61vw;
+    font-family: mono;
+}
+    </style>
+</head>
+
+<body>
+
+    <canvas width=0 height=0 id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <hr>
+    <pre id="output"></pre>
+    <script type='text/javascript'>
+        var Module = {
+            print: (function(){
+                      var output = document.querySelector("#output");
+                      if(output) output.innerText = "";
+                      return (function(text){
+                               if(output)
+                               output.innerText += text + "\\n";
+                               console.log(text)
+                             })
+                    })(),
+            canvas: (function() { return document.getElementById('canvas'); })(),
+            wasmBinary: (function(){return {{{ WASMBIN }}} })()
+        };
+    </script>
+    {{{ SCRIPT }}}
+
+</body>
+
+</html>
+
+`;
+    fs.writeFileSync(templatePath, templateContent);    
+
+
+    //create Makefile
+    const makefileString = `
+all: main
+
+main: ${sourceFileName}
+	emcc ${sourceFileName} -o main.js -sUSE_SDL=2
+
+`;
+    fs.writeFileSync(`${dirPath}/Makefile`, makefileString);
+    //run make
+    execSync(`(cd ${dirPath} && make)`);
+
+
+    //use bundler to create a web/html bundle of all emscripten files
+    const bundleString = bundle(`${dirPath}/main.html`,`${dirPath}/main.js`,`${dirPath}/main.wasm`);
+
+
+    //return bundle
+    res.json ({ compiledHTML: bundleString});
+
+
+    //delete compiled files
+/*    fs.unlink(`${dirPath}/${sourceFileName}`, ()=>{})
+    fs.unlink(`${dirPath}/main.wasm`, ()=>{})
+    fs.unlink(`${dirPath}/main.html`, ()=>{})
+    fs.unlink(`${dirPath}/main.js`, ()=>{})
+    fs.unlink(`${dirPath}/bundle.html`, ()=>{})
+    fs.unlink(`${dirPath}/Makefile`, ()=>{})
+*/
+    fs.rmdirSync(dirPath, { recursive: true });
+    
+})
+
 const codesController = {
     createCode,
     getCodeList,
@@ -338,7 +460,8 @@ const codesController = {
     getTemplate,
     editCode,
     deleteCode,
-    voteCode
+    voteCode,
+    compile
 }
 
 export default codesController

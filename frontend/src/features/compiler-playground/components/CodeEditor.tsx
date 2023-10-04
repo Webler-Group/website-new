@@ -6,6 +6,8 @@ import { Tab, Tabs } from "react-bootstrap";
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
+import ApiCommunication from "../../../helpers/apiCommunication";
+
 
 interface CodeEditorProps {
     code: ICode;
@@ -18,17 +20,36 @@ interface CodeEditorProps {
     loading: boolean;
     options: { scale: number };
 }
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
+const CodeEditor =  ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
 
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
 
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
+
+
+   const [compiledHTML, setCompiledHTML] = useState("");
+
+   useEffect(() => {
+     const getCompiledHTML = async () => {
+       const result = await ApiCommunication.sendJsonRequest(`/Codes/Compile`, "POST", {source: source, language: code.language});
+       if (result && result.compiledHTML) {
+         setCompiledHTML(result.compiledHTML);
+       }
+     }
+     getCompiledHTML();
+   }, [code]);
 
     useEffect(() => {
 
         switch (code.language) {
             case "web":
                 setEditorTabs(["html", "css", "javascript"]);
+                break;
+            case "c":
+                setEditorTabs(["c"]);
+                break;
+            case "cpp":
+                setEditorTabs(["cpp"]);
                 break;
         }
 
@@ -38,6 +59,12 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
     switch (code.language) {
         case "web":
             outputTab = <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} />;
+            break;
+        case "c":
+            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} />;
+            break;
+        case "cpp":
+            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} />;
             break;
     }
 

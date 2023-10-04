@@ -16,7 +16,28 @@ const templates = [
     
 }`,
         jsSource: ""
-    }
+    },
+    {
+        language: "c",
+        source: `#include <stdlib.h>
+#include <stdio.h>
+
+int main(int argc, char ** argv){
+  printf("Hello World\\n");
+  return 0;
+}`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "cpp",
+        source: `#include <iostream>
+
+using namespace std;
+
+int main(int argc, char ** argv){
+  cout << "Hello World" << endl;
+  return 0;
+}`, cssSource: "", jsSource: ""
+    },
 ];
 
 export default templates;
