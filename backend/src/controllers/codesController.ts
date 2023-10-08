@@ -430,7 +430,7 @@ canvas {
 all: main
 
 main: ${sourceFileName}
-	emcc ${sourceFileName} -o main.js -sUSE_SDL=2
+	emcc ${sourceFileName} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["bmp", "png", "xpm", "jpg"]' -s FETCH=1 -s USE_SDL_TTF=2 -o main.js
 
 `;
     fs.writeFileSync(`${dirPath}/Makefile`, makefileString);
@@ -442,19 +442,11 @@ main: ${sourceFileName}
     const bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
 
 
+    //delete compiled files
+
+
     //return bundle
     res.json({ compiledHTML: bundleString });
-
-
-    //delete compiled files
-    /*    fs.unlink(`${dirPath}/${sourceFileName}`, ()=>{})
-        fs.unlink(`${dirPath}/main.wasm`, ()=>{})
-        fs.unlink(`${dirPath}/main.html`, ()=>{})
-        fs.unlink(`${dirPath}/main.js`, ()=>{})
-        fs.unlink(`${dirPath}/bundle.html`, ()=>{})
-        fs.unlink(`${dirPath}/Makefile`, ()=>{})
-    */
-    fs.rmdirSync(dirPath, { recursive: true });
 
 })
 

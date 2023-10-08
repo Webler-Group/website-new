@@ -113,7 +113,8 @@ ul {
     }
 
     .wb-modal__container.console {
-        height: 60vh;
+        height: 923px;
+        max-height: 90vh;
     }
 
     .wb-modal__container.comments {

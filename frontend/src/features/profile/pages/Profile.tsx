@@ -108,7 +108,7 @@ const Profile = () => {
     }
 
     return (
-        <>
+        <div className="wb-p-container">
             {
                 userDetails &&
                 <>
@@ -123,72 +123,70 @@ const Profile = () => {
                     {setPageTitle(userDetails.name)}
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                     <Container>
-                        <div className="wb-p-container">
-                            <Card className="mt-4 p-2">
-                                <div className="d-block d-md-flex gap-3">
-                                    <div className="wb-p-details__avatar">
-                                        <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
+                        <Card className="mt-4 p-2">
+                            <div className="d-block d-md-flex gap-3">
+                                <div className="wb-p-details__avatar">
+                                    <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
+                                </div>
+                                <div className="d-flex flex-column align-items-center align-items-md-start">
+                                    <div className="d-flex wb-p-details__row">
+                                        <p className="wb-p-details__name" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
                                     </div>
-                                    <div className="d-flex flex-column align-items-center align-items-md-start">
-                                        <div className="d-flex wb-p-details__row">
-                                            <p className="wb-p-details__name" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
-                                        </div>
-                                        <div>
-                                            {
-                                                userInfo && userDetails.id !== userInfo.id
-                                                &&
-                                                (
-                                                    <div className="d-flex wb-p-details__row">
-                                                        {
-                                                            userDetails.isFollowing ?
-                                                                <Button variant="primary" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
-                                                                :
-                                                                <Button variant="primary" onClick={handleFollow} disabled={followLoading}>Follow</Button>
-                                                        }
-                                                    </div>
-                                                )
-                                            }
-                                        </div>
-                                        <div className="wb-p-details__row">
-                                            {
-                                                userDetails.following > 0 ?
-                                                    <button className="wb-p-details__follows__button" onClick={showFollowing}>{userDetails.following} Following</button>
-                                                    :
-                                                    <span>{userDetails.following} Following</span>
-                                            }
-                                            {
-                                                userDetails.followers ?
-                                                    <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{userDetails.followers} Followers</button>
-                                                    :
-                                                    <span className="ms-2">{userDetails.followers} Followers</span>
-                                            }
+                                    <div>
+                                        {
+                                            userInfo && userDetails.id !== userInfo.id
+                                            &&
+                                            (
+                                                <div className="d-flex wb-p-details__row">
+                                                    {
+                                                        userDetails.isFollowing ?
+                                                            <Button variant="primary" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
+                                                            :
+                                                            <Button variant="primary" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                                                    }
+                                                </div>
+                                            )
+                                        }
+                                    </div>
+                                    <div className="wb-p-details__row">
+                                        {
+                                            userDetails.following > 0 ?
+                                                <button className="wb-p-details__follows__button" onClick={showFollowing}>{userDetails.following} Following</button>
+                                                :
+                                                <span>{userDetails.following} Following</span>
+                                        }
+                                        {
+                                            userDetails.followers ?
+                                                <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{userDetails.followers} Followers</button>
+                                                :
+                                                <span className="ms-2">{userDetails.followers} Followers</span>
+                                        }
 
-                                        </div>
-                                        <p className="wb-p-details__row">
-                                            <FaStar style={{ color: "gold" }} />
-                                            <b>{userDetails.xp} XP</b>
-                                        </p>
-                                        <div className="wb-p-details__row">
-                                            <p className="text-secondary wb-p-details__bio">{userDetails.bio}</p>
-                                        </div>
-                                        <div className="wb-p-details__row">
-                                            {
-                                                userDetails.countryCode &&
-                                                <>
-                                                    {<Country country={countries.find(country => country.code === userDetails.countryCode)!} />}
-                                                    <span className="mx-2">·</span>
-                                                </>
-                                            }
-                                            Lvl {userDetails.level}
-                                        </div>
+                                    </div>
+                                    <p className="wb-p-details__row">
+                                        <FaStar style={{ color: "gold" }} />
+                                        <b>{userDetails.xp} XP</b>
+                                    </p>
+                                    <div className="wb-p-details__row">
+                                        <p className="text-secondary wb-p-details__bio">{userDetails.bio}</p>
+                                    </div>
+                                    <div className="wb-p-details__row">
+                                        {
+                                            userDetails.countryCode &&
+                                            <>
+                                                {<Country country={countries.find(country => country.code === userDetails.countryCode)!} />}
+                                                <span className="mx-2">·</span>
+                                            </>
+                                        }
+                                        Lvl {userDetails.level}
                                     </div>
                                 </div>
-                            </Card>
-                        </div>
+                            </div>
+                        </Card>
                     </Container>
                 </>
             }
-        </>
+        </div>
     )
 }
 
