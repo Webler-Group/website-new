@@ -21,7 +21,7 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 
   const regex = new RegExp("^" + searchQuery, "i")
 
-  let names = fs.readdirSync(path.join(rootDir, "blogs"));
+  let names = fs.readdirSync(path.join(rootDir, "uploads", "blogs"));
 
   let posts = names.map(name => {
     const fileData = fs.readFileSync(path.join(rootDir, "blogs", name, "info.json"));

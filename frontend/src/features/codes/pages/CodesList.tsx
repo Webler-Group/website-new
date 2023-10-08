@@ -128,6 +128,7 @@ const CodesList = () => {
                         <option value="all">All</option>
                         <option value="web">Web</option>
                         <option value="c">C</option>
+                        <option value="cpp">C++</option>
                     </Form.Select>
                 </div>
             </div>

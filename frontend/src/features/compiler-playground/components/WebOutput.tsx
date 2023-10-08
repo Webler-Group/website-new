@@ -6,17 +6,31 @@ interface WebOutputProps {
     cssSource: string;
     jsSource: string;
     tabOpen: boolean;
+    language: string;
 }
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => {
+const htmlTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`;
+
+const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutputProps) => {
 
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [consoleMessages, setConsoleLogs] = useState<{ message: string; method: string; }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
+    const consoleRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const callback: (this: Window, ev: MessageEvent<any>) => void = function (response: any) {
-            console.log(response);
+
             if (response.data && response.data.console) {
                 const console = response.data.console;
                 switch (console.method) {
@@ -36,15 +50,22 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
         if (iframeRef.current && iframeRef.current.contentWindow) {
             if (tabOpen) {
 
-                const output = genOutput()
+                let output = (() => {
+                    switch (language) {
+                        case "web": return genOutput();
+                        case "cpp": case "c": return source;
+                    }
+                })()
+
                 setConsoleLogs([]);
                 iframeRef.current.contentWindow.postMessage(output, "*");
+
             }
             else {
-                iframeRef.current.contentWindow.postMessage("", "*");
+                iframeRef.current.contentWindow.postMessage(htmlTemplate, "*");
             }
         }
-    }, [tabOpen]);
+    }, [tabOpen, source]);
 
     const genOutput = () => {
         const parser = new DOMParser();
@@ -80,7 +101,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
                         <b>Console</b>
                     </div>
                 </Modal.Header>
-                <Modal.Body className="overflow-auto">
+                <Modal.Body className="overflow-auto" ref={consoleRef}>
                     {
                         consoleMessages.map((item, idx) => {
                             let colorClass = "";
@@ -97,14 +118,14 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
                                 case "info":
                                     colorClass = "text-info";
                             }
-                            return (<div className={"border-bottom text-small p-1 " + colorClass} key={idx}>{item.message}</div>)
+                            return (<div className={"border-bottom text-small " + colorClass} key={idx}>{item.message}</div>)
                         })
                     }
                 </Modal.Body>
             </Modal>
             <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/"></iframe>
             <div className="wb-web-wrapper__frame-wrapper__console-btn">
-                <Button variant="secondary" onClick={onConsoleShow}>Console</Button>
+                <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
             </div>
         </>
     )

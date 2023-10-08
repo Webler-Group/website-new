@@ -8,6 +8,7 @@ import Post from "../models/Post";
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { bundle } from "../utils/bundler";
+import path from "path";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -335,22 +336,27 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 })
 
 const compile = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const fileSuffixes: {[index: string]: string} = {
-      c: "c",
-      cpp: "cpp",
+    const fileSuffixes: { [index: string]: string } = {
+        c: "c",
+        cpp: "cpp",
     };
 
     const { source, language } = req.body;
 
 
     const fileSuffix = fileSuffixes[language];
-    if(!fileSuffix){
-      res.json({compiledHTML: "err"});
-      return;
+    if (!fileSuffix) {
+        res.json({ compiledHTML: "err" });
+        return;
+    }
+
+    const dir = "./compiler";
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
     }
 
     const subDir = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-    const dirPath = `./compiler/${subDir}`;
+    const dirPath = `${dir}/${subDir}`;
     fs.mkdirSync(dirPath);
 
     //create main source file
@@ -417,8 +423,7 @@ canvas {
 </html>
 
 `;
-    fs.writeFileSync(templatePath, templateContent);    
-
+    fs.writeFileSync(templatePath, templateContent);
 
     //create Makefile
     const makefileString = `
@@ -434,23 +439,23 @@ main: ${sourceFileName}
 
 
     //use bundler to create a web/html bundle of all emscripten files
-    const bundleString = bundle(`${dirPath}/main.html`,`${dirPath}/main.js`,`${dirPath}/main.wasm`);
+    const bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
 
 
     //return bundle
-    res.json ({ compiledHTML: bundleString});
+    res.json({ compiledHTML: bundleString });
 
 
     //delete compiled files
-/*    fs.unlink(`${dirPath}/${sourceFileName}`, ()=>{})
-    fs.unlink(`${dirPath}/main.wasm`, ()=>{})
-    fs.unlink(`${dirPath}/main.html`, ()=>{})
-    fs.unlink(`${dirPath}/main.js`, ()=>{})
-    fs.unlink(`${dirPath}/bundle.html`, ()=>{})
-    fs.unlink(`${dirPath}/Makefile`, ()=>{})
-*/
+    /*    fs.unlink(`${dirPath}/${sourceFileName}`, ()=>{})
+        fs.unlink(`${dirPath}/main.wasm`, ()=>{})
+        fs.unlink(`${dirPath}/main.html`, ()=>{})
+        fs.unlink(`${dirPath}/main.js`, ()=>{})
+        fs.unlink(`${dirPath}/bundle.html`, ()=>{})
+        fs.unlink(`${dirPath}/Makefile`, ()=>{})
+    */
     fs.rmdirSync(dirPath, { recursive: true });
-    
+
 })
 
 const codesController = {

@@ -35,13 +35,13 @@ connectDB();
 
 app.use(express.static("public"));
 
-app.use("/uploads", express.static(rootDir));
+app.use("/uploads", express.static(path.join(rootDir, "uploads")));
 
 app.use(logger);
 
 //app.use(cors(corsOptions));
 
-app.use(express.json({ limit: "2mb" }));
+app.use(express.json({ limit: "5mb" }));
 
 app.use(cookieParser());
 

@@ -685,7 +685,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const query = req.query;
-    const { codeId, parentId, index, count, filter } = req.body;
+    const { codeId, parentId, index, count, filter, findPostId } = req.body;
 
     if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
@@ -694,36 +694,57 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     let dbQuery = Post.find({ codeId, parentId, _type: 3 });
 
-    switch (filter) {
-        // Most popular
-        case 1: {
-            dbQuery = dbQuery
-                .sort({ votes: "desc", createdAt: "desc" })
-            break;
+    let skipCount = index;
+
+    if (findPostId) {
+
+        const reply = await Post.findById(findPostId);
+
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" })
+            return
         }
-        // Oldest first
-        case 2: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "asc" })
-            break;
+
+        skipCount = Math.floor((await dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()) / count) * count;
+
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" })
+    }
+    else {
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc", createdAt: "desc" })
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" })
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" })
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
         }
-        // Newest first
-        case 3: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "desc" })
-            break;
-        }
-        default:
-            throw new Error("Unknown filter");
     }
 
     const result = await dbQuery
-        .skip(index)
+        .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles") as any[];
 
     if (result) {
-        const data = result.map(x => ({
+        const data = result.map((x, offset) => ({
             id: x._id,
             parentId: x.parentId,
             codeId: x.codeId,
@@ -738,7 +759,8 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             votes: x.votes,
             isUpvoted: false,
             isAccepted: x.isAccepted,
-            answers: x.answers
+            answers: x.answers,
+            index: index + offset
         }))
 
         let promises = [];

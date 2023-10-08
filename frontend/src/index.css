@@ -118,7 +118,7 @@ ul {
 
     .wb-modal__container.comments {
         height: 796px;
-        max-height: 80vh;
+        max-height: 90vh;
         position: relative;
     }
 
@@ -490,8 +490,8 @@ ul {
 
 .wb-web-wrapper__frame-wrapper__console-btn {
     position: absolute;
-    right: 32px;
-    bottom: 24px;
+    right: 2px;
+    bottom: 4px;
 }
 
 .wb-language-types__item {
