@@ -270,16 +270,18 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         const followers = new Set(((await PostFollowing.find({ following: question._id })) as any[]).map(x => x.user.toString()));
         followers.add(question.user.toString())
-        followers.delete(currentUserId?.toString())
+        followers.delete(currentUserId)
 
         for (let userToNotify of followers) {
-            console.log(userToNotify);
 
             await Notification.create({
                 _type: 201,
                 user: userToNotify,
                 actionUser: currentUserId,
-                message: "{action_user} posted in \"" + question.title + "\"",
+                message: userToNotify === question.user.toString() ?
+                    `{action_user} answered your question "${question.title}"`
+                    :
+                    `{action_user} posted in "${question.title}"`,
                 questionId: question._id,
                 postId: reply._id
             })
@@ -692,6 +694,13 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return
     }
 
+    let parentPost: any = null;
+    if (parentId) {
+        parentPost = await Post
+            .findById(parentId)
+            .populate("user", "name avatarUrl countryCode level roles");
+    }
+
     let dbQuery = Post.find({ codeId, parentId, _type: 3 });
 
     let skipCount = index;
@@ -705,10 +714,10 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             return
         }
 
-        skipCount = Math.floor((await dbQuery
+        skipCount = Math.max(0, (await dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()) / count) * count;
+            .countDocuments()) - Math.floor(count / 2));
 
         dbQuery = dbQuery
             .sort({ createdAt: "asc" })
@@ -744,7 +753,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .populate("user", "name avatarUrl countryCode level roles") as any[];
 
     if (result) {
-        const data = result.map((x, offset) => ({
+        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
             id: x._id,
             parentId: x.parentId,
             codeId: x.codeId,
@@ -760,7 +769,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             isUpvoted: false,
             isAccepted: x.isAccepted,
             answers: x.answers,
-            index: index + offset
+            index: findPostId && parentPost ? index + offset - 1 : index + offset
         }))
 
         let promises = [];
@@ -814,6 +823,28 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     if (reply) {
 
+        const usersToNotify = new Set();
+        usersToNotify.add(code.user.toString())
+        if (parentPost !== null) {
+            usersToNotify.add(parentPost.user.toString())
+        }
+        usersToNotify.delete(currentUserId)
+
+        for (let userToNotify of usersToNotify) {
+
+            await Notification.create({
+                _type: 202,
+                user: userToNotify,
+                actionUser: currentUserId,
+                message: userToNotify === code.user.toString() ?
+                    `{action_user} posted comment on your code "${code.name}"`
+                    :
+                    `{action_user} replied to your comment on "${code.name}"`,
+                codeId: code._id,
+                postId: reply._id
+            })
+        }
+
         code.comments += 1;
         await code.save();
 
@@ -849,6 +880,8 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
         res.status(400).json({ message: "Some fields are missing" })
         return
     }
+
+    console.log("editCodeComment");
 
     const comment = await Post.findById(commentId);
 
@@ -908,6 +941,13 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     try {
+
+        await Notification.deleteMany({
+            _type: 202,
+            actionUser: currentUserId,
+            codeId: code._id,
+            postId: comment._id
+        })
 
         await Post.deleteAndCleanup({ _id: commentId });
 

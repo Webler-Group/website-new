@@ -8,6 +8,7 @@ interface FollowListProps {
     options: {
         urlPath: string;
         title: string;
+        setCount: (callback: (data: number) => number) => void;
     }
 }
 
@@ -42,9 +43,9 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
     const content = results.map((user, i) => {
 
         if (results.length === i + 1) {
-            return <FollowListProfile ref={lastProfileRef} key={user.id} user={user} />
+            return <FollowListProfile ref={lastProfileRef} key={user.id} user={user} setCount={options.setCount} />
         }
-        return <FollowListProfile key={user.id} user={user} />
+        return <FollowListProfile key={user.id} user={user} setCount={options.setCount} />
     })
 
     return (

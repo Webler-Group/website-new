@@ -15,6 +15,8 @@ router.route("/:codeId")
     .get(codesController_1.default.getCode);
 router.route("/templates/:language")
     .get(codesController_1.default.getTemplate);
+router.route("/Compile")
+    .post(codesController_1.default.compile);
 router.use(protectRoute_1.default);
 router.route("/CreateCode")
     .post(codesController_1.default.createCode);

@@ -9,9 +9,10 @@ import ProfileName from '../../../components/ProfileName';
 
 interface FollowListProfileProps {
     user: UserMinimal;
+    setCount: (callback: (data: number) => number) => void;
 }
 
-const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const FollowListProfile = React.forwardRef(({ user, setCount }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const [followLoading, setFollowLoading] = useState(false);
     const [following, setFollowing] = useState(user.isFollowing);
     const { userInfo } = useAuth();
@@ -25,6 +26,7 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
         catch (err) { }
         if (data && data.success) {
             setFollowing(true);
+            setCount(count => count + 1)
         }
         setFollowLoading(false);
     }
@@ -38,6 +40,7 @@ const FollowListProfile = React.forwardRef(({ user }: FollowListProfileProps, re
         catch (err) { }
         if (data && data.success) {
             setFollowing(false);
+            setCount(count => count - 1)
         }
         setFollowLoading(false);
     }

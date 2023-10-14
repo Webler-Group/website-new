@@ -7,6 +7,7 @@ import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
 import { ICode } from '../../codes/components/Code';
 import { useNavigate } from 'react-router-dom';
+import ApiCommunication from '../../../helpers/apiCommunication';
 
 interface ICodeComment {
     id: string;
@@ -26,23 +27,42 @@ interface CommentNodeProps {
     parentId: string | null;
     filter: number;
     onReply: (parentId: string, callback: (data: ICodeComment) => void) => void;
+    onEdit: (id: string, message: string, callback: (id: string, message: string) => void) => void;
+    onDelete: (id: string, callback: (id: string) => void) => void;
+    onVote: (id: string, vote: number) => void;
     setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
     addReplyToParent: (data: ICodeComment) => void;
+    editParentReply: (id: string, message: string) => void;
+    deleteParentReply: (id: string) => void;
 }
 
-const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, setDefaultOnReplyCallback, addReplyToParent }: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const CommentNode = React.forwardRef(({
+    code,
+    data, parentId,
+    filter,
+    onReply,
+    onEdit,
+    onDelete,
+    onVote,
+    setDefaultOnReplyCallback,
+    addReplyToParent,
+    editParentReply,
+    deleteParentReply
+}: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { userInfo } = useAuth();
     const navigate = useNavigate()
     const [replyCount, setReplyCount] = useState(data ? data.answers : 0);
     const [repliesVisible, setRepliesVisible] = useState(data === null);
-    const [lastIndex, setLastIndex] = useState({ index: 0 });
+    const [indices, setIndices] = useState({ firstIndex: 0, lastIndex: 0 });
     const {
         isLoading,
         error,
         results,
         hasNextPage,
-        add
-    } = useComments(code.id!, data ? data.id : null, 20, 0, lastIndex, filter, repliesVisible);
+        add,
+        set,
+        remove
+    } = useComments(code.id!, data ? data.id : null, 20, indices, filter, repliesVisible);
 
     useEffect(() => {
         if (data === null) {
@@ -52,7 +72,7 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
 
     useEffect(() => {
         if (repliesVisible) {
-            setLastIndex(() => ({ index: 0 }))
+            setIndices(() => ({ firstIndex: 0, lastIndex: 0 }))
         }
     }, [code, filter, repliesVisible])
 
@@ -70,7 +90,7 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
 
             if (comments[0].isIntersecting && hasNextPage) {
 
-                setLastIndex(() => ({ index: results[results.length - 1].index + 1 }));
+                setIndices(indices => ({ ...indices, lastIndex: results[results.length - 1].index + 1 }));
             }
         })
 
@@ -90,9 +110,59 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
         onReply(parentId ? parentId : data.id, parentId ? addReplyToParent : addReply);
     }
 
+    const handleEdit = () => {
+        if (data === null) {
+            return;
+        }
+        if (!userInfo) {
+            navigate("/Login");
+            return;
+        }
+        onEdit(data.id, data.message, editParentReply);
+    }
+
+    const handleDelete = () => {
+        if (data === null) {
+            return;
+        }
+        if (!userInfo) {
+            navigate("/Login");
+            return;
+        }
+        onDelete(data.id, deleteParentReply);
+    }
+
+    const handleVote = async () => {
+        if (data === null) {
+            return;
+        }
+        if (!userInfo) {
+            navigate("/Login");
+            return;
+        }
+        const vote = data.isUpvoted ? 0 : 1;
+        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
+        if (result.vote === vote) {
+            onVote(data.id, vote);
+        }
+    }
+
     const addReply = (data: ICodeComment) => {
         add(data)
         setReplyCount(count => count + 1)
+    }
+
+    const editReply = (id: string, message: string) => {
+        set(id, data => ({ ...data, message }));
+    }
+
+    const deleteReply = (id: string) => {
+        remove(id)
+        setReplyCount(count => count - 1)
+    }
+
+    const voteReply = (id: string, vote: number) => {
+        set(id, (data) => ({ ...data, votes: data.votes + vote ? 1 : -1, isUpvoted: vote === 1 }));
     }
 
     let body = (
@@ -105,10 +175,10 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
                             {
                                 (userInfo && userInfo.id === data.userId) &&
                                 <>
-                                    <span>
+                                    <span className="wb-user-comment__options__item" onClick={handleEdit}>
                                         <FaPencil />
                                     </span>
-                                    <span>
+                                    <span className="wb-user-comment__options__item" onClick={handleDelete}>
                                         <FaTrash />
                                     </span>
                                 </>
@@ -130,20 +200,20 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
                         <div className="d-flex justify-content-between">
                             <div className="d-flex gap-2 align-items-center">
                                 <div className="small">
-                                    <span className={"wb-discuss-voting__button" + (data.isUpvoted ? " text-black" : "")}>
+                                    <span className={"wb-discuss-voting__button" + (data.isUpvoted ? " text-black" : "")} onClick={handleVote}>
                                         <FaThumbsUp />
                                     </span>
                                     <span className="ms-1">{data.votes}</span>
                                 </div>
-                                <span className="small wb-user-comment-footer__reply" onClick={handleReply}>
+                                <button className="small wb-user-comment-footer__reply" onClick={handleReply}>
                                     Reply
-                                </span>
+                                </button>
                                 {
                                     (parentId === null && replyCount > 0) &&
                                     <>
-                                        <span className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={toggleReplies}>
+                                        <button className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={toggleReplies}>
                                             {replyCount} replies
-                                        </span>
+                                        </button>
                                     </>
                                 }
                             </div>
@@ -181,8 +251,13 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
                                                             parentId={data ? data.id : null}
                                                             filter={2}
                                                             onReply={onReply}
+                                                            onEdit={onEdit}
+                                                            onDelete={onDelete}
+                                                            onVote={voteReply}
                                                             setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                             addReplyToParent={addReply}
+                                                            editParentReply={editReply}
+                                                            deleteParentReply={deleteReply}
                                                         />
                                                         :
                                                         <CommentNode
@@ -191,8 +266,13 @@ const CommentNode = React.forwardRef(({ code, data, parentId, filter, onReply, s
                                                             parentId={data ? data.id : null}
                                                             filter={2}
                                                             onReply={onReply}
+                                                            onEdit={onEdit}
+                                                            onDelete={onDelete}
+                                                            onVote={voteReply}
                                                             setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                             addReplyToParent={addReply}
+                                                            editParentReply={editReply}
+                                                            deleteParentReply={deleteReply}
                                                         />
                                                 }
                                             </div>

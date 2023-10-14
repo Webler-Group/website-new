@@ -17,6 +17,8 @@ const Post_1 = __importDefault(require("../models/Post"));
 const Tag_1 = __importDefault(require("../models/Tag"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
 const Code_1 = __importDefault(require("../models/Code"));
+const PostFollowing_1 = __importDefault(require("../models/PostFollowing"));
+const Notification_1 = __importDefault(require("../models/Notification"));
 const createQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -41,6 +43,10 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         user: currentUserId
     });
     if (question) {
+        yield PostFollowing_1.default.create({
+            user: currentUserId,
+            following: question._id
+        });
         res.json({
             question: {
                 id: question._id,
@@ -185,7 +191,8 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
     if (question) {
         //const answers = await Post.countDocuments({ parentId: questionId });
         //const votes = await Upvote.countDocuments({ parentId: questionId });
-        const isUpvoted = currentUserId ? yield Upvote_1.default.findOne({ parentId: questionId, user: currentUserId }) : false;
+        const isUpvoted = currentUserId ? (yield Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
+        const isFollowed = currentUserId ? (yield PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
         res.json({
             question: {
                 id: question._id,
@@ -202,7 +209,8 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
                 answers: question.answers,
                 votes: question.votes,
                 isUpvoted,
-                isAccepted: question.isAccepted
+                isAccepted: question.isAccepted,
+                isFollowed
             }
         });
     }
@@ -225,6 +233,32 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
         user: currentUserId
     });
     if (reply) {
+        const questionFollowed = yield PostFollowing_1.default.findOne({
+            user: currentUserId,
+            following: question._id
+        });
+        if (questionFollowed === null) {
+            yield PostFollowing_1.default.create({
+                user: currentUserId,
+                following: question._id
+            });
+        }
+        const followers = new Set((yield PostFollowing_1.default.find({ following: question._id })).map(x => x.user.toString()));
+        followers.add(question.user.toString());
+        followers.delete(currentUserId);
+        for (let userToNotify of followers) {
+            yield Notification_1.default.create({
+                _type: 201,
+                user: userToNotify,
+                actionUser: currentUserId,
+                message: userToNotify === question.user.toString() ?
+                    `{action_user} answered your question "${question.title}"`
+                    :
+                        `{action_user} posted in "${question.title}"`,
+                questionId: question._id,
+                postId: reply._id
+            });
+        }
         question.answers += 1;
         yield question.save();
         res.json({
@@ -248,42 +282,59 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
     const currentUserId = req.userId;
     const query = req.query;
     const questionId = req.params.questionId;
-    const page = Number(query.page);
+    const index = Number(query.index);
     const count = Number(query.count);
     const filter = Number(query.filter);
-    if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger(filter)) {
+    const replyId = query.findPostId;
+    if (!Number.isInteger(index) || !Number.isInteger(count) || !Number.isInteger(filter)) {
         res.status(400).json({ message: "Invalid query params" });
         return;
     }
     let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2 });
-    switch (filter) {
-        // Most popular
-        case 1: {
-            dbQuery = dbQuery
-                .sort({ votes: "desc" });
-            break;
+    let skipCount = index;
+    if (replyId) {
+        const reply = yield Post_1.default.findById(replyId);
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" });
+            return;
         }
-        // Oldest first
-        case 2: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "asc" });
-            break;
+        skipCount = Math.floor((yield dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()) / count) * count;
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" });
+    }
+    else {
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc" });
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" });
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" });
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
         }
-        // Newest first
-        case 3: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "desc" });
-            break;
-        }
-        default:
-            throw new Error("Unknown filter");
     }
     const result = yield dbQuery
-        .skip((page - 1) * count)
+        .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles");
     if (result) {
-        const data = result.map(x => ({
+        const data = result.map((x, offset) => ({
             id: x._id,
             parentId: x.parentId,
             message: x.message,
@@ -297,7 +348,8 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
             votes: x.votes,
             isUpvoted: false,
             isAccepted: x.isAccepted,
-            answers: x.answers
+            answers: x.answers,
+            index: skipCount + offset
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -485,6 +537,12 @@ const deleteReply = (0, express_async_handler_1.default)((req, res) => __awaiter
     }
     try {
         yield Post_1.default.deleteAndCleanup({ _id: replyId });
+        yield Notification_1.default.deleteMany({
+            _type: 201,
+            actionUser: currentUserId,
+            questionId: question._id,
+            postId: reply._id
+        });
         res.json({ success: true });
     }
     catch (err) {
@@ -523,40 +581,62 @@ const votePost = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
 const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
     const query = req.query;
-    const { codeId, parentId, page, count, filter } = req.body;
-    if (typeof filter === "undefined" || typeof page === "undefined" || typeof count === "undefined") {
+    const { codeId, parentId, index, count, filter, findPostId } = req.body;
+    if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
         return;
     }
+    let parentPost = null;
+    if (parentId) {
+        parentPost = yield Post_1.default
+            .findById(parentId)
+            .populate("user", "name avatarUrl countryCode level roles");
+    }
     let dbQuery = Post_1.default.find({ codeId, parentId, _type: 3 });
-    switch (filter) {
-        // Most popular
-        case 1: {
-            dbQuery = dbQuery
-                .sort({ votes: "desc", createdAt: "desc" });
-            break;
+    let skipCount = index;
+    if (findPostId) {
+        const reply = yield Post_1.default.findById(findPostId);
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" });
+            return;
         }
-        // Oldest first
-        case 2: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "asc" });
-            break;
+        skipCount = Math.max(0, (yield dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()) - Math.floor(count / 2));
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" });
+    }
+    else {
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc", createdAt: "desc" });
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" });
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" });
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
         }
-        // Newest first
-        case 3: {
-            dbQuery = dbQuery
-                .sort({ createdAt: "desc" });
-            break;
-        }
-        default:
-            throw new Error("Unknown filter");
     }
     const result = yield dbQuery
-        .skip((page - 1) * count)
+        .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles");
     if (result) {
-        const data = result.map(x => ({
+        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
             id: x._id,
             parentId: x.parentId,
             codeId: x.codeId,
@@ -571,7 +651,8 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             votes: x.votes,
             isUpvoted: false,
             isAccepted: x.isAccepted,
-            answers: x.answers
+            answers: x.answers,
+            index: findPostId && parentPost ? index + offset - 1 : index + offset
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -615,6 +696,25 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
         user: currentUserId
     });
     if (reply) {
+        const usersToNotify = new Set();
+        usersToNotify.add(code.user.toString());
+        if (parentPost !== null) {
+            usersToNotify.add(parentPost.user.toString());
+        }
+        usersToNotify.delete(currentUserId);
+        for (let userToNotify of usersToNotify) {
+            yield Notification_1.default.create({
+                _type: 202,
+                user: userToNotify,
+                actionUser: currentUserId,
+                message: userToNotify === code.user.toString() ?
+                    `{action_user} posted comment on your code "${code.name}"`
+                    :
+                        `{action_user} replied to your comment on "${code.name}"`,
+                codeId: code._id,
+                postId: reply._id
+            });
+        }
         code.comments += 1;
         yield code.save();
         if (parentPost) {
@@ -646,6 +746,7 @@ const editCodeComment = (0, express_async_handler_1.default)((req, res) => __awa
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
+    console.log("editCodeComment");
     const comment = yield Post_1.default.findById(commentId);
     if (comment === null) {
         res.status(404).json({ message: "Post not found" });
@@ -692,12 +793,77 @@ const deleteCodeComment = (0, express_async_handler_1.default)((req, res) => __a
         return;
     }
     try {
+        yield Notification_1.default.deleteMany({
+            _type: 202,
+            actionUser: currentUserId,
+            codeId: code._id,
+            postId: comment._id
+        });
         yield Post_1.default.deleteAndCleanup({ _id: commentId });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
+}));
+const followQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { postId } = req.body;
+    if (typeof postId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    const postExists = yield Post_1.default.findOne({ _id: postId });
+    if (!postExists) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+    }
+    if (postExists._type !== 1) {
+        res.status(405).json({ message: "Post is not a question" });
+        return;
+    }
+    const exists = yield PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
+    if (exists) {
+        res.status(204).json({ success: true });
+        return;
+    }
+    const postFollowing = yield PostFollowing_1.default.create({
+        user: currentUserId,
+        following: postId
+    });
+    if (postFollowing) {
+        res.json({ success: true });
+        return;
+    }
+    res.status(500).json({ success: false });
+}));
+const unfollowQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { postId } = req.body;
+    if (typeof postId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    const postExists = yield Post_1.default.findOne({ _id: postId });
+    if (!postExists) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+    }
+    if (postExists._type !== 1) {
+        res.status(405).json({ message: "Post is not a question" });
+        return;
+    }
+    const postFollowing = yield PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
+    if (postFollowing === null) {
+        res.status(204).json({ success: true });
+        return;
+    }
+    const result = yield PostFollowing_1.default.deleteOne({ user: currentUserId, following: postId });
+    if (result.deletedCount == 1) {
+        res.json({ success: true });
+        return;
+    }
+    res.status(500).json({ success: false });
 }));
 const discussController = {
     createQuestion,
@@ -715,6 +881,8 @@ const discussController = {
     createCodeComment,
     getCodeComments,
     editCodeComment,
-    deleteCodeComment
+    deleteCodeComment,
+    followQuestion,
+    unfollowQuestion
 };
 exports.default = discussController;

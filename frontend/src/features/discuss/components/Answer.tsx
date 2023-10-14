@@ -52,11 +52,11 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
 
     let isAccepted = acceptedAnswer === answer.id;
     let isNewlyCreated = newlyCreatedAnswer === answer.id;
-    let borderClassName = (isAccepted || isNewlyCreated) ?
-        " border-2 border-" + (isAccepted ? "success" : "warning") : ""
+    let borderClassName = isAccepted ? " border-2 border-success" : "";
+    let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
-        <div className={"rounded border p-2 mb-2 bg-white position-relative" + borderClassName}>
+        <div className={"rounded border p-2 mb-2 position-relative" + borderClassName} style={{ background: bg }}>
             {
                 isOwner &&
                 <span className="wb-discuss-reply__edit-button" onClick={() => showEditAnswer(answer.id)}>
@@ -66,8 +66,8 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
             <div className="d-flex">
                 <div className="wb-discuss-reply__actions">
                     {
-                        isQuestionOwner &&
-                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")}>
+                        (isQuestionOwner || isAccepted) &&
+                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")} style={{ cursor: isQuestionOwner ? "pointer" : "default" }}>
                             <FaCheckCircle />
                         </div>
                     }

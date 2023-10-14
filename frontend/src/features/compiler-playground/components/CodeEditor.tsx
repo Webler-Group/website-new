@@ -21,20 +21,6 @@ interface CodeEditorProps {
     options: { scale: number };
 }
 
-const compiledHtmlTemplate = (body: string) => {
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    ${body}
-</body>
-</html>`;
-}
-
 const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
 
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
@@ -46,7 +32,6 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     useEffect(() => {
         setIsCompiled(false)
-        setCompiledHTML(compiledHtmlTemplate(`<p>Compiling, please wait...</p>`))
     }, [source])
 
     useEffect(() => {
@@ -78,19 +63,16 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         if (result && result.compiledHTML) {
             setCompiledHTML(result.compiledHTML);
         }
-        else {
-            setCompiledHTML(compiledHtmlTemplate(`<p style="color: red; background: black;">${result.message}</p>`))
-        }
         setIsCompiled(true)
     }
 
     let outputTab: ReactNode;
     switch (code.language) {
         case "web":
-            outputTab = <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} />;
+            outputTab = <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={true} />;
             break;
         case "c": case "cpp":
-            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} />;
+            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={isCompiled} />;
             break;
     }
 

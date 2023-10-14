@@ -46,7 +46,7 @@ const codeSchema = new mongoose_1.default.Schema({
     jsSource: {
         type: String,
         default: ""
-    }
+    },
 }, {
     timestamps: true
 });

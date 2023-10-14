@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { ICodeComment } from "../components/CommentNode"
 import ApiCommunication from "../../../helpers/apiCommunication"
 
-const useComments = (codeId: string, parentId: string | null, count: number, firstIndex: number, lastIndex: { index: number; }, filter: number, repliesVisible: boolean) => {
+const useComments = (codeId: string, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number }, filter: number, repliesVisible: boolean) => {
 
     const [results, setResults] = useState<ICodeComment[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -20,7 +20,7 @@ const useComments = (codeId: string, parentId: string | null, count: number, fir
         const result = await ApiCommunication.sendJsonRequest("/Discussion/GetCodeComments", "POST", {
             codeId,
             parentId,
-            index: fromEnd ? lastIndex.index : firstIndex - count,
+            index: fromEnd ? indices.lastIndex : indices.firstIndex - count,
             count,
             filter
         },
@@ -33,7 +33,7 @@ const useComments = (codeId: string, parentId: string | null, count: number, fir
 
         if (result && result.posts) {
 
-            let keepPrev = lastIndex.index > 0;
+            let keepPrev = indices.lastIndex > 0;
             setResults(prev => keepPrev ? [...prev, ...result.posts] : result.posts);
             setHasNextPage(result.posts.length === count);
         }
@@ -45,10 +45,36 @@ const useComments = (codeId: string, parentId: string | null, count: number, fir
         if (repliesVisible) {
             getComments(true)
         }
-    }, [lastIndex])
+
+    }, [indices])
 
     const add = (data: ICodeComment) => {
         setResults(prev => [data, ...prev]);
+    }
+
+    const set = (id: string, callback: (data: ICodeComment) => ICodeComment) => {
+        setResults(prev => prev.map(item => {
+            if (item.id === id) {
+                return { ...callback(item) }
+            }
+            return item
+        }));
+    }
+
+    const remove = (id: string) => {
+        setResults(prev => {
+            const results: ICodeComment[] = [];
+            let isAfterDeleted = false;
+            for (let item of prev) {
+                if (item.id === id) {
+                    isAfterDeleted = true;
+                }
+                else {
+                    results.push({ ...item, index: isAfterDeleted ? item.index - 1 : item.index });
+                }
+            }
+            return results;
+        });
     }
 
     return {
@@ -56,7 +82,9 @@ const useComments = (codeId: string, parentId: string | null, count: number, fir
         isLoading,
         error,
         hasNextPage,
-        add
+        add,
+        set,
+        remove
     }
 }
 

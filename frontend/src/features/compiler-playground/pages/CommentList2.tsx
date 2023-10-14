@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
+import { useRef, useState } from "react";
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas } from "react-bootstrap";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
@@ -10,14 +10,15 @@ interface CommentListProps {
     code: ICode;
     visible: boolean;
     onHide: () => void;
+    commentCount: number;
+    setCommentCount: (callback: (data: number) => number) => void;
 }
 
-const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
+const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: CommentListProps) => {
 
     const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const [loading, setLoading] = useState(false)
-    const [commentCount, setCommentCount] = useState(code.comments);
+    const [_, setLoading] = useState(false)
     const [filter, setFilter] = useState(1);
     const commentContainerRef = useRef<HTMLDivElement>(null);
     const [answerFormVisible, setAnswerFormVisible] = useState(false);
@@ -26,6 +27,9 @@ const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
     const [parentComment, setParentComment] = useState<string | null>(null);
     const [onReplyCallback, setOnReplyCallback] = useState<(data: ICodeComment) => void>();
     const [defaultOnReplyCallback, setDefaultOnReplyCallback] = useState<(data: ICodeComment) => void>();
+    const [onEditCallback, setOnEditCallback] = useState<(id: string, message: string) => void>();
+    const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
+    const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
 
     const showAnswerForm = (input: string, editedComment: string | null) => {
         setAnswerFormVisible(true);
@@ -68,8 +72,42 @@ const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
         setLoading(false);
     }
 
-    const handleEditAnswer = () => {
+    const handleEditAnswer = async () => {
+        if (!code || !code.id) {
+            return
+        }
+        if (!userInfo) {
+            navigate("/Login");
+            return
+        }
+        setLoading(true);
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/EditCodeComment`, "PUT", {
+            message: answerFormMessage,
+            commentId: editedComment
+        });
+        if (result && result.success) {
+            onEditCallback!(result.data.id, result.data.message);
+            hideAnswerForm();
+        }
+        else {
 
+        }
+        setLoading(false);
+    }
+
+    const handleDeleteComment = async () => {
+        setLoading(true);
+        const result = await ApiCommunication.sendJsonRequest("/Discussion/DeleteCodeComment", "DELETE", { commentId: editedComment });
+        if (result && result.success) {
+            closeDeleteModal();
+            hideAnswerForm();
+            onDeleteCallback!(editedComment!)
+            setCommentCount(commentCount => commentCount - 1);
+        }
+        else {
+
+        }
+        setLoading(false);
     }
 
     const onReply = (parentId: string, callback: (data: ICodeComment) => void) => {
@@ -78,13 +116,36 @@ const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
         setOnReplyCallback(() => callback);
     }
 
+    const onEdit = (id: string, message: string, callback: (id: string, message: string) => void) => {
+        showAnswerForm(message, id);
+        setOnEditCallback(() => callback);
+    }
+
+    const onDelete = (id: string, callback: (id: string) => void) => {
+        setEditedComment(id);
+        setDeleteModalVisible(true);
+        setOnDeleteCallback(() => callback);
+    }
+
+    const closeDeleteModal = () => setDeleteModalVisible(false);
+
     return (
         <>
-            <Modal show={visible} onHide={onHide} centered fullscreen="sm-down" contentClassName="wb-modal__container comments">
+            <Modal size="sm" show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>{commentCount} Comments</Modal.Title>
+                    <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
-                <Modal.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                <Modal.Body>Your answer will be permanently deleted.</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDeleteComment}>Delete</Button>
+                </Modal.Footer>
+            </Modal>
+            <Offcanvas show={visible} onHide={onHide} placement="end">
+                <Offcanvas.Header closeButton>
+                    <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
+                </Offcanvas.Header>
+                <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
                     <div className="d-flex justify-content-between">
                         <div className="col-6 col-sm-4">
                             <Form.Select size="sm" value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
@@ -101,8 +162,13 @@ const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
                             parentId={null}
                             filter={filter}
                             onReply={onReply}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onVote={() => { }}
                             setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                             addReplyToParent={() => { }}
+                            editParentReply={() => { }}
+                            deleteParentReply={() => { }}
                         />
                     </div>
                     <div className="py-2 border-top">
@@ -127,8 +193,8 @@ const CommentList2 = ({ code, visible, onHide }: CommentListProps) => {
                             </div>
                         </div>
                     </div>
-                </Modal.Body>
-            </Modal>
+                </Offcanvas.Body>
+            </Offcanvas>
         </>
     )
 }

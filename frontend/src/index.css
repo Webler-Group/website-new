@@ -472,7 +472,6 @@ ul {
 }
 
 .wb-discuss-reply__actions__best-answer-button {
-    cursor: pointer;
     font-size: 26px;
 }
 
@@ -582,12 +581,25 @@ ul {
     top: 5px;
 }
 
-.wb-user-comment-footer__reply {
+.wb-user-comment__options__item {
     cursor: pointer;
 }
 
-.wb-user-comment-footer__replies {
-    cursor: pointer;
+.wb-user-comment__options__item:hover {
+    color: gray;
+}
+
+.wb-user-comment-footer__replies,
+.wb-user-comment-footer__reply {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.wb-user-comment-footer__replies:hover,
+.wb-user-comment-footer__reply:hover {
+    background: none;
+    text-shadow: -0.025rem -0.012rem 0 currentcolor, .025rem .012rem currentcolor;
 }
 
 .wb-user-comment__thread {

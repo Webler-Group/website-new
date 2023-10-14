@@ -17,6 +17,9 @@ const Code_1 = __importDefault(require("../models/Code"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
 const templates_1 = __importDefault(require("../data/templates"));
 const Post_1 = __importDefault(require("../models/Post"));
+const fs_1 = __importDefault(require("fs"));
+const child_process_1 = require("child_process");
+const bundler_1 = require("../utils/bundler");
 const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, language, source, cssSource, jsSource } = req.body;
     const currentUserId = req.userId;
@@ -137,7 +140,8 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
             comments: x.comments,
             votes: x.votes,
             isUpvoted: false,
-            isPublic: x.isPublic
+            isPublic: x.isPublic,
+            language: x.language
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -293,6 +297,103 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     yield code.save();
     res.json({ vote: upvote ? 1 : 0 });
 }));
+const compile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const fileSuffixes = {
+        c: "c",
+        cpp: "cpp",
+    };
+    const { source, language } = req.body;
+    const fileSuffix = fileSuffixes[language];
+    if (!fileSuffix) {
+        res.json({ compiledHTML: "err" });
+        return;
+    }
+    const dir = "./compiler";
+    if (!fs_1.default.existsSync(dir)) {
+        fs_1.default.mkdirSync(dir);
+    }
+    const subDir = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+    const dirPath = `./compiler/${subDir}`;
+    fs_1.default.mkdirSync(dirPath);
+    //create main source file
+    const sourceFileName = `main.${fileSuffix}`;
+    const sourcePath = `${dirPath}/${sourceFileName}`;
+    fs_1.default.writeFileSync(sourcePath, source);
+    //creat htmlTemplate file
+    const templatePath = `${dirPath}/main.html`;
+    const templateContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+body {
+    margin: 0;
+    background: #000000;
+    color: #CCCCCC;
+    width: 100%;
+}
+#output{
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    font-size: 14px;
+    font-family: monospace;
+    padding: 5px;
+}
+#canvas {
+    display: block;
+    max-width: 100%;
+}
+    </style>
+</head>
+<body>
+    <canvas width="0" height="0" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="output"></div>
+    <script>
+
+        var Module = {
+            print: (function(){
+                const output = document.querySelector("#output");
+                if(output) output.innerText = "";
+                return (function(text){
+                    if(output) output.innerText += text + "\\n";
+                    console.log(text);
+                })
+            })(),
+            canvas: (function() { return document.getElementById('canvas'); })(),
+            wasmBinary: (function(){return {{{ WASMBIN }}} })()
+        }
+    </script>
+    {{{ SCRIPT }}}
+</body>
+</html>`;
+    fs_1.default.writeFileSync(templatePath, templateContent);
+    //create Makefile
+    const makefileString = `
+all: main
+
+main: ${sourceFileName}
+	emcc -O0 -o main.js -sUSE_SDL=2 -sFETCH=1 -sUSE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["bmp","png","xpm", "jpg"]' -sUSE_SDL_TTF=2 -D PLATFORM_WEB ${sourceFileName}
+
+`;
+    fs_1.default.writeFileSync(`${dirPath}/Makefile`, makefileString);
+    //run make
+    (0, child_process_1.execSync)(`(cd ${dirPath} && make)`);
+    //use bundler to create a web/html bundle of all emscripten files
+    const bundleString = (0, bundler_1.bundle)(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
+    //delete compiled files
+    try {
+        fs_1.default.rmSync(dirPath, { recursive: true });
+    }
+    catch (err) {
+        console.log(err);
+    }
+    //return bundle
+    res.json({ compiledHTML: bundleString });
+}));
 const codesController = {
     createCode,
     getCodeList,
@@ -300,6 +401,7 @@ const codesController = {
     getTemplate,
     editCode,
     deleteCode,
-    voteCode
+    voteCode,
+    compile
 };
 exports.default = codesController;

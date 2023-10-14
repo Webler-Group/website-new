@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const User_1 = __importDefault(require("../models/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
+const Notification_1 = __importDefault(require("../models/Notification"));
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
     const userId = req.params.userId;
@@ -160,6 +161,12 @@ const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void
         following: userId
     });
     if (userFollowing) {
+        yield Notification_1.default.create({
+            user: userId,
+            actionUser: currentUserId,
+            _type: 101,
+            message: "{action_user} followed you"
+        });
         res.json({ success: true });
         return;
     }
@@ -183,6 +190,11 @@ const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     }
     const result = yield UserFollowing_1.default.deleteOne({ user: currentUserId, following: userId });
     if (result.deletedCount == 1) {
+        yield Notification_1.default.deleteOne({
+            user: userId,
+            actionUser: currentUserId,
+            _type: 101
+        });
         res.json({ success: true });
         return;
     }
@@ -270,6 +282,86 @@ const getFollowing = (0, express_async_handler_1.default)((req, res) => __awaite
         res.status(500).json({ success: false });
     }
 }));
+const getNotifications = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { count, fromId } = req.body;
+    if (typeof count === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    let dbQuery = Notification_1.default
+        .find({ user: currentUserId })
+        .sort({ createdAt: "desc" });
+    if (typeof fromId !== "undefined") {
+        const prevNotification = yield Notification_1.default.findById(fromId);
+        if (prevNotification !== null) {
+            dbQuery = dbQuery
+                .where({ createdAt: { $lt: prevNotification.createdAt } });
+        }
+    }
+    const result = yield dbQuery
+        .limit(count)
+        .populate("user", "name avatarUrl countryCode level roles")
+        .populate("actionUser", "name avatarUrl countryCode level roles");
+    if (result) {
+        const data = result.map(x => ({
+            id: x._id,
+            type: x._type,
+            message: x.message,
+            date: x.createdAt,
+            user: {
+                id: x.user._id,
+                name: x.user.name,
+                countryCode: x.user.countryCode,
+                level: x.user.level,
+                roles: x.user.roles
+            },
+            actionUser: {
+                id: x.actionUser._id,
+                name: x.actionUser.name,
+                countryCode: x.actionUser.countryCode,
+                level: x.actionUser.level,
+                roles: x.actionUser.roles
+            },
+            isSeen: x.isSeen,
+            isClicked: x.isClicked,
+            codeId: x.codeId,
+            postId: x.postId,
+            questionId: x.questionId
+        }));
+        res.json({
+            notifications: data
+        });
+    }
+    else {
+        res.status(500).json({ message: "error" });
+    }
+}));
+const getUnseenNotificationCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const count = yield Notification_1.default.countDocuments({ user: currentUserId, isClicked: false });
+    res.json({ count });
+}));
+const markNotificationsSeen = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { fromId } = req.body;
+    if (typeof fromId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    // TODO
+    res.json({});
+}));
+const markNotificationsClicked = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { ids } = req.body;
+    if (typeof ids !== "undefined") {
+        yield Notification_1.default.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } });
+    }
+    else {
+        yield Notification_1.default.updateMany({ user: currentUserId, isClicked: false }, { $set: { isClicked: true } });
+    }
+    res.json({});
+}));
 const controller = {
     getProfile,
     updateProfile,
@@ -277,6 +369,10 @@ const controller = {
     follow,
     unfollow,
     getFollowers,
-    getFollowing
+    getFollowing,
+    getNotifications,
+    getUnseenNotificationCount,
+    markNotificationsSeen,
+    markNotificationsClicked
 };
 exports.default = controller;

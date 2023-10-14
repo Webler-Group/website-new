@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const Upvote_1 = __importDefault(require("./Upvote"));
 const Code_1 = __importDefault(require("./Code"));
+const PostFollowing_1 = __importDefault(require("./PostFollowing"));
 const postSchema = new mongoose_1.default.Schema({
     /*
     * 1 - question
@@ -79,6 +80,7 @@ postSchema.statics.deleteAndCleanup = function (filter) {
             switch (post._type) {
                 case 1: {
                     yield Post.deleteAndCleanup({ parentId: post._id });
+                    yield PostFollowing_1.default.deleteMany({ following: post._id });
                     break;
                 }
                 case 2: {

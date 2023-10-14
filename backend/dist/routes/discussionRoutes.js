@@ -42,4 +42,8 @@ router.route("/EditCodeComment")
     .put(discussionController_1.default.editCodeComment);
 router.route("/DeleteCodeComment")
     .delete(discussionController_1.default.deleteCodeComment);
+router.route("/FollowQuestion")
+    .post(discussionController_1.default.followQuestion);
+router.route("/UnfollowQuestion")
+    .post(discussionController_1.default.unfollowQuestion);
 exports.default = router;

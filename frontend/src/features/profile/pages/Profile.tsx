@@ -37,6 +37,8 @@ const Profile = () => {
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
     const { userInfo } = useAuth();
     const [followLoading, setFollowLoading] = useState(false);
+    const [followingCount, setFollowingCount] = useState(0);
+    const [followersCount, setFollowersCount] = useState(0);
 
     const [followListVisible, setFollowListVisible] = useState(0);
 
@@ -46,6 +48,8 @@ const Profile = () => {
             .then(data => {
                 if (data.userDetails) {
                     setUserDetails(data.userDetails);
+                    setFollowingCount(data.userDetails.following);
+                    setFollowersCount(data.userDetails.followers);
                 }
             })
     }, [userId]);
@@ -114,11 +118,11 @@ const Profile = () => {
                 <>
                     {
                         followListVisible == 1 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/${userId}/followers` }} />
+                        <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/${userId}/followers`, setCount: setFollowingCount }} />
                     }
                     {
                         followListVisible == 2 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/${userId}/following` }} />
+                        <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/${userId}/following`, setCount: setFollowingCount }} />
                     }
                     {setPageTitle(userDetails.name)}
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
@@ -150,14 +154,14 @@ const Profile = () => {
                                     </div>
                                     <div className="wb-p-details__row">
                                         {
-                                            userDetails.following > 0 ?
-                                                <button className="wb-p-details__follows__button" onClick={showFollowing}>{userDetails.following} Following</button>
+                                            followingCount > 0 ?
+                                                <button className="wb-p-details__follows__button" onClick={showFollowing}>{followingCount} Following</button>
                                                 :
                                                 <span>{userDetails.following} Following</span>
                                         }
                                         {
-                                            userDetails.followers ?
-                                                <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{userDetails.followers} Followers</button>
+                                            followersCount > 0 ?
+                                                <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{followersCount} Followers</button>
                                                 :
                                                 <span className="ms-2">{userDetails.followers} Followers</span>
                                         }

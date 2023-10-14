@@ -144,7 +144,8 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             comments: x.comments,
             votes: x.votes,
             isUpvoted: false,
-            isPublic: x.isPublic
+            isPublic: x.isPublic,
+            language: x.language
         }));
 
         let promises = [];
@@ -356,7 +357,7 @@ const compile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const subDir = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-    const dirPath = `${dir}/${subDir}`;
+    const dirPath = `./compiler/${subDir}`;
     fs.mkdirSync(dirPath);
 
     //create main source file
@@ -368,69 +369,62 @@ const compile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const templatePath = `${dirPath}/main.html`;
     const templateContent = `
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
     <style>
-#output{
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-    color: lime;
-    background-color: black;
-    width: 80ch;
+body {
+    margin: 0;
+    background: #000000;
+    color: #CCCCCC;
+    width: 100%;
 }
-canvas {
-    padding-left: 0;
-    padding-right: 0;
-    margin-left: auto;
-    margin-right: auto;
+#output{
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    font-size: 14px;
+    font-family: monospace;
+    padding: 5px;
+}
+#canvas {
     display: block;
-    width: 61vw;
-    font-family: mono;
+    max-width: 100%;
 }
     </style>
 </head>
-
 <body>
+    <canvas width="0" height="0" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
+    <div id="output"></div>
+    <script>
 
-    <canvas width=0 height=0 id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <hr>
-    <pre id="output"></pre>
-    <script type='text/javascript'>
         var Module = {
             print: (function(){
-                      var output = document.querySelector("#output");
-                      if(output) output.innerText = "";
-                      return (function(text){
-                               if(output)
-                               output.innerText += text + "\\n";
-                               console.log(text)
-                             })
-                    })(),
+                const output = document.querySelector("#output");
+                if(output) output.innerText = "";
+                return (function(text){
+                    if(output) output.innerText += text + "\\n";
+                    console.log(text);
+                })
+            })(),
             canvas: (function() { return document.getElementById('canvas'); })(),
             wasmBinary: (function(){return {{{ WASMBIN }}} })()
-        };
+        }
     </script>
     {{{ SCRIPT }}}
-
 </body>
-
-</html>
-
-`;
+</html>`;
     fs.writeFileSync(templatePath, templateContent);
+
 
     //create Makefile
     const makefileString = `
 all: main
 
 main: ${sourceFileName}
-	emcc ${sourceFileName} -s USE_SDL=2 -s USE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["bmp", "png", "xpm", "jpg"]' -s FETCH=1 -s USE_SDL_TTF=2 -o main.js
+	emcc -O0 -o main.js -sUSE_SDL=2 -sFETCH=1 -sUSE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["bmp","png","xpm", "jpg"]' -sUSE_SDL_TTF=2 -D PLATFORM_WEB ${sourceFileName}
 
 `;
     fs.writeFileSync(`${dirPath}/Makefile`, makefileString);
@@ -443,7 +437,12 @@ main: ${sourceFileName}
 
 
     //delete compiled files
-
+    try {
+        fs.rmSync(dirPath, { recursive: true });
+    }
+    catch (err) {
+        console.log(err);
+    }
 
     //return bundle
     res.json({ compiledHTML: bundleString });

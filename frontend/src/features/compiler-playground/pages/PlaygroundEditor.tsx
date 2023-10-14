@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
@@ -9,14 +9,15 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
-import CommentList from "./CommentList";
 import LoginForm from "../../auth/components/LoginForm";
 import RegisterForm from "../../auth/components/RegisterForm";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import CommentList2 from "./CommentList2";
 
+const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
+
 interface PlaygroundEditorProps {
-    language: string;
+    language: any;
 }
 
 const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
@@ -39,7 +40,14 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [authModalVisible, setAuthModalVisible] = useState(false);
     const [isUserRegistering, setUserAuthPage] = useState(true);
     const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
-    const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
+    const [commentCount, setCommentCount] = useState(0);
+    const location = useLocation();
+
+    useEffect(() => {
+        if (location.state && location.state.postId) {
+            setCommentModalVisible(true);
+        }
+    }, [location])
 
     useEffect(() => {
         if (codeId) {
@@ -108,6 +116,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setSource(result.code.source);
             setCss(result.code.cssSource);
             setJs(result.code.jsSource);
+            setCommentCount(result.code.comments);
         }
     }
 
@@ -151,9 +160,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 "/* " + message + " */",
                 "// " + message
             ]
-            case "c": return [
-                "// " + message ,
-                "// " + message,
+            case "c": case "cpp": return [
                 "// " + message
             ]
             default:
@@ -180,7 +187,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 jsSource: (creditsHeaders[2] ? creditsHeaders[2] + "\n" : "") + js
             });
             if (result && result.code) {
-                navigate("/Compiler-Playground/" + result.code.id, { replace: true })
+                navigate("/Compiler-Playground/" + result.code.id, { replace: false })
             }
             else {
 
@@ -318,7 +325,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             {
                 (code && code.id) &&
                 <>
-                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} />
+                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} commentCount={commentCount} setCommentCount={setCommentCount} />
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>Code details</Modal.Title>
@@ -399,7 +406,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>
                                             <FaComment />
                                         </span>
-                                        <span>{code.comments}</span>
+                                        <span>{commentCount}</span>
                                     </div>
                                 </>
                             }

@@ -15,6 +15,7 @@ interface INotification {
     actionUser: UserMinimal;
     questionId: string;
     postId: string;
+    codeId: string;
     isClicked: boolean;
 }
 
@@ -49,6 +50,10 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 break;
             case 201:
                 link.to = "/Discuss/" + notification.questionId;
+                link.state = { postId: notification.postId };
+                break;
+            case 202:
+                link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId };
                 break;
         }

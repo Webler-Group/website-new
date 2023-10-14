@@ -13,17 +13,13 @@ router.route("/:codeId")
     .get(codesController.getCode);
 router.route("/templates/:language")
     .get(codesController.getTemplate);
-
-
+router.route("/Compile")
+    .post(codesController.compile);
 
 router.use(protectRoute);
 
 router.route("/CreateCode")
     .post(codesController.createCode);
-
-router.route("/Compile")
-    .post(codesController.compile);;
-
 router.route("/EditCode")
     .put(codesController.editCode);
 router.route("/DeleteCode")

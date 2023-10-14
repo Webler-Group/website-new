@@ -8,6 +8,7 @@ interface WebOutputProps {
     jsSource: string;
     tabOpen: boolean;
     language: string;
+    isCompiled: boolean;
 }
 
 const htmlTemplate = `<!DOCTYPE html>
@@ -22,7 +23,7 @@ const htmlTemplate = `<!DOCTYPE html>
 </body>
 </html>`;
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled }: WebOutputProps) => {
 
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
@@ -55,7 +56,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutput
 
     useEffect(() => {
         if (iframeRef.current && iframeRef.current.contentWindow) {
-            if (tabOpen) {
+            if (tabOpen && isCompiled) {
 
                 let output = (() => {
                     switch (language) {
@@ -72,7 +73,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutput
                 iframeRef.current.contentWindow.postMessage(htmlTemplate, "*");
             }
         }
-    }, [tabOpen, source]);
+    }, [tabOpen, source, isCompiled]);
 
     const clearConsole = () => {
         setConsoleLogs(() => [])
@@ -191,8 +192,6 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutput
         return <span style={{ color: "#FFFFFF" }}>{item}</span>
     }
 
-
-
     return (
         <>
             <Modal show={consoleVisible} onHide={onConsoleHide} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
@@ -273,9 +272,17 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language }: WebOutput
                     }
                 </Modal.Body>
             </Modal>
-            <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/"></iframe>
-            <div className="wb-web-wrapper__frame-wrapper__console-btn">
-                <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
+            {
+                isCompiled === false &&
+                <div className="h-100 bg-white">
+                    <p>Compiling, please wait...</p>
+                </div>
+            }
+            <div className="h-100" hidden={isCompiled === false}>
+                <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/" allow="fullscreen"></iframe>
+                <div className="wb-web-wrapper__frame-wrapper__console-btn">
+                    <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
+                </div>
             </div>
         </>
     )
