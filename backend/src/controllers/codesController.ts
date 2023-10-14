@@ -8,6 +8,7 @@ import Post from "../models/Post";
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { bundle } from "../utils/bundler";
+import { ErrorEvent } from "ws";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -433,13 +434,14 @@ main: ${sourceFileName}
 
     try {
         //run make
-        execSync(`(cd ${dirPath} && make)`);
+        execSync(`(cd ${dirPath} && mak)`);
 
         //use bundler to create a web/html bundle of all emscripten files
         bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
     }
     catch (err: any) {
-        message = err
+        console.log(err.message);
+        message = "error"
     }
 
     try {
@@ -451,10 +453,10 @@ main: ${sourceFileName}
 
     if (bundleString) {
         res.json({ compiledHTML: bundleString });
+        return
     }
-    else {
-        res.status(500).json({ message })
-    }
+
+    res.status(500).json({ message })
 
 })
 
