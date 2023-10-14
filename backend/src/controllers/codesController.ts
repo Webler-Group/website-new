@@ -8,7 +8,6 @@ import Post from "../models/Post";
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { bundle } from "../utils/bundler";
-import path from "path";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -428,24 +427,34 @@ main: ${sourceFileName}
 
 `;
     fs.writeFileSync(`${dirPath}/Makefile`, makefileString);
-    //run make
-    execSync(`(cd ${dirPath} && make)`);
 
+    let bundleString = null;
+    let message = "";
 
-    //use bundler to create a web/html bundle of all emscripten files
-    const bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
+    try {
+        //run make
+        execSync(`(cd ${dirPath} && make)`);
 
+        //use bundler to create a web/html bundle of all emscripten files
+        bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
+    }
+    catch (err: any) {
+        message = err
+    }
 
-    //delete compiled files
     try {
         fs.rmSync(dirPath, { recursive: true });
     }
-    catch (err) {
-        console.log(err);
+    catch {
+        console.warn("Unable to delete the directory");
     }
 
-    //return bundle
-    res.json({ compiledHTML: bundleString });
+    if (bundleString) {
+        res.json({ compiledHTML: bundleString });
+    }
+    else {
+        res.status(500).json({ message })
+    }
 
 })
 

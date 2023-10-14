@@ -16,10 +16,20 @@ import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
 import http from "http";
 import WebSocket from 'ws';
+import { execSync } from 'child_process';
 
 const rootDir = process.env.ROOT_DIR as string;
+const emsdkDir = process.env.EMSDK_DIR as string;
 
 const PORT = process.env.PORT || 5500;
+
+switch (process.platform) {
+    case "win32":
+        execSync(`cd ${emsdkDir} && emsdk_env.bat`);
+        break;
+    default:
+        execSync(`cd ${emsdkDir} && source ./emsdk_env.sh`);
+}
 
 const app = express();
 const server = http.createServer(app);
