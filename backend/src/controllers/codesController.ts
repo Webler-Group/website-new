@@ -434,7 +434,7 @@ main: ${sourceFileName}
 
     try {
         //run make
-        execSync(`(cd ${dirPath} && mak)`);
+        execSync(`(cd ${dirPath} && make)`);
 
         //use bundler to create a web/html bundle of all emscripten files
         bundleString = bundle(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
