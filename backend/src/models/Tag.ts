@@ -1,5 +1,4 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
-import isAlpha from "validator/lib/isAlpha";
 
 const tagSchema = new mongoose.Schema({
     name: {
@@ -8,7 +7,9 @@ const tagSchema = new mongoose.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [(val: string) => isAlpha(val), "Tag can only contain letters"]
+        maxLength: 20,
+        minLength: 1,
+        validate: [(val: string) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, "Tag can only contain words separated by -"]
     }
 });
 

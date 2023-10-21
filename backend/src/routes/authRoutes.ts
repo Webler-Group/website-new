@@ -14,12 +14,15 @@ router.route("/Logout")
     .post(authController.logout);
 
 router.route("/Refresh")
-    .get(authController.refresh);
+    .post(authController.refresh);
 
 router.route("/SendPasswordResetCode")
     .post(requestLimiter(60 * 10, 2, "Too many requests, try again later"), authController.sendPasswordResetCode);
 
 router.route("/ResetPassword")
     .post(authController.resetPassword);
+
+router.route("/GenerateCaptcha")
+    .post(authController.generateCaptcha)
 
 export default router;

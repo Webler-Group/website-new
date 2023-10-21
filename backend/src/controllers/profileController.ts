@@ -7,7 +7,7 @@ import Notification from "../models/Notification";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
 
     const user = await User.findById(userId);
 
@@ -46,11 +46,9 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
-    const { email, name, bio, countryCode } = req.body;
+    const { userId, name, bio, countryCode } = req.body;
 
     if (typeof name === "undefined" ||
-        typeof email === "undefined" ||
         typeof bio === "undefined" ||
         typeof countryCode === "undefined"
     ) {
@@ -70,7 +68,6 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    user.email = email;
     user.name = name;
     user.bio = bio;
     user.countryCode = countryCode;
@@ -82,10 +79,60 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             success: true,
             data: {
                 id: updatedUser._id,
-                email: updatedUser.email,
                 name: updatedUser.name,
                 bio: updatedUser.bio,
                 countryCode: updatedUser.countryCode
+            }
+        })
+    }
+    catch (err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        })
+    }
+
+})
+
+const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { email, password } = req.body;
+
+    if (typeof email === "undefined" ||
+        typeof password === "undefined"
+    ) {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    const user = await User.findById(currentUserId);
+
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
+    }
+
+    const matchPassword = await user.matchPassword(password);
+    if (!matchPassword) {
+        res.json({
+            success: false,
+            error: { _message: "Incorrect information" },
+            data: null
+        })
+        return
+    }
+
+    try {
+
+        user.email = email;
+        await user.save();
+
+        res.json({
+            success: true,
+            data: {
+                id: user._id,
+                email: user.email
             }
         })
     }
@@ -154,7 +201,7 @@ const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
 const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
 
     if (typeof userId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -200,7 +247,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
 
     if (typeof userId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -235,15 +282,11 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const userId = req.params.userId;
-    const query = req.query;
+    const { userId, page, count } = req.body;
     const currentUserId = req.userId;
 
-    const page = Number(query.page);
-    const count = Number(query.count);
-
-    if (!Number.isInteger(page) || !Number.isInteger(count)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined") {
+        res.status(400).json({ message: "Some fileds are missing" });
         return
     }
 
@@ -285,15 +328,11 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const userId = req.params.userId;
-    const query = req.query;
+    const { userId, page, count } = req.body;
     const currentUserId = req.userId;
 
-    const page = Number(query.page);
-    const count = Number(query.count);
-
-    if (!Number.isInteger(page) || !Number.isInteger(count)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined") {
+        res.status(400).json({ message: "Some fileds are missing" });
         return
     }
 
@@ -443,6 +482,7 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
 const controller = {
     getProfile,
     updateProfile,
+    changeEmail,
     changePassword,
     follow,
     unfollow,

@@ -42,7 +42,11 @@ const Blog = () => {
     setLoading(true);
     const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
     const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-    const result = await ApiCommunication.sendJsonRequest(`/Blog?page=${page}&count=${entriesPerPage}&query=${searchQuery}`, "GET");
+    const result = await ApiCommunication.sendJsonRequest(`/Blog`, "POST", {
+      page,
+      count: entriesPerPage,
+      searchQuery
+    });
     if (result && result.posts) {
       setBlogEntries(result.posts);
       setEntriesCount(result.count);

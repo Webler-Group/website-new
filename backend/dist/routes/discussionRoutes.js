@@ -11,13 +11,13 @@ const requestLimiter_1 = __importDefault(require("../middleware/requestLimiter")
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/")
-    .get(discussionController_1.default.getQuestionList);
-router.route("/:questionId")
-    .get(discussionController_1.default.getQuestion);
-router.route("/:questionId/GetReplies")
-    .get(discussionController_1.default.getReplies);
+    .post(discussionController_1.default.getQuestionList);
+router.route("/GetQuestion")
+    .post(discussionController_1.default.getQuestion);
+router.route("/GetQuestionReplies")
+    .post(discussionController_1.default.getReplies);
 router.route("/GetTags")
-    .get(discussionController_1.default.getTags);
+    .post(discussionController_1.default.getTags);
 router.route("/GetCodeComments")
     .post(discussionController_1.default.getCodeComments);
 router.use(protectRoute_1.default);

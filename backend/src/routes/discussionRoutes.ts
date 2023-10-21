@@ -9,13 +9,13 @@ const router = express.Router();
 router.use(verifyJWT);
 
 router.route("/")
-    .get(discussionController.getQuestionList);
-router.route("/:questionId")
-    .get(discussionController.getQuestion);
-router.route("/:questionId/GetReplies")
-    .get(discussionController.getReplies);
+    .post(discussionController.getQuestionList);
+router.route("/GetQuestion")
+    .post(discussionController.getQuestion);
+router.route("/GetQuestionReplies")
+    .post(discussionController.getReplies);
 router.route("/GetTags")
-    .get(discussionController.getTags);
+    .post(discussionController.getTags);
 router.route("/GetCodeComments")
     .post(discussionController.getCodeComments)
 

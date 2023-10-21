@@ -19,15 +19,11 @@ const showdown_1 = __importDefault(require("showdown"));
 const rootDir = process.env.ROOT_DIR;
 const blogsDir = path_1.default.join(rootDir, "uploads", "blogs");
 const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const query = req.query;
-    const page = Number(query.page);
-    const count = Number(query.count);
-    const searchQuery = typeof query.query !== "string" ? "" : query.query.trim();
-    if (!Number.isInteger(page) || !Number.isInteger(count)) {
-        res.status(400).json({ message: "Invalid query params" });
+    const { page, count, searchQuery } = req.body;
+    if (typeof page === "undefined" || typeof count === "undefined" || typeof searchQuery === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const regex = new RegExp("^" + searchQuery, "i");
     let postCount = 0;
     let posts = [];
     if (fs_1.default.existsSync(blogsDir)) {
@@ -38,7 +34,8 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
             const json = JSON.parse(fileData.toString());
             return json;
         });
-        if (searchQuery.length) {
+        if (searchQuery.trim().length) {
+            const regex = new RegExp("^" + searchQuery.trim(), "i");
             posts = posts.filter(post => {
                 return regex.test(post.title);
             });
@@ -52,7 +49,7 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
     });
 }));
 const getBlogEntry = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const entryName = req.params.entryName;
+    const { entryName } = req.body;
     try {
         const jsonFileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, entryName, 'info.json'));
         const json = JSON.parse(jsonFileData.toString());

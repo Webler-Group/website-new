@@ -16,11 +16,9 @@
     "@types/cors": "^2.8.13",
     "@types/express": "^4.17.17",
     "@types/jsonwebtoken": "^9.0.2",
-    "@types/mongoose-sequence": "^3.0.7",
     "@types/nodemailer": "^6.4.11",
     "@types/showdown": "^2.0.1",
     "@types/uuid": "^9.0.2",
-    "@types/validator": "^13.7.17",
     "@types/ws": "^8.5.5",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.1",
@@ -37,11 +35,9 @@
     "express-rate-limit": "^6.7.1",
     "jsonwebtoken": "^9.0.1",
     "mongoose": "^7.3.3",
-    "mongoose-sequence": "^5.3.1",
     "nodemailer": "^6.9.6",
     "showdown": "^2.1.0",
     "uuid": "^9.0.0",
-    "validator": "^13.9.0",
     "ws": "^8.14.1"
   }
 }

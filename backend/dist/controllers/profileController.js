@@ -18,7 +18,7 @@ const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
     const user = yield User_1.default.findById(userId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
@@ -50,10 +50,8 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
 }));
 const updateProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
-    const { email, name, bio, countryCode } = req.body;
+    const { userId, name, bio, countryCode } = req.body;
     if (typeof name === "undefined" ||
-        typeof email === "undefined" ||
         typeof bio === "undefined" ||
         typeof countryCode === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -68,7 +66,6 @@ const updateProfile = (0, express_async_handler_1.default)((req, res) => __await
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    user.email = email;
     user.name = name;
     user.bio = bio;
     user.countryCode = countryCode;
@@ -78,10 +75,50 @@ const updateProfile = (0, express_async_handler_1.default)((req, res) => __await
             success: true,
             data: {
                 id: updatedUser._id,
-                email: updatedUser.email,
                 name: updatedUser.name,
                 bio: updatedUser.bio,
                 countryCode: updatedUser.countryCode
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+}));
+const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { email, password } = req.body;
+    if (typeof email === "undefined" ||
+        typeof password === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    const user = yield User_1.default.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return;
+    }
+    const matchPassword = yield user.matchPassword(password);
+    if (!matchPassword) {
+        res.json({
+            success: false,
+            error: { _message: "Incorrect information" },
+            data: null
+        });
+        return;
+    }
+    try {
+        user.email = email;
+        yield user.save();
+        res.json({
+            success: true,
+            data: {
+                id: user._id,
+                email: user.email
             }
         });
     }
@@ -137,7 +174,7 @@ const changePassword = (0, express_async_handler_1.default)((req, res) => __awai
 }));
 const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
     if (typeof userId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -174,7 +211,7 @@ const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void
 }));
 const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const userId = req.params.userId;
+    const { userId } = req.body;
     if (typeof userId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -201,13 +238,10 @@ const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     res.status(500).json({ success: false });
 }));
 const getFollowers = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.params.userId;
-    const query = req.query;
+    const { userId, page, count } = req.body;
     const currentUserId = req.userId;
-    const page = Number(query.page);
-    const count = Number(query.count);
-    if (!Number.isInteger(page) || !Number.isInteger(count)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined") {
+        res.status(400).json({ message: "Some fileds are missing" });
         return;
     }
     const result = yield UserFollowing_1.default.find({ following: userId })
@@ -242,13 +276,10 @@ const getFollowers = (0, express_async_handler_1.default)((req, res) => __awaite
     }
 }));
 const getFollowing = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const userId = req.params.userId;
-    const query = req.query;
+    const { userId, page, count } = req.body;
     const currentUserId = req.userId;
-    const page = Number(query.page);
-    const count = Number(query.count);
-    if (!Number.isInteger(page) || !Number.isInteger(count)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined") {
+        res.status(400).json({ message: "Some fileds are missing" });
         return;
     }
     const result = yield UserFollowing_1.default.find({ user: userId })
@@ -369,6 +400,7 @@ const markNotificationsClicked = (0, express_async_handler_1.default)((req, res)
 const controller = {
     getProfile,
     updateProfile,
+    changeEmail,
     changePassword,
     follow,
     unfollow,

@@ -10,18 +10,12 @@ const blogsDir = path.join(rootDir, "uploads", "blogs")
 
 const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 
-  const query = req.query;
+  const { page, count, searchQuery } = req.body;
 
-  const page = Number(query.page);
-  const count = Number(query.count);
-  const searchQuery = typeof query.query !== "string" ? "" : query.query.trim();
-
-  if (!Number.isInteger(page) || !Number.isInteger(count)) {
-    res.status(400).json({ message: "Invalid query params" });
+  if (typeof page === "undefined" || typeof count === "undefined" || typeof searchQuery === "undefined") {
+    res.status(400).json({ message: "Some fields are missing" });
     return
   }
-
-  const regex = new RegExp("^" + searchQuery, "i")
 
   let postCount = 0;
   let posts = []
@@ -37,7 +31,8 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
       return json;
     })
 
-    if (searchQuery.length) {
+    if (searchQuery.trim().length) {
+      const regex = new RegExp("^" + searchQuery.trim(), "i")
       posts = posts.filter(post => {
         return regex.test(post.title);
       })
@@ -56,7 +51,7 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const getBlogEntry = asyncHandler(async (req: Request, res: Response) => {
-  const entryName = req.params.entryName;
+  const { entryName } = req.body;
   try {
     const jsonFileData = fs.readFileSync(path.join(blogsDir, entryName, 'info.json'));
     const json = JSON.parse(jsonFileData.toString());

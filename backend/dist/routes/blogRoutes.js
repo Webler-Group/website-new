@@ -7,7 +7,7 @@ const express_1 = __importDefault(require("express"));
 const blogController_1 = __importDefault(require("../controllers/blogController"));
 const router = express_1.default.Router();
 router.route("/")
-    .get(blogController_1.default.getBlogEntries);
-router.route("/:entryName")
-    .get(blogController_1.default.getBlogEntry);
+    .post(blogController_1.default.getBlogEntries);
+router.route("/GetBlog")
+    .post(blogController_1.default.getBlogEntry);
 exports.default = router;

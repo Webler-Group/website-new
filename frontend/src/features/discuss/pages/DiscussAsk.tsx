@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
-import { InputTags } from 'react-bootstrap-tagsinput';
+import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
 import ApiCommunication from '../../../helpers/apiCommunication';
 import { useNavigate } from 'react-router-dom';
@@ -27,7 +27,9 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
+            questionId
+        });
         if (result && result.question) {
             setTitle(result.question.title);
             setMessage(result.question.message);
@@ -114,7 +116,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                 </FormGroup>
                 <FormGroup>
                     <FormLabel>Tags</FormLabel>
-                    <InputTags values={tags} onTags={(value) => setTags(value.values)} placeholder="Start typing to add tags..." />
+                    <InputTags values={tags} setValues={setTags} placeholder="Add tag..." />
                     <p className="text-secondary">You can add up to 10 tags</p>
                 </FormGroup>
                 <div className="d-flex justify-content-end">

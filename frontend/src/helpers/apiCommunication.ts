@@ -43,7 +43,7 @@ class ApiCommunication {
     async fetchQueryWithReauthentication(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
         if (!path.startsWith("/Auth") && this.accessToken && this.expiresIn <= Date.now()) {
             const result = await this.fetchQuery("/Auth/Refresh", {
-                method: "GET",
+                method: "POST",
                 headers: {
                     contentType: "application/json"
                 }

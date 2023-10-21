@@ -52,32 +52,25 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const query = req.query;
+    const { page, count, filter, searchQuery, userId, language } = req.body;
     const currentUserId = req.userId;
 
-    const page = Number(query.page);
-    const count = Number(query.count);
-    const filter = Number(query.filter);
-    const searchQuery = typeof query.query !== "string" ? "" : query.query.trim();
-    const userId = typeof query.profileId !== "string" ? null : query.profileId;
-    const language = typeof query.language !== "string" ? "" : query.language;
-
-    if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger(filter)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined" || typeof language === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
     let dbQuery = Code.find({})
 
-    if (searchQuery.length) {
+    if (searchQuery.trim().length) {
         dbQuery.where({
             $or: [
-                { name: new RegExp("^" + searchQuery, "i") }
+                { name: new RegExp("^" + searchQuery.trim(), "i") }
             ]
         })
     }
 
-    if (language.length) {
+    if (language !== "") {
         dbQuery.where({ language });
     }
 
@@ -99,7 +92,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         // My Codes
         case 3: {
             if (userId === null) {
-                res.status(400).json({ message: "Invalid query params" });
+                res.status(400).json({ message: "Invalid request" });
                 return
             }
             if (userId !== currentUserId) {
@@ -170,7 +163,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const codeId = req.params.codeId;
+    const { codeId } = req.body;
 
     const code = await Code.findById(codeId)
         .populate("user", "name avatarUrl countryCode level roles") as any;

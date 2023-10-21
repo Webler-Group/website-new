@@ -4,10 +4,10 @@ import profileController from "../controllers/blogController";
 const router = express.Router();
 
 router.route("/")
-    .get(profileController.getBlogEntries);
+    .post(profileController.getBlogEntries);
 
-router.route("/:entryName")
-    .get(profileController.getBlogEntry);
+router.route("/GetBlog")
+    .post(profileController.getBlogEntry);
 
 
 export default router;

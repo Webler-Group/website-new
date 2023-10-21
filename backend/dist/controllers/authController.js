@@ -158,7 +158,8 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)((req, res) =>
         return;
     }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
-        userId: user._id.toString()
+        userId: user._id.toString(),
+        email: user.email
     });
     try {
         yield (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
@@ -204,12 +205,15 @@ const resetPassword = (0, express_async_handler_1.default)((req, res) => __await
         }
     }));
 }));
+const generateCaptcha = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+}));
 const controller = {
     login,
     register,
     logout,
     refresh,
     sendPasswordResetCode,
-    resetPassword
+    resetPassword,
+    generateCaptcha
 };
 exports.default = controller;

@@ -9,6 +9,8 @@ dotenv_1.default.config();
 const logger_1 = require("./middleware/logger");
 const errorHandler_1 = __importDefault(require("./middleware/errorHandler"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const cors_1 = __importDefault(require("cors"));
+const corsOptions_1 = __importDefault(require("./config/corsOptions"));
 const path_1 = __importDefault(require("path"));
 const dbConn_1 = __importDefault(require("./config/dbConn"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -23,6 +25,7 @@ const rootDir = process.env.ROOT_DIR;
 const PORT = process.env.PORT || 5500;
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
+const apiPrefix = "/api";
 const wss = new ws_1.default.Server({ server });
 wss.on("connection", (ws) => {
     console.log("A new client connected!");
@@ -32,14 +35,14 @@ wss.on("connection", (ws) => {
 app.use(express_1.default.static("public"));
 app.use("/uploads", express_1.default.static(path_1.default.join(rootDir, "uploads")));
 app.use(logger_1.logger);
-//app.use(cors(corsOptions));
+app.use((0, cors_1.default)(corsOptions_1.default));
 app.use(express_1.default.json({ limit: "5mb" }));
 app.use((0, cookie_parser_1.default)());
-app.use("/api/auth", authRoutes_1.default);
-app.use("/api/profile", profileRoutes_1.default);
-app.use("/api/discussion", discussionRoutes_1.default);
-app.use("/api/blog", blogRoutes_1.default);
-app.use("/api/codes", codesRoutes_1.default);
+app.use(`${apiPrefix}/auth`, authRoutes_1.default);
+app.use(`${apiPrefix}/profile`, profileRoutes_1.default);
+app.use(`${apiPrefix}/discussion`, discussionRoutes_1.default);
+app.use(`${apiPrefix}/blog`, blogRoutes_1.default);
+app.use(`${apiPrefix}/codes`, codesRoutes_1.default);
 app.all("*", (req, res) => {
     res.status(404);
     if (req.accepts('html')) {

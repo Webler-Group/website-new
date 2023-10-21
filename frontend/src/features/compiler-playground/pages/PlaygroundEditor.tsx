@@ -112,7 +112,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const getCode = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/codes/${codeId}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/codes/GetCode`, "POST", {
+            codeId
+        });
         if (result && result.code) {
             setCode(result.code);
             setCodeName(result.code.name);
@@ -125,7 +127,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const getCodeByTemplate = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/codes/templates/${language}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/codes/templates/${language}`, "POST");
         if (result && result.template) {
             const template = result.template;
             setCode({

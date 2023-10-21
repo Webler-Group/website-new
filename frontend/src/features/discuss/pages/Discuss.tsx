@@ -21,7 +21,13 @@ const Discuss = ({ MainPage }: DiscussProps) => {
     }, []);
 
     const getQuestions = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${1}&count=${10}&filter=${5}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion`, "POST", {
+            page: 1,
+            count: 10,
+            searchQuery: "",
+            filter: 5,
+            userId: null
+        });
         if (result && result.questions) {
             setQuestions(result.questions);
         }

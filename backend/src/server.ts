@@ -24,6 +24,8 @@ const PORT = process.env.PORT || 5500;
 const app = express();
 const server = http.createServer(app);
 
+const apiPrefix = "/api";
+
 const wss = new WebSocket.Server({ server });
 
 wss.on("connection", (ws) => {
@@ -39,17 +41,17 @@ app.use("/uploads", express.static(path.join(rootDir, "uploads")));
 
 app.use(logger);
 
-//app.use(cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "5mb" }));
 
 app.use(cookieParser());
 
-app.use("/api/auth", authRoutes);
-app.use("/api/profile", profileRoutes);
-app.use("/api/discussion", discussionRoutes);
-app.use("/api/blog", blogRoutes);
-app.use("/api/codes", codesRoutes);
+app.use(`${apiPrefix}/auth`, authRoutes);
+app.use(`${apiPrefix}/profile`, profileRoutes);
+app.use(`${apiPrefix}/discussion`, discussionRoutes);
+app.use(`${apiPrefix}/blog`, blogRoutes);
+app.use(`${apiPrefix}/codes`, codesRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);

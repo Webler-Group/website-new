@@ -187,7 +187,8 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
     }
 
     const { emailToken } = signEmailToken({
-        userId: user._id.toString()
+        userId: user._id.toString(),
+        email: user.email
     })
 
     try {
@@ -253,13 +254,18 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
 
 })
 
+const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
+
+})
+
 const controller = {
     login,
     register,
     logout,
     refresh,
     sendPasswordResetCode,
-    resetPassword
+    resetPassword,
+    generateCaptcha
 };
 
 export default controller;

@@ -8,11 +8,11 @@ const router = express.Router();
 router.use(verifyJWT);
 
 router.route("/")
-    .get(codesController.getCodeList);
-router.route("/:codeId")
-    .get(codesController.getCode);
+    .post(codesController.getCodeList);
+router.route("/GetCode")
+    .post(codesController.getCode);
 router.route("/templates/:language")
-    .get(codesController.getTemplate);
+    .post(codesController.getTemplate);
 router.route("/Compile")
     .post(codesController.compile);
 

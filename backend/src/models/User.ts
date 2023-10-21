@@ -1,8 +1,12 @@
 import mongoose, { InferSchemaType } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
-import isEmail from "validator/lib/isEmail";
 import rolesEnum from "../data/roles";
+
+const isEmail = (value: string) => {
+    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+    return value.match(validEmailRegex) !== null;
+}
 
 const userSchema = new mongoose.Schema({
     email: {

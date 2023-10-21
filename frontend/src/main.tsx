@@ -3,7 +3,6 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import App from './App';
 
 import 'bootstrap/dist/css/bootstrap.css';
-import "react-bootstrap-tagsinput/dist/index.css";
 import './index.css';
 import { AuthProvider } from './features/auth/context/authContext';
 

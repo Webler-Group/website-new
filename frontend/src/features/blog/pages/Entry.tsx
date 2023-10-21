@@ -15,7 +15,9 @@ const Entry = () => {
 
   useEffect(() => {
     const getArticle = async () => {
-      const result = await ApiCommunication.sendJsonRequest(`/Blog/${entryName}`, 'GET');
+      const result = await ApiCommunication.sendJsonRequest(`/Blog/GetBlog`, 'POST', {
+        entryName
+      });
       if (result && result.blog) {
         setArticle(result.blog);
       }

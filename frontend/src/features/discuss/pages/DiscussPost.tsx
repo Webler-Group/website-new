@@ -87,7 +87,9 @@ const DiscussPost = () => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
+            questionId
+        });
         if (result && result.question) {
             setQuestion(result.question)
         }
@@ -98,7 +100,13 @@ const DiscussPost = () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/${questionId}/GetReplies?index=${(page - 1) * answersPerPage}&count=${answersPerPage}&filter=${filter}` + (postId ? "&findPostId=" + postId : ""), "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestionReplies`, "POST", {
+            questionId,
+            index: (page - 1) * answersPerPage,
+            count: answersPerPage,
+            filter,
+            findPostId: postId
+        });
         if (result && result.posts) {
             setAnswers(result.posts);
             if (postId) {

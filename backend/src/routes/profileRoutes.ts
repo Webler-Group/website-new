@@ -7,23 +7,25 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.route("/:userId")
-    .get(profileController.getProfile);
+router.route("/GetProfile")
+    .post(profileController.getProfile);
 
-router.route("/:userId/following")
-    .get(profileController.getFollowing);
-router.route("/:userId/followers")
-    .get(profileController.getFollowers);
+router.route("/GetFollowing")
+    .post(profileController.getFollowing);
+router.route("/GetFollowers")
+    .post(profileController.getFollowers);
 
 router.use(protectRoute);
 
-router.route("/:userId")
+router.route("/UpdateProfile")
     .put(profileController.updateProfile);
+router.route("/ChangeEmail")
+    .post(profileController.changeEmail);
 router.route("/ChangePassword")
     .post(profileController.changePassword);
-router.route("/Follow/:userId")
+router.route("/Follow")
     .post(profileController.follow);
-router.route("/Unfollow/:userId")
+router.route("/Unfollow")
     .post(profileController.unfollow);
 router.route("/GetNotifications")
     .post(profileController.getNotifications)

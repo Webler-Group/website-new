@@ -66,28 +66,22 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 });
 
 const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const query = req.query;
+    const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
 
-    const page = Number(query.page);
-    const count = Number(query.count);
-    const filter = Number(query.filter);
-    const searchQuery = typeof query.query !== "string" ? "" : query.query.trim();
-    const userId = typeof query.profileId !== "string" ? null : query.profileId;
-
-    if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger(filter)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
     let dbQuery = Post.find({ _type: 1 })
 
-    if (searchQuery.length) {
-        const tagIds = (await Tag.find({ name: searchQuery }))
+    if (searchQuery.trim().length) {
+        const tagIds = (await Tag.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         dbQuery.where({
             $or: [
-                { title: new RegExp("^" + searchQuery, "i") },
+                { title: new RegExp("^" + searchQuery.trim(), "i") },
                 { "tags": { $in: tagIds } }
             ]
         })
@@ -110,7 +104,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         // My Questions
         case 3: {
             if (userId === null) {
-                res.status(400).json({ message: "Invalid query params" });
+                res.status(400).json({ message: "Invalid request" });
                 return
             }
             dbQuery = dbQuery
@@ -121,7 +115,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         // My Replies
         case 4: {
             if (userId === null) {
-                res.status(400).json({ message: "Invalid query params" });
+                res.status(400).json({ message: "Invalid request" });
                 return
             }
             const replies = await Post.find({ user: userId, _type: 2 }).select("parentId");
@@ -198,7 +192,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const questionId = req.params.questionId;
+    const { questionId } = req.body;
 
     const question = await Post.findById(questionId)
         .populate("user", "name avatarUrl countryCode level roles")
@@ -310,16 +304,10 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const query = req.query;
-    const questionId = req.params.questionId;
+    const { questionId, index, count, filter, findPostId } = req.body;
 
-    const index = Number(query.index);
-    const count = Number(query.count);
-    const filter = Number(query.filter);
-    const replyId = query.findPostId;
-
-    if (!Number.isInteger(index) || !Number.isInteger(count) || !Number.isInteger(filter)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
@@ -327,9 +315,9 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let skipCount = index;
 
-    if (replyId) {
+    if (findPostId) {
 
-        const reply = await Post.findById(replyId);
+        const reply = await Post.findById(findPostId);
 
         if (reply === null) {
             res.status(404).json({ message: "Post not found" })
@@ -417,10 +405,10 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getTags = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { query } = req.query;
+    const { query } = req.body;
 
-    if (typeof query !== "string") {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof query === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return
     }
 

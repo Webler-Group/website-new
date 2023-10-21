@@ -66,7 +66,13 @@ const QuestionList = () => {
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion?page=${page}&count=${questionsPerPage}&filter=${filter}&query=${searchQuery}` + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Discussion`, "POST", {
+            page,
+            count: questionsPerPage,
+            filter,
+            searchQuery,
+            userId: userInfo ? userInfo.id : null
+        });
         if (result && result.questions) {
             setQuestions(result.questions);
             setQuestionCount(result.count);

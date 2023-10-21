@@ -67,8 +67,15 @@ const CodesList = () => {
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const language = searchParams.has("language") ? searchParams.get("language")! : "all";
-        const result = await ApiCommunication.sendJsonRequest(`/Codes?page=${page}&count=${codesPerPage}&filter=${filter}&query=${searchQuery}` + (language !== "all" ? `&language=${language}` : "") + (userInfo ? `&profileId=${userInfo.id}` : ""), "GET");
+        const language = searchParams.has("language") ? searchParams.get("language")! : "";
+        const result = await ApiCommunication.sendJsonRequest(`/Codes`, "POST", {
+            page,
+            count: codesPerPage,
+            filter,
+            searchQuery,
+            language,
+            userId: userInfo ? userInfo.id : null
+        });
         if (result && result.codes) {
             setCodes(result.codes);
             setCodesCount(result.count);

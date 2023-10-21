@@ -14,6 +14,7 @@ interface AccessTokenPayload {
 
 interface EmailTokenPayload {
     userId: string;
+    email: string;
 }
 
 const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {

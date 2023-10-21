@@ -66,24 +66,19 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
     }
 }));
 const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const query = req.query;
+    const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
-    const page = Number(query.page);
-    const count = Number(query.count);
-    const filter = Number(query.filter);
-    const searchQuery = typeof query.query !== "string" ? "" : query.query.trim();
-    const userId = typeof query.profileId !== "string" ? null : query.profileId;
-    if (!Number.isInteger(page) || !Number.isInteger(count) || !Number.isInteger(filter)) {
-        res.status(400).json({ message: "Invalid query params" });
+    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return;
     }
     let dbQuery = Post_1.default.find({ _type: 1 });
-    if (searchQuery.length) {
-        const tagIds = (yield Tag_1.default.find({ name: searchQuery }))
+    if (searchQuery.trim().length) {
+        const tagIds = (yield Tag_1.default.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         dbQuery.where({
             $or: [
-                { title: new RegExp("^" + searchQuery, "i") },
+                { title: new RegExp("^" + searchQuery.trim(), "i") },
                 { "tags": { $in: tagIds } }
             ]
         });
@@ -105,7 +100,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         // My Questions
         case 3: {
             if (userId === null) {
-                res.status(400).json({ message: "Invalid query params" });
+                res.status(400).json({ message: "Invalid request" });
                 return;
             }
             dbQuery = dbQuery
@@ -116,7 +111,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         // My Replies
         case 4: {
             if (userId === null) {
-                res.status(400).json({ message: "Invalid query params" });
+                res.status(400).json({ message: "Invalid request" });
                 return;
             }
             const replies = yield Post_1.default.find({ user: userId, _type: 2 }).select("parentId");
@@ -184,7 +179,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
 }));
 const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const questionId = req.params.questionId;
+    const { questionId } = req.body;
     const question = yield Post_1.default.findById(questionId)
         .populate("user", "name avatarUrl countryCode level roles")
         .populate("tags", "name");
@@ -280,20 +275,15 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
 }));
 const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const query = req.query;
-    const questionId = req.params.questionId;
-    const index = Number(query.index);
-    const count = Number(query.count);
-    const filter = Number(query.filter);
-    const replyId = query.findPostId;
-    if (!Number.isInteger(index) || !Number.isInteger(count) || !Number.isInteger(filter)) {
-        res.status(400).json({ message: "Invalid query params" });
+    const { questionId, index, count, filter, findPostId } = req.body;
+    if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return;
     }
     let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2 });
     let skipCount = index;
-    if (replyId) {
-        const reply = yield Post_1.default.findById(replyId);
+    if (findPostId) {
+        const reply = yield Post_1.default.findById(findPostId);
         if (reply === null) {
             res.status(404).json({ message: "Post not found" });
             return;
@@ -370,9 +360,9 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
     }
 }));
 const getTags = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { query } = req.query;
-    if (typeof query !== "string") {
-        res.status(400).json({ message: "Invalid query params" });
+    const { query } = req.body;
+    if (typeof query === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
         return;
     }
     if (query.length < 3) {

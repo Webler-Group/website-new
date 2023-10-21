@@ -10,11 +10,11 @@ const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/")
-    .get(codesController_1.default.getCodeList);
-router.route("/:codeId")
-    .get(codesController_1.default.getCode);
+    .post(codesController_1.default.getCodeList);
+router.route("/GetCode")
+    .post(codesController_1.default.getCode);
 router.route("/templates/:language")
-    .get(codesController_1.default.getTemplate);
+    .post(codesController_1.default.getTemplate);
 router.route("/Compile")
     .post(codesController_1.default.compile);
 router.use(protectRoute_1.default);

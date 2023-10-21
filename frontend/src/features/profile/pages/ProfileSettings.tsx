@@ -26,6 +26,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [countryCode, setCountryCode] = useState("");
     const [infoMessage, setInfoMessage] = useState([true, ""]);
 
+    const [emailMessage, setEmailMessage] = useState([true, ""]);
+    const [emailPassword, setEmailPassword] = useState("");
+    const [emailStep, setEmailStep] = useState(0);
+
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [passwordMessage, setPasswordMessage] = useState([true, ""]);
@@ -64,38 +68,65 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (!userInfo) {
             return;
         }
-        const data = await ApiCommunication.sendJsonRequest(`/Profile/${userInfo.id}`, "PUT", {
+        const data = await ApiCommunication.sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
+            userId: userInfo.id,
             name: username,
-            email,
             bio,
             countryCode
         });
         if (data.success) {
             userInfo.name = data.data.name;
-            userInfo.email = data.data.email;
             userInfo.countryCode = data.data.coutryCode;
             updateUser(userInfo);
             onUpdate(data.data);
             setInfoMessage([true, "Information saved successfully"]);
         }
         else {
-            if (data.error.code === 11000) {
-                setInfoMessage([false, "Email already exists"]);
-            }
-            else {
-                setInfoMessage([false, data.error._message ? data.error._message : "Bad request"])
-            }
+            setInfoMessage([false, data.error._message ? data.error._message : "Bad request"])
         }
     }
 
     const resetInfo = () => {
         if (userDetails) {
             setUsername(userDetails.name || "");
-            setEmail(userDetails.email || "");
             setBio(userDetails.bio || "");
             setCountryCode(userDetails.countryCode || "");
         }
         setInfoMessage([true, ""])
+    }
+
+    const changeEmail = async () => {
+        setEmailMessage([true, ""]);
+        if (!userInfo) {
+            return;
+        }
+        const data = await ApiCommunication.sendJsonRequest(`/Profile/ChangeEmail`, "POST", {
+            email,
+            password: emailPassword
+        });
+        if (data.success) {
+            userInfo.email = data.data.email;
+            updateUser(userInfo);
+            setEmailMessage([true, "Email changed successfully"])
+        }
+        else {
+            if (data.error.code === 11000) {
+                setEmailMessage([false, "Email already exists"]);
+            }
+            else {
+                setEmailMessage([false, data.error._message ? data.error._message : "Bad request"])
+            }
+        }
+        setEmailStep(0);
+    }
+
+    const resetEmail = () => {
+        if (userDetails) {
+            setEmail(userDetails.email || "");
+        }
+        setEmailStep(0);
+        setEmailPassword("")
+        setEmailMessage([true, ""])
     }
 
     const changePassword = async () => {
@@ -127,6 +158,18 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         setNewPassword("");
     }
 
+    const handleEmailNext = () => {
+        const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+
+        if (email.match(validEmailRegex)) {
+            setEmailStep(1)
+            setEmailMessage([true, ""])
+        }
+        else {
+            setEmailMessage([false, "Invalid email"])
+        }
+    }
+
     return (
         <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
             <Modal.Header closeButton>
@@ -140,10 +183,6 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             <FormGroup>
                                 <FormLabel>Username</FormLabel>
                                 <FormControl type="text" required value={username} minLength={3} maxLength={20} onChange={(e) => setUsername(e.target.value)} />
-                            </FormGroup>
-                            <FormGroup>
-                                <FormLabel>Email</FormLabel>
-                                <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                             </FormGroup>
                             <FormGroup>
                                 <FormLabel>Bio</FormLabel>
@@ -166,6 +205,34 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                 <Button type="submit" disabled={loading}>Save</Button>
                                 <Button onClick={resetInfo} className="ms-2" type="button" disabled={loading}>Reset</Button>
                             </FormGroup>
+                        </Form>
+                    </Tab>
+                    <Tab eventKey="email" title="Email">
+                        <Form onSubmit={(e) => handleSubmit(e, changeEmail)}>
+                            {emailMessage[1] && <Alert variant={emailMessage[0] ? "success" : "danger"}>{emailMessage[1]}</Alert>}
+                            <FormGroup>
+                                <FormLabel>{emailStep === 0 ? "Email" : "New Email"}</FormLabel>
+                                <FormControl readOnly={emailStep !== 0} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                            </FormGroup>
+                            {
+                                emailStep === 0 ?
+                                    <>
+                                        <FormGroup className="mt-2">
+                                            <Button onClick={handleEmailNext} type="button">Change</Button>
+                                        </FormGroup>
+                                    </>
+                                    :
+                                    <>
+                                        <FormGroup>
+                                            <FormLabel>Current Password</FormLabel>
+                                            <PasswordFormControl password={emailPassword} setPassword={setEmailPassword} />
+                                        </FormGroup>
+                                        <FormGroup className="mt-2">
+                                            <Button type="submit" disabled={loading}>Submit</Button>
+                                            <Button variant="secondary" onClick={resetEmail} className="ms-2" type="button" disabled={loading}>Cancel</Button>
+                                        </FormGroup>
+                                    </>
+                            }
                         </Form>
                     </Tab>
                     <Tab eventKey="password" title="Password">

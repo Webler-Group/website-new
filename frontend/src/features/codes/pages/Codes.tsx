@@ -21,7 +21,14 @@ const Codes = ({ MainPage }: CodesProps) => {
     }, []);
 
     const getCodes = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/Codes?page=${1}&count=${10}&filter=${5}`, "GET");
+        const result = await ApiCommunication.sendJsonRequest(`/Codes`, "POST", {
+            page: 1,
+            count: 10,
+            filter: 5,
+            searchQuery: "",
+            language: "",
+            userId: null
+        });
         if (result && result.codes) {
             setCodes(result.codes);
         }

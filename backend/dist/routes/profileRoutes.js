@@ -9,20 +9,22 @@ const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
-router.route("/:userId")
-    .get(profileController_1.default.getProfile);
-router.route("/:userId/following")
-    .get(profileController_1.default.getFollowing);
-router.route("/:userId/followers")
-    .get(profileController_1.default.getFollowers);
+router.route("/GetProfile")
+    .post(profileController_1.default.getProfile);
+router.route("/GetFollowing")
+    .post(profileController_1.default.getFollowing);
+router.route("/GetFollowers")
+    .post(profileController_1.default.getFollowers);
 router.use(protectRoute_1.default);
-router.route("/:userId")
+router.route("/UpdateProfile")
     .put(profileController_1.default.updateProfile);
+router.route("/ChangeEmail")
+    .post(profileController_1.default.changeEmail);
 router.route("/ChangePassword")
     .post(profileController_1.default.changePassword);
-router.route("/Follow/:userId")
+router.route("/Follow")
     .post(profileController_1.default.follow);
-router.route("/Unfollow/:userId")
+router.route("/Unfollow")
     .post(profileController_1.default.unfollow);
 router.route("/GetNotifications")
     .post(profileController_1.default.getNotifications);

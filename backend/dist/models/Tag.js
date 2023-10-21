@@ -13,7 +13,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const isAlpha_1 = __importDefault(require("validator/lib/isAlpha"));
 const tagSchema = new mongoose_1.default.Schema({
     name: {
         required: true,
@@ -21,7 +20,9 @@ const tagSchema = new mongoose_1.default.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [(val) => (0, isAlpha_1.default)(val), "Tag can only contain letters"]
+        maxLength: 20,
+        minLength: 1,
+        validate: [(val) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, "Tag can only contain words separated by -"]
     }
 });
 tagSchema.statics.getOrCreateTagByName = function (tagName) {

@@ -15,8 +15,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const countryCodes_1 = __importDefault(require("../config/countryCodes"));
-const isEmail_1 = __importDefault(require("validator/lib/isEmail"));
 const roles_1 = __importDefault(require("../data/roles"));
+const isEmail = (value) => {
+    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+    return value.match(validEmailRegex) !== null;
+};
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
@@ -24,7 +27,7 @@ const userSchema = new mongoose_1.default.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [isEmail_1.default, 'invalid email']
+        validate: [isEmail, 'invalid email']
     },
     password: {
         required: true,

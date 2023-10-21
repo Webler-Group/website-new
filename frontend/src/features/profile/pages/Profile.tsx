@@ -44,7 +44,9 @@ const Profile = () => {
 
     useEffect(() => {
         setFollowListVisible(0);
-        ApiCommunication.sendJsonRequest(`/Profile/${userId}`, "GET")
+        ApiCommunication.sendJsonRequest(`/Profile/GetProfile`, "POST", {
+            userId
+        })
             .then(data => {
                 if (data.userDetails) {
                     setUserDetails(data.userDetails);
@@ -68,12 +70,12 @@ const Profile = () => {
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Follow/${userId}`, "POST");
+            data = await ApiCommunication.sendJsonRequest(`/Profile/Follow`, "POST", { userId });
         }
         catch (err) { }
         if (data && data.success) {
-            const newUserDetails = { ...userDetails, isFollowing: true, followers: userDetails.followers + 1 };
-            setUserDetails(newUserDetails);
+            setUserDetails(userDetails => (userDetails ? { ...userDetails, isFollowing: true, followers: userDetails.followers + 1 } : null));
+            setFollowersCount(count => count + 1)
         }
         setFollowLoading(false);
     }
@@ -85,12 +87,12 @@ const Profile = () => {
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Unfollow/${userId}`, "POST");
+            data = await ApiCommunication.sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
         }
         catch (err) { }
         if (data && data.success) {
-            const newUserDetails = { ...userDetails, isFollowing: false, followers: userDetails.followers - 1 };
-            setUserDetails(newUserDetails);
+            setUserDetails(userDetails => (userDetails ? { ...userDetails, isFollowing: false, followers: userDetails.followers - 1 } : null));
+            setFollowersCount(count => count - 1)
         }
         setFollowLoading(false);
     }
@@ -118,11 +120,11 @@ const Profile = () => {
                 <>
                     {
                         followListVisible == 1 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/${userId}/followers`, setCount: setFollowingCount }} />
+                        <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/GetFollowers`, setCount: setFollowingCount, userId: userDetails.id }} />
                     }
                     {
                         followListVisible == 2 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/${userId}/following`, setCount: setFollowingCount }} />
+                        <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
                     }
                     {setPageTitle(userDetails.name)}
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
@@ -157,13 +159,13 @@ const Profile = () => {
                                             followingCount > 0 ?
                                                 <button className="wb-p-details__follows__button" onClick={showFollowing}>{followingCount} Following</button>
                                                 :
-                                                <span>{userDetails.following} Following</span>
+                                                <span>{followingCount} Following</span>
                                         }
                                         {
                                             followersCount > 0 ?
                                                 <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{followersCount} Followers</button>
                                                 :
-                                                <span className="ms-2">{userDetails.followers} Followers</span>
+                                                <span className="ms-2">{followersCount} Followers</span>
                                         }
 
                                     </div>

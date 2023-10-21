@@ -8,6 +8,7 @@ interface FollowListProps {
     options: {
         urlPath: string;
         title: string;
+        userId: string;
         setCount: (callback: (data: number) => number) => void;
     }
 }
@@ -20,7 +21,7 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
         error,
         results,
         hasNextPage
-    } = useFollows(options.urlPath, 10, pageNum)
+    } = useFollows(options.urlPath, options.userId, 10, pageNum)
 
     const intObserver = useRef<IntersectionObserver>()
     const lastProfileRef = useCallback((profile: any) => {
@@ -42,10 +43,16 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
 
     const content = results.map((user, i) => {
 
-        if (results.length === i + 1) {
-            return <FollowListProfile ref={lastProfileRef} key={user.id} user={user} setCount={options.setCount} />
-        }
-        return <FollowListProfile key={user.id} user={user} setCount={options.setCount} />
+        return (
+            <div key={user.id} className="mb-3">
+                {
+                    results.length === i + 1 ?
+                        <FollowListProfile ref={lastProfileRef} user={user} viewedUserId={options.userId} setCount={options.setCount} />
+                        :
+                        <FollowListProfile user={user} viewedUserId={options.userId} setCount={options.setCount} />
+                }
+            </div>
+        )
     })
 
     return (
