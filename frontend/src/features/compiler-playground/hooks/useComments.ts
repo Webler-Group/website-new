@@ -2,9 +2,9 @@ import { useEffect, useState } from "react"
 import { ICodeComment } from "../components/CommentNode"
 import ApiCommunication from "../../../helpers/apiCommunication"
 
-const useComments = (codeId: string, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number }, filter: number, repliesVisible: boolean) => {
+const useComments = (codeId: string, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number, _state: number }, filter: number, repliesVisible: boolean, findPostId: string | null, defaultData: ICodeComment[] | null) => {
 
-    const [results, setResults] = useState<ICodeComment[]>([])
+    const [results, setResults] = useState<ICodeComment[]>(defaultData || [])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const [hasNextPage, setHasNextPage] = useState(true)
@@ -20,9 +20,10 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
         const result = await ApiCommunication.sendJsonRequest("/Discussion/GetCodeComments", "POST", {
             codeId,
             parentId,
-            index: fromEnd ? indices.lastIndex : indices.firstIndex - count,
-            count,
-            filter
+            index: fromEnd ? indices.lastIndex : Math.max(0, indices.firstIndex - count),
+            count: fromEnd ? count : Math.min(indices.firstIndex, count),
+            filter,
+            findPostId
         },
             signal)
 
@@ -33,17 +34,20 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
 
         if (result && result.posts) {
 
-            let keepPrev = indices.lastIndex > 0;
-            setResults(prev => keepPrev ? [...prev, ...result.posts] : result.posts);
-            setHasNextPage(result.posts.length === count);
+            let keepPrev = !fromEnd || indices.lastIndex > 0;
+            setResults(prev => keepPrev ? fromEnd ? [...prev, ...result.posts] : [...result.posts, ...prev] : result.posts);
+            if (fromEnd) {
+                setHasNextPage(result.posts.length === count);
+            }
+
         }
 
         setIsLoading(false);
     }
 
     useEffect(() => {
-        if (repliesVisible) {
-            getComments(true)
+        if (repliesVisible && indices._state !== 0) {
+            getComments(indices._state === 1);
         }
 
     }, [indices])

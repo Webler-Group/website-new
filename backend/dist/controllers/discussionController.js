@@ -259,7 +259,7 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
                 postId: reply._id
             });
         }
-        question.answers += 1;
+        question.$inc("answers", 1);
         yield question.save();
         res.json({
             post: {
@@ -565,22 +565,22 @@ const votePost = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     if (vote === 1) {
         if (!upvote) {
             upvote = yield Upvote_1.default.create({ user: currentUserId, parentId: postId });
-            post.votes += 1;
+            post.$inc("votes", 1);
+            yield post.save();
         }
     }
     else if (vote === 0) {
         if (upvote) {
             yield Upvote_1.default.deleteOne({ _id: upvote._id });
             upvote = null;
-            post.votes -= 1;
+            post.$inc("votes", -1);
+            yield post.save();
         }
     }
-    yield post.save();
     res.json({ vote: upvote ? 1 : 0 });
 }));
 const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const query = req.query;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
     if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
@@ -592,7 +592,7 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             .findById(parentId)
             .populate("user", "name avatarUrl countryCode level roles");
     }
-    let dbQuery = Post_1.default.find({ codeId, parentId, _type: 3 });
+    let dbQuery = Post_1.default.find({ codeId, _type: 3 });
     let skipCount = index;
     if (findPostId) {
         const reply = yield Post_1.default.findById(findPostId);
@@ -600,14 +600,21 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             res.status(404).json({ message: "Post not found" });
             return;
         }
+        parentPost = reply.parentId ? yield Post_1.default
+            .findById(reply.parentId)
+            .populate("user", "name avatarUrl countryCode level roles")
+            :
+                null;
+        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
         skipCount = Math.max(0, (yield dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()) - Math.floor(count / 2));
+            .countDocuments()));
         dbQuery = dbQuery
             .sort({ createdAt: "asc" });
     }
     else {
+        dbQuery = dbQuery.where({ parentId });
         switch (filter) {
             // Most popular
             case 1: {
@@ -652,7 +659,9 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             isUpvoted: false,
             isAccepted: x.isAccepted,
             answers: x.answers,
-            index: findPostId && parentPost ? index + offset - 1 : index + offset
+            index: (findPostId && parentPost) ?
+                offset === 0 ? -1 : skipCount + offset - 1 :
+                skipCount + offset
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -715,10 +724,10 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
                 postId: reply._id
             });
         }
-        code.comments += 1;
+        code.$inc("comments", 1);
         yield code.save();
         if (parentPost) {
-            parentPost.answers += 1;
+            parentPost.$inc("answers", 1);
             yield parentPost.save();
         }
         res.json({

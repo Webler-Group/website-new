@@ -88,7 +88,7 @@ postSchema.statics.deleteAndCleanup = function (filter) {
                     if (question === null) {
                         throw new Error("Question not found");
                     }
-                    question.answers -= 1;
+                    question.$inc("answers", -1);
                     yield question.save();
                     break;
                 }
@@ -97,11 +97,11 @@ postSchema.statics.deleteAndCleanup = function (filter) {
                     if (code === null) {
                         throw new Error("Code not found");
                     }
-                    code.comments -= 1;
+                    code.$inc("comments", -1);
                     yield code.save();
                     const parentComment = yield Post.findById(post.parentId);
                     if (parentComment) {
-                        parentComment.answers -= 1;
+                        parentComment.$inc("answers", -1);
                         yield parentComment.save();
                     }
                     else {

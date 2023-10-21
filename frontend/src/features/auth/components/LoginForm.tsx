@@ -55,9 +55,9 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
                     <PasswordFormControl password={password} setPassword={setPassword} />
                 </FormGroup>
                 <FormGroup className="d-flex justify-content-end">
-                    <Link to="/">Forgot Password?</Link>
+                    <Link to="/Users/Forgot-Password">Forgot Password?</Link>
                 </FormGroup>
-                <Button className="mt-2 w-100" type="submit" disabled={loading}>Sign in</Button>
+                <Button className="mt-2 w-100 d-block" type="submit" disabled={loading}>Sign in</Button>
             </Form>
             <p className="text-center mt-5">New to Webler? <Button variant="link" onClick={onToggleClick}>Create an account</Button></p>
         </>

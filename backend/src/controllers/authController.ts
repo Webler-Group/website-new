@@ -1,13 +1,14 @@
 import jwt, { JwtPayload, VerifyErrors } from "jsonwebtoken";
 import User from "../models/User";
-import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken } from "../utils/tokenUtils";
+import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
+import { sendPasswordResetEmail } from "../services/email";
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    if (typeof email == "undefined" || typeof password === "undefined") {
+    if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
@@ -60,7 +61,7 @@ const login = asyncHandler(async (req, res) => {
 const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, name, password } = req.body;
 
-    if (typeof email !== "string" || typeof password !== "string") {
+    if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
@@ -170,11 +171,95 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     );
 })
 
+const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (typeof email === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    const user = await User.findOne({ email });
+
+    if (user === null) {
+        res.status(404).json({ message: "Email is not registered" });
+        return
+    }
+
+    const { emailToken } = signEmailToken({
+        userId: user._id.toString()
+    })
+
+    try {
+        await sendPasswordResetEmail(user.name, user.email, user._id.toString(), emailToken);
+
+        res.json({ success: true })
+    }
+    catch {
+        res.status(500).json({ message: "Email could not be sent" })
+    }
+
+})
+
+const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+    const { token, password, resetId } = req.body;
+
+    if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    jwt.verify(
+        token,
+        process.env.EMAIL_TOKEN_SECRET as string,
+        async (err: VerifyErrors | null, decoded: any) => {
+            if (!err) {
+                const userId = decoded.userId as string;
+
+                if (userId !== resetId) {
+                    res.json({ success: false });
+                    return
+                }
+
+                const user = await User.findById(resetId);
+
+                if (user === null) {
+                    res.status(404).json({ message: "User not found" })
+                    return
+                }
+
+                user.password = password;
+
+                try {
+                    await user.save();
+
+                    const cookies = req.cookies;
+
+                    if (cookies?.refreshToken) {
+                        clearRefreshToken(res);
+                    }
+
+                    res.json({ success: true });
+                }
+                catch (err) {
+                    res.json({ success: false });
+                }
+            }
+            else {
+                res.json({ success: false });
+            }
+        }
+    )
+
+})
+
 const controller = {
     login,
     register,
     logout,
-    refresh
+    refresh,
+    sendPasswordResetCode,
+    resetPassword
 };
 
 export default controller;

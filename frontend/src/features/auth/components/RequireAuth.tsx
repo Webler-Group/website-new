@@ -12,7 +12,7 @@ const RequireAuth = ({ allowedRoles }: RequireAuthProps) => {
     const content = (
         userInfo?.roles.some(role => allowedRoles.includes(role))
             ? <Outlet />
-            : <Navigate to={"/Login?returnUrl=" + location.pathname} state={{ from: location }} replace />
+            : <Navigate to={"/Users/Login?returnUrl=" + location.pathname} state={{ from: location }} replace />
     )
 
     return content

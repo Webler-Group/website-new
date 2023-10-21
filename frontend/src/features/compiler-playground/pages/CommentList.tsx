@@ -67,7 +67,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);
@@ -109,7 +109,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);

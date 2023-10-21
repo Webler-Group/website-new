@@ -3,9 +3,6 @@ import { v4 as uuid } from "uuid";
 import fs from "fs";
 import path from "path";
 import { NextFunction, Request, Response } from "express";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const logEvents = async (message: string, logFileName: string) => {
     if (process.env.NODE_ENV !== "development") {

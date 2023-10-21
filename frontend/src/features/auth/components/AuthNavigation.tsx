@@ -15,7 +15,7 @@ const AuthNavigation = () => {
         ApiCommunication.sendJsonRequest("/Auth/Logout", "POST")
             .then(() => {
                 logout();
-                navigate("/Login");
+                navigate("/Users/Login");
             })
     }
 
@@ -50,10 +50,10 @@ const AuthNavigation = () => {
                         :
                         <>
                             <Nav.Item>
-                                <LinkContainer to="/Login">
+                                <LinkContainer to="/Users/Login">
                                     <Button variant="primary" className="me-2">Log in</Button>
                                 </LinkContainer>
-                                <LinkContainer to="/Register">
+                                <LinkContainer to="/Users/Register">
                                     <Button variant="primary">Register</Button>
                                 </LinkContainer>
                             </Nav.Item>

@@ -1,10 +1,11 @@
-import { useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas } from "react-bootstrap";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import CommentNode, { ICodeComment } from "../components/CommentNode";
+import { FaLeftLong } from "react-icons/fa6";
 
 interface CommentListProps {
     code: ICode;
@@ -12,9 +13,12 @@ interface CommentListProps {
     onHide: () => void;
     commentCount: number;
     setCommentCount: (callback: (data: number) => number) => void;
+    postId: string | null;
+    setPostId: (callback: (data: string | null) => string | null) => void;
+    isReply: boolean;
 }
 
-const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: CommentListProps) => {
+const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, postId, setPostId, isReply }: CommentListProps) => {
 
     const { userInfo } = useAuth();
     const navigate = useNavigate();
@@ -30,11 +34,25 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
     const [onEditCallback, setOnEditCallback] = useState<(id: string, message: string) => void>();
     const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
+    const formInputRef = useRef<HTMLTextAreaElement>(null);
+    const [showAllComments, setShowAllComments] = useState(!(isReply && postId))
+
+    useEffect(() => {
+        if (postId) {
+            setFilter(2);
+        }
+    }, [postId]);
+
 
     const showAnswerForm = (input: string, editedComment: string | null) => {
         setAnswerFormVisible(true);
         setAnswerFormMessage(input);
         setEditedComment(editedComment);
+        setTimeout(() => {
+            if (formInputRef.current) {
+                formInputRef.current.focus();
+            }
+        })
     }
 
     const hideAnswerForm = () => {
@@ -47,7 +65,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);
@@ -77,7 +95,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);
@@ -129,6 +147,16 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
 
     const closeDeleteModal = () => setDeleteModalVisible(false);
 
+    const handleFilterSelect = (e: ChangeEvent) => {
+        const value = Number((e.target as HTMLSelectElement).selectedOptions[0].value)
+        setFilter(value)
+    }
+
+    const handleBackToAllComments = () => {
+        setPostId(() => null)
+        setShowAllComments(true)
+    }
+
     return (
         <>
             <Modal size="sm" show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -147,13 +175,21 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
                 </Offcanvas.Header>
                 <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
                     <div className="d-flex justify-content-between">
-                        <div className="col-6 col-sm-4">
-                            <Form.Select size="sm" value={filter} onChange={(e) => setFilter(Number(e.target.selectedOptions[0].value))}>
-                                <option value="1">Most Popular</option>
-                                <option value="2">Oldest</option>
-                                <option value="3">Most recent</option>
-                            </Form.Select>
-                        </div>
+                        {
+                            showAllComments ?
+                                <div className="col-6 col-sm-4">
+                                    <Form.Select size="sm" value={filter} onChange={handleFilterSelect}>
+                                        <option value="1">Most Popular</option>
+                                        <option value="2">Oldest</option>
+                                        <option value="3">Most recent</option>
+                                    </Form.Select>
+                                </div>
+                                :
+                                <Button onClick={handleBackToAllComments} variant="link" size="sm">
+                                    <FaLeftLong />
+                                    Back to all comments
+                                </Button>
+                        }
                     </div>
                     <div className="mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
                         <CommentNode
@@ -169,6 +205,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
                             addReplyToParent={() => { }}
                             editParentReply={() => { }}
                             deleteParentReply={() => { }}
+                            activePostId={postId}
+                            setActivePostId={setPostId}
+                            showAllComments={showAllComments}
+                            isActivePostReply={isReply}
+                            defaultReplies={null}
                         />
                     </div>
                     <div className="py-2 border-top">
@@ -176,7 +217,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount }: 
                         <div hidden={answerFormVisible === false}>
                             <FormGroup>
                                 <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                                <FormControl size="sm" value={answerFormMessage} onChange={(e) => setAnswerFormMessage(e.target.value)} as="textarea" rows={3} placeholder="Write your comment here..." />
+                                <FormControl ref={formInputRef} size="sm" value={answerFormMessage} onChange={(e) => setAnswerFormMessage(e.target.value)} as="textarea" rows={3} placeholder="Write your comment here..." />
                             </FormGroup>
                             <div className="d-flex justify-content-end mt-2">
                                 <Button size="sm" variant="secondary" className="ms-2" onClick={hideAnswerForm}>Cancel</Button>

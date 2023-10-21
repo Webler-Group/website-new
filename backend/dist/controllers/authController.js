@@ -16,9 +16,10 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
+const email_1 = require("../services/email");
 const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
-    if (typeof email == "undefined" || typeof password === "undefined") {
+    if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
@@ -60,7 +61,7 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
 }));
 const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, name, password } = req.body;
-    if (typeof email !== "string" || typeof password !== "string") {
+    if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
@@ -145,10 +146,70 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         });
     }));
 }));
+const sendPasswordResetCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { email } = req.body;
+    if (typeof email === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    const user = yield User_1.default.findOne({ email });
+    if (user === null) {
+        res.status(404).json({ message: "Email is not registered" });
+        return;
+    }
+    const { emailToken } = (0, tokenUtils_1.signEmailToken)({
+        userId: user._id.toString()
+    });
+    try {
+        yield (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
+        res.json({ success: true });
+    }
+    catch (_a) {
+        res.status(500).json({ message: "Email could not be sent" });
+    }
+}));
+const resetPassword = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { token, password, resetId } = req.body;
+    if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    jsonwebtoken_1.default.verify(token, process.env.EMAIL_TOKEN_SECRET, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!err) {
+            const userId = decoded.userId;
+            if (userId !== resetId) {
+                res.json({ success: false });
+                return;
+            }
+            const user = yield User_1.default.findById(resetId);
+            if (user === null) {
+                res.status(404).json({ message: "User not found" });
+                return;
+            }
+            user.password = password;
+            try {
+                yield user.save();
+                const cookies = req.cookies;
+                if (cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken) {
+                    (0, tokenUtils_1.clearRefreshToken)(res);
+                }
+                res.json({ success: true });
+            }
+            catch (err) {
+                res.json({ success: false });
+            }
+        }
+        else {
+            res.json({ success: false });
+        }
+    }));
+}));
 const controller = {
     login,
     register,
     logout,
-    refresh
+    refresh,
+    sendPasswordResetCode,
+    resetPassword
 };
 exports.default = controller;

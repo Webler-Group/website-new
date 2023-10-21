@@ -39,7 +39,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
 
     const voteAnswer = async () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const vote = upvoted ? 0 : 1;

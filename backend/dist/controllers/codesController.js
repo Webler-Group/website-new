@@ -284,17 +284,16 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     if (vote === 1) {
         if (!upvote) {
             upvote = yield Upvote_1.default.create({ user: currentUserId, parentId: codeId });
-            code.votes += 1;
+            code.$inc("votes", 1);
         }
     }
     else if (vote === 0) {
         if (upvote) {
             yield Upvote_1.default.deleteOne({ _id: upvote._id });
             upvote = null;
-            code.votes -= 1;
+            code.$inc("votes", -1);
         }
     }
-    yield code.save();
     res.json({ vote: upvote ? 1 : 0 });
 }));
 const compile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -380,19 +379,29 @@ main: ${sourceFileName}
 
 `;
     fs_1.default.writeFileSync(`${dirPath}/Makefile`, makefileString);
-    //run make
-    (0, child_process_1.execSync)(`(cd ${dirPath} && make)`);
-    //use bundler to create a web/html bundle of all emscripten files
-    const bundleString = (0, bundler_1.bundle)(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
-    //delete compiled files
+    let bundleString = null;
+    let message = "";
+    try {
+        //run make
+        (0, child_process_1.execSync)(`(cd ${dirPath} && make)`);
+        //use bundler to create a web/html bundle of all emscripten files
+        bundleString = (0, bundler_1.bundle)(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
+    }
+    catch (err) {
+        console.log(err.message);
+        message = "error";
+    }
     try {
         fs_1.default.rmSync(dirPath, { recursive: true });
     }
-    catch (err) {
-        console.log(err);
+    catch (_a) {
+        console.warn("Unable to delete the directory");
     }
-    //return bundle
-    res.json({ compiledHTML: bundleString });
+    if (bundleString) {
+        res.json({ compiledHTML: bundleString });
+        return;
+    }
+    res.status(500).json({ message });
 }));
 const codesController = {
     createCode,

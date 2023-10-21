@@ -35,7 +35,7 @@ const Entry = () => {
                 <span>{article.title}</span>
               </div>
               <div className="py-4">
-                <h1 className="text-center my-4">{article.title}</h1>
+                <h1 className="text-center my-4" style={{ fontSize: "48px" }}>{article.title}</h1>
                 <div dangerouslySetInnerHTML={{ __html: article.content }} />
               </div>
             </div>

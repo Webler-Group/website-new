@@ -37,6 +37,7 @@ const DiscussPost = () => {
     const location = useLocation();
     const [postId, setPostId] = useState<string | null>(null);
     const findPostRef = useRef<HTMLDivElement>(null);
+    const formInputRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -123,7 +124,7 @@ const DiscussPost = () => {
 
     const handlePostAnswer = async () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);
@@ -150,7 +151,7 @@ const DiscussPost = () => {
 
     const handleEditAnswer = async () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return
         }
         setLoading(true);
@@ -187,10 +188,13 @@ const DiscussPost = () => {
                 if (form.current) {
                     form.current.scrollIntoView({ behavior: "smooth", block: "end" });
                 }
+                if (formInputRef.current) {
+                    formInputRef.current.focus();
+                }
             })
         }
         else {
-            navigate("/Login");
+            navigate("/Users/Login");
         }
     }
 
@@ -247,7 +251,7 @@ const DiscussPost = () => {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const vote = question.isUpvoted ? 0 : 1;
@@ -267,7 +271,7 @@ const DiscussPost = () => {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const isFollowed = question.isFollowed;
@@ -374,7 +378,7 @@ const DiscussPost = () => {
                 <Form ref={form}>
                     <FormGroup>
                         <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <FormControl as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={1000} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        <FormControl ref={formInputRef} as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={1000} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">

@@ -6,6 +6,8 @@ import showdown from 'showdown';
 
 const rootDir = process.env.ROOT_DIR as string;
 
+const blogsDir = path.join(rootDir, "uploads", "blogs")
+
 const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 
   const query = req.query;
@@ -21,23 +23,30 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 
   const regex = new RegExp("^" + searchQuery, "i")
 
-  let names = fs.readdirSync(path.join(rootDir, "uploads", "blogs"));
+  let postCount = 0;
+  let posts = []
 
-  let posts = names.map(name => {
-    const fileData = fs.readFileSync(path.join(rootDir, "blogs", name, "info.json"));
-    const json = JSON.parse(fileData.toString());
-    return json;
-  })
+  if (fs.existsSync(blogsDir)) {
+    let names = fs.readdirSync(blogsDir);
+    console.log(names);
 
-  if (searchQuery.length) {
-    posts = posts.filter(post => {
-      return regex.test(post.title);
+
+    posts = names.map(name => {
+      const fileData = fs.readFileSync(path.join(blogsDir, name, "info.json"));
+      const json = JSON.parse(fileData.toString());
+      return json;
     })
+
+    if (searchQuery.length) {
+      posts = posts.filter(post => {
+        return regex.test(post.title);
+      })
+    }
+
+    postCount = posts.length;
+
+    posts = posts.slice((page - 1) * count, page * count);
   }
-
-  const postCount = posts.length;
-
-  posts = posts.slice((page - 1) * count, page * count);
 
   res.json({
     posts,
@@ -49,9 +58,9 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 const getBlogEntry = asyncHandler(async (req: Request, res: Response) => {
   const entryName = req.params.entryName;
   try {
-    const jsonFileData = fs.readFileSync(path.join(rootDir, 'blogs', entryName, 'info.json'));
+    const jsonFileData = fs.readFileSync(path.join(blogsDir, entryName, 'info.json'));
     const json = JSON.parse(jsonFileData.toString());
-    const fileData = fs.readFileSync(path.join(rootDir, 'blogs', entryName, 'content.md'));
+    const fileData = fs.readFileSync(path.join(blogsDir, entryName, 'content.md'));
 
     const converter = new showdown.Converter();
     const text = fileData.toString();

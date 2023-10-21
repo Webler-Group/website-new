@@ -302,7 +302,8 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
     const result = yield dbQuery
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("actionUser", "name avatarUrl countryCode level roles");
+        .populate("actionUser", "name avatarUrl countryCode level roles")
+        .populate("postId", "parentId");
     if (result) {
         const data = result.map(x => ({
             id: x._id,
@@ -326,7 +327,10 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
             isSeen: x.isSeen,
             isClicked: x.isClicked,
             codeId: x.codeId,
-            postId: x.postId,
+            postId: x.postId ? x.postId._id : null,
+            post: {
+                parentId: x.postId ? x.postId.parentId : null
+            },
             questionId: x.questionId
         }));
         res.json({

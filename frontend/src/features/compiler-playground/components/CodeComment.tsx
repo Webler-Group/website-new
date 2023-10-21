@@ -105,7 +105,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
 
     const handleReply = () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         onReply(data.id, parentId ? parentId : data.id, addReply)
@@ -113,7 +113,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
 
     const handleEdit = () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         onEdit(data.id, parentId, data.message, editParentReply);
@@ -121,7 +121,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
 
     const handleDelete = () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         onDelete(data.id, parentId, deleteReply);
@@ -129,7 +129,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
 
     const voteAnswer = async () => {
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const vote = data.isUpvoted ? 0 : 1;

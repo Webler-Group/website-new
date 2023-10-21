@@ -204,7 +204,7 @@ const ProfileFromAuth = () => {
                 userInfo ?
                     <Navigate to={"/Profile/" + userInfo.id} state={{ from: location }} replace />
                     :
-                    <Navigate to="/Login" state={{ from: location }} replace />
+                    <Navigate to="/Users/Login" state={{ from: location }} replace />
             }
         </>
     )

@@ -2,6 +2,7 @@ import express from "express";
 import discussionController from "../controllers/discussionController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
+import requestLimiter from "../middleware/requestLimiter";
 
 const router = express.Router();
 
@@ -37,7 +38,7 @@ router.route("/ToggleAcceptedAnswer")
 router.route("/VotePost")
     .post(discussionController.votePost);
 router.route("/CreateCodeComment")
-    .post(discussionController.createCodeComment);
+    .post(requestLimiter(10 * 60, 20, "Too many requests, try again later"), discussionController.createCodeComment);
 router.route("/EditCodeComment")
     .put(discussionController.editCodeComment);
 router.route("/DeleteCodeComment")

@@ -77,7 +77,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
                 if (question === null) {
                     throw new Error("Question not found");
                 }
-                question.answers -= 1;
+                question.$inc("answers", -1);
                 await question.save();
                 break;
             }
@@ -86,11 +86,11 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
                 if (code === null) {
                     throw new Error("Code not found");
                 }
-                code.comments -= 1;
+                code.$inc("comments", -1);
                 await code.save();
                 const parentComment = await Post.findById(post.parentId);
                 if (parentComment) {
-                    parentComment.answers -= 1;
+                    parentComment.$inc("answers", -1);
                     await parentComment.save();
                 }
                 else {

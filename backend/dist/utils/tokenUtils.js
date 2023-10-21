@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.clearRefreshToken = exports.signAccessToken = exports.generateRefreshToken = void 0;
+exports.signEmailToken = exports.clearRefreshToken = exports.signAccessToken = exports.generateRefreshToken = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const generateRefreshToken = (res, payload) => {
     const refreshToken = jsonwebtoken_1.default.sign(payload, process.env.REFRESH_TOKEN_SECRET, { expiresIn: "7d" });
@@ -32,3 +32,12 @@ const signAccessToken = (payload) => {
     };
 };
 exports.signAccessToken = signAccessToken;
+const signEmailToken = (payload) => {
+    const emailToken = jsonwebtoken_1.default.sign(payload, process.env.EMAIL_TOKEN_SECRET, { expiresIn: "1h" });
+    const data = jsonwebtoken_1.default.decode(emailToken);
+    return {
+        emailToken,
+        data
+    };
+};
+exports.signEmailToken = signEmailToken;

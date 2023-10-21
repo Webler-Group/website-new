@@ -17,6 +17,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const showdown_1 = __importDefault(require("showdown"));
 const rootDir = process.env.ROOT_DIR;
+const blogsDir = path_1.default.join(rootDir, "uploads", "blogs");
 const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const query = req.query;
     const page = Number(query.page);
@@ -27,19 +28,24 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
         return;
     }
     const regex = new RegExp("^" + searchQuery, "i");
-    let names = fs_1.default.readdirSync(path_1.default.join(rootDir, "uploads", "blogs"));
-    let posts = names.map(name => {
-        const fileData = fs_1.default.readFileSync(path_1.default.join(rootDir, "blogs", name, "info.json"));
-        const json = JSON.parse(fileData.toString());
-        return json;
-    });
-    if (searchQuery.length) {
-        posts = posts.filter(post => {
-            return regex.test(post.title);
+    let postCount = 0;
+    let posts = [];
+    if (fs_1.default.existsSync(blogsDir)) {
+        let names = fs_1.default.readdirSync(blogsDir);
+        console.log(names);
+        posts = names.map(name => {
+            const fileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, name, "info.json"));
+            const json = JSON.parse(fileData.toString());
+            return json;
         });
+        if (searchQuery.length) {
+            posts = posts.filter(post => {
+                return regex.test(post.title);
+            });
+        }
+        postCount = posts.length;
+        posts = posts.slice((page - 1) * count, page * count);
     }
-    const postCount = posts.length;
-    posts = posts.slice((page - 1) * count, page * count);
     res.json({
         posts,
         count: postCount
@@ -48,9 +54,9 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
 const getBlogEntry = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const entryName = req.params.entryName;
     try {
-        const jsonFileData = fs_1.default.readFileSync(path_1.default.join(rootDir, 'blogs', entryName, 'info.json'));
+        const jsonFileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, entryName, 'info.json'));
         const json = JSON.parse(jsonFileData.toString());
-        const fileData = fs_1.default.readFileSync(path_1.default.join(rootDir, 'blogs', entryName, 'content.md'));
+        const fileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, entryName, 'content.md'));
         const converter = new showdown_1.default.Converter();
         const text = fileData.toString();
         const html = converter.makeHtml(text);

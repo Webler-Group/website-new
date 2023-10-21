@@ -359,7 +359,8 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     const result = await dbQuery
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("actionUser", "name avatarUrl countryCode level roles") as any[];
+        .populate("actionUser", "name avatarUrl countryCode level roles")
+        .populate("postId", "parentId") as any[];
 
 
     if (result) {
@@ -386,7 +387,10 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
             isSeen: x.isSeen,
             isClicked: x.isClicked,
             codeId: x.codeId,
-            postId: x.postId,
+            postId: x.postId ? x.postId._id : null,
+            post: {
+                parentId: x.postId ? x.postId.parentId : null
+            },
             questionId: x.questionId
         }));
 

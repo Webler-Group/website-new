@@ -54,7 +54,7 @@ class ApiCommunication {
             }
             else {
                 authenticate(null);
-                location.href = "/Login?returnUrl=" + location.pathname;
+                location.href = "/Users/Login?returnUrl=" + location.pathname;
             }
         }
 

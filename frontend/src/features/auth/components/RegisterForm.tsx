@@ -59,7 +59,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
                     <FormLabel>Password</FormLabel>
                     <PasswordFormControl password={password} setPassword={setPassword} />
                 </FormGroup>
-                <Button className="mt-4 w-100" type="submit" disabled={loading}>Sign up</Button>
+                <Button className="mt-4 w-100 d-block" type="submit" disabled={loading}>Sign up</Button>
             </Form>
             <p className="text-center mt-5">Already have an account? <Button variant="link" onClick={onToggleClick}>Sign in</Button></p>
             <p className="text-center mt-2">By signing up you agree to our <Link to="/Terms-of-use">Terms of Use</Link></p>

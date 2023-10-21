@@ -41,11 +41,15 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [isUserRegistering, setUserAuthPage] = useState(true);
     const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
     const [commentCount, setCommentCount] = useState(0);
+    const [postId, setPostId] = useState<string | null>(null);
+    const [isReply, setIsReply] = useState(false);
     const location = useLocation();
 
     useEffect(() => {
         if (location.state && location.state.postId) {
             setCommentModalVisible(true);
+            setPostId(location.state.postId);
+            setIsReply(location.state.isReply);
         }
     }, [location])
 
@@ -59,7 +63,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }, [codeId])
 
     useEffect(() => {
-        let editorValue = localStorage.getItem("editor");;
+        let editorValue = localStorage.getItem("editor");
         if (editorValue !== null) {
             setEditorOptions(JSON.parse(editorValue));
         }
@@ -274,7 +278,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const vote = code.isUpvoted ? 0 : 1;
@@ -325,7 +329,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             {
                 (code && code.id) &&
                 <>
-                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} commentCount={commentCount} setCommentCount={setCommentCount} />
+                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} commentCount={commentCount} setCommentCount={setCommentCount} postId={postId} setPostId={setPostId} isReply={isReply} />
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>Code details</Modal.Title>

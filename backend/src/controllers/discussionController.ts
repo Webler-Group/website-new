@@ -287,7 +287,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             })
         }
 
-        question.answers += 1;
+        question.$inc("answers", 1)
         await question.save();
 
         res.json({
@@ -667,18 +667,18 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (vote === 1) {
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: postId })
-            post.votes += 1;
+            post.$inc("votes", 1)
+            await post.save();
         }
     }
     else if (vote === 0) {
         if (upvote) {
             await Upvote.deleteOne({ _id: upvote._id });
             upvote = null;
-            post.votes -= 1;
+            post.$inc("votes", -1)
+            await post.save();
         }
     }
-
-    await post.save();
 
     res.json({ vote: upvote ? 1 : 0 });
 
@@ -686,7 +686,6 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const query = req.query;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
 
     if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
@@ -701,7 +700,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             .populate("user", "name avatarUrl countryCode level roles");
     }
 
-    let dbQuery = Post.find({ codeId, parentId, _type: 3 });
+    let dbQuery = Post.find({ codeId, _type: 3 });
 
     let skipCount = index;
 
@@ -714,15 +713,25 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             return
         }
 
+        parentPost = reply.parentId ? await Post
+            .findById(reply.parentId)
+            .populate("user", "name avatarUrl countryCode level roles")
+            :
+            null;
+
+        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null })
+
         skipCount = Math.max(0, (await dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()) - Math.floor(count / 2));
+            .countDocuments()));
 
         dbQuery = dbQuery
             .sort({ createdAt: "asc" })
     }
     else {
+        dbQuery = dbQuery.where({ parentId });
+
         switch (filter) {
             // Most popular
             case 1: {
@@ -769,7 +778,9 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             isUpvoted: false,
             isAccepted: x.isAccepted,
             answers: x.answers,
-            index: findPostId && parentPost ? index + offset - 1 : index + offset
+            index: (findPostId && parentPost) ?
+                offset === 0 ? -1 : skipCount + offset - 1 :
+                skipCount + offset
         }))
 
         let promises = [];
@@ -845,11 +856,11 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             })
         }
 
-        code.comments += 1;
+        code.$inc("comments", 1)
         await code.save();
 
         if (parentPost) {
-            parentPost.answers += 1;
+            parentPost.$inc("answers", 1)
             await parentPost.save();
         }
 

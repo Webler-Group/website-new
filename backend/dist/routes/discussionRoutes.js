@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const discussionController_1 = __importDefault(require("../controllers/discussionController"));
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
+const requestLimiter_1 = __importDefault(require("../middleware/requestLimiter"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/")
@@ -37,7 +38,7 @@ router.route("/ToggleAcceptedAnswer")
 router.route("/VotePost")
     .post(discussionController_1.default.votePost);
 router.route("/CreateCodeComment")
-    .post(discussionController_1.default.createCodeComment);
+    .post((0, requestLimiter_1.default)(10 * 60, 20, "Too many requests, try again later"), discussionController_1.default.createCodeComment);
 router.route("/EditCodeComment")
     .put(discussionController_1.default.editCodeComment);
 router.route("/DeleteCodeComment")

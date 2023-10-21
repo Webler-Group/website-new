@@ -34,6 +34,11 @@ interface CommentNodeProps {
     addReplyToParent: (data: ICodeComment) => void;
     editParentReply: (id: string, message: string) => void;
     deleteParentReply: (id: string) => void;
+    activePostId: string | null;
+    setActivePostId: (callback: (data: string | null) => string | null) => void;
+    showAllComments: boolean;
+    isActivePostReply: boolean;
+    defaultReplies: ICodeComment[] | null;
 }
 
 const CommentNode = React.forwardRef(({
@@ -47,13 +52,25 @@ const CommentNode = React.forwardRef(({
     setDefaultOnReplyCallback,
     addReplyToParent,
     editParentReply,
-    deleteParentReply
+    deleteParentReply,
+    activePostId,
+    setActivePostId,
+    showAllComments,
+    isActivePostReply,
+    defaultReplies
 }: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { userInfo } = useAuth();
     const navigate = useNavigate()
+
     const [replyCount, setReplyCount] = useState(data ? data.answers : 0);
-    const [repliesVisible, setRepliesVisible] = useState(data === null);
-    const [indices, setIndices] = useState({ firstIndex: 0, lastIndex: 0 });
+    const [repliesVisible, setRepliesVisible] = useState(data === null || defaultReplies !== null);
+
+    let initialIndicesState = (defaultReplies && defaultReplies.length > 0) ?
+        { firstIndex: defaultReplies[0].index, lastIndex: defaultReplies[defaultReplies.length - 1].index, _state: 0 }
+        :
+        { firstIndex: 0, lastIndex: 0, _state: 0 }
+    const [indices, setIndices] = useState(initialIndicesState);
+    const [findPostId, setFindPostId] = useState(activePostId);
     const {
         isLoading,
         error,
@@ -62,7 +79,8 @@ const CommentNode = React.forwardRef(({
         add,
         set,
         remove
-    } = useComments(code.id!, data ? data.id : null, 20, indices, filter, repliesVisible);
+    } = useComments(code.id!, data ? data.id : null, 20, indices, filter, repliesVisible, findPostId, defaultReplies);
+    const activePostRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (data === null) {
@@ -72,13 +90,27 @@ const CommentNode = React.forwardRef(({
 
     useEffect(() => {
         if (repliesVisible) {
-            setIndices(() => ({ firstIndex: 0, lastIndex: 0 }))
+            if (indices._state !== 0) {
+                setActivePostId(() => null)
+                setFindPostId(null)
+            }
+            else if (data) {
+                setFindPostId(null)
+            }
+            if (defaultReplies === null) {
+                setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
+            }
         }
     }, [code, filter, repliesVisible])
 
-    const toggleReplies = () => {
-        setRepliesVisible(visible => !visible);
-    }
+    useEffect(() => {
+        if (showAllComments) {
+            if (activePostId === null) {
+                setFindPostId(null)
+            }
+            setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
+        }
+    }, [showAllComments])
 
     const intObserver = useRef<IntersectionObserver>()
     const lastCommentRef = useCallback((comment: any) => {
@@ -89,8 +121,8 @@ const CommentNode = React.forwardRef(({
         intObserver.current = new IntersectionObserver(comments => {
 
             if (comments[0].isIntersecting && hasNextPage) {
-
-                setIndices(indices => ({ ...indices, lastIndex: results[results.length - 1].index + 1 }));
+                setFindPostId(null)
+                setIndices(indices => ({ ...indices, lastIndex: results[results.length - 1].index + 1, _state: 1 }));
             }
         })
 
@@ -98,12 +130,22 @@ const CommentNode = React.forwardRef(({
         if (comment) intObserver.current.observe(comment)
     }, [isLoading, hasNextPage])
 
+    const toggleReplies = () => {
+        setRepliesVisible(visible => !visible);
+    }
+
+    const handleLoadPrev = () => {
+        if (isLoading) return
+        setFindPostId(null)
+        setIndices(indices => ({ ...indices, firstIndex: results[0].index, _state: 2 }))
+    }
+
     const handleReply = () => {
         if (!data) {
             return
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         setRepliesVisible(true);
@@ -115,7 +157,7 @@ const CommentNode = React.forwardRef(({
             return;
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         onEdit(data.id, data.message, editParentReply);
@@ -126,7 +168,7 @@ const CommentNode = React.forwardRef(({
             return;
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         onDelete(data.id, deleteParentReply);
@@ -137,7 +179,7 @@ const CommentNode = React.forwardRef(({
             return;
         }
         if (!userInfo) {
-            navigate("/Login");
+            navigate("/Users/Login");
             return;
         }
         const vote = data.isUpvoted ? 0 : 1;
@@ -162,8 +204,11 @@ const CommentNode = React.forwardRef(({
     }
 
     const voteReply = (id: string, vote: number) => {
-        set(id, (data) => ({ ...data, votes: data.votes + vote ? 1 : -1, isUpvoted: vote === 1 }));
+        set(id, (data) => ({ ...data, votes: data.votes + (vote === 1 ? 1 : -1), isUpvoted: vote === 1 }));
     }
+
+    let isNewlyCreated = data && activePostId === data.id;
+    let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
         <div className="mb-4">
@@ -191,7 +236,7 @@ const CommentNode = React.forwardRef(({
                         </div>
                     </div>
                     <div className="flex-grow-1">
-                        <div className={"rounded border p-2 mb-1 bg-light"}>
+                        <div className={"rounded border p-2 mb-1"} style={{ background: bg }}>
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
@@ -211,7 +256,7 @@ const CommentNode = React.forwardRef(({
                                 {
                                     (parentId === null && replyCount > 0) &&
                                     <>
-                                        <button className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={toggleReplies}>
+                                        <button disabled={defaultReplies !== null} className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={toggleReplies}>
                                             {replyCount} replies
                                         </button>
                                     </>
@@ -236,48 +281,89 @@ const CommentNode = React.forwardRef(({
                             <>
                                 {
                                     (results.length > 0 && results[0].index > 0) &&
-                                    <Button variant="primary" size="sm" className="mb-2 w-100">Load more</Button>
+                                    <Button disabled={isLoading} onClick={handleLoadPrev} variant="primary" size="sm" className="mb-2 w-100">Load previous</Button>
                                 }
                                 {
-                                    results.map((reply, idx) => {
-                                        return (
-                                            <div key={reply.id}>
-                                                {
-                                                    results.length === idx + 1 ?
-                                                        <CommentNode
-                                                            ref={lastCommentRef}
-                                                            code={code}
-                                                            data={reply}
-                                                            parentId={data ? data.id : null}
-                                                            filter={2}
-                                                            onReply={onReply}
-                                                            onEdit={onEdit}
-                                                            onDelete={onDelete}
-                                                            onVote={voteReply}
-                                                            setDefaultOnReplyCallback={setDefaultOnReplyCallback}
-                                                            addReplyToParent={addReply}
-                                                            editParentReply={editReply}
-                                                            deleteParentReply={deleteReply}
-                                                        />
-                                                        :
-                                                        <CommentNode
-                                                            code={code}
-                                                            data={reply}
-                                                            parentId={data ? data.id : null}
-                                                            filter={2}
-                                                            onReply={onReply}
-                                                            onEdit={onEdit}
-                                                            onDelete={onDelete}
-                                                            onVote={voteReply}
-                                                            setDefaultOnReplyCallback={setDefaultOnReplyCallback}
-                                                            addReplyToParent={addReply}
-                                                            editParentReply={editReply}
-                                                            deleteParentReply={deleteReply}
-                                                        />
-                                                }
-                                            </div>
-                                        )
-                                    })
+                                    (results.length > 0 && activePostId !== null && isActivePostReply) ?
+                                        <div key={results[0].id}>
+                                            <CommentNode
+                                                code={code}
+                                                data={results[0]}
+                                                parentId={data ? data.id : null}
+                                                filter={2}
+                                                onReply={onReply}
+                                                onEdit={onEdit}
+                                                onDelete={onDelete}
+                                                onVote={voteReply}
+                                                setDefaultOnReplyCallback={setDefaultOnReplyCallback}
+                                                addReplyToParent={addReply}
+                                                editParentReply={editReply}
+                                                deleteParentReply={deleteReply}
+                                                activePostId={activePostId}
+                                                setActivePostId={setActivePostId}
+                                                showAllComments={false}
+                                                isActivePostReply={false}
+                                                defaultReplies={results.slice(1)}
+                                            />
+                                        </div>
+                                        :
+                                        results.map((reply, idx) => {
+                                            let node = results.length === idx + 1 ?
+                                                <CommentNode
+                                                    ref={lastCommentRef}
+                                                    code={code}
+                                                    data={reply}
+                                                    parentId={data ? data.id : null}
+                                                    filter={2}
+                                                    onReply={onReply}
+                                                    onEdit={onEdit}
+                                                    onDelete={onDelete}
+                                                    onVote={voteReply}
+                                                    setDefaultOnReplyCallback={setDefaultOnReplyCallback}
+                                                    addReplyToParent={addReply}
+                                                    editParentReply={editReply}
+                                                    deleteParentReply={deleteReply}
+                                                    activePostId={activePostId}
+                                                    setActivePostId={setActivePostId}
+                                                    showAllComments={false}
+                                                    isActivePostReply={false}
+                                                    defaultReplies={null}
+                                                />
+                                                :
+                                                <CommentNode
+                                                    code={code}
+                                                    data={reply}
+                                                    parentId={data ? data.id : null}
+                                                    filter={2}
+                                                    onReply={onReply}
+                                                    onEdit={onEdit}
+                                                    onDelete={onDelete}
+                                                    onVote={voteReply}
+                                                    setDefaultOnReplyCallback={setDefaultOnReplyCallback}
+                                                    addReplyToParent={addReply}
+                                                    editParentReply={editReply}
+                                                    deleteParentReply={deleteReply}
+                                                    activePostId={activePostId}
+                                                    setActivePostId={setActivePostId}
+                                                    showAllComments={false}
+                                                    isActivePostReply={false}
+                                                    defaultReplies={null}
+                                                />
+                                            return (
+                                                reply.id === activePostId ?
+                                                    <div key={reply.id} ref={activePostRef}>
+                                                        {
+                                                            node
+                                                        }
+                                                    </div>
+                                                    :
+                                                    <div key={reply.id}>
+                                                        {
+                                                            node
+                                                        }
+                                                    </div>
+                                            )
+                                        })
                                 }
                             </>
                     }

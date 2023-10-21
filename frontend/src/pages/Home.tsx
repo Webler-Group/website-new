@@ -24,7 +24,7 @@ function Home() {
             Courses designed by experts with real-world practice. Join our
             global community. <b>It's free.</b>
           </p>
-          <LinkContainer to="/Register">
+          <LinkContainer to="/Users/Register">
             <Button size="lg" variant="primary">
               Start learning now!
             </Button>

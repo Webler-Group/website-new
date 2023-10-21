@@ -15,6 +15,9 @@ interface INotification {
     actionUser: UserMinimal;
     questionId: string;
     postId: string;
+    post: {
+        parentId: string | null;
+    }
     codeId: string;
     isClicked: boolean;
 }
@@ -54,7 +57,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 break;
             case 202:
                 link.to = "/Compiler-Playground/" + notification.codeId;
-                link.state = { postId: notification.postId };
+                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
         }
         navigate(link.to, { state: link.state })

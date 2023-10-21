@@ -25,6 +25,8 @@ import Header from './layouts/Header';
 import Footer from './layouts/Footer';
 import Codes from './features/codes/pages/Codes';
 import CodesList from './features/codes/pages/CodesList';
+import ForgotPassword from './features/auth/pages/ForgotPassword';
+import ResetPassword from './features/auth/pages/ResetPassword';
 
 
 function App() {
@@ -35,9 +37,12 @@ function App() {
     <Routes>
 
       <Route element={<NoAuth />}>
-        <Route element={<Layout Header={null} Footer={null} />}>
-          <Route path="Login" element={<Login />} />
-          <Route path="Register" element={<Register />} />
+        <Route path="Users">
+          <Route element={<Layout Header={null} Footer={null} />}>
+            <Route path="Login" element={<Login />} />
+            <Route path="Register" element={<Register />} />
+            <Route path="Forgot-Password" element={<ForgotPassword />} />
+          </Route>
         </Route>
         <Route element={<Layout Header={<Header variant="dark" />} Footer={<Footer />} />}>
           <Route index element={<Home />} />
@@ -49,6 +54,11 @@ function App() {
         <Route path="Contact" element={<Contact />} />
       </Route>
 
+      <Route path="Users">
+        <Route element={<Layout Header={null} Footer={null} />}>
+          <Route path="Reset-Password" element={<ResetPassword />} />
+        </Route>
+      </Route>
 
       <Route path="Discuss">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
