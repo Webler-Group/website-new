@@ -30,6 +30,8 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
     const [compiledHTML, setCompiledHTML] = useState("");
     const [isCompiled, setIsCompiled] = useState(false);
 
+    const [tabHeight, setTabHeight] = useState("auto");
+
     useEffect(() => {
         setIsCompiled(false)
     }, [source])
@@ -55,6 +57,15 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         }
 
     }, [code]);
+
+    useEffect(() => {
+        const callback = () => {
+            setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 120}px)`);
+        }
+        addEventListener("resize", callback)
+        callback()
+        return () => removeEventListener("resize", callback)
+    })
 
     const getCompiledHTML = async () => {
 
@@ -86,12 +97,12 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         <div className="bg-dark" data-bs-theme="dark">
             {
                 editorTabs.length > 0 &&
-                <Tabs defaultActiveKey={editorTabs[0]} fill>
+                <Tabs defaultActiveKey={editorTabs[0]} fill justify>
                     {
                         editorTabs.map((lang, idx) => {
 
                             return (
-                                <Tab key={lang} eventKey={lang} title={lang} className="wb-playground-container__content">
+                                <Tab key={lang} eventKey={lang} title={lang} style={{ height: tabHeight }}>
                                     <ReactCodeMirror
                                         value={editorStates[idx].value}
                                         onChange={value => editorStates[idx].setValue(value)}
@@ -104,7 +115,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                             )
                         })
                     }
-                    <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} className="wb-playground-container__content">
+                    <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             outputTab
                         }

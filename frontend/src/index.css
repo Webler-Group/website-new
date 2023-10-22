@@ -34,7 +34,14 @@ ul {
 }
 
 .wb-p-container {
+    max-width: 780px;
+    margin: 0 auto;
     min-height: 100vh;
+}
+
+.wb-p-section__card {
+    max-width: 360px;
+    margin: 0 auto;
 }
 
 .wb-p-details__row {
@@ -109,6 +116,11 @@ ul {
 
     .wb-modal__container.follows {
         width: 367px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.codes {
+        width: 360px;
         max-height: 80vh;
     }
 

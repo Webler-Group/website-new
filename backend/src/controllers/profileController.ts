@@ -4,6 +4,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import UserFollowing from "../models/UserFollowing";
 import Notification from "../models/Notification";
+import Code from "../models/Code";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -23,6 +24,20 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const followers = await UserFollowing.countDocuments({ following: userId });
     const following = await UserFollowing.countDocuments({ user: userId });
 
+    let codesQuery = Code
+        .find({ user: userId })
+
+    if (currentUserId !== userId) {
+        codesQuery = codesQuery.where({ isPublic: true })
+    }
+
+    codesQuery = codesQuery
+        .sort({ createdAt: "desc" })
+
+    const codes = await codesQuery
+        .limit(10)
+        .select("-source -cssSource -jsSource") as any[]
+
     res.json({
         userDetails: {
             id: user._id,
@@ -38,7 +53,16 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isFollowing,
             registerDate: user.createdAt,
             level: user.level,
-            xp: user.xp
+            xp: user.xp,
+            codes: codes.map(x => ({
+                id: x._id,
+                name: x.name,
+                date: x.createdAt,
+                comments: x.comments,
+                votes: x.votes,
+                isPublic: x.isPublic,
+                language: x.language
+            }))
         }
     });
 

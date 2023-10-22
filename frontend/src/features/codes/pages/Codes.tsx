@@ -2,9 +2,7 @@ import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
 import { ReactNode, useEffect, useState } from "react";
 import ApiCommunication from "../../../helpers/apiCommunication";
-import { FaComment, FaThumbsUp } from "react-icons/fa";
-import { Link } from "react-router-dom";
-import { ICode } from "../components/Code";
+import Code, { ICode } from "../components/Code";
 
 interface CodesProps {
     MainPage: ReactNode
@@ -44,20 +42,8 @@ const Codes = ({ MainPage }: CodesProps) => {
                         {
                             codes.map(code => {
                                 return (
-                                    <div key={code.id} className="rounded border bg-white p-2 mb-2">
-                                        <Link to={"/Compiler-Playground/" + code.id}>
-                                            <h5>{code.name}</h5>
-                                        </Link>
-                                        <div className="d-flex small">
-                                            <div className="me-3 d-flex align-items-center">
-                                                <FaThumbsUp />
-                                                <span className="ms-2">{code.votes} Votes</span>
-                                            </div>
-                                            <div className="d-flex align-items-center">
-                                                <FaComment />
-                                                <span className="ms-2">{code.comments} Comments</span>
-                                            </div>
-                                        </div>
+                                    <div className="mt-2" key={code.id}>
+                                        <Code code={code} searchQuery="" showUserProfile={false} />
                                     </div>
                                 );
                             })

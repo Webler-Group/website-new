@@ -40,7 +40,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
         <div className="rounded border p-2 mb-2 bg-white d-md-flex">
             <div className="flex-grow-1">
                 <Link to={"/Discuss/" + question.id}>
-                    <h4>{title}</h4>
+                    <h4 style={{ wordBreak: "break-word" }}>{title}</h4>
                 </Link>
                 <div className="d-flex flex-wrap mt-3">
                     {

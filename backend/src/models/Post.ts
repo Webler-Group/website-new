@@ -2,6 +2,7 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 import Upvote from "./Upvote";
 import Code from "./Code";
 import PostFollowing from "./PostFollowing";
+import Notification from "./Notification";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -79,6 +80,11 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
                 }
                 question.$inc("answers", -1);
                 await question.save();
+                await Notification.deleteMany({
+                    _type: 201,
+                    questionId: question._id,
+                    postId: post._id
+                })
                 break;
             }
             case 3: {
@@ -96,6 +102,11 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
                 else {
                     await Post.deleteAndCleanup({ parentId: post._id });
                 }
+                await Notification.deleteMany({
+                    _type: 202,
+                    codeId: code._id,
+                    postId: post._id
+                })
                 break;
             }
         }

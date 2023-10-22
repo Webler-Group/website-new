@@ -51,10 +51,10 @@ const AuthNavigation = () => {
                         <>
                             <Nav.Item>
                                 <LinkContainer to="/Users/Login">
-                                    <Button variant="primary" className="me-2">Log in</Button>
+                                    <Button size="sm" variant="primary" className="me-2">Log in</Button>
                                 </LinkContainer>
                                 <LinkContainer to="/Users/Register">
-                                    <Button variant="primary">Register</Button>
+                                    <Button size="sm" variant="primary">Register</Button>
                                 </LinkContainer>
                             </Nav.Item>
                         </>

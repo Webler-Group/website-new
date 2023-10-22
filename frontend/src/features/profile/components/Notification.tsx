@@ -71,7 +71,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
             </div>
             <div className="flex-grow-1">
-                <div>
+                <div style={{ wordBreak: "break-word", fontSize: "14px" }}>
                     {messageParts[0]}
                     <ProfileName userId={notification.actionUser.id} userName={notification.actionUser.name} />
                     {messageParts[1]}
@@ -86,7 +86,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                     }
                 </div>
             </div>
-            <div className="d-flex align-items-center">
+            <div className="d-flex align-items-center ms-2">
                 <span style={{ cursor: "pointer" }} onClick={viewNotification}>
                     <FaEye />
                 </span>

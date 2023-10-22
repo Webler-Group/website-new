@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 
 interface RegisterFormProps {
@@ -18,6 +18,13 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [imageSrc, setImageSrc] = useState<string | null>(null);
+    const [captchaId, setCaptchaId] = useState<string | null>(null);
+    const [solution, setSolution] = useState("");
+
+    useEffect(() => {
+        generateCaptcha();
+    }, []);
 
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -29,9 +36,20 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         setLoading(false);
     }
 
+    const generateCaptcha = async () => {
+        setCaptchaId(null);
+
+        const result = await ApiCommunication.sendJsonRequest("/Auth/GenerateCaptcha", "POST");
+
+        if (result) {
+            setImageSrc(result.imageData);
+            setCaptchaId(result.captchaId);
+        }
+    }
+
     const registerUser = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/Register", "POST", { email, name, password });
+        const result = await ApiCommunication.sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution });
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);
@@ -39,6 +57,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         }
         else {
             setError(result.message)
+            generateCaptcha()
         }
     }
 
@@ -58,6 +77,16 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
                 <FormGroup>
                     <FormLabel>Password</FormLabel>
                     <PasswordFormControl password={password} setPassword={setPassword} />
+                </FormGroup>
+                <FormGroup>
+                    <FormLabel>Captcha</FormLabel>
+                    <FormControl type="text" required value={solution} onChange={(e) => setSolution(e.target.value)} />
+                    <div className="mt-2 d-flex gap-2">
+                        <div style={{ height: "50px" }}>
+                            {imageSrc && <img height="100%" src={imageSrc} />}
+                        </div>
+                        <button disabled={captchaId === null} onClick={generateCaptcha} className="d-flex justify-content-center align-items-center" style={{ width: "25px", height: "25px" }} type="button">⟳</button>
+                    </div>
                 </FormGroup>
                 <Button className="mt-4 w-100 d-block" type="submit" disabled={loading}>Sign up</Button>
             </Form>

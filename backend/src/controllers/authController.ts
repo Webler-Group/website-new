@@ -4,6 +4,8 @@ import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAcces
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { sendPasswordResetEmail } from "../services/email";
+import { getCaptcha, verifyCaptcha } from "../utils/captcha";
+import CaptchaRecord from "../models/CaptchaRecord";
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -59,12 +61,21 @@ const login = asyncHandler(async (req, res) => {
 })
 
 const register = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, password } = req.body;
+    const { email, name, password, solution, captchaId } = req.body;
 
-    if (typeof email === "undefined" || typeof password === "undefined") {
+    if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
+
+    const record = await CaptchaRecord.findById(captchaId);
+
+    if (record === null || !verifyCaptcha(solution, record.encrypted)) {
+        res.status(403).json({ message: "Captcha verification failed" });
+        return
+    }
+
+    await CaptchaRecord.deleteOne({ _id: captchaId });
 
     const userExists = await User.findOne({ email });
 
@@ -255,7 +266,17 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
+    const { base64ImageDataURI, encrypted } = await getCaptcha();
 
+    const record = await CaptchaRecord.create({ encrypted });
+
+    const date = new Date(Date.now() - 15 * 60 * 1000);
+    await CaptchaRecord.deleteMany({ createdAt: { $lt: date } });
+
+    res.json({
+        captchaId: record._id,
+        imageData: base64ImageDataURI,
+    });
 })
 
 const controller = {

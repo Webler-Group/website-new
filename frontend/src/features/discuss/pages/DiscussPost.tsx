@@ -310,9 +310,9 @@ const DiscussPost = () => {
                 </Modal.Footer>
             </Modal>
             <div className="d-flex gap-2 py-2">
-                <Link to="/Discuss">Q&A Discussions</Link>
+                <Link to="/Discuss">Q&A</Link>
                 <span>&rsaquo;</span>
-                <span>{question.title}</span>
+                <span>{question.title.length > 20 ? question.title.slice(0, 20) + "..." : question.title}</span>
             </div>
             <div className="p-2 bg-white rounded border mb-3 position-relative">
                 {
@@ -354,13 +354,13 @@ const DiscussPost = () => {
                         </div>
                     </div>
                     <div className="wb-discuss-question__main ms-2">
-                        <h3 className="wb-discuss-question__title">{question.title}</h3>
+                        <h3 className="wb-discuss-question__title" style={{ wordBreak: "break-word" }}>{question.title}</h3>
                         <p className="wb-discuss-question__description mt-4">{question.message}</p>
-                        <div className="d-flex mt-4 flex-wrap">
+                        <div className="d-flex mt-4 flex-wrap gap-1">
                             {
                                 question.tags.map((tag, idx) => {
                                     return (
-                                        <small key={idx} className="rounded bg-light p-1 me-2 border">{tag}</small>
+                                        <small key={idx} className="rounded bg-light p-1 border">{tag}</small>
                                     )
                                 })
                             }

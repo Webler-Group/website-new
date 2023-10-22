@@ -45,7 +45,7 @@ const Discuss = ({ MainPage }: DiscussProps) => {
                                 return (
                                     <div key={question.id} className="rounded border bg-white p-2 mb-2">
                                         <Link to={"/Discuss/" + question.id}>
-                                            <h5>{question.title}</h5>
+                                            <h5 style={{ wordBreak: "break-word" }}>{question.title}</h5>
                                         </Link>
                                         <div className="d-flex small">
                                             <div className="me-3 d-flex align-items-center">

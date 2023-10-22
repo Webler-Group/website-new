@@ -193,7 +193,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 jsSource: (creditsHeaders[2] ? creditsHeaders[2] + "\n" : "") + js
             });
             if (result && result.code) {
-                navigate("/Compiler-Playground/" + result.code.id, { replace: false })
+                navigate("/Compiler-Playground/" + result.code.id, { replace: code.userId === undefined })
             }
             else {
 
@@ -309,7 +309,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const formatTitle = (title: string) => {
-        return title.length > 16 ? title.slice(0, 16) + "..." : title;
+        return title.length > 10 ? title.slice(0, 10) + "..." : title;
     }
 
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
@@ -374,7 +374,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "60px" }}>
                 <div>
                     <Link to="/">
-                        <img src="/resources/images/logo.png" height="50px" width="150px" />
+                        <img src="/resources/images/logo.png" height="44px" width="132px" />
                     </Link>
                 </div>
                 <div>

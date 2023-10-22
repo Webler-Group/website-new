@@ -622,13 +622,6 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await Post.deleteAndCleanup({ _id: replyId });
 
-        await Notification.deleteMany({
-            _type: 201,
-            actionUser: currentUserId,
-            questionId: question._id,
-            postId: reply._id
-        })
-
         res.json({ success: true });
     }
     catch (err: any) {
@@ -940,13 +933,6 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     try {
-
-        await Notification.deleteMany({
-            _type: 202,
-            actionUser: currentUserId,
-            codeId: code._id,
-            postId: comment._id
-        })
 
         await Post.deleteAndCleanup({ _id: commentId });
 

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import ApiCommunication from "../../../helpers/apiCommunication";
-import { Navigate, useLocation, useParams } from "react-router-dom";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { Button, Card, Container } from "react-bootstrap";
+import { Button, Card, Col, Container, Row } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
 import countries from "../../../data/countries";
 import { FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";
+import CodesSection from "../components/CodesSection";
+import Code from "../../codes/components/Code";
 
 export interface UserDetails {
     id: string;
@@ -20,6 +22,7 @@ export interface UserDetails {
     isFollowing: boolean;
     level: number;
     xp: number;
+    codes: any[];
 }
 
 export interface UserMinimal {
@@ -42,6 +45,11 @@ const Profile = () => {
 
     const [followListVisible, setFollowListVisible] = useState(0);
 
+    const [codes, setCodes] = useState<any[]>([])
+    const [codesSectionVisible, setCodesSectionVisible] = useState(false);
+
+    const navigate = useNavigate();
+
     useEffect(() => {
         setFollowListVisible(0);
         ApiCommunication.sendJsonRequest(`/Profile/GetProfile`, "POST", {
@@ -52,6 +60,7 @@ const Profile = () => {
                     setUserDetails(data.userDetails);
                     setFollowingCount(data.userDetails.following);
                     setFollowersCount(data.userDetails.followers);
+                    setCodes(data.userDetails.codes.slice(0, 3))
                 }
             })
     }, [userId]);
@@ -109,15 +118,62 @@ const Profile = () => {
         setFollowListVisible(2);
     }
 
+    const showCodesSection = () => {
+        setCodesSectionVisible(true)
+    }
+
+    const closeCodesSection = () => {
+        setCodesSectionVisible(false)
+    }
+
     const setPageTitle = (userName: string) => {
         { document.title = userName + " | Webler" }
     }
+
+    const openPlaygroundMenu = () => {
+        navigate("/Compiler-Playground")
+    }
+
+    let isCurrentUser = userInfo && userInfo.id === userId;
+
+    let codesSectionContent = codes.length > 0 ?
+        <Col>
+            <Card className="p-2 wb-p-section__card">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h3>Codes</h3>
+                    <Button onClick={showCodesSection} variant="link">Show All</Button>
+                </div>
+                <div className="mt-2">
+                    {
+                        codes.map(code => {
+                            return (
+                                <div className="mt-2" key={code.id}>
+                                    <Code code={code} searchQuery="" showUserProfile={false} />
+                                </div>
+                            );
+                        })
+                    }
+                    {
+                        isCurrentUser &&
+                        <div className="mt-3">
+                            <Button onClick={openPlaygroundMenu} className="w-100">Add New</Button>
+                        </div>
+                    }
+                </div>
+            </Card>
+        </Col>
+        :
+        <></>
 
     return (
         <div className="wb-p-container">
             {
                 userDetails &&
                 <>
+                    {
+                        codesSectionVisible &&
+                        <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
+                    }
                     {
                         followListVisible == 1 &&
                         <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/GetFollowers`, setCount: setFollowingCount, userId: userDetails.id }} />
@@ -128,15 +184,15 @@ const Profile = () => {
                     }
                     {setPageTitle(userDetails.name)}
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
-                    <Container>
-                        <Card className="mt-4 p-2">
+                    <Container className="p-2">
+                        <Card className="p-2">
                             <div className="d-block d-md-flex gap-3">
                                 <div className="wb-p-details__avatar">
                                     <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
                                 </div>
                                 <div className="d-flex flex-column align-items-center align-items-md-start">
                                     <div className="d-flex wb-p-details__row">
-                                        <p className="wb-p-details__name" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
+                                        <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
                                     </div>
                                     <div>
                                         {
@@ -146,9 +202,9 @@ const Profile = () => {
                                                 <div className="d-flex wb-p-details__row">
                                                     {
                                                         userDetails.isFollowing ?
-                                                            <Button variant="primary" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
+                                                            <Button variant="primary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
                                                             :
-                                                            <Button variant="primary" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                                                            <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
                                                     }
                                                 </div>
                                             )
@@ -174,7 +230,7 @@ const Profile = () => {
                                         <b>{userDetails.xp} XP</b>
                                     </p>
                                     <div className="wb-p-details__row">
-                                        <p className="text-secondary wb-p-details__bio">{userDetails.bio}</p>
+                                        <p className="text-secondary wb-p-details__bio small">{userDetails.bio}</p>
                                     </div>
                                     <div className="wb-p-details__row">
                                         {
@@ -189,6 +245,11 @@ const Profile = () => {
                                 </div>
                             </div>
                         </Card>
+                        <Row className="mt-2 row-cols-1 row-cols-lg-2 row-gap-2">
+                            {
+                                codesSectionContent
+                            }
+                        </Row>
                     </Container>
                 </>
             }

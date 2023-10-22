@@ -28,15 +28,16 @@ interface CommentNodeProps {
     filter: number;
     onReply: (parentId: string, callback: (data: ICodeComment) => void) => void;
     onEdit: (id: string, message: string, callback: (id: string, message: string) => void) => void;
-    onDelete: (id: string, callback: (id: string) => void) => void;
+    onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
     onVote: (id: string, vote: number) => void;
     setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
     addReplyToParent: (data: ICodeComment) => void;
     editParentReply: (id: string, message: string) => void;
-    deleteParentReply: (id: string) => void;
+    deleteParentReply: (id: string, answers: number) => void;
     activePostId: string | null;
     setActivePostId: (callback: (data: string | null) => string | null) => void;
     showAllComments: boolean;
+    setShowAllComments: (callback: (data: boolean) => boolean) => void;
     isActivePostReply: boolean;
     defaultReplies: ICodeComment[] | null;
 }
@@ -56,6 +57,7 @@ const CommentNode = React.forwardRef(({
     activePostId,
     setActivePostId,
     showAllComments,
+    setShowAllComments,
     isActivePostReply,
     defaultReplies
 }: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
@@ -171,7 +173,7 @@ const CommentNode = React.forwardRef(({
             navigate("/Users/Login");
             return;
         }
-        onDelete(data.id, deleteParentReply);
+        onDelete(data.id, deleteParentReply, replyCount);
     }
 
     const handleVote = async () => {
@@ -198,9 +200,11 @@ const CommentNode = React.forwardRef(({
         set(id, data => ({ ...data, message }));
     }
 
-    const deleteReply = (id: string) => {
+    const deleteReply = (id: string, answers: number) => {
         remove(id)
-        setReplyCount(count => count - 1)
+        setReplyCount(count => count - 1 - answers)
+        setShowAllComments(() => true);
+        setActivePostId(() => null);
     }
 
     const voteReply = (id: string, vote: number) => {
@@ -301,6 +305,7 @@ const CommentNode = React.forwardRef(({
                                                 deleteParentReply={deleteReply}
                                                 activePostId={activePostId}
                                                 setActivePostId={setActivePostId}
+                                                setShowAllComments={setShowAllComments}
                                                 showAllComments={false}
                                                 isActivePostReply={false}
                                                 defaultReplies={results.slice(1)}
@@ -326,6 +331,7 @@ const CommentNode = React.forwardRef(({
                                                     activePostId={activePostId}
                                                     setActivePostId={setActivePostId}
                                                     showAllComments={false}
+                                                    setShowAllComments={setShowAllComments}
                                                     isActivePostReply={false}
                                                     defaultReplies={null}
                                                 />
@@ -346,6 +352,7 @@ const CommentNode = React.forwardRef(({
                                                     activePostId={activePostId}
                                                     setActivePostId={setActivePostId}
                                                     showAllComments={false}
+                                                    setShowAllComments={setShowAllComments}
                                                     isActivePostReply={false}
                                                     defaultReplies={null}
                                                 />

@@ -32,7 +32,8 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
     const [onReplyCallback, setOnReplyCallback] = useState<(data: ICodeComment) => void>();
     const [defaultOnReplyCallback, setDefaultOnReplyCallback] = useState<(data: ICodeComment) => void>();
     const [onEditCallback, setOnEditCallback] = useState<(id: string, message: string) => void>();
-    const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
+    const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string, answers: number) => void>();
+    const [deletedAnswersCount, setDeletedAnswersCount] = useState(0);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [showAllComments, setShowAllComments] = useState(!(isReply && postId))
@@ -119,8 +120,8 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         if (result && result.success) {
             closeDeleteModal();
             hideAnswerForm();
-            onDeleteCallback!(editedComment!)
-            setCommentCount(commentCount => commentCount - 1);
+            onDeleteCallback!(editedComment!, deletedAnswersCount)
+            setCommentCount(commentCount => commentCount - 1 - deletedAnswersCount);
         }
         else {
 
@@ -139,10 +140,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         setOnEditCallback(() => callback);
     }
 
-    const onDelete = (id: string, callback: (id: string) => void) => {
+    const onDelete = (id: string, callback: (id: string, answers: number) => void, answers: number) => {
         setEditedComment(id);
         setDeleteModalVisible(true);
         setOnDeleteCallback(() => callback);
+        setDeletedAnswersCount(answers);
     }
 
     const closeDeleteModal = () => setDeleteModalVisible(false);
@@ -208,6 +210,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                             activePostId={postId}
                             setActivePostId={setPostId}
                             showAllComments={showAllComments}
+                            setShowAllComments={setShowAllComments}
                             isActivePostReply={isReply}
                             defaultReplies={null}
                         />
