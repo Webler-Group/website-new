@@ -7,6 +7,7 @@ import Upvote from "../models/Upvote";
 import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
+import { PipelineStage } from "mongoose";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -74,11 +75,31 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return
     }
 
-    let dbQuery = Post.find({ _type: 1 })
+    let pipeline: PipelineStage[] = [
+        { $match: { _type: 1 } },
+        {
+            $set: {
+                score: { $add: ["$votes", "$answers"] }
+            }
+        }
+    ]
+
+    let dbQuery = Post
+        .find({
+            _type: 1
+        })
 
     if (searchQuery.trim().length) {
         const tagIds = (await Tag.find({ name: searchQuery.trim() }))
             .map(x => x._id);
+        pipeline.push({
+            $match: {
+                $or: [
+                    { title: new RegExp("^" + searchQuery.trim(), "i") },
+                    { "tags": { $in: tagIds } }
+                ]
+            }
+        })
         dbQuery.where({
             $or: [
                 { title: new RegExp("^" + searchQuery.trim(), "i") },
@@ -90,12 +111,20 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     switch (filter) {
         // Most Recent
         case 1: {
+            pipeline.push({
+                $sort: { createdAt: -1 }
+            })
             dbQuery = dbQuery
                 .sort({ createdAt: "desc" })
             break;
         }
         // Unanswered
         case 2: {
+            pipeline.push({
+                $match: { answers: 0 }
+            }, {
+                $sort: { createdAt: -1 }
+            })
             dbQuery = dbQuery
                 .where({ answers: 0 })
                 .sort({ createdAt: "desc" })
@@ -107,6 +136,11 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 res.status(400).json({ message: "Invalid request" });
                 return
             }
+            pipeline.push({
+                $match: { user: userId }
+            }, {
+                $sort: { createdAt: -1 }
+            })
             dbQuery = dbQuery
                 .where({ user: userId })
                 .sort({ createdAt: "desc" })
@@ -120,6 +154,11 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             }
             const replies = await Post.find({ user: userId, _type: 2 }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
+            pipeline.push({
+                $match: { _id: { $in: questionIds } }
+            }, {
+                $sort: { createdAt: -1 }
+            })
             dbQuery = dbQuery
                 .where({ _id: { $in: questionIds } })
                 .sort({ createdAt: "desc" })
@@ -128,8 +167,22 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         // Hot Today
         case 5: {
             let dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            pipeline.push({
+                $match: { createdAt: { $gt: dayAgo } }
+            }, {
+                $sort: { score: -1 }
+            })
             dbQuery = dbQuery
                 .where({ createdAt: { $gt: dayAgo } })
+                .sort({ votes: "desc" })
+            break;
+        }
+        // Trending
+        case 6: {
+            pipeline.push({
+                $sort: { score: -1 }
+            })
+            dbQuery = dbQuery
                 .sort({ votes: "desc" })
             break;
         }
@@ -139,12 +192,25 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const questionCount = await dbQuery.clone().countDocuments();
 
-    const result = await dbQuery
+    pipeline.push({
+        $skip: (page - 1) * count
+    }, {
+        $limit: count
+    }, {
+        $project: { message: 0 }
+    }, {
+        $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" }
+    }, {
+        $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
+    })
+    /*const result = await dbQuery
         .skip((page - 1) * count)
         .limit(count)
         .select("-message")
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("tags", "name") as any[];
+        .populate("tags", "name") as any[];*/
+
+    const result = await Post.aggregate(pipeline)
 
     if (result) {
         const data = result.map(x => ({
@@ -153,15 +219,16 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             tags: x.tags.map((y: any) => y.name),
             date: x.createdAt,
             userId: x.user._id,
-            userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
-            level: x.user.level,
-            roles: x.user.roles,
+            userName: x.users.length ? x.users[0].name : undefined,
+            avatarUrl: x.users.length ? x.users[0].avatarUrl : undefined,
+            countryCode: x.users.length ? x.users[0].countryCode : undefined,
+            level: x.users.length ? x.users[0].level : undefined,
+            roles: x.users.length ? x.users[0].roles : undefined,
             answers: x.answers,
             votes: x.votes,
             isUpvoted: false,
-            isAccepted: x.isAccepted
+            isAccepted: x.isAccepted,
+            score: x.score
         }));
 
         let promises = [];

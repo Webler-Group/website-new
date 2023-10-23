@@ -103,6 +103,7 @@ const QuestionList = () => {
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
                     <option value="1">Most Recent</option>
                     <option value="2">Unanswered</option>
+                    <option value="6">Trending</option>
                     {
                         userInfo &&
                         <>

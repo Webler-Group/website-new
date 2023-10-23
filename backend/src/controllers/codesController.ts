@@ -313,6 +313,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: codeId })
             code.$inc("votes", 1);
+            await code.save();
         }
     }
     else if (vote === 0) {
@@ -320,6 +321,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             await Upvote.deleteOne({ _id: upvote._id });
             upvote = null;
             code.$inc("votes", -1);
+            await code.save();
         }
     }
 

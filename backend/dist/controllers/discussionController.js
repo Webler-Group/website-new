@@ -527,12 +527,6 @@ const deleteReply = (0, express_async_handler_1.default)((req, res) => __awaiter
     }
     try {
         yield Post_1.default.deleteAndCleanup({ _id: replyId });
-        yield Notification_1.default.deleteMany({
-            _type: 201,
-            actionUser: currentUserId,
-            questionId: question._id,
-            postId: reply._id
-        });
         res.json({ success: true });
     }
     catch (err) {
@@ -792,12 +786,6 @@ const deleteCodeComment = (0, express_async_handler_1.default)((req, res) => __a
         return;
     }
     try {
-        yield Notification_1.default.deleteMany({
-            _type: 202,
-            actionUser: currentUserId,
-            codeId: code._id,
-            postId: comment._id
-        });
         yield Post_1.default.deleteAndCleanup({ _id: commentId });
         res.json({ success: true });
     }

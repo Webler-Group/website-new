@@ -17,6 +17,8 @@ const User_1 = __importDefault(require("../models/User"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const email_1 = require("../services/email");
+const captcha_1 = require("../utils/captcha");
+const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = req.body;
     if (typeof email === "undefined" || typeof password === "undefined") {
@@ -60,11 +62,17 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     }
 }));
 const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, name, password } = req.body;
-    if (typeof email === "undefined" || typeof password === "undefined") {
+    const { email, name, password, solution, captchaId } = req.body;
+    if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
+    const record = yield CaptchaRecord_1.default.findById(captchaId);
+    if (record === null || !(0, captcha_1.verifyCaptcha)(solution, record.encrypted)) {
+        res.status(403).json({ message: "Captcha verification failed" });
+        return;
+    }
+    yield CaptchaRecord_1.default.deleteOne({ _id: captchaId });
     const userExists = yield User_1.default.findOne({ email });
     if (userExists) {
         res.status(400).json({ message: "Email is already registered" });
@@ -206,6 +214,14 @@ const resetPassword = (0, express_async_handler_1.default)((req, res) => __await
     }));
 }));
 const generateCaptcha = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { base64ImageDataURI, encrypted } = yield (0, captcha_1.getCaptcha)();
+    const record = yield CaptchaRecord_1.default.create({ encrypted });
+    const date = new Date(Date.now() - 15 * 60 * 1000);
+    yield CaptchaRecord_1.default.deleteMany({ createdAt: { $lt: date } });
+    res.json({
+        captchaId: record._id,
+        imageData: base64ImageDataURI,
+    });
 }));
 const controller = {
     login,

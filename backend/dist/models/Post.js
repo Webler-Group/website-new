@@ -16,6 +16,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const Upvote_1 = __importDefault(require("./Upvote"));
 const Code_1 = __importDefault(require("./Code"));
 const PostFollowing_1 = __importDefault(require("./PostFollowing"));
+const Notification_1 = __importDefault(require("./Notification"));
 const postSchema = new mongoose_1.default.Schema({
     /*
     * 1 - question
@@ -90,6 +91,11 @@ postSchema.statics.deleteAndCleanup = function (filter) {
                     }
                     question.$inc("answers", -1);
                     yield question.save();
+                    yield Notification_1.default.deleteMany({
+                        _type: 201,
+                        questionId: question._id,
+                        postId: post._id
+                    });
                     break;
                 }
                 case 3: {
@@ -107,6 +113,11 @@ postSchema.statics.deleteAndCleanup = function (filter) {
                     else {
                         yield Post.deleteAndCleanup({ parentId: post._id });
                     }
+                    yield Notification_1.default.deleteMany({
+                        _type: 202,
+                        codeId: code._id,
+                        postId: post._id
+                    });
                     break;
                 }
             }

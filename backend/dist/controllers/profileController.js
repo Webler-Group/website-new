@@ -16,6 +16,7 @@ const User_1 = __importDefault(require("../models/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
+const Code_1 = __importDefault(require("../models/Code"));
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
     const { userId } = req.body;
@@ -29,6 +30,16 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
         false;
     const followers = yield UserFollowing_1.default.countDocuments({ following: userId });
     const following = yield UserFollowing_1.default.countDocuments({ user: userId });
+    let codesQuery = Code_1.default
+        .find({ user: userId });
+    if (currentUserId !== userId) {
+        codesQuery = codesQuery.where({ isPublic: true });
+    }
+    codesQuery = codesQuery
+        .sort({ createdAt: "desc" });
+    const codes = yield codesQuery
+        .limit(10)
+        .select("-source -cssSource -jsSource");
     res.json({
         userDetails: {
             id: user._id,
@@ -44,7 +55,16 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             isFollowing,
             registerDate: user.createdAt,
             level: user.level,
-            xp: user.xp
+            xp: user.xp,
+            codes: codes.map(x => ({
+                id: x._id,
+                name: x.name,
+                date: x.createdAt,
+                comments: x.comments,
+                votes: x.votes,
+                isPublic: x.isPublic,
+                language: x.language
+            }))
         }
     });
 }));
