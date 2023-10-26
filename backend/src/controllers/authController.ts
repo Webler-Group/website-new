@@ -27,7 +27,6 @@ const login = asyncHandler(async (req, res) => {
         const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
-                emailVerified: user.emailVerified,
                 roles: user.roles
             }
         })
@@ -96,7 +95,6 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
-                emailVerified: user.emailVerified,
                 roles: user.roles
             }
         })
@@ -169,7 +167,6 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
             const { accessToken, data: tokenInfo } = signAccessToken({
                 userInfo: {
                     userId: user._id.toString(),
-                    emailVerified: user.emailVerified,
                     roles: user.roles
                 }
             })

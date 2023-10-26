@@ -4,7 +4,6 @@ import { AccessTokenPayload } from "../utils/tokenUtils";
 
 interface IAuthRequest extends Request {
     userId?: string;
-    emailVerified?: boolean;
     roles?: string[];
 }
 
@@ -24,7 +23,6 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
 
                     req.userId = userInfo.userId;
                     req.roles = userInfo.roles;
-                    req.emailVerified = userInfo.emailVerified;
                 }
             }
         )

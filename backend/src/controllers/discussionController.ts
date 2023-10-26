@@ -9,16 +9,18 @@ import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
+import User from "../models/User";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
-    const emailVerified = req.emailVerified;
 
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
+
+    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
 
     if (!emailVerified) {
         res.status(401).json({ message: "Activate your account" })
@@ -309,8 +311,9 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const emailVerified = req.emailVerified;
     const { message, questionId } = req.body;
+
+    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
 
     if (!emailVerified) {
         res.status(401).json({ message: "Activate your account" });
@@ -722,13 +725,14 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const emailVerified = req.emailVerified;
     const { postId, vote } = req.body;
 
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
+
+    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
 
     if (!emailVerified) {
         res.status(401).json({ message: "Activate your account" })
@@ -887,8 +891,9 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const emailVerified = req.emailVerified;
     const { codeId, message, parentId } = req.body;
+
+    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
 
     if (!emailVerified) {
         res.status(401).json({ message: "Activate your account" });
