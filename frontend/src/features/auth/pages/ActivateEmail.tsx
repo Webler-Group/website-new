@@ -35,8 +35,8 @@ const ActivateEmail = () => {
                         submitState !== 0 &&
                             submitState === 1 ?
                             <>
-                                <h2 className="text-center">Congratulations! Your Sololearn account is activated.</h2>
-                                <p>Learn on the go, code in the website, connect with peers and enjoy!</p>
+                                <h2 className="text-center">Congratulations! Your webler account is activated.</h2>
+                                <p className="text-center">Learn on the go, code in the website, connect with peers and enjoy!</p>
                                 <Button className="w-100 d-block mt-2" onClick={() => navigate("/")}>Start coding now</Button>
                             </>
                             :

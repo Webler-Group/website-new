@@ -164,7 +164,10 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                     <span style={{ color: "#FFFFFF" }}>{"]"}</span>
                 </i>
             }
-            if (item instanceof Object) {
+            if (item instanceof RegExp) {
+                return <span style={{ color: "#35D4C7" }}>{`${item.toString()}`}</span>
+            }
+            if (item.constructor.name === "Object") {
                 return <i>
                     <span style={{ color: "#FFFFFF" }}>{"{ "}</span>
                     {
@@ -187,6 +190,9 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                     }
                     <span style={{ color: "#FFFFFF" }}>{" }"}</span>
                 </i>
+            }
+            else {
+                return <i style={{ color: "#FFFFFF" }}>{item.constructor.name}</i>
             }
         }
         return <span style={{ color: "#FFFFFF" }}>{item}</span>
@@ -279,7 +285,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                 </div>
             }
             <div className="h-100" hidden={isCompiled === false}>
-                <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/" allow="fullscreen"></iframe>
+                <iframe className="wb-playground-output-web" ref={iframeRef} src="http://127.0.0.1:5500/" allow="fullscreen"></iframe>
                 <div className="wb-web-wrapper__frame-wrapper__console-btn">
                     <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
                 </div>
