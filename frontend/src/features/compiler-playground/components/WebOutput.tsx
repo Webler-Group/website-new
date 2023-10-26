@@ -285,7 +285,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                 </div>
             }
             <div className="h-100" hidden={isCompiled === false}>
-                <iframe className="wb-playground-output-web" ref={iframeRef} src="http://127.0.0.1:5500/" allow="fullscreen"></iframe>
+                <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/" allow="fullscreen"></iframe>
                 <div className="wb-web-wrapper__frame-wrapper__console-btn">
                     <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
                 </div>
