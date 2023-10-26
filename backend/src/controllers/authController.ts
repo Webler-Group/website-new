@@ -27,6 +27,7 @@ const login = asyncHandler(async (req, res) => {
         const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
+                emailVerified: user.emailVerified,
                 roles: user.roles
             }
         })
@@ -95,6 +96,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         const { accessToken, data: tokenInfo } = signAccessToken({
             userInfo: {
                 userId: user._id.toString(),
+                emailVerified: user.emailVerified,
                 roles: user.roles
             }
         })
@@ -167,6 +169,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
             const { accessToken, data: tokenInfo } = signAccessToken({
                 userInfo: {
                     userId: user._id.toString(),
+                    emailVerified: user.emailVerified,
                     roles: user.roles
                 }
             })
@@ -279,6 +282,58 @@ const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
     });
 })
 
+const activate = asyncHandler(async (req: Request, res: Response) => {
+    const { token, userId } = req.body;
+
+    if (typeof token === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    jwt.verify(
+        token,
+        process.env.EMAIL_TOKEN_SECRET as string,
+        async (err: VerifyErrors | null, decoded: any) => {
+            if (!err) {
+                const userId2 = decoded.userId as string;
+                const email = decoded.email as string;
+
+                if (userId2 !== userId) {
+                    res.json({ success: false });
+                    return
+                }
+
+                const user = await User.findById(userId);
+
+                if (user === null) {
+                    res.status(404).json({ message: "User not found" })
+                    return
+                }
+
+                if (user.email !== email) {
+                    res.json({ success: false });
+                    return
+                }
+
+                user.emailVerified = true;
+
+                try {
+                    await user.save();
+
+                    res.json({ success: true });
+                }
+                catch (err) {
+                    res.json({ success: false });
+                }
+            }
+            else {
+                res.json({ success: false });
+            }
+        }
+    )
+
+})
+
 const controller = {
     login,
     register,
@@ -286,7 +341,8 @@ const controller = {
     refresh,
     sendPasswordResetCode,
     resetPassword,
-    generateCaptcha
+    generateCaptcha,
+    activate
 };
 
 export default controller;

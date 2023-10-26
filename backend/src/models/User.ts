@@ -48,6 +48,10 @@ const userSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    lastVerificationEmailTimestamp: {
+        type: Number,
+        default: 0
+    },
     active: {
         type: Boolean,
         default: true

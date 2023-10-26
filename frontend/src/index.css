@@ -89,7 +89,6 @@ ul {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-right: 20px;
 }
 
 .wb-p-follow-item__avatar-image {
@@ -99,8 +98,7 @@ ul {
 }
 
 .wb-p-follow-item__name {
-    font-weight: 600;
-    line-height: 120%;
+    font-size: 14px;
 }
 
 .wb-p-details__bio {

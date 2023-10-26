@@ -48,6 +48,32 @@ Your Webler Team
     return result
 }
 
+const sendActivationEmail = async (userName: string, userEmail: string, userId: string, emailToken: string) => {
+
+    let text = `Account activation
+    
+Welcome ${userName},
+
+Thanks for joining Webler! Click the link below to verify your email address and activate your account.
+
+${process.env.HOME_URL as string}Users/Activate?id=${userId}&token=${emailToken}
+
+Keep Coding,
+
+Your Webler Team
+
+© ${(new Date).getFullYear()} Webler Inc. All rights reserved.`
+
+    const result = await transporter.sendMail({
+        to: userEmail,
+        from: '"Webler" <info@' + (process.env.DOMAIN_NAME as string) + '>',
+        subject: userName + ", activate your Webler account!",
+        text
+    });
+    return result
+}
+
 export {
-    sendPasswordResetEmail
+    sendPasswordResetEmail,
+    sendActivationEmail
 }

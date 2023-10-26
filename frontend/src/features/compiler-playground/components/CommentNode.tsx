@@ -218,7 +218,7 @@ const CommentNode = React.forwardRef(({
         <div className="mb-4">
             {
                 data &&
-                <div className="d-flex position-relative">
+                <div className="d-flex position-relative gap-2">
                     <div className="wb-user-comment__options">
                         <div className="d-flex gap-2">
                             {
@@ -235,7 +235,7 @@ const CommentNode = React.forwardRef(({
                         </div>
                     </div>
                     <div>
-                        <div className="ms-2 wb-p-follow-item__avatar">
+                        <div className="wb-p-follow-item__avatar">
                             <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
                         </div>
                     </div>

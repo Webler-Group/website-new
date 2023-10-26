@@ -3,6 +3,7 @@ import Upvote from "./Upvote";
 import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
+import PostAttachment from "./PostAttachment";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -61,6 +62,81 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 
+postSchema.pre("save", async function (next) {
+    if (!this.isModified("message")) {
+        next();
+    }
+
+    const currentAttachments = await PostAttachment
+        .find({ postId: this._id })
+        .select("_type codeId questionId") as any[];
+
+    const newAttachmentIds: string[] = [];
+
+    const pattern = new RegExp(process.env.HOME_URL + "([\\w\-]+)\/([\\w\-]+)", "gi");
+    const matches = this.message.matchAll(pattern);
+
+    for (let match of matches) {
+
+        let attachment = null;
+        switch (match[1]) {
+            case "Compiler-Playground": {
+                const codeId = match[2];
+                try {
+                    const code = await Code.findById(codeId);
+                    if (!code) {
+                        continue
+                    }
+
+                    attachment = currentAttachments.find(x => x.code && x.code.toString() === codeId);
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: this._id,
+                            _type: 1,
+                            code: codeId,
+                            user: code.user
+                        })
+
+                    }
+                }
+                catch { }
+                break;
+            }
+            case "Discuss": {
+                const questionId = match[2];
+                try {
+                    const question = await Post.findById(questionId);
+                    if (!question) {
+                        continue
+                    }
+
+                    attachment = currentAttachments.find(x => x.question && x.question.toString() === questionId);
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: this._id,
+                            _type: 2,
+                            question: questionId,
+                            user: question.user
+                        })
+                    }
+                }
+                catch { }
+                break;
+            }
+        }
+        if (attachment) {
+            newAttachmentIds.push(attachment._id)
+        }
+    }
+
+    const idsToDelete = currentAttachments.map(x => x._id)
+        .filter(id => !newAttachmentIds.includes(id))
+
+    await PostAttachment.deleteMany({
+        _id: { $in: idsToDelete }
+    });
+
+})
 
 postSchema.statics.deleteAndCleanup = async function (filter: any) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");
@@ -111,6 +187,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
             }
         }
         await Upvote.deleteMany({ parentId: post._id });
+        await PostAttachment.deleteMany({ postId: post._id });
     }
 
     await Post.deleteMany(filter);
@@ -119,7 +196,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
 declare interface IPost extends InferSchemaType<typeof postSchema> { }
 
 interface PostModel extends Model<IPost> {
-    deleteAndCleanup(filter: any): Promise<any>
+    deleteAndCleanup(filter: any): Promise<any>;
 }
 
 const Post = mongoose.model<IPost, PostModel>("Post", postSchema);

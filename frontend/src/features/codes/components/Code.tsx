@@ -95,4 +95,6 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
 
 export type { ICode }
 
+export { colors }
+
 export default Code

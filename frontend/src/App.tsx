@@ -27,6 +27,7 @@ import Codes from './features/codes/pages/Codes';
 import CodesList from './features/codes/pages/CodesList';
 import ForgotPassword from './features/auth/pages/ForgotPassword';
 import ResetPassword from './features/auth/pages/ResetPassword';
+import ActivateEmail from './features/auth/pages/ActivateEmail';
 
 
 function App() {
@@ -57,6 +58,7 @@ function App() {
       <Route path="Users">
         <Route element={<Layout Header={null} Footer={null} />}>
           <Route path="Reset-Password" element={<ResetPassword />} />
+          <Route path="Activate" element={<ActivateEmail />} />
         </Route>
       </Route>
 

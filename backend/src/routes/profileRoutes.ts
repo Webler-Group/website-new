@@ -35,5 +35,7 @@ router.route("/MarkNotificationsSeen")
     .post(profileController.markNotificationsSeen)
 router.route("/MarkNotificationsClicked")
     .post(profileController.markNotificationsClicked)
+router.route("/SendActivationCode")
+    .post(profileController.sendActivationCode)
 
 export default router;

@@ -8,6 +8,7 @@ interface RefreshTokenPayload {
 interface AccessTokenPayload {
     userInfo: {
         userId: string;
+        emailVerified: boolean;
         roles: string[];
     }
 }

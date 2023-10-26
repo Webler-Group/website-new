@@ -1,5 +1,5 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas } from "react-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas, Toast } from "react-bootstrap";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
@@ -22,7 +22,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
 
     const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const [_, setLoading] = useState(false)
+    const [loading, setLoading] = useState(false)
     const [filter, setFilter] = useState(1);
     const commentContainerRef = useRef<HTMLDivElement>(null);
     const [answerFormVisible, setAnswerFormVisible] = useState(false);
@@ -37,6 +37,8 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [showAllComments, setShowAllComments] = useState(!(isReply && postId))
+
+    const [message, setMessage] = useState([true, ""]);
 
     useEffect(() => {
         if (postId) {
@@ -84,9 +86,10 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
             }
             setCommentCount(commentCount => commentCount + 1);
             hideAnswerForm();
+            setMessage([true, "Comment successfully created"])
         }
         else {
-
+            setMessage([false, result.message ? result.message : "Comment could not be created"])
         }
         setLoading(false);
     }
@@ -107,9 +110,10 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         if (result && result.success) {
             onEditCallback!(result.data.id, result.data.message);
             hideAnswerForm();
+            setMessage([true, "Comment successfully updated"])
         }
         else {
-
+            setMessage([false, result.message ? result.message : "Comment could not be updated"])
         }
         setLoading(false);
     }
@@ -193,7 +197,12 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                                 </Button>
                         }
                     </div>
-                    <div className="mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
+                    <div className="position-relative mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
+                        <Toast className="position-absolute bottom-0 m-2" style={{ zIndex: "999" }} bg={message[0] === false ? "danger" : "success"} onClose={() => setMessage([true, ""])} show={message[1] !== ""} delay={3000} autohide>
+                            <Toast.Body className="text-white">
+                                <b>{message[1]}</b>
+                            </Toast.Body>
+                        </Toast>
                         <CommentNode
                             code={code}
                             data={null}
@@ -227,11 +236,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                                 {
                                     editedComment === null ?
                                         <>
-                                            <Button size="sm" className="ms-2" variant="primary" onClick={handlePostAnswer}>Post</Button>
+                                            <Button size="sm" className="ms-2" variant="primary" onClick={handlePostAnswer} disabled={loading || answerFormMessage.length === 0}>Post</Button>
                                         </>
                                         :
                                         <>
-                                            <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer}>Save changes</Button>
+                                            <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading || answerFormMessage.length === 0}>Save changes</Button>
                                         </>
                                 }
                             </div>

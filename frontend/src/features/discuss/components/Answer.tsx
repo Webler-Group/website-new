@@ -7,6 +7,7 @@ import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import React from "react";
+import PostAttachment, { IPostAttachment } from "./PostAttachment";
 
 interface IAnswer {
     id: string;
@@ -18,6 +19,7 @@ interface IAnswer {
     parentId: string;
     votes: number;
     isUpvoted: boolean;
+    attachments: IPostAttachment[];
 }
 
 interface AnswerProps {
@@ -80,6 +82,17 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                 </div>
                 <div className="wb-discuss-question__main ms-2">
                     <p className="wb-discuss-question__description mt-2">{answer.message}</p>
+                    <div className="mt-3">
+                        {
+                            answer.attachments.map(attachment => {
+                                return (
+                                    <div key={attachment.id} className="mt-1">
+                                        <PostAttachment data={attachment} />
+                                    </div>
+                                )
+                            })
+                        }
+                    </div>
                 </div>
             </div>
             <div className="d-flex justify-content-end align-items-end mt-3">

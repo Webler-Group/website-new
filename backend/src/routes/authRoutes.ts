@@ -23,6 +23,9 @@ router.route("/ResetPassword")
     .post(authController.resetPassword);
 
 router.route("/GenerateCaptcha")
-    .post(authController.generateCaptcha)
+    .post(authController.generateCaptcha);
+
+router.route("/Activate")
+    .post(authController.activate);
 
 export default router;

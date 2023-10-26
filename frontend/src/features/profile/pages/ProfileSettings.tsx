@@ -6,6 +6,8 @@ import { UserDetails } from "./Profile";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import PasswordFormControl from "../../../components/PasswordFormControl";
+import { FaCheckCircle } from "react-icons/fa";
+import { FaCircleXmark } from "react-icons/fa6";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -29,6 +31,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [emailMessage, setEmailMessage] = useState([true, ""]);
     const [emailPassword, setEmailPassword] = useState("");
     const [emailStep, setEmailStep] = useState(0);
+    const [emailVerified, setEmailVerified] = useState(false);
 
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
@@ -40,6 +43,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setEmail(userDetails.email || "");
             setBio(userDetails.bio || "");
             setCountryCode(userDetails.countryCode || "");
+            setEmailVerified(userDetails.emailVerified || false);
         }
     }, [userDetails]);
 
@@ -107,7 +111,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (data.success) {
             userInfo.email = data.data.email;
             updateUser(userInfo);
+            onUpdate({ email: data.data.email, emailVerified: false });
             setEmailMessage([true, "Email changed successfully"])
+            setEmailStep(0);
+            setEmailVerified(false)
         }
         else {
             if (data.error.code === 11000) {
@@ -116,8 +123,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             else {
                 setEmailMessage([false, data.error._message ? data.error._message : "Bad request"])
             }
+            setEmailPassword("")
         }
-        setEmailStep(0);
     }
 
     const resetEmail = () => {
@@ -159,15 +166,21 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     }
 
     const handleEmailNext = () => {
-        const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
+        setEmailStep(1)
+        setEmailMessage([true, ""])
+    }
 
-        if (email.match(validEmailRegex)) {
-            setEmailStep(1)
-            setEmailMessage([true, ""])
+    const handleSendVerificationEmail = async () => {
+        setLoading(true)
+        setEmailMessage([true, ""]);
+        const data = await ApiCommunication.sendJsonRequest(`/Profile/SendActivationCode`, "POST");
+        if (data.success) {
+            setEmailMessage([true, "Verification email was sent"])
         }
         else {
-            setEmailMessage([false, "Invalid email"])
+            setEmailMessage([false, data.message ? data.message : "Verification email could not be sent"])
         }
+        setLoading(false)
     }
 
     return (
@@ -207,18 +220,45 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             </FormGroup>
                         </Form>
                     </Tab>
-                    <Tab eventKey="email" title="Email">
+                    <Tab eventKey="email" title="Email" onEnter={resetEmail}>
                         <Form onSubmit={(e) => handleSubmit(e, changeEmail)}>
                             {emailMessage[1] && <Alert variant={emailMessage[0] ? "success" : "danger"}>{emailMessage[1]}</Alert>}
                             <FormGroup>
                                 <FormLabel>{emailStep === 0 ? "Email" : "New Email"}</FormLabel>
-                                <FormControl readOnly={emailStep !== 0} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                                <FormControl readOnly={emailStep === 0} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                             </FormGroup>
                             {
                                 emailStep === 0 ?
                                     <>
                                         <FormGroup className="mt-2">
                                             <Button onClick={handleEmailNext} type="button">Change</Button>
+                                        </FormGroup>
+                                        <FormGroup>
+                                            <FormLabel>Email status</FormLabel>
+                                            <div className="d-flex justify-content-between">
+                                                <div className="d-flex align-items-center gap-1">
+                                                    {
+                                                        emailVerified ?
+                                                            <>
+                                                                <div className="text-success">
+                                                                    <FaCheckCircle />
+                                                                </div>
+                                                                <i>Verified</i>
+                                                            </>
+                                                            :
+                                                            <>
+                                                                <div className="text-secondary">
+                                                                    <FaCircleXmark />
+                                                                </div>
+                                                                <i>Unverified</i>
+                                                            </>
+                                                    }
+                                                </div>
+                                                {
+                                                    emailVerified === false &&
+                                                    <Button disabled={loading} onClick={handleSendVerificationEmail}>Send verification mail</Button>
+                                                }
+                                            </div>
                                         </FormGroup>
                                     </>
                                     :
@@ -228,7 +268,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                             <PasswordFormControl password={emailPassword} setPassword={setEmailPassword} />
                                         </FormGroup>
                                         <FormGroup className="mt-2">
-                                            <Button type="submit" disabled={loading}>Submit</Button>
+                                            <Button type="submit" disabled={loading}>Confirm</Button>
                                             <Button variant="secondary" onClick={resetEmail} className="ms-2" type="button" disabled={loading}>Cancel</Button>
                                         </FormGroup>
                                     </>

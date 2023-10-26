@@ -1,5 +1,5 @@
-import { FormEvent, useState } from 'react';
-import { Button, Form, FormControl } from 'react-bootstrap';
+import { useState } from 'react';
+import { Button, FormControl } from 'react-bootstrap';
 import { FaPlus } from 'react-icons/fa6';
 
 interface InputTagsProps {
@@ -12,10 +12,13 @@ const InputTags = ({ values, setValues, placeholder }: InputTagsProps) => {
 
     const [input, setInput] = useState("");
 
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = () => {
 
-        let newTagName = input.toLowerCase()
+        let newTagName = input.toLowerCase().trim()
+
+        if (newTagName.length === 0) {
+            return
+        }
 
         setValues(values => values.includes(newTagName) ? [...values] : [...values, newTagName])
         setInput("")
@@ -38,20 +41,18 @@ const InputTags = ({ values, setValues, placeholder }: InputTagsProps) => {
     return (
         <div className="d-flex flex-wrap gap-1">
             {content}
-            <Form className="d-flex gap-1" onSubmit={handleSubmit}>
+            <div className="d-flex gap-1">
                 <FormControl
-                    maxLength={20}
-                    minLength={1}
-                    required placeholder={placeholder}
                     type="text"
                     size="sm"
                     style={{ width: "80px" }}
                     value={input} onChange={e => setInput(e.target.value)}
+                    placeholder={placeholder}
                 />
-                <Button size="sm" type="submit">
+                <Button size="sm" onClick={handleSubmit}>
                     <FaPlus />
                 </Button>
-            </Form>
+            </div>
         </div>
     )
 }

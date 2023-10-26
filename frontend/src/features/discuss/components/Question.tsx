@@ -3,6 +3,7 @@ import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
+import { IPostAttachment } from "./PostAttachment";
 
 interface IQuestion {
     id: string;
@@ -16,6 +17,7 @@ interface IQuestion {
     votes: number;
     isUpvoted: boolean;
     isFollowed: boolean;
+    attachments: IPostAttachment[];
 }
 
 interface QuestionProps {

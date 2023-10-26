@@ -5,6 +5,9 @@ import asyncHandler from "express-async-handler";
 import UserFollowing from "../models/UserFollowing";
 import Notification from "../models/Notification";
 import Code from "../models/Code";
+import { signEmailToken } from "../utils/tokenUtils";
+import { sendActivationEmail } from "../services/email";
+import { intervalToDuration } from "date-fns";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -150,6 +153,7 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
 
         user.email = email;
+        user.emailVerified = false;
         await user.save();
 
         res.json({
@@ -168,6 +172,40 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
         })
     }
 
+})
+
+const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+
+    const user = await User.findById(currentUserId);
+    if (user === null) {
+        res.status(404).json({ message: "User not found" });
+        return
+    }
+
+    const diff = Date.now() - user.lastVerificationEmailTimestamp;
+    if (diff < 24 * 60 * 60 * 1000) {
+        const duration = intervalToDuration({ start: Date.now(), end: user.lastVerificationEmailTimestamp + 24 * 60 * 60 * 1000 })
+        res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
+        return
+    }
+
+    const { emailToken } = signEmailToken({
+        userId: currentUserId as string,
+        email: user.email
+    })
+
+    try {
+        await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
+
+        user.lastVerificationEmailTimestamp = Date.now();
+        await user.save()
+
+        res.json({ success: true })
+    }
+    catch {
+        res.status(500).json({ message: "Email could not be sent" })
+    }
 })
 
 const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -515,7 +553,8 @@ const controller = {
     getNotifications,
     getUnseenNotificationCount,
     markNotificationsSeen,
-    markNotificationsClicked
+    markNotificationsClicked,
+    sendActivationCode
 };
 
 export default controller;

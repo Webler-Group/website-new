@@ -4,7 +4,7 @@ import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaThumbsUp } from "react-icons/fa6";
-import { Button, Dropdown, FormControl, Modal } from "react-bootstrap";
+import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import ApiCommunication from "../../../helpers/apiCommunication";
@@ -44,6 +44,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [postId, setPostId] = useState<string | null>(null);
     const [isReply, setIsReply] = useState(false);
     const location = useLocation();
+
+    const [message, setMessage] = useState([true, ""])
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -196,7 +198,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 navigate("/Compiler-Playground/" + result.code.id, { replace: code.userId === undefined })
             }
             else {
-
+                setMessage([false, result.message ? result.message : "Code could not be created"]);
             }
             setLoading(false)
         }
@@ -205,9 +207,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             if (result && result.success) {
                 setCode(code => ({ ...code, ...result.data }));
 
+                setMessage([true, "Code updated successfully"]);
             }
             else {
-
+                setMessage([false, result.message ? result.message : "Code could not be updated"])
             }
             setLoading(false)
         }
@@ -227,9 +230,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             if (result && result.success) {
                 setCode(code => ({ ...code, ...result.data }));
 
+                setMessage([true, "Code updated successfully"]);
             }
             else {
-
+                setMessage([false, result.message ? result.message : "Code could not be updated"])
             }
             setLoading(false)
         }
@@ -292,6 +296,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 }
                 return code
             });
+        }
+        else {
+            setMessage([false, result.message ? result.message : "Could not vote the code"])
         }
     }
 
@@ -381,6 +388,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                     <AuthNavigation />
                 </div>
             </div>
+            <Toast className="position-absolute bottom-0 end-0 m-2" style={{ zIndex: "999" }} bg={message[0] === false ? "danger" : "success"} onClose={() => setMessage([true, ""])} show={message[1] !== ""} delay={3000} autohide>
+                <Toast.Body className="text-white">
+                    <b>{message[1]}</b>
+                </Toast.Body>
+            </Toast>
             {
                 code &&
                 <div className="wb-playground-container">
@@ -389,7 +401,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             {
                                 code.id &&
                                 <>
-                                    <div className="d-flex">
+                                    <div className="d-flex gap-2">
                                         <div className="ms-2 wb-p-follow-item__avatar">
                                             <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
                                         </div>

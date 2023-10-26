@@ -9,7 +9,7 @@ const tagSchema = new mongoose.Schema({
         lowercase: true,
         maxLength: 20,
         minLength: 1,
-        validate: [(val: string) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, "Tag can only contain words separated by -"]
+        validate: [(val: string) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, 'Tag can only contain words separated by "-"']
     }
 });
 

@@ -23,6 +23,7 @@ export interface UserDetails {
     level: number;
     xp: number;
     codes: any[];
+    emailVerified: boolean;
 }
 
 export interface UserMinimal {
@@ -136,7 +137,7 @@ const Profile = () => {
 
     let isCurrentUser = userInfo && userInfo.id === userId;
 
-    let codesSectionContent = codes.length > 0 ?
+    let codesSectionContent = isCurrentUser || codes.length > 0 ?
         <Col>
             <Card className="p-2 wb-p-section__card">
                 <div className="d-flex justify-content-between align-items-center">
@@ -145,13 +146,18 @@ const Profile = () => {
                 </div>
                 <div className="mt-2">
                     {
-                        codes.map(code => {
-                            return (
-                                <div className="mt-2" key={code.id}>
-                                    <Code code={code} searchQuery="" showUserProfile={false} />
-                                </div>
-                            );
-                        })
+                        codes.length > 0 ?
+                            codes.map(code => {
+                                return (
+                                    <div className="mt-2" key={code.id}>
+                                        <Code code={code} searchQuery="" showUserProfile={false} />
+                                    </div>
+                                );
+                            })
+                            :
+                            <div className="text-center py-4">
+                                <p className="text-secondary">You do not have saved any codes</p>
+                            </div>
                     }
                     {
                         isCurrentUser &&

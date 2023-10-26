@@ -12,6 +12,7 @@ import { LinkContainer } from "react-router-bootstrap";
 import { FaThumbsUp } from "react-icons/fa";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
+import PostAttachment from "../components/PostAttachment";
 
 
 const DiscussPost = () => {
@@ -173,6 +174,7 @@ const DiscussPost = () => {
                 for (let i = 0; i < currentAnswers.length; ++i) {
                     if (currentAnswers[i].id === editedAnswer) {
                         currentAnswers[i].message = result.data.message;
+                        currentAnswers[i].attachments = result.data.attachments;
                     }
                 }
                 return currentAnswers;
@@ -356,6 +358,17 @@ const DiscussPost = () => {
                     <div className="wb-discuss-question__main ms-2">
                         <h3 className="wb-discuss-question__title" style={{ wordBreak: "break-word" }}>{question.title}</h3>
                         <p className="wb-discuss-question__description mt-4">{question.message}</p>
+                        <div className="mt-3">
+                            {
+                                question.attachments.map(attachment => {
+                                    return (
+                                        <div key={attachment.id} className="mt-1">
+                                            <PostAttachment data={attachment} />
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
                         <div className="d-flex mt-4 flex-wrap gap-1">
                             {
                                 question.tags.map((tag, idx) => {
@@ -394,7 +407,7 @@ const DiscussPost = () => {
                         {
                             editedAnswer === null ?
                                 <>
-                                    <Button size="sm" variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading}>Post</Button>
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading || formInput.length === 0}>Post</Button>
                                 </>
                                 :
                                 <>

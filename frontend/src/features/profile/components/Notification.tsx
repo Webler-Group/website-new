@@ -66,7 +66,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const messageParts = notification.message.split("{action_user}");
 
     const body = (
-        <div className="d-flex p-2 border-bottom" onClick={onClose}>
+        <div className="d-flex p-2 border-bottom gap-2" onClick={onClose}>
             <div className="wb-p-follow-item__avatar">
                 <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
             </div>

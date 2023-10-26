@@ -8,13 +8,20 @@ import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import { PipelineStage } from "mongoose";
+import PostAttachment from "../models/PostAttachment";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
+    const emailVerified = req.emailVerified;
 
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    if (!emailVerified) {
+        res.status(401).json({ message: "Activate your account" })
         return
     }
 
@@ -271,6 +278,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
+        const attachments = await PostAttachment.getByPostId(questionId)
 
         res.json({
             question: {
@@ -289,7 +297,8 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 votes: question.votes,
                 isUpvoted,
                 isAccepted: question.isAccepted,
-                isFollowed
+                isFollowed,
+                attachments
             }
         });
     }
@@ -300,7 +309,13 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
+    const emailVerified = req.emailVerified;
     const { message, questionId } = req.body;
+
+    if (!emailVerified) {
+        res.status(401).json({ message: "Activate your account" });
+        return
+    }
 
     const question = await Post.findById(questionId);
     if (question === null) {
@@ -351,6 +366,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         question.$inc("answers", 1)
         await question.save();
 
+        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+
         res.json({
             post: {
                 id: reply._id,
@@ -360,7 +377,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 parentId: reply.parentId,
                 isAccepted: reply.isAccepted,
                 votes: reply.votes,
-                answers: reply.answers
+                answers: reply.answers,
+                attachments
             }
         })
     }
@@ -445,7 +463,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isUpvoted: false,
             isAccepted: x.isAccepted,
             answers: x.answers,
-            index: skipCount + offset
+            index: skipCount + offset,
+            attachments: new Array()
         }))
 
         let promises = [];
@@ -459,6 +478,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
+            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -646,15 +666,19 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await reply.save();
 
+        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+
         res.json({
             success: true,
             data: {
                 id: reply._id,
-                message: reply.message
+                message: reply.message,
+                attachments
             }
         })
     }
     catch (err: any) {
+
         res.json({
             success: false,
             error: err,
@@ -698,10 +722,16 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
+    const emailVerified = req.emailVerified;
     const { postId, vote } = req.body;
 
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
+        return
+    }
+
+    if (!emailVerified) {
+        res.status(401).json({ message: "Activate your account" })
         return
     }
 
@@ -828,7 +858,8 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             answers: x.answers,
             index: (findPostId && parentPost) ?
                 offset === 0 ? -1 : skipCount + offset - 1 :
-                skipCount + offset
+                skipCount + offset,
+            attachments: new Array()
         }))
 
         let promises = [];
@@ -842,6 +873,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
+            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -855,7 +887,13 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
+    const emailVerified = req.emailVerified;
     const { codeId, message, parentId } = req.body;
+
+    if (!emailVerified) {
+        res.status(401).json({ message: "Activate your account" });
+        return
+    }
 
     const code = await Code.findById(codeId);
     if (code === null) {
