@@ -320,7 +320,7 @@ const DiscussPost = () => {
                 {
                     userInfo &&
                     <div className="wb-discuss-reply__edit-button">
-                        <Dropdown>
+                        <Dropdown drop="start">
                             <Dropdown.Toggle as={EllipsisDropdownToggle} />
                             <Dropdown.Menu>
                                 {

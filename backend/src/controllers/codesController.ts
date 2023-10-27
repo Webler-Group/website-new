@@ -8,7 +8,6 @@ import Post from "../models/Post";
 import fs from 'fs';
 import { execSync } from 'child_process';
 import { bundle } from "../utils/bundler";
-import User from "../models/User";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -19,10 +18,8 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" })
+    if (await Code.countDocuments({ user: currentUserId }) >= 500) {
+        res.status(403).json({ message: "You already have max count of codes" })
         return
     }
 
@@ -67,7 +64,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    let dbQuery = Code.find({})
+    let dbQuery = Code.find({ hidden: false })
 
     if (searchQuery.trim().length) {
         dbQuery.where({
@@ -306,13 +303,6 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" })
         return
     }
 

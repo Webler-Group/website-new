@@ -58,6 +58,10 @@ const postSchema = new mongoose.Schema({
         type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
         validate: [(val: mongoose.Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"]
     },
+    hidden: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 });

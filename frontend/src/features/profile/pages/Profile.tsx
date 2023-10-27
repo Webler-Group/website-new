@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ApiCommunication from "../../../helpers/apiCommunication";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { Button, Card, Col, Container, Row } from "react-bootstrap";
+import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
 import countries from "../../../data/countries";
 import { FaStar } from "react-icons/fa6";
@@ -10,6 +10,7 @@ import Country from "../../../components/Country";
 import FollowList from "./FollowList";
 import CodesSection from "../components/CodesSection";
 import Code from "../../codes/components/Code";
+import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 
 export interface UserDetails {
     id: string;
@@ -24,6 +25,8 @@ export interface UserDetails {
     xp: number;
     codes: any[];
     emailVerified: boolean;
+    active: boolean;
+    roles: string[];
 }
 
 export interface UserMinimal {
@@ -135,6 +138,26 @@ const Profile = () => {
         navigate("/Compiler-Playground")
     }
 
+    const toggleUserBan = async () => {
+        if (!userDetails) {
+            return;
+        }
+
+        if (confirm(userDetails.active ? "Are you sure you want to deactivate this user?" : "Are you sure you want to activate this user?")) {
+            const result = await ApiCommunication.sendJsonRequest(`/Profile/ToggleUserBan`, "POST", { userId, active: !userDetails.active });
+            if (result.success) {
+                setUserDetails(details => {
+                    return details ? { ...details, active: result.active } : null
+                })
+                alert(result.active ? "User is activated" : "User is deactivated");
+            }
+            else {
+                alert("Something went wrong")
+            }
+        }
+
+    }
+
     let isCurrentUser = userInfo && userInfo.id === userId;
 
     let codesSectionContent = isCurrentUser || codes.length > 0 ?
@@ -171,6 +194,14 @@ const Profile = () => {
         :
         <></>
 
+    let badge = (() => {
+        if (userDetails?.roles.includes("Moderator")) {
+            return <Badge className="wb-p-details__avatar-badge" bg="secondary">Moderator</Badge>
+        }
+
+        return <></>
+    })()
+
     return (
         <div className="wb-p-container">
             {
@@ -192,13 +223,27 @@ const Profile = () => {
                     <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                     <Container className="p-2">
                         <Card className="p-2">
+                            <div className="wb-discuss-reply__edit-button">
+                                <Dropdown drop="start">
+                                    <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                    <Dropdown.Menu>
+                                        {
+                                            (userInfo &&
+                                                userInfo.roles.includes("Moderator") &&
+                                                !(userDetails.roles.includes("Moderator") || userDetails.roles.includes("Admin"))) &&
+                                            <Dropdown.Item onClick={toggleUserBan}>{userDetails.active ? "Deactivate" : "Activate"}</Dropdown.Item>
+                                        }
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
                             <div className="d-block d-md-flex gap-3">
                                 <div className="wb-p-details__avatar">
                                     <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
+                                    {badge}
                                 </div>
                                 <div className="d-flex flex-column align-items-center align-items-md-start">
                                     <div className="d-flex wb-p-details__row">
-                                        <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace" }}>{userDetails.name}</p>
+                                        <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace", textDecoration: userDetails.active ? "none" : "line-through" }}>{userDetails.name}</p>
                                     </div>
                                     <div>
                                         {

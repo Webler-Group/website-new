@@ -2,6 +2,10 @@ import mongoose, { InferSchemaType } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import rolesEnum from "../data/roles";
+import Post from "./Post";
+import Code from "./Code";
+import UserFollowing from "./UserFollowing";
+import Notification from "./Notification";
 
 const isEmail = (value: string) => {
     const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
@@ -77,16 +81,24 @@ userSchema.methods.matchPassword = async function (inputPassword: string) {
 }
 
 userSchema.pre('save', async function (next) {
-    if (!this.isModified("password")) {
-        return next();
+    if (this.isModified("password")) {
+        if (this.password.length < 6) {
+            return next(new Error("Password must contain at least 6 characters"));
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        this.password = await bcrypt.hash(this.password, salt);
     }
 
-    if (this.password.length < 6) {
-        return next(new Error("Password must contain at least 6 characters"));
+    if (this.isModified("active")) {
+        await Post.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+        await Code.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+        await Notification.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
+    return next();
+
+
 })
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {

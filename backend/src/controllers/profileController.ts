@@ -11,11 +11,14 @@ import { intervalToDuration } from "date-fns";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
+    const roles = req.roles;
     const { userId } = req.body;
+
+    const isModerator = roles && roles.includes("Moderator");
 
     const user = await User.findById(userId);
 
-    if (!user) {
+    if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
         return
     }
@@ -57,6 +60,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             registerDate: user.createdAt,
             level: user.level,
             xp: user.xp,
+            active: user.active,
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
@@ -445,7 +449,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     }
 
     let dbQuery = Notification
-        .find({ user: currentUserId })
+        .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
 
     if (typeof fromId !== "undefined") {
@@ -507,7 +511,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
 const getUnseenNotificationCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
-    const count = await Notification.countDocuments({ user: currentUserId, isClicked: false })
+    const count = await Notification.countDocuments({ user: currentUserId, isClicked: false, hidden: false })
 
     res.json({ count });
 })
@@ -535,10 +539,46 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
         await Notification.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } })
     }
     else {
-        await Notification.updateMany({ user: currentUserId, isClicked: false }, { $set: { isClicked: true } })
+        await Notification.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } })
     }
 
     res.json({});
+})
+
+const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const roles = req.roles;
+    const { userId, active } = req.body;
+
+    if (!roles || !roles.includes("Moderator")) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
+    }
+
+    if (user.roles.includes("Moderator") || user.roles.includes("Admin")) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    user.active = active;
+
+    try {
+        await user.save();
+
+        res.json({ success: true, active })
+    }
+    catch (err: any) {
+        res.json({
+            success: false,
+            error: err
+        })
+    }
 })
 
 const controller = {
@@ -554,7 +594,8 @@ const controller = {
     getUnseenNotificationCount,
     markNotificationsSeen,
     markNotificationsClicked,
-    sendActivationCode
+    sendActivationCode,
+    toggleUserBan
 };
 
 export default controller;

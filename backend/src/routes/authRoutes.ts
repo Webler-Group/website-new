@@ -26,6 +26,6 @@ router.route("/GenerateCaptcha")
     .post(authController.generateCaptcha);
 
 router.route("/Activate")
-    .post(authController.activate);
+    .post(authController.verifyEmail);
 
 export default router;

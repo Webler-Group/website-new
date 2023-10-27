@@ -43,7 +43,7 @@ app.use(logger);
 
 app.use(cors(corsOptions));
 
-app.use(express.json({ limit: "5mb" }));
+app.use(express.json({ limit: "2mb" }));
 
 app.use(cookieParser());
 

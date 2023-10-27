@@ -3,6 +3,7 @@ import discussionController from "../controllers/discussionController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import requestLimiter from "../middleware/requestLimiter";
+import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 
@@ -22,13 +23,13 @@ router.route("/GetCodeComments")
 router.use(protectRoute);
 
 router.route("/CreateQuestion")
-    .post(discussionController.createQuestion);
+    .post(verifyEmail, requestLimiter(60 * 60, 5, "Too many requests, try again later"), discussionController.createQuestion);
 router.route("/EditQuestion")
     .put(discussionController.editQuestion);
 router.route("/DeleteQuestion")
     .delete(discussionController.deleteQuestion);
 router.route("/CreateReply")
-    .post(discussionController.createReply);
+    .post(verifyEmail, requestLimiter(60 * 60, 50, "Too many requests, try again later"), discussionController.createReply);
 router.route("/EditReply")
     .put(discussionController.editReply);
 router.route("/DeleteReply")
@@ -36,9 +37,9 @@ router.route("/DeleteReply")
 router.route("/ToggleAcceptedAnswer")
     .post(discussionController.toggleAcceptedAnswer);
 router.route("/VotePost")
-    .post(discussionController.votePost);
+    .post(verifyEmail, discussionController.votePost);
 router.route("/CreateCodeComment")
-    .post(requestLimiter(10 * 60, 20, "Too many requests, try again later"), discussionController.createCodeComment);
+    .post(verifyEmail, requestLimiter(60 * 60, 20, "Too many requests, try again later"), discussionController.createCodeComment);
 router.route("/EditCodeComment")
     .put(discussionController.editCodeComment);
 router.route("/DeleteCodeComment")

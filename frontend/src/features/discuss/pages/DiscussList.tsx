@@ -16,7 +16,7 @@ const QuestionList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState(1);
+    const [filter, setFilter] = useState(6);
     const searchInputElement = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();

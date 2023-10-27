@@ -7,7 +7,7 @@ import Upvote from "../models/Upvote";
 import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
-import { PipelineStage } from "mongoose";
+import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
 import User from "../models/User";
 
@@ -17,13 +17,6 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" })
         return
     }
 
@@ -85,7 +78,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     let pipeline: PipelineStage[] = [
-        { $match: { _type: 1 } },
+        { $match: { _type: 1, hidden: false } },
         {
             $set: {
                 score: { $add: ["$votes", "$answers"] }
@@ -95,7 +88,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     let dbQuery = Post
         .find({
-            _type: 1
+            _type: 1,
+            hidden: false
         })
 
     if (searchQuery.trim().length) {
@@ -146,7 +140,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 return
             }
             pipeline.push({
-                $match: { user: userId }
+                $match: { user: new mongoose.Types.ObjectId(userId) }
             }, {
                 $sort: { createdAt: -1 }
             })
@@ -313,13 +307,6 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { message, questionId } = req.body;
 
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" });
-        return
-    }
-
     const question = await Post.findById(questionId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
@@ -399,7 +386,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    let dbQuery = Post.find({ parentId: questionId, _type: 2 });
+    let dbQuery = Post.find({ parentId: questionId, _type: 2, hidden: false });
 
     let skipCount = index;
 
@@ -732,13 +719,6 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" })
-        return
-    }
-
     const post = await Post.findById(postId);
     if (post === null) {
         res.status(404).json({ message: "Post not found" })
@@ -782,7 +762,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             .populate("user", "name avatarUrl countryCode level roles");
     }
 
-    let dbQuery = Post.find({ codeId, _type: 3 });
+    let dbQuery = Post.find({ codeId, _type: 3, hidden: false });
 
     let skipCount = index;
 
@@ -892,13 +872,6 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { codeId, message, parentId } = req.body;
-
-    const emailVerified = (await User.findById(currentUserId).select("emailVerified"))?.emailVerified;
-
-    if (!emailVerified) {
-        res.status(401).json({ message: "Activate your account" });
-        return
-    }
 
     const code = await Code.findById(codeId);
     if (code === null) {

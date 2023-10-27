@@ -159,7 +159,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
             const user = await User.findById((decoded as RefreshTokenPayload).userId);
 
-            if (!user) {
+            if (!user || !user.active) {
                 res.status(401).json({ message: "Unauthorized" });
                 return
             }
@@ -279,7 +279,7 @@ const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
     });
 })
 
-const activate = asyncHandler(async (req: Request, res: Response) => {
+const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { token, userId } = req.body;
 
     if (typeof token === "undefined" || typeof userId === "undefined") {
@@ -339,7 +339,7 @@ const controller = {
     sendPasswordResetCode,
     resetPassword,
     generateCaptcha,
-    activate
+    verifyEmail
 };
 
 export default controller;

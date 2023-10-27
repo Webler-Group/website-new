@@ -2,6 +2,7 @@ import express from "express";
 import codesController from "../controllers/codesController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
+import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 
@@ -19,12 +20,12 @@ router.route("/Compile")
 router.use(protectRoute);
 
 router.route("/CreateCode")
-    .post(codesController.createCode);
+    .post(verifyEmail, codesController.createCode);
 router.route("/EditCode")
     .put(codesController.editCode);
 router.route("/DeleteCode")
     .delete(codesController.deleteCode);
 router.route("/VoteCode")
-    .post(codesController.voteCode);
+    .post(verifyEmail, codesController.voteCode);
 
 export default router;

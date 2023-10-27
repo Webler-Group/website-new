@@ -43,8 +43,10 @@ const codeSchema = new mongoose.Schema({
         type: String,
         default: ""
     },
-
-
+    hidden: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 })
