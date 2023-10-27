@@ -64,7 +64,7 @@ const QuestionList = () => {
     const getQuestions = async () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
-        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
+        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 6;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
         const result = await ApiCommunication.sendJsonRequest(`/Discussion`, "POST", {
             page,
@@ -101,9 +101,9 @@ const QuestionList = () => {
             </Form>
             <div className="mt-4 d-flex justify-content-between">
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
+                    <option value="6">Trending</option>
                     <option value="1">Most Recent</option>
                     <option value="2">Unanswered</option>
-                    <option value="6">Trending</option>
                     {
                         userInfo &&
                         <>
