@@ -34,6 +34,8 @@ ul {
 }
 
 .wb-p-container {
+    display: flex;
+    flex-direction: column;
     max-width: 780px;
     margin: 0 auto;
     min-height: 100vh;

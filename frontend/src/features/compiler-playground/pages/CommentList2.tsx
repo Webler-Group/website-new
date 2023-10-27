@@ -197,12 +197,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                                 </Button>
                         }
                     </div>
-                    <div className="position-relative mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
-                        <Toast className="position-absolute bottom-0 m-2" style={{ zIndex: "999" }} bg={message[0] === false ? "danger" : "success"} onClose={() => setMessage([true, ""])} show={message[1] !== ""} delay={3000} autohide>
-                            <Toast.Body className="text-white">
-                                <b>{message[1]}</b>
-                            </Toast.Body>
-                        </Toast>
+                    <div className="mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
                         <CommentNode
                             code={code}
                             data={null}
@@ -224,6 +219,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                             defaultReplies={null}
                         />
                     </div>
+                    <Toast className="position-absolute" style={{ zIndex: "999", bottom: "68px", width: "90%" }} bg={message[0] === false ? "danger" : "success"} onClose={() => setMessage([true, ""])} show={message[1] !== ""} delay={3000} autohide>
+                        <Toast.Body className="text-white">
+                            <b>{message[1]}</b>
+                        </Toast.Body>
+                    </Toast>
                     <div className="py-2 border-top">
                         <Button hidden={answerFormVisible} size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Write comment</Button>
                         <div hidden={answerFormVisible === false}>

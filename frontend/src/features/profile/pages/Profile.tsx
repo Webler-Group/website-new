@@ -66,6 +66,9 @@ const Profile = () => {
                     setFollowersCount(data.userDetails.followers);
                     setCodes(data.userDetails.codes.slice(0, 3))
                 }
+                else {
+                    setUserDetails(null);
+                }
             })
     }, [userId]);
 
@@ -205,104 +208,109 @@ const Profile = () => {
     return (
         <div className="wb-p-container">
             {
-                userDetails &&
-                <>
-                    {
-                        codesSectionVisible &&
-                        <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
-                    }
-                    {
-                        followListVisible == 1 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/GetFollowers`, setCount: setFollowingCount, userId: userDetails.id }} />
-                    }
-                    {
-                        followListVisible == 2 &&
-                        <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
-                    }
-                    {setPageTitle(userDetails.name)}
-                    <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
-                    <Container className="p-2">
-                        <Card className="p-2">
-                            <div className="wb-discuss-reply__edit-button">
-                                <Dropdown drop="start">
-                                    <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                                    <Dropdown.Menu>
-                                        {
-                                            (userInfo &&
-                                                userInfo.roles.includes("Moderator") &&
-                                                !(userDetails.roles.includes("Moderator") || userDetails.roles.includes("Admin"))) &&
-                                            <Dropdown.Item onClick={toggleUserBan}>{userDetails.active ? "Deactivate" : "Activate"}</Dropdown.Item>
-                                        }
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
-                            <div className="d-block d-md-flex gap-3">
-                                <div className="wb-p-details__avatar">
-                                    <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
-                                    {badge}
+                userDetails ?
+                    <>
+                        {
+                            codesSectionVisible &&
+                            <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
+                        }
+                        {
+                            followListVisible == 1 &&
+                            <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/GetFollowers`, setCount: setFollowingCount, userId: userDetails.id }} />
+                        }
+                        {
+                            followListVisible == 2 &&
+                            <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
+                        }
+                        {setPageTitle(userDetails.name)}
+                        <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
+                        <Container className="p-2">
+                            <Card className="p-2">
+                                <div className="wb-discuss-reply__edit-button">
+                                    <Dropdown drop="start">
+                                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                        <Dropdown.Menu>
+                                            {
+                                                (userInfo &&
+                                                    userInfo.roles.includes("Moderator") &&
+                                                    !(userDetails.roles.includes("Moderator") || userDetails.roles.includes("Admin"))) &&
+                                                <Dropdown.Item onClick={toggleUserBan}>{userDetails.active ? "Deactivate" : "Activate"}</Dropdown.Item>
+                                            }
+                                        </Dropdown.Menu>
+                                    </Dropdown>
                                 </div>
-                                <div className="d-flex flex-column align-items-center align-items-md-start">
-                                    <div className="d-flex wb-p-details__row">
-                                        <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace", textDecoration: userDetails.active ? "none" : "line-through" }}>{userDetails.name}</p>
+                                <div className="d-block d-md-flex gap-3">
+                                    <div className="wb-p-details__avatar">
+                                        <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
+                                        {badge}
                                     </div>
-                                    <div>
-                                        {
-                                            userInfo && userDetails.id !== userInfo.id
-                                            &&
-                                            (
-                                                <div className="d-flex wb-p-details__row">
-                                                    {
-                                                        userDetails.isFollowing ?
-                                                            <Button variant="primary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
-                                                            :
-                                                            <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
-                                                    }
-                                                </div>
-                                            )
-                                        }
-                                    </div>
-                                    <div className="wb-p-details__row">
-                                        {
-                                            followingCount > 0 ?
-                                                <button className="wb-p-details__follows__button" onClick={showFollowing}>{followingCount} Following</button>
-                                                :
-                                                <span>{followingCount} Following</span>
-                                        }
-                                        {
-                                            followersCount > 0 ?
-                                                <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{followersCount} Followers</button>
-                                                :
-                                                <span className="ms-2">{followersCount} Followers</span>
-                                        }
+                                    <div className="d-flex flex-column align-items-center align-items-md-start">
+                                        <div className="d-flex wb-p-details__row">
+                                            <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace", textDecoration: userDetails.active ? "none" : "line-through" }}>{userDetails.name}</p>
+                                        </div>
+                                        <div>
+                                            {
+                                                userInfo && userDetails.id !== userInfo.id
+                                                &&
+                                                (
+                                                    <div className="d-flex wb-p-details__row">
+                                                        {
+                                                            userDetails.isFollowing ?
+                                                                <Button variant="primary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
+                                                                :
+                                                                <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                                                        }
+                                                    </div>
+                                                )
+                                            }
+                                        </div>
+                                        <div className="wb-p-details__row">
+                                            {
+                                                followingCount > 0 ?
+                                                    <button className="wb-p-details__follows__button" onClick={showFollowing}>{followingCount} Following</button>
+                                                    :
+                                                    <span>{followingCount} Following</span>
+                                            }
+                                            {
+                                                followersCount > 0 ?
+                                                    <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>{followersCount} Followers</button>
+                                                    :
+                                                    <span className="ms-2">{followersCount} Followers</span>
+                                            }
 
-                                    </div>
-                                    <p className="wb-p-details__row">
-                                        <FaStar style={{ color: "gold" }} />
-                                        <b>{userDetails.xp} XP</b>
-                                    </p>
-                                    <div className="wb-p-details__row">
-                                        <p className="text-secondary wb-p-details__bio small">{userDetails.bio}</p>
-                                    </div>
-                                    <div className="wb-p-details__row">
-                                        {
-                                            userDetails.countryCode &&
-                                            <>
-                                                {<Country country={countries.find(country => country.code === userDetails.countryCode)!} />}
-                                                <span className="mx-2">·</span>
-                                            </>
-                                        }
-                                        Lvl {userDetails.level}
+                                        </div>
+                                        <p className="wb-p-details__row">
+                                            <FaStar style={{ color: "gold" }} />
+                                            <b>{userDetails.xp} XP</b>
+                                        </p>
+                                        <div className="wb-p-details__row">
+                                            <p className="text-secondary wb-p-details__bio small">{userDetails.bio}</p>
+                                        </div>
+                                        <div className="wb-p-details__row">
+                                            {
+                                                userDetails.countryCode &&
+                                                <>
+                                                    {<Country country={countries.find(country => country.code === userDetails.countryCode)!} />}
+                                                    <span className="mx-2">·</span>
+                                                </>
+                                            }
+                                            Lvl {userDetails.level}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </Card>
-                        <Row className="mt-2 row-cols-1 row-cols-lg-2 row-gap-2">
-                            {
-                                codesSectionContent
-                            }
-                        </Row>
-                    </Container>
-                </>
+                            </Card>
+                            <Row className="mx-0 mt-2 row-cols-1 row-cols-lg-2 row-gap-2">
+                                {
+                                    codesSectionContent
+                                }
+                            </Row>
+                        </Container>
+                    </>
+                    :
+                    <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                        <h3>Sorry, couldn't find anything</h3>
+                        <p className="text-secondary">This user has just started their journey, try checking out their profile later.</p>
+                    </div>
             }
         </div>
     )
