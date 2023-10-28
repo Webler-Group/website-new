@@ -27,6 +27,7 @@ const TermsOfUse = () => {
                         <p>Users should not publish anything that violates copyright. We take intellectual property very seriously.</p>
                         <p>Users should be respectful towards one another. A failure to do so, may expedite a ban for the user who is disrespectful.</p>
                         <p>Users should keep all content matters coding related: no politics please!.</p>
+                        <p>Users should have fun. If it s not fun, then maybe coding is not for you. I suggest trying a different hobby</p>
                     </div>
                 </div>
             </div>
