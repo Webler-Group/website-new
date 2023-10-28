@@ -29,6 +29,7 @@ const TermsOfUse = () => {
                         <p>Users should keep all content matters coding related: no politics please!.</p>
                         <p>Users should have fun. If it s not fun, then maybe coding is not for you. I suggest trying a different hobby</p>
                         <p>Please report any concerns to info@chillpillcoding.com</p>
+                        <p>Our Terms of Use can change anytime. Make sure to stay up to date with the changes.</p>
                     </div>
                 </div>
             </div>
