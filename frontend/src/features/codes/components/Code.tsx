@@ -7,7 +7,8 @@ import React from 'react';
 const colors = {
     web: "rgb(221, 72, 36)",
     c: "rgb(49, 124, 226)",
-    cpp: "rgb(240, 140, 56)"
+    cpp: "rgb(240, 140, 56)",
+    python: "rgb(56, 140, 56)",
 }
 
 interface ICode {

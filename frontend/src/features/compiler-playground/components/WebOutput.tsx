@@ -25,6 +25,7 @@ const htmlTemplate = `<!DOCTYPE html>
 
 const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled }: WebOutputProps) => {
 
+
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -57,11 +58,11 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
     useEffect(() => {
         if (iframeRef.current && iframeRef.current.contentWindow) {
             if (tabOpen && isCompiled) {
-
                 let output = (() => {
                     switch (language) {
                         case "web": return genOutput();
                         case "cpp": case "c": return source;
+                        case "python": return source;
                     }
                 })()
 

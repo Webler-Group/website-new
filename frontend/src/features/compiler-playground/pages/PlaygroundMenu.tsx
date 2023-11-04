@@ -26,6 +26,11 @@ const PlaygroundMenu = () => {
                                     <Link to="/Compiler-Playground/CPP">C++</Link>
                                 </h3>
                             </div>
+                            <div className="wb-language-types__item">
+                                <h3 style={{ borderColor: "rgb(56, 240, 56)", color: "rgba(56, 140, 56, 0.565)" }} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/Python">Python</Link>
+                                </h3>
+                            </div>
                         </div>
 
                     </div>

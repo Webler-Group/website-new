@@ -54,6 +54,9 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
             case "cpp":
                 setEditorTabs(["cpp"]);
                 break;
+            case "python":
+                setEditorTabs(["python"]);
+                break;
         }
 
     }, [code]);
@@ -85,6 +88,22 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         case "c": case "cpp":
             outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={isCompiled} />;
             break;
+        case "python":
+            const pythonBundle = `<!DOCTYPE html>
+<html>
+<head>
+<script src="https://cdn.jsdelivr.net/npm/brython@3/brython.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/brython@3/brython_stdlib.js"></script>
+</head>
+<body onload="brython()">
+<script type="text/python">
+${source}
+</script>
+</body>
+</html>` ; 
+            outputTab = <WebOutput source={pythonBundle} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={true} />;
+            break;
+        
     }
 
     const editorStates = [

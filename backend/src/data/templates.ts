@@ -38,6 +38,11 @@ int main(int argc, char ** argv){
   return 0;
 }`, cssSource: "", jsSource: ""
     },
+    {
+        language: "python",
+        source: `print("Hello World")`, cssSource: "", jsSource: ""
+    },
+
 ];
 
 export default templates;

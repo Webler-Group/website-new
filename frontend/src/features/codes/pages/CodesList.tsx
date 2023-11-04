@@ -136,6 +136,7 @@ const CodesList = () => {
                         <option value="web">Web</option>
                         <option value="c">C</option>
                         <option value="cpp">C++</option>
+                        <option value="python">Python</option>
                     </Form.Select>
                 </div>
             </div>
