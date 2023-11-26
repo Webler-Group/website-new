@@ -16,6 +16,9 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const countryCodes_1 = __importDefault(require("../config/countryCodes"));
 const roles_1 = __importDefault(require("../data/roles"));
+const Post_1 = __importDefault(require("./Post"));
+const Code_1 = __importDefault(require("./Code"));
+const Notification_1 = __importDefault(require("./Notification"));
 const isEmail = (value) => {
     const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
     return value.match(validEmailRegex) !== null;
@@ -60,6 +63,10 @@ const userSchema = new mongoose_1.default.Schema({
         type: Boolean,
         default: false
     },
+    lastVerificationEmailTimestamp: {
+        type: Number,
+        default: 0
+    },
     active: {
         type: Boolean,
         default: true
@@ -85,14 +92,19 @@ userSchema.methods.matchPassword = function (inputPassword) {
 };
 userSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!this.isModified("password")) {
-            return next();
+        if (this.isModified("password")) {
+            if (this.password.length < 6) {
+                return next(new Error("Password must contain at least 6 characters"));
+            }
+            const salt = yield bcrypt_1.default.genSalt(10);
+            this.password = yield bcrypt_1.default.hash(this.password, salt);
         }
-        if (this.password.length < 6) {
-            return next(new Error("Password must contain at least 6 characters"));
+        if (this.isModified("active")) {
+            yield Post_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+            yield Code_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+            yield Notification_1.default.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
         }
-        const salt = yield bcrypt_1.default.genSalt(10);
-        this.password = yield bcrypt_1.default.hash(this.password, salt);
+        return next();
     });
 });
 const User = mongoose_1.default.model('User', userSchema);

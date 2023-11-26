@@ -11,11 +11,8 @@ function Footer() {
                 <div className="wb-home-footer">
                     <Row>
                         <Col className='p-3'><Link to={"/"}>Home</Link></Col>
-                        <Col className='p-3'>Pro</Col>
-                        <Col className='p-3'>FAQ</Col>
                         <Col className='p-3'><Link to={"/Contact"}>Contact</Link></Col>
                         <Col className='p-3'><Link to={"/Terms-of-use"}>Terms of Use</Link></Col>
-                        <Col className='p-3'>Privacy Policy</Col>
                     </Row>
                     <Row  className='p-2 w-100'>
                     <div className="text-center wb-made-by">

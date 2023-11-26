@@ -136,7 +136,7 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             return;
         }
         const user = yield User_1.default.findById(decoded.userId);
-        if (!user) {
+        if (!user || !user.active) {
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
@@ -223,6 +223,43 @@ const generateCaptcha = (0, express_async_handler_1.default)((req, res) => __awa
         imageData: base64ImageDataURI,
     });
 }));
+const verifyEmail = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { token, userId } = req.body;
+    if (typeof token === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    jsonwebtoken_1.default.verify(token, process.env.EMAIL_TOKEN_SECRET, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!err) {
+            const userId2 = decoded.userId;
+            const email = decoded.email;
+            if (userId2 !== userId) {
+                res.json({ success: false });
+                return;
+            }
+            const user = yield User_1.default.findById(userId);
+            if (user === null) {
+                res.status(404).json({ message: "User not found" });
+                return;
+            }
+            if (user.email !== email) {
+                res.json({ success: false });
+                return;
+            }
+            user.emailVerified = true;
+            try {
+                yield user.save();
+                res.json({ success: true });
+            }
+            catch (err) {
+                res.json({ success: false });
+            }
+        }
+        else {
+            res.json({ success: false });
+        }
+    }));
+}));
 const controller = {
     login,
     register,
@@ -230,6 +267,7 @@ const controller = {
     refresh,
     sendPasswordResetCode,
     resetPassword,
-    generateCaptcha
+    generateCaptcha,
+    verifyEmail
 };
 exports.default = controller;

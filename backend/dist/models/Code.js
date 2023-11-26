@@ -47,6 +47,10 @@ const codeSchema = new mongoose_1.default.Schema({
         type: String,
         default: ""
     },
+    hidden: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 });

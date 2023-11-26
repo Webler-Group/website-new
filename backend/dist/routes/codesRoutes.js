@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const codesController_1 = __importDefault(require("../controllers/codesController"));
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
+const verifyEmail_1 = __importDefault(require("../middleware/verifyEmail"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/")
@@ -19,11 +20,11 @@ router.route("/Compile")
     .post(codesController_1.default.compile);
 router.use(protectRoute_1.default);
 router.route("/CreateCode")
-    .post(codesController_1.default.createCode);
+    .post(verifyEmail_1.default, codesController_1.default.createCode);
 router.route("/EditCode")
     .put(codesController_1.default.editCode);
 router.route("/DeleteCode")
     .delete(codesController_1.default.deleteCode);
 router.route("/VoteCode")
-    .post(codesController_1.default.voteCode);
+    .post(verifyEmail_1.default, codesController_1.default.voteCode);
 exports.default = router;

@@ -17,11 +17,16 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const Code_1 = __importDefault(require("../models/Code"));
+const tokenUtils_1 = require("../utils/tokenUtils");
+const email_1 = require("../services/email");
+const date_fns_1 = require("date-fns");
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
+    const roles = req.roles;
     const { userId } = req.body;
+    const isModerator = roles && roles.includes("Moderator");
     const user = yield User_1.default.findById(userId);
-    if (!user) {
+    if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
@@ -56,6 +61,7 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             registerDate: user.createdAt,
             level: user.level,
             xp: user.xp,
+            active: user.active,
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
@@ -133,6 +139,7 @@ const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
     }
     try {
         user.email = email;
+        user.emailVerified = false;
         yield user.save();
         res.json({
             success: true,
@@ -148,6 +155,33 @@ const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
             error: err,
             data: null
         });
+    }
+}));
+const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const user = yield User_1.default.findById(currentUserId);
+    if (user === null) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+    const diff = Date.now() - user.lastVerificationEmailTimestamp;
+    if (diff < 24 * 60 * 60 * 1000) {
+        const duration = (0, date_fns_1.intervalToDuration)({ start: Date.now(), end: user.lastVerificationEmailTimestamp + 24 * 60 * 60 * 1000 });
+        res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
+        return;
+    }
+    const { emailToken } = (0, tokenUtils_1.signEmailToken)({
+        userId: currentUserId,
+        email: user.email
+    });
+    try {
+        yield (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
+        user.lastVerificationEmailTimestamp = Date.now();
+        yield user.save();
+        res.json({ success: true });
+    }
+    catch (_a) {
+        res.status(500).json({ message: "Email could not be sent" });
     }
 }));
 const changePassword = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -341,7 +375,7 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
         return;
     }
     let dbQuery = Notification_1.default
-        .find({ user: currentUserId })
+        .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
     if (typeof fromId !== "undefined") {
         const prevNotification = yield Notification_1.default.findById(fromId);
@@ -394,7 +428,7 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
 }));
 const getUnseenNotificationCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    const count = yield Notification_1.default.countDocuments({ user: currentUserId, isClicked: false });
+    const count = yield Notification_1.default.countDocuments({ user: currentUserId, isClicked: false, hidden: false });
     res.json({ count });
 }));
 const markNotificationsSeen = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -413,9 +447,37 @@ const markNotificationsClicked = (0, express_async_handler_1.default)((req, res)
         yield Notification_1.default.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } });
     }
     else {
-        yield Notification_1.default.updateMany({ user: currentUserId, isClicked: false }, { $set: { isClicked: true } });
+        yield Notification_1.default.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } });
     }
     res.json({});
+}));
+const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const roles = req.roles;
+    const { userId, active } = req.body;
+    if (!roles || !roles.includes("Moderator")) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    const user = yield User_1.default.findById(userId);
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return;
+    }
+    if (user.roles.includes("Moderator") || user.roles.includes("Admin")) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    user.active = active;
+    try {
+        yield user.save();
+        res.json({ success: true, active });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err
+        });
+    }
 }));
 const controller = {
     getProfile,
@@ -429,6 +491,8 @@ const controller = {
     getNotifications,
     getUnseenNotificationCount,
     markNotificationsSeen,
-    markNotificationsClicked
+    markNotificationsClicked,
+    sendActivationCode,
+    toggleUserBan
 };
 exports.default = controller;

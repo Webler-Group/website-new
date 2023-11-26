@@ -1,0 +1,300 @@
+/**
+ * okaidia theme for JavaScript, CSS and HTML
+ * Loosely based on Monokai textmate theme by http://www.monokai.nl/
+ * @author ocodia
+ */
+
+code[class*="language-"],
+pre[class*="language-"] {
+	color: #f8f8f2;
+	text-shadow: 0 1px rgba(0, 0, 0, 0.3);
+	font-family: Consolas, Monaco, 'Andale Mono', monospace;
+	direction: ltr;
+	text-align: left;
+	white-space: pre;
+	word-spacing: normal;
+	word-break: normal;
+	line-height: 1.5;
+
+	-moz-tab-size: 4;
+	-o-tab-size: 4;
+	tab-size: 4;
+
+	-webkit-hyphens: none;
+	-moz-hyphens: none;
+	-ms-hyphens: none;
+	hyphens: none;
+}
+
+/* Code blocks */
+pre[class*="language-"] {
+	padding: 1em;
+	margin: .5em 0;
+	overflow: auto;
+	border-radius: 0.3em;
+}
+
+:not(pre) > code[class*="language-"],
+pre[class*="language-"] {
+	background: #272822;
+}
+
+/* Inline code */
+:not(pre) > code[class*="language-"] {
+	padding: .1em;
+	border-radius: .3em;
+}
+
+.token.comment,
+.token.prolog,
+.token.doctype,
+.token.cdata {
+	color: slategray;
+}
+
+.token.punctuation {
+	color: #f8f8f2;
+}
+
+.namespace {
+	opacity: .7;
+}
+
+.token.property,
+.token.tag,
+.token.constant,
+.token.symbol,
+.token.deleted {
+	color: #f92672;
+}
+
+.token.boolean,
+.token.number {
+	color: #ae81ff;
+}
+
+.token.selector,
+.token.attr-name,
+.token.string,
+.token.char,
+.token.builtin,
+.token.inserted {
+	color: #a6e22e;
+}
+
+.token.operator,
+.token.entity,
+.token.url,
+.language-css .token.string,
+.style .token.string,
+.token.variable {
+	color: #f8f8f2;
+}
+
+.token.atrule,
+.token.attr-value,
+.token.function {
+	color: #e6db74;
+}
+
+.token.keyword {
+	color: #66d9ef;
+}
+
+.token.regex,
+.token.important {
+	color: #fd971f;
+}
+
+.token.important,
+.token.bold {
+	font-weight: bold;
+}
+.token.italic {
+	font-style: italic;
+}
+
+.token.entity {
+	cursor: help;
+}
+
+
+
+
+
+
+/*
+
+
+
+
+custom css below
+
+
+
+*/
+
+
+
+
+
+
+
+.codeEditor{
+  position:relative;
+  border-radius:10px;
+  width:100%;
+  height:100vh;
+  margin: 0 auto;
+  padding: 0px;
+  border: 0px;
+  display: inline-block;
+}
+
+.textEditing{
+  margin: 0px 0px 0px 30pt;
+  padding: 0px;
+  border: 0px;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  font-size: 15pt !important;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
+  line-height: 20pt !important;   
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  z-index: 1;
+  background-color: #0000;
+  color: #0000;                                                            
+  caret-color: #777f;
+  overflow: auto;
+  white-space: pre;
+  resize: none;
+  text-align: left;
+  display:block;
+  text-indent:0px;
+}
+
+.codeHighlighting, code{
+  padding: 0px !important;
+  border: 0px !important;
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+  font-size: 15pt !important;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace !important;
+  line-height: 20pt !important;   
+  position: absolute;
+  top: 0px !important;
+  left: 0px !important;
+  overflow: auto !important;
+  white-space: pre !important;
+  z-index:0;
+  text-align: left;
+  display:block;
+  text-indent:0px;
+}
+
+.codeHighlighting{
+  margin: 0px 0px 0px 30pt !important;
+}
+
+code{
+  margin: 0px 0px 0px 0px !important;
+}
+
+.lineNumbers {
+  font-size: 15pt;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  line-height: 20pt;
+  display: block;
+  margin: 0px 0px 0px 0px;                                                 
+  padding: 0px 0px 0px 0px;
+  border: 0px solid black;
+  width: 30pt;
+  height: 100%;
+  z-index: 1;
+  background-color: #0007;
+  color: #fff7;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  text-align: left;
+  overflow: auto;
+  white-space: pre;
+}
+
+.textEditing:focus{
+  outline: none;
+}
+
+#ioButton {
+  position: fixed ;
+  bottom: 0px ;
+  right: 0px ;
+  z-index: 2 ;
+  width: 20vw ;
+  background-color: white ; 
+  border: 1px solid black ;
+  border-radius: 4px ;
+  font-size: 1.25em;
+  font-family: courier ;
+}
+
+
+#io {
+  min-width: 50vw ;
+  min-height: 50vh ; 
+  z-index: 3 ;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #777  ; 
+  margin: 0px ;
+  border: 0px ;
+  color: white ;
+  border-radius: 4px;
+  padding: 5% ;
+  font-size: 10pt;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  line-height: 15pt;
+  overflow: auto ;
+  opacity: 0.8 ;
+}
+
+#io textarea {
+  min-width: 100% ;
+  resize: none ;
+  margin: 0px ; 
+  padding: 0px ; 
+  border: 0px ;
+  background-color: black ;
+  color: lime ;
+  font-size: 10pt;
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+  line-height: 15pt;
+  border-radius: 4px ;
+  opacity: 1.0 ;
+}
+
+#io #x {
+  opacity: 1.0 ;
+  font-size: 0.75em;
+  position: absolute ;
+  top: 2.5vw ;
+  left: 2.5vw ;
+}
+
+#io h2{
+  text-align: center;
+}
+
+#io #run {
+  width: 100% ;
+  padding: 0.75em ;
+  background-color: orange ;
+  color: black ;
+  opacity: 1.0 ;
+}

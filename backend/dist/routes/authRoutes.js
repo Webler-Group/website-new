@@ -21,4 +21,6 @@ router.route("/ResetPassword")
     .post(authController_1.default.resetPassword);
 router.route("/GenerateCaptcha")
     .post(authController_1.default.generateCaptcha);
+router.route("/Activate")
+    .post(authController_1.default.verifyEmail);
 exports.default = router;

@@ -34,4 +34,8 @@ router.route("/MarkNotificationsSeen")
     .post(profileController_1.default.markNotificationsSeen);
 router.route("/MarkNotificationsClicked")
     .post(profileController_1.default.markNotificationsClicked);
+router.route("/SendActivationCode")
+    .post(profileController_1.default.sendActivationCode);
+router.route("/ToggleUserBan")
+    .post(profileController_1.default.toggleUserBan);
 exports.default = router;
