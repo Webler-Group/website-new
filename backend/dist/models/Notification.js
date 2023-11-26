@@ -48,6 +48,10 @@ const notificationSchema = new mongoose_1.default.Schema({
         type: mongoose_1.default.Types.ObjectId,
         ref: "Post"
     },
+    hidden: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 });

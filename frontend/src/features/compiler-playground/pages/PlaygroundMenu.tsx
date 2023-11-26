@@ -1,5 +1,6 @@
 import { Container } from "react-bootstrap"
 import { Link } from "react-router-dom"
+import { colors } from "../../codes/components/Code" 
 
 const PlaygroundMenu = () => {
     return (
@@ -16,21 +17,17 @@ const PlaygroundMenu = () => {
                                     <Link to="/Compiler-Playground/Web">Web Compiler</Link>
                                 </h3>
                             </div>
+                            {
+                              Object.entries(colors).map(([key,value])=>{
+                                return ( key==="web"? null :
                             <div className="wb-language-types__item">
-                                <h3 style={{ borderColor: "rgb(49, 124, 226)", color: "rgba(49, 124, 226, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/C">C</Link>
+                                <h3 style={{ borderColor: value, color: value+77 }} className="wb-language-types__language-button">
+                                    <Link to={"/Compiler-Playground/"+key}>{key[0].toUpperCase()+key.substring(1)}</Link>
                                 </h3>
                             </div>
-                            <div className="wb-language-types__item">
-                                <h3 style={{ borderColor: "rgb(240, 140, 56)", color: "rgba(240, 140, 56, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/CPP">C++</Link>
-                                </h3>
-                            </div>
-                            <div className="wb-language-types__item">
-                                <h3 style={{ borderColor: "rgb(56, 240, 56)", color: "rgba(56, 140, 56, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/Python">Python</Link>
-                                </h3>
-                            </div>
+                                )
+                              })
+                            }
                         </div>
 
                     </div>

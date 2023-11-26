@@ -136,7 +136,10 @@ const CodesList = () => {
                         <option value="web">Web</option>
                         <option value="c">C</option>
                         <option value="cpp">C++</option>
+                        <option value="clojure">Clojure</option>
+                        <option value="java">Java</option>
                         <option value="python">Python</option>
+                        <option value="rust">Rust</option>
                     </Form.Select>
                 </div>
             </div>

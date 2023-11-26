@@ -12,27 +12,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const mongoose_1 = __importDefault(require("mongoose"));
-const tagSchema = new mongoose_1.default.Schema({
-    name: {
-        required: true,
-        type: String,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        maxLength: 20,
-        minLength: 1,
-        validate: [(val) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, 'Tag can only contain words separated by "-"']
+const User_1 = __importDefault(require("../models/User"));
+const verifyEmail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    if (!((_a = (yield User_1.default.findById(req.userId))) === null || _a === void 0 ? void 0 : _a.emailVerified)) {
+        return res.status(403).json({ message: "Verify your email address" });
     }
+    next();
 });
-tagSchema.statics.getOrCreateTagByName = function (tagName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let tag = yield Tag.findOne({ name: tagName });
-        if (tag === null) {
-            tag = yield Tag.create({ name: tagName });
-        }
-        return tag;
-    });
-};
-const Tag = mongoose_1.default.model("Tag", tagSchema);
-exports.default = Tag;
+exports.default = verifyEmail;

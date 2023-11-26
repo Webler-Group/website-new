@@ -42,6 +42,26 @@ int main(int argc, char ** argv){
         language: "python",
         source: `print("Hello World")`, cssSource: "", jsSource: ""
     },
+    {
+        language: "clojure",
+        source: `(defn main [] (println "hello world"))(main)`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "java",
+        source: `class Main
+{
+    public static void main(String []args)
+    {
+        System.out.println("My First Java Program.");
+    }
+};`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "rust",
+        source: `fn main(){
+  println!("Hello World") ;
+}`, cssSource: "", jsSource: ""
+    },
 
 ];
 

@@ -17,6 +17,7 @@ const Upvote_1 = __importDefault(require("./Upvote"));
 const Code_1 = __importDefault(require("./Code"));
 const PostFollowing_1 = __importDefault(require("./PostFollowing"));
 const Notification_1 = __importDefault(require("./Notification"));
+const PostAttachment_1 = __importDefault(require("./PostAttachment"));
 const postSchema = new mongoose_1.default.Schema({
     /*
     * 1 - question
@@ -70,8 +71,78 @@ const postSchema = new mongoose_1.default.Schema({
         type: [{ type: mongoose_1.default.Types.ObjectId, ref: "Tag" }],
         validate: [(val) => val.length <= 10, "tags exceed limit of 10"]
     },
+    hidden: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
+});
+postSchema.pre("save", function (next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!this.isModified("message")) {
+            next();
+        }
+        const currentAttachments = yield PostAttachment_1.default
+            .find({ postId: this._id })
+            .select("_type codeId questionId");
+        const newAttachmentIds = [];
+        const pattern = new RegExp(process.env.HOME_URL + "([\\w\-]+)\/([\\w\-]+)", "gi");
+        const matches = this.message.matchAll(pattern);
+        for (let match of matches) {
+            let attachment = null;
+            switch (match[1]) {
+                case "Compiler-Playground": {
+                    const codeId = match[2];
+                    try {
+                        const code = yield Code_1.default.findById(codeId);
+                        if (!code) {
+                            continue;
+                        }
+                        attachment = currentAttachments.find(x => x.code && x.code.toString() === codeId);
+                        if (!attachment) {
+                            attachment = yield PostAttachment_1.default.create({
+                                postId: this._id,
+                                _type: 1,
+                                code: codeId,
+                                user: code.user
+                            });
+                        }
+                    }
+                    catch (_a) { }
+                    break;
+                }
+                case "Discuss": {
+                    const questionId = match[2];
+                    try {
+                        const question = yield Post.findById(questionId);
+                        if (!question) {
+                            continue;
+                        }
+                        attachment = currentAttachments.find(x => x.question && x.question.toString() === questionId);
+                        if (!attachment) {
+                            attachment = yield PostAttachment_1.default.create({
+                                postId: this._id,
+                                _type: 2,
+                                question: questionId,
+                                user: question.user
+                            });
+                        }
+                    }
+                    catch (_b) { }
+                    break;
+                }
+            }
+            if (attachment) {
+                newAttachmentIds.push(attachment._id);
+            }
+        }
+        const idsToDelete = currentAttachments.map(x => x._id)
+            .filter(id => !newAttachmentIds.includes(id));
+        yield PostAttachment_1.default.deleteMany({
+            _id: { $in: idsToDelete }
+        });
+    });
 });
 postSchema.statics.deleteAndCleanup = function (filter) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -122,6 +193,7 @@ postSchema.statics.deleteAndCleanup = function (filter) {
                 }
             }
             yield Upvote_1.default.deleteMany({ parentId: post._id });
+            yield PostAttachment_1.default.deleteMany({ postId: post._id });
         }
         yield Post.deleteMany(filter);
     });

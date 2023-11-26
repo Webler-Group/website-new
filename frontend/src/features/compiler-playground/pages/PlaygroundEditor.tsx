@@ -168,12 +168,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 "/* " + message + " */",
                 "// " + message
             ]
-            case "c": case "cpp": return [
-                "// " + message
-            ]
-            case "python": return [
-                "#" + message 
-            ]
             default:
                 throw new Error("Unknown language");
         }

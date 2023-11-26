@@ -19,6 +19,8 @@ const Upvote_1 = __importDefault(require("../models/Upvote"));
 const Code_1 = __importDefault(require("../models/Code"));
 const PostFollowing_1 = __importDefault(require("../models/PostFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
+const mongoose_1 = __importDefault(require("mongoose"));
+const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const createQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -72,10 +74,30 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    let dbQuery = Post_1.default.find({ _type: 1 });
+    let pipeline = [
+        { $match: { _type: 1, hidden: false } },
+        {
+            $set: {
+                score: { $add: ["$votes", "$answers"] }
+            }
+        }
+    ];
+    let dbQuery = Post_1.default
+        .find({
+        _type: 1,
+        hidden: false
+    });
     if (searchQuery.trim().length) {
         const tagIds = (yield Tag_1.default.find({ name: searchQuery.trim() }))
             .map(x => x._id);
+        pipeline.push({
+            $match: {
+                $or: [
+                    { title: new RegExp("^" + searchQuery.trim(), "i") },
+                    { "tags": { $in: tagIds } }
+                ]
+            }
+        });
         dbQuery.where({
             $or: [
                 { title: new RegExp("^" + searchQuery.trim(), "i") },
@@ -86,12 +108,20 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
     switch (filter) {
         // Most Recent
         case 1: {
+            pipeline.push({
+                $sort: { createdAt: -1 }
+            });
             dbQuery = dbQuery
                 .sort({ createdAt: "desc" });
             break;
         }
         // Unanswered
         case 2: {
+            pipeline.push({
+                $match: { answers: 0 }
+            }, {
+                $sort: { createdAt: -1 }
+            });
             dbQuery = dbQuery
                 .where({ answers: 0 })
                 .sort({ createdAt: "desc" });
@@ -103,6 +133,11 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
                 res.status(400).json({ message: "Invalid request" });
                 return;
             }
+            pipeline.push({
+                $match: { user: new mongoose_1.default.Types.ObjectId(userId) }
+            }, {
+                $sort: { createdAt: -1 }
+            });
             dbQuery = dbQuery
                 .where({ user: userId })
                 .sort({ createdAt: "desc" });
@@ -116,6 +151,11 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
             }
             const replies = yield Post_1.default.find({ user: userId, _type: 2 }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
+            pipeline.push({
+                $match: { _id: { $in: questionIds } }
+            }, {
+                $sort: { createdAt: -1 }
+            });
             dbQuery = dbQuery
                 .where({ _id: { $in: questionIds } })
                 .sort({ createdAt: "desc" });
@@ -124,8 +164,22 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         // Hot Today
         case 5: {
             let dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            pipeline.push({
+                $match: { createdAt: { $gt: dayAgo } }
+            }, {
+                $sort: { score: -1 }
+            });
             dbQuery = dbQuery
                 .where({ createdAt: { $gt: dayAgo } })
+                .sort({ votes: "desc" });
+            break;
+        }
+        // Trending
+        case 6: {
+            pipeline.push({
+                $sort: { score: -1 }
+            });
+            dbQuery = dbQuery
                 .sort({ votes: "desc" });
             break;
         }
@@ -133,12 +187,24 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
             throw new Error("Unknown filter");
     }
     const questionCount = yield dbQuery.clone().countDocuments();
-    const result = yield dbQuery
+    pipeline.push({
+        $skip: (page - 1) * count
+    }, {
+        $limit: count
+    }, {
+        $project: { message: 0 }
+    }, {
+        $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" }
+    }, {
+        $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
+    });
+    /*const result = await dbQuery
         .skip((page - 1) * count)
         .limit(count)
         .select("-message")
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("tags", "name");
+        .populate("tags", "name") as any[];*/
+    const result = yield Post_1.default.aggregate(pipeline);
     if (result) {
         const data = result.map(x => ({
             id: x._id,
@@ -146,15 +212,16 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
             tags: x.tags.map((y) => y.name),
             date: x.createdAt,
             userId: x.user._id,
-            userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
-            level: x.user.level,
-            roles: x.user.roles,
+            userName: x.users.length ? x.users[0].name : undefined,
+            avatarUrl: x.users.length ? x.users[0].avatarUrl : undefined,
+            countryCode: x.users.length ? x.users[0].countryCode : undefined,
+            level: x.users.length ? x.users[0].level : undefined,
+            roles: x.users.length ? x.users[0].roles : undefined,
             answers: x.answers,
             votes: x.votes,
             isUpvoted: false,
-            isAccepted: x.isAccepted
+            isAccepted: x.isAccepted,
+            score: x.score
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -188,6 +255,7 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
         //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (yield Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (yield PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
+        const attachments = yield PostAttachment_1.default.getByPostId(questionId);
         res.json({
             question: {
                 id: question._id,
@@ -205,7 +273,8 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
                 votes: question.votes,
                 isUpvoted,
                 isAccepted: question.isAccepted,
-                isFollowed
+                isFollowed,
+                attachments
             }
         });
     }
@@ -256,6 +325,7 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
         }
         question.$inc("answers", 1);
         yield question.save();
+        const attachments = yield PostAttachment_1.default.getByPostId(reply._id.toString());
         res.json({
             post: {
                 id: reply._id,
@@ -265,7 +335,8 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
                 parentId: reply.parentId,
                 isAccepted: reply.isAccepted,
                 votes: reply.votes,
-                answers: reply.answers
+                answers: reply.answers,
+                attachments
             }
         });
     }
@@ -280,7 +351,7 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2 });
+    let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2, hidden: false });
     let skipCount = index;
     if (findPostId) {
         const reply = yield Post_1.default.findById(findPostId);
@@ -339,7 +410,8 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
             isUpvoted: false,
             isAccepted: x.isAccepted,
             answers: x.answers,
-            index: skipCount + offset
+            index: skipCount + offset,
+            attachments: new Array()
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -351,6 +423,7 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
+            promises.push(PostAttachment_1.default.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
         }
         yield Promise.all(promises);
         res.status(200).json({ posts: data });
@@ -492,11 +565,13 @@ const editReply = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     reply.message = message;
     try {
         yield reply.save();
+        const attachments = yield PostAttachment_1.default.getByPostId(reply._id.toString());
         res.json({
             success: true,
             data: {
                 id: reply._id,
-                message: reply.message
+                message: reply.message,
+                attachments
             }
         });
     }
@@ -576,7 +651,7 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             .findById(parentId)
             .populate("user", "name avatarUrl countryCode level roles");
     }
-    let dbQuery = Post_1.default.find({ codeId, _type: 3 });
+    let dbQuery = Post_1.default.find({ codeId, _type: 3, hidden: false });
     let skipCount = index;
     if (findPostId) {
         const reply = yield Post_1.default.findById(findPostId);
@@ -645,7 +720,8 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             answers: x.answers,
             index: (findPostId && parentPost) ?
                 offset === 0 ? -1 : skipCount + offset - 1 :
-                skipCount + offset
+                skipCount + offset,
+            attachments: new Array()
         }));
         let promises = [];
         for (let i = 0; i < data.length; ++i) {
@@ -657,6 +733,7 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
+            promises.push(PostAttachment_1.default.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
         }
         yield Promise.all(promises);
         res.status(200).json({ posts: data });

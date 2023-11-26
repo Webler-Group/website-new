@@ -85,8 +85,11 @@ function App() {
         </Route>
         <Route path="Web" element={<PlaygroundEditor language="web" />} />
         <Route path="C" element={<PlaygroundEditor language="c" />} />
-        <Route path="CPP" element={<PlaygroundEditor language="cpp" />} />
+        <Route path="Cpp" element={<PlaygroundEditor language="cpp" />} />
         <Route path="Python" element={<PlaygroundEditor language="python" />} />
+        <Route path="Java" element={<PlaygroundEditor language="java" />} />
+        <Route path="Clojure" element={<PlaygroundEditor language="clojure" />} />
+        <Route path="Rust" element={<PlaygroundEditor language="rust" />} />
         <Route path=":codeId" element={<PlaygroundEditor language="" />} />
       </Route>
 

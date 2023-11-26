@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sendPasswordResetEmail = void 0;
+exports.sendActivationEmail = exports.sendPasswordResetEmail = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const transport = process.env.NODE_ENV === "development" ?
     {
@@ -30,7 +30,7 @@ const transport = process.env.NODE_ENV === "development" ?
             secure: true,
             dkim: {
                 domainName: process.env.DOMAIN_NAME,
-                keySelector: process.env.DKIM_KEY_SELECTOR,
+                keySelector: process.env.DKIM_KEY_SELECTOR, // The key you used in your DKIM TXT DNS Record
                 privateKey: process.env.DKIM_PRIVATE_KEY, // Content of you private key
             }
         };
@@ -58,3 +58,26 @@ Your Webler Team
     return result;
 });
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
+const sendActivationEmail = (userName, userEmail, userId, emailToken) => __awaiter(void 0, void 0, void 0, function* () {
+    let text = `Account activation
+    
+Welcome ${userName},
+
+Thanks for joining Webler! Click the link below to verify your email address and activate your account.
+
+${process.env.HOME_URL}Users/Activate?id=${userId}&token=${emailToken}
+
+Keep Coding,
+
+Your Webler Team
+
+© ${(new Date).getFullYear()} Webler Inc. All rights reserved.`;
+    const result = yield transporter.sendMail({
+        to: userEmail,
+        from: '"Webler" <info@' + process.env.DOMAIN_NAME + '>',
+        subject: userName + ", activate your Webler account!",
+        text
+    });
+    return result;
+});
+exports.sendActivationEmail = sendActivationEmail;

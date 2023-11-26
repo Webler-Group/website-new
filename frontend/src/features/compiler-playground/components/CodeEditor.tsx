@@ -7,7 +7,7 @@ import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
 import ApiCommunication from "../../../helpers/apiCommunication";
-
+import {ConsoleCodeEditor} from './ConsoleCodeEditor.tsx' ;
 
 interface CodeEditorProps {
     code: ICode;
@@ -27,7 +27,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
 
-    const [compiledHTML, setCompiledHTML] = useState("");
+//    const [compiledHTML, setCompiledHTML] = useState("");
     const [isCompiled, setIsCompiled] = useState(false);
 
     const [tabHeight, setTabHeight] = useState("auto");
@@ -48,14 +48,8 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
             case "web":
                 setEditorTabs(["html", "css", "javascript"]);
                 break;
-            case "c":
-                setEditorTabs(["c"]);
-                break;
-            case "cpp":
-                setEditorTabs(["cpp"]);
-                break;
-            case "python":
-                setEditorTabs(["python"]);
+            case 'c':
+                setEditorTabs(['c']);
                 break;
         }
 
@@ -75,7 +69,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         const result = await ApiCommunication.sendJsonRequest(`/Codes/Compile`, "POST", { source: source, language: code.language });
 
         if (result && result.compiledHTML) {
-            setCompiledHTML(result.compiledHTML);
+//            setCompiledHTML(result.compiledHTML);
         }
         setIsCompiled(true)
     }
@@ -85,25 +79,6 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         case "web":
             outputTab = <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={true} />;
             break;
-        case "c": case "cpp":
-            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={isCompiled} />;
-            break;
-        case "python":
-            const pythonBundle = `<!DOCTYPE html>
-<html>
-<head>
-<script src="https://cdn.jsdelivr.net/npm/brython@3/brython.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/brython@3/brython_stdlib.js"></script>
-</head>
-<body onload="brython()">
-<script type="text/python">
-${source}
-</script>
-</body>
-</html>` ; 
-            outputTab = <WebOutput source={pythonBundle} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={true} />;
-            break;
-        
     }
 
     const editorStates = [
@@ -112,12 +87,12 @@ ${source}
         { value: js, setValue: setJs }
     ];
 
-    return (
+    return (code.language == 'web') ? (
         <div className="bg-dark" data-bs-theme="dark">
             {
                 editorTabs.length > 0 &&
                 <Tabs defaultActiveKey={editorTabs[0]} fill justify>
-                    {
+                    {   
                         editorTabs.map((lang, idx) => {
 
                             return (
@@ -142,7 +117,9 @@ ${source}
                 </Tabs>
             }
         </div>
-    )
+    ) : <ConsoleCodeEditor language={ code.language }
+                           text={ source }
+                           setText={ setSource }/>
 }
 
 export default CodeEditor

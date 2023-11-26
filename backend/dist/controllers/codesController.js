@@ -27,6 +27,10 @@ const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
+    if ((yield Code_1.default.countDocuments({ user: currentUserId })) >= 500) {
+        res.status(403).json({ message: "You already have max count of codes" });
+        return;
+    }
     const code = yield Code_1.default.create({
         name,
         language,
@@ -63,7 +67,7 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    let dbQuery = Code_1.default.find({});
+    let dbQuery = Code_1.default.find({ hidden: false });
     if (searchQuery.trim().length) {
         dbQuery.where({
             $or: [
@@ -279,6 +283,7 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         if (!upvote) {
             upvote = yield Upvote_1.default.create({ user: currentUserId, parentId: codeId });
             code.$inc("votes", 1);
+            yield code.save();
         }
     }
     else if (vote === 0) {
@@ -286,6 +291,7 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
             yield Upvote_1.default.deleteOne({ _id: upvote._id });
             upvote = null;
             code.$inc("votes", -1);
+            yield code.save();
         }
     }
     res.json({ vote: upvote ? 1 : 0 });

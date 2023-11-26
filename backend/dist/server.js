@@ -36,7 +36,7 @@ app.use(express_1.default.static("public"));
 app.use("/uploads", express_1.default.static(path_1.default.join(rootDir, "uploads")));
 app.use(logger_1.logger);
 app.use((0, cors_1.default)(corsOptions_1.default));
-app.use(express_1.default.json({ limit: "5mb" }));
+app.use(express_1.default.json({ limit: "2mb" }));
 app.use((0, cookie_parser_1.default)());
 app.use(`${apiPrefix}/auth`, authRoutes_1.default);
 app.use(`${apiPrefix}/profile`, profileRoutes_1.default);
