@@ -1,5 +1,5 @@
 const connect = async (sourceCode, language, consoleOut, consoleErr, consoleIn) => {
-   const ws = new WebSocket(`ws://localhost:8080`);
+   const ws = new WebSocket(`ws://chillpillcoding.com:8008`);
    ws.onerror = (e) =>{
       console.error(e.message) ;
    };
