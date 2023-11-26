@@ -67,7 +67,7 @@ export class ConsoleCodeEditor extends LitElement {
   }
 
   consoleIn(){
-    return '' ; //todo
+    return this._stdin.value ;
   }
 
   firstUpdated() {
