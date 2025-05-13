@@ -3,9 +3,10 @@ import { v4 as uuid } from "uuid";
 import fs from "fs";
 import path from "path";
 import { NextFunction, Request, Response } from "express";
+import { config } from "../confg";
 
 const logEvents = async (message: string, logFileName: string) => {
-    if (process.env.NODE_ENV !== "development") {
+    if (config.nodeEnv !== "development") {
         return;
     }
     const dateTime = format(new Date(), 'yyyyMMdd\tHH:mm:ss');

@@ -1,5 +1,6 @@
 import { Response } from "express";
 import jwt from "jsonwebtoken";
+import { config } from "../confg";
 
 interface RefreshTokenPayload {
     userId: string;
@@ -21,7 +22,7 @@ const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {
 
     const refreshToken = jwt.sign(
         payload,
-        process.env.REFRESH_TOKEN_SECRET as string,
+        config.refreshTokenSecret,
         { expiresIn: "7d" }
     );
 
@@ -45,7 +46,7 @@ const signAccessToken = (payload: AccessTokenPayload) => {
 
     const accessToken = jwt.sign(
         payload,
-        process.env.ACCESS_TOKEN_SECRET as string,
+        config.accessTokenSecret,
         { expiresIn: "15m" }
     );
 
@@ -61,7 +62,7 @@ const signEmailToken = (payload: EmailTokenPayload) => {
 
     const emailToken = jwt.sign(
         payload,
-        process.env.EMAIL_TOKEN_SECRET as string,
+        config.emailTokenSecret,
         { expiresIn: "1h" }
     );
 

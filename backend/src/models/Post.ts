@@ -4,6 +4,7 @@ import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
+import { config } from "../confg";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -77,7 +78,7 @@ postSchema.pre("save", async function (next) {
 
     const newAttachmentIds: string[] = [];
 
-    const pattern = new RegExp(process.env.HOME_URL + "([\\w\-]+)\/([\\w\-]+)", "gi");
+    const pattern = new RegExp(config.homeUrl + "([\\w\-]+)\/([\\w\-]+)", "gi");
     const matches = this.message.matchAll(pattern);
 
     for (let match of matches) {

@@ -1,6 +1,4 @@
 import express from "express";
-import dotenv from "dotenv";
-dotenv.config();
 import { logEvents, logger } from "./middleware/logger";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
@@ -16,10 +14,10 @@ import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
 import http from "http";
 import WebSocket from 'ws';
+import { config } from "./confg";
 
-const rootDir = process.env.ROOT_DIR as string;
+console.log(config.nodeEnv);
 
-const PORT = process.env.PORT || 5500;
 
 const app = express();
 const server = http.createServer(app);
@@ -37,7 +35,7 @@ connectDB();
 
 app.use(express.static("public"));
 
-app.use("/uploads", express.static(path.join(rootDir, "uploads")));
+app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
 
 app.use(logger);
 
@@ -70,7 +68,7 @@ app.use(errorHandler);
 
 mongoose.connection.once("open", () => {
     console.log("Connected to MongoDB");
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(config.port, () => console.log(`Server running on port ${config.port}`));
 });
 
 mongoose.connection.once("error", (err: any) => {

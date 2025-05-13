@@ -1,25 +1,14 @@
 import nodemailer from 'nodemailer';
+import { config } from '../confg';
 
-const transport = process.env.NODE_ENV === "development" ?
+const transport =
     {
         service: "gmail",
         auth: {
-            user: process.env.TEST_EMAIL_USER as string,
-            pass: process.env.TEST_EMAIL_PASSWORD as string,
+            user: "",
+            pass: "",
         },
-    }
-    :
-    {
-        sendmail: true,
-        newline: 'unix',
-        path: '/usr/sbin/sendmail',
-        secure: true,
-        dkim: {
-            domainName: process.env.DOMAIN_NAME as string,
-            keySelector: process.env.DKIM_KEY_SELECTOR as string, // The key you used in your DKIM TXT DNS Record
-            privateKey: process.env.DKIM_PRIVATE_KEY as string, // Content of you private key
-        }
-    }
+    };
 
 const transporter = nodemailer.createTransport(transport);
 
@@ -31,7 +20,7 @@ Hello ${userName},
 
 Forgot your password or want to change it? You can set a new password by clicking on the following link:
 
-${process.env.HOME_URL as string}Users/Reset-Password?id=${userId}&token=${emailToken}
+${config.homeUrl}Users/Reset-Password?id=${userId}&token=${emailToken}
 
 Keep Coding,
 
@@ -41,7 +30,7 @@ Your Webler Team
 
     const result = await transporter.sendMail({
         to: userEmail,
-        from: '"Webler" <info@' + (process.env.DOMAIN_NAME as string) + '>',
+        from: '"Webler" <info@' + config.domainName + '>',
         subject: "Password reset",
         text
     });
@@ -56,7 +45,7 @@ Welcome ${userName},
 
 Thanks for joining Webler! Click the link below to verify your email address and activate your account.
 
-${process.env.HOME_URL as string}Users/Activate?id=${userId}&token=${emailToken}
+${config.homeUrl}Users/Activate?id=${userId}&token=${emailToken}
 
 Keep Coding,
 
@@ -66,7 +55,7 @@ Your Webler Team
 
     const result = await transporter.sendMail({
         to: userEmail,
-        from: '"Webler" <info@' + (process.env.DOMAIN_NAME as string) + '>',
+        from: '"Webler" <info@' + config.domainName + '>',
         subject: userName + ", activate your Webler account!",
         text
     });

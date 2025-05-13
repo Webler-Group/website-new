@@ -1,6 +1,7 @@
 import jwt, { VerifyErrors } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
 import { AccessTokenPayload } from "../utils/tokenUtils";
+import { config } from "../confg";
 
 interface IAuthRequest extends Request {
     userId?: string;
@@ -16,7 +17,7 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
 
         jwt.verify(
             token,
-            process.env.ACCESS_TOKEN_SECRET as string,
+            config.accessTokenSecret,
             (err: VerifyErrors | null, decoded: any) => {
                 if (!err) {
                     const userInfo = (decoded as AccessTokenPayload).userInfo;

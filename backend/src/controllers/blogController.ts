@@ -3,10 +3,9 @@ import asyncHandler from "express-async-handler";
 import fs from 'fs';
 import path from 'path';
 import showdown from 'showdown';
+import { config } from "../confg";
 
-const rootDir = process.env.ROOT_DIR as string;
-
-const blogsDir = path.join(rootDir, "uploads", "blogs")
+const blogsDir = path.join(config.rootDir, "uploads", "blogs")
 
 const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
 

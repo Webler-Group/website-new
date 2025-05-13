@@ -6,6 +6,7 @@ import asyncHandler from "express-async-handler";
 import { sendPasswordResetEmail } from "../services/email";
 import { getCaptcha, verifyCaptcha } from "../utils/captcha";
 import CaptchaRecord from "../models/CaptchaRecord";
+import { config } from "../confg";
 
 const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
@@ -88,6 +89,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         email,
         name,
         password,
+        emailVerified: config.nodeEnv == "development"
     });
 
     if (user) {
@@ -150,7 +152,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
     jwt.verify(
         refreshToken,
-        process.env.REFRESH_TOKEN_SECRET as string,
+        config.refreshTokenSecret,
         async (err: VerifyErrors | null, decoded: any) => {
             if (err) {
                 res.status(403).json({ message: "Forbidden" });
@@ -223,7 +225,7 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
 
     jwt.verify(
         token,
-        process.env.EMAIL_TOKEN_SECRET as string,
+        config.emailTokenSecret,
         async (err: VerifyErrors | null, decoded: any) => {
             if (!err) {
                 const userId = decoded.userId as string;
@@ -289,7 +291,7 @@ const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
     jwt.verify(
         token,
-        process.env.EMAIL_TOKEN_SECRET as string,
+        config.emailTokenSecret,
         async (err: VerifyErrors | null, decoded: any) => {
             if (!err) {
                 const userId2 = decoded.userId as string;
