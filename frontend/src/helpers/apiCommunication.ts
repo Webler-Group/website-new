@@ -1,18 +1,19 @@
 import { authenticate } from "../features/auth/context/authContext";
 
 class ApiCommunication {
-    static #instance: ApiCommunication | null = null;
+    static _instance: ApiCommunication | null = null;
 
-    static #get() {
-        if (this.#instance === null) {
-            this.#instance = new ApiCommunication();
+    static _get() {
+        if (this._instance === null) {
+            this._instance = new ApiCommunication();
         }
-        return this.#instance;
+        return this._instance;
     }
 
     baseUrl: string;
     accessToken: string | null;
     expiresIn: number;
+    _refreshRequestSent = false;
 
     constructor() {
         this.baseUrl = "/api";
@@ -21,60 +22,92 @@ class ApiCommunication {
     }
 
     static setAccessToken(accessToken: string | null, expiresIn: number) {
-        const _this = this.#get();
+        const _this = this._get();
         _this.accessToken = accessToken;
         _this.expiresIn = expiresIn;
     }
 
-    async fetchQuery(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
+    async fetchQuery(path: string, options: { method: string; headers?: any; body?: any; signal?: AbortSignal; }, isMultipart: boolean = false) {
+        const headers = options.headers ?? {};
+        let body;
+        if (isMultipart) {
+            body = new FormData();
+            if (options.body) {
+                for (let k in options.body) {
+                    body.append(k, options.body[k]);
+                }
+            }
+        } else {
+            headers["Content-Type"] = "application/json";
+            body = JSON.stringify(options.body);
+        }
         return await fetch(this.baseUrl + path, {
             method: options.method,
             credentials: "include",
             mode: "cors",
             headers: {
-                "Content-Type": options.headers.contentType,
+                ...headers,
                 "Authorization": this.accessToken ? "Bearer " + this.accessToken : ""
             },
-            body: options.method != "GET" ? JSON.stringify(options.body) : undefined,
+            body: options.method != "GET" ? body : undefined,
             signal: options.signal
         });
     }
 
-    async fetchQueryWithReauthentication(path: string, options: { method: string; headers: { contentType: string; }; body?: any; signal?: AbortSignal; }) {
+    async fetchQueryWithReauthentication(path: string, options: { method: string; body?: any; signal?: AbortSignal; }, isMultipart: boolean = false) {
         if (!path.startsWith("/Auth") && this.accessToken && this.expiresIn <= Date.now()) {
-            const result = await this.fetchQuery("/Auth/Refresh", {
-                method: "POST",
-                headers: {
-                    contentType: "application/json"
-                }
-            })
-                .then(response => response.json());
-            if (result && result.accessToken && result.expiresIn) {
-                authenticate(result.accessToken, result.expiresIn);
-            }
-            else {
-                authenticate(null);
+            let authenticated = this._reauthenticate();
+            if (!authenticated) {
                 location.href = "/Users/Login?returnUrl=" + location.pathname;
             }
         }
 
         return await this.fetchQuery(path, {
             ...options
-        });
+        }, isMultipart);
 
     }
 
-    static async sendJsonRequest(path: string, method: string, body: any = {}, options = {}) {
-        const _this = this.#get();
+    async _reauthenticate() {
+        if (this._refreshRequestSent) {
+            let attempts = 5;
+            while (attempts > 0) {
+                await new Promise((resolve) => {
+                    setTimeout(() => resolve(true), 250);
+                });
+                if(!this._refreshRequestSent) {
+                    break;
+                }
+                --attempts;
+            }
+            return attempts > 0;
+        }
+        let authenticated = false;
+        this._refreshRequestSent = true;
+        const result = await this.fetchQuery("/Auth/Refresh", {
+            method: "POST"
+        })
+            .then(response => response.json());
+        if (result && result.accessToken && result.expiresIn) {
+            authenticate(result.accessToken, result.expiresIn);
+            authenticated = true;
+        }
+        else {
+            authenticate(null);
+        }
+        this._refreshRequestSent = false;
+
+        return authenticated;
+    }
+
+    static async sendJsonRequest(path: string, method: string, body: any = {}, options: any = {}, isMultipart: boolean = false) {
+        const _this = this._get();
 
         const response = await _this.fetchQueryWithReauthentication(path, {
-            headers: {
-                contentType: "application/json"
-            },
             method,
             body,
             ...options
-        });
+        }, isMultipart);
 
         const data = await response.json();
 

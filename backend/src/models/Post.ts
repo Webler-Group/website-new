@@ -143,7 +143,7 @@ postSchema.pre("save", async function (next) {
 
 })
 
-postSchema.statics.deleteAndCleanup = async function (filter: any) {
+postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");
 
     for (let i = 0; i < postsToDelete.length; ++i) {
@@ -201,7 +201,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: any) {
 declare interface IPost extends InferSchemaType<typeof postSchema> { }
 
 interface PostModel extends Model<IPost> {
-    deleteAndCleanup(filter: any): Promise<any>;
+    deleteAndCleanup(filter: mongoose.FilterQuery<IPost>): Promise<any>;
 }
 
 const Post = mongoose.model<IPost, PostModel>("Post", postSchema);

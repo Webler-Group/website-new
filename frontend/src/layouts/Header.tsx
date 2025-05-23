@@ -26,19 +26,20 @@ function Header({ variant }: HeaderProps) {
         </div>
         <Navbar.Collapse id="navbarScroll" className="text-center">
           <Nav className="me-auto">
-            {/* <Nav.Link>Catalog</Nav.Link>
-            <Nav.Link>Leaderboard</Nav.Link> */}
+            <LinkContainer to="/Courses">
+              <Nav.Link>Courses</Nav.Link>
+            </LinkContainer>
             <LinkContainer to="/Codes">
               <Nav.Link>Codes</Nav.Link>
             </LinkContainer>
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>
             </LinkContainer>
-            {/* <LinkContainer to="/feed">
-              <Nav.Link>Feed</Nav.Link>
-          </LinkContainer> */ }
             <LinkContainer to="/blog">
               <Nav.Link>Blog</Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/Courses/Editor">
+              <Nav.Link>Course Editor</Nav.Link>
             </LinkContainer>
           </Nav>
           <AuthNavigation />

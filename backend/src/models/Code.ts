@@ -1,5 +1,7 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import mongoose, { InferSchemaType, Model } from "mongoose";
 import compilerLanguagesEnum from "../config/compilerLanguages";
+import Post from "./Post";
+import Upvote from "./Upvote";
 
 const codeSchema = new mongoose.Schema({
     user: {
@@ -49,8 +51,20 @@ const codeSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
-})
+});
 
-const Code = mongoose.model<InferSchemaType<typeof codeSchema>>("Code", codeSchema);
+codeSchema.statics.deleteAndCleanup = async function(codeId: mongoose.Types.ObjectId) {
+    await Post.deleteAndCleanup({ codeId: codeId, parentId: null });
+    await Upvote.deleteMany({ parentId: codeId });
+    await Code.deleteOne({ _id: codeId });
+}
+
+declare interface ICode extends InferSchemaType<typeof codeSchema> {}
+
+interface CodeModel extends Model<ICode> {
+    deleteAndCleanup(codeId: mongoose.Types.ObjectId): Promise<any>;
+}
+
+const Code = mongoose.model<ICode, CodeModel>("Code", codeSchema);
 
 export default Code;

@@ -132,11 +132,9 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 const logout = asyncHandler(async (req: Request, res: Response) => {
     const cookies = req.cookies;
 
-    if (!cookies?.refreshToken) {
-        res.status(204).json({});
-        return
+    if (cookies?.refreshToken) {
+        clearRefreshToken(res);
     }
-    clearRefreshToken(res);
     res.json({});
 })
 

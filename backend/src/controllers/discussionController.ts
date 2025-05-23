@@ -9,7 +9,6 @@ import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
-import User from "../models/User";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;

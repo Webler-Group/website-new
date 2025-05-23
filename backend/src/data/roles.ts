@@ -1,5 +1,6 @@
 const roles: string[] = [
     "User",
+    "Creator",
     "Moderator",
     "Admin"
 ];

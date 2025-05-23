@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
 import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
+import courseRoutes from "./routes/courseRoutes";
 import http from "http";
 import WebSocket from 'ws';
 import { config } from "./confg";
@@ -39,17 +40,18 @@ app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
 
 app.use(logger);
 
-app.use(cors(corsOptions));
+//app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "2mb" }));
 
 app.use(cookieParser());
 
-app.use(`${apiPrefix}/auth`, authRoutes);
-app.use(`${apiPrefix}/profile`, profileRoutes);
-app.use(`${apiPrefix}/discussion`, discussionRoutes);
-app.use(`${apiPrefix}/blog`, blogRoutes);
-app.use(`${apiPrefix}/codes`, codesRoutes);
+app.use(`${apiPrefix}/Auth`, authRoutes);
+app.use(`${apiPrefix}/Profile`, profileRoutes);
+app.use(`${apiPrefix}/Discussion`, discussionRoutes);
+app.use(`${apiPrefix}/Blog`, blogRoutes);
+app.use(`${apiPrefix}/Codes`, codesRoutes);
+app.use(`${apiPrefix}/Courses`, courseRoutes);
 
 app.all("*", (req, res) => {
     res.status(404);

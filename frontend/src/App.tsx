@@ -28,11 +28,16 @@ import CodesList from './features/codes/pages/CodesList';
 import ForgotPassword from './features/auth/pages/ForgotPassword';
 import ResetPassword from './features/auth/pages/ResetPassword';
 import ActivateEmail from './features/auth/pages/ActivateEmail';
+import CoursesEditorPage from './features/courses/pages/CourseEditorPage';
+import CourseList from './features/courses/pages/CourseList';
+import CreateCourse from './features/courses/pages/CreateCourse';
+import EditCourse from './features/courses/pages/EditCourse';
+import CourseEditor from './features/courses/pages/CourseEditor';
 
 
 function App() {
 
-  const allRoles = [...Object.values(roles)];
+  const allRoles = [...roles];
 
   return (
     <Routes>
@@ -106,6 +111,26 @@ function App() {
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route path=":userId" element={<Profile />} />
           <Route index element={<ProfileFromAuth />} />
+        </Route>
+      </Route>
+
+      <Route path="Courses">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+
+          <Route element={<RequireAuth allowedRoles={["Admin"]} />}>
+            <Route path="Editor">
+              <Route index element={<CoursesEditorPage MainPage={<CourseList />} />} />
+              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null}/>} />} />
+              <Route path="Edit/:courseCode" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
+              <Route path=":courseCode">
+                <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
+                <Route path="Lessons/:lessonId" element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
+              </Route>
+            </Route>
+          </Route>
+
+          <Route index />
+
         </Route>
       </Route>
 

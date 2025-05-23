@@ -28,18 +28,12 @@ const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
-        secure: true,
-        sameSite: "none",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 }
 
 const clearRefreshToken = (res: Response) => {
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: true,
-        sameSite: "none"
-    });
+    res.clearCookie("refreshToken");
 }
 
 const signAccessToken = (payload: AccessTokenPayload) => {

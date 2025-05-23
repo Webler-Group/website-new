@@ -23,7 +23,6 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
     let names = fs.readdirSync(blogsDir);
     console.log(names);
 
-
     posts = names.map(name => {
       const fileData = fs.readFileSync(path.join(blogsDir, name, "info.json"));
       const json = JSON.parse(fileData.toString());

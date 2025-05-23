@@ -285,10 +285,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     try {
-
-        await Post.deleteAndCleanup({ codeId: codeId });
-        await Upvote.deleteMany({ parentId: codeId });
-        await Code.deleteOne({ _id: codeId });
+        await Code.deleteAndCleanup(codeId);
 
         res.json({ success: true });
     }
