@@ -9,6 +9,7 @@
 
 1. Clone the repo
 2. Create .env config file in /backend directory and copy paste content from .env-local-example (may require set some variables yourself)
+- Make sure MongoDB service is running and the database with given name is created!
 3. Open /backend directory
 4. Install NodeJS dependencies `npm install`
 5. Run development server `npm run dev`
