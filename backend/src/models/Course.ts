@@ -1,5 +1,6 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import CourseLesson from "./CourseLesson";
+import CourseProgress from "./CourseProgress";
 
 const courseSchema = new mongoose.Schema({
     code: {
@@ -38,7 +39,7 @@ const courseSchema = new mongoose.Schema({
 
 courseSchema.statics.deleteAndCleanup = async function(courseId: mongoose.Types.ObjectId) {
     await CourseLesson.deleteAndCleanup({ courseId });
-
+    await CourseProgress.deleteMany({ courseId });
     await Course.deleteOne({ _id: courseId });
 }
 

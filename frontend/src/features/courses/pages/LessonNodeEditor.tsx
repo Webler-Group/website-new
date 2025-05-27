@@ -64,7 +64,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
 
     const getNode = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/GetLessonNode", "POST", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/GetLessonNode", "POST", {
             nodeId
         });
         if (result && result.lessonNode) {
@@ -82,7 +82,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
             return;
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/DeleteLessonNode", "DELETE", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteLessonNode", "DELETE", {
             nodeId: node.id
         });
         if (result && result.success) {
@@ -110,7 +110,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
             }
         }
 
-        const result = await ApiCommunication.sendJsonRequest("/Courses/EditLessonNode", "PUT", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
             nodeId: node.id,
             type: nodeType,
             text: nodeText,
@@ -178,7 +178,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
         }
 
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/ChangeLessonNodeIndex", "POST", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
             nodeId: node.id,
             newIndex
         });
@@ -272,15 +272,15 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
                         <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={3} required />
                     </FormGroup>
                     {fields}
-                    <div className="d-flex justify-content-between mt-4">
-                        <div className="d-flex gap-2">
-                            <Button disabled={loading || node.index <= 1} onClick={() => handleChangeIndex(node.index - 1)}>Move left</Button>
-                            <Button disabled={loading || node.index >= nodeCount} onClick={() => handleChangeIndex(node.index + 1)}>Move right</Button>
+                    <div className="d-sm-flex justify-content-between mt-4">
+                        <div className="d-flex gap-2 justify-content-end">
+                            <Button size="sm" disabled={loading || node.index <= 1} onClick={() => handleChangeIndex(node.index - 1)}>Move left</Button>
+                            <Button size="sm" disabled={loading || node.index >= nodeCount} onClick={() => handleChangeIndex(node.index + 1)}>Move right</Button>
                         </div>
-                        <div className="d-flex gap-2">
-                            <Button disabled={loading} variant="secondary" onClick={handleResetNode}>Reset</Button>
-                            <Button disabled={loading} variant="secondary" type="button" onClick={() => setDeleteModalVisible(true)}>Delete</Button>
-                            <Button disabled={loading} type="submit">Save</Button>
+                        <div className="d-flex gap-2 justify-content-end mt-2 mt-sm-0">
+                            <Button size="sm" disabled={loading} variant="secondary" onClick={handleResetNode}>Reset</Button>
+                            <Button size="sm" disabled={loading} variant="secondary" type="button" onClick={() => setDeleteModalVisible(true)}>Delete</Button>
+                            <Button size="sm" disabled={loading} type="submit">Save</Button>
                         </div>
                     </div>
                 </Form>

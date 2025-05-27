@@ -12,6 +12,7 @@ import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
 import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
+import courseEditorRoutes from "./routes/courseEditorRoutes";
 import courseRoutes from "./routes/courseRoutes";
 import http from "http";
 import WebSocket from 'ws';
@@ -51,6 +52,7 @@ app.use(`${apiPrefix}/Profile`, profileRoutes);
 app.use(`${apiPrefix}/Discussion`, discussionRoutes);
 app.use(`${apiPrefix}/Blog`, blogRoutes);
 app.use(`${apiPrefix}/Codes`, codesRoutes);
+app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
 app.use(`${apiPrefix}/Courses`, courseRoutes);
 
 app.all("*", (req, res) => {

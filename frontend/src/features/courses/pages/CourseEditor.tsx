@@ -26,7 +26,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const getCourse = async (includeLessons: boolean) => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Courses/GetCourse`, "POST", { courseCode, includeLessons });
+        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseCode, includeLessons });
         if (result && result.course) {
             setCourse(result.course);
             setLessons(result.course.lessons);
@@ -47,7 +47,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const handleCreateLesson = async () => {
         setLoading(true)
-        const result = await ApiCommunication.sendJsonRequest(`/Courses/CreateLesson`, "POST", {
+        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/CreateLesson`, "POST", {
             courseId: course!.id,
             title: formInput
         });
@@ -65,7 +65,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
             return;
         }
 
-        const result = await ApiCommunication.sendJsonRequest(`/Courses/EditLesson`, "PUT", {
+        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/EditLesson`, "PUT", {
             lessonId: editedLessonId,
             title: formInput,
             index: lesson.index
@@ -87,7 +87,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const handleDeleteLesson = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/DeleteLesson", "DELETE", { lessonId: editedLessonId });
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteLesson", "DELETE", { lessonId: editedLessonId });
         if (result && result.success) {
             closeDeleteModal();
             setLessons((lessons) => {

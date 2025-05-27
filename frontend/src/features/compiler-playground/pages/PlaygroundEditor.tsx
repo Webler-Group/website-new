@@ -446,9 +446,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                                         <>
                                                             <Dropdown.Item onClick={handleRename}>Rename</Dropdown.Item>
                                                             <Dropdown.Item onClick={() => setDeleteModalVisible(true)}>Delete</Dropdown.Item>
-                                                            <Dropdown.ItemText className="d-flex gap-2 align-items-center">
-                                                                <ToggleSwitch value={codePublic} onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)} />
+                                                            <Dropdown.ItemText className="d-flex justify-content-between align-items-center">
                                                                 <span>Public</span>
+                                                                <ToggleSwitch value={codePublic} onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)} />
                                                             </Dropdown.ItemText>
                                                         </>
                                                     }

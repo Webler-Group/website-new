@@ -1,16 +1,23 @@
-import { LinkContainer } from "react-router-bootstrap";
-import Course from "../components/Course";
-import { Button } from "react-bootstrap";
+import Course, { ICourse } from "../components/Course";
+import { Container } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import ApiCommunication from "../../../helpers/apiCommunication";
+import PageTitle from "../../../layouts/PageTitle";
+import { useAuth } from "../../auth/context/authContext";
+import MyCourse from "../components/MyCourse";
 
 interface CourseListProps {
+
 }
 
-const CourseList = ({}: CourseListProps) => {
+const CourseList = ({ }: CourseListProps) => {
 
-    const [courses, setCourses] = useState<any[]>([]);
+    const [courses, setCourses] = useState<ICourse[]>([]);
+    const [myCourses, setMyCourses] = useState<ICourse[]>([]);
     const [_, setLoading] = useState(false);
+    const { userInfo } = useAuth();
+
+    PageTitle("Webler - Courses");
 
     useEffect(() => {
         getCourses();
@@ -18,38 +25,66 @@ const CourseList = ({}: CourseListProps) => {
 
     const getCourses = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Courses`, "POST", {});
+        const result = await ApiCommunication.sendJsonRequest(`/Courses`, "POST", {
+            excludeUserId: userInfo?.id
+        });
         if (result && result.courses) {
             setCourses(result.courses);
+        }
+        if (userInfo) {
+            const result = await ApiCommunication.sendJsonRequest(`/Courses/GetUserCourses`, "POST", {
+                userId: userInfo.id
+            });
+            if (result && result.courses) {
+                setMyCourses(result.courses);
+            }
         }
         setLoading(false);
     }
 
     return (
-        <>
-            <h2>Courses</h2>
-            <div className="mt-4 d-flex justify-content-end">
-                <LinkContainer to="/Courses/Editor/New">
-                    <Button size='sm'>Create course</Button>
-                </LinkContainer>
-            </div>
-            <div className="my-3">
+        <Container>
+            <div className="wb-courses-main p-4">
                 {
-                    courses.length == 0 ?
-                        <div className="wb-discuss-empty-questions">
-                            <h3>Nothing to show</h3>
+                    userInfo !== null && myCourses.length > 0 &&
+                    <>
+                        <div className="d-flex justify-content-center">
+                            <h2>My Courses</h2>
                         </div>
-                        :
-                        courses.map(course => {
-                            return (
-                                <div className="mt-2" key={course.id}>
-                                    <Course course={course} />
-                                </div>
-                            )
-                        })
+                        <div className="my-3">
+                            {
+                                myCourses.map(course => {
+                                    return (
+                                        <div className="mt-2" key={course.id}>
+                                            <MyCourse course={course} />
+                                        </div>
+                                    )
+                                })
+                            }
+                        </div>
+                    </>
                 }
+                <div className="d-flex justify-content-center">
+                    <h2>Explore our courses</h2>
+                </div>
+                <div className="my-3">
+                    {
+                        courses.length == 0 ?
+                            <div className="wb-discuss-empty-questions">
+                                <h3>Nothing to show</h3>
+                            </div>
+                            :
+                            courses.map(course => {
+                                return (
+                                    <div className="mt-2" key={course.id}>
+                                        <Course course={course} isEditor={false} />
+                                    </div>
+                                )
+                            })
+                    }
+                </div>
             </div>
-        </>
+        </Container>
     );
 }
 

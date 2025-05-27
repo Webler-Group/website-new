@@ -18,7 +18,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }, [lessonId]);
 
     const getLesson = async () => {
-        const result = await ApiCommunication.sendJsonRequest("/Courses/GetLesson", "POST", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/GetLesson", "POST", {
             lessonId
         });
         if (result && result.lesson) {
@@ -27,7 +27,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }
 
     const createLessonNode = async () => {
-        const result = await ApiCommunication.sendJsonRequest("/Courses/CreateLessonNode", "POST", {
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/CreateLessonNode", "POST", {
             lessonId: lessonId
         });
         if (result && result.lessonNode) {

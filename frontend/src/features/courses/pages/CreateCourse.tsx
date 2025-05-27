@@ -29,7 +29,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const getCourse = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Courses/GetCourse`, "POST", {
+        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/GetCourse`, "POST", {
             courseCode
         });
         if (result && result.course) {
@@ -54,7 +54,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const createCourse = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Courses/CreateCourse", "POST", { code, title, description, visible });
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
         if (result && result.course) {
             navigate("/Courses/Editor");
         }
@@ -65,7 +65,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const editCourse = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Courses/EditCourse", "PUT", { courseId, title, code, description, visible });
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
             navigate("/Courses/Editor");
         }
@@ -80,7 +80,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const handleDeleteCourse = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/DeleteCourse", "DELETE", { courseId });
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteCourse", "DELETE", { courseId });
         if (result && result.success) {
             closeDeleteModal();
             navigate("/Courses/Editor")
@@ -95,7 +95,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
         e.preventDefault();
 
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Courses/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
+        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
             console.log(result);
         }
@@ -124,16 +124,16 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
                     <Button variant="danger" onClick={handleDeleteCourse}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="d-flex gap-3">
+            <div className="d-md-flex gap-3">
                 {
                     courseId !== null &&
                     <Form onSubmit={handleCoverImageUpload}>
                         <FormGroup>
                             <FormLabel>Cover image</FormLabel>
-                            <FormControl type="file" required onChange={handleCoverImageChange} />
+                            <FormControl size="sm" type="file" required onChange={handleCoverImageChange} />
                         </FormGroup>
                         <div className="d-flex justify-content-end mt-2">
-                            <Button className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
+                            <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
                         </div>
                     </Form>
                 }
@@ -151,23 +151,23 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
                         <FormLabel>Course description</FormLabel>
                         <FormControl as="textarea" rows={8} maxLength={1000} required value={description} onChange={(e) => setDescription(e.target.value)} />
                     </FormGroup>
-                    <FormGroup>
+                    <FormGroup className="d-flex align-items-center mt-2 gap-2">
                         <FormLabel>Is visible</FormLabel>
                         <ToggleSwitch value={visible} onChange={(e) => setVisible((e.target as HTMLInputElement).checked)} />
                     </FormGroup>
                     <div className="d-flex justify-content-end">
                         <LinkContainer to="/Courses/Editor">
-                            <Button type="button" variant="secondary" disabled={loading}>Cancel</Button>
+                            <Button size="sm" type="button" variant="secondary" disabled={loading}>Cancel</Button>
                         </LinkContainer>
                         {
                             courseId ?
                                 <>
-                                    <Button variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                    <Button variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
+                                    <Button size="sm" variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
+                                    <Button size="sm" variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
                                 </>
                                 :
                                 <>
-                                    <Button className="ms-2" variant="primary" type="submit" disabled={loading}>Create course</Button>
+                                    <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Create course</Button>
                                 </>
                         }
                     </div>
