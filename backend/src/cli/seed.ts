@@ -1,6 +1,6 @@
-import {config} from "../src/confg";
-import connectDB from "../src/config/dbConn";
-import User from "../src/models/User";
+import {config} from "../confg";
+import connectDB from "../config/dbConn";
+import User from "../models/User";
 
 async function main() {
     await connectDB();

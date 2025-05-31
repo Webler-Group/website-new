@@ -34,8 +34,6 @@ wss.on("connection", (ws) => {
 
 connectDB();
 
-app.use(express.static("public"));
-
 app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
 
 app.use(logger);
@@ -55,17 +53,8 @@ app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
 app.use(`${apiPrefix}/Courses`, courseRoutes);
 
 app.all("*", (req, res) => {
-    res.status(404);
-    if (req.accepts('html')) {
-        res.sendFile(path.join(__dirname, "..", "views", "404.html"));
-    }
-    else if (req.accepts('json')) {
-        res.json({ message: "404 Not Found" });
-    }
-    else {
-        res.send("404 Not Found");
-    }
-})
+    res.status(404).json({ message: "404 Not Found" });
+});
 
 app.use(errorHandler);
 

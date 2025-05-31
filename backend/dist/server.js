@@ -30,7 +30,6 @@ wss.on("connection", (ws) => {
     ws.send("Welcome New Client!");
 });
 (0, dbConn_1.default)();
-app.use(express_1.default.static("public"));
 app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
 app.use(logger_1.logger);
 //app.use(cors(corsOptions));
@@ -44,16 +43,7 @@ app.use(`${apiPrefix}/Codes`, codesRoutes_1.default);
 app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes_1.default);
 app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
 app.all("*", (req, res) => {
-    res.status(404);
-    if (req.accepts('html')) {
-        res.sendFile(path_1.default.join(__dirname, "..", "views", "404.html"));
-    }
-    else if (req.accepts('json')) {
-        res.json({ message: "404 Not Found" });
-    }
-    else {
-        res.send("404 Not Found");
-    }
+    res.status(404).json({ message: "404 Not Found" });
 });
 app.use(errorHandler_1.default);
 mongoose_1.default.connection.once("open", () => {
