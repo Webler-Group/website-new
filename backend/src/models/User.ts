@@ -6,6 +6,7 @@ import Post from "./Post";
 import Code from "./Code";
 import UserFollowing from "./UserFollowing";
 import Notification from "./Notification";
+import { validate, v4 as uuid } from "uuid";
 
 const isEmail = (value: string) => {
     const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
@@ -28,7 +29,7 @@ const userSchema = new mongoose.Schema({
     name: {
         type: String,
         trim: true,
-        default: "Weblerian",
+        default: "User_" + uuid().slice(0, 12),
         minLength: 3,
         maxLength: 20
     },
