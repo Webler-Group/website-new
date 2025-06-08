@@ -42,7 +42,7 @@ ExecStart=/usr/bin/node ${projectDir}/backend/dist/server.js
 Restart=always
 User=root
 Environment=NODE_ENV=development
-WorkingDirectory=/website-new/backend
+WorkingDirectory=${projectDir}/backend
 
 [Install]
 WantedBy=multi-user.target
