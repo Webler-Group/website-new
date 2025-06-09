@@ -38,15 +38,15 @@ Description=Weblercodes backend
 After=network.target
 
 [Service]
-ExecStart=/usr/bin/node ${projectDir}/backend/dist/server.js
+ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/server.js")}
 Restart=always
 User=root
 Environment=NODE_ENV=development
-WorkingDirectory=${projectDir}/backend
+WorkingDirectory=${path.join(projectDir, "backend")}
 
 [Install]
 WantedBy=multi-user.target
 `.trim();
-const outputPath = path.resolve('backend-service');
+const outputPath = path.resolve("website-new-backend.service");
 fs.writeFileSync(outputPath, backendService, 'utf-8');
 console.log(`backend service generated successfully at ${outputPath}`);

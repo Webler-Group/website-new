@@ -50,6 +50,5 @@ mongoose_1.default.connection.once("open", () => {
     app.listen(confg_1.config.port, () => console.log(`Server running on port ${confg_1.config.port}`));
 });
 mongoose_1.default.connection.once("error", (err) => {
-    console.log(err);
-    (0, logger_1.logEvents)(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log');
+    (0, logger_1.logEvents)(`${err.name}: ${err.message}`, 'mongoErrLog.log');
 });

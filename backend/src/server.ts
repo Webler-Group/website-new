@@ -63,6 +63,5 @@ mongoose.connection.once("open", () => {
 });
 
 mongoose.connection.once("error", (err: any) => {
-    console.log(err);
-    logEvents(`${err.no}: ${err.code}\t${err.syscall}\t${err.hostname}`, 'mongoErrLog.log');
+    logEvents(`${err.name}: ${err.message}`, 'mongoErrLog.log');
 });

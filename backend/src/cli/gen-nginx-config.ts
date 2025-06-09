@@ -17,7 +17,7 @@ server {
   server_name localhost;
 
   location / {
-    root ${projectDir}/frontend/dist;
+    root ${path.join(projectDir, "frontend/dist")};
     index index.html index.htm;
     proxy_http_version 1.1;
     proxy_set_header Host $host;
@@ -44,7 +44,7 @@ server {
 }
 `.trim();
 
-const outputPath = path.resolve('nginx-config');
-fs.writeFileSync(outputPath, nginxConfig, 'utf-8');
+const outputPath = path.resolve("website-new-nginx.conf");
+fs.writeFileSync(outputPath, nginxConfig, "utf-8");
 
 console.log(`nginx config generated successfully at ${outputPath}`);
