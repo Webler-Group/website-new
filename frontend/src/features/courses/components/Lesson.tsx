@@ -34,7 +34,7 @@ const Lesson = ({ lesson, courseCode, onEdit, onDelete }: LessonProps) => {
         <div className="border p-2 bg-white d-flex justify-content-between gap-3">
             <div>
                 <b className="me-2">{lesson.index}.</b>
-                <Link to={"/Courses/Editor/" + courseCode + "/Lessons/" + lesson.id}>
+                <Link to={"/Courses/Editor/" + courseCode + "/Lesson/" + lesson.id}>
                     {lesson.title}
                 </Link>
             </div>

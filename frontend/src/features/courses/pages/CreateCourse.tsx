@@ -2,14 +2,15 @@ import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from "r
 import { LinkContainer } from "react-router-bootstrap";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { useNavigate } from "react-router-dom";
+import { useApi } from "../../../context/apiCommunication";
 
 interface CreateCourseProps {
     courseCode: string | null;
 }
 
 const CreateCourse = ({ courseCode }: CreateCourseProps) => {
+    const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
     const [courseId, setCourseId] = useState<string | null>(null);
@@ -29,7 +30,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const getCourse = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/GetCourse`, "POST", {
+        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", {
             courseCode
         });
         if (result && result.course) {
@@ -54,7 +55,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const createCourse = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
+        const result = await sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
         if (result && result.course) {
             navigate("/Courses/Editor");
         }
@@ -65,7 +66,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const editCourse = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
+        const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
             navigate("/Courses/Editor");
         }
@@ -80,7 +81,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
 
     const handleDeleteCourse = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteCourse", "DELETE", { courseId });
+        const result = await sendJsonRequest("/CourseEditor/DeleteCourse", "DELETE", { courseId });
         if (result && result.success) {
             closeDeleteModal();
             navigate("/Courses/Editor")
@@ -95,7 +96,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
         e.preventDefault();
 
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
+        const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
             console.log(result);
         }

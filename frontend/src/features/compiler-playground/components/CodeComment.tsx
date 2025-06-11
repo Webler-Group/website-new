@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaPencil, FaThumbsUp, FaTrash } from "react-icons/fa6";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { ICode } from "../../codes/components/Code";
 import { Button } from "react-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
@@ -34,7 +34,7 @@ interface CodeCommentProps {
 }
 
 const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeComment, onEdit, editParentReply, onDelete, deleteReplyFromParent, onVote }: CodeCommentProps) => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [repliesVisible, setRepliesVisible] = useState(false);
     const [replies, setReplies] = useState<ICodeComment[]>([]);
@@ -87,7 +87,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
     }, [repliesVisible]);
 
     const getReplies = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetCodeComments`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/GetCodeComments`, "POST", {
             codeId: code.id,
             parentId: data.id,
             page: Math.ceil(replies.length / repliesPerPage) + 1,
@@ -133,7 +133,7 @@ const CodeComment = ({ code, data, parentId, onReply, addReplyToParent, activeCo
             return;
         }
         const vote = data.isUpvoted ? 0 : 1;
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
+        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
         if (result.vote === vote) {
             onVote(data.id, vote);
         }

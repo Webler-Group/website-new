@@ -41,7 +41,7 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
         codesQuery = codesQuery.where({ isPublic: true });
     }
     codesQuery = codesQuery
-        .sort({ createdAt: "desc" });
+        .sort({ updatedAt: "desc" });
     const codes = yield codesQuery
         .limit(10)
         .select("-source -cssSource -jsSource");
@@ -65,7 +65,8 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
-                date: x.createdAt,
+                createdAt: x.createdAt,
+                updatedAt: x.updatedAt,
                 comments: x.comments,
                 votes: x.votes,
                 isPublic: x.isPublic,

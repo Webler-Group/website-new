@@ -4,10 +4,10 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle"
 import { FaBell } from "react-icons/fa6"
 import Notification from "../components/Notification"
 import useNotifications from "../hooks/useNotifications"
-import ApiCommunication from "../../../helpers/apiCommunication"
+import { useApi } from "../../../context/apiCommunication"
 
 const NotificationList = () => {
-
+    const { sendJsonRequest } = useApi();
     const [prevId, setPrevId] = useState<string | null>(null);
     const [opened, setOpened] = useState(false);
     const {
@@ -21,7 +21,7 @@ const NotificationList = () => {
 
     useEffect(() => {
         const getUnseenNotificationCount = async () => {
-            const result = await ApiCommunication.sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
+            const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
             if (result && typeof result.count !== "undefined") {
                 setUnseenCount(result.count);
             }
@@ -30,7 +30,7 @@ const NotificationList = () => {
     }, [])
 
     const markAllAsRead = async () => {
-        await ApiCommunication.sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", {});
+        await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", {});
         setUnseenCount(0);
         onMarkAllAsRead();
     }

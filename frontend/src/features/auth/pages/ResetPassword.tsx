@@ -1,13 +1,13 @@
 import { FormEvent, useState } from "react";
 import { Alert, Button, Container, Form, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import { useAuth } from "../context/authContext";
 
 const ForgotPassword = () => {
     const [searchParams, _] = useSearchParams();
-
+    const { sendJsonRequest } = useApi();
     const { logout } = useAuth();
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -29,7 +29,7 @@ const ForgotPassword = () => {
         setError("");
         const resetId = searchParams.get("id");
         const token = searchParams.get("token");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/ResetPassword", "POST", { password, resetId, token });
+        const result = await sendJsonRequest("/Auth/ResetPassword", "POST", { password, resetId, token });
         if (result && typeof result.success === "boolean") {
             if (result.success) {
                 logout();

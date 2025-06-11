@@ -1,21 +1,21 @@
 import PageTitle from "../../../layouts/PageTitle";
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { Container } from "react-bootstrap";
 import { Link, useParams } from "react-router-dom";
 import { IBlogEntry } from "../components/BlogEntry";
 
 
 const Entry = () => {
-
   PageTitle("Webler - Blog", false);
 
+  const { sendJsonRequest } = useApi();
   const [article, setArticle] = useState<IBlogEntry>();
   const { entryName } = useParams();
 
   useEffect(() => {
     const getArticle = async () => {
-      const result = await ApiCommunication.sendJsonRequest(`/Blog/GetBlog`, 'POST', {
+      const result = await sendJsonRequest(`/Blog/GetBlog`, 'POST', {
         entryName
       });
       if (result && result.blog) {

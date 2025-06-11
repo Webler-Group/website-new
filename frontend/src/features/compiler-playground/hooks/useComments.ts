@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react"
 import { ICodeComment } from "../components/CommentNode"
-import ApiCommunication from "../../../helpers/apiCommunication"
+import {useApi} from "../../../context/apiCommunication"
 
 const useComments = (codeId: string, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number, _state: number }, filter: number, repliesVisible: boolean, findPostId: string | null, defaultData: ICodeComment[] | null) => {
-
+    const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<ICodeComment[]>(defaultData || [])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
@@ -17,7 +17,7 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
 
         setIsLoading(true);
 
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/GetCodeComments", "POST", {
+        const result = await sendJsonRequest("/Discussion/GetCodeComments", "POST", {
             codeId,
             parentId,
             index: fromEnd ? indices.lastIndex : Math.max(0, indices.firstIndex - count),

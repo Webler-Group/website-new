@@ -38,7 +38,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     codesQuery = codesQuery
-        .sort({ createdAt: "desc" })
+        .sort({ updatedAt: "desc" })
 
     const codes = await codesQuery
         .limit(10)
@@ -64,7 +64,8 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
-                date: x.createdAt,
+                createdAt: x.createdAt,
+                updatedAt: x.updatedAt,
                 comments: x.comments,
                 votes: x.votes,
                 isPublic: x.isPublic,

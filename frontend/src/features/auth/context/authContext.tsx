@@ -1,5 +1,4 @@
 import React, { ReactNode, useContext, useState } from "react"
-import ApiCommunication from "../../../helpers/apiCommunication";
 
 interface UserInfo {
     id: string;
@@ -16,7 +15,9 @@ interface UserInfo {
 
 interface AuthState {
     userInfo: UserInfo | null;
-    authenticate: (accessToken: string, expiresIn: number) => void;
+    accessToken: string | null;
+    expiresIn: number;
+    authenticate: (accessToken: string | null, expiresIn: number) => void;
     updateUser: (userInfo: UserInfo) => void;
     logout: () => void;
 }
@@ -29,50 +30,51 @@ interface AuthProviderProps {
 
 export const useAuth = () => useContext(AuthContext);
 
-export const authenticate = (accessToken: string | null, expiresIn: number = 0) => {
-    ApiCommunication.setAccessToken(accessToken, expiresIn);
-    if (accessToken) {
-        localStorage.setItem("accessToken", accessToken);
-        localStorage.setItem("expiresIn", expiresIn.toString());
-    }
-    else {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("expiresIn");
-        localStorage.removeItem("userInfo");
-    }
-}
+const AuthProvider = ({ children }: AuthProviderProps) => {
 
-export const AuthProvider = ({ children }: AuthProviderProps) => {
-
-    const accessToken = localStorage.getItem("accessToken") ?
+    const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") ?
         localStorage.getItem("accessToken") :
-        null;
-    const expiresIn = localStorage.getItem("expiresIn") ?
+        null);
+
+    const [expiresIn, setExpiresIn] = useState(localStorage.getItem("expiresIn") ?
         Number(localStorage.getItem("expiresIn")) :
-        0;
-    ApiCommunication.setAccessToken(accessToken, expiresIn);
+        0);
 
     const defaultUserInfo = (accessToken && localStorage.getItem("userInfo")) ?
         JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo :
         null;
     const [userInfo, setUserInfo] = useState(defaultUserInfo);
 
+    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0) => {
+        if (accessTokenValue) {
+            setAccessToken(accessTokenValue);
+            localStorage.setItem("accessToken", accessTokenValue);
+            setExpiresIn(expiresInValue);
+            localStorage.setItem("expiresIn", expiresInValue.toString());
+        }
+        else {
+            setAccessToken(null);
+            localStorage.removeItem("accessToken");
+            setExpiresIn(0);
+            localStorage.removeItem("expiresIn");
+            setUserInfo(null);
+            localStorage.removeItem("userInfo");
+        }
+    }
+
     const updateUser = (userInfo: UserInfo) => {
         setUserInfo(userInfo);
-
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
     }
 
     const logout = () => {
-        ApiCommunication.setAccessToken(null, 0);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("expiresIn");
-        setUserInfo(null);
-        localStorage.removeItem("userInfo");
+        authenticate(null);
     }
 
     const value: AuthState = {
         userInfo,
+        accessToken,
+        expiresIn,
         authenticate,
         updateUser,
         logout
@@ -84,3 +86,5 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         </AuthContext.Provider>
     )
 }
+
+export default AuthProvider;

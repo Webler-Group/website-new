@@ -62,7 +62,7 @@ codeSchema.statics.deleteAndCleanup = async function(codeId: mongoose.Types.Obje
 declare interface ICode extends InferSchemaType<typeof codeSchema> {}
 
 interface CodeModel extends Model<ICode> {
-    deleteAndCleanup(codeId: mongoose.Types.ObjectId): Promise<any>;
+    deleteAndCleanup(codeId: mongoose.Types.ObjectId): Promise<void>;
 }
 
 const Code = mongoose.model<ICode, CodeModel>("Code", codeSchema);

@@ -4,7 +4,7 @@ import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
 import { FaCircle, FaEye } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 
 interface INotification {
     id: string;
@@ -29,7 +29,7 @@ interface NotificationProps {
 }
 
 const Notification = React.forwardRef(({ notification, onClose, onView }: NotificationProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-
+    const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [seen, setSeen] = useState(notification.isClicked);
 
@@ -39,7 +39,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
 
     const viewNotification = async () => {
         if (seen === false) {
-            await ApiCommunication.sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", { ids: [notification.id] })
+            await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", { ids: [notification.id] })
             setSeen(true);
             onView();
         }

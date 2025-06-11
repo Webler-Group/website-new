@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useEffect, useState } from "react";
@@ -11,7 +11,7 @@ interface RegisterFormProps {
 }
 
 const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
-
+    const { sendJsonRequest } = useApi();
     const { authenticate, updateUser } = useAuth();
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
@@ -39,7 +39,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const generateCaptcha = async () => {
         setCaptchaId(null);
 
-        const result = await ApiCommunication.sendJsonRequest("/Auth/GenerateCaptcha", "POST");
+        const result = await sendJsonRequest("/Auth/GenerateCaptcha", "POST");
 
         if (result) {
             setImageSrc(result.imageData);
@@ -49,7 +49,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
 
     const registerUser = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution });
+        const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution });
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);

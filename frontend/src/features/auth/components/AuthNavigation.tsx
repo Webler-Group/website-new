@@ -2,17 +2,17 @@ import { Nav, NavDropdown, Button } from "react-bootstrap";
 import { FaQuestion, FaSignOutAlt } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 
 const AuthNavigation = () => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogout = () => {
-        ApiCommunication.sendJsonRequest("/Auth/Logout", "POST")
+        sendJsonRequest("/Auth/Logout", "POST")
             .then(() => {
                 logout();
                 navigate("/Users/Login");

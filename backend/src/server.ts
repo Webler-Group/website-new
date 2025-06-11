@@ -6,7 +6,6 @@ import cors from "cors";
 import corsOptions from "./config/corsOptions";
 import path from "path";
 import connectDB from "./config/dbConn";
-import mongoose from "mongoose";
 import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
@@ -15,53 +14,49 @@ import codesRoutes from "./routes/codesRoutes";
 import courseEditorRoutes from "./routes/courseEditorRoutes";
 import courseRoutes from "./routes/courseRoutes";
 import http from "http";
-import WebSocket from 'ws';
 import { config } from "./confg";
+import { initCronJobs } from "./services/cronJobs";
 
-console.log(config.nodeEnv);
+async function main() {
+    console.log(config.nodeEnv);
 
-const app = express();
-const server = http.createServer(app);
+    const app = express();
+    const server = http.createServer(app);
 
-const apiPrefix = "/api";
+    const apiPrefix = "/api";
 
-const wss = new WebSocket.Server({ server });
+    // const wss = new WebSocket.Server({ server });
 
-wss.on("connection", (ws) => {
-    console.log("A new client connected!");
-    ws.send("Welcome New Client!");
-})
+    // wss.on("connection", (ws) => {
+    //     console.log("A new client connected!");
+    //     ws.send("Welcome New Client!");
+    // })
 
-connectDB();
+    await connectDB();
 
-app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
+    initCronJobs();
 
-app.use(logger);
+    app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
+    app.use(logger);
+    //app.use(cors(corsOptions));
+    app.use(express.json({ limit: "2mb" }));
+    app.use(cookieParser());
 
-//app.use(cors(corsOptions));
+    app.use(`${apiPrefix}/Auth`, authRoutes);
+    app.use(`${apiPrefix}/Profile`, profileRoutes);
+    app.use(`${apiPrefix}/Discussion`, discussionRoutes);
+    app.use(`${apiPrefix}/Blog`, blogRoutes);
+    app.use(`${apiPrefix}/Codes`, codesRoutes);
+    app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
+    app.use(`${apiPrefix}/Courses`, courseRoutes);
 
-app.use(express.json({ limit: "2mb" }));
+    app.all("*", (req, res) => {
+        res.status(404).json({ message: "404 Not Found" });
+    });
 
-app.use(cookieParser());
+    app.use(errorHandler);
 
-app.use(`${apiPrefix}/Auth`, authRoutes);
-app.use(`${apiPrefix}/Profile`, profileRoutes);
-app.use(`${apiPrefix}/Discussion`, discussionRoutes);
-app.use(`${apiPrefix}/Blog`, blogRoutes);
-app.use(`${apiPrefix}/Codes`, codesRoutes);
-app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
-app.use(`${apiPrefix}/Courses`, courseRoutes);
-
-app.all("*", (req, res) => {
-    res.status(404).json({ message: "404 Not Found" });
-});
-
-app.use(errorHandler);
-
-mongoose.connection.once("open", () => {
     app.listen(config.port, () => console.log(`Server running on port ${config.port}`));
-});
+}
 
-mongoose.connection.once("error", (err: any) => {
-    logEvents(`${err.name}: ${err.message}`, 'mongoErrLog.log');
-});
+main();

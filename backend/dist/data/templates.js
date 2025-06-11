@@ -11,12 +11,14 @@ const templates = [
     <title>Document</title>
 </head>
 <body>
-    
+    <h1>Hello world</h1>
 </body>
-</html>`,
+</html>
+`,
         cssSource: `body {
     
-}`,
+}
+`,
         jsSource: ""
     },
     {
@@ -27,7 +29,8 @@ const templates = [
 int main(int argc, char ** argv){
   printf("Hello World\\n");
   return 0;
-}`, cssSource: "", jsSource: ""
+}
+`, cssSource: "", jsSource: ""
     },
     {
         language: "cpp",
@@ -38,7 +41,28 @@ using namespace std;
 int main(int argc, char ** argv){
   cout << "Hello World" << endl;
   return 0;
-}`, cssSource: "", jsSource: ""
+}
+`, cssSource: "", jsSource: ""
     },
+    {
+        language: "python",
+        source: `print("Hello World")
+`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "nodejs",
+        source: `console.log("Hello world");
+`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "ruby",
+        source: `puts "Hello world"
+`, cssSource: "", jsSource: ""
+    },
+    {
+        language: "lua",
+        source: `print("Hello world")
+`, cssSource: "", jsSource: ""
+    }
 ];
 exports.default = templates;

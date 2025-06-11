@@ -2,7 +2,7 @@ import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
 import { ReactNode, useEffect, useState } from "react";
 import { IQuestion } from "../components/Question";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import { FaComment, FaThumbsUp } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
@@ -11,9 +11,9 @@ interface DiscussProps {
 }
 
 const Discuss = ({ MainPage }: DiscussProps) => {
-
     PageTitle("Webler - Discuss", false);
 
+    const { sendJsonRequest } = useApi();
     const [questions, setQuestions] = useState<IQuestion[]>([]);
 
     useEffect(() => {
@@ -21,7 +21,7 @@ const Discuss = ({ MainPage }: DiscussProps) => {
     }, []);
 
     const getQuestions = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion`, "POST", {
+        const result = await sendJsonRequest(`/Discussion`, "POST", {
             page: 1,
             count: 10,
             searchQuery: "",

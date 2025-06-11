@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import ApiCommunication from "../../../helpers/apiCommunication"
+import {useApi} from "../../../context/apiCommunication"
 
 const useCodes = (userId: string, count: number, pageNum: number) => {
+    const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
@@ -14,7 +15,7 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
         const controller = new AbortController()
         const { signal } = controller
 
-        ApiCommunication.sendJsonRequest(`/Codes`, "POST", {
+        sendJsonRequest(`/Codes`, "POST", {
             page: pageNum,
             count,
             filter: 3,

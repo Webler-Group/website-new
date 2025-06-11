@@ -3,7 +3,7 @@ import { UserMinimal } from '../pages/Profile'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
-import ApiCommunication from '../../../helpers/apiCommunication';
+import {useApi} from '../../../context/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
 import ProfileName from '../../../components/ProfileName';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +15,7 @@ interface FollowListProfileProps {
 }
 
 const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+    const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [followLoading, setFollowLoading] = useState(false);
     const [following, setFollowing] = useState(user.isFollowing);
@@ -28,7 +29,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Follow`, "POST", { userId: user.id });
+            data = await sendJsonRequest(`/Profile/Follow`, "POST", { userId: user.id });
         }
         catch (err) { }
         if (data && data.success) {
@@ -48,7 +49,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Unfollow`, "POST", { userId: user.id });
+            data = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId: user.id });
         }
         catch (err) { }
         if (data && data.success) {

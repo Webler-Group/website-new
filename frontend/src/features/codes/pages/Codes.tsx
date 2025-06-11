@@ -1,7 +1,7 @@
 import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
 import { ReactNode, useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import Code, { ICode } from "../components/Code";
 
 interface CodesProps {
@@ -9,9 +9,9 @@ interface CodesProps {
 }
 
 const Codes = ({ MainPage }: CodesProps) => {
-
     PageTitle("Webler - Codes", false);
 
+    const { sendJsonRequest } = useApi();
     const [codes, setCodes] = useState<ICode[]>([]);
 
     useEffect(() => {
@@ -19,7 +19,7 @@ const Codes = ({ MainPage }: CodesProps) => {
     }, []);
 
     const getCodes = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/Codes`, "POST", {
+        const result = await sendJsonRequest(`/Codes`, "POST", {
             page: 1,
             count: 10,
             filter: 5,

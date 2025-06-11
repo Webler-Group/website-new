@@ -3,11 +3,11 @@ import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tab
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
 import { UserDetails } from "./Profile";
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
+import { useApi } from "../../../context/apiCommunication";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -15,7 +15,7 @@ interface ProfileSettingsProps {
 }
 
 const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
-
+    const { sendJsonRequest } = useApi();
     const [searchParams, setSearchParams] = useSearchParams();
     const [visible, setVisible] = useState(false);
 
@@ -72,7 +72,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (!userInfo) {
             return;
         }
-        const data = await ApiCommunication.sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
+        const data = await sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
             userId: userInfo.id,
             name: username,
             bio,
@@ -104,7 +104,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (!userInfo) {
             return;
         }
-        const data = await ApiCommunication.sendJsonRequest(`/Profile/ChangeEmail`, "POST", {
+        const data = await sendJsonRequest(`/Profile/ChangeEmail`, "POST", {
             email,
             password: emailPassword
         });
@@ -145,7 +145,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setPasswordMessage([false, "Passwords cannot be same"]);
             return
         }
-        const data = await ApiCommunication.sendJsonRequest(`/Profile/ChangePassword`, "POST", {
+        const data = await sendJsonRequest(`/Profile/ChangePassword`, "POST", {
             currentPassword,
             newPassword
         });
@@ -173,7 +173,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const handleSendVerificationEmail = async () => {
         setLoading(true)
         setEmailMessage([true, ""]);
-        const data = await ApiCommunication.sendJsonRequest(`/Profile/SendActivationCode`, "POST");
+        const data = await sendJsonRequest(`/Profile/SendActivationCode`, "POST");
         if (data.success) {
             setEmailMessage([true, "Verification email was sent"])
         }

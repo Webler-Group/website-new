@@ -37,7 +37,7 @@ const Course = ({ course, isEditor }: CourseProps) => {
                 }
                 <div className="d-flex justify-content-center">
                     <div className="rounded-circle">
-                        <img className="wb-courses-course__cover-image" src={"/uploads/courses/" + course.coverImage} />
+                        <img className="wb-courses-course__cover-image" src={course.coverImage ? "/uploads/courses/" + course.coverImage : "/resources/images/logoicon.png"} />
                     </div>
                 </div>
                 <div className="d-flex flex-column align-items-sm-start align-items-center">

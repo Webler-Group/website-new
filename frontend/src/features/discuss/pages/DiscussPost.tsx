@@ -1,6 +1,5 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
@@ -13,9 +12,11 @@ import { FaThumbsUp } from "react-icons/fa";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
 import PostAttachment from "../components/PostAttachment";
+import { useApi } from "../../../context/apiCommunication";
 
 
 const DiscussPost = () => {
+    const { sendJsonRequest } = useApi();
     const { questionId } = useParams();
 
     const navigate = useNavigate();
@@ -88,7 +89,7 @@ const DiscussPost = () => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
             questionId
         });
         if (result && result.question) {
@@ -101,7 +102,7 @@ const DiscussPost = () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestionReplies`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/GetQuestionReplies`, "POST", {
             questionId,
             index: (page - 1) * answersPerPage,
             count: answersPerPage,
@@ -137,7 +138,7 @@ const DiscussPost = () => {
             return
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/CreateReply`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/CreateReply`, "POST", {
             message: formInput,
             questionId
         });
@@ -164,7 +165,7 @@ const DiscussPost = () => {
             return
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/EditReply`, "PUT", {
+        const result = await sendJsonRequest(`/Discussion/EditReply`, "PUT", {
             message: formInput,
             replyId: editedAnswer
         });
@@ -214,7 +215,7 @@ const DiscussPost = () => {
     }
 
     const toggleAcceptedAnswer = async (postId: string) => {
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/ToggleAcceptedAnswer", "POST", {
+        const result = await sendJsonRequest("/Discussion/ToggleAcceptedAnswer", "POST", {
             postId,
             accepted: !(postId === acceptedAnswer)
         });
@@ -236,7 +237,7 @@ const DiscussPost = () => {
 
     const handleDeletePost = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/DeleteReply", "DELETE", { replyId: editedAnswer });
+        const result = await sendJsonRequest("/Discussion/DeleteReply", "DELETE", { replyId: editedAnswer });
         if (result && result.success) {
             closeDeleteModal();
             hideAnswerForm();
@@ -265,7 +266,7 @@ const DiscussPost = () => {
             return;
         }
         const vote = question.isUpvoted ? 0 : 1;
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: questionId, vote });
+        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: questionId, vote });
         if (result.vote === vote) {
             setQuestion(question => {
                 if (question) {
@@ -285,7 +286,7 @@ const DiscussPost = () => {
             return;
         }
         const isFollowed = question.isFollowed;
-        const result = await ApiCommunication.sendJsonRequest(isFollowed ? "/Discussion/UnfollowQuestion" : "/Discussion/FollowQuestion", "POST", { postId: questionId });
+        const result = await sendJsonRequest(isFollowed ? "/Discussion/UnfollowQuestion" : "/Discussion/FollowQuestion", "POST", { postId: questionId });
         if (result && result.success) {
             setQuestion(question => {
                 if (question) {

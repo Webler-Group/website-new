@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Alert, Button, Form, FormCheck, FormControl, FormGroup, FormLabel, FormSelect, Modal } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa6";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 
 interface ILessonNodeAnswer {
     id?: string;
@@ -26,6 +26,7 @@ interface LessonNodeEditorProps {
 }
 
 const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: LessonNodeEditorProps) => {
+    const { sendJsonRequest } = useApi();
     const [node, setNode] = useState<ILessonNode | null>(null);
     const [nodeText, setNodeText] = useState("");
     const [nodeType, setNodeType] = useState(0);
@@ -64,7 +65,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
 
     const getNode = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/GetLessonNode", "POST", {
+        const result = await sendJsonRequest("/CourseEditor/GetLessonNode", "POST", {
             nodeId
         });
         if (result && result.lessonNode) {
@@ -82,7 +83,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
             return;
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteLessonNode", "DELETE", {
+        const result = await sendJsonRequest("/CourseEditor/DeleteLessonNode", "DELETE", {
             nodeId: node.id
         });
         if (result && result.success) {
@@ -110,7 +111,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
             }
         }
 
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
+        const result = await sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
             nodeId: node.id,
             type: nodeType,
             text: nodeText,
@@ -178,7 +179,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
         }
 
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
+        const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
             nodeId: node.id,
             newIndex
         });

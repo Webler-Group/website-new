@@ -89,9 +89,13 @@ function App() {
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<PlaygroundMenu />} />
         </Route>
-        <Route path="Web" element={<PlaygroundEditor language="web" />} />
-        <Route path="C" element={<PlaygroundEditor language="c" />} />
-        <Route path="CPP" element={<PlaygroundEditor language="cpp" />} />
+        <Route path="web" element={<PlaygroundEditor language="web" />} />
+        <Route path="c" element={<PlaygroundEditor language="c" />} />
+        <Route path="cpp" element={<PlaygroundEditor language="cpp" />} />
+        <Route path="nodejs" element={<PlaygroundEditor language="nodejs" />} />
+        <Route path="ruby" element={<PlaygroundEditor language="ruby" />} />
+        <Route path="python" element={<PlaygroundEditor language="python" />} />
+        <Route path="lua" element={<PlaygroundEditor language="lua" />} />
         <Route path=":codeId" element={<PlaygroundEditor language="" />} />
       </Route>
 

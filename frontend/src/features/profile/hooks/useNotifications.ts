@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import ApiCommunication from "../../../helpers/apiCommunication"
+import { useApi } from "../../../context/apiCommunication"
 
 const useNotifications = (count: number, prevId: string | null, isOpened: boolean) => {
+    const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
@@ -24,7 +25,7 @@ const useNotifications = (count: number, prevId: string | null, isOpened: boolea
             body.fromId = prevId;
         }
 
-        ApiCommunication.sendJsonRequest(`/Profile/GetNotifications`, "POST", body, { signal })
+        sendJsonRequest(`/Profile/GetNotifications`, "POST", body, { signal })
             .then(result => {
                 if (!result || !result.notifications) {
                     setIsLoading(false)

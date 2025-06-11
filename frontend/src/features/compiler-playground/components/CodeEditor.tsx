@@ -1,13 +1,12 @@
 import { LanguageName, loadLanguage } from "@uiw/codemirror-extensions-langs";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import ReactCodeMirror from "@uiw/react-codemirror";
-import { ReactNode, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Tab, Tabs } from "react-bootstrap";
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
-import ApiCommunication from "../../../helpers/apiCommunication";
-
+import CompileOutput from "./CompileOutput";
 
 interface CodeEditorProps {
     code: ICode;
@@ -27,20 +26,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
 
-    const [compiledHTML, setCompiledHTML] = useState("");
-    const [isCompiled, setIsCompiled] = useState(false);
-
     const [tabHeight, setTabHeight] = useState("auto");
-
-    useEffect(() => {
-        setIsCompiled(false)
-    }, [source])
-
-    useEffect(() => {
-        if (tabOpen && !isCompiled) {
-            getCompiledHTML();
-        }
-    }, [tabOpen]);
 
     useEffect(() => {
 
@@ -54,6 +40,18 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
             case "cpp":
                 setEditorTabs(["cpp"]);
                 break;
+            case "nodejs":
+                setEditorTabs(["javascript"]);
+                break;
+            case "python":
+                setEditorTabs(["python"]);
+                break;
+            case "ruby":
+                setEditorTabs(["ruby"]);
+                break;
+            case "lua":
+                setEditorTabs(["lua"]);
+                break;
         }
 
     }, [code]);
@@ -66,26 +64,6 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
         callback()
         return () => removeEventListener("resize", callback)
     })
-
-    const getCompiledHTML = async () => {
-
-        const result = await ApiCommunication.sendJsonRequest(`/Codes/Compile`, "POST", { source: source, language: code.language });
-
-        if (result && result.compiledHTML) {
-            setCompiledHTML(result.compiledHTML);
-        }
-        setIsCompiled(true)
-    }
-
-    let outputTab: ReactNode;
-    switch (code.language) {
-        case "web":
-            outputTab = <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={true} />;
-            break;
-        case "c": case "cpp":
-            outputTab = <WebOutput source={compiledHTML} cssSource={css} jsSource={js} tabOpen={tabOpen} language={code.language} isCompiled={isCompiled} />;
-            break;
-    }
 
     const editorStates = [
         { value: source, setValue: setSource },
@@ -117,7 +95,9 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                     }
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
-                            outputTab
+                            code.language === "web" ?
+                            <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
+                            <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>
                 </Tabs>

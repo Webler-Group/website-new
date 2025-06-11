@@ -41,7 +41,7 @@ const signAccessToken = (payload: AccessTokenPayload) => {
     const accessToken = jwt.sign(
         payload,
         config.accessTokenSecret,
-        { expiresIn: "15m" }
+        { expiresIn: "15s" }
     );
 
     const data = jwt.decode(accessToken);

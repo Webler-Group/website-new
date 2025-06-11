@@ -2,14 +2,14 @@ import { LinkContainer } from "react-router-bootstrap";
 import Course from "../components/Course";
 import { Button } from "react-bootstrap";
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 
 interface CourseEditorListProps {
     
 }
 
 const CourseEditorList = ({}: CourseEditorListProps) => {
-
+    const { sendJsonRequest } = useApi();
     const [courses, setCourses] = useState<any[]>([]);
     const [_, setLoading] = useState(false);
 
@@ -19,7 +19,7 @@ const CourseEditorList = ({}: CourseEditorListProps) => {
 
     const getCourses = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor`, "POST", {});
+        const result = await sendJsonRequest(`/CourseEditor`, "POST", {});
         if (result && result.courses) {
             setCourses(result.courses);
         }

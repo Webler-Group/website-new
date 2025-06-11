@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react"
-import ApiCommunication from "../../../helpers/apiCommunication"
+import { useApi } from "../../../context/apiCommunication"
 
 const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum = 1) => {
+    const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
@@ -18,7 +19,7 @@ const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum 
         const controller = new AbortController()
         const { signal } = controller
 
-        ApiCommunication.sendJsonRequest(`${loadUrlPath}`, "POST", {
+        sendJsonRequest(`${loadUrlPath}`, "POST", {
             userId,
             count,
             page: pageNum

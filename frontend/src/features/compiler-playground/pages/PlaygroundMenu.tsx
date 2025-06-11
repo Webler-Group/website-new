@@ -13,21 +13,40 @@ const PlaygroundMenu = () => {
                         <div className="row row-cols-1 row-cols-sm-2 row-cols-md-3 g-3 mt-2">
                             <div className="wb-language-types__item">
                                 <h3 style={{ borderColor: "rgb(221, 72, 36)", color: "rgba(221, 72, 36, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/Web">Web Compiler</Link>
+                                    <Link to="/Compiler-Playground/web">Web Compiler</Link>
                                 </h3>
                             </div>
                             <div className="wb-language-types__item">
                                 <h3 style={{ borderColor: "rgb(49, 124, 226)", color: "rgba(49, 124, 226, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/C">C</Link>
+                                    <Link to="/Compiler-Playground/c">C</Link>
                                 </h3>
                             </div>
                             <div className="wb-language-types__item">
-                                <h3 style={{ borderColor: "rgb(240, 140, 56)", color: "rgba(240, 140, 56, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/CPP">C++</Link>
+                                <h3 style={{ borderColor: "rgb(49, 124, 226)", color: "rgba(49, 124, 226, 0.565)" }} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/cpp">C++</Link>
+                                </h3>
+                            </div>
+                            <div className="wb-language-types__item">
+                                <h3 style={{ borderColor: "rgb(49, 124, 226)", color: "rgba(49, 124, 226, 0.565)" }} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/python">Python</Link>
+                                </h3>
+                            </div>
+                            <div className="wb-language-types__item">
+                                <h3 style={{ borderColor: "rgb(75, 137, 38)", color: "rgba(75, 137, 38, 0.565)" }} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/nodejs">NodeJS</Link>
+                                </h3>
+                            </div>
+                            <div className="wb-language-types__item">
+                                <h3 style={{ borderColor: "rgb(198, 42, 74)", color: "rgba(198, 42, 74, 0.565)"}} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/ruby">Ruby</Link>
+                                </h3>
+                            </div>
+                            <div className="wb-language-types__item">
+                                <h3 style={{borderColor: "rgb(79, 45, 168)", color: "rgba(79, 45, 168, 0.565)"}} className="wb-language-types__language-button">
+                                    <Link to="/Compiler-Playground/lua">Lua</Link>
                                 </h3>
                             </div>
                         </div>
-
                     </div>
                 </Container>
             </div>

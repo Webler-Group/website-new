@@ -7,23 +7,9 @@ interface WebOutputProps {
     cssSource: string;
     jsSource: string;
     tabOpen: boolean;
-    language: string;
-    isCompiled: boolean;
 }
 
-const htmlTemplate = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    
-</body>
-</html>`;
-
-const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => {
 
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
@@ -56,24 +42,16 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
 
     useEffect(() => {
         if (iframeRef.current && iframeRef.current.contentWindow) {
-            if (tabOpen && isCompiled) {
 
-                let output = (() => {
-                    switch (language) {
-                        case "web": return genOutput();
-                        case "cpp": case "c": return source;
-                    }
-                })()
+            if (tabOpen) {
+                let output = genOutput();
 
-                setConsoleLogs([]);
                 iframeRef.current.contentWindow.postMessage(output, "*");
 
-            }
-            else {
-                iframeRef.current.contentWindow.postMessage(htmlTemplate, "*");
+                setConsoleLogs([]);
             }
         }
-    }, [tabOpen, source, isCompiled]);
+    }, [tabOpen, source]);
 
     const clearConsole = () => {
         setConsoleLogs(() => [])
@@ -106,7 +84,6 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
     }
 
     const processDataItem = (item: any, depth: number, method: string) => {
-
         if (typeof item === "undefined") {
             return <span style={{ color: "#80868B" }}>{"undefined"}</span>
         }
@@ -167,33 +144,31 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
             if (item instanceof RegExp) {
                 return <span style={{ color: "#35D4C7" }}>{`${item.toString()}`}</span>
             }
-            if (item.constructor.name === "Object") {
-                return <i>
-                    <span style={{ color: "#FFFFFF" }}>{"{ "}</span>
-                    {
-                        Object.entries(item).map((entry, idx) => {
-                            let content = <>
-                                <span style={{ color: "#80868B" }}>{entry[0]}</span>
-                                <span style={{ color: "#FFFFFF" }}>{": "}</span>
-                                {processDataItem(entry[1], depth + 1, method)}
-                            </>
-                            return idx > 0 ?
-                                <span key={idx}>
-                                    <span style={{ color: "#FFFFFF" }}>{", "}</span>
-                                    {content}
-                                </span>
-                                :
-                                <span key={idx}>
-                                    {content}
-                                </span>
-                        })
-                    }
-                    <span style={{ color: "#FFFFFF" }}>{" }"}</span>
-                </i>
+            if (item.__type == "object") {
+                return <i style={{ color: "#FFFFFF" }}>{item.__constructor}</i>
             }
-            else {
-                return <i style={{ color: "#FFFFFF" }}>{item.constructor.name}</i>
-            }
+            return (<i>
+                <span style={{ color: "#FFFFFF" }}>{"{ "}</span>
+                {
+                    Object.entries(item).map((entry, idx) => {
+                        let content = <>
+                            <span style={{ color: "#80868B" }}>{entry[0]}</span>
+                            <span style={{ color: "#FFFFFF" }}>{": "}</span>
+                            {processDataItem(entry[1], depth + 1, method)}
+                        </>
+                        return idx > 0 ?
+                            <span key={idx}>
+                                <span style={{ color: "#FFFFFF" }}>{", "}</span>
+                                {content}
+                            </span>
+                            :
+                            <span key={idx}>
+                                {content}
+                            </span>
+                    })
+                }
+                <span style={{ color: "#FFFFFF" }}>{" }"}</span>
+            </i>);
         }
         return <span style={{ color: "#FFFFFF" }}>{item}</span>
     }
@@ -206,7 +181,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                         <Button size="sm" variant="secondary" onClick={clearConsole}>Clear</Button>
                     </div>
                 </Modal.Header>
-                <Modal.Body className="overflow-auto" ref={consoleRef}>
+                <Modal.Body className="overflow-auto" style={{ fontFamily: "monospace" }} ref={consoleRef}>
                     {
                         consoleMessages.map((item, idx) => {
 
@@ -278,13 +253,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, language, isCompiled 
                     }
                 </Modal.Body>
             </Modal>
-            {
-                isCompiled === false &&
-                <div className="h-100 bg-white">
-                    <p>Compiling, please wait...</p>
-                </div>
-            }
-            <div className="h-100" hidden={isCompiled === false}>
+            <div className="h-100">
                 <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/" allow="fullscreen"></iframe>
                 <div className="wb-web-wrapper__frame-wrapper__console-btn">
                     <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>

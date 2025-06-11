@@ -16,8 +16,6 @@ router.route("/GetCode")
     .post(codesController_1.default.getCode);
 router.route("/templates/:language")
     .post(codesController_1.default.getTemplate);
-router.route("/Compile")
-    .post(codesController_1.default.compile);
 router.use(protectRoute_1.default);
 router.route("/CreateCode")
     .post(verifyEmail_1.default, codesController_1.default.createCode);
@@ -27,4 +25,8 @@ router.route("/DeleteCode")
     .delete(codesController_1.default.deleteCode);
 router.route("/VoteCode")
     .post(verifyEmail_1.default, codesController_1.default.voteCode);
+router.route("/CreateJob")
+    .post(codesController_1.default.createJob);
+router.route("/GetJob")
+    .post(codesController_1.default.getJob);
 exports.default = router;

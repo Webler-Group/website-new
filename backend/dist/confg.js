@@ -17,7 +17,8 @@ const config = {
     accessTokenSecret: process.env.ACCESS_TOKEN_SECRET,
     emailTokenSecret: process.env.EMAIL_TOKEN_SECRET,
     adminEmail: process.env.ADMIN_EMAIL,
-    adminPassword: process.env.ADMIN_PASSWORD
+    adminPassword: process.env.ADMIN_PASSWORD,
+    dumpDir: process.env.DUMP_DIR
 };
 exports.config = config;
 for (let [k, v] of Object.entries(config)) {

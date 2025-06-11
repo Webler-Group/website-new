@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import CodeComment, { ICodeComment } from "../components/CodeComment";
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
+import { useApi } from "../../../context/apiCommunication";
 
 interface CommentListProps {
     code: ICode;
@@ -13,7 +13,7 @@ interface CommentListProps {
 }
 
 const CommentList = ({ code, visible, onHide }: CommentListProps) => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const navigate = useNavigate();
     const commentsPerPage = 20;
@@ -40,7 +40,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
 
     const getComments = async (replace: boolean) => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetCodeComments`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/GetCodeComments`, "POST", {
             codeId: code.id,
             parentId: null,
             page: replace ? 1 : Math.ceil(comments.length / commentsPerPage) + 1,
@@ -71,7 +71,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
             return
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/CreateCodeComment`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/CreateCodeComment`, "POST", {
             message: answerFormMessage,
             codeId: code.id,
             parentId: parentComment
@@ -113,7 +113,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
             return
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/EditCodeComment`, "PUT", {
+        const result = await sendJsonRequest(`/Discussion/EditCodeComment`, "PUT", {
             message: answerFormMessage,
             commentId: editedComment
         });
@@ -129,7 +129,7 @@ const CommentList = ({ code, visible, onHide }: CommentListProps) => {
 
     const handleDeleteComment = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/DeleteCodeComment", "DELETE", { commentId: editedComment });
+        const result = await sendJsonRequest("/Discussion/DeleteCodeComment", "DELETE", { commentId: editedComment });
         if (result && result.success) {
             closeDeleteModal();
             hideAnswerForm();

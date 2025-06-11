@@ -17,7 +17,9 @@ const config = {
     emailTokenSecret: process.env.EMAIL_TOKEN_SECRET as string,
 
     adminEmail: process.env.ADMIN_EMAIL as string,
-    adminPassword: process.env.ADMIN_PASSWORD as string
+    adminPassword: process.env.ADMIN_PASSWORD as string,
+
+    dumpDir: process.env.DUMP_DIR as string
 };
 
 for(let [k, v] of Object.entries(config)) {

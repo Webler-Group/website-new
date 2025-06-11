@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useState } from "react";
@@ -11,7 +11,7 @@ interface LoginFormProps {
 }
 
 const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
-
+    const { sendJsonRequest } = useApi();
     const { authenticate, updateUser } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -30,7 +30,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
 
     const loginUser = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/Login", "POST", { email, password });
+        const result = await sendJsonRequest("/Auth/Login", "POST", { email, password });
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);

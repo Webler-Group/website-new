@@ -7,7 +7,7 @@ import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
 import { ICode } from '../../codes/components/Code';
 import { useNavigate } from 'react-router-dom';
-import ApiCommunication from '../../../helpers/apiCommunication';
+import {useApi} from '../../../context/apiCommunication';
 
 interface ICodeComment {
     id: string;
@@ -61,6 +61,7 @@ const CommentNode = React.forwardRef(({
     isActivePostReply,
     defaultReplies
 }: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const navigate = useNavigate()
 
@@ -185,7 +186,7 @@ const CommentNode = React.forwardRef(({
             return;
         }
         const vote = data.isUpvoted ? 0 : 1;
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
+        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
         if (result.vote === vote) {
             onVote(data.id, vote);
         }

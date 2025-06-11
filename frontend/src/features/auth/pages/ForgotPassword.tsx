@@ -1,10 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Alert, Button, Container, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 
 const ForgotPassword = () => {
-
+    const { sendJsonRequest } = useApi();
     const [email, setEmail] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
@@ -23,7 +23,7 @@ const ForgotPassword = () => {
 
     const sendPasswordResetCode = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email });
+        const result = await sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email });
         if (result && result.success) {
             setIsSubmitted(true);
         }

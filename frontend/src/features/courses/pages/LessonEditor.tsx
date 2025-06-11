@@ -2,7 +2,7 @@ import { Button, ButtonGroup, ToggleButton } from "react-bootstrap";
 import { ILesson } from "../components/Lesson"
 import { FaPlus } from "react-icons/fa6";
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import LessonNodeEditor from "./LessonNodeEditor";
 
 interface LessonEditorProps {
@@ -10,6 +10,7 @@ interface LessonEditorProps {
 }
 
 const LessonEditor = ({ lessonId }: LessonEditorProps) => {
+    const { sendJsonRequest } = useApi();
     const [lesson, setLesson] = useState<ILesson | null>(null);
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
 
@@ -18,7 +19,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }, [lessonId]);
 
     const getLesson = async () => {
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/GetLesson", "POST", {
+        const result = await sendJsonRequest("/CourseEditor/GetLesson", "POST", {
             lessonId
         });
         if (result && result.lesson) {
@@ -27,7 +28,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }
 
     const createLessonNode = async () => {
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/CreateLessonNode", "POST", {
+        const result = await sendJsonRequest("/CourseEditor/CreateLessonNode", "POST", {
             lessonId: lessonId
         });
         if (result && result.lessonNode) {

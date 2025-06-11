@@ -19,7 +19,7 @@ const clearRefreshToken = (res) => {
 };
 exports.clearRefreshToken = clearRefreshToken;
 const signAccessToken = (payload) => {
-    const accessToken = jsonwebtoken_1.default.sign(payload, confg_1.config.accessTokenSecret, { expiresIn: "15m" });
+    const accessToken = jsonwebtoken_1.default.sign(payload, confg_1.config.accessTokenSecret, { expiresIn: "15s" });
     const data = jsonwebtoken_1.default.decode(accessToken);
     return {
         accessToken,

@@ -3,11 +3,16 @@ import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import React from 'react';
+import { FaLock } from 'react-icons/fa6';
 
 const colors = {
     web: "rgb(221, 72, 36)",
     c: "rgb(49, 124, 226)",
-    cpp: "rgb(240, 140, 56)"
+    cpp: "rgb(49, 124, 226)",
+    python: "rgb(49, 124, 226)",
+    nodejs: "rgb(75, 137, 38)",
+    ruby: "rgb(198, 42, 74)",
+    lua: "rgb(79, 45, 168)"
 }
 
 interface ICode {
@@ -16,7 +21,8 @@ interface ICode {
     language: keyof typeof colors;
     userName?: string;
     userId?: string;
-    date?: string;
+    createdAt?: string;
+    updatedAt?: string;
     comments: number;
     votes: number;
     isUpvoted: boolean;
@@ -51,15 +57,21 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                     <Link to={"/Compiler-Playground/" + code.id}>
                         <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
                     </Link>
-                    <div className="d-flex small mt-3">
-                        <div className="me-3 d-flex align-items-center">
+                    <div className="d-flex small mt-3 align-items-center gap-2">
+                        <div className="d-flex align-items-center">
                             <FaThumbsUp />
                             <span className="ms-2">{code.votes} Votes</span>
                         </div>
                         {
                             showUserProfile === false &&
                             <div>
-                                <span className="text-secondary">{DateUtils.format2(new Date(code.date!))}</span>
+                                <span className="text-secondary">{DateUtils.format2(new Date(code.updatedAt!))}</span>
+                            </div>
+                        }
+                        {
+                            code.isPublic === false &&
+                            <div>
+                                <FaLock />
                             </div>
                         }
                     </div>
@@ -71,7 +83,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                     <div className="d-flex">
                         <div>
                             <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(code.date!))}</small>
+                                <small className="text-secondary">{DateUtils.format(new Date(code.updatedAt!))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
                                 <ProfileName userId={code.userId!} userName={code.userName!} />

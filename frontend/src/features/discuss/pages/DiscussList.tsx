@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Form, FormControl } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
-import ApiCommunication from '../../../helpers/apiCommunication';
+import { useApi } from '../../../context/apiCommunication';
 import Question from '../components/Question';
 import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
@@ -9,7 +9,7 @@ import QuestionPlaceholder from '../components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 
 const QuestionList = () => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [questions, setQuestions] = useState<any[]>([]);
     const questionsPerPage = 10;
@@ -66,7 +66,7 @@ const QuestionList = () => {
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 6;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion`, "POST", {
+        const result = await sendJsonRequest(`/Discussion`, "POST", {
             page,
             count: questionsPerPage,
             filter,

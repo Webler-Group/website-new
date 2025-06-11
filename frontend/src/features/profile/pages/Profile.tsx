@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
 import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
@@ -38,7 +38,7 @@ export interface UserMinimal {
 }
 
 const Profile = () => {
-
+    const { sendJsonRequest } = useApi();
     const { userId } = useParams();
 
     const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
@@ -56,7 +56,7 @@ const Profile = () => {
 
     useEffect(() => {
         setFollowListVisible(0);
-        ApiCommunication.sendJsonRequest(`/Profile/GetProfile`, "POST", {
+        sendJsonRequest(`/Profile/GetProfile`, "POST", {
             userId
         })
             .then(data => {
@@ -86,7 +86,7 @@ const Profile = () => {
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Follow`, "POST", { userId });
+            data = await sendJsonRequest(`/Profile/Follow`, "POST", { userId });
         }
         catch (err) { }
         if (data && data.success) {
@@ -103,7 +103,7 @@ const Profile = () => {
         setFollowLoading(true);
         let data = null;
         try {
-            data = await ApiCommunication.sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
+            data = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
         }
         catch (err) { }
         if (data && data.success) {
@@ -147,7 +147,7 @@ const Profile = () => {
         }
 
         if (confirm(userDetails.active ? "Are you sure you want to deactivate this user?" : "Are you sure you want to activate this user?")) {
-            const result = await ApiCommunication.sendJsonRequest(`/Profile/ToggleUserBan`, "POST", { userId, active: !userDetails.active });
+            const result = await sendJsonRequest(`/Profile/ToggleUserBan`, "POST", { userId, active: !userDetails.active });
             if (result.success) {
                 setUserDetails(details => {
                     return details ? { ...details, active: result.active } : null

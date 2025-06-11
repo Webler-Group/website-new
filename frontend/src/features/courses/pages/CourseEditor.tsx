@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { ICourse } from "../components/Course";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { Link, useParams } from "react-router-dom";
 import Lesson, { ILesson } from "../components/Lesson";
 import LessonEditor from "./LessonEditor";
+import { useApi } from "../../../context/apiCommunication";
 
 interface CourseEditorProps {
 }
 
 const CourseEditor = ({ }: CourseEditorProps) => {
+    const { sendJsonRequest } = useApi();
     const { courseCode, lessonId } = useParams();
 
     const [course, setCourse] = useState<ICourse | null>(null);
@@ -26,7 +27,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const getCourse = async (includeLessons: boolean) => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseCode, includeLessons });
+        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseCode, includeLessons });
         if (result && result.course) {
             setCourse(result.course);
             setLessons(result.course.lessons);
@@ -47,7 +48,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const handleCreateLesson = async () => {
         setLoading(true)
-        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/CreateLesson`, "POST", {
+        const result = await sendJsonRequest(`/CourseEditor/CreateLesson`, "POST", {
             courseId: course!.id,
             title: formInput
         });
@@ -65,7 +66,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
             return;
         }
 
-        const result = await ApiCommunication.sendJsonRequest(`/CourseEditor/EditLesson`, "PUT", {
+        const result = await sendJsonRequest(`/CourseEditor/EditLesson`, "PUT", {
             lessonId: editedLessonId,
             title: formInput,
             index: lesson.index
@@ -87,7 +88,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const handleDeleteLesson = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/CourseEditor/DeleteLesson", "DELETE", { lessonId: editedLessonId });
+        const result = await sendJsonRequest("/CourseEditor/DeleteLesson", "DELETE", { lessonId: editedLessonId });
         if (result && result.success) {
             closeDeleteModal();
             setLessons((lessons) => {

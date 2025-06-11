@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { Button, Container } from "react-bootstrap"
 import { useNavigate, useSearchParams } from "react-router-dom";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 
 const ActivateEmail = () => {
     const [searchParams, _] = useSearchParams();
-
+    const { sendJsonRequest } = useApi();
     const [submitState, setSubmitState] = useState(0);
     const [_1, setError] = useState("");
     const navigate = useNavigate();
@@ -18,7 +18,7 @@ const ActivateEmail = () => {
         setError("");
         const userId = searchParams.get("id");
         const token = searchParams.get("token");
-        const result = await ApiCommunication.sendJsonRequest("/Auth/Activate", "POST", { userId, token });
+        const result = await sendJsonRequest("/Auth/Activate", "POST", { userId, token });
         if (result && typeof result.success === "boolean") {
             setSubmitState(result.success ? 1 : 2);
         }

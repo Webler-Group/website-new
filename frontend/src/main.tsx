@@ -4,14 +4,17 @@ import App from './App';
 
 import 'bootstrap/dist/css/bootstrap.css';
 import './index.css';
-import { AuthProvider } from './features/auth/context/authContext';
+import AuthProvider from './features/auth/context/authContext';
+import ApiProvider from './context/apiCommunication';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AuthProvider>
     <BrowserRouter>
+      <ApiProvider baseUrl='/api'>
       <Routes>
         <Route path="/*" element={<App />} />
       </Routes>
-    </BrowserRouter>
-  </AuthProvider>
+    </ApiProvider>
+  </BrowserRouter>
+  </AuthProvider >
 );

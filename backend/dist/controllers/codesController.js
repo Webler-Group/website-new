@@ -16,9 +16,7 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const Code_1 = __importDefault(require("../models/Code"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
 const templates_1 = __importDefault(require("../data/templates"));
-const fs_1 = __importDefault(require("fs"));
-const child_process_1 = require("child_process");
-const bundler_1 = require("../utils/bundler");
+const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, language, source, cssSource, jsSource } = req.body;
     const currentUserId = req.userId;
@@ -44,7 +42,8 @@ const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(
                 id: code._id,
                 name: code.name,
                 language: code.language,
-                date: code.createdAt,
+                createdAt: code.createdAt,
+                updatedAt: code.createdAt,
                 userId: code.user,
                 votes: code.votes,
                 comments: code.comments,
@@ -103,7 +102,7 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
             }
             dbQuery = dbQuery
                 .where({ user: userId })
-                .sort({ createdAt: "desc" });
+                .sort({ updatedAt: "desc" });
             break;
         }
         // Hot Today
@@ -127,7 +126,8 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         const data = result.map(x => ({
             id: x._id,
             name: x.name,
-            date: x.createdAt,
+            createdAt: x.createdAt,
+            updatedAt: x.updatedAt,
             userId: x.user._id,
             userName: x.user.name,
             avatarUrl: x.user.avatarUrl,
@@ -167,7 +167,8 @@ const getCode = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
                 id: code._id,
                 name: code.name,
                 language: code.language,
-                date: code.createdAt,
+                createdAt: code.createdAt,
+                updatedAt: code.updatedAt,
                 userId: code.user._id,
                 userName: code.user.name,
                 avatarUrl: code.user.avatarUrl,
@@ -293,112 +294,37 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     }
     res.json({ vote: upvote ? 1 : 0 });
 }));
-const compile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const fileSuffixes = {
-        c: "c",
-        cpp: "cpp",
-    };
-    const { source, language } = req.body;
-    const fileSuffix = fileSuffixes[language];
-    if (!fileSuffix) {
-        res.json({ compiledHTML: "err" });
+const createJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    const { language, source, stdin } = req.body;
+    const job = yield EvaluationJob_1.default.create({
+        language,
+        source,
+        stdin,
+        user: currentUserId
+    });
+    res.json({
+        jobId: job._id
+    });
+}));
+const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { jobId } = req.body;
+    const job = yield EvaluationJob_1.default.findById(jobId).select("-source");
+    if (!job) {
+        res.status(404).json({ message: "Job does not exist" });
         return;
     }
-    const dir = "./compiler";
-    if (!fs_1.default.existsSync(dir)) {
-        fs_1.default.mkdirSync(dir);
-    }
-    const subDir = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
-    const dirPath = `./compiler/${subDir}`;
-    fs_1.default.mkdirSync(dirPath);
-    //create main source file
-    const sourceFileName = `main.${fileSuffix}`;
-    const sourcePath = `${dirPath}/${sourceFileName}`;
-    fs_1.default.writeFileSync(sourcePath, source);
-    //creat htmlTemplate file
-    const templatePath = `${dirPath}/main.html`;
-    const templateContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <style>
-body {
-    margin: 0;
-    background: #000000;
-    color: #CCCCCC;
-    width: 100%;
-}
-#output{
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    word-break: break-all;
-    font-size: 14px;
-    font-family: monospace;
-    padding: 5px;
-}
-#canvas {
-    display: block;
-    max-width: 100%;
-}
-    </style>
-</head>
-<body>
-    <canvas width="0" height="0" id="canvas" oncontextmenu="event.preventDefault()"></canvas>
-    <div id="output"></div>
-    <script>
-
-        var Module = {
-            print: (function(){
-                const output = document.querySelector("#output");
-                if(output) output.innerText = "";
-                return (function(text){
-                    if(output) output.innerText += text + "\\n";
-                    console.log(text);
-                })
-            })(),
-            canvas: (function() { return document.getElementById('canvas'); })(),
-            wasmBinary: (function(){return {{{ WASMBIN }}} })()
+    res.json({
+        job: {
+            id: job._id,
+            userId: job.user,
+            status: job.status,
+            language: job.language,
+            stdin: job.stdin,
+            stdout: job.stdout,
+            stderr: job.stderr
         }
-    </script>
-    {{{ SCRIPT }}}
-</body>
-</html>`;
-    fs_1.default.writeFileSync(templatePath, templateContent);
-    //create Makefile
-    const makefileString = `
-all: main
-
-main: ${sourceFileName}
-	emcc -O0 -o main.js -sUSE_SDL=2 -sFETCH=1 -sUSE_SDL_IMAGE=2 -s SDL2_IMAGE_FORMATS='["bmp","png","xpm", "jpg"]' -sUSE_SDL_TTF=2 -D PLATFORM_WEB ${sourceFileName}
-
-`;
-    fs_1.default.writeFileSync(`${dirPath}/Makefile`, makefileString);
-    let bundleString = null;
-    let message = "";
-    try {
-        //run make
-        (0, child_process_1.execSync)(`(cd ${dirPath} && make)`);
-        //use bundler to create a web/html bundle of all emscripten files
-        bundleString = (0, bundler_1.bundle)(`${dirPath}/main.html`, `${dirPath}/main.js`, `${dirPath}/main.wasm`);
-    }
-    catch (err) {
-        console.log(err.message);
-        message = "error";
-    }
-    try {
-        fs_1.default.rmSync(dirPath, { recursive: true });
-    }
-    catch (_a) {
-        console.warn("Unable to delete the directory");
-    }
-    if (bundleString) {
-        res.json({ compiledHTML: bundleString });
-        return;
-    }
-    res.status(500).json({ message });
+    });
 }));
 const codesController = {
     createCode,
@@ -408,6 +334,7 @@ const codesController = {
     editCode,
     deleteCode,
     voteCode,
-    compile
+    createJob,
+    getJob
 };
 exports.default = codesController;

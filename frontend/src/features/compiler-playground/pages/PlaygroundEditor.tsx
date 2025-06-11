@@ -7,12 +7,13 @@ import { FaComment, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
-import ApiCommunication from "../../../helpers/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import LoginForm from "../../auth/components/LoginForm";
 import RegisterForm from "../../auth/components/RegisterForm";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import CommentList2 from "./CommentList2";
+import { useApi } from "../../../context/apiCommunication";
+import DateUtils from "../../../utils/DateUtils";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -21,6 +22,7 @@ interface PlaygroundEditorProps {
 }
 
 const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
+    const { sendJsonRequest } = useApi();
     const { codeId } = useParams();
 
     const { userInfo } = useAuth();
@@ -63,6 +65,24 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             getCodeByTemplate()
         }
     }, [codeId])
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isMac = navigator.userAgent.includes('Mac');
+            const isSaveShortcut = (isMac && e.metaKey && e.key === 's') || (!isMac && e.ctrlKey && e.key === 's');
+
+            if (isSaveShortcut) {
+                e.preventDefault();
+                handleSave(); // your existing save handler
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [code, userInfo, source, css, js]);
+
 
     useEffect(() => {
         let editorValue = localStorage.getItem("editor");
@@ -114,7 +134,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const getCode = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/codes/GetCode`, "POST", {
+        const result = await sendJsonRequest(`/codes/GetCode`, "POST", {
             codeId
         });
         if (result && result.code) {
@@ -129,7 +149,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const getCodeByTemplate = async () => {
-        const result = await ApiCommunication.sendJsonRequest(`/codes/templates/${language}`, "POST");
+        const result = await sendJsonRequest(`/codes/templates/${language}`, "POST");
         if (result && result.template) {
             const template = result.template;
             setCode({
@@ -149,7 +169,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (!code) {
             return
         }
-        const result = await ApiCommunication.sendJsonRequest("/codes/EditCode", "PUT", {
+        const result = await sendJsonRequest("/codes/EditCode", "PUT", {
             codeId: code.id,
             name: codeName,
             isPublic,
@@ -187,7 +207,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             if (code.userId && code.userId !== userInfo.id) {
                 creditsHeaders = getCreditsHeaders(code.language, code.userName!);
             }
-            const result = await ApiCommunication.sendJsonRequest("/codes/CreateCode", "POST", {
+            const result = await sendJsonRequest("/codes/CreateCode", "POST", {
                 name: codeName,
                 language: code.language,
                 source: (creditsHeaders[0] ? creditsHeaders[0] + "\n" : "") + source,
@@ -269,7 +289,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             return
         }
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
+        const result = await sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
         if (result && result.success) {
             navigate("/Codes", { replace: true })
         }
@@ -288,7 +308,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             return;
         }
         const vote = code.isUpvoted ? 0 : 1;
-        const result = await ApiCommunication.sendJsonRequest("/Codes/VoteCode", "POST", { codeId: code.id, vote });
+        const result = await sendJsonRequest("/Codes/VoteCode", "POST", { codeId: code.id, vote });
         if (result.vote === vote) {
             setCode(code => {
                 if (code) {
@@ -347,7 +367,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             <ul>
                                 <li>Title: <i>{code.name}</i></li>
                                 <li>Author: <i>{code.userName}</i></li>
-                                <li>Creation Date: <i>{code.date?.split("T")[0]}</i></li>
+                                <li>Creation Date: <i>{code.createdAt?.split("T")[0]}</i></li>
+                                <li>Last Changed: <i>{DateUtils.format(new Date(code.updatedAt!))}</i></li>
                                 <li>Line Count: <i>{lineCount}</i></li>
                                 <li>Character Count: <i>{characterCount}</i></li>
                             </ul>

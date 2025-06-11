@@ -1,6 +1,6 @@
 import PageTitle from "../../../layouts/PageTitle";
 import { FormEvent, useEffect, useRef, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 
 import { IBlogEntry } from '../components/BlogEntry';
 import BlogEntry from '../components/BlogEntry';
@@ -9,9 +9,9 @@ import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useSearchParams } from "react-router-dom";
 
 const Blog = () => {
-
   PageTitle("Webler - Blog", false);
 
+  const { sendJsonRequest } = useApi();
   const entriesPerPage = 10;
   const [entriesCount, setEntriesCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,7 +42,7 @@ const Blog = () => {
     setLoading(true);
     const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
     const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-    const result = await ApiCommunication.sendJsonRequest(`/Blog`, "POST", {
+    const result = await sendJsonRequest(`/Blog`, "POST", {
       page,
       count: entriesPerPage,
       searchQuery

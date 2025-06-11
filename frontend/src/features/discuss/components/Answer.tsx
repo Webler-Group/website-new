@@ -3,7 +3,7 @@ import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { FaCheckCircle, FaThumbsUp } from "react-icons/fa";
 import { useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -32,7 +32,7 @@ interface AnswerProps {
 }
 
 const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [upvoted, setUpvoted] = useState(answer.isUpvoted);
     const [votes, setVotes] = useState(answer.votes);
@@ -45,7 +45,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
             return;
         }
         const vote = upvoted ? 0 : 1;
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/VotePost", "POST", { postId: answer.id, vote });
+        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: answer.id, vote });
         if (result.vote === vote) {
             setUpvoted(vote === 1);
             setVotes(votes + (vote ? 1 : -1));

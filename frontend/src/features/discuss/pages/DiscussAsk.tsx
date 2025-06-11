@@ -2,15 +2,15 @@ import { FormEvent, useEffect, useState } from 'react'
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
 import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
-import ApiCommunication from '../../../helpers/apiCommunication';
 import { useNavigate } from 'react-router-dom';
+import { useApi } from '../../../context/apiCommunication';
 
 interface AskQuestionProps {
     questionId: string | null;
 }
 
 const AskQuestion = ({ questionId }: AskQuestionProps) => {
-
+    const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
@@ -27,7 +27,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
+        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
             questionId
         });
         if (result && result.question) {
@@ -52,7 +52,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const createQuestion = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
+        const result = await sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
         if (result && result.question) {
             navigate("/Discuss");
         }
@@ -63,7 +63,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const editQuestion = async () => {
         setError("");
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/EditQuestion", "PUT", { questionId, title, message, tags });
+        const result = await sendJsonRequest("/Discussion/EditQuestion", "PUT", { questionId, title, message, tags });
         if (result && result.success) {
             navigate("/Discuss");
         }
@@ -80,7 +80,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const handleDeletePost = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId });
+        const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId });
         if (result && result.success) {
             closeDeleteModal();
             navigate("/Discuss")

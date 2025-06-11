@@ -1,7 +1,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
 import { Button, Form, FormControl } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
-import ApiCommunication from '../../../helpers/apiCommunication';
+import {useApi} from '../../../context/apiCommunication';
 import Code from '../components/Code';
 import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
@@ -9,7 +9,7 @@ import QuestionPlaceholder from '../../discuss/components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 
 const CodesList = () => {
-
+    const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [codes, setCodes] = useState<any[]>([]);
     const codesPerPage = 10;
@@ -68,7 +68,7 @@ const CodesList = () => {
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
         const language = searchParams.has("language") ? searchParams.get("language")! : "";
-        const result = await ApiCommunication.sendJsonRequest(`/Codes`, "POST", {
+        const result = await sendJsonRequest(`/Codes`, "POST", {
             page,
             count: codesPerPage,
             filter,

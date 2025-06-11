@@ -1,7 +1,7 @@
 import Course, { ICourse } from "../components/Course";
 import { Container } from "react-bootstrap";
 import { useEffect, useState } from "react";
-import ApiCommunication from "../../../helpers/apiCommunication";
+import {useApi} from "../../../context/apiCommunication";
 import PageTitle from "../../../layouts/PageTitle";
 import { useAuth } from "../../auth/context/authContext";
 import MyCourse from "../components/MyCourse";
@@ -11,7 +11,7 @@ interface CourseListProps {
 }
 
 const CourseList = ({ }: CourseListProps) => {
-
+    const { sendJsonRequest } = useApi();
     const [courses, setCourses] = useState<ICourse[]>([]);
     const [myCourses, setMyCourses] = useState<ICourse[]>([]);
     const [_, setLoading] = useState(false);
@@ -25,14 +25,14 @@ const CourseList = ({ }: CourseListProps) => {
 
     const getCourses = async () => {
         setLoading(true);
-        const result = await ApiCommunication.sendJsonRequest(`/Courses`, "POST", {
+        const result = await sendJsonRequest(`/Courses`, "POST", {
             excludeUserId: userInfo?.id
         });
         if (result && result.courses) {
             setCourses(result.courses);
         }
         if (userInfo) {
-            const result = await ApiCommunication.sendJsonRequest(`/Courses/GetUserCourses`, "POST", {
+            const result = await sendJsonRequest(`/Courses/GetUserCourses`, "POST", {
                 userId: userInfo.id
             });
             if (result && result.courses) {
