@@ -10,7 +10,6 @@ const colors = {
     c: "rgb(49, 124, 226)",
     cpp: "rgb(49, 124, 226)",
     python: "rgb(49, 124, 226)",
-    nodejs: "rgb(75, 137, 38)",
     ruby: "rgb(198, 42, 74)",
     lua: "rgb(79, 45, 168)"
 }

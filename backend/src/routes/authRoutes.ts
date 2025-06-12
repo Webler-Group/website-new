@@ -17,7 +17,7 @@ router.route("/Refresh")
     .post(authController.refresh);
 
 router.route("/SendPasswordResetCode")
-    .post(requestLimiter(60 * 10, 2, "Too many requests, try again later"), authController.sendPasswordResetCode);
+    .post(authController.sendPasswordResetCode);
 
 router.route("/ResetPassword")
     .post(authController.resetPassword);

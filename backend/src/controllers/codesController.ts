@@ -331,14 +331,12 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 })
 
 const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
     const { language, source, stdin } = req.body;
 
     const job = await EvaluationJob.create({
         language,
         source,
-        stdin,
-        user: currentUserId
+        stdin
     });
 
     res.json({
@@ -358,7 +356,6 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         job: {
             id: job._id,
-            userId: job.user,
             status: job.status,
             language: job.language,
             stdin: job.stdin,

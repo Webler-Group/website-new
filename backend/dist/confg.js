@@ -18,7 +18,9 @@ const config = {
     emailTokenSecret: process.env.EMAIL_TOKEN_SECRET,
     adminEmail: process.env.ADMIN_EMAIL,
     adminPassword: process.env.ADMIN_PASSWORD,
-    dumpDir: process.env.DUMP_DIR
+    dumpDir: process.env.DUMP_DIR,
+    compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
+    compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024)
 };
 exports.config = config;
 for (let [k, v] of Object.entries(config)) {

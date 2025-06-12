@@ -295,13 +295,11 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     res.json({ vote: upvote ? 1 : 0 });
 }));
 const createJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const currentUserId = req.userId;
     const { language, source, stdin } = req.body;
     const job = yield EvaluationJob_1.default.create({
         language,
         source,
-        stdin,
-        user: currentUserId
+        stdin
     });
     res.json({
         jobId: job._id
@@ -317,7 +315,6 @@ const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void
     res.json({
         job: {
             id: job._id,
-            userId: job.user,
             status: job.status,
             language: job.language,
             stdin: job.stdin,

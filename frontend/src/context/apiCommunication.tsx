@@ -47,11 +47,14 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     }
 
     const fetchQueryWithReauthentication = async (path: string, options: { method: string; body?: any; signal?: AbortSignal; accessToken?: string; }, isMultipart: boolean = false) => {
+        // console.log(path, expiresIn Date.now());
         if (!path.startsWith("/Auth") && options.accessToken && expiresIn <= Date.now()) {
             options.accessToken = (await reauthenticate()) ?? undefined;
             if (!options.accessToken) {
                 navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
             }
+            console.log("reaunthenticated");
+            
         }
 
         return await fetchQuery(path, {

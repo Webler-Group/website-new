@@ -17,6 +17,7 @@ const child_process_1 = require("child_process");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const fileUtils_1 = require("./fileUtils");
+const confg_1 = require("../confg");
 function runInIsolate(source, language, boxId, stdin = "") {
     return __awaiter(this, void 0, void 0, function* () {
         const boxDir = (0, child_process_1.execSync)(`isolate --box-id=${boxId} --init`).toString().trim();
@@ -68,6 +69,7 @@ function runInIsolate(source, language, boxId, stdin = "") {
                 `--box-id=${boxId}`,
                 "--run",
                 "--processes=20",
+                `--fsize=${confg_1.config.compilerFsizeLimit}`,
                 "--stdout=compile.out",
                 "--stderr=compile.err",
                 "--",
@@ -81,7 +83,7 @@ function runInIsolate(source, language, boxId, stdin = "") {
             }
             const compileErrPath = path_1.default.join(boxPath, "compile.err");
             if (fs_1.default.existsSync(compileErrPath)) {
-                stderr += (0, fileUtils_1.safeReadFile)(compileErrPath, 100 * 1024);
+                stderr += (0, fileUtils_1.safeReadFile)(compileErrPath, confg_1.config.compilerFsizeLimit);
             }
         }
         // Run step
@@ -92,11 +94,11 @@ function runInIsolate(source, language, boxId, stdin = "") {
                 "--run",
                 "--stdin=input.txt",
                 "--processes=1",
-                "--mem=128000",
+                `--mem=${confg_1.config.compilerMemLimit}`,
                 "--meta=meta",
-                "--fsize=64000",
-                "--time=4",
-                "--wall-time=6",
+                `--fsize=${confg_1.config.compilerFsizeLimit}`,
+                "--time=2",
+                "--wall-time=3",
                 "--stdout=run.out",
                 "--stderr=run.err",
                 "--",
@@ -108,10 +110,10 @@ function runInIsolate(source, language, boxId, stdin = "") {
             const runOutPath = path_1.default.join(boxPath, "run.out");
             const runErrPath = path_1.default.join(boxPath, "run.err");
             if (fs_1.default.existsSync(runOutPath)) {
-                stdout = (0, fileUtils_1.safeReadFile)(runOutPath, 100 * 1024);
+                stdout = (0, fileUtils_1.safeReadFile)(runOutPath, confg_1.config.compilerFsizeLimit);
             }
             if (fs_1.default.existsSync(runErrPath)) {
-                stderr += (0, fileUtils_1.safeReadFile)(runErrPath, 100 * 1024);
+                stderr += (0, fileUtils_1.safeReadFile)(runErrPath, confg_1.config.compilerFsizeLimit);
             }
             const metaPath = path_1.default.join(boxPath, "meta");
             if (fs_1.default.existsSync(metaPath)) {

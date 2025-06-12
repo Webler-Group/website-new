@@ -20,14 +20,18 @@ const NotificationList = () => {
     const [unseenCount, setUnseenCount] = useState(0);
 
     useEffect(() => {
-        const getUnseenNotificationCount = async () => {
-            const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
-            if (result && typeof result.count !== "undefined") {
-                setUnseenCount(result.count);
-            }
+        const t = setInterval(() => {
+            getUnseenNotificationCount();
+        }, 30 * 1000);
+        return () => clearInterval(t);
+    }, []);
+
+    const getUnseenNotificationCount = async () => {
+        const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
+        if (result && typeof result.count !== "undefined") {
+            setUnseenCount(result.count);
         }
-        getUnseenNotificationCount();
-    }, [])
+    }
 
     const markAllAsRead = async () => {
         await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", {});

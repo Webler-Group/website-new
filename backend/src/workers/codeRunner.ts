@@ -35,7 +35,6 @@ async function processJobs() {
         }
 
         await job.save();
-        
     }
 }
 

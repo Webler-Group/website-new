@@ -14,6 +14,10 @@ router.route("/GetCode")
     .post(codesController.getCode);
 router.route("/templates/:language")
     .post(codesController.getTemplate);
+router.route("/CreateJob")
+    .post(codesController.createJob);
+router.route("/GetJob")
+    .post(codesController.getJob);
 
 router.use(protectRoute);
 
@@ -25,9 +29,5 @@ router.route("/DeleteCode")
     .delete(codesController.deleteCode);
 router.route("/VoteCode")
     .post(verifyEmail, codesController.voteCode);
-router.route("/CreateJob")
-    .post(codesController.createJob);
-router.route("/GetJob")
-    .post(codesController.getJob);
 
 export default router;

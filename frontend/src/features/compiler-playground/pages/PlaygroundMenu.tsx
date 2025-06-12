@@ -32,11 +32,6 @@ const PlaygroundMenu = () => {
                                 </h3>
                             </div>
                             <div className="wb-language-types__item">
-                                <h3 style={{ borderColor: "rgb(75, 137, 38)", color: "rgba(75, 137, 38, 0.565)" }} className="wb-language-types__language-button">
-                                    <Link to="/Compiler-Playground/nodejs">NodeJS</Link>
-                                </h3>
-                            </div>
-                            <div className="wb-language-types__item">
                                 <h3 style={{ borderColor: "rgb(198, 42, 74)", color: "rgba(198, 42, 74, 0.565)"}} className="wb-language-types__language-button">
                                     <Link to="/Compiler-Playground/ruby">Ruby</Link>
                                 </h3>

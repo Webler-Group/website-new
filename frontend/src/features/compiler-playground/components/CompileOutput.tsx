@@ -37,51 +37,43 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         setStderr(null);
         setError(null);
 
-        try {
-            const result = await sendJsonRequest("/Codes/CreateJob", "POST", {
-                source,
-                language,
-                stdin: stdinValue
-            });
+        const createJobResult = await sendJsonRequest("/Codes/CreateJob", "POST", {
+            source,
+            language,
+            stdin: stdinValue
+        });
 
-            const jobId = result?.jobId;
-
-            if (!jobId) {
-                throw new Error("Failed to retrieve jobId");
-            }
-
-            // Polling for job status
+        if (createJobResult && createJobResult.jobId) {
+            let getJobResult = null;
             let status = "pending";
-            let jobOutput = null;
+            let attempt = 0;
 
             while (status === "pending" || status === "running") {
-                const res = await sendJsonRequest("/Codes/GetJob", "POST", { jobId });
-                jobOutput = res?.job;
-
-                if (!jobOutput) {
-                    throw new Error("Invalid job response");
+                ++attempt;
+                if (attempt > 10) {
+                    break;
                 }
+                getJobResult = await sendJsonRequest("/Codes/GetJob", "POST", { jobId: createJobResult.jobId });
+                if (getJobResult && getJobResult.job) {
+                    status = getJobResult.job.status;
 
-                status = jobOutput.status;
-
-                if (status === "pending" || status === "running") {
-                    await new Promise((resolve) => setTimeout(resolve, 1000));
+                    if (status === "pending" || status === "running") {
+                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                    }
                 }
             }
 
             if (status === "done") {
-                setStdout(jobOutput.stdout || "");
-                setStderr(jobOutput.stderr || "");
-            } else if (status === "error") {
-                setError("An error occurred during code execution.");
-                setStderr(jobOutput.stderr || "");
+                setStdout(getJobResult.job.stdout || "");
+                setStderr(getJobResult.job.stderr || "");
+            } else {
+                setError("Something went wrong.");
             }
-
-        } catch (err: any) {
-            setError(err.message || "Unexpected error");
-        } finally {
-            setLoading(false);
+        } else {
+            setError("Something went wrong.");
         }
+
+        setLoading(false);
     };
 
     return (

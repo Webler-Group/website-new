@@ -2,6 +2,7 @@ import { execSync, spawnSync } from "child_process";
 import path from "path";
 import fs from "fs";
 import { safeReadFile } from "./fileUtils";
+import { config } from "../confg";
 
 async function runInIsolate(source: string, language: string, boxId: number, stdin: string = ""): Promise<{ stdout: string; stderr: string }> {
     const boxDir = execSync(`isolate --box-id=${boxId} --init`).toString().trim();
@@ -59,6 +60,7 @@ async function runInIsolate(source: string, language: string, boxId: number, std
             `--box-id=${boxId}`,
             "--run",
             "--processes=20",
+            `--fsize=${config.compilerFsizeLimit}`,
             "--stdout=compile.out",
             "--stderr=compile.err",
             "--",
@@ -74,7 +76,7 @@ async function runInIsolate(source: string, language: string, boxId: number, std
 
         const compileErrPath = path.join(boxPath, "compile.err");
         if (fs.existsSync(compileErrPath)) {
-            stderr += safeReadFile(compileErrPath, 100 * 1024);
+            stderr += safeReadFile(compileErrPath, config.compilerFsizeLimit);
         }
     }
 
@@ -87,11 +89,11 @@ async function runInIsolate(source: string, language: string, boxId: number, std
             "--run",
             "--stdin=input.txt",
             "--processes=1",
-            "--mem=128000",
+            `--mem=${config.compilerMemLimit}`,
             "--meta=meta",
-            "--fsize=64000",
-            "--time=4",
-            "--wall-time=6",
+            `--fsize=${config.compilerFsizeLimit}`,
+            "--time=2",
+            "--wall-time=3",
             "--stdout=run.out",
             "--stderr=run.err",
             "--",
@@ -105,11 +107,11 @@ async function runInIsolate(source: string, language: string, boxId: number, std
         const runErrPath = path.join(boxPath, "run.err");
 
         if (fs.existsSync(runOutPath)) {
-            stdout = safeReadFile(runOutPath, 100 * 1024);
+            stdout = safeReadFile(runOutPath, config.compilerFsizeLimit);
         }
 
         if (fs.existsSync(runErrPath)) {
-            stderr += safeReadFile(runErrPath, 100 * 1024);
+            stderr += safeReadFile(runErrPath, config.compilerFsizeLimit);
         }
 
         const metaPath = path.join(boxPath, "meta");

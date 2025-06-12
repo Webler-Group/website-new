@@ -2,11 +2,6 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 import compilerLanguagesEnum from "../config/compilerLanguages";
 
 const evaluationJobSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
     language: {
         type: String,
         required: true,
@@ -37,14 +32,9 @@ const evaluationJobSchema = new mongoose.Schema({
     timestamps: true
 });
 
-evaluationJobSchema.statics.resetJobs = async () => {
-    await EvaluationJob.updateMany({ status: "running" }, { status: "pending" });
-}
-
 declare interface IEvaluationJob extends InferSchemaType<typeof evaluationJobSchema> {}
 
 interface EvaluationJobModel extends Model<IEvaluationJob> {
-    resetJobs(): Promise<void>;
 }
 
 const EvaluationJob = mongoose.model<IEvaluationJob, EvaluationJobModel>("EvaluationJob", evaluationJobSchema);
