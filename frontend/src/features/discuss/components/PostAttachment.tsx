@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
-import { colors, compilerLanguages } from "../../codes/components/Code";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
 
 interface IPostAttachment {
     id: string;
@@ -26,7 +26,8 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             case 1: return (
                 <div className="d-flex gap-2">
                     <div>
-                        <div className="rounded-circle d-flex justify-content-center align-items-center text-light" style={{ width: "42px", height: "42px", background: colors[data.codeLanguage], textTransform: "capitalize" }}>{data.codeLanguage}</div>
+                        <div className="rounded-circle d-flex justify-content-center align-items-center text-light" 
+                        style={{ width: "42px", height: "42px", background: languagesInfo[data.codeLanguage].color, textTransform: "capitalize" }}>{languagesInfo[data.codeLanguage].shortName}</div>
                     </div>
                     <div>
                         <Link to={"/Compiler-Playground/" + data.codeId}>

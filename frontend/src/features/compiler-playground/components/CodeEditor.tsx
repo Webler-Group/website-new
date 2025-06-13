@@ -30,25 +30,10 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     useEffect(() => {
 
-        switch (code.language) {
-            case "web":
-                setEditorTabs(["html", "css", "javascript"]);
-                break;
-            case "c":
-                setEditorTabs(["c"]);
-                break;
-            case "cpp":
-                setEditorTabs(["cpp"]);
-                break;
-            case "py":
-                setEditorTabs(["python"]);
-                break;
-            case "ruby":
-                setEditorTabs(["ruby"]);
-                break;
-            case "lua":
-                setEditorTabs(["lua"]);
-                break;
+        if(code.language == "web") {
+            setEditorTabs(["html", "css", "javascript"]);
+        } else {
+            setEditorTabs([code.language]);
         }
 
     }, [code]);

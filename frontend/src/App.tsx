@@ -34,6 +34,7 @@ import CreateCourse from './features/courses/pages/CreateCourse';
 import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
+import { languagesInfo } from './data/compilerLanguages';
 
 
 function App() {
@@ -89,13 +90,11 @@ function App() {
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<PlaygroundMenu />} />
         </Route>
-        <Route path="web" element={<PlaygroundEditor language="web" />} />
-        <Route path="c" element={<PlaygroundEditor language="c" />} />
-        <Route path="cpp" element={<PlaygroundEditor language="cpp" />} />
-        <Route path="nodejs" element={<PlaygroundEditor language="nodejs" />} />
-        <Route path="ruby" element={<PlaygroundEditor language="ruby" />} />
-        <Route path="python" element={<PlaygroundEditor language="python" />} />
-        <Route path="lua" element={<PlaygroundEditor language="lua" />} />
+        {
+          Object.keys(languagesInfo).map((lang, i) => {
+            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang} />} />);
+          })
+        }
         <Route path=":codeId" element={<PlaygroundEditor language="" />} />
       </Route>
 

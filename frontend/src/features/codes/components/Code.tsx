@@ -5,17 +5,7 @@ import { FaThumbsUp } from "react-icons/fa";
 import React from 'react';
 import { FaLock } from 'react-icons/fa6';
 import ProfileAvatar from '../../../components/ProfileAvatar';
-
-export type compilerLanguages = "web" | "c" | "cpp" | "py" | "ruby" | "lua";
-
-const colors = {
-    web: "rgb(221, 72, 36)",
-    c: "rgb(49, 124, 226)",
-    cpp: "rgb(49, 124, 226)",
-    py: "rgb(49, 124, 226)",
-    ruby: "rgb(198, 42, 74)",
-    lua: "rgb(79, 45, 168)"
-};
+import { compilerLanguages, languagesInfo } from '../../../data/compilerLanguages';
 
 interface ICode {
     id?: string;
@@ -54,7 +44,8 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
         <div className="rounded border p-2 bg-white d-md-flex">
             <div className="flex-grow-1 d-flex gap-2">
                 <div>
-                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light" style={{ width: "42px", height: "42px", background: colors[code.language], textTransform: "capitalize" }}>{code.language}</div>
+                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light" 
+                        style={{ width: "42px", height: "42px", background: languagesInfo[code.language].color }}>{languagesInfo[code.language].shortName}</div>
                 </div>
                 <div>
                     <Link to={"/Compiler-Playground/" + code.id}>
@@ -109,7 +100,5 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
 })
 
 export type { ICode }
-
-export { colors }
 
 export default Code
