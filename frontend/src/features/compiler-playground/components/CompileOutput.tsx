@@ -99,7 +99,10 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                     />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button onClick={handleRunCode}>Run code</Button>
+                    <div className="d-flex gap-2">
+                        <Button variant="secondary" onClick={stdinHide}>Cancel</Button>
+                        <Button variant="primary" onClick={handleRunCode}>Run</Button>
+                    </div>
                 </Modal.Footer>
             </Modal>
 
