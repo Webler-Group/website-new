@@ -4,7 +4,7 @@ interface UserInfo {
     id: string;
     name: string;
     email: string;
-    avatarUrl: string | null;
+    avatarImage: string | null;
     roles: string[];
     emailVerified: boolean;
     countryCode: string | null;

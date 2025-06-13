@@ -1,6 +1,6 @@
 import express from "express";
 import verifyJWT from "../middleware/verifyJWT";
-import courseEditorController, { coverImageUpload } from "../controllers/courseEditorController";
+import courseEditorController from "../controllers/courseEditorController";
 
 const router = express.Router();
 
@@ -11,7 +11,7 @@ router.route("/GetCourse").post(courseEditorController.getCourse);
 router.route("/CreateCourse").post(courseEditorController.createCourse);
 router.route("/EditCourse").put(courseEditorController.editCourse);
 router.route("/DeleteCourse").delete(courseEditorController.deleteCourse);
-router.route("/UploadCourseCoverImage").post(coverImageUpload.single("coverImage"), courseEditorController.uploadCourseCoverImage);
+router.route("/UploadCourseCoverImage").post(courseEditorController.coverImageUpload.single("coverImage"), courseEditorController.uploadCourseCoverImage);
 
 router.route("/GetLesson").post(courseEditorController.getLesson);
 router.route("/CreateLesson").post(courseEditorController.createLesson);

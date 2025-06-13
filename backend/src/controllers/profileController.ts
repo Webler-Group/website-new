@@ -8,6 +8,34 @@ import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail } from "../services/email";
 import { intervalToDuration } from "date-fns";
+import multer from "multer";
+import { config } from "../confg";
+import path from "path";
+import fs from "fs";
+import { v4 as uuid } from "uuid";
+
+const avatarImageUpload = multer({
+    limits: { fileSize: 1024 * 1024 },
+    fileFilter(req, file, cb) {
+        if (file.mimetype === 'image/png') {
+            cb(null, true);
+        } else {
+            cb(null, false);
+        }
+    },
+    storage: multer.diskStorage({
+        destination(req, file, cb) {
+            const dir = path.join(config.rootDir, "uploads", "users");
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+            }
+            cb(null, dir);
+        },
+        filename(req, file, cb) {
+            cb(null, uuid() + path.extname(file.originalname));
+        }
+    })
+});
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -50,7 +78,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             name: user.name,
             email: currentUserId === userId ? user.email : null,
             bio: user.bio,
-            avatarUrl: user.avatarUrl,
+            avatarImage: user.avatarImage,
             roles: user.roles,
             emailVerified: user.emailVerified,
             countryCode: user.countryCode,
@@ -361,7 +389,7 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("user", "name avatarUrl countryCode level roles")
+        .populate("user", "name avatarImage countryCode level roles")
         .select("user") as any[];
 
     if (result) {
@@ -369,7 +397,7 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const data = result.map(x => ({
             id: x.user._id,
             name: x.user.name,
-            avatarUrl: x.user.avatarUrl,
+            avatar: x.user.avatarImage,
             countryCode: x.user.countryCode,
             level: x.user.level,
             roles: x.user.roles,
@@ -407,7 +435,7 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("following", "name avatarUrl countryCode level roles")
+        .populate("following", "name avatarImage countryCode level roles")
         .select("following") as any[];
 
     if (result) {
@@ -415,7 +443,7 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const data = result.map(x => ({
             id: x.following._id,
             name: x.following.name,
-            avatarUrl: x.following.avatarUrl,
+            avatar: x.following.avatarImage,
             countryCode: x.following.countryCode,
             level: x.following.level,
             roles: x.following.roles,
@@ -465,7 +493,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     const result = await dbQuery
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("actionUser", "name avatarUrl countryCode level roles")
+        .populate("actionUser", "name avatarImage countryCode level roles")
         .populate("postId", "parentId") as any[];
 
 
@@ -480,6 +508,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
                 id: x.user._id,
                 name: x.user.name,
                 countryCode: x.user.countryCode,
+                avatar: x.user.avatarImage,
                 level: x.user.level,
                 roles: x.user.roles
             },
@@ -487,6 +516,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
                 id: x.actionUser._id,
                 name: x.actionUser.name,
                 countryCode: x.actionUser.countryCode,
+                avatar: x.actionUser.avatarImage,
                 level: x.actionUser.level,
                 roles: x.actionUser.roles
             },
@@ -580,7 +610,53 @@ const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
             error: err
         })
     }
-})
+});
+
+const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+
+    if (!req.file) {
+        res.status(400).json({
+            success: false,
+            message: "No file uploaded"
+        });
+        return;
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+        fs.unlinkSync(req.file.path);
+
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    if (user.avatarImage) {
+        const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
+        if (fs.existsSync(oldPath)) {
+            fs.unlinkSync(oldPath);
+        }
+    }
+
+    user.avatarImage = req.file.filename;
+
+    try {
+        await user.save();
+
+        res.json({
+            success: true,
+            data: {
+                avatarImage: user.avatarImage
+            }
+        });
+    } catch (err: any) {
+        res.json({
+            success: false,
+            error: err
+        });
+    }
+
+});
 
 const controller = {
     getProfile,
@@ -596,7 +672,9 @@ const controller = {
     markNotificationsSeen,
     markNotificationsClicked,
     sendActivationCode,
-    toggleUserBan
+    toggleUserBan,
+    uploadProfileAvatarImage,
+    avatarImageUpload
 };
 
 export default controller;

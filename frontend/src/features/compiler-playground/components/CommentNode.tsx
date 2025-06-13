@@ -7,18 +7,22 @@ import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
 import { ICode } from '../../codes/components/Code';
 import { useNavigate } from 'react-router-dom';
-import {useApi} from '../../../context/apiCommunication';
+import { useApi } from '../../../context/apiCommunication';
+import ProfileAvatar from '../../../components/ProfileAvatar';
+import PostAttachment, { IPostAttachment } from '../../discuss/components/PostAttachment';
 
 interface ICodeComment {
     id: string;
     userId: string;
     userName: string;
+    userAvatar: string;
     date: string;
     message: string;
     answers: number;
     votes: number;
     isUpvoted: boolean;
     index: number;
+    attachments: IPostAttachment[];
 }
 
 interface CommentNodeProps {
@@ -27,12 +31,12 @@ interface CommentNodeProps {
     parentId: string | null;
     filter: number;
     onReply: (parentId: string, callback: (data: ICodeComment) => void) => void;
-    onEdit: (id: string, message: string, callback: (id: string, message: string) => void) => void;
+    onEdit: (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => void;
     onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
     onVote: (id: string, vote: number) => void;
     setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
     addReplyToParent: (data: ICodeComment) => void;
-    editParentReply: (id: string, message: string) => void;
+    editParentReply: (id: string, message: string, attachments: IPostAttachment[]) => void;
     deleteParentReply: (id: string, answers: number) => void;
     activePostId: string | null;
     setActivePostId: (callback: (data: string | null) => string | null) => void;
@@ -197,8 +201,8 @@ const CommentNode = React.forwardRef(({
         setReplyCount(count => count + 1)
     }
 
-    const editReply = (id: string, message: string) => {
-        set(id, data => ({ ...data, message }));
+    const editReply = (id: string, message: string, attachments: IPostAttachment[]) => {
+        set(id, data => ({ ...data, message, attachments }));
     }
 
     const deleteReply = (id: string, answers: number) => {
@@ -237,7 +241,7 @@ const CommentNode = React.forwardRef(({
                     </div>
                     <div>
                         <div className="wb-p-follow-item__avatar">
-                            <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                            <ProfileAvatar size={42} avatarImage={data.userAvatar} />
                         </div>
                     </div>
                     <div className="flex-grow-1">
@@ -245,7 +249,18 @@ const CommentNode = React.forwardRef(({
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
-                            <p className="wb-discuss-question__description mt-2">{data.message}</p>
+                            <p className="wb-playground-comments__message mt-2">{data.message}</p>
+                            <div className="mt-2">
+                                {
+                                    data.attachments.map(attachment => {
+                                        return (
+                                            <div key={attachment.id} className="mt-1">
+                                                <PostAttachment data={attachment} />
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
                         </div>
                         <div className="d-flex justify-content-between">
                             <div className="d-flex gap-2 align-items-center">

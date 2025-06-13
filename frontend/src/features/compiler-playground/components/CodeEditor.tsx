@@ -40,7 +40,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
             case "cpp":
                 setEditorTabs(["cpp"]);
                 break;
-            case "python":
+            case "py":
                 setEditorTabs(["python"]);
                 break;
             case "ruby":

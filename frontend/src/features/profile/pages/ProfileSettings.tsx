@@ -1,4 +1,4 @@
-import { FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
@@ -36,6 +36,9 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [currentPassword, setCurrentPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [passwordMessage, setPasswordMessage] = useState([true, ""]);
+
+    const [avatarImageFile, setAvatarImageFile] = useState<File | null>(null);
+    const [avatarMessage, setAvatarMessage] = useState([true, ""]);
 
     useEffect(() => {
         if (userDetails) {
@@ -183,6 +186,58 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         setLoading(false)
     }
 
+    const handleAvatarUpload = async (e: FormEvent) => {
+        if (!userInfo) return;
+        e.preventDefault();
+
+        // Validate file presence
+        if (!avatarImageFile) {
+            setAvatarMessage([false, "Please select an image file."]);
+            return;
+        }
+
+        // Validate file type
+        if (avatarImageFile.type !== 'image/png') {
+            setAvatarMessage([false, "Only PNG images are allowed."]);
+            return;
+        }
+
+        // Validate file size (max 1 MB)
+        if (avatarImageFile.size > 1024 * 1024) {
+            setAvatarMessage([false, "File size must be less than or equal to 1 MB."]);
+            return;
+        }
+
+        setLoading(true);
+        setAvatarMessage([true, ""]);
+
+        const result = await sendJsonRequest(
+            "/Profile/UploadProfileAvatarImage",
+            "POST",
+            { avatarImage: avatarImageFile },
+            {},
+            true
+        );
+
+        if (result && result.success) {
+            userInfo.avatarImage = result.data.avatarImage;
+            updateUser(userInfo);
+            setAvatarMessage([true, "Avatar image updated successfully"]);
+        } else {
+            setAvatarMessage([false, result.message ?? "Avatar image failed to update"]);
+        }
+
+        setLoading(false);
+    };
+
+
+    const handleAvatarChange = (e: ChangeEvent) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files && files.length > 0) {
+            setAvatarImageFile(files[0]);
+        }
+    }
+
     return (
         <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
             <Modal.Header closeButton>
@@ -292,11 +347,17 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             </FormGroup>
                         </Form>
                     </Tab>
-                    <Tab eventKey="connected-accounts" title="Connected Accounts">
-                        Tab content for Connected Accounts
-                    </Tab>
-                    <Tab eventKey="webler-pro" title="Webler PRO">
-                        Tab content for Webler PRO
+                    <Tab eventKey="avatar" title="Avatar">
+                        <Form onSubmit={handleAvatarUpload}>
+                            {avatarMessage[1] && <Alert variant={avatarMessage[0] ? "success" : "danger"}>{avatarMessage[1]}</Alert>}
+                            <FormGroup>
+                                <FormLabel>Avatar image</FormLabel>
+                                <FormControl size="sm" type="file" required accept="image/png" onChange={handleAvatarChange} />
+                            </FormGroup>
+                            <div className="d-flex justify-content-end mt-2">
+                                <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
+                            </div>
+                        </Form>
                     </Tab>
                     <Tab eventKey="delete-account" title="Delete Account">
                         Tab content for Delete Account

@@ -12,7 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.coverImageUpload = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Course_1 = __importDefault(require("../models/Course"));
 const CourseLesson_1 = __importDefault(require("../models/CourseLesson"));
@@ -47,7 +46,6 @@ const coverImageUpload = (0, multer_1.default)({
         }
     })
 });
-exports.coverImageUpload = coverImageUpload;
 const createCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, description, code } = req.body;
     const course = yield Course_1.default.create({
@@ -457,6 +455,7 @@ const courseEditorController = {
     getLesson,
     deleteLessonNode,
     editLessonNode,
-    changeLessonNodeIndex
+    changeLessonNodeIndex,
+    coverImageUpload
 };
 exports.default = courseEditorController;

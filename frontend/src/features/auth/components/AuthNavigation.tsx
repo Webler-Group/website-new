@@ -5,6 +5,7 @@ import { LinkContainer } from "react-router-bootstrap";
 import {useApi} from "../../../context/apiCommunication";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 const AuthNavigation = () => {
     const { sendJsonRequest } = useApi();
@@ -26,7 +27,7 @@ const AuthNavigation = () => {
                     (userInfo) ?
                         <>
                             <Nav.Item>
-                                <NavDropdown align="end" title={<> <img className="wb-user__image" src="/resources/images/user.svg" /> </>} menuVariant="light">
+                                <NavDropdown align="end" title={<> <ProfileAvatar size={32} avatarImage={userInfo.avatarImage} /> </>} menuVariant="light">
                                     <LinkContainer to="/Profile">
                                         <NavDropdown.Item>
                                             <b style={{ fontFamily: "monospace" }}>{userInfo.name}</b>

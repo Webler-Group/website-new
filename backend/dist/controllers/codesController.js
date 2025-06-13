@@ -121,7 +121,7 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         .skip((page - 1) * count)
         .limit(count)
         .select("-source -cssSource -jsSource")
-        .populate("user", "name avatarUrl countryCode level roles");
+        .populate("user", "name avatarImage level roles");
     if (result) {
         const data = result.map(x => ({
             id: x._id,
@@ -130,8 +130,7 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
             updatedAt: x.updatedAt,
             userId: x.user._id,
             userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
+            userAvatar: x.user.avatarImage,
             level: x.user.level,
             roles: x.user.roles,
             comments: x.comments,
@@ -159,7 +158,7 @@ const getCode = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     const currentUserId = req.userId;
     const { codeId } = req.body;
     const code = yield Code_1.default.findById(codeId)
-        .populate("user", "name avatarUrl countryCode level roles");
+        .populate("user", "name avatarImage countryCode level roles");
     if (code) {
         const isUpvoted = currentUserId ? yield Upvote_1.default.findOne({ parentId: codeId, user: currentUserId }) : false;
         res.json({
@@ -171,8 +170,7 @@ const getCode = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
                 updatedAt: code.updatedAt,
                 userId: code.user._id,
                 userName: code.user.name,
-                avatarUrl: code.user.avatarUrl,
-                countryCode: code.user.countryCode,
+                userAvatar: code.user.avatarImage,
                 level: code.user.level,
                 roles: code.user.roles,
                 comments: code.comments,

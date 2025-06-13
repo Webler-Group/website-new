@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import CommentNode, { ICodeComment } from "../components/CommentNode";
 import { FaLeftLong } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
+import { IPostAttachment } from "../../discuss/components/PostAttachment";
 
 interface CommentListProps {
     code: ICode;
@@ -31,7 +32,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
     const [parentComment, setParentComment] = useState<string | null>(null);
     const [onReplyCallback, setOnReplyCallback] = useState<(data: ICodeComment) => void>();
     const [defaultOnReplyCallback, setDefaultOnReplyCallback] = useState<(data: ICodeComment) => void>();
-    const [onEditCallback, setOnEditCallback] = useState<(id: string, message: string) => void>();
+    const [onEditCallback, setOnEditCallback] = useState<(id: string, message: string, attachments: IPostAttachment[]) => void>();
     const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string, answers: number) => void>();
     const [deletedAnswersCount, setDeletedAnswersCount] = useState(0);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
@@ -79,10 +80,10 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         });
         if (result && result.post) {
             if (parentComment) {
-                onReplyCallback!({ ...result.post, userName: userInfo.name });
+                onReplyCallback!({ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarImage });
             }
             else {
-                defaultOnReplyCallback!({ ...result.post, userName: userInfo.name });
+                defaultOnReplyCallback!({ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarImage });
             }
             setCommentCount(commentCount => commentCount + 1);
             hideAnswerForm();
@@ -108,7 +109,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
             commentId: editedComment
         });
         if (result && result.success) {
-            onEditCallback!(result.data.id, result.data.message);
+            onEditCallback!(result.data.id, result.data.message, result.data.attachments);
             hideAnswerForm();
             setMessage([true, "Comment successfully updated"])
         }
@@ -139,7 +140,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         setOnReplyCallback(() => callback);
     }
 
-    const onEdit = (id: string, message: string, callback: (id: string, message: string) => void) => {
+    const onEdit = (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => {
         showAnswerForm(message, id);
         setOnEditCallback(() => callback);
     }

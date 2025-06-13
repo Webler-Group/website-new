@@ -4,22 +4,26 @@ import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import React from 'react';
 import { FaLock } from 'react-icons/fa6';
+import ProfileAvatar from '../../../components/ProfileAvatar';
+
+export type compilerLanguages = "web" | "c" | "cpp" | "py" | "ruby" | "lua";
 
 const colors = {
     web: "rgb(221, 72, 36)",
     c: "rgb(49, 124, 226)",
     cpp: "rgb(49, 124, 226)",
-    python: "rgb(49, 124, 226)",
+    py: "rgb(49, 124, 226)",
     ruby: "rgb(198, 42, 74)",
     lua: "rgb(79, 45, 168)"
-}
+};
 
 interface ICode {
     id?: string;
     name?: string;
-    language: keyof typeof colors;
+    language: compilerLanguages;
     userName?: string;
     userId?: string;
+    userAvatar?: string;
     createdAt?: string;
     updatedAt?: string;
     comments: number;
@@ -89,7 +93,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                             </div>
                         </div>
                         <div className="ms-2 wb-p-follow-item__avatar">
-                            <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                            <ProfileAvatar size={42} avatarImage={code.userAvatar!} />
                         </div>
                     </div>
                 </div>

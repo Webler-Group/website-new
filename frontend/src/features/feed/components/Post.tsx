@@ -8,7 +8,6 @@ const Post = () => {
   const [content , setContent] = useState("");
 
   function handleImageChange(e: any) {
-    console.log(e.target.files);
     setFile(URL.createObjectURL(e.target.files[0]));
   }
 

@@ -80,8 +80,9 @@ const userSchema = new mongoose_1.default.Schema({
         type: Number,
         default: 0
     },
-    avatarUrl: {
-        type: String
+    avatarImage: {
+        type: String,
+        required: false
     }
 }, {
     timestamps: true

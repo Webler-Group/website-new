@@ -532,11 +532,8 @@ const courseEditorController = {
     getLesson,
     deleteLessonNode,
     editLessonNode,
-    changeLessonNodeIndex
-};
-
-export {
+    changeLessonNodeIndex,
     coverImageUpload
-}
+};
 
 export default courseEditorController;

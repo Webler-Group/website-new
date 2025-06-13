@@ -1,15 +1,17 @@
 import { Link } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
-import { colors } from "../../codes/components/Code";
+import { colors, compilerLanguages } from "../../codes/components/Code";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface IPostAttachment {
     id: string;
     type: number;
     userId: string;
     userName: string;
+    userAvatar: string;
     codeId: string;
     codeName: string;
-    codeLanguage: keyof typeof colors;
+    codeLanguage: compilerLanguages;
     questionId: string;
     questionTitle: string;
 }
@@ -38,7 +40,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
                 <div className="d-flex gap-2">
                     <div>
                         <div className="wb-p-follow-item__avatar">
-                            <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                            <ProfileAvatar size={42} avatarImage={data.userAvatar} />
                         </div>
                     </div>
                     <div>

@@ -8,11 +8,13 @@ import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface IAnswer {
     id: string;
     userName: string;
     userId: string;
+    userAvatar: string;
     date: string;
     message: string;
     isAccepted: boolean;
@@ -106,7 +108,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                        <ProfileAvatar size={42} avatarImage={answer.userAvatar} />
                     </div>
                 </div>
             </div>

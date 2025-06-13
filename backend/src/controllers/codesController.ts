@@ -123,7 +123,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .select("-source -cssSource -jsSource")
-        .populate("user", "name avatarUrl countryCode level roles") as any[];
+        .populate("user", "name avatarImage level roles") as any[];
 
     if (result) {
         const data = result.map(x => ({
@@ -133,8 +133,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             updatedAt: x.updatedAt,
             userId: x.user._id,
             userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
+            userAvatar: x.user.avatarImage,
             level: x.user.level,
             roles: x.user.roles,
             comments: x.comments,
@@ -169,7 +168,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId } = req.body;
 
     const code = await Code.findById(codeId)
-        .populate("user", "name avatarUrl countryCode level roles") as any;
+        .populate("user", "name avatarImage countryCode level roles") as any;
 
     if (code) {
 
@@ -184,8 +183,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 updatedAt: code.updatedAt,
                 userId: code.user._id,
                 userName: code.user.name,
-                avatarUrl: code.user.avatarUrl,
-                countryCode: code.user.countryCode,
+                userAvatar: code.user.avatarImage,
                 level: code.user.level,
                 roles: code.user.roles,
                 comments: code.comments,

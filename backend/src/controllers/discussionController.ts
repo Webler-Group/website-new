@@ -222,8 +222,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             date: x.createdAt,
             userId: x.user._id,
             userName: x.users.length ? x.users[0].name : undefined,
-            avatarUrl: x.users.length ? x.users[0].avatarUrl : undefined,
-            countryCode: x.users.length ? x.users[0].countryCode : undefined,
+            userAvatar: x.users.length ? x.users[0].avatarImage : undefined,
             level: x.users.length ? x.users[0].level : undefined,
             roles: x.users.length ? x.users[0].roles : undefined,
             answers: x.answers,
@@ -264,7 +263,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { questionId } = req.body;
 
     const question = await Post.findById(questionId)
-        .populate("user", "name avatarUrl countryCode level roles")
+        .populate("user", "name avatarImage countryCode level roles")
         .populate("tags", "name") as any;
 
     if (question) {
@@ -284,8 +283,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 date: question.createdAt,
                 userId: question.user._id,
                 userName: question.user.name,
-                avatarUrl: question.user.avatarUrl,
-                countryCode: question.user.countryCode,
+                userAvatar: question.user.avatarImage,
                 level: question.user.level,
                 roles: question.user.roles,
                 answers: question.answers,
@@ -434,7 +432,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", "name avatarUrl countryCode level roles") as any[];
+        .populate("user", "name avatarImage countryCode level roles") as any[];
 
     if (result) {
         const data = result.map((x, offset) => ({
@@ -444,8 +442,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             date: x.createdAt,
             userId: x.user._id,
             userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
+            userAvatar: x.user.avatarImage,
             level: x.user.level,
             roles: x.user.roles,
             votes: x.votes,
@@ -758,7 +755,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     if (parentId) {
         parentPost = await Post
             .findById(parentId)
-            .populate("user", "name avatarUrl countryCode level roles");
+            .populate("user", "name avatarImage countryCode level roles");
     }
 
     let dbQuery = Post.find({ codeId, _type: 3, hidden: false });
@@ -776,7 +773,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
         parentPost = reply.parentId ? await Post
             .findById(reply.parentId)
-            .populate("user", "name avatarUrl countryCode level roles")
+            .populate("user", "name avatarImage countryCode level roles")
             :
             null;
 
@@ -820,7 +817,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", "name avatarUrl countryCode level roles") as any[];
+        .populate("user", "name avatarImage countryCode level roles") as any[];
 
     if (result) {
         const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
@@ -831,8 +828,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             date: x.createdAt,
             userId: x.user._id,
             userName: x.user.name,
-            avatarUrl: x.user.avatarUrl,
-            countryCode: x.user.countryCode,
+            userAvatar: x.user.avatarImage,
             level: x.user.level,
             roles: x.user.roles,
             votes: x.votes,
@@ -927,6 +923,8 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             await parentPost.save();
         }
 
+        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+
         res.json({
             post: {
                 id: reply._id,
@@ -937,7 +935,8 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
                 parentId: reply.parentId,
                 isAccepted: reply.isAccepted,
                 votes: reply.votes,
-                answers: reply.answers
+                answers: reply.answers,
+                attachments
             }
         })
     }
@@ -954,8 +953,6 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
         res.status(400).json({ message: "Some fields are missing" })
         return
     }
-
-    console.log("editCodeComment");
 
     const comment = await Post.findById(commentId);
 
@@ -974,11 +971,14 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     try {
         await comment.save();
 
+        const attachments = await PostAttachment.getByPostId(comment._id.toString())
+
         res.json({
             success: true,
             data: {
                 id: comment._id,
-                message: comment.message
+                message: comment.message,
+                attachments
             }
         })
     }

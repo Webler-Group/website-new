@@ -5,6 +5,7 @@ import ProfileName from "../../../components/ProfileName";
 import { FaCircle, FaEye } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface INotification {
     id: string;
@@ -68,7 +69,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const body = (
         <div className="d-flex p-2 border-bottom gap-2" onClick={onClose}>
             <div className="wb-p-follow-item__avatar">
-                <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                <ProfileAvatar size={42} avatarImage={notification.actionUser.avatar} />
             </div>
             <div className="flex-grow-1">
                 <div style={{ wordBreak: "break-word", fontSize: "14px" }}>

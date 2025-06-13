@@ -14,6 +14,7 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import CommentList2 from "./CommentList2";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -424,7 +425,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                 <>
                                     <div className="d-flex gap-2">
                                         <div className="ms-2 wb-p-follow-item__avatar">
-                                            <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                                            <ProfileAvatar size={42} avatarImage={code.userAvatar!} />
                                         </div>
                                         <div>
                                             <div>

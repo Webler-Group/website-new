@@ -69,8 +69,9 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    avatarUrl: {
-        type: String
+    avatarImage: {
+        type: String,
+        required: false
     }
 },
     {

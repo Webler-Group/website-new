@@ -38,6 +38,9 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
 router.route("/ToggleUserBan")
-    .post(profileController.toggleUserBan)
+    .post(profileController.toggleUserBan);
+router.route("/UploadProfileAvatarImage")
+    .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
+
 
 export default router;

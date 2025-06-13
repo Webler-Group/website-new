@@ -11,12 +11,14 @@ import FollowList from "./FollowList";
 import CodesSection from "../components/CodesSection";
 import Code from "../../codes/components/Code";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 export interface UserDetails {
     id: string;
     name: string;
     email: string;
     bio: string;
+    avatarImage: string;
     countryCode: string;
     followers: number;
     following: number;
@@ -33,6 +35,7 @@ export interface UserMinimal {
     id: string;
     name: string;
     countryCode: string;
+    avatar: string;
     level: number;
     isFollowing: boolean;
 }
@@ -241,7 +244,7 @@ const Profile = () => {
                                 </div>
                                 <div className="d-block d-md-flex gap-3">
                                     <div className="wb-p-details__avatar">
-                                        <img className="wb-p-details__avatar-image" src="/resources/images/user.svg" />
+                                        <ProfileAvatar size={96} avatarImage={userDetails.avatarImage} />
                                         {badge}
                                     </div>
                                     <div className="d-flex flex-column align-items-center align-items-md-start">

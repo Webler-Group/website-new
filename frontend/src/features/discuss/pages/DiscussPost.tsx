@@ -13,6 +13,7 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
 import PostAttachment from "../components/PostAttachment";
 import { useApi } from "../../../context/apiCommunication";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 
 const DiscussPost = () => {
@@ -143,7 +144,7 @@ const DiscussPost = () => {
             questionId
         });
         if (result && result.post) {
-            setAnswers(answers => [{ ...result.post, userName: userInfo.name }, ...answers]);
+            setAnswers(answers => [{ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarImage }, ...answers]);
             setQuestion(question => {
                 if (question) {
                     return { ...question, answers: question.answers + 1 }
@@ -391,7 +392,7 @@ const DiscussPost = () => {
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                        <ProfileAvatar size={42} avatarImage={question.userAvatar} />
                     </div>
                 </div>
             </div>

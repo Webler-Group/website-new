@@ -38,4 +38,6 @@ router.route("/SendActivationCode")
     .post(profileController_1.default.sendActivationCode);
 router.route("/ToggleUserBan")
     .post(profileController_1.default.toggleUserBan);
+router.route("/UploadProfileAvatarImage")
+    .post(profileController_1.default.avatarImageUpload.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
 exports.default = router;

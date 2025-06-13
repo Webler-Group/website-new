@@ -4,12 +4,14 @@ import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import { IPostAttachment } from "./PostAttachment";
+import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface IQuestion {
     id: string;
     title: string;
     tags: string[];
     userName: string;
+    userAvatar: string;
     userId: string;
     date: string;
     message: string;
@@ -75,7 +77,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                        <ProfileAvatar size={42} avatarImage={question.userAvatar} />
                     </div>
                 </div>
             </div>

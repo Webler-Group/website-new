@@ -49,12 +49,12 @@ postAttachmentSchema.statics.getByPostId = function (postId) {
             .find({ postId })
             .populate("code", "name language")
             .populate("question", "title")
-            .populate("user", "name avatarUrl countryCode level roles");
+            .populate("user", "name avatarImage countryCode level roles");
         return result.map(x => {
             const userDetails = {
                 userId: x.user._id,
                 userName: x.user.name,
-                avatarUrl: x.user.avatarUrl,
+                userAvatar: x.user.avatarImage,
                 countryCode: x.user.countryCode,
                 level: x.user.level,
                 roles: x.user.roles

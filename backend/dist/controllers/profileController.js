@@ -20,6 +20,34 @@ const Code_1 = __importDefault(require("../models/Code"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const email_1 = require("../services/email");
 const date_fns_1 = require("date-fns");
+const multer_1 = __importDefault(require("multer"));
+const confg_1 = require("../confg");
+const path_1 = __importDefault(require("path"));
+const fs_1 = __importDefault(require("fs"));
+const uuid_1 = require("uuid");
+const avatarImageUpload = (0, multer_1.default)({
+    limits: { fileSize: 1024 * 1024 },
+    fileFilter(req, file, cb) {
+        if (file.mimetype === 'image/png') {
+            cb(null, true);
+        }
+        else {
+            cb(null, false);
+        }
+    },
+    storage: multer_1.default.diskStorage({
+        destination(req, file, cb) {
+            const dir = path_1.default.join(confg_1.config.rootDir, "uploads", "users");
+            if (!fs_1.default.existsSync(dir)) {
+                fs_1.default.mkdirSync(dir, { recursive: true });
+            }
+            cb(null, dir);
+        },
+        filename(req, file, cb) {
+            cb(null, (0, uuid_1.v4)() + path_1.default.extname(file.originalname));
+        }
+    })
+});
 const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
     const roles = req.roles;
@@ -51,7 +79,7 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             name: user.name,
             email: currentUserId === userId ? user.email : null,
             bio: user.bio,
-            avatarUrl: user.avatarUrl,
+            avatarImage: user.avatarImage,
             roles: user.roles,
             emailVerified: user.emailVerified,
             countryCode: user.countryCode,
@@ -303,14 +331,14 @@ const getFollowers = (0, express_async_handler_1.default)((req, res) => __awaite
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("user", "name avatarUrl countryCode level roles")
+        .populate("user", "name avatarImage countryCode level roles")
         .select("user");
     if (result) {
         const promises = [];
         const data = result.map(x => ({
             id: x.user._id,
             name: x.user.name,
-            avatarUrl: x.user.avatarUrl,
+            avatar: x.user.avatarImage,
             countryCode: x.user.countryCode,
             level: x.user.level,
             roles: x.user.roles,
@@ -341,14 +369,14 @@ const getFollowing = (0, express_async_handler_1.default)((req, res) => __awaite
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("following", "name avatarUrl countryCode level roles")
+        .populate("following", "name avatarImage countryCode level roles")
         .select("following");
     if (result) {
         const promises = [];
         const data = result.map(x => ({
             id: x.following._id,
             name: x.following.name,
-            avatarUrl: x.following.avatarUrl,
+            avatar: x.following.avatarImage,
             countryCode: x.following.countryCode,
             level: x.following.level,
             roles: x.following.roles,
@@ -388,7 +416,7 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
     const result = yield dbQuery
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles")
-        .populate("actionUser", "name avatarUrl countryCode level roles")
+        .populate("actionUser", "name avatarImage countryCode level roles")
         .populate("postId", "parentId");
     if (result) {
         const data = result.map(x => ({
@@ -400,6 +428,7 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
                 id: x.user._id,
                 name: x.user.name,
                 countryCode: x.user.countryCode,
+                avatar: x.user.avatarImage,
                 level: x.user.level,
                 roles: x.user.roles
             },
@@ -407,6 +436,7 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
                 id: x.actionUser._id,
                 name: x.actionUser.name,
                 countryCode: x.actionUser.countryCode,
+                avatar: x.actionUser.avatarImage,
                 level: x.actionUser.level,
                 roles: x.actionUser.roles
             },
@@ -480,6 +510,44 @@ const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __await
         });
     }
 }));
+const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
+    if (!req.file) {
+        res.status(400).json({
+            success: false,
+            message: "No file uploaded"
+        });
+        return;
+    }
+    const user = yield User_1.default.findById(currentUserId);
+    if (!user) {
+        fs_1.default.unlinkSync(req.file.path);
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+    if (user.avatarImage) {
+        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
+        if (fs_1.default.existsSync(oldPath)) {
+            fs_1.default.unlinkSync(oldPath);
+        }
+    }
+    user.avatarImage = req.file.filename;
+    try {
+        yield user.save();
+        res.json({
+            success: true,
+            data: {
+                avatarImage: user.avatarImage
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err
+        });
+    }
+}));
 const controller = {
     getProfile,
     updateProfile,
@@ -494,6 +562,8 @@ const controller = {
     markNotificationsSeen,
     markNotificationsClicked,
     sendActivationCode,
-    toggleUserBan
+    toggleUserBan,
+    uploadProfileAvatarImage,
+    avatarImageUpload
 };
 exports.default = controller;

@@ -7,6 +7,7 @@ import {useApi} from '../../../context/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
 import ProfileName from '../../../components/ProfileName';
 import { useNavigate } from 'react-router-dom';
+import ProfileAvatar from '../../../components/ProfileAvatar';
 
 interface FollowListProfileProps {
     user: UserMinimal;
@@ -64,7 +65,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
     const body = (
         <div className="d-flex">
             <div className="wb-p-follow-item__avatar">
-                <img className="wb-p-follow-item__avatar-image" src="/resources/images/user.svg" />
+                <ProfileAvatar size={42} avatarImage={user.avatar} />
             </div>
             <div>
                 <ProfileName userId={user.id} userName={user.name} />

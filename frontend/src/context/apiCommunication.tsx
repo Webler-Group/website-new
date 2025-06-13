@@ -53,8 +53,6 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             if (!options.accessToken) {
                 navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
             }
-            console.log("reaunthenticated");
-            
         }
 
         return await fetchQuery(path, {
