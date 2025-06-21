@@ -20,9 +20,10 @@ const NotificationList = () => {
     const [unseenCount, setUnseenCount] = useState(0);
 
     useEffect(() => {
-        const t = setInterval(() => {
+        getUnseenNotificationCount();
+        let t = setInterval(() => {
             getUnseenNotificationCount();
-        }, 30 * 1000);
+        }, 10 * 1000);
         return () => clearInterval(t);
     }, []);
 

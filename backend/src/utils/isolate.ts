@@ -1,11 +1,23 @@
-import { execSync, spawnSync } from "child_process";
+import { spawn, exec as execCallback } from "child_process";
+import { promisify } from "util";
 import path from "path";
 import fs from "fs";
 import { safeReadFile } from "./fileUtils";
 import { config } from "../confg";
 
+const exec = promisify(execCallback);
+
+function spawnAsync(command: string, args: string[], options: any): Promise<{ code: number | null }> {
+    return new Promise((resolve, reject) => {
+        const child = spawn(command, args, options);
+        child.on("error", reject);
+        child.on("close", (code) => resolve({ code }));
+    });
+}
+
 async function runInIsolate(source: string, language: string, boxId: number, stdin: string = ""): Promise<{ stdout: string; stderr: string }> {
-    const boxDir = execSync(`isolate --box-id=${boxId} --init`).toString().trim();
+    const { stdout: initOutput } = await exec(`isolate --box-id=${boxId} --init`);
+    const boxDir = initOutput.trim();
     const boxPath = path.join(boxDir, "box");
 
     fs.writeFileSync(path.join(boxPath, "input.txt"), stdin);
@@ -54,9 +66,9 @@ async function runInIsolate(source: string, language: string, boxId: number, std
     let stderr = "";
     let success = true;
 
-    // Compile step (if needed)
+    // Compile step
     if (compileCmd) {
-        const compile = spawnSync("isolate", [
+        const compileArgs = [
             `--box-id=${boxId}`,
             "--run",
             "--processes=20",
@@ -65,12 +77,14 @@ async function runInIsolate(source: string, language: string, boxId: number, std
             "--stderr=compile.err",
             "--",
             ...compileCmd.split(" ")
-        ], {
+        ];
+
+        const compileResult = await spawnAsync("isolate", compileArgs, {
             cwd: boxPath,
-            encoding: "utf-8"
+            stdio: "inherit"
         });
 
-        if (compile.status !== 0) {
+        if (compileResult.code !== 0) {
             success = false;
         }
 
@@ -81,10 +95,8 @@ async function runInIsolate(source: string, language: string, boxId: number, std
     }
 
     // Run step
-    let runResult;
     if (success) {
-
-        runResult = spawnSync("isolate", [
+        const runArgs = [
             `--box-id=${boxId}`,
             "--run",
             "--stdin=input.txt",
@@ -98,9 +110,11 @@ async function runInIsolate(source: string, language: string, boxId: number, std
             "--stderr=run.err",
             "--",
             ...runCmd.split(" ")
-        ], {
+        ];
+
+        await spawnAsync("isolate", runArgs, {
             cwd: boxPath,
-            encoding: "utf-8"
+            stdio: "inherit"
         });
 
         const runOutPath = path.join(boxPath, "run.out");
@@ -117,7 +131,6 @@ async function runInIsolate(source: string, language: string, boxId: number, std
         const metaPath = path.join(boxPath, "meta");
         if (fs.existsSync(metaPath)) {
             const metaContent = fs.readFileSync(metaPath, "utf-8");
-
             const meta = Object.fromEntries(
                 metaContent
                     .split("\n")
@@ -137,10 +150,9 @@ async function runInIsolate(source: string, language: string, boxId: number, std
                 }
             }
         }
-
     }
 
-    execSync(`isolate --box-id=${boxId} --cleanup`);
+    await exec(`isolate --box-id=${boxId} --cleanup`);
 
     return { stdout, stderr };
 }

@@ -14,13 +14,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.runInIsolate = void 0;
 const child_process_1 = require("child_process");
+const util_1 = require("util");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const fileUtils_1 = require("./fileUtils");
 const confg_1 = require("../confg");
+const exec = (0, util_1.promisify)(child_process_1.exec);
+function spawnAsync(command, args, options) {
+    return new Promise((resolve, reject) => {
+        const child = (0, child_process_1.spawn)(command, args, options);
+        child.on("error", reject);
+        child.on("close", (code) => resolve({ code }));
+    });
+}
 function runInIsolate(source, language, boxId, stdin = "") {
     return __awaiter(this, void 0, void 0, function* () {
-        const boxDir = (0, child_process_1.execSync)(`isolate --box-id=${boxId} --init`).toString().trim();
+        const { stdout: initOutput } = yield exec(`isolate --box-id=${boxId} --init`);
+        const boxDir = initOutput.trim();
         const boxPath = path_1.default.join(boxDir, "box");
         fs_1.default.writeFileSync(path_1.default.join(boxPath, "input.txt"), stdin);
         let sourceFile;
@@ -63,9 +73,9 @@ function runInIsolate(source, language, boxId, stdin = "") {
         let stdout = "";
         let stderr = "";
         let success = true;
-        // Compile step (if needed)
+        // Compile step
         if (compileCmd) {
-            const compile = (0, child_process_1.spawnSync)("isolate", [
+            const compileArgs = [
                 `--box-id=${boxId}`,
                 "--run",
                 "--processes=20",
@@ -74,11 +84,12 @@ function runInIsolate(source, language, boxId, stdin = "") {
                 "--stderr=compile.err",
                 "--",
                 ...compileCmd.split(" ")
-            ], {
+            ];
+            const compileResult = yield spawnAsync("isolate", compileArgs, {
                 cwd: boxPath,
-                encoding: "utf-8"
+                stdio: "inherit"
             });
-            if (compile.status !== 0) {
+            if (compileResult.code !== 0) {
                 success = false;
             }
             const compileErrPath = path_1.default.join(boxPath, "compile.err");
@@ -87,9 +98,8 @@ function runInIsolate(source, language, boxId, stdin = "") {
             }
         }
         // Run step
-        let runResult;
         if (success) {
-            runResult = (0, child_process_1.spawnSync)("isolate", [
+            const runArgs = [
                 `--box-id=${boxId}`,
                 "--run",
                 "--stdin=input.txt",
@@ -103,9 +113,10 @@ function runInIsolate(source, language, boxId, stdin = "") {
                 "--stderr=run.err",
                 "--",
                 ...runCmd.split(" ")
-            ], {
+            ];
+            yield spawnAsync("isolate", runArgs, {
                 cwd: boxPath,
-                encoding: "utf-8"
+                stdio: "inherit"
             });
             const runOutPath = path_1.default.join(boxPath, "run.out");
             const runErrPath = path_1.default.join(boxPath, "run.err");
@@ -136,7 +147,7 @@ function runInIsolate(source, language, boxId, stdin = "") {
                 }
             }
         }
-        (0, child_process_1.execSync)(`isolate --box-id=${boxId} --cleanup`);
+        yield exec(`isolate --box-id=${boxId} --cleanup`);
         return { stdout, stderr };
     });
 }

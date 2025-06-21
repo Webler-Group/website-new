@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { MouseEvent, useEffect, useState } from "react";
 import { UserMinimal } from "../pages/Profile";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
-import { FaCircle, FaEye } from "react-icons/fa6";
+import { FaCircle } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
@@ -38,7 +38,12 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
         setSeen(notification.isClicked)
     }, [notification]);
 
-    const viewNotification = async () => {
+    const viewNotification = async (e: MouseEvent) => {
+        onClose()
+
+        if((e.target as HTMLElement).closest("a")) {
+            return;
+        }
         if (seen === false) {
             await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", { ids: [notification.id] })
             setSeen(true);
@@ -67,7 +72,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const messageParts = notification.message.split("{action_user}");
 
     const body = (
-        <div className="d-flex p-2 border-bottom gap-2" onClick={onClose}>
+        <div className="d-flex p-2 border-bottom gap-2" onClick={viewNotification} style={{ cursor: "pointer" }}>
             <div className="wb-p-follow-item__avatar">
                 <ProfileAvatar size={42} avatarImage={notification.actionUser.avatar} />
             </div>
@@ -86,11 +91,6 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                         </small>
                     }
                 </div>
-            </div>
-            <div className="d-flex align-items-center ms-2">
-                <span style={{ cursor: "pointer" }} onClick={viewNotification}>
-                    <FaEye />
-                </span>
             </div>
         </div>
     )
