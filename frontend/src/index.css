@@ -226,17 +226,18 @@ ul {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100vw;
-    height: 100vh;
+    width: 100dvw;
+    height: 100dvh;
     background-image: url("/resources/images/collageBlurred.jpg");
+    background-size: min(100%, 1200px);
     background-repeat: repeat;
-    background-position: center;
     background-attachment: fixed;
     z-index: -10;
 }
 
 .wb-banner {
-    height: 100vh;
+    position: relative;
+    height: calc(100dvh - 60px);
     padding: 48px;
 }
 
@@ -311,7 +312,7 @@ ul {
 }
 
 .wb-home-card {
-    height: 320px;
+    min-height: 400px;
 }
 
 /* wb join us */
