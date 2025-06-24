@@ -1,205 +1,131 @@
-import { Button, Card, CardImg, Col, Container } from "react-bootstrap";
+import { Row, Col, Card, Button, Container } from "react-bootstrap";
+import PageTitle from "../layouts/PageTitle";
 import { LinkContainer } from "react-router-bootstrap";
+import RegisterForm from "../features/auth/components/RegisterForm";
+import { useAuth } from "../features/auth/context/authContext";
 import { useState } from "react";
 import LoginForm from "../features/auth/components/LoginForm";
-import RegisterForm from "../features/auth/components/RegisterForm";
-import PageTitle from "../layouts/PageTitle";
 import { useNavigate } from "react-router-dom";
 
 function Home() {
 
-  const navigate = useNavigate();
-  const [isUserRegistering, setUserAuthPage] = useState(true);
   PageTitle("Webler - Home", false);
 
+  const { userInfo } = useAuth();
+  const [isRegisterForm, toggleForm] = useState(true);
+  const navigate = useNavigate();
+
   return (
-    <>
+    <div className="wb-home-container">
 
-      <div className="wb-home-container bg-light">
-        <div className="wb-home-header__container bg-dark text-white">
-          <h1 className="wb-home-header__title">
-            The best way to learn to code
-          </h1>
-          <p className="wb-home-header__info">
-            Courses designed by experts with real-world practice. Join our
-            global community. <b>It's free.</b>
-          </p>
-          <LinkContainer to="/Users/Register">
-            <Button size="lg" variant="primary">
-              Start learning now!
-            </Button>
-          </LinkContainer>
+      <div className="wb-banner text-light d-flex flex-column justify-content-center gap-2">
+        <div className="wb-banner__logo">
+          <img className="wb-banner__logo__img" src="../resources/images/logotransparent.png" alt="Webler logo" />
         </div>
+        <h2 className="wb-banner__text">Software Engineering</h2>
+        <p className="wb-banner__slogan">- Building the future, one code at a time</p>
+      </div>
 
-        {/* Webler home why webler cards */}
+      <div className="bg-light wb-home-content">
         <Container>
-          <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-5 text-center ">
+          <h1 className="text-center mb-3">Information</h1>
+          <p className="text-center">
+            Welcome to Webler! We're a global team of independent developers passionate about building high-quality, accessible software. Our mission is to create useful and fun tools — always free and open to everyone. Whether you're a beginner or a pro, we aim to support your learning and creativity with practical, innovative applications.
+          </p>
+          <p className="text-center mt-4">Explore some of our core features below:</p>
+
+          <Row xs="1" md="2" className="g-4 mt-2">
             <Col>
-              <Card className="w-100 wb-home-why_wb_card">
-                <CardImg src="resources\images\placeHolderImage.jpg" alt="..."></CardImg>
-                <div className="card-body">
-                  <h5 className="card-title">Card title</h5>
-                  <p className="card-text">
-                    This is a longer card with supporting text below as a
-                    natural lead-in to additional content. This content is a
-                    little bit longer.
-                  </p>
-                </div>
+              <Card bg="light" text="dark" className="wb-home-card">
+                <Card.Body className="d-flex flex-column justify-content-between">
+                  <Card.Title className="text-center py-4 border-bottom border-2">Code Playground</Card.Title>
+                  <Card.Text className="mt-4">
+                    Create, edit, and run code in multiple programming languages — all within your browser. Our web-based IDE is perfect for testing ideas, learning syntax, or building small projects without any setup.
+                  </Card.Text>
+                  <div className="text-center mt-4">
+                    <LinkContainer to="/Codes">
+                      <Button variant="primary">Go to Playground</Button>
+                    </LinkContainer>
+                  </div>
+                </Card.Body>
               </Card>
             </Col>
 
             <Col>
-              <Card className="w-100 wb-home-why_wb_card">
-                <CardImg src="resources\images\placeHolderImage.jpg" alt="..."></CardImg>
-                <div className="card-body">
-                  <h5 className="card-title">Card title</h5>
-                  <p className="card-text">
-                    This is a longer card with supporting text below as a
-                    natural lead-in to additional content. This content is a
-                    little bit longer.
-                  </p>
-                </div>
+              <Card bg="light" text="dark" className="wb-home-card">
+                <Card.Body className="d-flex flex-column justify-content-between">
+                  <Card.Title className="text-center py-4 border-bottom border-2">Courses</Card.Title>
+                  <Card.Text className="mt-4">
+                    Learn by doing with our interactive courses! Each one includes hands-on content, quizzes, and coding tasks to help you master web technologies, programming languages, and software tools at your own pace.
+                  </Card.Text>
+                  <div className="text-center mt-4">
+                    <LinkContainer to="/Courses">
+                      <Button variant="primary">Explore Courses</Button>
+                    </LinkContainer>
+                  </div>
+                </Card.Body>
               </Card>
             </Col>
 
             <Col>
-              <Card className="w-100 wb-home-why_wb_card">
-                <CardImg src="resources\images\placeHolderImage.jpg" alt="..."></CardImg>
-                <div className="card-body">
-                  <h5 className="card-title">Card title</h5>
-                  <p className="card-text">
-                    This is a longer card with supporting text below as a
-                    natural lead-in to additional content. This content is a
-                    little bit longer.
-                  </p>
-                </div>
+              <Card bg="light" text="dark" className="wb-home-card">
+                <Card.Body className="d-flex flex-column justify-content-between">
+                  <Card.Title className="text-center py-4 border-bottom border-2">Q&A Discussions</Card.Title>
+                  <Card.Text className="mt-4">
+                    Have a question about code or tech? Join our community-driven forum to ask, answer, and explore real-world programming problems. It’s a place to learn, share knowledge, and grow together.
+                  </Card.Text>
+                  <div className="text-center mt-4">
+                    <LinkContainer to="/Discuss">
+                      <Button variant="primary">Visit Forum</Button>
+                    </LinkContainer>
+                  </div>
+                </Card.Body>
               </Card>
             </Col>
-          </div>
+
+            <Col>
+              <Card bg="light" text="dark" className="wb-home-card">
+                <Card.Body className="d-flex flex-column justify-content-between">
+                  <Card.Title className="text-center py-4 border-bottom border-2">Blog</Card.Title>
+                  <Card.Text className="mt-4">
+                    Stay up to date with Webler's blog! We share development insights, tutorials, project updates, and thoughts on the future of software engineering and technology.
+                  </Card.Text>
+                  <div className="text-center mt-4">
+                    <LinkContainer to="/Blog">
+                      <Button variant="primary">Read Blog</Button>
+                    </LinkContainer>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
         </Container>
+      </div>
 
-        {/* Perfect platform info cards */}
-        <div className="bg-white">
+      {
+        userInfo == null &&
+        <div className="bg-dark text-light wb-home-content">
           <Container>
-            <h1 className="text-center wb-home-platform_header">
-              Perfect platform for you
-            </h1>
-
-            <div className="row row-cols-1 row-cols-md-2 g-6 text-center">
+            <Row xs="1" md="2" className="g-4 mt-2">
               <Col>
-                <Card className="wb-home-perfect-platform_card">
-                  <CardImg src="resources\images\placeholderImage1.png" alt="..."></CardImg>
-                  <div className="card-body">
-                    <h5 className="card-title">Card title</h5>
-                    <p className="card-text">
-                      This is a longer card with supporting text below as a
-                      natural lead-in to additional content. This content is a
-                      little bit longer.
-                    </p>
-                  </div>
-                </Card>
+                <h2 className="text-center mt-5">Join us right now!</h2>
               </Col>
-
-              <Col>
-                <Card className="wb-home-perfect-platform_card">
-                  <CardImg src="resources\images\placeholderImage1.png" alt="..."></CardImg>
-                  <div className="card-body">
-                    <h5 className="card-title">Card title</h5>
-                    <p className="card-text">
-                      This is a longer card with supporting text below as a
-                      natural lead-in to additional content. This content is a
-                      little bit longer.
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-            </div>
-          </Container>
-        </div>
-
-        {/* Why to code cards */}
-        <section className="wb-home-why-code d-flex">
-          <Container>
-
-            <div className="row row-cols-1 row-cols-md-3 gy-5  text-center align-self-center">
-
-              <h1 className="wb-why-code_header">Why Code?</h1>
-              <Col>
-                <Card className="wb_card">
-                  <CardImg src="resources\images\pctemplate.png" alt="..."></CardImg>
-                  <div className="card-body">
-                    <h5 className="card-title">Card title</h5>
-                    <p className="card-text">
-                      This is a longer card with supporting text below as a
-                      natural lead-in to additional content. This content is a
-                      little bit longer.
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-
-              <Col>
-                <Card className="wb_card">
-                  <CardImg src="resources\images\pctemplate.png" alt="..."></CardImg>
-                  <div className="card-body">
-                    <h5 className="card-title">Card title</h5>
-                    <p className="card-text">
-                      This is a longer card with supporting text below as a
-                      natural lead-in to additional content. This content is a
-                      little bit longer.
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-
-              <Col>
-                <Card className="wb_card">
-                  <CardImg src="resources\images\pctemplate.png" alt="..."></CardImg>
-                  <div className="card-body">
-                    <h5 className="card-title">Card title</h5>
-                    <p className="card-text">
-                      This is a longer card with supporting text below as a
-                      natural lead-in to additional content. This content is a
-                      little bit longer.
-                    </p>
-                  </div>
-                </Card>
-              </Col>
-
-            </div>
-          </Container>
-        </section>
-
-        {/* Sign up section */}
-        <section className="wb-home-join-us bg-dark">
-          <Container>
-
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-2 gx-2 gy-5 container">
-              <Col>
-                <h1 className="text-center text-white wb-home-join-us_header">
-                  Join us right now!
-                </h1>
-              </Col>
-
               <Col>
                 <div className="wb-home-sign-up-form">
-                  {isUserRegistering == true ? (
-                    <RegisterForm
-                      onToggleClick={() => setUserAuthPage(false)}
-                      onRegister={() => navigate("/Profile")}
-                    />
-                  ) : (
-                    <LoginForm onToggleClick={() => setUserAuthPage(true)} onLogin={() => navigate("/Profile")} />
-                  )}
+                  {
+                    isRegisterForm ?
+                      <RegisterForm onRegister={() => navigate("/Profile")} onToggleClick={() => toggleForm(false)} />
+                      :
+                      <LoginForm onLogin={() => navigate("/Profile")} onToggleClick={() => toggleForm(true)} />
+                  }
                 </div>
               </Col>
-
-            </div>
+            </Row>
           </Container>
-        </section>
+        </div>
+      }
 
-      </div>
-    </>
+    </div>
   );
 }
 

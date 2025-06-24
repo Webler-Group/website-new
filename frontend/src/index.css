@@ -221,7 +221,84 @@ ul {
 
 }
 
+.wb-banner::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-image: url("/resources/images/collageBlurred.jpg");
+    background-repeat: repeat;
+    background-position: center;
+    background-attachment: fixed;
+    z-index: -10;
+}
 
+.wb-banner {
+    height: 100vh;
+    padding: 48px;
+}
+
+.wb-banner__logo {
+    display: flex;
+    width: 100%;
+}
+
+.wb-banner__logo__img {
+    width: 480px;
+}
+
+.wb-banner__text {
+    font-size: 60px;
+    font-weight: 600;
+}
+
+.wb-banner__slogan {
+    border-top: 2px solid #f2f2f2;
+    font-size: 40px;
+}
+
+@media (max-width: 720px) {
+    .wb-banner {
+        padding: 24px;
+    }
+
+    .wb-banner__logo {
+        justify-content: center;
+    }
+
+    .wb-banner__logo__img {
+        width: 360px;
+    }
+
+    .wb-banner__text {
+        font-size: 45px;
+    }
+
+    .wb-banner__slogan {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wb-banner {
+        padding: 12px;
+    }
+
+    .wb-banner__logo__img {
+        width: 240px;
+    }
+
+    .wb-banner__text {
+        font-size: 30px;
+        font-weight: 600;
+    }
+
+    .wb-banner__slogan {
+        font-size: 20px;
+    }
+}
 
 .wb-home-container {
     display: flex;
@@ -229,103 +306,22 @@ ul {
     min-height: 100vh;
 }
 
-.wb-home-header__container {
-    padding: 32px 28px 64px 28px;
-    margin-bottom: 64px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
+.wb-home-content {
+    padding: 80px 0 80px 0;
 }
 
-.wb-home-header__title {
-    font-size: 80px;
-    font-weight: 700;
-    line-height: 100%;
-    margin-bottom: 16px;
-    text-align: center;
-}
-
-.wb-home-header__info {
-    font-size: 26px;
-    font-weight: 400;
-    line-height: 150%;
-    margin-bottom: 24px;
-    max-width: 657px;
-    text-align: center;
-}
-
-@media (max-width: 1023px) and (min-width: 600px) {
-
-    .wb-home-header__title {
-        font-size: 50px;
-    }
-
-    .wb-home-header__info {
-        font-size: 16px;
-        max-width: 416px;
-    }
-}
-
-@media (max-width: 599px) {
-
-    .wb-home-header__title {
-        font-size: 50px;
-        margin-bottom: 36px;
-        min-width: 295px;
-        padding: 0 32px;
-    }
-
-    .wb-home-header__info {
-        font-size: 16px;
-        line-height: 120%;
-        margin-bottom: 34px;
-        max-width: 295px;
-    }
-}
-
-
-/*Why code*/
-
-.wb-home-why-code {
-    background-color: rgb(247, 247, 247);
-    width: 100%;
-    height: auto;
-    margin-bottom: 80px;
-
-}
-
-.wb-home-why-code .wb_card {
-    border: none;
-    max-width: 600px;
-    color: rgb(64, 85, 104);
-    box-shadow: 0px 0px 10px rgb(224, 224, 224);
-}
-
-.wb-why-code_header {
-    width: 100%;
-    margin-top: 80px;
-    margin-bottom: 20px;
-    color: rgb(57, 57, 57);
+.wb-home-card {
+    height: 320px;
 }
 
 /* wb join us */
 
-.wb-home-join-us_header {
-    width: 100%;
-    margin-top: 100px;
-}
-
-.wb-home-join-us {
-    height: auto;
-}
-
 .wb-home-sign-up-form {
-    padding: 20px;
+    padding: 24px;
     color: rgb(61, 76, 88);
     background-color: rgb(236, 236, 236);
     border-radius: 5px;
-    transform: scale(0.9);
+    min-height: 720px;
 }
 
 
@@ -650,11 +646,11 @@ ul {
 }
 
 .wb-courses-course-card {
-    box-shadow: 0 4px 0 rgba(107,127,153,.5);
+    box-shadow: 0 4px 0 rgba(107, 127, 153, .5);
     cursor: pointer;
 }
 
 .wb-courses-course-card:hover {
-    box-shadow: 0 6px 0 rgba(107,127,153,.5);
+    box-shadow: 0 6px 0 rgba(107, 127, 153, .5);
     transform: translateY(-2px);
 }

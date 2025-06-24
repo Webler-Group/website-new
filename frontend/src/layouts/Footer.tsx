@@ -2,6 +2,7 @@ import Container from 'react-bootstrap/Container';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Link } from 'react-router-dom';
+import { FaHeart } from 'react-icons/fa6';
 
 function Footer() {
   return (
@@ -19,7 +20,7 @@ function Footer() {
                     </Row>
                     <Row  className='p-2 w-100'>
                     <div className="text-center wb-made-by">
-                        Made with :heart: by <b>Webler</b>
+                        Made with <FaHeart /> by <b>Webler</b>
                     </div>
                     </Row>
                 </div>

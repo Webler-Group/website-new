@@ -46,15 +46,16 @@ function App() {
 
       <Route element={<NoAuth />}>
         <Route path="Users">
-          <Route element={<Layout Header={null} Footer={null} />}>
+          <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
             <Route path="Login" element={<Login />} />
             <Route path="Register" element={<Register />} />
             <Route path="Forgot-Password" element={<ForgotPassword />} />
           </Route>
         </Route>
-        <Route element={<Layout Header={<Header variant="dark" />} Footer={<Footer />} />}>
-          <Route index element={<Home />} />
-        </Route>
+      </Route>
+
+      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+        <Route index element={<Home />} />
       </Route>
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
@@ -124,7 +125,7 @@ function App() {
           <Route element={<RequireAuth allowedRoles={["Admin"]} />}>
             <Route path="Editor">
               <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
-              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null}/>} />} />
+              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null} />} />} />
               <Route path="Edit/:courseCode" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
               <Route path=":courseCode">
                 <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />

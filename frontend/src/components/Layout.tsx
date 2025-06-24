@@ -10,7 +10,7 @@ const Layout = ({ Header, Footer }: LayoutProps) => {
     return (
         <>
             {Header !== null && Header}
-            <main className="bg-light">
+            <main>
                 <Outlet />
             </main>
             {Footer !== null && Footer}
