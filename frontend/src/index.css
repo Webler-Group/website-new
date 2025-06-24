@@ -238,6 +238,7 @@ ul {
 .wb-banner {
     position: relative;
     height: calc(100dvh - 60px);
+    min-height: 360px;
     padding: 48px;
 }
 
@@ -312,7 +313,7 @@ ul {
 }
 
 .wb-home-card {
-    min-height: 400px;
+    min-height: 360px;
 }
 
 /* wb join us */
