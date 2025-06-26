@@ -15,10 +15,11 @@ const corsOptions = {
             callback(null, true);
         }
         else {
-            callback(new Error('Not allowed by CORS\nOrigin: ' + origin + '\nAllowed origins: ' + allowedOrigins.join(", ")));
+            callback(new Error("Not allowed by CORS"));
         }
     },
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    allowedHeaders: "*"
 };
 exports.default = corsOptions;

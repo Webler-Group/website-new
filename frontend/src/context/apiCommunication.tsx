@@ -35,15 +35,17 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             headers["Content-Type"] = "application/json";
             body = JSON.stringify(options.body);
         }
+        if(options.accessToken) {
+            headers["Authorization"] = "Bearer " + options.accessToken;
+        }
+        if(options.deviceId) {
+            headers["X-Device-Id"] = options.deviceId;
+        }
         return await fetch(baseUrl + path, {
             method: options.method,
             credentials: "include",
             mode: "cors",
-            headers: {
-                ...headers,
-                "Authorization": options.accessToken ? "Bearer " + options.accessToken : undefined,
-                "X-Device-Id": options.deviceId
-            },
+            headers,
             body: options.method != "GET" ? body : undefined,
             signal: options.signal
         });

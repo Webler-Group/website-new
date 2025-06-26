@@ -10,7 +10,7 @@ interface IAuthRequest extends Request {
 
 const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
-    const deviceId = req.headers["X-Device-Id"];
+    const deviceId = req.headers["x-device-id"];
 
     if (typeof authHeader === "string" && authHeader.startsWith("Bearer ") && typeof deviceId === "string") {
 
