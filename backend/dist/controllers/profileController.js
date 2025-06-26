@@ -194,7 +194,7 @@ const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __
         return;
     }
     const diff = Date.now() - user.lastVerificationEmailTimestamp;
-    if (diff < 24 * 60 * 60 * 1000) {
+    if (confg_1.config.nodeEnv === "production" && diff < 24 * 60 * 60 * 1000) {
         const duration = (0, date_fns_1.intervalToDuration)({ start: Date.now(), end: user.lastVerificationEmailTimestamp + 24 * 60 * 60 * 1000 });
         res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
         return;

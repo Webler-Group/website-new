@@ -31,6 +31,7 @@ const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
+        secure: config.nodeEnv === "production",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 }

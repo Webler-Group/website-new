@@ -21,6 +21,7 @@ const generateRefreshToken = (res, payload) => {
     const refreshToken = jsonwebtoken_1.default.sign(payload, confg_1.config.refreshTokenSecret, { expiresIn: "7d" });
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
+        secure: confg_1.config.nodeEnv === "production",
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
 };

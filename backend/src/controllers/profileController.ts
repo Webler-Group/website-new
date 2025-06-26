@@ -217,7 +217,7 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
     }
 
     const diff = Date.now() - user.lastVerificationEmailTimestamp;
-    if (diff < 24 * 60 * 60 * 1000) {
+    if (config.nodeEnv === "production" && diff < 24 * 60 * 60 * 1000) {
         const duration = intervalToDuration({ start: Date.now(), end: user.lastVerificationEmailTimestamp + 24 * 60 * 60 * 1000 })
         res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
         return

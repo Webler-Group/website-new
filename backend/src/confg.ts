@@ -22,7 +22,13 @@ const config = {
     dumpDir: process.env.DUMP_DIR as string,
 
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
-    compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024)
+    compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
+
+    emailHost: process.env.EMAIL_HOST as string,
+    emailPort: Number(process.env.EMAIL_PORT),
+    emailUser: process.env.EMAIL_USER as string,
+    emailPassword: process.env.EMAIL_PASSWORD as string,
+    emailSecure: process.env.EMAIL_SECURE === "true"
 };
 
 for(let [k, v] of Object.entries(config)) {
