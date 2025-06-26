@@ -32,7 +32,7 @@ const clearRefreshToken = (res) => {
 exports.clearRefreshToken = clearRefreshToken;
 const signAccessToken = (req, userInfo) => __awaiter(void 0, void 0, void 0, function* () {
     const deviceId = (0, uuid_1.v4)();
-    const fingerprintRaw = req.ip + req.headers["user-agent"] + deviceId;
+    const fingerprintRaw = req.headers["user-agent"] + deviceId;
     const fingerprint = yield bcrypt_1.default.hash(fingerprintRaw, 10);
     const payload = {
         userInfo,

@@ -21,7 +21,7 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
             config.accessTokenSecret,
             async (err: VerifyErrors | null, decoded: any) => {
                 if (!err) {
-                    const rawFingerprint = req.ip + req.headers["user-agent"] + deviceId;
+                    const rawFingerprint = req.headers["user-agent"] + deviceId;
 
                     const match = await bcrypt.compare(rawFingerprint, decoded.fingerprint);
 

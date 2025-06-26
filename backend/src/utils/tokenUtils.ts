@@ -45,7 +45,7 @@ const signAccessToken = async (req: Request, userInfo: {
         roles: string[];
     }) => {
     const deviceId = uuid();
-    const fingerprintRaw = req.ip + req.headers["user-agent"] + deviceId;
+    const fingerprintRaw = req.headers["user-agent"] + deviceId;
     const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
 
     const payload = {
