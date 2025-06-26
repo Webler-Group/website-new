@@ -2,7 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const config = {
-    nodeEnv: process.env.NODE_ENV as string,
+    nodeEnv: process.env.NODE_ENV as ("development" | "production"),
 
     rootDir: process.env.ROOT_DIR as string,
 

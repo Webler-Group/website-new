@@ -6,6 +6,8 @@ interface ApiState {
     sendJsonRequest(path: string, method: string, body?: any, options?: any, isMultipart?: boolean): Promise<any>;
 }
 
+type QueryOptions = { method: string; headers?: any; body?: any; signal?: AbortSignal; accessToken?: string; deviceId?: string; };
+
 const ApiContext = React.createContext<ApiState>({} as ApiState);
 
 export const useApi = (() => useContext(ApiContext));
@@ -19,7 +21,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     const navigate = useNavigate();
     const { authenticate, accessToken, expiresIn } = useAuth();
 
-    const fetchQuery = async (path: string, options: { method: string; headers?: any; body?: any; signal?: AbortSignal; accessToken?: string; }, isMultipart: boolean = false) => {
+    const fetchQuery = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
         const headers = options.headers ?? {};
         let body;
         if (isMultipart) {
@@ -39,17 +41,20 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             mode: "cors",
             headers: {
                 ...headers,
-                "Authorization": options.accessToken ? "Bearer " + options.accessToken : undefined
+                "Authorization": options.accessToken ? "Bearer " + options.accessToken : undefined,
+                "x-device-id": options.deviceId
             },
             body: options.method != "GET" ? body : undefined,
             signal: options.signal
         });
     }
 
-    const fetchQueryWithReauthentication = async (path: string, options: { method: string; body?: any; signal?: AbortSignal; accessToken?: string; }, isMultipart: boolean = false) => {
+    const fetchQueryWithReauthentication = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
         // console.log(path, expiresIn Date.now());
         if (!path.startsWith("/Auth") && options.accessToken && expiresIn <= Date.now()) {
-            options.accessToken = (await reauthenticate()) ?? undefined;
+            const reauthResult = await reauthenticate();
+            options.accessToken = reauthResult.accessToken ?? undefined;
+            options.deviceId = reauthResult.deviceId;
             if (!options.accessToken) {
                 navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
             }
@@ -61,17 +66,17 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
 
     }
 
-    const reauthenticate = async (): Promise<string | null> => {
+    const reauthenticate = async (): Promise<any> => {
         const result = await fetchQuery("/Auth/Refresh", {
             method: "POST"
         })
             .then(response => response.json());
         if (result && result.accessToken && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
-            return result.accessToken;
+            authenticate(result.accessToken, result.expiresIn, result.deviceId);
+            return result;
         }
 
-        authenticate(null, 0);
+        authenticate(null);
         return null;
     }
 

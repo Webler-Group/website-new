@@ -1,7 +1,7 @@
 import jwt, { VerifyErrors } from "jsonwebtoken";
 import { Request, Response, NextFunction } from "express";
-import { AccessTokenPayload } from "../utils/tokenUtils";
 import { config } from "../confg";
+import bcrypt from "bcrypt";
 
 interface IAuthRequest extends Request {
     userId?: string;
@@ -10,27 +10,36 @@ interface IAuthRequest extends Request {
 
 const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
+    const deviceId = req.headers["x-device-id"];
 
-    if (typeof authHeader === "string" && authHeader.startsWith("Bearer ")) {
+    if (typeof authHeader === "string" && authHeader.startsWith("Bearer ") && typeof deviceId === "string") {
 
         const token = authHeader.split(" ")[1];
 
         jwt.verify(
             token,
             config.accessTokenSecret,
-            (err: VerifyErrors | null, decoded: any) => {
+            async (err: VerifyErrors | null, decoded: any) => {
                 if (!err) {
-                    const userInfo = (decoded as AccessTokenPayload).userInfo;
+                    const rawFingerprint = req.ip + req.headers["user-agent"] + deviceId;
 
-                    req.userId = userInfo.userId;
-                    req.roles = userInfo.roles;
+                    const match = await bcrypt.compare(rawFingerprint, decoded.fingerprint);
+
+                    if (match) {
+                        const userInfo = decoded.userInfo;
+
+                        req.userId = userInfo.userId;
+                        req.roles = userInfo.roles;
+                    }
                 }
+
+                next();
             }
         )
 
+    } else {
+        next();
     }
-
-    next()
 }
 
 export {

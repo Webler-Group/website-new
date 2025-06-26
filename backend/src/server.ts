@@ -38,7 +38,9 @@ async function main() {
 
     app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
     app.use(logger);
-    //app.use(cors(corsOptions));
+    if(config.nodeEnv == "production") {
+        app.use(cors(corsOptions));
+    }
     app.use(express.json({ limit: "2mb" }));
     app.use(cookieParser());
 

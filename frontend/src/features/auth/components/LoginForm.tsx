@@ -32,7 +32,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
         setError("");
         const result = await sendJsonRequest("/Auth/Login", "POST", { email, password });
         if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
+            authenticate(result.accessToken, result.expiresIn, result.deviceId);
             updateUser(result.user);
             onLogin();
         }

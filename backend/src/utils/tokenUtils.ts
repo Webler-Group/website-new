@@ -1,6 +1,8 @@
-import { Response } from "express";
+import { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../confg";
+import bcrypt from "bcrypt";
+import { v4 as uuid } from "uuid";
 
 interface RefreshTokenPayload {
     userId: string;
@@ -10,7 +12,8 @@ interface AccessTokenPayload {
     userInfo: {
         userId: string;
         roles: string[];
-    }
+    },
+    fingerprint: string;
 }
 
 interface EmailTokenPayload {
@@ -36,7 +39,18 @@ const clearRefreshToken = (res: Response) => {
     res.clearCookie("refreshToken");
 }
 
-const signAccessToken = (payload: AccessTokenPayload) => {
+const signAccessToken = async (req: Request, userInfo: {
+        userId: string;
+        roles: string[];
+    }) => {
+    const deviceId = uuid();
+    const fingerprintRaw = req.ip + req.headers["user-agent"] + deviceId;
+    const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
+
+    const payload = {
+        userInfo,
+        fingerprint
+    };
 
     const accessToken = jwt.sign(
         payload,
@@ -48,7 +62,8 @@ const signAccessToken = (payload: AccessTokenPayload) => {
 
     return {
         accessToken,
-        data
+        data,
+        deviceId
     };
 }
 

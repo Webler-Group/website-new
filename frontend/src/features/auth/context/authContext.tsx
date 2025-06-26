@@ -17,7 +17,8 @@ interface AuthState {
     userInfo: UserInfo | null;
     accessToken: string | null;
     expiresIn: number;
-    authenticate: (accessToken: string | null, expiresIn: number) => void;
+    deviceId: string | null;
+    authenticate: (accessToken: string | null, expiresIn?: number, deviceId?: string) => void;
     updateUser: (userInfo: UserInfo) => void;
     logout: () => void;
 }
@@ -32,25 +33,31 @@ export const useAuth = () => useContext(AuthContext);
 
 const AuthProvider = ({ children }: AuthProviderProps) => {
 
-    const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") ?
-        localStorage.getItem("accessToken") :
+    const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") ??
         null);
 
     const [expiresIn, setExpiresIn] = useState(localStorage.getItem("expiresIn") ?
         Number(localStorage.getItem("expiresIn")) :
         0);
 
+    const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") ??
+        null);
+
     const defaultUserInfo = (accessToken && localStorage.getItem("userInfo")) ?
         JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo :
         null;
     const [userInfo, setUserInfo] = useState(defaultUserInfo);
 
-    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0) => {
+    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0, deviceIdValue: string | null = null) => {
         if (accessTokenValue) {
             setAccessToken(accessTokenValue);
             localStorage.setItem("accessToken", accessTokenValue);
             setExpiresIn(expiresInValue);
             localStorage.setItem("expiresIn", expiresInValue.toString());
+            setDeviceId(deviceIdValue);
+            if(deviceIdValue) {
+                localStorage.setItem("deviceId", deviceIdValue);
+            }
         }
         else {
             setAccessToken(null);
@@ -75,6 +82,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         userInfo,
         accessToken,
         expiresIn,
+        deviceId,
         authenticate,
         updateUser,
         logout

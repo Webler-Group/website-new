@@ -51,7 +51,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         setError("");
         const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution });
         if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
+            authenticate(result.accessToken, result.expiresIn, result.deviceId);
             updateUser(result.user);
             onRegister();
         }

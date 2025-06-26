@@ -32,11 +32,9 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
             res.status(401).json({ message: "Account is deactivated" });
             return;
         }
-        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
-            userInfo: {
-                userId: user._id.toString(),
-                roles: user.roles
-            }
+        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+            userId: user._id.toString(),
+            roles: user.roles
         });
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
@@ -44,6 +42,7 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
         res.json({
             accessToken,
             expiresIn,
+            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -86,11 +85,9 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         emailVerified: confg_1.config.nodeEnv == "development"
     });
     if (user) {
-        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
-            userInfo: {
-                userId: user._id.toString(),
-                roles: user.roles
-            }
+        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+            userId: user._id.toString(),
+            roles: user.roles
         });
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
@@ -98,6 +95,7 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         res.json({
             accessToken,
             expiresIn,
+            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -140,17 +138,16 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const { accessToken, data: tokenInfo } = (0, tokenUtils_1.signAccessToken)({
-            userInfo: {
-                userId: user._id.toString(),
-                roles: user.roles
-            }
+        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+            userId: user._id.toString(),
+            roles: user.roles
         });
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
         res.json({
             accessToken,
-            expiresIn
+            expiresIn,
+            deviceId
         });
     }));
 }));

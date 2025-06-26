@@ -8,7 +8,7 @@ export const initCronJobs = () => {
     cron.schedule("0 * * * *", async () => {
         try {
             const result = await EvaluationJob.deleteMany({
-                createdAt: { $lt: new Date(Date.now() - 1000 * 60 * 5) } // older than 7 days
+                createdAt: { $lt: new Date(Date.now() - 1000 * 60) }
             });
             console.log(`[CRON] Deleted ${result.deletedCount} old evaluation jobs`);
         } catch (err) {

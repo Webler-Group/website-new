@@ -22,7 +22,7 @@ const initCronJobs = () => {
     node_cron_1.default.schedule("0 * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
         try {
             const result = yield EvaluationJob_1.default.deleteMany({
-                createdAt: { $lt: new Date(Date.now() - 1000 * 60 * 5) } // older than 7 days
+                createdAt: { $lt: new Date(Date.now() - 1000 * 60) }
             });
             console.log(`[CRON] Deleted ${result.deletedCount} old evaluation jobs`);
         }

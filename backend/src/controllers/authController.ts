@@ -25,11 +25,9 @@ const login = asyncHandler(async (req, res) => {
             return
         }
 
-        const { accessToken, data: tokenInfo } = signAccessToken({
-            userInfo: {
-                userId: user._id.toString(),
-                roles: user.roles
-            }
+        const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
+            userId: user._id.toString(),
+            roles: user.roles
         })
 
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
@@ -40,6 +38,7 @@ const login = asyncHandler(async (req, res) => {
         res.json({
             accessToken,
             expiresIn,
+            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -94,11 +93,9 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
     if (user) {
 
-        const { accessToken, data: tokenInfo } = signAccessToken({
-            userInfo: {
-                userId: user._id.toString(),
-                roles: user.roles
-            }
+        const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
+            userId: user._id.toString(),
+            roles: user.roles
         })
 
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
@@ -109,6 +106,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         res.json({
             accessToken,
             expiresIn,
+            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -164,11 +162,9 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
                 return
             }
 
-            const { accessToken, data: tokenInfo } = signAccessToken({
-                userInfo: {
-                    userId: user._id.toString(),
-                    roles: user.roles
-                }
+            const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
+                userId: user._id.toString(),
+                roles: user.roles
             })
 
             const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
@@ -176,7 +172,8 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
             res.json({
                 accessToken,
-                expiresIn
+                expiresIn,
+                deviceId
             })
         }
     );

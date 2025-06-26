@@ -16,6 +16,8 @@ const express_1 = __importDefault(require("express"));
 const logger_1 = require("./middleware/logger");
 const errorHandler_1 = __importDefault(require("./middleware/errorHandler"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
+const cors_1 = __importDefault(require("cors"));
+const corsOptions_1 = __importDefault(require("./config/corsOptions"));
 const path_1 = __importDefault(require("path"));
 const dbConn_1 = __importDefault(require("./config/dbConn"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
@@ -43,7 +45,9 @@ function main() {
         (0, cronJobs_1.initCronJobs)();
         app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
         app.use(logger_1.logger);
-        //app.use(cors(corsOptions));
+        if (confg_1.config.nodeEnv == "production") {
+            app.use((0, cors_1.default)(corsOptions_1.default));
+        }
         app.use(express_1.default.json({ limit: "2mb" }));
         app.use((0, cookie_parser_1.default)());
         app.use(`${apiPrefix}/Auth`, authRoutes_1.default);
