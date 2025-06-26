@@ -19,7 +19,7 @@ interface ApiProviderProps {
 
 const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     const navigate = useNavigate();
-    const { authenticate, accessToken, expiresIn } = useAuth();
+    const { authenticate, accessToken, expiresIn, deviceId } = useAuth();
 
     const fetchQuery = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
         const headers = options.headers ?? {};
@@ -42,7 +42,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             headers: {
                 ...headers,
                 "Authorization": options.accessToken ? "Bearer " + options.accessToken : undefined,
-                "x-device-id": options.deviceId
+                "X-Device-Id": options.deviceId
             },
             body: options.method != "GET" ? body : undefined,
             signal: options.signal
@@ -85,6 +85,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             method,
             body,
             accessToken,
+            deviceId,
             ...options
         }, isMultipart);
 
