@@ -16,6 +16,7 @@ import courseRoutes from "./routes/courseRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
+import { channelRoutes } from "./routes/chatRoutes";
 
 async function main() {
     console.log(config.nodeEnv);
@@ -51,7 +52,8 @@ async function main() {
     app.use(`${apiPrefix}/Codes`, codesRoutes);
     app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
     app.use(`${apiPrefix}/Courses`, courseRoutes);
-
+    app.use(`${apiPrefix}/Channels`, channelRoutes);
+    
     app.all("*", (req, res) => {
         res.status(404).json({ message: "404 Not Found" });
     });
