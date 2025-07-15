@@ -96,7 +96,10 @@ export const createDirect = asyncHandler(async (req: IAuthRequest, res: Response
         return;
     }
     memberId = new mongoose.Types.ObjectId(memberId);
-
+    if(memberId.equals(userId)){
+        res.status(403).json({message:"You can't send a direct to yourself"});
+        return;
+    }
     //TODO: ask target user for confirmation of firect message from this user.
 
     // wait for so if it throws we are informig the user an error
