@@ -119,10 +119,8 @@ const channelSchema = new Schema({
     defaultPermissions: permissions,
 
     participants:[{
-        user:{
-            type: SchemaTypes.ObjectId,
-            ref: "User",
-        },
+        type: SchemaTypes.ObjectId,
+        ref: "User",    
     }],
     
     createdBy: {
@@ -170,6 +168,8 @@ channelSchema.statics.getPermissions = async function (channelId: mongoose.Types
     const i = permissions.permissions.findIndex((v:any)=>{
         return v.user == userId;
     });
+    if(i<0) return{...permissions.defaultPermissions}; 
+    
     return {...permissions.defaultPermissions, ...permissions.permissions[i]};
 }
 channelSchema.statics.isParticipantOf = async function (channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId){

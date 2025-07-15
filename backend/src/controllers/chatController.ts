@@ -3,6 +3,7 @@ import { IAuthRequest } from "../middleware/verifyJWT";
 import {Channel, ChannelMessage} from "../models/Channel";
 import { Response } from "express";
 import mongoose from "mongoose";
+import User from "../models/User";
 
 export const PAGE_SIZE = 30;
 
@@ -67,7 +68,7 @@ export const sendChannelMessage = asyncHandler(async (req: IAuthRequest, res: Re
         res.sendStatus(404); // no 403 for security standards
         return;
     }
-    //
+    
     if(!(await Channel.getPermissions(channelId,userId)).canSendText){ 
         // TODO: handle other media permissions espicialy image
         // TODO: check for attachemnts that point to media and filter based on permissions
@@ -81,4 +82,30 @@ export const sendChannelMessage = asyncHandler(async (req: IAuthRequest, res: Re
            channel:channelId,
     });
     res.sendStatus(200);
+});
+
+
+
+export const createDirect = asyncHandler(async (req: IAuthRequest, res: Response)=>{
+
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    let memberId : mongoose.Types.ObjectId | undefined = req.body.memberId; 
+    
+    if(!memberId || !(await User.findById(memberId))){
+        res.status(404).json({message:"missing information"});
+        return;
+    }
+    memberId = new mongoose.Types.ObjectId(memberId);
+
+    //TODO: ask target user for confirmation of firect message from this user.
+
+    // wait for so if it throws we are informig the user an error
+    const channelId = await Channel.create({
+           participants:[userId,memberId],
+           permissions:[],
+           createdBy:userId,
+           pinnedMessages:[],
+    });
+    
+    res.status(200).json({channelId});
 });
