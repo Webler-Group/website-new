@@ -51,8 +51,8 @@ const courseSchema = new mongoose_1.default.Schema({
 });
 courseSchema.statics.deleteAndCleanup = function (courseId) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield CourseLesson_1.default.deleteAndCleanup({ courseId });
-        yield CourseProgress_1.default.deleteMany({ courseId });
+        yield CourseLesson_1.default.deleteAndCleanup({ course: courseId });
+        yield CourseProgress_1.default.deleteMany({ course: courseId });
         yield Course.deleteOne({ _id: courseId });
     });
 };

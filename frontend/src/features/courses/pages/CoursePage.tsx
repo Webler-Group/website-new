@@ -80,6 +80,8 @@ const CoursePage = () => {
 
                         <h3>{course.title}</h3>
 
+                        <p className="wb-courses-course__description">{course.description}</p>
+
                         {lastUnlockedLesson && (
                             <Card className="mt-4 shadow-sm">
                                 <Card.Body>

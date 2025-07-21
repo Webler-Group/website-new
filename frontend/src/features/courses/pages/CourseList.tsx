@@ -91,7 +91,7 @@ const CourseList = ({ }: CourseListProps) => {
                                 {
                                     myCourses.map(course => {
                                         return (
-                                            <div className="mt-2" key={course.id}>
+                                            <div className="mt-3" key={course.id}>
                                                 <MyCourse course={course} onRestart={onRestartCourse} />
                                             </div>
                                         )
@@ -112,7 +112,7 @@ const CourseList = ({ }: CourseListProps) => {
                                 :
                                 courses.map(course => {
                                     return (
-                                        <div className="mt-2" key={course.id}>
+                                        <div className="mt-3" key={course.id}>
                                             <Course course={course} isEditor={false} />
                                         </div>
                                     )

@@ -43,7 +43,7 @@ const CourseEditorList = ({}: CourseEditorListProps) => {
                         :
                         courses.map(course => {
                             return (
-                                <div className="mt-2" key={course.id}>
+                                <div className="mt-3" key={course.id}>
                                     <Course course={course} isEditor={true} />
                                 </div>
                             )

@@ -138,10 +138,12 @@ function App() {
 
         </Route>
 
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<CourseList />} />
+        </Route>
+
         <Route element={<RequireAuth allowedRoles={allRoles} />}>
-          <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-            <Route index element={<CourseList />} />
-          </Route>
+
           <Route path=":courseCode">
             <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
               <Route index element={<CoursePage />} />

@@ -158,7 +158,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
             {
                 currentNodeId !== null &&
                 (nodePreviewVisible ?
-                    <div className="d-flex flex-column" style={{ height: "400px" }}>
+                    <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
                         <div className="flex-grow-1 border border-2">
                             <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
                         </div>
