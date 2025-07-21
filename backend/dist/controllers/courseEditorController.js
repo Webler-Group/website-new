@@ -227,7 +227,7 @@ const createLesson = (0, express_async_handler_1.default)((req, res) => __awaite
     const lastLessonIndex = yield CourseLesson_1.default.count({ course: courseId });
     const lesson = yield CourseLesson_1.default.create({
         title,
-        courseId,
+        course: courseId,
         index: lastLessonIndex + 1
     });
     res.json({

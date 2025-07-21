@@ -253,7 +253,7 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lesson = await CourseLesson.create({
         title,
-        courseId,
+        course: courseId,
         index: lastLessonIndex + 1
     });
 
