@@ -152,7 +152,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                 </Modal.Footer>
             </Modal>
             <div className="d-flex gap-2 py-2">
-                <Link to="/Courses/Editor">Courses</Link>
+                <Link to="/Courses/Editor">Course Editor</Link>
                 <span>&rsaquo;</span>
                 {
                     lessonId !== null ?

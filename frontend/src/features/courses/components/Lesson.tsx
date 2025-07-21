@@ -6,11 +6,15 @@ interface ILesson {
     title: string;
     index: number;
     nodeCount: number;
+    unlocked: boolean;
+    completed: boolean;
+    lastUnlockedNodexIndex?: number;
     nodes: {
         id: string;
         index: number;
         type: number;
-    }[]
+        unlocked: boolean;
+    }[];
 }
 
 interface LessonProps {

@@ -5,9 +5,15 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 
 interface CourseProps {
     course: ICourse;
+    onRestart: (id: string) => void;
 }
 
-const MyCourse = ({ course }: CourseProps) => {
+const MyCourse = ({ course, onRestart }: CourseProps) => {
+
+    const handleRestart = async () => {
+        onRestart(course.id);
+    }
+
     return (
         <LinkContainer to={"/Courses/" + course.code}>
             <div className="wb-courses-course-card rounded border p-2 bg-white position-relative">
@@ -15,7 +21,7 @@ const MyCourse = ({ course }: CourseProps) => {
                     <Dropdown drop="start">
                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
                         <Dropdown.Menu>
-                            <Dropdown.Item>Restart</Dropdown.Item>
+                            <Dropdown.Item onClick={handleRestart}>Restart</Dropdown.Item>
                         </Dropdown.Menu>
                     </Dropdown>
                 </div>

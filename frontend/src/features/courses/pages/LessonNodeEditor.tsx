@@ -2,30 +2,17 @@ import { FormEvent, useEffect, useState } from "react";
 import { Alert, Button, Form, FormCheck, FormControl, FormGroup, FormLabel, FormSelect, Modal } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
-
-interface ILessonNodeAnswer {
-    id?: string;
-    text: string;
-    correct: boolean;
-}
-
-interface ILessonNode {
-    id: string;
-    type: number;
-    index: number;
-    text?: string;
-    answers: ILessonNodeAnswer[];
-    correctAnswer?: string;
-}
+import { ILessonNode, ILessonNodeAnswer } from "../components/LessonNode";
 
 interface LessonNodeEditorProps {
     nodeId: string;
     nodeCount: number;
     onDelete: (nodeId: string) => void;
     onChangeIndex: (nodeId: string, newIndex: number) => void;
+    onPreview: (nodeId: string) => void;
 }
 
-const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: LessonNodeEditorProps) => {
+const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPreview }: LessonNodeEditorProps) => {
     const { sendJsonRequest } = useApi();
     const [node, setNode] = useState<ILessonNode | null>(null);
     const [nodeText, setNodeText] = useState("");
@@ -206,6 +193,10 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
         setQuestionsAnswers(node.answers);
     }
 
+    const handlePreview = () => {
+        onPreview(nodeId);
+    }
+
     const getEditorForm = () => {
         const nodeTypes = [
             { name: "Text block", value: 1 },
@@ -277,6 +268,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
                         <div className="d-flex gap-2 justify-content-end">
                             <Button size="sm" disabled={loading || node.index <= 1} onClick={() => handleChangeIndex(node.index - 1)}>Move left</Button>
                             <Button size="sm" disabled={loading || node.index >= nodeCount} onClick={() => handleChangeIndex(node.index + 1)}>Move right</Button>
+                            <Button size="sm" disabled={loading} onClick={handlePreview}>Preview</Button>
                         </div>
                         <div className="d-flex gap-2 justify-content-end mt-2 mt-sm-0">
                             <Button size="sm" disabled={loading} variant="secondary" onClick={handleResetNode}>Reset</Button>

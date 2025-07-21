@@ -38,9 +38,12 @@ function Header({ variant }: HeaderProps) {
             <LinkContainer to="/blog">
               <Nav.Link>Blog</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/Courses/Editor">
-              <Nav.Link>Course Editor</Nav.Link>
-            </LinkContainer>
+            {
+              ["Creator", "Admin"].some(role => userInfo?.roles.includes(role)) &&
+              <LinkContainer to="/Courses/Editor">
+                <Nav.Link>Course Editor</Nav.Link>
+              </LinkContainer>
+            }
           </Nav>
           <AuthNavigation />
         </Navbar.Collapse>

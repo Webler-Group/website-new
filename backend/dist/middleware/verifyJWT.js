@@ -22,7 +22,7 @@ const verifyJWT = (req, res, next) => {
         const token = authHeader.split(" ")[1];
         jsonwebtoken_1.default.verify(token, confg_1.config.accessTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
             if (!err) {
-                const rawFingerprint = req.headers["user-agent"] + deviceId;
+                const rawFingerprint = deviceId;
                 const match = yield bcrypt_1.default.compare(rawFingerprint, decoded.fingerprint);
                 if (match) {
                     const userInfo = decoded.userInfo;

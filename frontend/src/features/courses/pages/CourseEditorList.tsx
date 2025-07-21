@@ -28,7 +28,7 @@ const CourseEditorList = ({}: CourseEditorListProps) => {
 
     return (
         <>
-            <h2>Courses</h2>
+            <h2>Course Editor</h2>
             <div className="mt-4 d-flex justify-content-end">
                 <LinkContainer to="/Courses/Editor/New">
                     <Button size='sm'>Create course</Button>

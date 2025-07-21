@@ -28,7 +28,6 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
     let posts = [];
     if (fs_1.default.existsSync(blogsDir)) {
         let names = fs_1.default.readdirSync(blogsDir);
-        console.log(names);
         posts = names.map(name => {
             const fileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, name, "info.json"));
             const json = JSON.parse(fileData.toString());
