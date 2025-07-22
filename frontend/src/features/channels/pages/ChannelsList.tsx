@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useState } from "react"
+import {useEffect, useState } from "react"
 import { useApi } from "../../../context/apiCommunication";
 import QuestionPlaceholder from "../../discuss/components/QuestionPlaceholder";
 import { Link } from "react-router-dom";
