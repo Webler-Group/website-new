@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, redirect, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
 import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
@@ -51,7 +51,7 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState(0);
 
     const [followListVisible, setFollowListVisible] = useState(0);
-
+    
     const [codes, setCodes] = useState<any[]>([])
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
 
@@ -143,7 +143,12 @@ const Profile = () => {
     const openPlaygroundMenu = () => {
         navigate("/Compiler-Playground")
     }
-
+    const handleMessage = async ()=>{
+        await sendJsonRequest('/Channels/createDirect','POST',{
+            memberId:userId,
+        })
+        navigate('/Channels/');
+    }
     const toggleUserBan = async () => {
         if (!userDetails) {
             return;
@@ -263,6 +268,8 @@ const Profile = () => {
                                                                 :
                                                                 <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
                                                         }
+                                                        <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>Message</Button>
+                                                        
                                                     </div>
                                                 )
                                             }

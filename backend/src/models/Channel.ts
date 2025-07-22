@@ -142,6 +142,7 @@ const channelSchema = new Schema({
     },
     channelIcon:{
         type: String,
+        default: "/resources/images/group_chat.png",
         trim: true,
         minLength: 1,
         maxLength: 1024
@@ -153,17 +154,8 @@ export const ChannelMessage = mongoose.model<IChannelMessage>("ChannelMessage", 
 
 
 declare interface IChannel extends InferSchemaType<typeof channelSchema> {}
-
-interface ChannelModel extends Model<IChannel> {
-    getPermissions(channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<{[K in keyof typeof permissions]:boolean}>;
-    isParticipantOf(channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<boolean>; // used only for authentication
-}
-
-export const Channel = mongoose.model<IChannel,ChannelModel>("Channel", channelSchema);
-
-
 channelSchema.statics.getPermissions = async function (channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId){
-    const permissions = await Channel.findOne({'permissions.user':userId, _id:channelId}).select("defaultPermissions permissions");
+    const permissions = await Channel.findOne({participants:{$in: userId}, _id:channelId}).select("defaultPermissions permissions");
     if(!permissions) throw "no such channel with such a user exists";
     const i = permissions.permissions.findIndex((v:any)=>{
         return v.user == userId;
@@ -173,6 +165,16 @@ channelSchema.statics.getPermissions = async function (channelId: mongoose.Types
     return {...permissions.defaultPermissions, ...permissions.permissions[i]};
 }
 channelSchema.statics.isParticipantOf = async function (channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId){
-    const n = await Channel.countDocuments({'participants.user': userId, _id:channelId}) ;
+    const n = await Channel.countDocuments({participants:{$in: userId}, _id:channelId}) ;
     return n===1;
 }
+
+interface ChannelModel extends Model<IChannel> {
+    getPermissions(channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<{[K in keyof typeof permissions]:boolean}>;
+    isParticipantOf(channelId: mongoose.Types.ObjectId, userId: mongoose.Types.ObjectId): Promise<boolean>; // used only for authentication
+}
+
+export const Channel = mongoose.model<IChannel,ChannelModel>("Channel", channelSchema);
+
+
+

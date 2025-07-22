@@ -41,6 +41,9 @@ function Header({ variant }: HeaderProps) {
             <LinkContainer to="/Courses/Editor">
               <Nav.Link>Course Editor</Nav.Link>
             </LinkContainer>
+            <LinkContainer to="/Channels">
+              <Nav.Link>Channels</Nav.Link>
+            </LinkContainer>
           </Nav>
           <AuthNavigation />
         </Navbar.Collapse>

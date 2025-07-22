@@ -35,6 +35,8 @@ import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
 import { languagesInfo } from './data/compilerLanguages';
+import {  ChannelsList } from './features/channels/pages/ChannelsList';
+import { ChannelRoom } from './features/channels/components/ChannelRoom';
 
 
 function App() {
@@ -142,6 +144,12 @@ function App() {
             </Route>
           </Route>
 
+        </Route>
+      </Route>
+      <Route path="Channels">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<ChannelsList />} />
+          <Route path=":channelId" element={<ChannelsList openChannel/>}/>
         </Route>
       </Route>
 
