@@ -36,7 +36,6 @@ import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
 import { languagesInfo } from './data/compilerLanguages';
 import {  ChannelsList } from './features/channels/pages/ChannelsList';
-import { ChannelRoom } from './features/channels/components/ChannelRoom';
 
 
 function App() {
