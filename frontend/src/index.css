@@ -21,7 +21,9 @@ ul {
 .wb-user__image {
     border-radius: 50%;
 }
-
+.channel-message:hover{
+    background-color: lightgray;
+}
 @media(max-width: 449px) {
     .wb-login-container {
         width: 100%;
