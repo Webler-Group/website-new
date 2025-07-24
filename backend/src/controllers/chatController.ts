@@ -149,3 +149,41 @@ export const createDirect = asyncHandler(async (req: IAuthRequest, res: Response
     }
     res.status(200).json({channelId:channel._id});
 });
+
+export const createGroupChat = asyncHandler(async (req: IAuthRequest, res: Response)=>{
+
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    
+    if(!Array.isArray(req.body.memberIds)){
+        res.status(404).json({message:"wrong information"});
+        return;
+    }
+    const groupName = req.body.groupName as string|undefined;
+    if(!groupName){
+        res.status(404).json({message:"missing name for group"});
+        return
+    }
+    let rawMemberIds : string[] = req.body.memberIds; 
+    console.log(rawMemberIds);
+    const prmss= rawMemberIds.map(async id=> await User.findById(id));
+    const checkIds = await Promise.all(prmss);
+    if(checkIds.filter(v=>!v).length>0 || rawMemberIds.length < 2){
+        res.status(404).json({message:"wrong or insufficent information"});
+        return;
+    }
+
+    
+    const memberIds = new Set(rawMemberIds.map(id=>new mongoose.Types.ObjectId(id)));
+    //TODO: Check for max groups limit
+    //TODO: ask target user for confirmation of firect message from this user.
+    // wait for so if it throws we are informig the user an error
+    const channel = await Channel.create({
+            participants:[userId,...memberIds.values()],
+            permissions:[],
+            createdBy:userId,
+            pinnedMessages:[],
+            channelName:groupName
+    });
+    
+    res.status(200).json({channelId:channel._id});
+});

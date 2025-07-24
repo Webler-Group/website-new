@@ -4,15 +4,19 @@ import QuestionPlaceholder from "../../discuss/components/QuestionPlaceholder";
 import { Link } from "react-router-dom";
 import { ChannelRoom } from "../components/ChannelRoom";
 
+import { CreateGroupModal } from "../components/CreateGroupModal";
+import { Button } from "react-bootstrap";
+
 
 
 export function ChannelsList({openChannel=false}){
     const [loading,setLoading] = useState(false);
     const {sendJsonRequest} = useApi();
     const [pageNumber, setPageNumber] = useState(1);
+    const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
     const [channels, setChannels] = useState<any[]>([])
 
-
+    
     useEffect(()=>{ getChannelsList()},[pageNumber])
 
     const getChannelsList = async ()=>{
@@ -26,12 +30,16 @@ export function ChannelsList({openChannel=false}){
     };
 
     let placeholders = [];
-    for (let i = 0; i < 30; ++i) {
+    for (let i = 0; i < 10; ++i) {
         placeholders.push(<QuestionPlaceholder key={i} />);
     }
     console.group(channels)
     return (<div className="d-flex mb-1">
         <div className="my-3 w-25 h-100 ">
+            <div className="container align-items-end mt-3">
+                
+                <Button onClick={()=>setShowCreateGroupModal(true)} className="ms-2 text-decoration-none align-bottom"><img width={42} height={42} style={{borderRadius:"50%"}} src="/resources/images/group_chat.png"/> New Group</Button>
+            </div>
                 {
                     loading ?
                         placeholders
@@ -48,7 +56,7 @@ export function ChannelsList({openChannel=false}){
                                      
                                     
                                     <Link to={"/Channels/" + channel.id} className="ms-2 text-decoration-none align-bottom" > <img width={42} height={42} style={{borderRadius:"50%"}} src={channel.channelIcon} /> {channel.channelName}</Link>
-                
+                                    
                                     
                                 </div>
                                  
@@ -61,5 +69,7 @@ export function ChannelsList({openChannel=false}){
         {openChannel&&
         <div className="flex-grow-1"><ChannelRoom /> </div>
         }
+        { showCreateGroupModal && <CreateGroupModal onClose={()=>setShowCreateGroupModal(false)}/>}
+        
     </div>)
 }

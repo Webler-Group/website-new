@@ -137,7 +137,7 @@ const channelSchema = new Schema({
     channelName:{
         type: String,
         trim: true,
-        minLength: 1,
+        minLength: 4,
         maxLength: 128
     },
     channelIcon:{
