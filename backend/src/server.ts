@@ -17,6 +17,8 @@ import sitemapRoutes from "./routes/sitemapRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
+import { Server } from "socket.io";
+import allowedOrigins from "./config/allowedOrigins";
 
 async function main() {
     console.log(config.nodeEnv);
@@ -24,14 +26,34 @@ async function main() {
     const app = express();
     const server = http.createServer(app);
 
+    const io = new Server(server, {
+        cors: {
+            origin: allowedOrigins,
+            methods: ["POST", "GET"],
+            credentials: true
+        }
+    });
+
+    io.on('connection', (socket) => {
+        console.log('User connected:', socket.id);
+
+        // Listen for chat message
+        socket.on('chat message', (data) => {
+            io.emit('chat message', data); // Broadcast to all
+        });
+
+        // Custom events for notifications
+        socket.on('send notification', (notif) => {
+            io.to(notif.userId).emit('notification', notif);
+        });
+
+        // Handle disconnect
+        socket.on('disconnect', () => {
+            console.log('User disconnected');
+        });
+    });
+
     const apiPrefix = "/api";
-
-    // const wss = new WebSocket.Server({ server });
-
-    // wss.on("connection", (ws) => {
-    //     console.log("A new client connected!");
-    //     ws.send("Welcome New Client!");
-    // })
 
     await connectDB();
 
@@ -39,7 +61,7 @@ async function main() {
 
     app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
     app.use(logger);
-    if(config.nodeEnv == "production") {
+    if (config.nodeEnv == "production") {
         app.use(cors(corsOptions));
     }
     app.use(express.json({ limit: "2mb" }));
@@ -60,7 +82,7 @@ async function main() {
 
     app.use(errorHandler);
 
-    app.listen(config.port, () => console.log(`Server running on port ${config.port}`));
+    server.listen(config.port, () => console.log(`Server running on port ${config.port}`));
 }
 
 main();
