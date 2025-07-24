@@ -26,7 +26,7 @@ const courseLessonSchema = new mongoose_1.default.Schema({
         type: Number,
         required: true
     },
-    courseId: {
+    course: {
         type: mongoose_1.default.Types.ObjectId,
         ref: "Course",
         required: true

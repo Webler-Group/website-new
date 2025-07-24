@@ -92,7 +92,7 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     }
     let lessons = [];
     if (includeLessons === true) {
-        lessons = yield CourseLesson_1.default.find({ courseId: course.id }).sort({ "index": "asc" });
+        lessons = yield CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
         lessons = lessons.map(lesson => ({
             id: lesson._id,
             title: lesson.title,
@@ -128,13 +128,12 @@ const deleteCourse = (0, express_async_handler_1.default)((req, res) => __awaite
     }
 }));
 const editCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { courseId, code, title, description, visible } = req.body;
+    const { courseId, title, description, visible } = req.body;
     const course = yield Course_1.default.findById(courseId);
     if (!course) {
         res.status(404).json({ message: "Course not found" });
         return;
     }
-    course.code = code;
     course.title = title;
     course.description = description;
     course.visible = visible;
@@ -182,9 +181,32 @@ const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         lesson: data
     });
 }));
+const getLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { nodeId } = req.body;
+    const lessonNode = yield LessonNode_1.default.findById(nodeId);
+    if (!lessonNode) {
+        res.status(404).json({ message: "Lesson node not found" });
+        return;
+    }
+    const answers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id });
+    res.json({
+        lessonNode: {
+            id: lessonNode._id,
+            index: lessonNode.index,
+            type: lessonNode._type,
+            text: lessonNode.text,
+            correctAnswer: lessonNode.correctAnswer,
+            answers: answers.map(x => ({
+                id: x._id,
+                text: x.text,
+                correct: x.correct
+            }))
+        }
+    });
+}));
 const getLessonList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { courseId } = req.body;
-    let lessons = yield CourseLesson_1.default.find({ courseId }).sort({ "index": "asc" });
+    let lessons = yield CourseLesson_1.default.find({ course: courseId }).sort({ "index": "asc" });
     lessons = lessons.map(lesson => ({
         id: lesson._id,
         title: lesson.title,
@@ -202,10 +224,10 @@ const createLesson = (0, express_async_handler_1.default)((req, res) => __awaite
         res.status(404).json({ message: "Course not found" });
         return;
     }
-    const lastLessonIndex = yield CourseLesson_1.default.count({ courseId });
+    const lastLessonIndex = yield CourseLesson_1.default.count({ course: courseId });
     const lesson = yield CourseLesson_1.default.create({
         title,
-        courseId,
+        course: courseId,
         index: lastLessonIndex + 1
     });
     res.json({
@@ -252,7 +274,7 @@ const deleteLesson = (0, express_async_handler_1.default)((req, res) => __awaite
     }
     try {
         yield CourseLesson_1.default.deleteAndCleanup({ _id: lessonId });
-        yield CourseLesson_1.default.updateMany({ courseId: lesson.courseId, index: { $gt: lesson.index } }, { $inc: { index: -1 } });
+        yield CourseLesson_1.default.updateMany({ course: lesson.course, index: { $gt: lesson.index } }, { $inc: { index: -1 } });
         res.json({ success: true });
     }
     catch (err) {
@@ -293,29 +315,6 @@ const uploadCourseCoverImage = (0, express_async_handler_1.default)((req, res) =
             error: err
         });
     }
-}));
-const getLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { nodeId } = req.body;
-    const lessonNode = yield LessonNode_1.default.findById(nodeId);
-    if (!lessonNode) {
-        res.status(404).json({ message: "Lesson node not found" });
-        return;
-    }
-    const answers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id });
-    res.json({
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type,
-            text: lessonNode.text,
-            correctAnswer: lessonNode.correctAnswer,
-            answers: answers.map(x => ({
-                id: x._id,
-                text: x.text,
-                correct: x.correct
-            }))
-        }
-    });
 }));
 const createLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { lessonId } = req.body;
@@ -450,9 +449,9 @@ const courseEditorController = {
     getLessonList,
     editLesson,
     deleteLesson,
-    getLessonNode,
     createLessonNode,
     getLesson,
+    getLessonNode,
     deleteLessonNode,
     editLessonNode,
     changeLessonNodeIndex,

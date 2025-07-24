@@ -658,3 +658,71 @@ ul {
     box-shadow: 0 6px 0 rgba(107, 127, 153, .5);
     transform: translateY(-2px);
 }
+
+.wb-course-lesson-container {
+    position: relative;
+    height: 100vh;
+}
+
+.wb-course-lesson-main {
+    max-width: 648px;
+    margin: 0 auto;
+}
+
+.wb-lesson-node-question {
+    width: 100%;
+    max-width: 552px;
+    margin: 0 auto;
+    flex-grow: 1;
+}
+
+.wb-course-lesson-answer {
+    background-color: #fff;
+    border: 2px solid #c8d2db;
+    border-radius: 4px;
+    width: 100%;
+    font-family: "Fira Mono", sans-serif;
+    color: #2d3846;
+}
+
+.wb-course-lesson-answer.initial {
+    box-shadow: 0 2px 0 1px #c8d2db;
+}
+
+.wb-course-lesson-answer.selected {
+    background: rgba(20, 158, 242, .1);
+    border-color: #149ef2;
+}
+
+.wb-course-lesson-answer.correct {
+    background: rgba(64, 175, 12, .1);
+    border-color: #40af0c;
+}
+
+.wb-course-lesson-answer.incorrect {
+    background: rgba(242, 0, 87, .1);
+    border-color: #f20057;
+}
+
+.wb-course-lesson-arrow-pill {
+    width: 48px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* double arrow tip: left and right both angled forward */
+    clip-path: polygon(0% 0%,
+            /* top-left inward angle */
+            85% 0%,
+            /* top-right inward angle */
+            100% 50%,
+            /* right point */
+            85% 100%,
+            /* bottom-right inward */
+            0% 100%,
+            /* bottom-left inward */
+            15% 50%
+            /* left point */
+        );
+}

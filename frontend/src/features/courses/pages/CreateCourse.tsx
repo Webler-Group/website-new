@@ -146,7 +146,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Course code</FormLabel>
-                        <FormControl type="text" required value={code} onChange={(e) => setCode(e.target.value)} />
+                        <FormControl type="text" required value={code} readOnly={courseCode !== null} onChange={(e) => setCode(e.target.value)} />
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Course description</FormLabel>

@@ -89,7 +89,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let lessons: any[] = [];
     if (includeLessons === true) {
-        lessons = await CourseLesson.find({ courseId: course.id }).sort({ "index": "asc" });
+        lessons = await CourseLesson.find({ course: course.id }).sort({ "index": "asc" });
         
         lessons = lessons.map(lesson => ({
             id: lesson._id,
@@ -132,7 +132,7 @@ const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId, code, title, description, visible } = req.body;
+    const { courseId, title, description, visible } = req.body;
 
     const course = await Course.findById(courseId);
     if (!course) {
@@ -140,7 +140,6 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    course.code = code;
     course.title = title;
     course.description = description;
     course.visible = visible;
@@ -197,10 +196,38 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { nodeId } = req.body;
+
+    const lessonNode = await LessonNode.findById(nodeId);
+
+    if (!lessonNode) {
+        res.status(404).json({ message: "Lesson node not found" });
+        return;
+    }
+
+    const answers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id });
+
+    res.json({
+        lessonNode: {
+            id: lessonNode._id,
+            index: lessonNode.index,
+            type: lessonNode._type,
+            text: lessonNode.text,
+            correctAnswer: lessonNode.correctAnswer,
+            answers: answers.map(x => ({
+                id: x._id,
+                text: x.text,
+                correct: x.correct
+            }))
+        }
+    });
+});
+
 const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { courseId } = req.body;
 
-    let lessons: any[] = await CourseLesson.find({ courseId }).sort({ "index": "asc" });
+    let lessons: any[] = await CourseLesson.find({ course: courseId }).sort({ "index": "asc" });
     lessons = lessons.map(lesson => ({
         id: lesson._id,
         title: lesson.title,
@@ -222,11 +249,11 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const lastLessonIndex = await CourseLesson.count({ courseId });
+    const lastLessonIndex = await CourseLesson.count({ course: courseId });
 
     const lesson = await CourseLesson.create({
         title,
-        courseId,
+        course: courseId,
         index: lastLessonIndex + 1
     });
 
@@ -284,7 +311,7 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         await CourseLesson.deleteAndCleanup({ _id: lessonId });
 
         await CourseLesson.updateMany(
-            { courseId: lesson.courseId, index: { $gt: lesson.index } }, 
+            { course: lesson.course, index: { $gt: lesson.index } }, 
             { $inc: { index: -1 } }
         );
 
@@ -336,34 +363,6 @@ const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Respo
         });
     }
 
-});
-
-const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { nodeId } = req.body;
-
-    const lessonNode = await LessonNode.findById(nodeId);
-
-    if (!lessonNode) {
-        res.status(404).json({ message: "Lesson node not found" });
-        return;
-    }
-
-    const answers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id });
-
-    res.json({
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type,
-            text: lessonNode.text,
-            correctAnswer: lessonNode.correctAnswer,
-            answers: answers.map(x => ({
-                id: x._id,
-                text: x.text,
-                correct: x.correct
-            }))
-        }
-    });
 });
 
 const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -527,9 +526,9 @@ const courseEditorController = {
     getLessonList,
     editLesson,
     deleteLesson,
-    getLessonNode,
     createLessonNode,
     getLesson,
+    getLessonNode,
     deleteLessonNode,
     editLessonNode,
     changeLessonNodeIndex,

@@ -36,6 +36,9 @@ import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
 import { languagesInfo } from './data/compilerLanguages';
 import {  ChannelsList } from './features/channels/pages/ChannelsList';
+import CoursePage from './features/courses/pages/CoursePage';
+import CourseLessonPage from './features/courses/pages/CourseLessonPage';
+import SocketioTest from './pages/SocketioTest';
 
 
 function App() {
@@ -57,6 +60,7 @@ function App() {
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route index element={<Home />} />
+        <Route path="Socketio-Test" element={<SocketioTest />} />
       </Route>
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
@@ -123,7 +127,7 @@ function App() {
       <Route path="Courses">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
 
-          <Route element={<RequireAuth allowedRoles={["Admin"]} />}>
+          <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
             <Route path="Editor">
               <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
               <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null} />} />} />
@@ -135,14 +139,20 @@ function App() {
             </Route>
           </Route>
 
-          <Route element={<RequireAuth allowedRoles={allRoles} />}>
-            <Route index element={<CourseList />} />
-            <Route path=":courseCode">
-              <Route index />
-              <Route path="Lesson/:lessonId" />
-            </Route>
-          </Route>
+        </Route>
 
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<CourseList />} />
+        </Route>
+
+        <Route element={<RequireAuth allowedRoles={allRoles} />}>
+
+          <Route path=":courseCode">
+            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+              <Route index element={<CoursePage />} />
+            </Route>
+            <Route path="Lesson/:lessonId" element={<CourseLessonPage />} />
+          </Route>
         </Route>
       </Route>
       <Route path="Channels">

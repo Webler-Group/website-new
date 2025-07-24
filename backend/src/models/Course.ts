@@ -38,8 +38,8 @@ const courseSchema = new mongoose.Schema({
 });
 
 courseSchema.statics.deleteAndCleanup = async function(courseId: mongoose.Types.ObjectId) {
-    await CourseLesson.deleteAndCleanup({ courseId });
-    await CourseProgress.deleteMany({ courseId });
+    await CourseLesson.deleteAndCleanup({ course: courseId });
+    await CourseProgress.deleteMany({ course: courseId });
     await Course.deleteOne({ _id: courseId });
 }
 

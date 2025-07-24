@@ -17,8 +17,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
     const consoleRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        const callback: (this: Window, ev: MessageEvent<any>) => void = function (response: any) {
-
+        const callback = function (response: any) {
             if (response.data && response.data.console) {
 
                 const console = response.data.console;
@@ -41,20 +40,21 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
     }, []);
 
     useEffect(() => {
-        if (iframeRef.current && iframeRef.current.contentWindow) {
+        if (iframeRef.current) {
 
             if (tabOpen) {
-                let output = genOutput();
-
-                iframeRef.current.contentWindow.postMessage(output, "*");
+                const output = genOutput();
+                iframeRef.current.srcdoc = output;
 
                 setConsoleLogs([]);
+            } else {
+                iframeRef.current.srcdoc = "<!DOCTYPE HTML><html><head></head><body></body></html>";
             }
         }
     }, [tabOpen, source]);
 
     const clearConsole = () => {
-        setConsoleLogs(() => [])
+        setConsoleLogs(() => []);
     }
 
     const genOutput = () => {
@@ -64,16 +64,103 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
         const head = doc.head || doc.getElementsByTagName('head')[0];
         const body = doc.body || doc.getElementsByTagName('body')[0];
 
+        // Inject CSS
         const style = document.createElement("style");
         style.appendChild(document.createTextNode(cssSource));
         head.appendChild(style);
 
+        // Inject console override script BEFORE user scripts
+        const consoleOverrideScript = document.createElement("script");
+        consoleOverrideScript.text = `
+      (function () {
+        function processPayload(item) {
+            if (typeof item === "function") {
+                return { __type: "function", __name: item.name };
+            }
+            if (typeof item === "symbol") {
+                return { __type: "symbol", __description: item.description }
+            }
+            if (typeof item === "object") {
+                if (item === null) return null;
+
+                if (Array.isArray(item)) {
+                    let arr = [];
+                    for (let elem of item) {
+                        arr.push(processPayload(elem));
+                    }
+                    return arr;
+                }
+                if(item.constructor.name === "Date" || item.constructor.name === "RegExp") {
+                    return item;
+                }
+                if (item.constructor.name === "Object") {
+                    let obj = {};
+                    for (let entry of Object.entries(item)) {
+                        obj[entry[0]] = processPayload(entry[1]);
+                    }
+                    return obj;
+                }
+                return { __type: "object", __constructor: item.constructor.name };
+            }
+            return item;
+        }
+
+        const pushToConsole = (payload, type) => {
+            window.parent.postMessage({
+                console: {
+                    data: processPayload(payload),
+                    method: type
+                }
+            }, "*");
+        }
+
+        let console = (function(systemConsole) {
+            return {
+                log(...args) {
+                    pushToConsole(args, "log");
+                    systemConsole.log.apply(this, args);
+                },
+                info(...args) {
+                    pushToConsole(args, "info");
+                    systemConsole.info.apply(this, args);
+                },
+                warn(...args) {
+                    pushToConsole(args, "warn");
+                    systemConsole.warn.apply(this, args);
+                },
+                error(...args) {
+                    pushToConsole(args, "error");
+                    systemConsole.error.apply(this, args);
+                },
+                clear: function () {
+                    pushToConsole([], "clear");
+                    systemConsole.clear.apply(this, {});
+                },
+                time: function (...args) {
+                    systemConsole.time.apply(this, args);
+                }
+            };
+        })(window.console);
+        window.console = { ...window.console, ...console };
+
+        window.onerror = function (message, source, lineno, colno, error) {
+            pushToConsole([message], "error");
+        }
+        window.addEventListener("unhandledrejection", function (event) {
+            pushToConsole([event.reason], "error");
+        });
+      })();
+    `;
+        head.insertBefore(consoleOverrideScript, head.firstChild);
+
+        // Inject user JS
         const script = document.createElement("script");
         script.text = jsSource;
         body.appendChild(script);
 
-        return '<!DOCTYPE HTML>' + '\n' + doc.documentElement.outerHTML;
-    }
+        return '<!DOCTYPE HTML>\n' + doc.documentElement.outerHTML;
+    };
+
 
     const onConsoleShow = () => {
         setConsoleVisible(true);
@@ -254,7 +341,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
                 </Modal.Body>
             </Modal>
             <div className="h-100">
-                <iframe className="wb-playground-output-web" ref={iframeRef} src="https://webler-group.github.io/web-playground/" allow="fullscreen"></iframe>
+                <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts"></iframe>
                 <div className="wb-web-wrapper__frame-wrapper__console-btn">
                     <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
                 </div>

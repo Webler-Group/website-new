@@ -28,7 +28,7 @@ const CourseEditorList = ({}: CourseEditorListProps) => {
 
     return (
         <>
-            <h2>Courses</h2>
+            <h2>Course Editor</h2>
             <div className="mt-4 d-flex justify-content-end">
                 <LinkContainer to="/Courses/Editor/New">
                     <Button size='sm'>Create course</Button>
@@ -43,7 +43,7 @@ const CourseEditorList = ({}: CourseEditorListProps) => {
                         :
                         courses.map(course => {
                             return (
-                                <div className="mt-2" key={course.id}>
+                                <div className="mt-3" key={course.id}>
                                     <Course course={course} isEditor={true} />
                                 </div>
                             )

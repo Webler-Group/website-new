@@ -17,12 +17,14 @@ const Course_1 = __importDefault(require("../models/Course"));
 const CourseProgress_1 = __importDefault(require("../models/CourseProgress"));
 const CourseLesson_1 = __importDefault(require("../models/CourseLesson"));
 const LessonNode_1 = __importDefault(require("../models/LessonNode"));
+const QuizAnswer_1 = __importDefault(require("../models/QuizAnswer"));
+const User_1 = __importDefault(require("../models/User"));
 const getCourseList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { excludeUserId } = req.body;
     let result;
     if (typeof excludeUserId !== "undefined") {
-        const progresses = yield CourseProgress_1.default.find({ userId: excludeUserId }).select("courseId");
-        const startedCourseIds = progresses.map(x => x.courseId);
+        const progresses = yield CourseProgress_1.default.find({ userId: excludeUserId }).select("course");
+        const startedCourseIds = progresses.map(x => x.course);
         result = yield Course_1.default.find({
             visible: true,
             _id: { $nin: startedCourseIds }
@@ -46,7 +48,7 @@ const getCourseList = (0, express_async_handler_1.default)((req, res) => __await
 const getUserCourseList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { userId } = req.body;
     const result = yield CourseProgress_1.default.find({ userId })
-        .populate("courseId");
+        .populate("course");
     const data = result.map(x => ({
         id: x.course._id,
         code: x.course.code,
@@ -75,21 +77,19 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         res.status(404).json({ message: "Course not found" });
         return;
     }
-    let userProgress = yield CourseProgress_1.default.findOne({ courseId: course.id, userId: currentUserId });
+    let userProgress = yield CourseProgress_1.default.findOne({ course: course.id, userId: currentUserId });
     if (!userProgress) {
-        userProgress = yield CourseProgress_1.default.create({ courseId: course.id, userId: currentUserId });
+        userProgress = yield CourseProgress_1.default.create({ course: course.id, userId: currentUserId });
     }
     let lessons = [];
     if (includeLessons === true) {
-        lessons = yield CourseLesson_1.default.find({ courseId: course.id }).sort({ "index": "asc" });
-        let lastLessonIndex = 1;
+        lessons = yield CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
+        const lastUnlockedLessonIndex = yield userProgress.getLastUnlockedLessonIndex();
+        let lastUnlockedNodeIndex = 1;
         if (userProgress.lastLessonNodeId) {
-            const lastLessonNode = yield LessonNode_1.default.findById(userProgress.lastLessonNodeId);
+            const lastLessonNode = yield LessonNode_1.default.findById(userProgress.lastLessonNodeId).select("index");
             if (lastLessonNode) {
-                const lastLesson = yield CourseLesson_1.default.findById(lastLessonNode.lessonId);
-                if (lastLesson) {
-                    lastLessonIndex = lastLesson.nodes == lastLessonNode.index ? lastLesson.index + 1 : lastLesson.index;
-                }
+                lastUnlockedNodeIndex = lastLessonNode.index + 1;
             }
         }
         lessons = lessons.map(lesson => ({
@@ -97,7 +97,9 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
             title: lesson.title,
             index: lesson.index,
             nodeCount: lesson.nodes,
-            unlocked: lesson.index <= lastLessonIndex
+            unlocked: lesson.index <= lastUnlockedLessonIndex,
+            completed: lesson.index < lastUnlockedLessonIndex,
+            lastUnlockedNodexIndex: lesson.index < lastUnlockedLessonIndex ? lesson.nodes : lastUnlockedNodeIndex
         }));
     }
     res.json({
@@ -116,9 +118,177 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         }
     });
 }));
+const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const { lessonId } = req.body;
+    const currentUserId = req.userId;
+    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    if (!lesson) {
+        res.status(404).json({ message: "Lesson not found" });
+        return;
+    }
+    const userProgress = yield CourseProgress_1.default.findOne({ course: lesson.course, userId: currentUserId }).populate("lastLessonNodeId", "index lessonId");
+    if (!userProgress) {
+        res.status(404).json({ message: "User progress not found" });
+        return;
+    }
+    const lastUnlockedLessonIndex = yield userProgress.getLastUnlockedLessonIndex();
+    if (lesson.index > lastUnlockedLessonIndex) {
+        res.status(400).json({ message: "Lesson is not unlocked" });
+        return;
+    }
+    const data = {
+        id: lesson._id,
+        title: lesson.title,
+        index: lesson.index,
+        nodeCount: lesson.nodes
+    };
+    let lastUnlockedNodeIndex = 1;
+    if (lesson._id.equals((_a = userProgress.lastLessonNodeId) === null || _a === void 0 ? void 0 : _a.lessonId)) {
+        lastUnlockedNodeIndex = userProgress.lastLessonNodeId.index + 1;
+    }
+    const nodes = yield LessonNode_1.default.find({ lessonId: lesson._id }).sort({ index: "asc" }).select("_id _type index");
+    data.nodes = nodes.map(x => ({
+        id: x._id,
+        index: x.index,
+        type: x._type,
+        unlocked: lesson.index < lastUnlockedLessonIndex || x.index <= lastUnlockedNodeIndex
+    }));
+    res.json({
+        lesson: data
+    });
+}));
+const getLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { nodeId, mock } = req.body;
+    const currentUserId = req.userId;
+    const lessonNode = yield LessonNode_1.default.findById(nodeId)
+        .populate("lessonId");
+    if (!lessonNode) {
+        res.status(404).json({ message: "Lesson node not found" });
+        return;
+    }
+    if (!mock) {
+        const userProgress = yield CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
+        if (!userProgress) {
+            res.status(404).json({ message: "User progress not found" });
+            return;
+        }
+        const { unlocked, isLast } = yield userProgress.getLessonNodeInfo(lessonNode._id);
+        if (!unlocked) {
+            res.status(400).json({ message: "Node is not unlocked" });
+            return;
+        }
+        if (lessonNode._type == 1 && isLast) {
+            userProgress.lastLessonNodeId = lessonNode._id;
+            yield userProgress.save();
+        }
+    }
+    else {
+        const user = yield User_1.default.findById(currentUserId).select("roles");
+        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+            res.status(403).json({ message: "Unauthorized" });
+            return;
+        }
+    }
+    const answers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode._id });
+    res.json({
+        lessonNode: {
+            id: lessonNode._id,
+            index: lessonNode.index,
+            type: lessonNode._type,
+            text: lessonNode.text,
+            correctAnswer: lessonNode.correctAnswer,
+            answers: answers.map(x => ({
+                id: x._id,
+                text: x.text,
+                correct: x.correct
+            }))
+        }
+    });
+}));
+const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { nodeId, correctAnswer, answers, mock } = req.body;
+    const currentUserId = req.userId;
+    const lessonNode = yield LessonNode_1.default.findById(nodeId)
+        .populate("lessonId");
+    if (!lessonNode) {
+        res.status(404).json({ message: "Lesson node not found" });
+        return;
+    }
+    let userProgress = null;
+    let isLast = false;
+    if (!mock) {
+        userProgress = (yield CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index"));
+        if (!userProgress) {
+            res.status(404).json({ message: "User progress not found" });
+            return;
+        }
+        const nodeInfo = yield userProgress.getLessonNodeInfo(lessonNode._id);
+        if (!nodeInfo.unlocked) {
+            res.status(400).json({ message: "Node is not unlocked" });
+            return;
+        }
+        isLast = nodeInfo.isLast;
+    }
+    else {
+        const user = yield User_1.default.findById(currentUserId).select("roles");
+        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+            res.status(403).json({ message: "Unauthorized" });
+            return;
+        }
+    }
+    const nodeAnswers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
+    let correct = false;
+    switch (lessonNode._type) {
+        case 1: {
+            correct = true;
+            break;
+        }
+        case 2:
+        case 3: {
+            correct = nodeAnswers.every(x => {
+                const myAnswer = answers.find((y) => y.id == x._id);
+                return myAnswer && myAnswer.correct == x.correct;
+            });
+            break;
+        }
+        case 4: {
+            correct = correctAnswer == lessonNode.correctAnswer;
+            break;
+        }
+    }
+    if (!mock && isLast && correct) {
+        userProgress.lastLessonNodeId = lessonNode.id;
+        yield userProgress.save();
+    }
+    res.json({
+        success: true,
+        data: {
+            correct
+        }
+    });
+}));
+const resetCourseProgress = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { courseId } = req.body;
+    const currentUserId = req.userId;
+    const userProgress = yield CourseProgress_1.default.findOne({ course: courseId, userId: currentUserId });
+    if (!userProgress) {
+        res.status(404).json({ message: "Course progress not found" });
+        return;
+    }
+    userProgress.lastLessonNodeId = null;
+    userProgress.save();
+    res.json({
+        success: true
+    });
+}));
 const courseController = {
     getCourseList,
     getUserCourseList,
-    getCourse
+    getCourse,
+    getLesson,
+    getLessonNode,
+    solve,
+    resetCourseProgress
 };
 exports.default = courseController;
