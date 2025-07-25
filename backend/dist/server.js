@@ -31,22 +31,13 @@ const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
 const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
-const socket_io_1 = require("socket.io");
-const allowedOrigins_1 = __importDefault(require("./config/allowedOrigins"));
-const verifyJWTWebSocket_1 = __importDefault(require("./middleware/verifyJWTWebSocket"));
+const socketServer_1 = require("./config/socketServer");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(confg_1.config.nodeEnv);
         const app = (0, express_1.default)();
         const server = http_1.default.createServer(app);
-        const io = new socket_io_1.Server(server, {
-            cors: {
-                origin: allowedOrigins_1.default,
-                methods: ["POST", "GET"],
-                credentials: true
-            }
-        });
-        io.use(verifyJWTWebSocket_1.default);
+        (0, socketServer_1.init)(server);
         const apiPrefix = "/api";
         yield (0, dbConn_1.default)();
         (0, cronJobs_1.initCronJobs)();

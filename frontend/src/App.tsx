@@ -58,9 +58,6 @@ function App() {
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route index element={<Home />} />
-      </Route>
-
-      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route path="Terms-of-use" element={<TermsOfUse />} />
         <Route path="Contact" element={<Contact />} />
       </Route>

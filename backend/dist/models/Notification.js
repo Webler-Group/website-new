@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
+const socketServer_1 = require("../config/socketServer");
 const notificationSchema = new mongoose_1.default.Schema({
     /*
     * 101 - {action_user} followed you
@@ -54,6 +55,11 @@ const notificationSchema = new mongoose_1.default.Schema({
     }
 }, {
     timestamps: true
+});
+notificationSchema.post("save", (doc, next) => {
+    const io = (0, socketServer_1.getIO)();
+    io.to(doc.user.toString()).emit("notification", {});
+    next();
 });
 const Notification = mongoose_1.default.model("Notification", notificationSchema);
 exports.default = Notification;

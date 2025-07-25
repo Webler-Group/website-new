@@ -17,9 +17,7 @@ import sitemapRoutes from "./routes/sitemapRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
-import { Server } from "socket.io";
-import allowedOrigins from "./config/allowedOrigins";
-import verifyJWTWebSocket from "./middleware/verifyJWTWebSocket";
+import { init } from "./config/socketServer";
 
 async function main() {
     console.log(config.nodeEnv);
@@ -27,15 +25,7 @@ async function main() {
     const app = express();
     const server = http.createServer(app);
 
-    const io = new Server(server, {
-        cors: {
-            origin: allowedOrigins,
-            methods: ["POST", "GET"],
-            credentials: true
-        }
-    });
-
-    io.use(verifyJWTWebSocket);
+    init(server);
 
     const apiPrefix = "/api";
 
