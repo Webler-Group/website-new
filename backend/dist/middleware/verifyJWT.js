@@ -21,11 +21,12 @@ const verifyJWT = (req, res, next) => {
     if (typeof authHeader === "string" && authHeader.startsWith("Bearer ") && typeof deviceId === "string") {
         const token = authHeader.split(" ")[1];
         jsonwebtoken_1.default.verify(token, confg_1.config.accessTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+            const accessTokenPayload = decoded;
             if (!err) {
                 const rawFingerprint = deviceId;
-                const match = yield bcrypt_1.default.compare(rawFingerprint, decoded.fingerprint);
+                const match = yield bcrypt_1.default.compare(rawFingerprint, accessTokenPayload.fingerprint);
                 if (match) {
-                    const userInfo = decoded.userInfo;
+                    const userInfo = accessTokenPayload.userInfo;
                     req.userId = userInfo.userId;
                     req.roles = userInfo.roles;
                 }
