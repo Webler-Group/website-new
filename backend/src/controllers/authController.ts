@@ -9,7 +9,7 @@ import CaptchaRecord from "../models/CaptchaRecord";
 import { config } from "../confg";
 
 const login = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, deviceId } = req.body;
 
     if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -25,10 +25,10 @@ const login = asyncHandler(async (req, res) => {
             return
         }
 
-        const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
-            userId: user._id.toString(),
-            roles: user.roles
-        })
+        const { accessToken, data: tokenInfo } = await signAccessToken(req, { 
+            userId: user._id.toString(), 
+            roles: user.roles 
+        }, deviceId);
 
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
             (tokenInfo as JwtPayload).exp! * 1000 : 0;
@@ -61,7 +61,7 @@ const login = asyncHandler(async (req, res) => {
 })
 
 const register = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, password, solution, captchaId } = req.body;
+    const { email, name, password, solution, captchaId, deviceId } = req.body;
 
     if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -93,10 +93,10 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
     if (user) {
 
-        const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
+        const { accessToken, data: tokenInfo } = await signAccessToken(req, {
             userId: user._id.toString(),
             roles: user.roles
-        })
+        }, deviceId);
 
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
             (tokenInfo as JwtPayload).exp! * 1000 : 0;
@@ -137,6 +137,7 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const refresh = asyncHandler(async (req: Request, res: Response) => {
+    const { deviceId } = req.body;
     const cookies = req.cookies;
 
     if (!cookies?.refreshToken) {
@@ -162,10 +163,10 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
                 return
             }
 
-            const { accessToken, data: tokenInfo, deviceId } = await signAccessToken(req, {
+            const { accessToken, data: tokenInfo } = await signAccessToken(req, {
                 userId: user._id.toString(),
                 roles: user.roles
-            })
+            }, deviceId);
 
             const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
                 (tokenInfo as JwtPayload).exp! * 1000 : 0;

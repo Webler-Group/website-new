@@ -19,6 +19,7 @@ import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
 import { Server } from "socket.io";
 import allowedOrigins from "./config/allowedOrigins";
+import verifyJWTWebSocket from "./middleware/verifyJWTWebSocket";
 
 async function main() {
     console.log(config.nodeEnv);
@@ -34,24 +35,7 @@ async function main() {
         }
     });
 
-    io.on('connection', (socket) => {
-        console.log('User connected:', socket.id);
-
-        // Listen for chat message
-        socket.on('chat message', (data) => {
-            io.emit('chat message', data); // Broadcast to all
-        });
-
-        // Custom events for notifications
-        socket.on('send notification', (notif) => {
-            io.to(notif.userId).emit('notification', notif);
-        });
-
-        // Handle disconnect
-        socket.on('disconnect', () => {
-            console.log('User disconnected');
-        });
-    });
+    io.use(verifyJWTWebSocket);
 
     const apiPrefix = "/api";
 
