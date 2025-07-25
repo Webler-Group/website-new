@@ -12,35 +12,72 @@ if (args.length !== 1) {
 const projectDir = path.resolve(args[0]);
 
 const nginxConfig = `
+# Redirect HTTP to HTTPS and non-www to www
 server {
-  listen 80;
-  server_name localhost;
+    listen 80;
+    server_name weblercodes.com www.weblercodes.com;
 
-  location / {
-    root ${path.join(projectDir, "frontend/dist")};
-    index index.html index.htm;
-    proxy_http_version 1.1;
-    proxy_set_header Host $host;
-    try_files $uri $uri/ /index.html;
-  }
+    # Redirect to HTTPS with www
+    return 301 https://www.weblercodes.com$request_uri;
+}
 
-  location /api {
-    proxy_pass http://localhost:5500;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-  }
+# Redirect HTTPS non-www to www
+server {
+    listen 443 ssl;
+    server_name weblercodes.com;
 
-  location /uploads {
-    proxy_pass http://localhost:5500;
-    proxy_http_version 1.1;
-    proxy_set_header Upgrade $http_upgrade;
-    proxy_set_header Connection 'upgrade';
-    proxy_set_header Host $host;
-    proxy_cache_bypass $http_upgrade;
-  }
+    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    return 301 https://www.weblercodes.com$request_uri;
+}
+
+# Main server block for www version
+server {
+    listen 443 ssl;
+    server_name www.weblercodes.com;
+
+    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    location / {
+        root ${path.join(projectDir, "frontend/dist")};
+        index index.html index.htm;
+        try_files $uri $uri/ /index.html;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location /api {
+        proxy_pass http://localhost:5500;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /uploads {
+        proxy_pass http://localhost:5500;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+
+    location /socket.io {
+        proxy_pass http://localhost:5500;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
 }
 `.trim();
 

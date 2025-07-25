@@ -12,7 +12,7 @@ interface RegisterFormProps {
 
 const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const { sendJsonRequest } = useApi();
-    const { authenticate, updateUser } = useAuth();
+    const { authenticate, updateUser, deviceId } = useAuth();
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
@@ -49,9 +49,9 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
 
     const registerUser = async () => {
         setError("");
-        const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution });
+        const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution, deviceId });
         if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn, result.deviceId);
+            authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);
             onRegister();
         }

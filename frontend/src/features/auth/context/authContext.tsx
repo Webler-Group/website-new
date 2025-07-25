@@ -1,4 +1,4 @@
-import React, { ReactNode, useContext, useState } from "react"
+import React, { ReactNode, useContext, useState } from "react";
 
 interface UserInfo {
     id: string;
@@ -17,8 +17,8 @@ interface AuthState {
     userInfo: UserInfo | null;
     accessToken: string | null;
     expiresIn: number;
-    deviceId: string | null;
-    authenticate: (accessToken: string | null, expiresIn?: number, deviceId?: string) => void;
+    deviceId: string;
+    authenticate: (accessToken: string | null, expiresIn?: number) => void;
     updateUser: (userInfo: UserInfo) => void;
     logout: () => void;
 }
@@ -26,40 +26,47 @@ interface AuthState {
 const AuthContext = React.createContext<AuthState>({} as AuthState);
 
 interface AuthProviderProps {
-    children: ReactNode
+    children: ReactNode;
 }
 
 export const useAuth = () => useContext(AuthContext);
 
+const getOrCreateDeviceId = (): string => {
+    let id = localStorage.getItem("deviceId");
+    if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("deviceId", id);
+    }
+    return id;
+};
+
 const AuthProvider = ({ children }: AuthProviderProps) => {
+    const [accessToken, setAccessToken] = useState(
+        localStorage.getItem("accessToken") ?? null
+    );
 
-    const [accessToken, setAccessToken] = useState(localStorage.getItem("accessToken") ??
-        null);
+    const [expiresIn, setExpiresIn] = useState(
+        localStorage.getItem("expiresIn")
+            ? Number(localStorage.getItem("expiresIn"))
+            : 0
+    );
 
-    const [expiresIn, setExpiresIn] = useState(localStorage.getItem("expiresIn") ?
-        Number(localStorage.getItem("expiresIn")) :
-        0);
+    const deviceId = getOrCreateDeviceId();
 
-    const [deviceId, setDeviceId] = useState(localStorage.getItem("deviceId") ??
-        null);
+    const defaultUserInfo =
+        accessToken && localStorage.getItem("userInfo")
+            ? (JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo)
+            : null;
 
-    const defaultUserInfo = (accessToken && localStorage.getItem("userInfo")) ?
-        JSON.parse(localStorage.getItem("userInfo") as string) as UserInfo :
-        null;
     const [userInfo, setUserInfo] = useState(defaultUserInfo);
 
-    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0, deviceIdValue: string | null = null) => {
+    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0) => {
         if (accessTokenValue) {
             setAccessToken(accessTokenValue);
             localStorage.setItem("accessToken", accessTokenValue);
             setExpiresIn(expiresInValue);
             localStorage.setItem("expiresIn", expiresInValue.toString());
-            setDeviceId(deviceIdValue);
-            if(deviceIdValue) {
-                localStorage.setItem("deviceId", deviceIdValue);
-            }
-        }
-        else {
+        } else {
             setAccessToken(null);
             localStorage.removeItem("accessToken");
             setExpiresIn(0);
@@ -67,16 +74,16 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
             setUserInfo(null);
             localStorage.removeItem("userInfo");
         }
-    }
+    };
 
     const updateUser = (userInfo: UserInfo) => {
         setUserInfo(userInfo);
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
-    }
+    };
 
     const logout = () => {
         authenticate(null);
-    }
+    };
 
     const value: AuthState = {
         userInfo,
@@ -85,14 +92,10 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         deviceId,
         authenticate,
         updateUser,
-        logout
-    }
+        logout,
+    };
 
-    return (
-        <AuthContext.Provider value={value}>
-            {children}
-        </AuthContext.Provider>
-    )
-}
+    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+};
 
 export default AuthProvider;

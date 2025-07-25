@@ -40,11 +40,7 @@ const clearRefreshToken = (res: Response) => {
     res.clearCookie("refreshToken");
 }
 
-const signAccessToken = async (req: Request, userInfo: {
-        userId: string;
-        roles: string[];
-    }) => {
-    const deviceId = uuid();
+const signAccessToken = async (req: Request, userInfo: { userId: string; roles: string[]; }, deviceId: string) => {
     const fingerprintRaw = deviceId;
     const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
 
@@ -63,8 +59,7 @@ const signAccessToken = async (req: Request, userInfo: {
 
     return {
         accessToken,
-        data,
-        deviceId
+        data
     };
 }
 

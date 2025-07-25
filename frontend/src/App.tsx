@@ -38,7 +38,6 @@ import { languagesInfo } from './data/compilerLanguages';
 import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
-import SocketioTest from './pages/SocketioTest';
 
 
 function App() {
@@ -60,7 +59,6 @@ function App() {
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route index element={<Home />} />
-        <Route path="Socketio-Test" element={<SocketioTest />} />
       </Route>
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>

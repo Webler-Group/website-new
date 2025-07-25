@@ -70,11 +70,14 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
 
     const reauthenticate = async (): Promise<any> => {
         const result = await fetchQuery("/Auth/Refresh", {
-            method: "POST"
+            method: "POST",
+            body: {
+                deviceId
+            }
         })
             .then(response => response.json());
         if (result && result.accessToken && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn, result.deviceId);
+            authenticate(result.accessToken, result.expiresIn);
             return result;
         }
 

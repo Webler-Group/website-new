@@ -21,7 +21,7 @@ const captcha_1 = require("../utils/captcha");
 const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const confg_1 = require("../confg");
 const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = req.body;
+    const { email, password, deviceId } = req.body;
     if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -32,10 +32,10 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
             res.status(401).json({ message: "Account is deactivated" });
             return;
         }
-        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
             userId: user._id.toString(),
             roles: user.roles
-        });
+        }, deviceId);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
@@ -62,7 +62,7 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     }
 }));
 const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, name, password, solution, captchaId } = req.body;
+    const { email, name, password, solution, captchaId, deviceId } = req.body;
     if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -85,10 +85,10 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         emailVerified: confg_1.config.nodeEnv == "development"
     });
     if (user) {
-        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
             userId: user._id.toString(),
             roles: user.roles
-        });
+        }, deviceId);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
         (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
@@ -122,6 +122,7 @@ const logout = (0, express_async_handler_1.default)((req, res) => __awaiter(void
     res.json({});
 }));
 const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { deviceId } = req.body;
     const cookies = req.cookies;
     if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken)) {
         res.status(401).json({ message: "Unauthorized" });
@@ -138,10 +139,10 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const { accessToken, data: tokenInfo, deviceId } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
             userId: user._id.toString(),
             roles: user.roles
-        });
+        }, deviceId);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
         res.json({

@@ -16,7 +16,6 @@ exports.signEmailToken = exports.clearRefreshToken = exports.signAccessToken = e
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const confg_1 = require("../confg");
 const bcrypt_1 = __importDefault(require("bcrypt"));
-const uuid_1 = require("uuid");
 const generateRefreshToken = (res, payload) => {
     const refreshToken = jsonwebtoken_1.default.sign(payload, confg_1.config.refreshTokenSecret, { expiresIn: "7d" });
     res.cookie("refreshToken", refreshToken, {
@@ -30,8 +29,7 @@ const clearRefreshToken = (res) => {
     res.clearCookie("refreshToken");
 };
 exports.clearRefreshToken = clearRefreshToken;
-const signAccessToken = (req, userInfo) => __awaiter(void 0, void 0, void 0, function* () {
-    const deviceId = (0, uuid_1.v4)();
+const signAccessToken = (req, userInfo, deviceId) => __awaiter(void 0, void 0, void 0, function* () {
     const fingerprintRaw = deviceId;
     const fingerprint = yield bcrypt_1.default.hash(fingerprintRaw, 10);
     const payload = {
@@ -42,8 +40,7 @@ const signAccessToken = (req, userInfo) => __awaiter(void 0, void 0, void 0, fun
     const data = jsonwebtoken_1.default.decode(accessToken);
     return {
         accessToken,
-        data,
-        deviceId
+        data
     };
 });
 exports.signAccessToken = signAccessToken;

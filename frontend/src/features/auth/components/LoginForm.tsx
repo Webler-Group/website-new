@@ -12,7 +12,7 @@ interface LoginFormProps {
 
 const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
     const { sendJsonRequest } = useApi();
-    const { authenticate, updateUser } = useAuth();
+    const { authenticate, updateUser, deviceId } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -30,9 +30,9 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
 
     const loginUser = async () => {
         setError("");
-        const result = await sendJsonRequest("/Auth/Login", "POST", { email, password });
+        const result = await sendJsonRequest("/Auth/Login", "POST", { email, password, deviceId });
         if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn, result.deviceId);
+            authenticate(result.accessToken, result.expiresIn);
             updateUser(result.user);
             onLogin();
         }
