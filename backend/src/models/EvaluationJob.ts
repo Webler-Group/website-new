@@ -1,5 +1,6 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import compilerLanguagesEnum from "../config/compilerLanguages";
+import { devRoom, getIO } from "../config/socketServer";
 
 const evaluationJobSchema = new mongoose.Schema({
     language: {
@@ -27,6 +28,10 @@ const evaluationJobSchema = new mongoose.Schema({
         type: String,
         enum: ["pending", "running", "done", "error"],
         default: "pending"
+    },
+    deviceId: {
+        type: String,
+        required: true
     }
 }, {
     timestamps: true

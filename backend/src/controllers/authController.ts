@@ -9,7 +9,13 @@ import CaptchaRecord from "../models/CaptchaRecord";
 import { config } from "../confg";
 
 const login = asyncHandler(async (req, res) => {
-    const { email, password, deviceId } = req.body;
+    const { email, password } = req.body;
+    const deviceId = req.headers["x-device-id"] as string;
+
+    if (!deviceId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
 
     if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -25,7 +31,7 @@ const login = asyncHandler(async (req, res) => {
             return
         }
 
-        const { accessToken, data: tokenInfo } = await signAccessToken(req, { 
+        const { accessToken, data: tokenInfo } = await signAccessToken({ 
             userId: user._id.toString(), 
             roles: user.roles 
         }, deviceId);
@@ -38,7 +44,6 @@ const login = asyncHandler(async (req, res) => {
         res.json({
             accessToken,
             expiresIn,
-            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -61,7 +66,13 @@ const login = asyncHandler(async (req, res) => {
 })
 
 const register = asyncHandler(async (req: Request, res: Response) => {
-    const { email, name, password, solution, captchaId, deviceId } = req.body;
+    const { email, name, password, solution, captchaId } = req.body;
+    const deviceId = req.headers["x-device-id"] as string;
+
+    if (!deviceId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
 
     if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -93,7 +104,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
     if (user) {
 
-        const { accessToken, data: tokenInfo } = await signAccessToken(req, {
+        const { accessToken, data: tokenInfo } = await signAccessToken({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -106,7 +117,6 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         res.json({
             accessToken,
             expiresIn,
-            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -137,12 +147,12 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const refresh = asyncHandler(async (req: Request, res: Response) => {
-    const { deviceId } = req.body;
+    const deviceId = req.headers["x-device-id"] as string;
     const cookies = req.cookies;
 
-    if (!cookies?.refreshToken) {
+    if (!cookies?.refreshToken || !deviceId) {
         res.status(401).json({ message: "Unauthorized" });
-        return
+        return;
     }
 
     const refreshToken = cookies.refreshToken;
@@ -163,7 +173,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
                 return
             }
 
-            const { accessToken, data: tokenInfo } = await signAccessToken(req, {
+            const { accessToken, data: tokenInfo } = await signAccessToken({
                 userId: user._id.toString(),
                 roles: user.roles
             }, deviceId);
@@ -173,8 +183,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 
             res.json({
                 accessToken,
-                expiresIn,
-                deviceId
+                expiresIn
             })
         }
     );

@@ -12,11 +12,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerHandlersWS = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Code_1 = __importDefault(require("../models/Code"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
 const templates_1 = __importDefault(require("../data/templates"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
+const socketServer_1 = require("../config/socketServer");
 const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, language, source, cssSource, jsSource } = req.body;
     const currentUserId = req.userId;
@@ -294,10 +296,12 @@ const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
 }));
 const createJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { language, source, stdin } = req.body;
+    const deviceId = req.deviceId;
     const job = yield EvaluationJob_1.default.create({
         language,
         source,
-        stdin
+        stdin,
+        deviceId
     });
     res.json({
         jobId: job._id
@@ -313,6 +317,7 @@ const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void
     res.json({
         job: {
             id: job._id,
+            deviceId: job.deviceId,
             status: job.status,
             language: job.language,
             stdin: job.stdin,
@@ -321,6 +326,30 @@ const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void
         }
     });
 }));
+const getJobWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const { jobId } = payload;
+    const job = yield EvaluationJob_1.default.findById(jobId).select("-source");
+    if (!job) {
+        return;
+    }
+    socket.to((0, socketServer_1.devRoom)(job.deviceId)).emit("job:get", {
+        job: {
+            id: job._id,
+            deviceId: job.deviceId,
+            status: job.status,
+            language: job.language,
+            stdin: job.stdin,
+            stdout: job.stdout,
+            stderr: job.stderr
+        }
+    });
+});
+const registerHandlersWS = (socket) => {
+    if (socket.data.roles && socket.data.roles.includes("Admin")) {
+        socket.on("job:finished", (payload) => getJobWS(socket, payload));
+    }
+};
+exports.registerHandlersWS = registerHandlersWS;
 const codesController = {
     createCode,
     getCodeList,

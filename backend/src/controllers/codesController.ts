@@ -5,6 +5,8 @@ import Code from "../models/Code";
 import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
+import { devRoom, getIO } from "../config/socketServer";
+import { Socket } from "socket.io";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -325,16 +327,17 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     res.json({ vote: upvote ? 1 : 0 });
-
-})
+});
 
 const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { language, source, stdin } = req.body;
+    const deviceId = req.deviceId;
 
     const job = await EvaluationJob.create({
         language,
         source,
-        stdin
+        stdin,
+        deviceId
     });
 
     res.json({
@@ -346,7 +349,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { jobId } = req.body;
 
     const job = await EvaluationJob.findById(jobId).select("-source");
-    if(!job) {
+    if (!job) {
         res.status(404).json({ message: "Job does not exist" });
         return;
     }
@@ -354,6 +357,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         job: {
             id: job._id,
+            deviceId: job.deviceId,
             status: job.status,
             language: job.language,
             stdin: job.stdin,
@@ -362,6 +366,34 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
     });
 });
+
+const getJobWS = async (socket: Socket, payload: any) => {
+    const { jobId } = payload;
+
+    const job = await EvaluationJob.findById(jobId).select("-source");
+    if (!job) {
+        return;
+    }
+
+    socket.to(devRoom(job.deviceId)).emit("job:get", {
+        job: {
+            id: job._id,
+            deviceId: job.deviceId,
+            status: job.status,
+            language: job.language,
+            stdin: job.stdin,
+            stdout: job.stdout,
+            stderr: job.stderr
+        }
+    });
+}
+
+const registerHandlersWS = (socket: Socket) => {
+
+    if(socket.data.roles && socket.data.roles.includes("Admin")) {
+        socket.on("job:finished", (payload) => getJobWS(socket, payload));
+    }
+}
 
 const codesController = {
     createCode,
@@ -373,6 +405,10 @@ const codesController = {
     voteCode,
     createJob,
     getJob
+}
+
+export {
+    registerHandlersWS
 }
 
 export default codesController

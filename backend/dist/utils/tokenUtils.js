@@ -29,7 +29,7 @@ const clearRefreshToken = (res) => {
     res.clearCookie("refreshToken");
 };
 exports.clearRefreshToken = clearRefreshToken;
-const signAccessToken = (req, userInfo, deviceId) => __awaiter(void 0, void 0, void 0, function* () {
+const signAccessToken = (userInfo, deviceId) => __awaiter(void 0, void 0, void 0, function* () {
     const fingerprintRaw = deviceId;
     const fingerprint = yield bcrypt_1.default.hash(fingerprintRaw, 10);
     const payload = {

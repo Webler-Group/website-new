@@ -58,8 +58,10 @@ const notificationSchema = new mongoose_1.default.Schema({
 });
 notificationSchema.post("save", (doc, next) => {
     const io = (0, socketServer_1.getIO)();
-    io.to(doc.user.toString()).emit("notification", {});
-    next();
+    if (io) {
+        io.to((0, socketServer_1.uidRoom)(doc.user.toString())).emit("notification:new", {});
+    }
+    return next();
 });
 const Notification = mongoose_1.default.model("Notification", notificationSchema);
 exports.default = Notification;

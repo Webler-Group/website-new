@@ -2,19 +2,15 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../features/auth/context/authContext";
 
-// Define the shape of what you'll provide via context
 interface WSState {
     socket: Socket | null;
     connected: boolean;
 }
 
-// Create context with default empty object casted to WSState
 const WSContext = createContext<WSState>({} as WSState);
 
-// Custom hook for consuming the context
 export const useWS = () => useContext(WSContext);
 
-// Props type
 interface WSProviderProps {
     children: React.ReactNode;
 }
@@ -25,7 +21,6 @@ const WSProvider = ({ children }: WSProviderProps) => {
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
-        if (!accessToken) return;
 
         const newSocket = io({
             auth: {

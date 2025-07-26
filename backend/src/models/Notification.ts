@@ -1,5 +1,5 @@
 import mongoose, { InferSchemaType } from "mongoose";
-import { getIO } from "../config/socketServer";
+import { getIO, uidRoom } from "../config/socketServer";
 
 const notificationSchema = new mongoose.Schema({
     /*
@@ -55,10 +55,11 @@ const notificationSchema = new mongoose.Schema({
 
 notificationSchema.post("save", (doc, next) => {
     const io = getIO();
+    if(io) {
+        io.to(uidRoom(doc.user.toString())).emit("notification:new", {});
+    }
 
-    io.to(doc.user.toString()).emit("notification", {});
-
-    next();
+    return next();
 });
 
 const Notification = mongoose.model<InferSchemaType<typeof notificationSchema>>("Notification", notificationSchema);

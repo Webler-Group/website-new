@@ -18,6 +18,7 @@ const bcrypt_1 = __importDefault(require("bcrypt"));
 const verifyJWT = (req, res, next) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     const deviceId = req.headers["x-device-id"];
+    req.deviceId = deviceId;
     if (typeof authHeader === "string" && authHeader.startsWith("Bearer ") && typeof deviceId === "string") {
         const token = authHeader.split(" ")[1];
         jsonwebtoken_1.default.verify(token, confg_1.config.accessTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {

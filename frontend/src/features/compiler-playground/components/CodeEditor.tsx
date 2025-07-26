@@ -21,30 +21,25 @@ interface CodeEditorProps {
 }
 
 const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
-
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
-
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
-
     const [tabHeight, setTabHeight] = useState("auto");
 
     useEffect(() => {
-
         if(code.language == "web") {
             setEditorTabs(["html", "css", "javascript"]);
         } else {
             setEditorTabs([code.language]);
         }
-
     }, [code]);
 
     useEffect(() => {
         const callback = () => {
             setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 120}px)`);
         }
-        addEventListener("resize", callback)
-        callback()
-        return () => removeEventListener("resize", callback)
+        addEventListener("resize", callback);
+        callback();
+        return () => removeEventListener("resize", callback);
     })
 
     const editorStates = [
@@ -88,4 +83,4 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
     )
 }
 
-export default CodeEditor
+export default CodeEditor;

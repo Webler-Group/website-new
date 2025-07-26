@@ -56,7 +56,6 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
         if (!path.startsWith("/Auth") && options.accessToken && expiresIn <= Date.now()) {
             const reauthResult = await reauthenticate();
             options.accessToken = reauthResult.accessToken ?? undefined;
-            options.deviceId = reauthResult.deviceId;
             if (!options.accessToken) {
                 navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
             }
@@ -71,8 +70,8 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     const reauthenticate = async (): Promise<any> => {
         const result = await fetchQuery("/Auth/Refresh", {
             method: "POST",
-            body: {
-                deviceId
+            headers: {
+                "X-Device-Id": deviceId
             }
         })
             .then(response => response.json());

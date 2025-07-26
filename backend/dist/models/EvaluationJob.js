@@ -31,6 +31,10 @@ const evaluationJobSchema = new mongoose_1.default.Schema({
         type: String,
         enum: ["pending", "running", "done", "error"],
         default: "pending"
+    },
+    deviceId: {
+        type: String,
+        required: true
     }
 }, {
     timestamps: true

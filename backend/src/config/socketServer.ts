@@ -1,11 +1,11 @@
-import { Server } from "socket.io";
+import { Server, Socket } from "socket.io";
 import http from "http";
 import allowedOrigins from "./allowedOrigins";
 import verifyJWTWebSocket from "../middleware/verifyJWTWebSocket";
 
 let io: Server;
 
-const init = (server: http.Server) => {
+const init = (server: http.Server, registerHandlers: (socket: Socket) => void) => {
     io = new Server(server, {
         cors: {
             origin: allowedOrigins,
@@ -18,26 +18,28 @@ const init = (server: http.Server) => {
 
     io.on("connection", (socket) => {
         const userId = socket.data.userId;
+        const deviceId = socket.data.deviceId;
+
+        socket.join(devRoom(deviceId));
 
         if (userId) {
-            socket.join(userId);
-            console.log(`Socket ${socket.id} joined room ${userId}`);
+            socket.join(uidRoom(userId));
         }
 
-        socket.on("disconnect", () => {
-            console.log(`Socket ${socket.id} disconnected`);
-        });
+        registerHandlers(socket);
     });
 }
 
 const getIO = () => {
-    if (!io) {
-        throw new Error("Socket.io is not initialized");
-    }
     return io;
 }
 
+const uidRoom = (userId: string) => "uid-" + userId;
+const devRoom = (deviceId: string) => "dev-" + deviceId;
+
 export {
     init,
-    getIO
+    getIO,
+    uidRoom,
+    devRoom
 }

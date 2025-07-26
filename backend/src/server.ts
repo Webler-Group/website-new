@@ -18,6 +18,7 @@ import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
+import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/codesController"; 
 
 async function main() {
     console.log(config.nodeEnv);
@@ -25,7 +26,9 @@ async function main() {
     const app = express();
     const server = http.createServer(app);
 
-    init(server);
+    init(server, (socket) => {
+        codesRegisterHandlersWS(socket);
+    });
 
     const apiPrefix = "/api";
 

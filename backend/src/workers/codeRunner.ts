@@ -1,10 +1,16 @@
+import { io, Socket } from "socket.io-client";
 import connectDB from "../config/dbConn";
 import EvaluationJob from "../models/EvaluationJob";
 import { BoxIdPool } from "../utils/BoxIdPool";
 import { runInIsolate } from "../utils/isolate";
+import { config } from "../confg";
+import { signAccessToken } from "../utils/tokenUtils";
+import User from "../models/User";
 
 const boxIdPool = new BoxIdPool(100, 10000);
 const CONCURRENCY = 4;
+const deviceId = "worker-" + process.pid;
+let socket: Socket;
 
 async function processSingleJob(job: typeof EvaluationJob.prototype) {
     const boxId = await boxIdPool.acquire();
@@ -28,11 +34,29 @@ async function processSingleJob(job: typeof EvaluationJob.prototype) {
     } finally {
         boxIdPool.release(boxId);
         await job.save();
+
+        socket.emit("job:finished", {
+            jobId: job._id
+        });
     }
 }
 
 async function processJobs() {
     await connectDB();
+
+    const adminUser = await User.findOne({ email: config.adminEmail });
+    let token = null;
+    if (adminUser) {
+        const { accessToken } = await signAccessToken({ userId: adminUser._id.toString(), roles: adminUser.roles }, deviceId);
+        token = accessToken;
+    }
+
+    socket = io("http://localhost:" + config.port, {
+        auth: {
+            deviceId,
+            token
+        }
+    });
 
     while (true) {
         const jobs = await EvaluationJob.find({ status: "pending" }).limit(CONCURRENCY);

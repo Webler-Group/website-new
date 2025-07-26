@@ -30,16 +30,16 @@ const NotificationList = () => {
             setUnseenCount((prev) => prev + 1);
         };
 
-        socket.on("notification", handleNotification);
+        socket.on("notification:new", handleNotification);
 
         return () => {
-            socket.off("notification", handleNotification);
+            socket.off("notification:new", handleNotification);
         };
     }, [socket]);
 
     const getUnseenNotificationCount = async () => {
         const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
-        if (result && typeof result.count !== "undefined") {
+        if (result && result.count !== undefined) {
             setUnseenCount(result.count);
         }
     }
