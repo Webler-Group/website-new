@@ -55,6 +55,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setCommentModalVisible(true);
             setPostId(location.state.postId);
             setIsReply(location.state.isReply);
+        } else {
+            setCommentModalVisible(false);
         }
     }, [location]);
 
@@ -65,7 +67,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         else {
             getCodeByTemplate();
         }
-        setCommentModalVisible(false);
     }, [codeId]);
 
     useEffect(() => {
