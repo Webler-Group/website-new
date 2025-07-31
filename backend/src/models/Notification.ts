@@ -1,4 +1,5 @@
 import mongoose, { InferSchemaType } from "mongoose";
+import { getIO, uidRoom } from "../config/socketServer";
 
 const notificationSchema = new mongoose.Schema({
     /*
@@ -50,6 +51,15 @@ const notificationSchema = new mongoose.Schema({
     }
 }, {
     timestamps: true
+});
+
+notificationSchema.post("save", (doc, next) => {
+    const io = getIO();
+    if(io) {
+        io.to(uidRoom(doc.user.toString())).emit("notification:new", {});
+    }
+
+    return next();
 });
 
 const Notification = mongoose.model<InferSchemaType<typeof notificationSchema>>("Notification", notificationSchema);

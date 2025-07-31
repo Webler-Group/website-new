@@ -23,13 +23,13 @@ router.route("/GetCodeComments")
     .post(discussionController_1.default.getCodeComments);
 router.use(protectRoute_1.default);
 router.route("/CreateQuestion")
-    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(60 * 60, 5, "Too many requests, try again later"), discussionController_1.default.createQuestion);
+    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(3600, 5, "Too many requests, try again later"), discussionController_1.default.createQuestion);
 router.route("/EditQuestion")
     .put(discussionController_1.default.editQuestion);
 router.route("/DeleteQuestion")
     .delete(discussionController_1.default.deleteQuestion);
 router.route("/CreateReply")
-    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(60 * 60, 50, "Too many requests, try again later"), discussionController_1.default.createReply);
+    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(300, 10, "Too many requests, try again later"), discussionController_1.default.createReply);
 router.route("/EditReply")
     .put(discussionController_1.default.editReply);
 router.route("/DeleteReply")
@@ -39,7 +39,7 @@ router.route("/ToggleAcceptedAnswer")
 router.route("/VotePost")
     .post(verifyEmail_1.default, discussionController_1.default.votePost);
 router.route("/CreateCodeComment")
-    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(60 * 60, 20, "Too many requests, try again later"), discussionController_1.default.createCodeComment);
+    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(300, 10, "Too many requests, try again later"), discussionController_1.default.createCodeComment);
 router.route("/EditCodeComment")
     .put(discussionController_1.default.editCodeComment);
 router.route("/DeleteCodeComment")

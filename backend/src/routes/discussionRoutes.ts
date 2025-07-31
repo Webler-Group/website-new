@@ -23,13 +23,13 @@ router.route("/GetCodeComments")
 router.use(protectRoute);
 
 router.route("/CreateQuestion")
-    .post(verifyEmail, requestLimiter(60 * 60, 5, "Too many requests, try again later"), discussionController.createQuestion);
+    .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), discussionController.createQuestion);
 router.route("/EditQuestion")
     .put(discussionController.editQuestion);
 router.route("/DeleteQuestion")
     .delete(discussionController.deleteQuestion);
 router.route("/CreateReply")
-    .post(verifyEmail, requestLimiter(60 * 60, 50, "Too many requests, try again later"), discussionController.createReply);
+    .post(verifyEmail, requestLimiter(300, 10, "Too many requests, try again later"), discussionController.createReply);
 router.route("/EditReply")
     .put(discussionController.editReply);
 router.route("/DeleteReply")
@@ -39,7 +39,7 @@ router.route("/ToggleAcceptedAnswer")
 router.route("/VotePost")
     .post(verifyEmail, discussionController.votePost);
 router.route("/CreateCodeComment")
-    .post(verifyEmail, requestLimiter(60 * 60, 20, "Too many requests, try again later"), discussionController.createCodeComment);
+    .post(verifyEmail, requestLimiter(300, 10, "Too many requests, try again later"), discussionController.createCodeComment);
 router.route("/EditCodeComment")
     .put(discussionController.editCodeComment);
 router.route("/DeleteCodeComment")

@@ -1,20 +1,16 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "../features/auth/context/authContext";
 
-// Define the shape of what you'll provide via context
 interface WSState {
     socket: Socket | null;
     connected: boolean;
 }
 
-// Create context with default empty object casted to WSState
-const WSContext = createContext<WSState>({ socket: null, connected: false });
+const WSContext = createContext<WSState>({} as WSState);
 
-// Custom hook for consuming the context
 export const useWS = () => useContext(WSContext);
 
-// Props type
 interface WSProviderProps {
     children: React.ReactNode;
 }
@@ -25,7 +21,6 @@ const WSProvider = ({ children }: WSProviderProps) => {
     const [connected, setConnected] = useState(false);
 
     useEffect(() => {
-        if (!accessToken) return;
 
         const newSocket = io({
             auth: {
@@ -38,12 +33,10 @@ const WSProvider = ({ children }: WSProviderProps) => {
 
         newSocket.on("connect", () => {
             setConnected(true);
-            console.log("Socket connected");
         });
 
         newSocket.on("disconnect", () => {
             setConnected(false);
-            console.log("Socket disconnected");
         });
 
         return () => {
@@ -51,7 +44,10 @@ const WSProvider = ({ children }: WSProviderProps) => {
         };
     }, [accessToken]);
 
-    const value = useMemo(() => ({ socket, connected }), [socket, connected]);
+    const value: WSState = {
+        socket,
+        connected
+    };
 
     return <WSContext.Provider value={value}>{children}</WSContext.Provider>;
 };

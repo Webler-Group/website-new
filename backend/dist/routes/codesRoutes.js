@@ -8,6 +8,7 @@ const codesController_1 = __importDefault(require("../controllers/codesControlle
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const verifyEmail_1 = __importDefault(require("../middleware/verifyEmail"));
+const requestLimiter_1 = __importDefault(require("../middleware/requestLimiter"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/")
@@ -17,7 +18,7 @@ router.route("/GetCode")
 router.route("/templates/:language")
     .post(codesController_1.default.getTemplate);
 router.route("/CreateJob")
-    .post(codesController_1.default.createJob);
+    .post((0, requestLimiter_1.default)(60, 10, "Too many requests, try again later"), codesController_1.default.createJob);
 router.route("/GetJob")
     .post(codesController_1.default.getJob);
 router.use(protectRoute_1.default);

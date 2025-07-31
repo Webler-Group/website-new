@@ -48,24 +48,26 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [isReply, setIsReply] = useState(false);
     const location = useLocation();
 
-    const [message, setMessage] = useState([true, ""])
+    const [message, setMessage] = useState([true, ""]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
             setCommentModalVisible(true);
             setPostId(location.state.postId);
             setIsReply(location.state.isReply);
+        } else {
+            setCommentModalVisible(false);
         }
-    }, [location])
+    }, [location]);
 
     useEffect(() => {
         if (codeId) {
-            getCode()
+            getCode();
         }
         else {
-            getCodeByTemplate()
+            getCodeByTemplate();
         }
-    }, [codeId])
+    }, [codeId]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -74,7 +76,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
 
             if (isSaveShortcut) {
                 e.preventDefault();
-                handleSave(); // your existing save handler
+                handleSave();
             }
         };
 
@@ -90,7 +92,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (editorValue !== null) {
             setEditorOptions(JSON.parse(editorValue));
         }
-    }, [])
+    }, []);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);

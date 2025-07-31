@@ -21,7 +21,12 @@ const captcha_1 = require("../utils/captcha");
 const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const confg_1 = require("../confg");
 const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password, deviceId } = req.body;
+    const { email, password } = req.body;
+    const deviceId = req.headers["x-device-id"];
+    if (!deviceId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
     if (typeof email === "undefined" || typeof password === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -32,7 +37,7 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
             res.status(401).json({ message: "Account is deactivated" });
             return;
         }
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -42,7 +47,6 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
         res.json({
             accessToken,
             expiresIn,
-            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -62,7 +66,12 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     }
 }));
 const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, name, password, solution, captchaId, deviceId } = req.body;
+    const { email, name, password, solution, captchaId } = req.body;
+    const deviceId = req.headers["x-device-id"];
+    if (!deviceId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
     if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
@@ -85,7 +94,7 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         emailVerified: confg_1.config.nodeEnv == "development"
     });
     if (user) {
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -95,7 +104,6 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         res.json({
             accessToken,
             expiresIn,
-            deviceId,
             user: {
                 id: user._id,
                 name: user.name,
@@ -122,9 +130,9 @@ const logout = (0, express_async_handler_1.default)((req, res) => __awaiter(void
     res.json({});
 }));
 const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { deviceId } = req.body;
+    const deviceId = req.headers["x-device-id"];
     const cookies = req.cookies;
-    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken)) {
+    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken) || !deviceId) {
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
@@ -139,7 +147,7 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)(req, {
+        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -147,8 +155,7 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             tokenInfo.exp * 1000 : 0;
         res.json({
             accessToken,
-            expiresIn,
-            deviceId
+            expiresIn
         });
     }));
 }));

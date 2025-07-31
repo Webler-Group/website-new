@@ -18,9 +18,8 @@ import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
 import { channelRoutes } from "./routes/chatRoutes";
-import { Server } from "socket.io";
-import allowedOrigins from "./config/allowedOrigins";
-import verifyJWTWebSocket from "./middleware/verifyJWTWebSocket";
+import { init } from "./config/socketServer";
+import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/codesController"; 
 
 async function main() {
     console.log(config.nodeEnv);
@@ -28,15 +27,9 @@ async function main() {
     const app = express();
     const server = http.createServer(app);
 
-    const io = new Server(server, {
-        cors: {
-            origin: allowedOrigins,
-            methods: ["POST", "GET"],
-            credentials: true
-        }
+    init(server, (socket) => {
+        codesRegisterHandlersWS(socket);
     });
-
-    io.use(verifyJWTWebSocket);
 
     const apiPrefix = "/api";
 

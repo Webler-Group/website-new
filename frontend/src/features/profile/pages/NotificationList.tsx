@@ -5,6 +5,7 @@ import { FaBell } from "react-icons/fa6"
 import Notification from "../components/Notification"
 import useNotifications from "../hooks/useNotifications"
 import { useApi } from "../../../context/apiCommunication"
+import { useWS } from "../../../context/wsCommunication"
 
 const NotificationList = () => {
     const { sendJsonRequest } = useApi();
@@ -18,18 +19,27 @@ const NotificationList = () => {
         onMarkAllAsRead
     } = useNotifications(20, prevId, opened);
     const [unseenCount, setUnseenCount] = useState(0);
+    const { socket } = useWS();
 
     useEffect(() => {
         getUnseenNotificationCount();
-        let t = setInterval(() => {
-            getUnseenNotificationCount();
-        }, 10 * 1000);
-        return () => clearInterval(t);
-    }, []);
+
+        if (!socket) return;
+
+        const handleNotification = () => {
+            setUnseenCount((prev) => prev + 1);
+        };
+
+        socket.on("notification:new", handleNotification);
+
+        return () => {
+            socket.off("notification:new", handleNotification);
+        };
+    }, [socket]);
 
     const getUnseenNotificationCount = async () => {
         const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
-        if (result && typeof result.count !== "undefined") {
+        if (result && result.count !== undefined) {
             setUnseenCount(result.count);
         }
     }

@@ -7,11 +7,14 @@ import { AccessTokenPayload } from "../utils/tokenUtils";
 interface IAuthRequest extends Request {
     userId?: string;
     roles?: string[];
+    deviceId?: string;
 }
 
 const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
-    const deviceId = req.headers["x-device-id"];
+    const deviceId = req.headers["x-device-id"] as string;
+
+    req.deviceId = deviceId;
 
     if (typeof authHeader === "string" && authHeader.startsWith("Bearer ") && typeof deviceId === "string") {
 

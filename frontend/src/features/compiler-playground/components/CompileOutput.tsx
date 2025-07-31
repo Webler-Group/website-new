@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
+import { useWS } from "../../../context/wsCommunication";
 
 interface CompileOutputProps {
     source: string;
@@ -10,11 +11,13 @@ interface CompileOutputProps {
 
 const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
     const { sendJsonRequest } = useApi();
+    const { socket } = useWS();
 
     const [stdinVisible, setStdinVisible] = useState(false);
     const stdinRef = useRef<HTMLDivElement>(null);
     const [stdinValue, setStdinValue] = useState("");
 
+    const [currentJobId, setCurrentJobId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [stdout, setStdout] = useState<string | null>(null);
     const [stderr, setStderr] = useState<string | null>(null);
@@ -25,6 +28,38 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
             setStdinVisible(true);
         }
     }, [tabOpen]);
+
+    useEffect(() => {
+        const timeoutId = setTimeout(() => {
+            setLoading(false);
+        }, 10000);
+
+        return () => clearTimeout(timeoutId);
+    }, [currentJobId]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleGetJob = (payload: any) => {
+            if (payload.job) {
+                if (payload.job.status === "done") {
+                    setStdout(payload.job.stdout || "");
+                    setStderr(payload.job.stderr || "");
+                } else {
+                    setError("Something went wrong.");
+                }
+            } else {
+                setError("Something went wrong.");
+            }
+            setLoading(false);
+        };
+
+        socket.on("job:get", handleGetJob);
+
+        return () => {
+            socket.off("job:get", handleGetJob);
+        };
+    }, [socket]);
 
     const stdinHide = () => {
         setStdinVisible(false);
@@ -44,36 +79,11 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         });
 
         if (createJobResult && createJobResult.jobId) {
-            let getJobResult = null;
-            let status = "pending";
-            let attempt = 0;
-
-            while (status === "pending" || status === "running") {
-                ++attempt;
-                if (attempt > 10) {
-                    break;
-                }
-                getJobResult = await sendJsonRequest("/Codes/GetJob", "POST", { jobId: createJobResult.jobId });
-                if (getJobResult && getJobResult.job) {
-                    status = getJobResult.job.status;
-
-                    if (status === "pending" || status === "running") {
-                        await new Promise((resolve) => setTimeout(resolve, 1000));
-                    }
-                }
-            }
-
-            if (status === "done") {
-                setStdout(getJobResult.job.stdout || "");
-                setStderr(getJobResult.job.stderr || "");
-            } else {
-                setError("Something went wrong.");
-            }
+            setCurrentJobId(createJobResult.jobId);
         } else {
-            setError("Something went wrong.");
+            setError(createJobResult.message ?? "Something went wrong");
+            setLoading(false);
         }
-
-        setLoading(false);
     };
 
     return (

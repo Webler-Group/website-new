@@ -3,6 +3,7 @@ import codesController from "../controllers/codesController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import verifyEmail from "../middleware/verifyEmail";
+import requestLimiter from "../middleware/requestLimiter";
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.route("/GetCode")
 router.route("/templates/:language")
     .post(codesController.getTemplate);
 router.route("/CreateJob")
-    .post(codesController.createJob);
+    .post(requestLimiter(60, 10, "Too many requests, try again later"), codesController.createJob);
 router.route("/GetJob")
     .post(codesController.getJob);
 
