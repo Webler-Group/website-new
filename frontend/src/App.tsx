@@ -35,9 +35,10 @@ import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
 import { languagesInfo } from './data/compilerLanguages';
-import {  ChannelsList } from './features/channels/pages/ChannelsList';
+// import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
+import ChannelsPage from './features/channels/pages/ChannelsPage';
 
 
 function App() {
@@ -120,8 +121,8 @@ function App() {
       </Route>
 
       <Route path="Courses">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
 
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
             <Route path="Editor">
               <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
@@ -133,7 +134,6 @@ function App() {
               </Route>
             </Route>
           </Route>
-
         </Route>
 
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
@@ -141,7 +141,6 @@ function App() {
         </Route>
 
         <Route element={<RequireAuth allowedRoles={allRoles} />}>
-
           <Route path=":courseCode">
             <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
               <Route index element={<CoursePage />} />
@@ -149,12 +148,20 @@ function App() {
             <Route path="Lesson/:lessonId" element={<CourseLessonPage />} />
           </Route>
         </Route>
+
       </Route>
+
       <Route path="Channels">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+
+        <Route element={<RequireAuth allowedRoles={allRoles} />}>
+          <Route index element={<ChannelsPage />} />
+        </Route>
+
+        {/*<Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
           <Route index element={<ChannelsList />} />
           <Route path=":channelId" element={<ChannelsList openChannel/>}/>
-        </Route>
+        </Route>*/}
+
       </Route>
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
