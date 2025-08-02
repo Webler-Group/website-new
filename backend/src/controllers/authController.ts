@@ -99,7 +99,8 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         email,
         name,
         password,
-        emailVerified: config.nodeEnv == "development"
+        emailVerified: config.nodeEnv == "development",
+        roles: ["User"]
     });
 
     if (user) {

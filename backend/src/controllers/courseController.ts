@@ -6,6 +6,7 @@ import CourseProgress from "../models/CourseProgress";
 import CourseLesson from "../models/CourseLesson";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
+import UserActivity from "../models/UserActivity";
 import User from "../models/User";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -105,6 +106,22 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }));
     }
 
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
+        const codeKey = `visitedCourses.${course.id}`;
+
+        await UserActivity.updateOne(
+        { user: currentUserId },
+        {
+            $inc: { [`${codeKey}.count`]: 1 },
+            $set: { [`${codeKey}.lastViewed`]: new Date() }
+        },
+        { upsert: true }
+        );
+
+
     res.json({
         course: {
             id: course._id,
@@ -164,6 +181,16 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         unlocked: lesson.index < lastUnlockedLessonIndex || x.index <= lastUnlockedNodeIndex
     }));
 
+    let activity = await UserActivity.findOne({ user: currentUserId });
+    if (!activity) {
+        activity = await UserActivity.create({ user: currentUserId });
+    }
+
+    // Update inprogressCourses
+    await activity.updateOne({
+        $addToSet: { inProgressCourses: lesson.course }
+    });
+    
     res.json({
         lesson: data
     });
@@ -282,6 +309,18 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userProgress.lastLessonNodeId = lessonNode.id;
         await userProgress.save();
     }
+    
+    userProgress.lastLessonNodeId = null as any;
+    userProgress.save();
+
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
+    
+    await userActivity.updateOne({
+        $addToSet: { inProgressCourses: lessonNode.lessonId.course }
+    })
 
     res.json({
         success: true,
@@ -301,8 +340,16 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
         return;
     }
 
-    userProgress.lastLessonNodeId = null as any;
-    userProgress.save();
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
+    
+    // Remove from completed courses and in-progress courses
+    await userActivity.updateOne({
+        $pull: { inProgressCourses: courseId },
+        timestamp: new Date()
+    });
 
     res.json({
         success: true

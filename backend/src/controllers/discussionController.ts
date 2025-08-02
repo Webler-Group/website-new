@@ -4,6 +4,7 @@ import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
+import UserActivity from "../models/UserActivity";
 import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
@@ -722,9 +723,17 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
     if (vote === 1) {
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: postId })
+            await userActivity.updateOne({
+                $addToSet: { likedComments: postId },
+                timestamp: new Date()
+            });
             post.$inc("votes", 1)
             await post.save();
         }
@@ -732,6 +741,10 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     else if (vote === 0) {
         if (upvote) {
             await Upvote.deleteOne({ _id: upvote._id });
+            await userActivity.updateOne({
+                $pull: { likedComments: postId },
+                timestamp: new Date()
+            });
             upvote = null;
             post.$inc("votes", -1)
             await post.save();
@@ -893,6 +906,15 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     if (reply) {
 
+        let userActivity = await UserActivity.findOne({ user: currentUserId });
+        if (!userActivity) {
+            userActivity = await UserActivity.create({ user: currentUserId });
+        }
+        await userActivity.updateOne({
+            $addToSet: { commentedCodes: codeId },
+            timestamp: new Date()
+        });
+
         const usersToNotify = new Set();
         usersToNotify.add(code.user.toString())
         if (parentPost !== null) {
@@ -1017,6 +1039,19 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     try {
 
         await Post.deleteAndCleanup({ _id: commentId });
+        let userActivity = await UserActivity.findOne({ user: currentUserId });
+        if (!userActivity) {
+            userActivity = await UserActivity.create({ user: currentUserId });
+        }
+
+        // If no of comments by user is 0, remove codeId from user activity
+        const commentsCount = await Post.countDocuments({ user: currentUserId, codeId: comment.codeId, _type: 3 });
+        if (commentsCount === 0) {  
+            await userActivity.updateOne({
+                $pull: { commentedCodes: comment.codeId },
+                timestamp: new Date()
+            });
+        }
 
         res.json({ success: true });
     }

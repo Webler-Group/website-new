@@ -5,6 +5,7 @@ import asyncHandler from "express-async-handler";
 import UserFollowing from "../models/UserFollowing";
 import Notification from "../models/Notification";
 import Code from "../models/Code";
+import UserActivity from "../models/UserActivity";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail } from "../services/email";
 import { intervalToDuration } from "date-fns";
@@ -315,6 +316,12 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const exists = await UserFollowing.findOne({ user: currentUserId, following: userId });
+
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
+
     if (exists) {
         res.status(204).json({ success: true })
         return
@@ -326,6 +333,10 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     if (userFollowing) {
+        await userActivity.updateOne({
+            $addToSet: { following: userId },
+            timestamp: new Date()
+        });
         await Notification.create({
             user: userId,
             actionUser: currentUserId,
@@ -361,6 +372,11 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const result = await UserFollowing.deleteOne({ user: currentUserId, following: userId })
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
+
     if (result.deletedCount == 1) {
 
         await Notification.deleteOne({
@@ -368,6 +384,11 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
             actionUser: currentUserId,
             _type: 101
         })
+
+        await userActivity.updateOne({
+            $pull: { following: userId },
+            timestamp: new Date()
+        });
 
         res.json({ success: true })
         return

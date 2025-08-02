@@ -3,6 +3,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import Code from "../models/Code";
 import Upvote from "../models/Upvote";
+import UserActivity  from "../models/UserActivity";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
 import { devRoom, getIO } from "../config/socketServer";
@@ -176,6 +177,24 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         const isUpvoted = currentUserId ? await Upvote.findOne({ parentId: codeId, user: currentUserId }) : false;
 
+        let userActivity = await UserActivity.findOne({ user: currentUserId });
+        if (!userActivity) {
+            userActivity = await UserActivity.create({ user: currentUserId });
+        }
+
+        const codeKey = `visitedCodes.${codeId}`;
+
+        await UserActivity.updateOne(
+        { user: currentUserId },
+        {
+            $inc: { [`${codeKey}.count`]: 1 },
+            $set: { [`${codeKey}.lastViewed`]: new Date() }
+        },
+        { upsert: true }
+        );
+
+
+
         res.json({
             code: {
                 id: code._id,
@@ -310,12 +329,20 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     let upvote = await Upvote.findOne({ parentId: codeId, user: currentUserId });
+    let userActivity = await UserActivity.findOne({ user: currentUserId });
+    if (!userActivity) {
+        userActivity = await UserActivity.create({ user: currentUserId });
+    }
     if (vote === 1) {
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: codeId })
             code.$inc("votes", 1);
             await code.save();
         }
+        await userActivity.updateOne({
+            $addToSet: { likedCodes: codeId }
+        });
+
     }
     else if (vote === 0) {
         if (upvote) {
@@ -324,6 +351,9 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             code.$inc("votes", -1);
             await code.save();
         }
+        await userActivity.updateOne({
+            $pull: { likedCodes: codeId }
+        });
     }
 
     res.json({ vote: upvote ? 1 : 0 });
