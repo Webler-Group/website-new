@@ -737,3 +737,14 @@ ul {
     cursor: pointer;
     font-size: 20px;
 }
+
+.wb-channels-settings {
+    position: absolute;
+    width: 100%;
+    height: calc(100% - 120px);
+    transition: 500ms transform;
+}
+
+.wb-channels-settings__closed {
+    transform: translateY(-100%);
+}

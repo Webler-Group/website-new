@@ -37,7 +37,7 @@ export interface UserMinimal {
     countryCode: string;
     avatar: string;
     level: number;
-    isFollowing: boolean;
+    isFollowing?: boolean;
 }
 
 const Profile = () => {

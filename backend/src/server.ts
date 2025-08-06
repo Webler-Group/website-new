@@ -13,11 +13,11 @@ import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
 import courseEditorRoutes from "./routes/courseEditorRoutes";
 import courseRoutes from "./routes/courseRoutes";
+import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
-import { channelRoutes } from "./routes/chatRoutes";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/codesController"; 
 

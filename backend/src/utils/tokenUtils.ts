@@ -40,7 +40,7 @@ const clearRefreshToken = (res: Response) => {
     res.clearCookie("refreshToken");
 }
 
-const signAccessToken = async (userInfo: { userId: string; roles: string[]; }, deviceId: string) => {
+const signAccessToken = async (userInfo: { userId: string; roles: string[]; }, deviceId: string, expiresIn = "30m") => {
     const fingerprintRaw = deviceId;
     const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
 
@@ -52,7 +52,7 @@ const signAccessToken = async (userInfo: { userId: string; roles: string[]; }, d
     const accessToken = jwt.sign(
         payload,
         config.accessTokenSecret,
-        { expiresIn: "30m" }
+        { expiresIn }
     );
 
     const data = jwt.decode(accessToken);

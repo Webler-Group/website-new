@@ -1,5 +1,6 @@
 POST http://localhost:5500/api/Auth/Login HTTP/1.1
 content-type: application/json
+x-device-id: localhost
 
 {
     "email": "dada542cz@gmail.com",
