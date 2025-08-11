@@ -34,9 +34,9 @@ export interface UserDetails {
 export interface UserMinimal {
     id: string;
     name: string;
-    countryCode: string;
+    countryCode?: string;
     avatar: string;
-    level: number;
+    level?: number;
     isFollowing?: boolean;
 }
 
@@ -51,7 +51,7 @@ const Profile = () => {
     const [followersCount, setFollowersCount] = useState(0);
 
     const [followListVisible, setFollowListVisible] = useState(0);
-    
+
     const [codes, setCodes] = useState<any[]>([])
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
 
@@ -143,11 +143,13 @@ const Profile = () => {
     const openPlaygroundMenu = () => {
         navigate("/Compiler-Playground")
     }
-    const handleMessage = async ()=>{
-        await sendJsonRequest('/Channels/createDirect','POST',{
-            memberId:userId,
+    const handleMessage = async () => {
+        const result = await sendJsonRequest('/Channels/CreateDirectMessages', 'POST', {
+            userId
         })
-        navigate('/Channels/');
+        if(result && result.channel) {
+            navigate("/Channels/" + result.channel.id);
+        }
     }
     const toggleUserBan = async () => {
         if (!userDetails) {
@@ -269,7 +271,7 @@ const Profile = () => {
                                                                 <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
                                                         }
                                                         <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>Message</Button>
-                                                        
+
                                                     </div>
                                                 )
                                             }

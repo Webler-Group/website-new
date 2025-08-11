@@ -10,24 +10,30 @@ import {
     Col,
     Badge,
     InputGroup,
-    Alert
+    Alert,
+    Modal
 } from "react-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import { useApi } from "../../../context/apiCommunication";
+import { IChannelInvite } from "./InvitesListItem";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
+    onUserKick: (userId: string) => void;
+    onUserInvite: (invite: IChannelInvite) => void;
+    onRevokeInvite: (inviteId: string) => void;
 }
 
-const ChannelRoomSettings = ({ channel }: ChannelRoomSettingsProps) => {
+const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onRevokeInvite }: ChannelRoomSettingsProps) => {
     const [activeTab, setActiveTab] = useState("members");
     const [inviteUsername, setInviteUsername] = useState("");
     const [newTitle, setNewTitle] = useState("");
     const { userInfo } = useAuth();
     const { sendJsonRequest } = useApi();
     const [inviteMessage, setInviteMessage] = useState(["", ""]);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
 
     useEffect(() => {
         setNewTitle(channel.title ?? "");
@@ -38,6 +44,10 @@ const ChannelRoomSettings = ({ channel }: ChannelRoomSettingsProps) => {
     const isOwner = currentUser?.role === "Owner";
     const isAdmin = isOwner || currentUser?.role === "Admin";
 
+    const closeDeleteModal = () => {
+        setDeleteModalVisible(false);
+    }
+
     const handleInvite = async () => {
         const result = await sendJsonRequest("/Channels/GroupInviteUser", "POST", {
             channelId: channel.id,
@@ -45,13 +55,25 @@ const ChannelRoomSettings = ({ channel }: ChannelRoomSettingsProps) => {
         });
         if (result && result.invite) {
             setInviteMessage(["success", "Invite created successfully"]);
+            onUserInvite({
+                ...result.invite,
+                authorId: userInfo?.id,
+                authorName: userInfo?.name,
+                authorAvatar: userInfo?.avatarImage
+            });
         } else {
             setInviteMessage(["danger", result.message ?? "Invite failed"])
         }
     };
 
-    const handleKick = (userId: string) => {
-        console.log("Kicking user", userId);
+    const handleKick = async (userId: string) => {
+        const result = await sendJsonRequest("/Channels/GroupRemoveUser", "POST", {
+            channelId: channel.id,
+            userId
+        });
+        if (result && result.success) {
+            onUserKick(userId);
+        }
     };
 
     const handleRoleChange = (userId: string, newRole: string) => {
@@ -62,185 +84,208 @@ const ChannelRoomSettings = ({ channel }: ChannelRoomSettingsProps) => {
         console.log("Changing title to", newTitle);
     };
 
-    const handleLeave = () => {
-        console.log("Leaving channel");
+    const handleLeave = async () => {
+        await sendJsonRequest("/Channels/LeaveChannel", "POST", {
+            channelId: channel.id
+        });
     };
 
-    const handleDeleteGroup = () => {
-        console.log("Deleting group");
+    const handleDeleteChannel = async () => {
+
     };
+
+    const handleRevokeInvite = async (inviteId: string) => {
+        const result = await sendJsonRequest("/Channels/GroupRevokeInvite", "POST", {
+            inviteId
+        });
+        if(result && result.success) {
+            onRevokeInvite(inviteId);
+        }
+    }
 
     return (
-        <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "members")}>
-            <Row>
-                <Col sm={3}>
-                    <Nav variant="pills" className="flex-column">
-                        {channel.type == 2 && (
+        <>
+            <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Are you sure?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>Channel will be permanently deleted.</Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDeleteChannel}>Delete</Button>
+                </Modal.Footer>
+            </Modal>
+            <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "members")}>
+                <Row>
+                    <Col sm={3}>
+                        <Nav variant="pills" className="flex-column">
+                            {channel.type == 2 && (
+                                <Nav.Item>
+                                    <Nav.Link eventKey="members">Members</Nav.Link>
+                                </Nav.Item>
+                            )}
                             <Nav.Item>
-                                <Nav.Link eventKey="members">Members</Nav.Link>
+                                <Nav.Link eventKey="general">General</Nav.Link>
                             </Nav.Item>
-                        )}
-                        <Nav.Item>
-                            <Nav.Link eventKey="general">General</Nav.Link>
-                        </Nav.Item>
-                    </Nav>
-                </Col>
+                        </Nav>
+                    </Col>
 
-                <Col sm={9}>
-                    <Tab.Content>
-                        {channel.type == 2 && (
-                            <Tab.Pane eventKey="members">
-                                {isAdmin && (
+                    <Col sm={9}>
+                        <Tab.Content>
+                            {channel.type == 2 && (
+                                <Tab.Pane eventKey="members">
+                                    {isAdmin && (
+                                        <Form
+                                            onSubmit={(e) => {
+                                                e.preventDefault();
+                                                handleInvite();
+                                            }}
+                                            className="mb-3"
+                                        >
+                                            <Form.Label>Invite by username</Form.Label>
+                                            <InputGroup size="sm">
+                                                <Form.Control
+                                                    value={inviteUsername}
+                                                    onChange={(e) => setInviteUsername(e.target.value)}
+                                                    placeholder="Username"
+                                                />
+                                                <Button type="submit" variant="primary" disabled={inviteUsername.trim().length < 3}>
+                                                    Invite
+                                                </Button>
+                                            </InputGroup>
+                                            {inviteMessage[1] && <Alert className="mt-2" variant={inviteMessage[0]} onClose={() => setInviteMessage(["", ""])} dismissible>{inviteMessage[1]}</Alert>}
+                                        </Form>
+                                    )}
+
+
+                                    {isAdmin &&
+                                        <>
+                                            <h5>Invites</h5>
+                                            <ListGroup>
+                                                {channel.invites?.map((invite) => (
+                                                    <ListGroup.Item
+                                                        key={invite.id}
+                                                        className="d-flex justify-content-between align-items-center"
+                                                    >
+                                                        <div className="d-flex flex-column">
+                                                            <div className="d-flex align-items-center gap-2">
+                                                                <ProfileAvatar avatarImage={invite.invitedUserAvatar!} size={36} />
+                                                                <ProfileName
+                                                                    userId={invite.invitedUserId ?? ""}
+                                                                    userName={invite.invitedUserName ?? "Unknown"}
+                                                                />
+                                                            </div>
+                                                            <small className="text-muted ms-5">
+                                                                Invited by {invite.authorName}
+                                                            </small>
+                                                        </div>
+
+                                                        <Button
+                                                            variant="outline-danger"
+                                                            size="sm"
+                                                            onClick={() => handleRevokeInvite(invite.id)}
+                                                        >
+                                                            Revoke
+                                                        </Button>
+                                                    </ListGroup.Item>
+                                                ))}
+                                                {channel.invites?.length === 0 && (
+                                                    <ListGroup.Item className="text-muted fst-italic">No invites</ListGroup.Item>
+                                                )}
+                                            </ListGroup>
+                                        </>
+                                    }
+
+                                    <h5>Members</h5>
+                                    <ListGroup>
+                                        {channel.participants?.map((x) => (
+                                            <ListGroup.Item
+                                                key={x.userId}
+                                                className="d-flex justify-content-between align-items-center"
+                                            >
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <ProfileAvatar avatarImage={x.userAvatar} size={42} />
+                                                    <ProfileName userId={x.userId} userName={x.userName} />
+                                                    <Badge bg="secondary" className="ms-2">
+                                                        {x.role}
+                                                    </Badge>
+                                                </div>
+
+                                                {isAdmin && x.userId !== userInfo?.id && (
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        {isOwner && (
+                                                            <Form.Select
+                                                                size="sm"
+                                                                value={x.role}
+                                                                onChange={(e) =>
+                                                                    handleRoleChange(
+                                                                        x.userId,
+                                                                        e.target.value
+                                                                    )
+                                                                }
+                                                            >
+                                                                <option value="member">Member</option>
+                                                                <option value="admin">Admin</option>
+                                                            </Form.Select>
+                                                        )}
+                                                        <Button
+                                                            variant="outline-danger"
+                                                            size="sm"
+                                                            onClick={() => handleKick(x.userId)}
+                                                        >
+                                                            Kick
+                                                        </Button>
+                                                    </div>
+                                                )}
+                                            </ListGroup.Item>
+                                        ))}
+                                    </ListGroup>
+                                </Tab.Pane>
+                            )}
+
+                            <Tab.Pane eventKey="general">
+                                <h5>General Settings</h5>
+
+                                {channel.type == 2 && isOwner && (
                                     <Form
                                         onSubmit={(e) => {
                                             e.preventDefault();
-                                            handleInvite();
+                                            handleTitleChange();
                                         }}
                                         className="mb-3"
                                     >
-                                        <Form.Label>Invite by username</Form.Label>
-                                        <InputGroup size="sm">
+                                        <Form.Label>Channel Name</Form.Label>
+                                        <InputGroup>
                                             <Form.Control
-                                                value={inviteUsername}
-                                                onChange={(e) => setInviteUsername(e.target.value)}
-                                                placeholder="Username"
+                                                value={newTitle}
+                                                onChange={(e) => setNewTitle(e.target.value)}
                                             />
-                                            <Button type="submit" variant="primary" disabled={inviteUsername.trim().length < 3}>
-                                                Invite
+                                            <Button type="submit" variant="success">
+                                                Save
                                             </Button>
                                         </InputGroup>
-                                        {inviteMessage[1] && <Alert className="mt-2" variant={inviteMessage[0]} onClose={() => setInviteMessage(["", ""])} dismissible>{inviteMessage[1]}</Alert>}
                                     </Form>
                                 )}
 
-
-                                {isAdmin &&
-                                    <>
-                                        <h5>Invites</h5>
-                                        <ListGroup>
-                                            {channel.invites?.map((invite) => (
-                                                <ListGroup.Item
-                                                    key={invite.id}
-                                                    className="d-flex justify-content-between align-items-center"
-                                                >
-                                                    <div className="d-flex flex-column">
-                                                        <div className="d-flex align-items-center gap-2">
-                                                            <ProfileAvatar avatarImage={invite.invitedUserAvatar!} size={36} />
-                                                            <ProfileName
-                                                                userId={invite.invitedUserId ?? ""}
-                                                                userName={invite.invitedUserName ?? "Unknown"}
-                                                            />
-                                                        </div>
-                                                        <small className="text-muted ms-5">
-                                                            Invited by {invite.authorName}
-                                                        </small>
-                                                    </div>
-
-                                                    <Button
-                                                        variant="outline-danger"
-                                                        size="sm"
-                                                        
-                                                    >
-                                                        Delete
-                                                    </Button>
-                                                </ListGroup.Item>
-                                            ))}
-                                            {channel.invites?.length === 0 && (
-                                                <ListGroup.Item className="text-muted fst-italic">No invites</ListGroup.Item>
-                                            )}
-                                        </ListGroup>
-                                    </>
-                                }
-
-                                <h5>Members</h5>
-                                <ListGroup>
-                                    {channel.participants?.map((x) => (
-                                        <ListGroup.Item
-                                            key={x.userId}
-                                            className="d-flex justify-content-between align-items-center"
-                                        >
-                                            <div className="d-flex align-items-center gap-2">
-                                                <ProfileAvatar avatarImage={x.userAvatar} size={42} />
-                                                <ProfileName userId={x.userId} userName={x.userName} />
-                                                <Badge bg="secondary" className="ms-2">
-                                                    {x.role}
-                                                </Badge>
-                                            </div>
-
-                                            {isAdmin && x.userId !== userInfo?.id && (
-                                                <div className="d-flex align-items-center gap-2">
-                                                    {isOwner && (
-                                                        <Form.Select
-                                                            size="sm"
-                                                            value={x.role}
-                                                            onChange={(e) =>
-                                                                handleRoleChange(
-                                                                    x.userId,
-                                                                    e.target.value
-                                                                )
-                                                            }
-                                                        >
-                                                            <option value="member">Member</option>
-                                                            <option value="admin">Admin</option>
-                                                        </Form.Select>
-                                                    )}
-                                                    <Button
-                                                        variant="outline-danger"
-                                                        size="sm"
-                                                        onClick={() => handleKick(x.userId)}
-                                                    >
-                                                        Kick
-                                                    </Button>
-                                                </div>
-                                            )}
-                                        </ListGroup.Item>
-                                    ))}
-                                </ListGroup>
-                            </Tab.Pane>
-                        )}
-
-                        <Tab.Pane eventKey="general">
-                            <h5>General Settings</h5>
-
-                            {channel.type == 2 && isOwner && (
-                                <Form
-                                    onSubmit={(e) => {
-                                        e.preventDefault();
-                                        handleTitleChange();
-                                    }}
-                                    className="mb-3"
-                                >
-                                    <Form.Label>Channel Name</Form.Label>
-                                    <InputGroup>
-                                        <Form.Control
-                                            value={newTitle}
-                                            onChange={(e) => setNewTitle(e.target.value)}
-                                        />
-                                        <Button type="submit" variant="success">
-                                            Save
+                                {(channel.type == 2 && isOwner) ?
+                                    <div>
+                                        <Button variant="outline-danger" onClick={handleLeave}>
+                                            Leave Channel
                                         </Button>
-                                    </InputGroup>
-                                </Form>
-                            )}
-
-                            {channel.type == 2 && isOwner && (
-                                <div className="mb-3">
-                                    <Button variant="danger" onClick={handleDeleteGroup}>
-                                        Delete Group
-                                    </Button>
-                                </div>
-                            )}
-
-                            <div>
-                                <Button variant="outline-danger" onClick={handleLeave}>
-                                    Leave Channel
-                                </Button>
-                            </div>
-                        </Tab.Pane>
-                    </Tab.Content>
-                </Col>
-            </Row>
-        </Tab.Container>
+                                    </div>
+                                    :
+                                    <div className="mb-3">
+                                        <Button variant="danger" onClick={() => setDeleteModalVisible(true)}>
+                                            Delete Channel
+                                        </Button>
+                                    </div>
+                                }
+                            </Tab.Pane>
+                        </Tab.Content>
+                    </Col>
+                </Row>
+            </Tab.Container>
+        </>
     );
 };
 

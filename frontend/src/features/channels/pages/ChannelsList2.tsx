@@ -10,17 +10,24 @@ interface ChannelsListProps {
     visible: boolean;
     onHide: () => void;
     onChannelSelect: (channelId: string) => void;
+    currentChannelId: string | null;
+    onExit: () => void;
 }
 
-const ChannelsList2 = ({ visible, onHide, onChannelSelect }: ChannelsListProps) => {
+const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
     const [activeTab, setActiveTab] = useState("channels");
     const [groupTitle, setGroupTitle] = useState("");
     const [createGroupModalVisible, setCreateGroupModalVisible] = useState(false);
     const { sendJsonRequest } = useApi();
-    const [channelsPageNum, setChannelsPageNum] = useState(1);
-    const channels = useChannels(10, channelsPageNum);
-    const [invitesPageNum, setInvitesPageNum] = useState(1);
-    const invites = useInvites(10, invitesPageNum);
+    const [channelsFromDate, setChannelsFromDate] = useState<Date | null>(null);
+    const onLeaveChannel = useCallback((channelId: string) => {
+        if (currentChannelId === channelId) {
+            onExit();
+        }
+    }, [currentChannelId]);
+    const channels = useChannels(10, channelsFromDate, onLeaveChannel);
+    const [invitesFromDate, setInvitesFromDate] = useState<Date | null>(null);
+    const invites = useInvites(10, invitesFromDate);
 
     const channelsIntObserver = useRef<IntersectionObserver>();
     const lastChannelRef = useCallback((channel: any) => {
@@ -31,7 +38,7 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect }: ChannelsListProps) 
         channelsIntObserver.current = new IntersectionObserver(elems => {
             if (elems[0].isIntersecting && channels.hasNextPage) {
 
-                setChannelsPageNum(prev => prev + 1);
+                setChannelsFromDate(() => new Date(channels.results[channels.results.length - 1].updatedAt));
             }
         });
 
@@ -47,7 +54,7 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect }: ChannelsListProps) 
         invitesIntObserver.current = new IntersectionObserver(elems => {
             if (elems[0].isIntersecting && invites.hasNextPage) {
 
-                setInvitesPageNum(prev => prev + 1);
+                setInvitesFromDate(() => new Date(invites.results[invites.results.length - 1].createdAt));
             }
         });
 
@@ -74,8 +81,9 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect }: ChannelsListProps) 
             inviteId,
             accepted: true
         });
-        if(result && result.success) {
+        if (result && result.success) {
             invites.remove(inviteId);
+            setActiveTab("channels");
         }
     }
 
@@ -84,19 +92,27 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect }: ChannelsListProps) 
             inviteId,
             accepted: true
         });
-        if(result && result.success) {
+        if (result && result.success) {
             invites.remove(inviteId);
         }
     }
 
     const channelsListContent = channels.results.map((channel, i) => {
+        const selected = channel.id === currentChannelId;
         return (
-            <div key={channel.id} className="mt-2">
-                {
-                    channels.results.length === i + 1 ?
-                        <ChannelListItem ref={lastChannelRef} channel={channel} onClick={() => onChannelSelect(channel.id)} />
-                        :
-                        <ChannelListItem channel={channel} onClick={() => onChannelSelect(channel.id)} />
+            <div key={channel.id}>
+                {channels.results.length === i + 1 ?
+                    <ChannelListItem
+                        ref={lastChannelRef}
+                        channel={channel}
+                        onClick={() => onChannelSelect(channel.id)}
+                        selected={selected}
+                    /> :
+                    <ChannelListItem
+                        channel={channel}
+                        onClick={() => onChannelSelect(channel.id)}
+                        selected={selected}
+                    />
                 }
             </div>
         );

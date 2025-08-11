@@ -34,7 +34,7 @@ const postSchema = new mongoose.Schema({
         required: true,
         trim: true,
         minLength: 1,
-        maxLength: 1000
+        maxLength: 4096
     },
     user: {
         type: mongoose.Types.ObjectId,

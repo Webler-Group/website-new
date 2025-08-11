@@ -29,14 +29,14 @@ const clearRefreshToken = (res) => {
     res.clearCookie("refreshToken");
 };
 exports.clearRefreshToken = clearRefreshToken;
-const signAccessToken = (userInfo, deviceId) => __awaiter(void 0, void 0, void 0, function* () {
+const signAccessToken = (userInfo, deviceId, expiresIn = "30m") => __awaiter(void 0, void 0, void 0, function* () {
     const fingerprintRaw = deviceId;
     const fingerprint = yield bcrypt_1.default.hash(fingerprintRaw, 10);
     const payload = {
         userInfo,
         fingerprint
     };
-    const accessToken = jsonwebtoken_1.default.sign(payload, confg_1.config.accessTokenSecret, { expiresIn: "30m" });
+    const accessToken = jsonwebtoken_1.default.sign(payload, confg_1.config.accessTokenSecret, { expiresIn });
     const data = jsonwebtoken_1.default.decode(accessToken);
     return {
         accessToken,

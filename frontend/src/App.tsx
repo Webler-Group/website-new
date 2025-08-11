@@ -155,12 +155,8 @@ function App() {
 
         <Route element={<RequireAuth allowedRoles={allRoles} />}>
           <Route index element={<ChannelsPage />} />
+          <Route path=":channelId" element={<ChannelsPage />} />
         </Route>
-
-        {/*<Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<ChannelsList />} />
-          <Route path=":channelId" element={<ChannelsList openChannel/>}/>
-        </Route>*/}
 
       </Route>
 

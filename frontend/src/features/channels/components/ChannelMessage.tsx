@@ -1,25 +1,69 @@
+import React from "react";
+import ProfileAvatar from "../../../components/ProfileAvatar";
+import ProfileName from "../../../components/ProfileName";
+import DateUtils from "../../../utils/DateUtils";
+
 interface IChannelMessage {
+    id: string;
+    type: number;
     content: string;
-    senderId: string;
-    senderName: string;
-    date: string;
+    userId: string;
+    userName: string;
+    userAvatar: string;
+    createdAt: string;
+    channelId: string;
 }
 
 interface ChannelMessageProps {
     message: IChannelMessage;
+    showHeader: boolean;
 }
 
-const ChannelMessage = ({ message }: ChannelMessageProps) => {
-    const { senderName, content, date } = message;
-    const formattedDate = new Date(date).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+const ChannelMessage = React.forwardRef(({ message, showHeader }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
-    return (
-        <div className="mb-3">
-            <div className="fw-bold">{senderName} <small className="text-muted">{formattedDate}</small></div>
-            <div className="bg-light p-2 rounded">{content}</div>
+    const messageParts = message.content.split("{action_user}");
+    let body = message.type !== 1 ? (
+        <div className="d-flex justify-content-center">
+            <div className="p-2 rounded small bg-light">
+                {messageParts[0]}
+                <ProfileName
+                    userId={message.userId}
+                    userName={message.userName}
+                />
+                {messageParts[1]}
+            </div>
+        </div>
+    ) : (
+        <div className="d-flex">
+            {showHeader && (
+                <div className="me-2 flex-shrink-0">
+                    <ProfileAvatar avatarImage={message.userAvatar} size={42} />
+                </div>
+            )}
+
+            <div className="flex-grow-1">
+                {showHeader && (
+                    <div className="d-flex align-items-center mb-1">
+                        <ProfileName userId={message.userId} userName={message.userName} />
+                        <small className="text-muted ms-2">
+                            {DateUtils.format(new Date(message.createdAt))}
+                        </small>
+                    </div>
+                )}
+
+                <div className={`bg-light p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5" : ""}`}>
+                    {message.content}
+                </div>
+            </div>
         </div>
     );
-};
+
+    const content = ref ?
+        <div ref={ref}>{body}</div>
+        :
+        <div>{body}</div>
+    return content;
+});
 
 export type {
     IChannelMessage

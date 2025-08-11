@@ -16,5 +16,10 @@ router.route("/GetChannel").post(channelsController.getChannel);
 router.route("/GroupInviteUser").post(channelsController.groupInviteUser);
 router.route("/Invites").post(channelsController.getInvitesList);
 router.route("/AcceptInvite").post(channelsController.acceptInvite);
+router.route("/GroupRemoveUser").post(channelsController.groupRemoveUser);
+router.route("/Messages").post(channelsController.getMessages);
+router.route("/CreateMessage").post(channelsController.createMessage);
+router.route("/LeaveChannel").post(channelsController.leaveChannel);
+router.route("GroupRevokeInvite").post(channelsController.groupRevokeInvite);
 
 export default router;

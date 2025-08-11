@@ -27,6 +27,7 @@ const blogRoutes_1 = __importDefault(require("./routes/blogRoutes"));
 const codesRoutes_1 = __importDefault(require("./routes/codesRoutes"));
 const courseEditorRoutes_1 = __importDefault(require("./routes/courseEditorRoutes"));
 const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
+const channelsRoutes_1 = __importDefault(require("./routes/channelsRoutes"));
 const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
 const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
@@ -58,6 +59,7 @@ function main() {
         app.use(`${apiPrefix}/Codes`, codesRoutes_1.default);
         app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes_1.default);
         app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
+        app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
         app.use(`${apiPrefix}/Sitemap`, sitemapRoutes_1.default);
         app.all("*", (req, res) => {
             res.status(404).json({ message: "404 Not Found" });

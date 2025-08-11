@@ -47,7 +47,7 @@ const postSchema = new mongoose_1.default.Schema({
         required: true,
         trim: true,
         minLength: 1,
-        maxLength: 1000
+        maxLength: 4096
     },
     user: {
         type: mongoose_1.default.Types.ObjectId,

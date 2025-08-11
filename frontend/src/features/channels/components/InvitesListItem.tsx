@@ -13,6 +13,7 @@ interface IChannelInvite {
     invitedUserId?: string;
     invitedUserName?: string;
     invitedUserAvatar?: string;
+    createdAt: string;
 }
 
 interface InvitesListItemProps {

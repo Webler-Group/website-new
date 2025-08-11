@@ -1,0 +1,25 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
+const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
+const channelsController_1 = __importDefault(require("../controllers/channelsController"));
+const router = express_1.default.Router();
+router.use(verifyJWT_1.default);
+router.use(protectRoute_1.default);
+router.route("/").post(channelsController_1.default.getChannelsList);
+router.route("/CreateDirectMessages").post(channelsController_1.default.createDirectMessages);
+router.route("/CreateGroup").post(channelsController_1.default.createGroup);
+router.route("/GetChannel").post(channelsController_1.default.getChannel);
+router.route("/GroupInviteUser").post(channelsController_1.default.groupInviteUser);
+router.route("/Invites").post(channelsController_1.default.getInvitesList);
+router.route("/AcceptInvite").post(channelsController_1.default.acceptInvite);
+router.route("/GroupRemoveUser").post(channelsController_1.default.groupRemoveUser);
+router.route("/Messages").post(channelsController_1.default.getMessages);
+router.route("/CreateMessage").post(channelsController_1.default.createMessage);
+router.route("/LeaveChannel").post(channelsController_1.default.leaveChannel);
+router.route("GroupRevokeInvite").post(channelsController_1.default.groupRevokeInvite);
+exports.default = router;

@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
 import {useApi} from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
+import { useWS } from "../../../context/wsCommunication";
 
-const useInvites = (count: number, pageNum: number) => {
+const useInvites = (count: number, fromDate: Date | null) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<IChannelInvite[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [hasNextPage, setHasNextPage] = useState(false);
+    const { socket } = useWS();
 
     useEffect(() => {
         setIsLoading(true);
@@ -17,7 +19,7 @@ const useInvites = (count: number, pageNum: number) => {
         const { signal } = controller;
 
         sendJsonRequest(`/Channels/Invites`, "POST", {
-            page: pageNum,
+            fromDate,
             count
         }, { signal })
             .then(result => {
@@ -34,7 +36,21 @@ const useInvites = (count: number, pageNum: number) => {
 
         return () => controller.abort();
 
-    }, [pageNum]);
+    }, [fromDate]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleNewInvite = (data: any) => {
+            setResults(prev => [data, ...prev]);
+        }
+
+        socket.on("channels:new_invite", handleNewInvite);
+
+        return () => {
+            socket.off("channels:new_invite", handleNewInvite);
+        };
+    }, [socket]);
 
     const add = (data: IChannelInvite) => {
         setResults(prev => [data, ...prev]);
