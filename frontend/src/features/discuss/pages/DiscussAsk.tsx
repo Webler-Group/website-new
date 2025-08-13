@@ -113,7 +113,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                 </FormGroup>
                 <FormGroup>
                     <FormLabel>Description</FormLabel>
-                    <FormControl placeholder="Include as much detail as possible to get the most relevant answers." as="textarea" rows={8} maxLength={1000} required value={message} onChange={(e) => setMessage(e.target.value)} />
+                    <FormControl placeholder="Include as much detail as possible to get the most relevant answers." as="textarea" rows={8} maxLength={4096} required value={message} onChange={(e) => setMessage(e.target.value)} />
                 </FormGroup>
                 <FormGroup>
                     <FormLabel>Tags</FormLabel>
