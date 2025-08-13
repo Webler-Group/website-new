@@ -68,10 +68,10 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         return;
     }
     let dbQuery = Code_1.default.find({ hidden: false });
-    if (searchQuery.trim().length) {
+    if (searchQuery.trim().length > 2) {
         dbQuery.where({
             $or: [
-                { name: new RegExp("^" + searchQuery.trim(), "i") }
+                { name: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") }
             ]
         });
     }

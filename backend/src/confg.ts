@@ -25,15 +25,15 @@ const config = {
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
 
     emailHost: process.env.EMAIL_HOST as string,
-    emailPort: Number(process.env.EMAIL_PORT),
+    emailPort: (process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined) as number,
     emailUser: process.env.EMAIL_USER as string,
     emailPassword: process.env.EMAIL_PASSWORD as string,
-    emailSecure: process.env.EMAIL_SECURE === "true"
+    emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined) as boolean
 };
 
 for(let [k, v] of Object.entries(config)) {
     if(typeof v === "undefined") {
-        console.error(`Config Error: ${k} is not set`);
+        console.warn(`Config: Varible ${k} is not set`);
     }
 }
 

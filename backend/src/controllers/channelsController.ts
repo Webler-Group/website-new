@@ -6,6 +6,7 @@ import ChannelInvite from "../models/ChannelInvite";
 import ChannelParticipant from "../models/ChannelParticipant";
 import User from "../models/User";
 import ChannelMessage from "../models/ChannelMessage";
+import { Socket } from "socket.io";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
@@ -18,6 +19,7 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         channel: {
             id: channel._id,
+            type: channel._type,
             title: channel.title,
             updatedAt: channel.updatedAt
         }
@@ -108,7 +110,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const channel = await Channel.findById(channelId)
         .populate<{ DMUser: any }>("DMUser", "name avatarImage level roles")
-        .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")   
+        .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
         .lean();
     if (!channel) {
         res.status(404).json({ message: "Channel not found" });
@@ -120,9 +122,9 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: channel._type == 2 ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
         coverImage: channel.DMUser?._id == currentUserId ? channel.createdBy.avatarImage : channel.DMUser?.avatarImage,
         type: channel._type,
-        DMUser: channel.DMUser,
         createdAt: channel.createdAt,
-        updatedAt: channel.updatedAt
+        updatedAt: channel.updatedAt,
+        lastActiveAt: participant.lastActiveAt
     };
 
     if (includeInvites) {
@@ -163,7 +165,9 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const currentUserId = req.userId;
 
     // First find all channels where user is participant
-    const participantChannels = await ChannelParticipant.find({ user: currentUserId }).select('channel');
+    const participantChannels = await ChannelParticipant.find({ user: currentUserId })
+        .select('channel lastActiveAt');
+    
     const channelIds = participantChannels.map(p => p.channel);
 
     let query = Channel.find({ _id: { $in: channelIds } });
@@ -178,7 +182,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
         .populate<{ lastMessage: any }>({
             path: "lastMessage",
-            select: "user content _type",
+            select: "user content _type createdAt",
             populate: {
                 path: "user",
                 select: "name avatarImage"
@@ -187,23 +191,30 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .lean();
 
     res.json({
-        channels: channels.map(x => ({
-            id: x._id,
-            type: x._type,
-            title: x._type == 2 ? x.title : x.DMUser?._id == currentUserId ? x.createdBy.name : x.DMUser?.name,
-            coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
-            createdAt: x.createdAt,
-            updatedAt: x.updatedAt,
-            lastMessage: x.lastMessage ? {
-                type: x.lastMessage._type,
-                id: x.lastMessage._id,
-                content: x.lastMessage.content,
-                createdAt: x.lastMessage.createdAt,
-                userId: x.lastMessage.user._id,
-                userName: x.lastMessage.user.name,
-                userAvatar: x.lastMessage.user.avatarImage
-            } : null
-        }))
+        channels: channels.map(x => {
+            const lastActiveAt = participantChannels.find(y => y.channel.equals(x._id))?.lastActiveAt;
+            return {
+                id: x._id,
+                type: x._type,
+                title: x._type == 2 ? x.title : x.DMUser?._id == currentUserId ? x.createdBy.name : x.DMUser?.name,
+                coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
+                createdAt: x.createdAt,
+                updatedAt: x.updatedAt,
+                lastMessage: x.lastMessage ? {
+                    type: x.lastMessage._type,
+                    id: x.lastMessage._id,
+                    content: x.lastMessage.content,
+                    createdAt: x.lastMessage.createdAt,
+                    userId: x.lastMessage.user._id,
+                    userName: x.lastMessage.user.name,
+                    userAvatar: x.lastMessage.user.avatarImage,
+                    viewed: lastActiveAt
+                        ? lastActiveAt >= x.lastMessage.createdAt
+                        : false
+
+                } : null
+            }
+        })
     });
 });
 
@@ -243,7 +254,7 @@ const acceptInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const invite = await ChannelInvite.findById(inviteId);
 
-    if(!invite) {
+    if (!invite) {
         res.status(403).json({ message: "Invite not found" });
         return;
     }
@@ -348,7 +359,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId })
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
@@ -374,7 +385,8 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
             userAvatar: x.user.avatarImage,
             createdAt: x.createdAt,
             content: x.content,
-            channelId: x.channel
+            channelId: x.channel,
+            viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false
         }))
     });
 });
@@ -402,6 +414,51 @@ const groupRevokeInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
     });
 });
 
+const markMessagesSeenWS = async (socket: Socket, payload: any) => {
+    const { channelId } = payload;
+    const currentUserId = socket.data.userId;
+
+    const participant = await ChannelParticipant.findOne({ user: currentUserId, channel: channelId });
+    if(!participant) {
+        return;
+    }
+
+    participant.lastActiveAt = new Date();
+    await participant.save();
+
+    socket.emit("channels:messages_seen", {
+        channelId,
+        userId: currentUserId,
+        lastActiveAt: participant.lastActiveAt
+    });
+}
+
+const createMessageWS = async (socket: Socket, payload: any) => {
+    const { channelId, content } = payload;
+    const currentUserId = socket.data.userId;
+
+    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        return;
+    }
+
+    await ChannelMessage.create({
+        _type: 1,
+        content,
+        channel: channelId,
+        user: currentUserId
+    });
+}
+
+const registerHandlersWS = (socket: Socket) => {
+    socket.on("channels:messages_seen", (payload) => {
+        markMessagesSeenWS(socket, payload);
+    });
+    socket.on("channels:send_message", (payload) => {
+        createMessageWS(socket, payload);
+    });
+}
+
 const channelsController = {
     createGroup,
     createDirectMessages,
@@ -415,6 +472,10 @@ const channelsController = {
     groupRemoveUser,
     leaveChannel,
     groupRevokeInvite
+}
+
+export {
+    registerHandlersWS
 }
 
 export default channelsController;

@@ -34,6 +34,7 @@ const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
 const socketServer_1 = require("./config/socketServer");
 const codesController_1 = require("./controllers/codesController");
+const channelsController_1 = require("./controllers/channelsController");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         console.log(confg_1.config.nodeEnv);
@@ -41,10 +42,13 @@ function main() {
         const server = http_1.default.createServer(app);
         (0, socketServer_1.init)(server, (socket) => {
             (0, codesController_1.registerHandlersWS)(socket);
+            (0, channelsController_1.registerHandlersWS)(socket);
         });
         const apiPrefix = "/api";
         yield (0, dbConn_1.default)();
-        (0, cronJobs_1.initCronJobs)();
+        if (confg_1.config.nodeEnv == "production") {
+            (0, cronJobs_1.initCronJobs)();
+        }
         app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
         app.use(logger_1.logger);
         if (confg_1.config.nodeEnv == "production") {

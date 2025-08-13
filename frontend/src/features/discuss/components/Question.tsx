@@ -29,16 +29,24 @@ interface QuestionProps {
 
 const Question = ({ question, searchQuery }: QuestionProps) => {
 
-    let titleMatch = question.title.match(new RegExp("^" + searchQuery, "i"));
-    let title = titleMatch && titleMatch.length ?
-        <>
-            <span className="bg-warning">{titleMatch[0]}</span>
-            {question.title.slice(titleMatch[0].length)}
-        </>
-        :
-        <>
-            {question.title}
-        </>
+    const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
+    const match = question.title.match(regex);
+
+    let title;
+    if (searchQuery.trim().length > 2 && match && match.index !== undefined) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        title = (
+            <>
+                {question.title.slice(0, start)}
+                <span className="bg-warning">{question.title.slice(start, end)}</span>
+                {question.title.slice(end)}
+            </>
+        );
+    } else {
+        title = <>{question.title}</>;
+    }
 
     return (
         <div className="rounded border p-2 mb-2 bg-white d-md-flex">

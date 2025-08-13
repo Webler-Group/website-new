@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
 import { IChannelMessage } from "../components/ChannelMessage";
 import { IChannelParticipant } from "../components/ChannelListItem";
 
-const useMessages = (count: number, channelId: string, fromDate: Date | null, onChannelJoin: (user: IChannelParticipant) => void, onChannelLeave: (userId: string) => void) => {
+const useMessages = (count: number, channelId: string | null, fromDate: Date | null, onChannelJoin: (user: IChannelParticipant) => void, onChannelLeave: (userId: string) => void, onMessagesSeen: (date: string) => void) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<IChannelMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -75,15 +75,43 @@ const useMessages = (count: number, channelId: string, fromDate: Date | null, on
             }
         };
 
+        const handleMessagesSeen = (data: any) => {
+            onMessagesSeen(data.lastActiveAt);
+        }
+
         socket.on("channels:new_message", handleNewMessage);
-        return () => socket.off("channels:new_message", handleNewMessage);
+        socket.on("channels:messages_seen", handleMessagesSeen);
+
+        return () => {
+            socket.off("channels:new_message", handleNewMessage);
+            socket.off("channels:messages_seen", handleMessagesSeen);
+        }
+    }, [socket, channelId]);
+
+    const markMessagesSeen = useCallback(() => {
+        if(!socket) return;
+
+        socket.emit("channels:messages_seen", {
+            channelId
+        });
+    }, [socket, channelId]);
+
+    const sendMessage = useCallback((content: string) => {
+        if(!socket) return;
+
+        socket.emit("channels:send_message", {
+            channelId,
+            content
+        });
     }, [socket, channelId]);
 
     return {
         isLoading,
         error,
         results,
-        hasNextPage
+        hasNextPage,
+        markMessagesSeen,
+        sendMessage
     };
 };
 

@@ -61,6 +61,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onRevokeInvite
                 authorName: userInfo?.name,
                 authorAvatar: userInfo?.avatarImage
             });
+            setInviteUsername("");
         } else {
             setInviteMessage(["danger", result.message ?? "Invite failed"])
         }

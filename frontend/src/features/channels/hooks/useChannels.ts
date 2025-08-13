@@ -86,10 +86,26 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
             }
         };
 
+        const handleMessagesSeen = (data: any) => {
+            
+            setResults(prev => {
+                for(let i = 0; i < prev.length; ++i) {
+                    if(prev[i].id == data.channelId) {
+                        if(prev[i].lastMessage) {
+                            prev[i].lastMessage!.viewed = true;
+                        }
+                    }
+                }
+                return prev;
+            });
+        }
+
         socket.on("channels:new_message", handleNewMessage);
+        socket.on("channels:messages_seen", handleMessagesSeen);
 
         return () => {
             socket.off("channels:new_message", handleNewMessage);
+            socket.off("channels:messages_seen", handleMessagesSeen);
         };
     }, [socket]);
 

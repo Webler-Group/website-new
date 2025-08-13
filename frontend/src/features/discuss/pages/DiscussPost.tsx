@@ -14,6 +14,7 @@ import { FaStar } from "react-icons/fa6";
 import PostAttachment from "../components/PostAttachment";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 
 const DiscussPost = () => {
@@ -31,7 +32,7 @@ const DiscussPost = () => {
     const form = useRef<HTMLFormElement>(null);
     const [formVisible, setFormVisible] = useState(false);
     const [formInput, setFormInput] = useState("");
-    const maxCharacters = 1000;
+    const maxCharacters = 4096;
     const [acceptedAnswer, setAcceptedAnswer] = useState<string | null>(null);
     const [editedAnswer, setEditedAnswer] = useState<string | null>(null);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
@@ -359,7 +360,9 @@ const DiscussPost = () => {
                     </div>
                     <div className="wb-discuss-question__main ms-2">
                         <h3 className="wb-discuss-question__title" style={{ wordBreak: "break-word" }}>{question.title}</h3>
-                        <p className="wb-discuss-question__description mt-4">{question.message}</p>
+                        <div className="mt-4">
+                            <MarkdownRenderer content={question.message} /> 
+                        </div>
                         <div className="mt-3">
                             {
                                 question.attachments.map(attachment => {
@@ -401,7 +404,7 @@ const DiscussPost = () => {
                 <Form ref={form}>
                     <FormGroup>
                         <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <FormControl ref={formInputRef} as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={1000} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        <FormControl ref={formInputRef} as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">

@@ -22,14 +22,14 @@ const config = {
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
     emailHost: process.env.EMAIL_HOST,
-    emailPort: Number(process.env.EMAIL_PORT),
+    emailPort: (process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined),
     emailUser: process.env.EMAIL_USER,
     emailPassword: process.env.EMAIL_PASSWORD,
-    emailSecure: process.env.EMAIL_SECURE === "true"
+    emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined)
 };
 exports.config = config;
 for (let [k, v] of Object.entries(config)) {
     if (typeof v === "undefined") {
-        console.error(`Config Error: ${k} is not set`);
+        console.warn(`Config: Varible ${k} is not set`);
     }
 }

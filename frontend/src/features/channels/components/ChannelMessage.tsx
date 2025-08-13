@@ -12,6 +12,7 @@ interface IChannelMessage {
     userAvatar: string;
     createdAt: string;
     channelId: string;
+    viewed: boolean;
 }
 
 interface ChannelMessageProps {
@@ -57,6 +58,8 @@ const ChannelMessage = React.forwardRef(({ message, showHeader }: ChannelMessage
             </div>
         </div>
     );
+
+    body = (<div style={{ maxWidth: "720px" }}>{body}</div>);
 
     const content = ref ?
         <div ref={ref}>{body}</div>

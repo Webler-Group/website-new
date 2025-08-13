@@ -54,7 +54,7 @@ const QuestionList = () => {
         e.preventDefault();
 
         if (searchInputElement.current) {
-            const value = searchInputElement.current.value.trim()
+            const value = searchInputElement.current.value.trim();
             searchParams.set("query", value);
             setSearchParams(searchParams, { replace: true });
             setSearchQuery(value);

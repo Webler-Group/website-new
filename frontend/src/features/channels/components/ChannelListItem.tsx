@@ -21,6 +21,7 @@ interface IChannel {
     lastMessage?: IChannelMessage;
     invites?: IChannelInvite[];
     participants?: IChannelParticipant[];
+    lastActiveAt?: string;
 }
 
 interface ChannelListItemProps {
@@ -55,7 +56,17 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
             }
             <div className="flex-grow-1">
                 <div className="d-flex justify-content-between">
-                    <div className="fw-bold">{channel.title}</div>
+                    <div className="fw-bold d-flex align-items-center gap-2">
+                        {channel.title}
+                        {channel.lastMessage && channel.lastMessage.viewed === false && (
+                            <span
+                                className="badge bg-danger"
+                                style={{ fontSize: "0.7rem" }}
+                            >
+                                NEW
+                            </span>
+                        )}
+                    </div>
                     <div className="small text-muted">
                         {DateUtils.format2(new Date(channel.updatedAt))}
                     </div>

@@ -43,6 +43,10 @@ const channelParticipantSchema = new mongoose_1.Schema({
         type: mongoose_1.SchemaTypes.ObjectId,
         ref: "Channel",
         required: true
+    },
+    lastActiveAt: {
+        type: Date,
+        default: null
     }
 });
 const ChannelParticipant = mongoose_1.default.model("ChannelParticipant", channelParticipantSchema);

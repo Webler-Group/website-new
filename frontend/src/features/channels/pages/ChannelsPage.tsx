@@ -2,7 +2,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { FaBars } from "react-icons/fa";
 import ChannelsList2 from "./ChannelsList2";
-import ChannelRoom2 from "../components/ChannelRoom2";
+import ChannelRoom2 from "./ChannelRoom2";
 
 const ChannelsPage = () => {
     const [channelListVisible, setChannelListVisible] = useState(false);

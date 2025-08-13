@@ -12,6 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.registerHandlersWS = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Channel_1 = __importDefault(require("../models/Channel"));
 const ChannelInvite_1 = __importDefault(require("../models/ChannelInvite"));
@@ -26,6 +27,7 @@ const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter
     res.json({
         channel: {
             id: channel._id,
+            type: channel._type,
             title: channel.title,
             updatedAt: channel.updatedAt
         }
@@ -112,9 +114,9 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         title: channel._type == 2 ? channel.title : ((_a = channel.DMUser) === null || _a === void 0 ? void 0 : _a._id) == currentUserId ? channel.createdBy.name : (_b = channel.DMUser) === null || _b === void 0 ? void 0 : _b.name,
         coverImage: ((_c = channel.DMUser) === null || _c === void 0 ? void 0 : _c._id) == currentUserId ? channel.createdBy.avatarImage : (_d = channel.DMUser) === null || _d === void 0 ? void 0 : _d.avatarImage,
         type: channel._type,
-        DMUser: channel.DMUser,
         createdAt: channel.createdAt,
-        updatedAt: channel.updatedAt
+        updatedAt: channel.updatedAt,
+        lastActiveAt: participant.lastActiveAt
     };
     if (includeInvites) {
         const invites = yield ChannelInvite_1.default.find({ channel: channelId })
@@ -150,7 +152,8 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
     const { fromDate, count } = req.body;
     const currentUserId = req.userId;
     // First find all channels where user is participant
-    const participantChannels = yield ChannelParticipant_1.default.find({ user: currentUserId }).select('channel');
+    const participantChannels = yield ChannelParticipant_1.default.find({ user: currentUserId })
+        .select('channel lastActiveAt');
     const channelIds = participantChannels.map(p => p.channel);
     let query = Channel_1.default.find({ _id: { $in: channelIds } });
     if (fromDate) {
@@ -163,7 +166,7 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
         .populate("createdBy", "name avatarImage level roles")
         .populate({
         path: "lastMessage",
-        select: "user content _type",
+        select: "user content _type createdAt",
         populate: {
             path: "user",
             select: "name avatarImage"
@@ -172,12 +175,13 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
         .lean();
     res.json({
         channels: channels.map(x => {
-            var _a, _b, _c, _d;
-            return ({
+            var _a, _b, _c, _d, _e;
+            const lastActiveAt = (_a = participantChannels.find(y => y.channel.equals(x._id))) === null || _a === void 0 ? void 0 : _a.lastActiveAt;
+            return {
                 id: x._id,
                 type: x._type,
-                title: x._type == 2 ? x.title : ((_a = x.DMUser) === null || _a === void 0 ? void 0 : _a._id) == currentUserId ? x.createdBy.name : (_b = x.DMUser) === null || _b === void 0 ? void 0 : _b.name,
-                coverImage: ((_c = x.DMUser) === null || _c === void 0 ? void 0 : _c._id) == currentUserId ? x.createdBy.avatarImage : (_d = x.DMUser) === null || _d === void 0 ? void 0 : _d.avatarImage,
+                title: x._type == 2 ? x.title : ((_b = x.DMUser) === null || _b === void 0 ? void 0 : _b._id) == currentUserId ? x.createdBy.name : (_c = x.DMUser) === null || _c === void 0 ? void 0 : _c.name,
+                coverImage: ((_d = x.DMUser) === null || _d === void 0 ? void 0 : _d._id) == currentUserId ? x.createdBy.avatarImage : (_e = x.DMUser) === null || _e === void 0 ? void 0 : _e.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
                 lastMessage: x.lastMessage ? {
@@ -187,9 +191,12 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
                     createdAt: x.lastMessage.createdAt,
                     userId: x.lastMessage.user._id,
                     userName: x.lastMessage.user.name,
-                    userAvatar: x.lastMessage.user.avatarImage
+                    userAvatar: x.lastMessage.user.avatarImage,
+                    viewed: lastActiveAt
+                        ? lastActiveAt >= x.lastMessage.createdAt
+                        : false
                 } : null
-            });
+            };
         })
     });
 }));
@@ -334,7 +341,8 @@ const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter
             userAvatar: x.user.avatarImage,
             createdAt: x.createdAt,
             content: x.content,
-            channelId: x.channel
+            channelId: x.channel,
+            viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false
         }))
     });
 }));
@@ -356,6 +364,44 @@ const groupRevokeInvite = (0, express_async_handler_1.default)((req, res) => __a
         success: true
     });
 }));
+const markMessagesSeenWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId } = payload;
+    const currentUserId = socket.data.userId;
+    const participant = yield ChannelParticipant_1.default.findOne({ user: currentUserId, channel: channelId });
+    if (!participant) {
+        return;
+    }
+    participant.lastActiveAt = new Date();
+    yield participant.save();
+    socket.emit("channels:messages_seen", {
+        channelId,
+        userId: currentUserId,
+        lastActiveAt: participant.lastActiveAt
+    });
+});
+const createMessageWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId, content } = payload;
+    const currentUserId = socket.data.userId;
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        return;
+    }
+    yield ChannelMessage_1.default.create({
+        _type: 1,
+        content,
+        channel: channelId,
+        user: currentUserId
+    });
+});
+const registerHandlersWS = (socket) => {
+    socket.on("channels:messages_seen", (payload) => {
+        markMessagesSeenWS(socket, payload);
+    });
+    socket.on("channels:send_message", (payload) => {
+        createMessageWS(socket, payload);
+    });
+};
+exports.registerHandlersWS = registerHandlersWS;
 const channelsController = {
     createGroup,
     createDirectMessages,

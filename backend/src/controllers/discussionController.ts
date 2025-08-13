@@ -91,20 +91,20 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             hidden: false
         })
 
-    if (searchQuery.trim().length) {
+    if (searchQuery.trim().length > 2) {
         const tagIds = (await Tag.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
                 $or: [
-                    { title: new RegExp("^" + searchQuery.trim(), "i") },
+                    { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
                     { "tags": { $in: tagIds } }
                 ]
             }
         })
         dbQuery.where({
             $or: [
-                { title: new RegExp("^" + searchQuery.trim(), "i") },
+                { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
                 { "tags": { $in: tagIds } }
             ]
         })

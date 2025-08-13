@@ -66,10 +66,10 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let dbQuery = Code.find({ hidden: false })
 
-    if (searchQuery.trim().length) {
+    if (searchQuery.trim().length > 2) {
         dbQuery.where({
             $or: [
-                { name: new RegExp("^" + searchQuery.trim(), "i") }
+                { name: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") }
             ]
         })
     }

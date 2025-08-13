@@ -24,6 +24,8 @@
     "react-router-bootstrap": "^0.26.2",
     "react-router-dom": "^6.15.0",
     "react-syntax-highlighter": "^15.6.1",
+    "remark-breaks": "^4.0.0",
+    "remark-gfm": "^4.0.1",
     "socket.io-client": "^4.8.1"
   },
   "devDependencies": {

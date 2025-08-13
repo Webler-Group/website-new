@@ -9,6 +9,7 @@ import { useNavigate } from "react-router-dom";
 import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 interface IAnswer {
     id: string;
@@ -83,7 +84,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                     </div>
                 </div>
                 <div className="wb-discuss-question__main ms-2">
-                    <p className="wb-discuss-question__description mt-2">{answer.message}</p>
+                    <MarkdownRenderer content={answer.message} />
                     <div className="mt-3">
                         {
                             answer.attachments.map(attachment => {

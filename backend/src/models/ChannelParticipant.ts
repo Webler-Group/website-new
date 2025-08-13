@@ -16,6 +16,10 @@ const channelParticipantSchema = new Schema({
         type: SchemaTypes.ObjectId,
         ref: "Channel",
         required: true
+    },
+    lastActiveAt: {
+        type: Date,
+        default: null
     }
 });
 

@@ -7,6 +7,7 @@ import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
 import QuestionPlaceholder from '../../discuss/components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
+import { languagesInfo } from '../../../data/compilerLanguages';
 
 const CodesList = () => {
     const { sendJsonRequest } = useApi();
@@ -132,10 +133,14 @@ const CodesList = () => {
                         }
                     </Form.Select>
                     <Form.Select size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
-                        <option value="all">All</option>
-                        <option value="web">Web</option>
-                        <option value="c">C</option>
-                        <option value="cpp">C++</option>
+                        <option key="all" value="all">All</option>
+                        {
+                            Object.entries(languagesInfo).map(entry => {
+                                return (
+                                    <option key={entry[0]} value={entry[0]}>{entry[1].displayName}</option>
+                                )
+                            })
+                        }
                     </Form.Select>
                 </div>
             </div>

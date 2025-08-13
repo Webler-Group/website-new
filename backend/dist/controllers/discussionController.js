@@ -87,20 +87,20 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         _type: 1,
         hidden: false
     });
-    if (searchQuery.trim().length) {
+    if (searchQuery.trim().length > 2) {
         const tagIds = (yield Tag_1.default.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
                 $or: [
-                    { title: new RegExp("^" + searchQuery.trim(), "i") },
+                    { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
                     { "tags": { $in: tagIds } }
                 ]
             }
         });
         dbQuery.where({
             $or: [
-                { title: new RegExp("^" + searchQuery.trim(), "i") },
+                { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
                 { "tags": { $in: tagIds } }
             ]
         });

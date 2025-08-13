@@ -92,7 +92,8 @@ channelMessageSchema.post("save", function () {
                 createdAt: this.createdAt,
                 userId: user._id.toString(),
                 userName: user.name,
-                userAvatar: user.avatarImage
+                userAvatar: user.avatarImage,
+                viewed: false
             });
         }
     });

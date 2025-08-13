@@ -29,22 +29,30 @@ interface CodeProps {
 }
 
 const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-    let titleMatch = code.name!.match(new RegExp("^" + searchQuery, "i"));
-    let title = titleMatch && titleMatch.length ?
-        <>
-            <span className="bg-warning">{titleMatch[0]}</span>
-            {code.name!.slice(titleMatch[0].length)}
-        </>
-        :
-        <>
-            {code.name}
-        </>
+    const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
+    const match = code.name!.match(regex);
+
+    let title;
+    if (searchQuery.trim().length > 2 && match && match.index !== undefined) {
+        const start = match.index;
+        const end = start + match[0].length;
+
+        title = (
+            <>
+                {code.name!.slice(0, start)}
+                <span className="bg-warning">{code.name!.slice(start, end)}</span>
+                {code.name!.slice(end)}
+            </>
+        );
+    } else {
+        title = <>{code.name!}</>;
+    }
 
     let body = (
         <div className="rounded border p-2 bg-white d-md-flex">
             <div className="flex-grow-1 d-flex gap-2">
                 <div>
-                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light" 
+                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light"
                         style={{ width: "42px", height: "42px", background: languagesInfo[code.language].color }}>{languagesInfo[code.language].shortName}</div>
                 </div>
                 <div>

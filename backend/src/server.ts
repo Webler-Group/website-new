@@ -20,6 +20,7 @@ import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/codesController"; 
+import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 
 async function main() {
     console.log(config.nodeEnv);
@@ -29,13 +30,16 @@ async function main() {
 
     init(server, (socket) => {
         codesRegisterHandlersWS(socket);
+        channelsregisterHandlersWS(socket);
     });
 
     const apiPrefix = "/api";
 
     await connectDB();
 
-    initCronJobs();
+    if (config.nodeEnv == "production") {
+        initCronJobs();
+    }
 
     app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
     app.use(logger);
