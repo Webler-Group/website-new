@@ -17,6 +17,7 @@ const node_cron_1 = __importDefault(require("node-cron"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const dbUtils_1 = require("../utils/dbUtils");
 const confg_1 = require("../confg");
+const logger_1 = require("../middleware/logger");
 const initCronJobs = () => {
     // This will run every day at midnight
     node_cron_1.default.schedule("0 * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
@@ -24,10 +25,10 @@ const initCronJobs = () => {
             const result = yield EvaluationJob_1.default.deleteMany({
                 createdAt: { $lt: new Date(Date.now() - 1000 * 60) }
             });
-            console.log(`[CRON] Deleted ${result.deletedCount} old evaluation jobs`);
+            (0, logger_1.logEvents)(`Deleted ${result.deletedCount} old evaluation jobs`, "cronLog.log");
         }
         catch (err) {
-            console.error("[CRON] Error deleting old evaluation jobs:", err);
+            (0, logger_1.logEvents)("Deleting old evaluation jobs failed with error: " + err.message, "cronErrLog.log");
         }
     }));
     node_cron_1.default.schedule("0 0 * * *", () => __awaiter(void 0, void 0, void 0, function* () {

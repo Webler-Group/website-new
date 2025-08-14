@@ -20,6 +20,7 @@ const config = {
     adminPassword: process.env.ADMIN_PASSWORD as string,
 
     dumpDir: process.env.DUMP_DIR as string,
+    logDir: process.env.LOG_DIR as string,
 
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),

@@ -20,6 +20,7 @@ const isolate_1 = require("../utils/isolate");
 const confg_1 = require("../confg");
 const tokenUtils_1 = require("../utils/tokenUtils");
 const User_1 = __importDefault(require("../models/User"));
+const logger_1 = require("../middleware/logger");
 const boxIdPool = new BoxIdPool_1.BoxIdPool(100, 10000);
 const CONCURRENCY = 4;
 const deviceId = "worker-" + process.pid;
@@ -40,14 +41,17 @@ function processSingleJob(job) {
         catch (err) {
             job.status = "error";
             job.stderr = err.message;
-            console.log(`Job ${job._id} failed with error: ${err.message}`);
+            (0, logger_1.logEvents)(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
         }
-        finally {
-            boxIdPool.release(boxId);
+        boxIdPool.release(boxId);
+        try {
             yield job.save();
-            socket.emit("job:finished", {
+            yield socket.timeout(1000).emitWithAck("job:finished", {
                 jobId: job._id
             });
+        }
+        catch (err) {
+            (0, logger_1.logEvents)(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
         }
     });
 }

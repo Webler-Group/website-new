@@ -52,7 +52,6 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     }
 
     const fetchQueryWithReauthentication = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
-        // console.log(path, expiresIn Date.now());
         if (!path.startsWith("/Auth") && options.accessToken && expiresIn <= Date.now()) {
             const reauthResult = await reauthenticate();
             options.accessToken = reauthResult.accessToken ?? undefined;

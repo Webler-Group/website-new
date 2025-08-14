@@ -19,6 +19,7 @@ const config = {
     adminEmail: process.env.ADMIN_EMAIL,
     adminPassword: process.env.ADMIN_PASSWORD,
     dumpDir: process.env.DUMP_DIR,
+    logDir: process.env.LOG_DIR,
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
     emailHost: process.env.EMAIL_HOST,

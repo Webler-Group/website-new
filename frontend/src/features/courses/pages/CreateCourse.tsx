@@ -98,7 +98,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
-            console.log(result);
+            
         }
         else {
             setError(result.error ? result.error.message : result.message);

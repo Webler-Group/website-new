@@ -6,6 +6,7 @@ import { runInIsolate } from "../utils/isolate";
 import { config } from "../confg";
 import { signAccessToken } from "../utils/tokenUtils";
 import User from "../models/User";
+import { logEvents } from "../middleware/logger";
 
 const boxIdPool = new BoxIdPool(100, 10000);
 const CONCURRENCY = 4;
@@ -30,14 +31,19 @@ async function processSingleJob(job: typeof EvaluationJob.prototype) {
         job.status = "error";
         job.stderr = err.message;
 
-        console.log(`Job ${job._id} failed with error: ${err.message}`);
-    } finally {
-        boxIdPool.release(boxId);
+        logEvents(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
+    }
+
+    boxIdPool.release(boxId);
+
+    try {
         await job.save();
 
-        socket.emit("job:finished", {
+        await socket.timeout(1000).emitWithAck("job:finished", {
             jobId: job._id
         });
+    } catch(err: any) {
+        logEvents(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
     }
 }
 

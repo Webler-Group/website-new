@@ -37,7 +37,7 @@ const codesController_1 = require("./controllers/codesController");
 const channelsController_1 = require("./controllers/channelsController");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        console.log(confg_1.config.nodeEnv);
+        console.log("Environment:", confg_1.config.nodeEnv);
         const app = (0, express_1.default)();
         const server = http_1.default.createServer(app);
         (0, socketServer_1.init)(server, (socket) => {

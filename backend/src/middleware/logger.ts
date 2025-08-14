@@ -6,17 +6,16 @@ import { NextFunction, Request, Response } from "express";
 import { config } from "../confg";
 
 const logEvents = async (message: string, logFileName: string) => {
-    if (config.nodeEnv !== "development") {
-        return;
-    }
     const dateTime = format(new Date(), 'yyyyMMdd\tHH:mm:ss');
     const logItem = `${dateTime}\t${uuid()}\t${message}\n`;
 
+    console.log(message);
+
     try {
-        if (!fs.existsSync(path.join(__dirname, "..", "..", "logs"))) {
-            await fs.promises.mkdir(path.join(__dirname, "..", "..", "logs"));
+        if (!fs.existsSync(config.logDir)) {
+            await fs.promises.mkdir(config.logDir);
         }
-        await fs.promises.appendFile(path.join(__dirname, "..", "..", "logs", logFileName), logItem);
+        await fs.promises.appendFile(path.join(config.logDir, logFileName), logItem);
     }
     catch (err) {
         console.log(err);
@@ -24,7 +23,6 @@ const logEvents = async (message: string, logFileName: string) => {
 }
 
 const logger = (req: Request, res: Response, next: NextFunction) => {
-    logEvents(`${req.method}\t${req.url}\t${req.headers.origin}`, 'reqLog.log');
     console.log(`${req.method} ${req.path}`);
     next();
 }

@@ -23,7 +23,7 @@ import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/cod
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 
 async function main() {
-    console.log(config.nodeEnv);
+    console.log("Environment:", config.nodeEnv);
 
     const app = express();
     const server = http.createServer(app);
