@@ -330,8 +330,10 @@ const getJobWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function
     const { jobId } = payload;
     const job = yield EvaluationJob_1.default.findById(jobId).select("-source");
     if (!job) {
+        console.log("404 Job " + jobId + " not found");
         return;
     }
+    console.log("Job " + jobId + " finished with status: " + job.status);
     socket.to((0, socketServer_1.devRoom)(job.deviceId)).emit("job:get", {
         job: {
             id: job._id,

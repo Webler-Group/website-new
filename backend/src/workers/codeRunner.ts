@@ -35,11 +35,9 @@ async function processSingleJob(job: typeof EvaluationJob.prototype) {
     }
 
     boxIdPool.release(boxId);
-
     try {
         await job.save();
-
-        await socket.timeout(1000).emitWithAck("job:finished", {
+        socket.emit("job:finished", {
             jobId: job._id
         });
     } catch(err: any) {

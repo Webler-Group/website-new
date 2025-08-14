@@ -46,7 +46,7 @@ function processSingleJob(job) {
         boxIdPool.release(boxId);
         try {
             yield job.save();
-            yield socket.timeout(1000).emitWithAck("job:finished", {
+            socket.emit("job:finished", {
                 jobId: job._id
             });
         }

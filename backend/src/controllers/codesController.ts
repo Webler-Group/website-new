@@ -370,10 +370,13 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getJobWS = async (socket: Socket, payload: any) => {
     const { jobId } = payload;
 
-    const job = await EvaluationJob.findById(jobId).select("-source");
+    const job = await EvaluationJob.findById(jobId).select("-source");    
     if (!job) {
+        console.log("404 Job " + jobId + " not found");
         return;
     }
+
+    console.log("Job " + jobId + " finished with status: " + job.status);
 
     socket.to(devRoom(job.deviceId)).emit("job:get", {
         job: {
