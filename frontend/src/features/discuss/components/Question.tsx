@@ -75,7 +75,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                 </div>
             </div>
             <div className="d-flex justify-content-end align-items-end mt-3">
-                <div className="d-flex">
+                <div className="d-flex align-items-center">
                     <div>
                         <div>
                             <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
@@ -85,7 +85,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <ProfileAvatar size={42} avatarImage={question.userAvatar} />
+                        <ProfileAvatar size={32} avatarImage={question.userAvatar} />
                     </div>
                 </div>
             </div>

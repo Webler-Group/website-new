@@ -198,7 +198,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                                 </Button>
                         }
                     </div>
-                    <div className="mt-2 pe-3 flex-grow-1 overflow-auto" ref={commentContainerRef}>
+                    <div className="mt-1 pe-1 flex-grow-1 overflow-auto" ref={commentContainerRef}>
                         <CommentNode
                             code={code}
                             data={null}

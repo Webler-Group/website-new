@@ -242,8 +242,8 @@ const Profile = () => {
                                         <Dropdown.Menu>
                                             {
                                                 (userInfo &&
-                                                    userInfo.roles.includes("Moderator") &&
-                                                    !(userDetails.roles.includes("Moderator") || userDetails.roles.includes("Admin"))) &&
+                                                    userInfo.roles.some(role => ["Moderator", "Admin"].includes(role)) &&
+                                                    !userDetails.roles.some(role => ["Moderator", "Admin"].includes(role))) &&
                                                 <Dropdown.Item onClick={toggleUserBan}>{userDetails.active ? "Deactivate" : "Activate"}</Dropdown.Item>
                                             }
                                         </Dropdown.Menu>

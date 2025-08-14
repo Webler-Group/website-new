@@ -52,8 +52,8 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
         <div className="rounded border p-2 bg-white d-md-flex">
             <div className="flex-grow-1 d-flex gap-2">
                 <div>
-                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light"
-                        style={{ width: "42px", height: "42px", background: languagesInfo[code.language].color }}>{languagesInfo[code.language].shortName}</div>
+                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light small"
+                        style={{ width: "32px", height: "32px", background: languagesInfo[code.language].color }}>{languagesInfo[code.language].shortName}</div>
                 </div>
                 <div>
                     <Link to={"/Compiler-Playground/" + code.id}>
@@ -82,7 +82,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
             {
                 showUserProfile &&
                 <div className="d-flex justify-content-end align-items-end mt-3">
-                    <div className="d-flex">
+                    <div className="d-flex align-items-center">
                         <div>
                             <div>
                                 <small className="text-secondary">{DateUtils.format(new Date(code.updatedAt!))}</small>
@@ -92,7 +92,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                             </div>
                         </div>
                         <div className="ms-2 wb-p-follow-item__avatar">
-                            <ProfileAvatar size={42} avatarImage={code.userAvatar!} />
+                            <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
                         </div>
                     </div>
                 </div>

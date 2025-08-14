@@ -35,9 +35,9 @@ const Discuss = ({ MainPage }: DiscussProps) => {
 
     return (
         <Container>
-            <div className="wb-discuss-questions-list-page d-block d-lg-flex p-4">
-                <div className="wb-discuss-questions-list-page__questions-section mb-5">{MainPage}</div>
-                <div className="wb-discuss-hot-today">
+            <div className="wb-discuss-questions-list-page d-block d-lg-flex gap-3 mt-2">
+                <div className="flex-grow-1">{MainPage}</div>
+                <div style={{ minWidth: "300px" }}>
                     <h2>Hot today</h2>
                     <div className="mt-4">
                         {

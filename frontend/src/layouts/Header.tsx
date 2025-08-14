@@ -18,7 +18,7 @@ function Header({ variant }: HeaderProps) {
     <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom" collapseOnSelect>
       <Container fluid>
         <LinkContainer to="/">
-          <Navbar.Brand><img src="/resources/images/logo.png" height="44px" width="132px" /></Navbar.Brand>
+          <Navbar.Brand><img src="/resources/images/logo.png" height="32px" width="96px" /></Navbar.Brand>
         </LinkContainer>
         <div className="d-flex gap-1 align-items-center">
           <Navbar.Toggle aria-controls="navbarScroll" />

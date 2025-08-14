@@ -402,10 +402,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                     <Button variant="primary" onClick={saveCode} disabled={codeName.length === 0}>Save</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "60px" }}>
+            <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
                 <div>
                     <Link to="/">
-                        <img src="/resources/images/logo.png" height="44px" width="132px" />
+                        <img src="/resources/images/logo.png" height="32px" width="96px" />
                     </Link>
                 </div>
                 <div>
@@ -420,15 +420,13 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             {
                 code &&
                 <div className="wb-playground-container">
-                    <div className="d-flex align-items-center justify-content-between p-2" style={{ height: "60px" }}>
-                        <div className="d-flex">
+                    <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
+                        <div className="d-flex align-items-center">
                             {
                                 code.id &&
                                 <>
-                                    <div className="d-flex gap-2">
-                                        <div className="ms-2 wb-p-follow-item__avatar">
-                                            <ProfileAvatar size={42} avatarImage={code.userAvatar!} />
-                                        </div>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
                                         <div>
                                             <div>
                                                 <b>{formatTitle(code.name!)}</b>
@@ -438,13 +436,13 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="ms-2 wb-playground-voting">
+                                    <div className="ms-2 wb-playground-voting small">
                                         <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
                                             <FaThumbsUp />
                                         </span>
                                         <span>{code.votes}</span>
                                     </div>
-                                    <div className="ms-2 wb-playground-comments">
+                                    <div className="ms-2 wb-playground-comments small">
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>
                                             <FaComment />
                                         </span>

@@ -3,7 +3,7 @@ import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { FaCheckCircle, FaThumbsUp } from "react-icons/fa";
 import { useState } from "react";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import React from "react";
@@ -61,15 +61,9 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
     let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
-        <div className={"rounded border p-2 mb-2 position-relative" + borderClassName} style={{ background: bg }}>
-            {
-                isOwner &&
-                <span className="wb-discuss-reply__edit-button" onClick={() => showEditAnswer(answer.id)}>
-                    <FaPencil />
-                </span>
-            }
-            <div className="d-flex">
-                <div className="wb-discuss-reply__actions">
+        <div className={"rounded border p-2 gap-2 d-flex flex-column mt-3 " + borderClassName} style={{ background: bg }}>
+            <div className="d-flex gap-2">
+                <div className="d-flex flex-column align-items-center">
                     {
                         (isQuestionOwner || isAccepted) &&
                         <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")} style={{ cursor: isQuestionOwner ? "pointer" : "default" }}>
@@ -83,9 +77,20 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         <b>{votes}</b>
                     </div>
                 </div>
-                <div className="wb-discuss-question__main ms-2">
-                    <MarkdownRenderer content={answer.message} />
-                    <div className="mt-3">
+
+                <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: 0, overflowX: 'auto' }}>
+                    <div className="d-flex justify-content-end align-items-center">
+                        {
+                            isOwner &&
+                            <span style={{ cursor: "pointer" }} onClick={() => showEditAnswer(answer.id)}>
+                                <FaPencil />
+                            </span>
+                        }
+                    </div>
+                    <div className="wb-discuss-question__description">
+                        <MarkdownRenderer content={answer.message} />
+                    </div>
+                    <div className="mt-2">
                         {
                             answer.attachments.map(attachment => {
                                 return (
@@ -98,8 +103,9 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                     </div>
                 </div>
             </div>
-            <div className="d-flex justify-content-end align-items-end mt-3">
-                <div className="d-flex">
+
+            <div className="d-flex justify-content-end align-items-end mt-1">
+                <div className="d-flex align-items-center">
                     <div>
                         <div>
                             <small className="text-secondary">{DateUtils.format(new Date(answer.date))}</small>
@@ -109,7 +115,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <ProfileAvatar size={42} avatarImage={answer.userAvatar} />
+                        <ProfileAvatar size={32} avatarImage={answer.userAvatar} />
                     </div>
                 </div>
             </div>

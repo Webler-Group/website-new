@@ -112,8 +112,8 @@ const CodesList = () => {
         <div className="d-flex flex-column">
             <h2>Codes</h2>
             <Form className="d-flex mt-4" onSubmit={handleSearch}>
-                <FormControl type="search" placeholder="Search..." ref={searchInputElement} />
-                <Button className="ms-2" type="submit">Search</Button>
+                <FormControl type="search" size='sm' placeholder="Search..." ref={searchInputElement} />
+                <Button className="ms-2" size='sm' type="submit">Search</Button>
             </Form>
             <div className="mt-4 d-sm-flex flex-row-reverse justify-content-between">
                 <div className="mb-4 mb-sm-0 d-flex justify-content-end">

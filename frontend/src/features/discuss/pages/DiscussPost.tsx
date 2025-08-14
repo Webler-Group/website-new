@@ -319,7 +319,8 @@ const DiscussPost = () => {
                 <span>&rsaquo;</span>
                 <span>{question.title.length > 20 ? question.title.slice(0, 20) + "..." : question.title}</span>
             </div>
-            <div className="p-2 bg-white rounded border mb-3 position-relative">
+            <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
+
                 {
                     userInfo &&
                     <div className="wb-discuss-reply__edit-button">
@@ -344,8 +345,9 @@ const DiscussPost = () => {
                         </Dropdown>
                     </div>
                 }
-                <div className="d-flex">
-                    <div className="d-flex flex-column justify-content-between align-items-center">
+
+                <div className="d-flex gap-2">
+                    <div className="d-flex flex-column align-items-center">
                         <div className="wb-discuss-voting">
                             <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
                                 <FaThumbsUp />
@@ -358,12 +360,13 @@ const DiscussPost = () => {
                             </span>
                         </div>
                     </div>
-                    <div className="wb-discuss-question__main ms-2">
+
+                    <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0", overflow: "auto" }}>
                         <h3 className="wb-discuss-question__title" style={{ wordBreak: "break-word" }}>{question.title}</h3>
-                        <div className="mt-4">
-                            <MarkdownRenderer content={question.message} /> 
+                        <div className="mt-1 wb-discuss-question__description">
+                            <MarkdownRenderer content={question.message} />
                         </div>
-                        <div className="mt-3">
+                        <div className="mt-1">
                             {
                                 question.attachments.map(attachment => {
                                     return (
@@ -385,7 +388,7 @@ const DiscussPost = () => {
                         </div>
                     </div>
                 </div>
-                <div className="d-flex justify-content-end mt-3">
+                <div className="d-flex justify-content-end mt-2 align-items-center gap-2">
                     <div>
                         <div>
                             <small>{DateUtils.format(new Date(question.date))}</small>
@@ -394,9 +397,7 @@ const DiscussPost = () => {
                             <ProfileName userId={question.userId} userName={question.userName} />
                         </div>
                     </div>
-                    <div className="ms-2 wb-p-follow-item__avatar">
-                        <ProfileAvatar size={42} avatarImage={question.userAvatar} />
-                    </div>
+                    <ProfileAvatar size={32} avatarImage={question.userAvatar} />
                 </div>
             </div>
             {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
@@ -433,7 +434,7 @@ const DiscussPost = () => {
                 </Form.Select>
                 <Button size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
             </div>
-            <div className="mt-2">
+            <div className="mt-2 d-flex flex-column w-100">
                 {
                     answers.map(answer => {
                         if (postId === answer.id) {
@@ -458,7 +459,7 @@ const DiscussPost = () => {
                     })
                 }
             </div>
-            <div>
+            <div className="my-3">
                 <PaginationControl
                     page={currentPage}
                     between={3}

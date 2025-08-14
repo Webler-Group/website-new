@@ -24,29 +24,29 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     let body = (() => {
         switch (data.type) {
             case 1: return (
-                <div className="d-flex gap-2">
+                <div className="d-flex gap-2 align-items-center">
                     <div>
-                        <div className="rounded-circle d-flex justify-content-center align-items-center text-light" 
-                        style={{ width: "42px", height: "42px", background: languagesInfo[data.codeLanguage].color, textTransform: "capitalize" }}>{languagesInfo[data.codeLanguage].shortName}</div>
+                        <div className="rounded-circle d-flex justify-content-center align-items-center text-light small" 
+                        style={{ width: "32px", height: "32px", background: languagesInfo[data.codeLanguage].color, textTransform: "capitalize" }}>{languagesInfo[data.codeLanguage].shortName}</div>
                     </div>
                     <div>
                         <Link to={"/Compiler-Playground/" + data.codeId}>
-                            <h6 style={{ wordBreak: "break-word" }}>{data.codeName}</h6>
+                            <h6 style={{ wordBreak: "break-word", margin: "0" }}>{data.codeName}</h6>
                         </Link>
                         <ProfileName userId={data.userId} userName={data.userName} />
                     </div>
                 </div>
             )
             case 2: return (
-                <div className="d-flex gap-2">
+                <div className="d-flex gap-2 align-items-center">
                     <div>
                         <div className="wb-p-follow-item__avatar">
-                            <ProfileAvatar size={42} avatarImage={data.userAvatar} />
+                            <ProfileAvatar size={32} avatarImage={data.userAvatar} />
                         </div>
                     </div>
                     <div>
                         <Link to={"/Discuss/" + data.questionId}>
-                            <h6 style={{ wordBreak: "break-word" }}>{data.questionTitle}</h6>
+                            <h6 style={{ wordBreak: "break-word", margin: "0" }}>{data.questionTitle}</h6>
                         </Link>
                         <ProfileName userId={data.userId} userName={data.userName} />
                     </div>

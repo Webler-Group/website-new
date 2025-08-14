@@ -8,6 +8,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
+import { FaPaperPlane } from "react-icons/fa6";
 
 interface ChannelRoomProps {
     channelId: string;
@@ -282,9 +283,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     if (!channel) return <div>Loading...</div>;
 
     return (
-        <div className="d-flex flex-column" style={{ height: "calc(100dvh - 60px)" }}>
+        <div className="d-flex flex-column" style={{ height: "calc(100dvh - 44px)" }}>
 
-            <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-2 bg-white" style={{ height: "60px" }}>
+            <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
                 <div className="d-flex align-items-center">
                     <Button variant="link" className="text-secondary" onClick={onExit}>
                         <FaTimes />
@@ -297,13 +298,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             </div>
 
             <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-                <div className={"wb-channels-settings bg-light p-3" + (settingsVisible ? "" : " wb-channels-settings__closed")}>
+                <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
                     <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onRevokeInvite={onRevokeInvite} />
                 </div>
                 <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                     {messagesListContent}
                 </div>
-                <div className="position-relative p-3 border-top d-flex align-items-center">
+                <div className="position-relative p-2 border-top d-flex align-items-center">
                     {showJumpButton && (
                         <Button
                             size="sm"
@@ -331,7 +332,12 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         maxLength={1024}
                         style={{ resize: "none" }}
                     />
-                    <Button variant="primary" onClick={handleSendMessage}>Send</Button>
+                    {
+                        newMessage.trim().length > 0 &&
+                        <Button variant="primary" onClick={handleSendMessage}>
+                            <FaPaperPlane />
+                        </Button>
+                    }
                 </div>
             </div>
         </div>

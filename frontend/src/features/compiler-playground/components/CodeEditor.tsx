@@ -35,7 +35,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     useEffect(() => {
         const callback = () => {
-            setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 120}px)`);
+            setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 80}px)`);
         }
         addEventListener("resize", callback);
         callback();

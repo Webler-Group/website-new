@@ -241,7 +241,7 @@ const CommentNode = React.forwardRef(({
                     </div>
                     <div>
                         <div className="wb-p-follow-item__avatar">
-                            <ProfileAvatar size={42} avatarImage={data.userAvatar} />
+                            <ProfileAvatar size={32} avatarImage={data.userAvatar} />
                         </div>
                     </div>
                     <div className="flex-grow-1">
