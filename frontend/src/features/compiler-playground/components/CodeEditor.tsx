@@ -7,6 +7,7 @@ import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
 import CompileOutput from "./CompileOutput";
+import { EditorView } from "@codemirror/view";
 
 interface CodeEditorProps {
     code: ICode;
@@ -26,7 +27,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
     const [tabHeight, setTabHeight] = useState("auto");
 
     useEffect(() => {
-        if(code.language == "web") {
+        if (code.language == "web") {
             setEditorTabs(["html", "css", "javascript"]);
         } else {
             setEditorTabs([code.language]);
@@ -35,7 +36,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
 
     useEffect(() => {
         const callback = () => {
-            setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 88}px)`);
+            setTabHeight(`calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 90}px)`);
         }
         addEventListener("resize", callback);
         callback();
@@ -65,7 +66,23 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                                         height="100%"
                                         style={{ height: "100%", fontSize: `${options.scale * 100}%` }}
                                         theme={vscodeDark}
-                                        extensions={code ? [loadLanguage(lang) as any] : []} />
+                                        extensions={[
+                                            loadLanguage(lang) as any,
+                                            EditorView.updateListener.of((update) => {
+                                                // Check if a line break or cursor move happened
+                                                if (update.selectionSet || update.docChanged) {
+                                                    setTimeout(() => {
+                                                        update.view.dispatch({
+                                                            effects: EditorView.scrollIntoView(update.state.selection.main.head, {
+                                                                y: "center", // or "nearest"
+                                                                yMargin: 40  // extra space so it's nicely centered
+                                                            })
+                                                        });
+                                                    }, 0);
+                                                }
+                                            })
+                                        ]}
+                                    />
                                 </Tab>
                             )
                         })
@@ -73,8 +90,8 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
-                            <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
-                            <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
+                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
+                                <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>
                 </Tabs>
