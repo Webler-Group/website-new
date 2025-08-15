@@ -7,12 +7,14 @@ import './index.css';
 import AuthProvider from './features/auth/context/authContext';
 import ApiProvider from './context/apiCommunication';
 import WSProvider from './context/wsCommunication';
+import ScrollToTop from './components/ScrollToTop';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AuthProvider>
     <BrowserRouter>
       <ApiProvider baseUrl='/api'>
         <WSProvider>
+          <ScrollToTop />
           <Routes>
             <Route path="/*" element={<App />} />
           </Routes>
