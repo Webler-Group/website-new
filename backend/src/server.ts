@@ -29,7 +29,7 @@ async function main() {
     const server = http.createServer(app);
 
     init(server, (socket) => {
-        codesRegisterHandlersWS(socket);
+        // codesRegisterHandlersWS(socket);
         channelsregisterHandlersWS(socket);
     });
 

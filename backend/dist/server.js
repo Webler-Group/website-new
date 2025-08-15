@@ -33,7 +33,6 @@ const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
 const socketServer_1 = require("./config/socketServer");
-const codesController_1 = require("./controllers/codesController");
 const channelsController_1 = require("./controllers/channelsController");
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
@@ -41,7 +40,7 @@ function main() {
         const app = (0, express_1.default)();
         const server = http_1.default.createServer(app);
         (0, socketServer_1.init)(server, (socket) => {
-            (0, codesController_1.registerHandlersWS)(socket);
+            // codesRegisterHandlersWS(socket);
             (0, channelsController_1.registerHandlersWS)(socket);
         });
         const apiPrefix = "/api";

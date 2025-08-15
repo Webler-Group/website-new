@@ -3,7 +3,7 @@ import User from "../models/User";
 import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
-import { sendPasswordResetEmail } from "../services/email";
+import { sendActivationEmail, sendPasswordResetEmail } from "../services/email";
 import { getCaptcha, verifyCaptcha } from "../utils/captcha";
 import CaptchaRecord from "../models/CaptchaRecord";
 import { config } from "../confg";
@@ -31,9 +31,9 @@ const login = asyncHandler(async (req, res) => {
             return
         }
 
-        const { accessToken, data: tokenInfo } = await signAccessToken({ 
-            userId: user._id.toString(), 
-            roles: user.roles 
+        const { accessToken, data: tokenInfo } = await signAccessToken({
+            userId: user._id.toString(),
+            roles: user.roles
         }, deviceId);
 
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
@@ -114,6 +114,23 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
         generateRefreshToken(res, { userId: user._id.toString() });
 
+        const { emailToken } = signEmailToken({
+            userId: user._id.toString(),
+            email: user.email
+        });
+
+        try {
+            await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
+
+            user.lastVerificationEmailTimestamp = Date.now();
+            await user.save();
+
+            res.json({ success: true });
+        }
+        catch {
+            res.status(500).json({ message: "Activation email could not be sent" });
+        }
+
         res.json({
             accessToken,
             expiresIn,
@@ -129,7 +146,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
                 level: user.level,
                 xp: user.xp
             }
-        })
+        });
     }
     else {
         res.status(401).json({ message: "Invalid email or password" });

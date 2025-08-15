@@ -42,7 +42,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const roles = req.roles;
     const { userId } = req.body;
 
-    const isModerator = roles && roles.includes("Moderator");
+    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
 
     const user = await User.findById(userId);
 
@@ -216,29 +216,21 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
         return
     }
 
-    const diff = Date.now() - user.lastVerificationEmailTimestamp;
-    const minDiff = 60 * 60 * 1000;
-    if (config.nodeEnv === "production" && diff < minDiff) {
-        const duration = intervalToDuration({ start: Date.now(), end: user.lastVerificationEmailTimestamp + minDiff })
-        res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
-        return;
-    }
-
     const { emailToken } = signEmailToken({
         userId: currentUserId as string,
         email: user.email
-    })
+    });
 
     try {
         await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
 
         user.lastVerificationEmailTimestamp = Date.now();
-        await user.save()
+        await user.save();
 
-        res.json({ success: true })
+        res.json({ success: true });
     }
     catch {
-        res.status(500).json({ message: "Email could not be sent" })
+        res.status(500).json({ message: "Activation email could not be sent" });
     }
 })
 
@@ -581,7 +573,7 @@ const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const roles = req.roles;
     const { userId, active } = req.body;
 
-    if (!roles || !roles.includes("Moderator")) {
+    if (!roles || !roles.some(role => ["Admin", "Moderator"].includes(role))) {
         res.status(401).json({ message: "Unauthorized" });
         return
     }
@@ -593,7 +585,7 @@ const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (user.roles.includes("Moderator") || user.roles.includes("Admin")) {
+    if (user.roles.some(role => ["Admin", "Moderator"].includes(role))) {
         res.status(401).json({ message: "Unauthorized" });
         return
     }

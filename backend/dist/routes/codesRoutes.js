@@ -23,7 +23,7 @@ router.route("/GetJob")
     .post(codesController_1.default.getJob);
 router.use(protectRoute_1.default);
 router.route("/CreateCode")
-    .post(verifyEmail_1.default, codesController_1.default.createCode);
+    .post(codesController_1.default.createCode);
 router.route("/EditCode")
     .put(codesController_1.default.editCode);
 router.route("/DeleteCode")

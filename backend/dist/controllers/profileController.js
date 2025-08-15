@@ -19,7 +19,6 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const Code_1 = __importDefault(require("../models/Code"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const email_1 = require("../services/email");
-const date_fns_1 = require("date-fns");
 const multer_1 = __importDefault(require("multer"));
 const confg_1 = require("../confg");
 const path_1 = __importDefault(require("path"));
@@ -52,7 +51,7 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
     const currentUserId = req.userId;
     const roles = req.roles;
     const { userId } = req.body;
-    const isModerator = roles && roles.includes("Moderator");
+    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
     const user = yield User_1.default.findById(userId);
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
@@ -193,13 +192,6 @@ const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __
         res.status(404).json({ message: "User not found" });
         return;
     }
-    const diff = Date.now() - user.lastVerificationEmailTimestamp;
-    const minDiff = 60 * 60 * 1000;
-    if (confg_1.config.nodeEnv === "production" && diff < minDiff) {
-        const duration = (0, date_fns_1.intervalToDuration)({ start: Date.now(), end: user.lastVerificationEmailTimestamp + minDiff });
-        res.status(400).json({ message: `You can send verification email in ${duration.hours} hours and ${duration.minutes} minutes` });
-        return;
-    }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
         userId: currentUserId,
         email: user.email
@@ -211,7 +203,7 @@ const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __
         res.json({ success: true });
     }
     catch (_a) {
-        res.status(500).json({ message: "Email could not be sent" });
+        res.status(500).json({ message: "Activation email could not be sent" });
     }
 }));
 const changePassword = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -486,7 +478,7 @@ const markNotificationsClicked = (0, express_async_handler_1.default)((req, res)
 const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const roles = req.roles;
     const { userId, active } = req.body;
-    if (!roles || !roles.includes("Moderator")) {
+    if (!roles || !roles.some(role => ["Admin", "Moderator"].includes(role))) {
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
@@ -495,7 +487,7 @@ const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __await
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    if (user.roles.includes("Moderator") || user.roles.includes("Admin")) {
+    if (user.roles.some(role => ["Admin", "Moderator"].includes(role))) {
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
