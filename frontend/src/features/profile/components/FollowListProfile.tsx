@@ -3,7 +3,7 @@ import { UserMinimal } from '../pages/Profile'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
-import {useApi} from '../../../context/apiCommunication';
+import { useApi } from '../../../context/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
 import ProfileName from '../../../components/ProfileName';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +16,7 @@ interface FollowListProfileProps {
     setCount: (callback: (data: number) => number) => void;
 }
 
-const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount , hideFollowButton=false}: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount, hideFollowButton = false }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [followLoading, setFollowLoading] = useState(false);
@@ -64,36 +64,37 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount , hid
     }
 
     const body = (
-        <div className="d-flex">
-            <div className="wb-p-follow-item__avatar">
-                <ProfileAvatar size={42} avatarImage={user.avatar} />
-            </div>
-            <div>
-                <ProfileName userId={user.id} userName={user.name} />
-                <div>
-                    {
-                        user.countryCode &&
-                        <>
-                            {<Country country={countries.find(country => country.code === user.countryCode)!} />}
-                            <span className="mx-2">·</span>
-                        </>
-                    }
-                    Lvl {user.level}
+        <div className="d-flex gap-2 justify-content-between">
+            <div className='d-flex align-items-start gap-1'>
+                <div className="wb-p-follow-item__avatar">
+                    <ProfileAvatar size={32} avatarImage={user.avatar} />
                 </div>
-                {
-                    userInfo && !hideFollowButton &&
+                <div className='d-flex flex-column gap-1'>
+                    <ProfileName userId={user.id} userName={user.name} />
                     <div>
                         {
-                            userInfo.id != user.id && (
-                                following ?
-                                    <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Following</Button>
-                                    :
-                                    <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
-                            )
+                            user.countryCode &&
+                            <>
+                                {<Country country={countries.find(country => country.code === user.countryCode)!} />}
+                                <span className="mx-2">·</span>
+                            </>
                         }
                     </div>
-                }
+                </div>
             </div>
+            {
+                userInfo && !hideFollowButton &&
+                <div>
+                    {
+                        userInfo.id != user.id && (
+                            following ?
+                                <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Following</Button>
+                                :
+                                <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
+                        )
+                    }
+                </div>
+            }
         </div>
     )
     const content = ref ?

@@ -361,8 +361,8 @@ const DiscussPost = () => {
                         </div>
                     </div>
 
-                    <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0", overflow: "auto" }}>
-                        <h3 className="wb-discuss-question__title" style={{ wordBreak: "break-word" }}>{question.title}</h3>
+                    <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
+                        <h3 className="wb-discuss-question__title">{question.title}</h3>
                         <div className="mt-1 wb-discuss-question__description">
                             <MarkdownRenderer content={question.message} />
                         </div>

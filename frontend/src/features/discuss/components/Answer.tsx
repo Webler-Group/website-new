@@ -78,7 +78,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                     </div>
                 </div>
 
-                <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: 0, overflowX: 'auto' }}>
+                <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: 0 }}>
                     <div className="d-flex justify-content-end align-items-center">
                         {
                             isOwner &&

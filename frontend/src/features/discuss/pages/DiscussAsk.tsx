@@ -65,7 +65,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         setError("");
         const result = await sendJsonRequest("/Discussion/EditQuestion", "PUT", { questionId, title, message, tags });
         if (result && result.success) {
-            navigate("/Discuss");
+            navigate("/Discuss/" + questionId);
         }
         else {
             setError(result.error ? result.error.message : result.message);
@@ -121,7 +121,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                     <p className="text-secondary">You can add up to 10 tags</p>
                 </FormGroup>
                 <div className="d-flex justify-content-end">
-                    <LinkContainer to="/Discuss">
+                    <LinkContainer to={questionId ? "/Discuss/" + questionId : "/Discuss"}>
                         <Button type="button" variant="secondary" disabled={loading}>Cancel</Button>
                     </LinkContainer>
                     {

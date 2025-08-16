@@ -16,7 +16,7 @@ const QuestionList = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState(6);
+    const [filter, setFilter] = useState(1);
     const searchInputElement = useRef<HTMLInputElement>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
@@ -101,9 +101,9 @@ const QuestionList = () => {
             </Form>
             <div className="mt-4 d-flex justify-content-between">
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
-                    <option value="6">Trending</option>
                     <option value="1">Most Recent</option>
                     <option value="2">Unanswered</option>
+                    <option value="6">Trending</option>
                     {
                         userInfo &&
                         <>
