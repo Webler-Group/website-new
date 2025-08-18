@@ -34,6 +34,12 @@ interface AnswerProps {
     newlyCreatedAnswer: string | null;
 }
 
+const allowedUrls = [
+  /^https?:\/\/(?:i\.)?imgur\.com/i,
+  /^https?:\/\/(?:media\.)?tenor\.com/i,
+  /^https?:\/\/(?:www\.)?weblercodes\.com/i
+];
+
 const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
@@ -88,7 +94,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         }
                     </div>
                     <div className="wb-discuss-question__description">
-                        <MarkdownRenderer content={answer.message} />
+                        <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
                     </div>
                     <div className="mt-2">
                         {

@@ -5,13 +5,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.devRoom = exports.uidRoom = exports.getIO = exports.init = void 0;
 const socket_io_1 = require("socket.io");
-const allowedOrigins_1 = __importDefault(require("./allowedOrigins"));
 const verifyJWTWebSocket_1 = __importDefault(require("../middleware/verifyJWTWebSocket"));
+const confg_1 = require("../confg");
 let io;
 const init = (server, registerHandlers) => {
     io = new socket_io_1.Server(server, {
         cors: {
-            origin: allowedOrigins_1.default,
+            origin: confg_1.config.allowedOrigins,
             methods: ["POST", "GET"],
             credentials: true
         }

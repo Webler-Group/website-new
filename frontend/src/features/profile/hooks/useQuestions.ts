@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import {useApi} from "../../../context/apiCommunication"
-import { ICode } from "../../codes/components/Code";
+import { useApi } from "../../../context/apiCommunication"
+import { IQuestion } from "../../discuss/components/Question";
 
-const useCodes = (userId: string, count: number, pageNum: number) => {
+const useQuestions = (userId: string, count: number, pageNum: number) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<ICode[]>([])
+    const [results, setResults] = useState<IQuestion[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const [hasNextPage, setHasNextPage] = useState(false)
@@ -16,23 +16,22 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
         const controller = new AbortController()
         const { signal } = controller
 
-        sendJsonRequest(`/Codes`, "POST", {
+        sendJsonRequest(`/Discussion`, "POST", {
             page: pageNum,
             count,
             filter: 3,
             searchQuery: "",
-            language: "",
             userId
         }, { signal })
             .then(result => {
-                if (!result || !result.codes) {
+                if (!result || !result.questions) {
                     setIsLoading(false)
                     if (signal.aborted) return
                     setError("Something went wrong");
                     return
                 }
-                setResults(prev => [...prev, ...result.codes])
-                setHasNextPage(result.codes.length === count)
+                setResults(prev => [...prev, ...result.questions])
+                setHasNextPage(result.questions.length === count)
                 setIsLoading(false)
             })
 
@@ -43,4 +42,4 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
     return { isLoading, error, results, hasNextPage }
 }
 
-export default useCodes;
+export default useQuestions;

@@ -111,12 +111,12 @@ const CodesList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Codes</h2>
-            <Form className="d-flex mt-4" onSubmit={handleSearch}>
+            <Form className="d-flex mt-2" onSubmit={handleSearch}>
                 <FormControl type="search" size='sm' placeholder="Search..." ref={searchInputElement} />
                 <Button className="ms-2" size='sm' type="submit">Search</Button>
             </Form>
-            <div className="mt-4 d-sm-flex flex-row-reverse justify-content-between">
-                <div className="mb-4 mb-sm-0 d-flex justify-content-end">
+            <div className="mt-2 d-sm-flex flex-row-reverse justify-content-between">
+                <div className="mb-2 mb-sm-0 d-flex justify-content-end">
                     <LinkContainer to="/Compiler-Playground">
                         <Button size='sm'>New code</Button>
                     </LinkContainer>
@@ -164,7 +164,7 @@ const CodesList = () => {
 
                 }
             </div>
-            <div>
+            <div className='my-3'>
                 <PaginationControl
                     page={currentPage}
                     between={3}

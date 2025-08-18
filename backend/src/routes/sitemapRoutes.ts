@@ -8,7 +8,7 @@ router.get("/sitemap.xml", async (req, res) => {
     try {
         res.header("Content-Type", "application/xml");
 
-        const smStream = new SitemapStream({ hostname: config.homeUrl });
+        const smStream = new SitemapStream({ hostname: config.allowedOrigins[0] });
 
         const staticRoutes = [
             { url: "/", changefreq: "daily", priority: 1.0 },                         // homepage

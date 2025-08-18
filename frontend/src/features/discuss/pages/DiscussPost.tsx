@@ -16,6 +16,11 @@ import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
+const allowedUrls = [
+  /^https?:\/\/(?:i\.)?imgur\.com/i,
+  /^https?:\/\/(?:media\.)?tenor\.com/i,
+  /^https?:\/\/(?:www\.)?weblercodes\.com/i
+];
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -320,7 +325,6 @@ const DiscussPost = () => {
                 <span>{question.title.length > 20 ? question.title.slice(0, 20) + "..." : question.title}</span>
             </div>
             <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
-
                 {
                     userInfo &&
                     <div className="wb-discuss-reply__edit-button">
@@ -364,7 +368,7 @@ const DiscussPost = () => {
                     <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
                         <h3 className="wb-discuss-question__title">{question.title}</h3>
                         <div className="mt-1 wb-discuss-question__description">
-                            <MarkdownRenderer content={question.message} />
+                            <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
                         </div>
                         <div className="mt-1">
                             {
@@ -425,7 +429,7 @@ const DiscussPost = () => {
                 </Form>
             </div>
             <div className="d-flex">
-                <h2>{question.answers} Answers</h2>
+                <h4>{question.answers} Answers</h4>
             </div>
             <div className="d-flex justify-content-between">
                 <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>

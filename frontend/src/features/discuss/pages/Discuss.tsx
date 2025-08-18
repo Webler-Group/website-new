@@ -34,37 +34,39 @@ const Discuss = ({ MainPage }: DiscussProps) => {
     }
 
     return (
-        <Container>
-            <div className="wb-discuss-questions-list-page d-block d-lg-flex gap-3 mt-2">
-                <div className="flex-grow-1">{MainPage}</div>
-                <div style={{ minWidth: "300px" }}>
-                    <h2>Hot today</h2>
-                    <div className="mt-4">
-                        {
-                            questions.map(question => {
-                                return (
-                                    <div key={question.id} className="rounded border bg-white p-2 mb-2">
-                                        <Link to={"/Discuss/" + question.id}>
-                                            <h5 style={{ wordBreak: "break-word" }}>{question.title}</h5>
-                                        </Link>
-                                        <div className="d-flex small">
-                                            <div className="me-3 d-flex align-items-center">
-                                                <FaThumbsUp />
-                                                <span className="ms-2">{question.votes} Votes</span>
-                                            </div>
-                                            <div className="d-flex align-items-center">
-                                                <FaComment />
-                                                <span className="ms-2">{question.answers} Answers</span>
+        <div className="bg-light">
+            <Container>
+                <div className="wb-discuss-questions-list-page d-block d-lg-flex gap-3 pt-2">
+                    <div className="flex-grow-1">{MainPage}</div>
+                    <div style={{ minWidth: "300px" }}>
+                        <h2>Hot today</h2>
+                        <div className="mt-2">
+                            {
+                                questions.map(question => {
+                                    return (
+                                        <div key={question.id} className="rounded border bg-white p-2 mb-2">
+                                            <Link to={"/Discuss/" + question.id}>
+                                                <h5 style={{ wordBreak: "break-word" }}>{question.title}</h5>
+                                            </Link>
+                                            <div className="d-flex small">
+                                                <div className="me-3 d-flex align-items-center">
+                                                    <FaThumbsUp />
+                                                    <span className="ms-2">{question.votes} Votes</span>
+                                                </div>
+                                                <div className="d-flex align-items-center">
+                                                    <FaComment />
+                                                    <span className="ms-2">{question.answers} Answers</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })
-                        }
+                                    );
+                                })
+                            }
+                        </div>
                     </div>
                 </div>
-            </div>
-        </Container>
+            </Container>
+        </div>
     )
 }
 

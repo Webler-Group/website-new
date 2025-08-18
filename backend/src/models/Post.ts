@@ -70,77 +70,10 @@ const postSchema = new mongoose.Schema({
 postSchema.pre("save", async function (next) {
     if (!this.isModified("message")) {
         next();
+        return
     }
 
-    const currentAttachments = await PostAttachment
-        .find({ postId: this._id })
-        .select("_type codeId questionId") as any[];
-
-    const newAttachmentIds: string[] = [];
-
-    const pattern = new RegExp(config.homeUrl + "([\\w\-]+)\/([\\w\-]+)", "gi");
-    const matches = this.message.matchAll(pattern);
-
-    for (let match of matches) {
-
-        let attachment = null;
-        switch (match[1]) {
-            case "Compiler-Playground": {
-                const codeId = match[2];
-                try {
-                    const code = await Code.findById(codeId);
-                    if (!code) {
-                        continue
-                    }
-
-                    attachment = currentAttachments.find(x => x.code && x.code.toString() === codeId);
-                    if (!attachment) {
-                        attachment = await PostAttachment.create({
-                            postId: this._id,
-                            _type: 1,
-                            code: codeId,
-                            user: code.user
-                        })
-
-                    }
-                }
-                catch { }
-                break;
-            }
-            case "Discuss": {
-                const questionId = match[2];
-                try {
-                    const question = await Post.findById(questionId);
-                    if (!question) {
-                        continue
-                    }
-
-                    attachment = currentAttachments.find(x => x.question && x.question.toString() === questionId);
-                    if (!attachment) {
-                        attachment = await PostAttachment.create({
-                            postId: this._id,
-                            _type: 2,
-                            question: questionId,
-                            user: question.user
-                        })
-                    }
-                }
-                catch { }
-                break;
-            }
-        }
-        if (attachment) {
-            newAttachmentIds.push(attachment._id)
-        }
-    }
-
-    const idsToDelete = currentAttachments.map(x => x._id)
-        .filter(id => !newAttachmentIds.includes(id))
-
-    await PostAttachment.deleteMany({
-        _id: { $in: idsToDelete }
-    });
-
+    await PostAttachment.updateAttachments(this.message, { post: this._id });
 })
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {

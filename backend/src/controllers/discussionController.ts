@@ -272,7 +272,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
-        const attachments = await PostAttachment.getByPostId(questionId)
+        const attachments = await PostAttachment.getByPostId({ post: questionId })
 
         res.json({
             question: {
@@ -353,7 +353,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         question.$inc("answers", 1)
         await question.save();
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             post: {
@@ -464,7 +464,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -652,7 +652,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await reply.save();
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             success: true,
@@ -852,7 +852,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -923,7 +923,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             await parentPost.save();
         }
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             post: {
@@ -971,7 +971,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     try {
         await comment.save();
 
-        const attachments = await PostAttachment.getByPostId(comment._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: comment._id })
 
         res.json({
             success: true,

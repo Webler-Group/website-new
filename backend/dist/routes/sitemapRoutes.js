@@ -19,7 +19,7 @@ const router = express_1.default.Router();
 router.get("/sitemap.xml", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         res.header("Content-Type", "application/xml");
-        const smStream = new sitemap_1.SitemapStream({ hostname: confg_1.config.homeUrl });
+        const smStream = new sitemap_1.SitemapStream({ hostname: confg_1.config.allowedOrigins[0] });
         const staticRoutes = [
             { url: "/", changefreq: "daily", priority: 1.0 },
             { url: "/Users/Login", changefreq: "yearly", priority: 0.1 },

@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaThumbsUp } from "react-icons/fa6";
+import { FaArrowLeft, FaComment, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -403,9 +403,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 </Modal.Footer>
             </Modal>
             <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
-                <div>
-                    <Link to="/">
-                        <img src="/resources/images/logo.png" height="32px" width="96px" />
+                <div className="ps-2">
+                    <Link to={-1 as any}>
+                        <FaArrowLeft size={18} className="text-dark" />
                     </Link>
                 </div>
                 <div>

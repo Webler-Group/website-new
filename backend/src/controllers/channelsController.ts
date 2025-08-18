@@ -7,6 +7,8 @@ import ChannelParticipant from "../models/ChannelParticipant";
 import User from "../models/User";
 import ChannelMessage from "../models/ChannelMessage";
 import { Socket } from "socket.io";
+import { getIO, uidRoom } from "../config/socketServer";
+import PostAttachment from "../models/PostAttachment";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
@@ -167,7 +169,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     // First find all channels where user is participant
     const participantChannels = await ChannelParticipant.find({ user: currentUserId })
         .select('channel lastActiveAt');
-    
+
     const channelIds = participantChannels.map(p => p.channel);
 
     let query = Channel.find({ _id: { $in: channelIds } });
@@ -376,22 +378,33 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .populate<{ user: any }>("user", "name avatarImage level roles")
         .lean();
 
+    const data = messages.map(x => ({
+        id: x._id,
+        type: x._type,
+        userId: x.user._id,
+        userName: x.user.name,
+        userAvatar: x.user.avatarImage,
+        createdAt: x.createdAt,
+        content: x.content,
+        channelId: x.channel,
+        viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
+        attachments: new Array()
+    }));
+
+    let promises = [];
+
+    for (let i = 0; i < data.length; ++i) {
+        promises.push(PostAttachment.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
+    }
+
+    await Promise.all(promises);
+
     res.json({
-        messages: messages.map(x => ({
-            id: x._id,
-            type: x._type,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            createdAt: x.createdAt,
-            content: x.content,
-            channelId: x.channel,
-            viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false
-        }))
+        messages: data
     });
 });
 
-const groupRevokeInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
+const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { inviteId } = req.body;
     const currentUserId = req.userId;
 
@@ -409,9 +422,22 @@ const groupRevokeInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     await invite.deleteOne();
 
+    const io = getIO();
+    if (io) {
+        io.to(uidRoom(invite.invitedUser.toString())).emit("channels:invite_canceled", {
+            inviteId
+        });
+    }
+
     res.json({
         success: true
     });
+});
+
+const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+
+
 });
 
 const markMessagesSeenWS = async (socket: Socket, payload: any) => {
@@ -419,7 +445,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
     const currentUserId = socket.data.userId;
 
     const participant = await ChannelParticipant.findOne({ user: currentUserId, channel: channelId });
-    if(!participant) {
+    if (!participant) {
         return;
     }
 
@@ -471,7 +497,8 @@ const channelsController = {
     getMessages,
     groupRemoveUser,
     leaveChannel,
-    groupRevokeInvite
+    groupCancelInvite,
+    getUnseenMessagesCount
 }
 
 export {

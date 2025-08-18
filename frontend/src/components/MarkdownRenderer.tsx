@@ -8,9 +8,17 @@ import remarkBreaks from 'remark-breaks';
 
 interface MarkdownRendererProps {
     content: string;
+    allowedUrls?: (string | RegExp)[];
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrls = [] }) => {
+    const isAllowedUrl = (url?: string) => {
+        if (!url) return false;
+        return allowedUrls.some(pattern =>
+            typeof pattern === "string" ? url.startsWith(pattern) : pattern.test(url)
+        );
+    };
+
     const components: Components = {
         code({ className, children }) {
             const match = /language-(\w+)/.exec(className || '');
@@ -28,9 +36,34 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
                 </code>
             );
         },
+
+        a({ href, children }) {
+            if (isAllowedUrl(href)) {
+                return (
+                    <a href={href} target="_blank" rel="noopener noreferrer">
+                        {children}
+                    </a>
+                );
+            }
+            return <span>{children}</span>;
+        },
+
+        img({ src, alt }) {
+            if (isAllowedUrl(src)) {
+                return <img src={src} alt={alt || ""} style={{ maxWidth: "100%" }} />;
+            }
+            return <span>{alt || "Image not allowed"}</span>;
+        }
     };
 
-    return <ReactMarkdown components={components} remarkPlugins={[remarkGfm, remarkBreaks]}>{content}</ReactMarkdown>;
+    return (
+        <ReactMarkdown
+            components={components}
+            remarkPlugins={[remarkGfm, remarkBreaks]}
+        >
+            {content}
+        </ReactMarkdown>
+    );
 };
 
 export default MarkdownRenderer;

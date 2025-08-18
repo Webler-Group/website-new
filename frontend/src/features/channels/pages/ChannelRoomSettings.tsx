@@ -1,4 +1,4 @@
-import { IChannel } from "./ChannelListItem";
+import { IChannel } from "../components/ChannelListItem";
 import { useEffect, useState } from "react";
 import {
     Button,
@@ -17,16 +17,16 @@ import { useAuth } from "../../auth/context/authContext";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import { useApi } from "../../../context/apiCommunication";
-import { IChannelInvite } from "./InvitesListItem";
+import { IChannelInvite } from "../components/InvitesListItem";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
     onUserKick: (userId: string) => void;
     onUserInvite: (invite: IChannelInvite) => void;
-    onRevokeInvite: (inviteId: string) => void;
+    onCancelInvite: (inviteId: string) => void;
 }
 
-const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onRevokeInvite }: ChannelRoomSettingsProps) => {
+const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite }: ChannelRoomSettingsProps) => {
     const [activeTab, setActiveTab] = useState("members");
     const [inviteUsername, setInviteUsername] = useState("");
     const [newTitle, setNewTitle] = useState("");
@@ -95,12 +95,12 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onRevokeInvite
 
     };
 
-    const handleRevokeInvite = async (inviteId: string) => {
-        const result = await sendJsonRequest("/Channels/GroupRevokeInvite", "POST", {
+    const handleCancelInvite = async (inviteId: string) => {
+        const result = await sendJsonRequest("/Channels/GroupCancelInvite", "POST", {
             inviteId
         });
         if(result && result.success) {
-            onRevokeInvite(inviteId);
+            onCancelInvite(inviteId);
         }
     }
 
@@ -184,9 +184,9 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onRevokeInvite
                                                         <Button
                                                             variant="outline-danger"
                                                             size="sm"
-                                                            onClick={() => handleRevokeInvite(invite.id)}
+                                                            onClick={() => handleCancelInvite(invite.id)}
                                                         >
-                                                            Revoke
+                                                            Cancel
                                                         </Button>
                                                     </ListGroup.Item>
                                                 ))}

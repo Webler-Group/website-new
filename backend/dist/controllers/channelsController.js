@@ -19,6 +19,8 @@ const ChannelInvite_1 = __importDefault(require("../models/ChannelInvite"));
 const ChannelParticipant_1 = __importDefault(require("../models/ChannelParticipant"));
 const User_1 = __importDefault(require("../models/User"));
 const ChannelMessage_1 = __importDefault(require("../models/ChannelMessage"));
+const socketServer_1 = require("../config/socketServer");
+const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title } = req.body;
     const currentUserId = req.userId;
@@ -332,21 +334,28 @@ const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter
         .limit(count)
         .populate("user", "name avatarImage level roles")
         .lean();
+    const data = messages.map(x => ({
+        id: x._id,
+        type: x._type,
+        userId: x.user._id,
+        userName: x.user.name,
+        userAvatar: x.user.avatarImage,
+        createdAt: x.createdAt,
+        content: x.content,
+        channelId: x.channel,
+        viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
+        attachments: new Array()
+    }));
+    let promises = [];
+    for (let i = 0; i < data.length; ++i) {
+        promises.push(PostAttachment_1.default.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
+    }
+    yield Promise.all(promises);
     res.json({
-        messages: messages.map(x => ({
-            id: x._id,
-            type: x._type,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            createdAt: x.createdAt,
-            content: x.content,
-            channelId: x.channel,
-            viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false
-        }))
+        messages: data
     });
 }));
-const groupRevokeInvite = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const groupCancelInvite = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { inviteId } = req.body;
     const currentUserId = req.userId;
     const invite = yield ChannelInvite_1.default.findById(inviteId);
@@ -360,9 +369,18 @@ const groupRevokeInvite = (0, express_async_handler_1.default)((req, res) => __a
         return;
     }
     yield invite.deleteOne();
+    const io = (0, socketServer_1.getIO)();
+    if (io) {
+        io.to((0, socketServer_1.uidRoom)(invite.invitedUser.toString())).emit("channels:invite_canceled", {
+            inviteId
+        });
+    }
     res.json({
         success: true
     });
+}));
+const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const currentUserId = req.userId;
 }));
 const markMessagesSeenWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { channelId } = payload;
@@ -414,6 +432,7 @@ const channelsController = {
     getMessages,
     groupRemoveUser,
     leaveChannel,
-    groupRevokeInvite
+    groupCancelInvite,
+    getUnseenMessagesCount
 };
 exports.default = channelsController;

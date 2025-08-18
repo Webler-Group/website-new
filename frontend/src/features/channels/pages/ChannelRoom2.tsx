@@ -3,7 +3,7 @@ import { IChannel, IChannelParticipant } from "../components/ChannelListItem";
 import ChannelMessage from "../components/ChannelMessage";
 import { Button, Form, Badge } from "react-bootstrap";
 import { FaArrowCircleDown, FaCog, FaTimes } from "react-icons/fa";
-import ChannelRoomSettings from "../components/ChannelRoomSettings";
+import ChannelRoomSettings from "./ChannelRoomSettings";
 import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
@@ -223,7 +223,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
-    const onRevokeInvite = (inviteId: string) => {
+    const onCancelInvite = (inviteId: string) => {
         setChannel(prev => {
             if (!prev) return null;
             return {
@@ -299,7 +299,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
             <div className="d-flex flex-column flex-grow-1 overflow-hidden">
                 <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
-                    <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onRevokeInvite={onRevokeInvite} />
+                    <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} />
                 </div>
                 <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                     {messagesListContent}

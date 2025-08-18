@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import React from "react";
 
 interface IQuestion {
     id: string;
@@ -25,9 +26,10 @@ interface IQuestion {
 interface QuestionProps {
     question: IQuestion;
     searchQuery: string;
+    showUserProfile: boolean;
 }
 
-const Question = ({ question, searchQuery }: QuestionProps) => {
+const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
     const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
     const match = question.title.match(regex);
@@ -48,13 +50,13 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
         title = <>{question.title}</>;
     }
 
-    return (
+    let body = (
         <div className="rounded border p-2 mb-2 bg-white d-md-flex">
             <div className="flex-grow-1">
                 <Link to={"/Discuss/" + question.id}>
-                    <h4 style={{ wordBreak: "break-word" }}>{title}</h4>
+                    <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
                 </Link>
-                <div className="d-flex flex-wrap mt-3">
+                <div className="d-flex flex-wrap mt-2">
                     {
                         question.tags.map((tag, idx) => {
                             return (
@@ -63,35 +65,50 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                         })
                     }
                 </div>
-                <div className="d-flex small mt-3">
-                    <div className="me-3 d-flex align-items-center">
+                <div className="d-flex small mt-2 gap-3">
+                    <div className="d-flex align-items-center">
                         <FaThumbsUp />
-                        <span className="ms-2">{question.votes} Votes</span>
+                        <span className="ms-1">{question.votes}</span>
                     </div>
                     <div className="d-flex align-items-center">
                         <FaComment />
-                        <span className="ms-2">{question.answers} Answers</span>
+                        <span className="ms-1">{question.answers}</span>
                     </div>
-                </div>
-            </div>
-            <div className="d-flex justify-content-end align-items-end mt-3">
-                <div className="d-flex align-items-center">
-                    <div>
+                    {
+                        showUserProfile === false &&
                         <div>
-                            <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
+                            <span className="text-secondary">{DateUtils.format2(new Date(question.date!))}</span>
                         </div>
-                        <div className="d-flex justify-content-end">
-                            <ProfileName userId={question.userId} userName={question.userName} />
-                        </div>
-                    </div>
-                    <div className="ms-2 wb-p-follow-item__avatar">
-                        <ProfileAvatar size={32} avatarImage={question.userAvatar} />
-                    </div>
+                    }
                 </div>
             </div>
+            {
+                showUserProfile &&
+                <div className="d-flex justify-content-end align-items-end mt-3">
+                    <div className="d-flex align-items-center">
+                        <div>
+                            <div>
+                                <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
+                            </div>
+                            <div className="d-flex justify-content-end">
+                                <ProfileName userId={question.userId} userName={question.userName} />
+                            </div>
+                        </div>
+                        <div className="ms-2 wb-p-follow-item__avatar">
+                            <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
-    )
-}
+    );
+
+    const content = ref ?
+        <div ref={ref}>{body}</div>
+        :
+        <div>{body}</div>
+    return content;
+});
 
 export type { IQuestion }
 

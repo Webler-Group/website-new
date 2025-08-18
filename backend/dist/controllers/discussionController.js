@@ -254,7 +254,7 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
         //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (yield Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (yield PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
-        const attachments = yield PostAttachment_1.default.getByPostId(questionId);
+        const attachments = yield PostAttachment_1.default.getByPostId({ post: questionId });
         res.json({
             question: {
                 id: question._id,
@@ -323,7 +323,7 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
         }
         question.$inc("answers", 1);
         yield question.save();
-        const attachments = yield PostAttachment_1.default.getByPostId(reply._id.toString());
+        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             post: {
                 id: reply._id,
@@ -420,7 +420,7 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment_1.default.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
         yield Promise.all(promises);
         res.status(200).json({ posts: data });
@@ -562,7 +562,7 @@ const editReply = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     reply.message = message;
     try {
         yield reply.save();
-        const attachments = yield PostAttachment_1.default.getByPostId(reply._id.toString());
+        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             success: true,
             data: {
@@ -729,7 +729,7 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment_1.default.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
         yield Promise.all(promises);
         res.status(200).json({ posts: data });
@@ -787,7 +787,7 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
             parentPost.$inc("answers", 1);
             yield parentPost.save();
         }
-        const attachments = yield PostAttachment_1.default.getByPostId(reply._id.toString());
+        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             post: {
                 id: reply._id,
@@ -826,7 +826,7 @@ const editCodeComment = (0, express_async_handler_1.default)((req, res) => __awa
     comment.message = message;
     try {
         yield comment.save();
-        const attachments = yield PostAttachment_1.default.getByPostId(comment._id.toString());
+        const attachments = yield PostAttachment_1.default.getByPostId({ post: comment._id });
         res.json({
             success: true,
             data: {

@@ -64,7 +64,7 @@ const QuestionList = () => {
     const getQuestions = async () => {
         setLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
-        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 6;
+        const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
         const result = await sendJsonRequest(`/Discussion`, "POST", {
             page,
@@ -95,11 +95,11 @@ const QuestionList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Q&A Discussions</h2>
-            <Form className="d-flex mt-4" onSubmit={handleSearch}>
+            <Form className="d-flex mt-2" onSubmit={handleSearch}>
                 <FormControl type="search" size='sm' placeholder="Search..." ref={searchInputElement} />
                 <Button className="ms-2" size='sm' type="submit">Search</Button>
             </Form>
-            <div className="mt-4 d-flex justify-content-between">
+            <div className="mt-2 d-flex justify-content-between">
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
                     <option value="1">Most Recent</option>
                     <option value="2">Unanswered</option>
@@ -116,7 +116,7 @@ const QuestionList = () => {
                     <Button size='sm'>Ask a question</Button>
                 </LinkContainer>
             </div>
-            <div className="mt-3">
+            <div className="mt-2">
                 {
                     loading ?
                         placeholders
@@ -128,7 +128,7 @@ const QuestionList = () => {
                             :
                             questions.map(question => {
                                 return (
-                                    <Question question={question} searchQuery={searchQuery} key={question.id} />
+                                    <Question question={question} searchQuery={searchQuery} key={question.id} showUserProfile={true} />
                                 )
                             })
 
