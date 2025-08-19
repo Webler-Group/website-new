@@ -20,17 +20,20 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     const tagIds: any[] = [];
-    let promises: Promise<void>[] = [];
 
     for (let tagName of tags) {
-        promises.push(Tag.getOrCreateTagByName(tagName)
-            .then(tag => {
-                tagIds.push(tag._id);
-            })
-        )
+        const tag = await Tag.findOne({ name: tagName });
+        if(!tag) {
+            res.status(400).json({ message: `${tagName} does not exists` });
+            return;
+        }
+        tagIds.push(tag._id);
     }
 
-    await Promise.all(promises);
+    if(tagIds.length < 1) {
+        res.status(400).json({ message: `Empty Tag` });
+        return;        
+    }
 
     const question = await Post.create({
         _type: 1,

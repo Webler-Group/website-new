@@ -15,14 +15,28 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
     const [tags, setTags] = useState<string[]>([]);
+    const [validTags, setValidTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
+
+    useEffect(() => {
+        getValidTags();
+    });
 
     if (questionId) {
         useEffect(() => {
             getQuestion();
         }, [])
+    }
+
+    const getValidTags = async() => {
+        const result = await sendJsonRequest(`/Tag`, "POST");
+        const resArr = [];
+        if(result) {
+            for(const tag of result) resArr.push(tag.name);
+            setValidTags(resArr);
+        }
     }
 
     const getQuestion = async () => {
@@ -117,8 +131,12 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                 </FormGroup>
                 <FormGroup>
                     <FormLabel>Tags</FormLabel>
-                    <InputTags values={tags} setValues={setTags} placeholder="Add tag..." />
-                    <p className="text-secondary">You can add up to 10 tags</p>
+                    <InputTags values={tags} setValues={setTags} validTags={validTags} setValidTags={setValidTags} placeholder="Add tag..." />
+                    {
+                        tags.length <= 9 ?
+                            <p className="text-secondary">You can add up to 10 tags</p>
+                        : <p className="text-danger">Tag limit exceeded</p>
+                    }
                 </FormGroup>
                 <div className="d-flex justify-content-end">
                     <LinkContainer to={questionId ? "/Discuss/" + questionId : "/Discuss"}>

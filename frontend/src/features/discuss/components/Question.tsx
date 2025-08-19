@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { WeblerBadge } from "../../../components/InputTags";
 
 interface IQuestion {
     id: string;
@@ -58,7 +59,7 @@ const Question = ({ question, searchQuery }: QuestionProps) => {
                     {
                         question.tags.map((tag, idx) => {
                             return (
-                                <small key={idx} className={"rounded px-2 me-2 mb-1 border" + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")}>{tag}</small>
+                                <WeblerBadge key={idx} name={tag} state="neutral" className={"me-2 " + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")} />
                             )
                         })
                     }
