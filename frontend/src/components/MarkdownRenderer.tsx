@@ -14,6 +14,7 @@ interface MarkdownRendererProps {
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrls = [] }) => {
     const isAllowedUrl = (url?: string) => {
         if (!url) return false;
+        
         return allowedUrls.some(pattern =>
             typeof pattern === "string" ? url.startsWith(pattern) : pattern.test(url)
         );
@@ -50,7 +51,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
 
         img({ src, alt }) {
             if (isAllowedUrl(src)) {
-                return <img src={src} alt={alt || ""} style={{ maxWidth: "100%" }} />;
+                return <img src={src} alt={alt || ""} style={{ width: "100%", maxWidth: "480px" }} />;
             }
             return <span>{alt || "Image not allowed"}</span>;
         }

@@ -10,6 +10,7 @@ import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import allowedUrls from "../../../data/discussAllowedUrls";
 
 interface IAnswer {
     id: string;
@@ -33,12 +34,6 @@ interface AnswerProps {
     showEditAnswer: (postId: string) => void;
     newlyCreatedAnswer: string | null;
 }
-
-const allowedUrls = [
-  /^https?:\/\/(?:i\.)?imgur\.com/i,
-  /^https?:\/\/(?:media\.)?tenor\.com/i,
-  /^https?:\/\/(?:www\.)?weblercodes\.com/i
-];
 
 const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();

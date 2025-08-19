@@ -15,12 +15,7 @@ import PostAttachment from "../components/PostAttachment";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
-
-const allowedUrls = [
-  /^https?:\/\/(?:i\.)?imgur\.com/i,
-  /^https?:\/\/(?:media\.)?tenor\.com/i,
-  /^https?:\/\/(?:www\.)?weblercodes\.com/i
-];
+import allowedUrls from "../../../data/discussAllowedUrls";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
