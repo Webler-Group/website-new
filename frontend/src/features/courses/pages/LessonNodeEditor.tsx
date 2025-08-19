@@ -80,21 +80,18 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         setLoading(false);
     }
 
-    const handleSaveNode = async (e: FormEvent) => {
-        e.preventDefault();
-
+    const saveNode = async (showMessage: boolean) => {
         if (!node) {
-            return;
+            return false;
         }
 
-        setLoading(true);
         if ((nodeType == 2 || nodeType == 3)) {
             if (questionAnswers.length < 2) {
-                setMessage(["danger", "Question cannot have less than 2 answers"]);
-                return;
+                if (showMessage) setMessage(["danger", "Question cannot have less than 2 answers"]);
+                return false;
             } else if (questionAnswers.length > 4) {
-                setMessage(["danger", "Question cannot have more than 4 answers"]);
-                return;
+                if (showMessage) setMessage(["danger", "Question cannot have more than 4 answers"]);
+                return false;
             }
         }
 
@@ -117,8 +114,16 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                 }
             });
             setQuestionsAnswers(result.data.answers);
-            setMessage(["success", "Lessson node was saved successfully."])
+            if (showMessage) setMessage(["success", "Lessson node was saved successfully."])
         }
+
+        return true;
+    }
+
+    const handleSubmit = async (e: FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        await saveNode(true);
         setLoading(false);
     }
 
@@ -161,40 +166,38 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
     }
 
     const handleChangeIndex = async (newIndex: number) => {
-        if(!node) {
+        if (!node) {
             return;
         }
 
         setLoading(true);
-        const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
-            nodeId: node.id,
-            newIndex
-        });
-        if(result && result.success) {
-            setNode(node => {
-                if(!node) return null;
-                return {
-                    ...node,
-                    index: result.data.index
-                };
+        const success = await saveNode(false);
+        if (success) {
+            const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
+                nodeId: node.id,
+                newIndex
             });
-            onChangeIndex(node.id, newIndex);
+            if (result && result.success) {
+                setNode(node => {
+                    if (!node) return null;
+                    return {
+                        ...node,
+                        index: result.data.index
+                    };
+                });
+                onChangeIndex(node.id, newIndex);
+            }
         }
         setLoading(false);
     }
 
-    const handleResetNode = () => {
-        if (!node) {
-            return;
+    const handlePreview = async () => {
+        setLoading(true);
+        const success = await saveNode(false);
+        setLoading(false);
+        if (success) {
+            onPreview(nodeId);
         }
-        setNodeText(node.text ?? "");
-        setNodeType(node.type);
-        setQuestionCorrectAnswer(node.correctAnswer ?? "");
-        setQuestionsAnswers(node.answers);
-    }
-
-    const handlePreview = () => {
-        onPreview(nodeId);
     }
 
     const getEditorForm = () => {
@@ -250,7 +253,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         return (
             node !== null &&
             <div className="mt-2">
-                <Form onSubmit={handleSaveNode}>
+                <Form onSubmit={handleSubmit}>
                     <FormGroup>
                         <FormLabel>Type</FormLabel>
                         <FormSelect value={nodeType} onChange={(e) => setNodeType(Number(e.target.value))} required>
@@ -271,7 +274,6 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                             <Button size="sm" disabled={loading} onClick={handlePreview}>Preview</Button>
                         </div>
                         <div className="d-flex gap-2 justify-content-end mt-2 mt-sm-0">
-                            <Button size="sm" disabled={loading} variant="secondary" onClick={handleResetNode}>Reset</Button>
                             <Button size="sm" disabled={loading} variant="secondary" type="button" onClick={() => setDeleteModalVisible(true)}>Delete</Button>
                             <Button size="sm" disabled={loading} type="submit">Save</Button>
                         </div>

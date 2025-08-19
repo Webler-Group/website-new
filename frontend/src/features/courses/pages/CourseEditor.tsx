@@ -94,13 +94,13 @@ const CourseEditor = ({ }: CourseEditorProps) => {
             setLessons((lessons) => {
                 let newLessons = [];
                 let deletedFound = false;
-                for(let i = 0; i < lessons.length; ++i) {
+                for (let i = 0; i < lessons.length; ++i) {
                     const lesson = lessons[i];
-                    if(lesson.id === editedLessonId) {
+                    if (lesson.id === editedLessonId) {
                         deletedFound = true;
                         continue;
                     }
-                    if(deletedFound) {
+                    if (deletedFound) {
                         --lesson.index;
                     }
                     newLessons.push(lesson);
@@ -110,6 +110,35 @@ const CourseEditor = ({ }: CourseEditorProps) => {
         }
         setLoading(false);
     }
+
+    const handleChangeLessonIndex = async (lessonId: string, newIndex: number) => {
+        setLoading(true);
+
+        const result = await sendJsonRequest("/CourseEditor/ChangeLessonIndex", "POST", { lessonId, newIndex });
+        if (result && result.success) {
+            setLessons((prevLessons) => {
+                const lessonsCopy = [...prevLessons];
+
+                const currentIndex = lessonsCopy.findIndex(l => l.id === lessonId);
+                if (currentIndex === -1) return lessonsCopy;
+
+                // Swap lessons
+                const targetIndex = lessonsCopy.findIndex(l => l.index === newIndex);
+                if (targetIndex === -1) return lessonsCopy;
+
+                // Swap indexes
+                [lessonsCopy[currentIndex].index, lessonsCopy[targetIndex].index] = [lessonsCopy[targetIndex].index, lessonsCopy[currentIndex].index];
+
+                // Sort by index to keep order consistent
+                lessonsCopy.sort((a, b) => a.index - b.index);
+
+                return lessonsCopy;
+            });
+        }
+
+        setLoading(false);
+    };
+
 
     const onEdit = (id: string, title: string) => {
         showLessonForm(title, id);
@@ -126,7 +155,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     const getLessonTitlePath = () => {
         const currentLesson = lessons.find(x => x.id === lessonId);
-        if(!currentLesson) {
+        if (!currentLesson) {
             return <></>;
         }
         const lessonTitle = currentLesson.title.length > 20 ? currentLesson.title.slice(0, 20) + "..." : currentLesson.title;
@@ -187,7 +216,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
             </div>
             {
                 lessonId ?
-                    <LessonEditor lessonId={lessonId}/>
+                    <LessonEditor lessonId={lessonId} />
                     :
                     <>
                         <div className="d-flex justify-content-end">
@@ -198,7 +227,15 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                                 lessons.map(lesson => {
                                     return (
                                         <div key={lesson.index} className="mt-2">
-                                            <Lesson lesson={lesson} courseCode={course.code} onDelete={onDelete} onEdit={onEdit} />
+                                            <Lesson
+                                                lesson={lesson}
+                                                courseCode={course.code}
+                                                onDelete={onDelete}
+                                                onEdit={onEdit}
+                                                onChangeIndex={handleChangeLessonIndex}
+                                                isFirst={lesson.index === 1}
+                                                isLast={lesson.index === lessons.length}
+                                            />
                                         </div>
                                     );
                                 })

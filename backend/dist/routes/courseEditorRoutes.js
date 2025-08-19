@@ -19,6 +19,7 @@ router.route("/CreateLesson").post(courseEditorController_1.default.createLesson
 router.route("/GetLessonList").post(courseEditorController_1.default.getLessonList);
 router.route("/EditLesson").put(courseEditorController_1.default.editLesson);
 router.route("/DeleteLesson").delete(courseEditorController_1.default.deleteLesson);
+router.route("/ChangeLessonIndex").post(courseEditorController_1.default.changeLessonIndex);
 router.route("/GetLessonNode").post(courseEditorController_1.default.getLessonNode);
 router.route("/CreateLessonNode").post(courseEditorController_1.default.createLessonNode);
 router.route("/DeleteLessonNode").delete(courseEditorController_1.default.deleteLessonNode);

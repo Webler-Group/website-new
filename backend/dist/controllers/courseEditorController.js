@@ -406,6 +406,38 @@ const editLessonNode = (0, express_async_handler_1.default)((req, res) => __awai
         });
     }
 }));
+const changeLessonIndex = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { lessonId, newIndex } = req.body;
+    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    if (!lesson) {
+        res.status(404).json({ message: "Lesson not found" });
+        return;
+    }
+    const otherLesson = yield CourseLesson_1.default.findOne({ course: lesson.course, index: newIndex });
+    if (!otherLesson) {
+        res.status(404).json({ message: "New index is not valid" });
+        return;
+    }
+    otherLesson.index = lesson.index;
+    lesson.index = newIndex;
+    try {
+        yield lesson.save();
+        yield otherLesson.save();
+        res.json({
+            success: true,
+            data: {
+                index: newIndex
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+}));
 const changeLessonNodeIndex = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { nodeId, newIndex } = req.body;
     const node = yield LessonNode_1.default.findById(nodeId);
@@ -455,6 +487,7 @@ const courseEditorController = {
     deleteLessonNode,
     editLessonNode,
     changeLessonNodeIndex,
+    changeLessonIndex,
     coverImageUpload
 };
 exports.default = courseEditorController;
