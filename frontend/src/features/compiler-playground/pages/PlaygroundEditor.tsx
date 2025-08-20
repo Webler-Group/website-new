@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
@@ -338,6 +338,14 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
+    const handleGoBack = () => {
+        if (history.state && history.state.idx > 0) {
+            navigate(-1);
+        } else {
+            navigate("/");
+        }
+    };
+
     const formatTitle = (title: string) => {
         return title.length > 10 ? title.slice(0, 10) + "..." : title;
     }
@@ -404,9 +412,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             </Modal>
             <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
                 <div className="ps-2">
-                    <Link to={-1 as any}>
-                        <FaArrowLeft size={18} className="text-dark" />
-                    </Link>
+                    <Button variant="link">
+                        <FaArrowLeft size={18} className="text-dark" onClick={handleGoBack} />
+                    </Button>
                 </div>
                 <div>
                     <AuthNavigation />
