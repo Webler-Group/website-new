@@ -14,10 +14,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const confg_1 = require("../confg");
 const dbConn_1 = __importDefault(require("../config/dbConn"));
+const tags_1 = __importDefault(require("../config/tags"));
+const Tag_1 = __importDefault(require("../models/Tag"));
 const User_1 = __importDefault(require("../models/User"));
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         yield (0, dbConn_1.default)();
+        yield Tag_1.default.deleteMany({});
+        console.log("All existing tags deleted.");
+        const tagDocs = tags_1.default.map(name => ({ name }));
+        yield Tag_1.default.insertMany(tagDocs);
+        console.log("New tags added successfully.");
         let adminUser = yield User_1.default.findOne({ email: confg_1.config.adminEmail });
         if (adminUser) {
             console.log("Admin user already exists.");

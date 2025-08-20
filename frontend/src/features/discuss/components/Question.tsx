@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { WeblerBadge } from "../../../components/InputTags";
 import React from "react";
 
 interface IQuestion {
@@ -35,7 +36,7 @@ const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: Q
     const match = question.title.match(regex);
 
     let title;
-    if (searchQuery.trim().length > 2 && match && match.index !== undefined) {
+    if (searchQuery.trim().length > 0 && match && match.index !== undefined) {
         const start = match.index;
         const end = start + match[0].length;
 
@@ -60,7 +61,7 @@ const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: Q
                     {
                         question.tags.map((tag, idx) => {
                             return (
-                                <small key={idx} className={"rounded px-2 me-2 mb-1 border" + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")}>{tag}</small>
+                                <WeblerBadge key={idx} name={tag} state="neutral" className={"me-2 " + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")} />
                             )
                         })
                     }

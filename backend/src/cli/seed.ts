@@ -1,9 +1,18 @@
 import {config} from "../confg";
 import connectDB from "../config/dbConn";
+import tags from "../config/tags";
+import Tag from "../models/Tag";
 import User from "../models/User";
 
 async function main() {
     await connectDB();
+
+    await Tag.deleteMany({});
+    console.log("All existing tags deleted.");
+
+    const tagDocs = tags.map(name => ({ name }));
+    await Tag.insertMany(tagDocs);
+    console.log("New tags added successfully.");
 
     let adminUser = await User.findOne({ email: config.adminEmail });
     if(adminUser) {

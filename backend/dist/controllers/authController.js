@@ -105,14 +105,15 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
             userId: user._id.toString(),
             email: user.email
         });
-        try {
-            yield (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
-            user.lastVerificationEmailTimestamp = Date.now();
-            yield user.save();
-            res.json({ success: true });
-        }
-        catch (_a) {
-            res.status(500).json({ message: "Activation email could not be sent" });
+        if (confg_1.config.nodeEnv === "production") {
+            try {
+                yield (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
+                user.lastVerificationEmailTimestamp = Date.now();
+                yield user.save();
+            }
+            catch (_a) {
+                console.log("Activation email could not be sent");
+            }
         }
         res.json({
             accessToken,

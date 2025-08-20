@@ -21,6 +21,7 @@ const PostFollowing_1 = __importDefault(require("../models/PostFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
+const regexUtils_1 = require("../utils/regexUtils");
 const createQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -29,14 +30,18 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         return;
     }
     const tagIds = [];
-    let promises = [];
     for (let tagName of tags) {
-        promises.push(Tag_1.default.getOrCreateTagByName(tagName)
-            .then(tag => {
-            tagIds.push(tag._id);
-        }));
+        const tag = yield Tag_1.default.findOne({ name: tagName });
+        if (!tag) {
+            res.status(400).json({ message: `${tagName} does not exists` });
+            return;
+        }
+        tagIds.push(tag._id);
     }
-    yield Promise.all(promises);
+    if (tagIds.length < 1) {
+        res.status(400).json({ message: `Empty Tag` });
+        return;
+    }
     const question = yield Post_1.default.create({
         _type: 1,
         title,
@@ -74,6 +79,8 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
+    const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
+    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
     let pipeline = [
         { $match: { _type: 1, hidden: false } },
         {
@@ -87,20 +94,20 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         _type: 1,
         hidden: false
     });
-    if (searchQuery.trim().length > 2) {
+    if (searchQuery.trim().length > 0) {
         const tagIds = (yield Tag_1.default.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
                 $or: [
-                    { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
+                    { title: searchRegex },
                     { "tags": { $in: tagIds } }
                 ]
             }
         });
         dbQuery.where({
             $or: [
-                { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
+                { title: searchRegex },
                 { "tags": { $in: tagIds } }
             ]
         });
@@ -435,7 +442,7 @@ const getTags = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    if (query.length < 3) {
+    if (query.length < 1) {
         res.json({ tags: [] });
     }
     else {

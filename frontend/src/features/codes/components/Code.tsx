@@ -33,7 +33,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
     const match = code.name!.match(regex);
 
     let title;
-    if (searchQuery.trim().length > 2 && match && match.index !== undefined) {
+    if (searchQuery.trim().length > 0 && match && match.index !== undefined) {
         const start = match.index;
         const end = start + match[0].length;
 

@@ -1,7 +1,7 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
+import { ChangeEvent, useEffect, useState } from 'react'
 import { Button, Form, FormControl } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
-import {useApi} from '../../../context/apiCommunication';
+import { useApi } from '../../../context/apiCommunication';
 import Code from '../components/Code';
 import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
@@ -19,7 +19,7 @@ const CodesList = () => {
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState(1);
     const [language, setLanguage] = useState("all");
-    const searchInputElement = useRef<HTMLInputElement>(null);
+    const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -33,13 +33,17 @@ const CodesList = () => {
 
     useEffect(() => {
         if (searchParams.has("page")) {
-            setCurrentPage(Number(searchParams.get("page")))
+            setCurrentPage(Number(searchParams.get("page")));
         }
         if (searchParams.has("filter")) {
-            setFilter(Number(searchParams.get("filter")))
+            setFilter(Number(searchParams.get("filter")));
         }
         if (searchParams.has("query")) {
-            setSearchQuery(searchParams.get("query")!)
+            setSearchInput(searchParams.get("query")!);
+            setSearchQuery(searchParams.get("query")!);
+        }
+        if (searchParams.has("language")) {
+            setLanguage(searchParams.get("language")!);
         }
     }, []);
 
@@ -52,15 +56,11 @@ const CodesList = () => {
         setCurrentPage(page);
     }
 
-    const handleSearch = (e: FormEvent) => {
-        e.preventDefault();
-
-        if (searchInputElement.current) {
-            const value = searchInputElement.current.value.trim()
-            searchParams.set("query", value);
-            setSearchParams(searchParams, { replace: true });
-            setSearchQuery(value);
-        }
+    const handleSearch = () => {
+        const value = searchInput.trim()
+        searchParams.set("query", value);
+        setSearchParams(searchParams, { replace: true });
+        setSearchQuery(value);
     }
 
     const getCodes = async () => {
@@ -111,10 +111,10 @@ const CodesList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Codes</h2>
-            <Form className="d-flex mt-2" onSubmit={handleSearch}>
-                <FormControl type="search" size='sm' placeholder="Search..." ref={searchInputElement} />
-                <Button className="ms-2" size='sm' type="submit">Search</Button>
-            </Form>
+            <div className="d-flex mt-2">
+                <FormControl type="search" size='sm' placeholder="Search..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
+                <Button className="ms-2" size='sm' onClick={handleSearch}>Search</Button>
+            </div>
             <div className="mt-2 d-sm-flex flex-row-reverse justify-content-between">
                 <div className="mb-2 mb-sm-0 d-flex justify-content-end">
                     <LinkContainer to="/Compiler-Playground">

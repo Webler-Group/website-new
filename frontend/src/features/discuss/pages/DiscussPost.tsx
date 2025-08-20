@@ -15,6 +15,7 @@ import PostAttachment from "../components/PostAttachment";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
 
 const DiscussPost = () => {
@@ -362,6 +363,15 @@ const DiscussPost = () => {
 
                     <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
                         <h3 className="wb-discuss-question__title">{question.title}</h3>
+                        <div className="d-flex mb-1 flex-wrap gap-1">
+                            {
+                                question.tags.map((tag, idx) => {
+                                    return (
+                                        <WeblerBadge key={idx} name={tag} state="neutral" />
+                                    )
+                                })
+                            }
+                        </div>
                         <div className="mt-1 wb-discuss-question__description">
                             <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
                         </div>
@@ -372,15 +382,6 @@ const DiscussPost = () => {
                                         <div key={attachment.id} className="mt-1">
                                             <PostAttachment data={attachment} />
                                         </div>
-                                    )
-                                })
-                            }
-                        </div>
-                        <div className="d-flex mt-4 flex-wrap gap-1">
-                            {
-                                question.tags.map((tag, idx) => {
-                                    return (
-                                        <small key={idx} className="rounded bg-light p-1 border">{tag}</small>
                                     )
                                 })
                             }

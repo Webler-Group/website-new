@@ -1,5 +1,5 @@
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react'
-import { Button, Form, FormControl } from 'react-bootstrap'
+import { ChangeEvent, useEffect, useState } from 'react'
+import { Button, Form } from 'react-bootstrap'
 import { LinkContainer } from 'react-router-bootstrap';
 import { useApi } from '../../../context/apiCommunication';
 import Question from '../components/Question';
@@ -7,6 +7,7 @@ import { useAuth } from '../../auth/context/authContext';
 import { PaginationControl } from 'react-bootstrap-pagination-control';
 import QuestionPlaceholder from '../components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
+import { TagSearch } from '../../../components/InputTags';
 
 const QuestionList = () => {
     const { sendJsonRequest } = useApi();
@@ -17,7 +18,7 @@ const QuestionList = () => {
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState(1);
-    const searchInputElement = useRef<HTMLInputElement>(null);
+    const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -38,6 +39,7 @@ const QuestionList = () => {
         }
         if (searchParams.has("query")) {
             setSearchQuery(searchParams.get("query")!)
+            setSearchInput(searchParams.get("query")!)
         }
     }, []);
 
@@ -50,15 +52,11 @@ const QuestionList = () => {
         setCurrentPage(page);
     }
 
-    const handleSearch = (e: FormEvent) => {
-        e.preventDefault();
-
-        if (searchInputElement.current) {
-            const value = searchInputElement.current.value.trim();
-            searchParams.set("query", value);
-            setSearchParams(searchParams, { replace: true });
-            setSearchQuery(value);
-        }
+    const handleSearch = () => {
+        const value = searchInput.trim();
+        searchParams.set("query", value);
+        setSearchParams(searchParams, { replace: true });
+        setSearchQuery(value);
     }
 
     const getQuestions = async () => {
@@ -95,10 +93,20 @@ const QuestionList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Q&A Discussions</h2>
-            <Form className="d-flex mt-2" onSubmit={handleSearch}>
-                <FormControl type="search" size='sm' placeholder="Search..." ref={searchInputElement} />
-                <Button className="ms-2" size='sm' type="submit">Search</Button>
-            </Form>
+            <div className="d-flex mt-2" style={{ gap: "0.5rem" }}>
+                <div style={{ flex: 1 }}>
+                    <TagSearch
+                        query={searchInput}
+                        onChange={(val) => setSearchInput(val)}
+                        onSelect={(tag) => {
+                            setSearchInput(tag);
+                        }}
+                        placeholder="Search by tags or title..."
+                        maxWidthPx={360}
+                    />
+                </div>
+                <Button size="sm" onClick={handleSearch}>Search</Button>
+            </div>
             <div className="mt-2 d-flex justify-content-between">
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
                     <option value="1">Most Recent</option>
