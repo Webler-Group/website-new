@@ -119,16 +119,16 @@ const register = asyncHandler(async (req: Request, res: Response) => {
             email: user.email
         });
 
-        try {
-            await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
+        if (config.nodeEnv === "production") {
+            try {
+                await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
 
-            user.lastVerificationEmailTimestamp = Date.now();
-            await user.save();
-
-            res.json({ success: true });
-        }
-        catch {
-            res.status(500).json({ message: "Activation email could not be sent" });
+                user.lastVerificationEmailTimestamp = Date.now();
+                await user.save();
+            }
+            catch {
+                console.log("Activation email could not be sent");
+            }
         }
 
         res.json({

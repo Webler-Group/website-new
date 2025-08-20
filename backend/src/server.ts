@@ -44,6 +44,9 @@ async function main() {
 
     app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
     app.use(logger);
+
+    app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
+
     if (config.nodeEnv == "production") {
         app.use(cors(corsOptions));
     }
@@ -58,7 +61,6 @@ async function main() {
     app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
     app.use(`${apiPrefix}/Courses`, courseRoutes);
     app.use(`${apiPrefix}/Channels`, channelRoutes);
-    app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
     app.use(`${apiPrefix}/Tag`, tagRoutes);
 
     app.all("*", (req, res) => {
