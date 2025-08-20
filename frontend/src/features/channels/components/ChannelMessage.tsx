@@ -2,6 +2,7 @@ import React from "react";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
+import PostAttachment, { IPostAttachment } from "../../discuss/components/PostAttachment";
 
 interface IChannelMessage {
     id: string;
@@ -13,6 +14,7 @@ interface IChannelMessage {
     createdAt: string;
     channelId: string;
     viewed: boolean;
+    attachments: IPostAttachment[];
 }
 
 interface ChannelMessageProps {
@@ -54,6 +56,17 @@ const ChannelMessage = React.forwardRef(({ message, showHeader }: ChannelMessage
 
                 <div className={`bg-light p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5" : ""}`}>
                     {message.content}
+                    <div className="mt-2">
+                        {
+                            message.attachments.map(attachment => {
+                                return (
+                                    <div key={attachment.id} className="mt-1">
+                                        <PostAttachment data={attachment} />
+                                    </div>
+                                )
+                            })
+                        }
+                    </div>
                 </div>
             </div>
         </div>

@@ -24,6 +24,7 @@ const confg_1 = require("../confg");
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
+const Post_1 = __importDefault(require("../models/Post"));
 const avatarImageUpload = (0, multer_1.default)({
     limits: { fileSize: 1024 * 1024 },
     fileFilter(req, file, cb) {
@@ -70,8 +71,17 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
     codesQuery = codesQuery
         .sort({ updatedAt: "desc" });
     const codes = yield codesQuery
-        .limit(10)
+        .limit(5)
         .select("-source -cssSource -jsSource");
+    const questions = yield Post_1.default.find({ user: userId, _type: 1 })
+        .sort({ createdAt: "desc" })
+        .limit(5)
+        .populate("tags", "name")
+        .select("-message");
+    const answers = yield Post_1.default.find({ user: userId, _type: 2 })
+        .sort({ createdAt: "desc" })
+        .limit(5)
+        .select("-message");
     res.json({
         userDetails: {
             id: user._id,
@@ -98,6 +108,21 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
                 votes: x.votes,
                 isPublic: x.isPublic,
                 language: x.language
+            })),
+            questions: questions.map(x => ({
+                id: x._id,
+                title: x.title,
+                date: x.createdAt,
+                answers: x.answers,
+                votes: x.votes,
+                tags: x.tags.map(x => x.name)
+            })),
+            answers: answers.map(x => ({
+                id: x._id,
+                title: x.title,
+                date: x.createdAt,
+                answers: x.answers,
+                votes: x.votes
             }))
         }
     });

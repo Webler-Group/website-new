@@ -40,6 +40,7 @@ const socketServer_1 = require("../config/socketServer");
 const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
+const PostAttachment_1 = __importDefault(require("./PostAttachment"));
 const channelMessageSchema = new mongoose_1.Schema({
     /*
     1 - Basic
@@ -72,6 +73,15 @@ const channelMessageSchema = new mongoose_1.Schema({
         default: false
     },
 }, { timestamps: true });
+channelMessageSchema.pre("save", function (next) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (!this.isModified("content")) {
+            next();
+            return;
+        }
+        yield PostAttachment_1.default.updateAttachments(this.content, { channelMessage: this._id });
+    });
+});
 channelMessageSchema.post("save", function () {
     return __awaiter(this, void 0, void 0, function* () {
         yield Channel_1.default.updateOne({ _id: this.channel }, { lastMessage: this._id });
@@ -80,6 +90,7 @@ channelMessageSchema.post("save", function () {
             const user = yield User_1.default.findById(this.user, "name avatarImage level roles").lean();
             if (!user)
                 return;
+            const attachments = yield PostAttachment_1.default.getByPostId({ channelMessage: this._id });
             const userIds = (yield ChannelParticipant_1.default.find({ channel: this.channel }, "user").lean()).map(x => x.user);
             if (this._type == 3) {
                 userIds.push(user._id);
@@ -93,7 +104,8 @@ channelMessageSchema.post("save", function () {
                 userId: user._id.toString(),
                 userName: user.name,
                 userAvatar: user.avatarImage,
-                viewed: false
+                viewed: false,
+                attachments
             });
         }
     });

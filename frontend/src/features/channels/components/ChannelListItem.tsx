@@ -39,20 +39,21 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
 
     let body = (
         <div
-            className={`d-flex align-items-start gap-1 p-2 border-bottom cursor-pointer ${selected ? "border border-2 border-dark" : "border-bottom"}`}
+            className={`d-flex align-items-center gap-2 p-2 border-bottom cursor-pointer ${selected ? "border border-2 border-dark" : "border-bottom"}`}
             onClick={onClick}
             style={{ cursor: "pointer" }}
         >
             {
                 channel.type == 2 ?
                     <img
-                        src="/resources/images/logoicon.png"
+                        src="/resources/images/group.svg"
                         alt="channel avatar"
-                        className="rounded-circle me-2"
-                        style={{ width: 48, height: 48, objectFit: "cover" }}
+                        className="me-2"
+                        width={32}
+                        height={32}
                     />
                     :
-                    <ProfileAvatar size={48} avatarImage={channel.coverImage} />
+                    <ProfileAvatar size={32} avatarImage={channel.coverImage} />
             }
             <div className="flex-grow-1">
                 <div className="d-flex justify-content-between">

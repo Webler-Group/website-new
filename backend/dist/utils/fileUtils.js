@@ -10,12 +10,11 @@ function safeReadFile(filePath, maxSaveSize) {
         return "";
     const stats = fs_1.default.statSync(filePath);
     if (stats.size > maxSaveSize) {
-        // Read only the first MAX_SAVE_SIZE bytes and append truncation message
         const fd = fs_1.default.openSync(filePath, "r");
-        const buffer = Buffer.alloc(maxSaveSize);
+        const buffer = new Uint8Array(maxSaveSize);
         fs_1.default.readSync(fd, buffer, 0, maxSaveSize, 0);
         fs_1.default.closeSync(fd);
-        return buffer.toString("utf-8") + "[Output truncated]";
+        return new TextDecoder('utf-8').decode(buffer) + "[Output truncated]";
     }
     else {
         return fs_1.default.readFileSync(filePath, "utf-8");

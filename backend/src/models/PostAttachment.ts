@@ -1,10 +1,18 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
+import Post from "./Post";
+import Code from "./Code";
+import { config } from "../confg";
 
 const postAttachmentSchema = new mongoose.Schema({
     postId: {
         type: mongoose.Types.ObjectId,
         ref: "Post",
-        required: true
+        default: null
+    },
+    channelMessageId: {
+        type: mongoose.Types.ObjectId,
+        ref: "ChannelMessage",
+        default: null
     },
     /*
     * 1 - code
@@ -31,9 +39,9 @@ const postAttachmentSchema = new mongoose.Schema({
     }
 })
 
-postAttachmentSchema.statics.getByPostId = async function (postId: string) {
+postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }) {
     const result = await PostAttachment
-        .find({ postId })
+        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null })
         .populate("code", "name language")
         .populate("question", "title")
         .populate("user", "name avatarImage countryCode level roles") as any[];
@@ -68,10 +76,90 @@ postAttachmentSchema.statics.getByPostId = async function (postId: string) {
         .filter(x => x !== null)
 }
 
+postAttachmentSchema.statics.updateAttachments = async function (message: string, id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }) {
+    const currentAttachments = await PostAttachment
+        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null });
+
+    const newAttachmentIds: string[] = [];
+
+    const pattern = new RegExp("(" + config.allowedOrigins.join("|") + ")\/([\\w\-]+)\/([\\w\-]+)", "gi");
+    const matches = message.matchAll(pattern);
+
+    for (let match of matches) {
+        if (match.length < 4) continue;
+
+        let attachment = null;
+        switch (match[2]) {
+            case "Compiler-Playground": {
+                const codeId = match[3];
+                try {
+                    const code = await Code.findById(codeId);
+                    if (!code) {
+                        continue
+                    }
+
+                    attachment = currentAttachments.find(x => x.code && x.code == codeId);
+                    
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: id.post ?? null,
+                            channelMessageId: id.channelMessage ?? null,
+                            _type: 1,
+                            code: codeId,
+                            user: code.user
+                        })
+                    }
+                    
+                }
+                catch (err: any) {
+                    console.log(err?.message);
+                }
+                break;
+            }
+            case "Discuss": {
+                const questionId = match[3];
+                try {
+                    const question = await Post.findById(questionId);
+                    if (!question) {
+                        continue
+                    }
+
+                    attachment = currentAttachments.find(x => x.question && x.question == questionId);
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: id.post ?? null,
+                            channelMessageId: id.channelMessage ?? null,
+                            _type: 2,
+                            question: questionId,
+                            user: question.user
+                        })
+                    }
+                }
+                catch(err: any) {
+                    console.log(err?.message);
+                }
+                break;
+            }
+        }
+        if (attachment) {
+            newAttachmentIds.push(attachment._id.toString());
+        }
+    }
+
+    const idsToDelete = currentAttachments.map(x => x._id)
+        .filter(v => !newAttachmentIds.includes(v.toString()));
+
+    await PostAttachment.deleteMany({
+        _id: { $in: idsToDelete }
+    });
+}
+
 declare interface IPostAttachment extends InferSchemaType<typeof postAttachmentSchema> { }
 
 interface PostAttachmentModel extends Model<IPostAttachment> {
-    getByPostId(postId: string): Promise<any[]>;
+    getByPostId(id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }): Promise<any[]>;
+    updateAttachments(message: string, id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }): Promise<void>;
+
 }
 
 const PostAttachment = mongoose.model<IPostAttachment, PostAttachmentModel>("PostAttachment", postAttachmentSchema);

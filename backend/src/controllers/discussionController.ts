@@ -9,6 +9,7 @@ import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
+import { escapeRegex } from "../utils/regexUtils";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -20,17 +21,20 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     const tagIds: any[] = [];
-    let promises: Promise<void>[] = [];
 
     for (let tagName of tags) {
-        promises.push(Tag.getOrCreateTagByName(tagName)
-            .then(tag => {
-                tagIds.push(tag._id);
-            })
-        )
+        const tag = await Tag.findOne({ name: tagName });
+        if(!tag) {
+            res.status(400).json({ message: `${tagName} does not exists` });
+            return;
+        }
+        tagIds.push(tag._id);
     }
 
-    await Promise.all(promises);
+    if(tagIds.length < 1) {
+        res.status(400).json({ message: `Empty Tag` });
+        return;        
+    }
 
     const question = await Post.create({
         _type: 1,
@@ -76,6 +80,9 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return
     }
 
+    const safeQuery = escapeRegex(searchQuery.trim());
+    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
+
     let pipeline: PipelineStage[] = [
         { $match: { _type: 1, hidden: false } },
         {
@@ -91,20 +98,20 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             hidden: false
         })
 
-    if (searchQuery.trim().length > 2) {
+    if (searchQuery.trim().length > 0) {
         const tagIds = (await Tag.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
                 $or: [
-                    { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
+                    { title: searchRegex },
                     { "tags": { $in: tagIds } }
                 ]
             }
         })
         dbQuery.where({
             $or: [
-                { title: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") },
+                { title: searchRegex },
                 { "tags": { $in: tagIds } }
             ]
         })
@@ -272,7 +279,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
-        const attachments = await PostAttachment.getByPostId(questionId)
+        const attachments = await PostAttachment.getByPostId({ post: questionId })
 
         res.json({
             question: {
@@ -353,7 +360,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         question.$inc("answers", 1)
         await question.save();
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             post: {
@@ -464,7 +471,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -485,7 +492,7 @@ const getTags = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (query.length < 3) {
+    if (query.length < 1) {
         res.json({ tags: [] })
     }
     else {
@@ -652,7 +659,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await reply.save();
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             success: true,
@@ -852,7 +859,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
                     data[i].isUpvoted = !(upvote === null);
                 }));
             }
-            promises.push(PostAttachment.getByPostId(data[i].id).then(attachments => data[i].attachments = attachments));
+            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
 
         await Promise.all(promises);
@@ -923,7 +930,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             await parentPost.save();
         }
 
-        const attachments = await PostAttachment.getByPostId(reply._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
         res.json({
             post: {
@@ -971,7 +978,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     try {
         await comment.save();
 
-        const attachments = await PostAttachment.getByPostId(comment._id.toString())
+        const attachments = await PostAttachment.getByPostId({ post: comment._id })
 
         res.json({
             success: true,

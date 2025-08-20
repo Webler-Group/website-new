@@ -31,7 +31,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
                 }
             }
         }
-    }, [lesson]);
+    }, [lesson?.id]);
 
     const getLesson = async () => {
         const result = await sendJsonRequest("/CourseEditor/GetLesson", "POST", {
@@ -99,6 +99,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
 
                 newNodes[oldIndex - 1] = newNodes[newIndex - 1];
                 newNodes[newIndex - 1] = node;
+
             }
             return {
                 ...current,
@@ -112,6 +113,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
         if (!lesson) {
             return;
         }
+
         setNodePreviewVisible(false);
         setCurrentNodeId(nodeId);
         const node = lesson.nodes.find(x => x.id == nodeId);
@@ -131,46 +133,48 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
 
     return (
         lesson !== null &&
-        <div className="p-2">
-            <h4>{lesson.title}</h4>
-            <div className="d-flex justify-content-between my-3">
-                <ButtonGroup size="sm">
-                    {lesson.nodes.map((node, i) => (
-                        <ToggleButton
-                            key={i}
-                            id={`current-lesson-input-${node.index}`}
-                            type="radio"
-                            variant="outline-primary"
-                            name="current-lesson"
-                            value={node.id}
-                            checked={currentNodeId === node.id}
-                            onChange={(e) => handleNodeChange(e.currentTarget.value)}
-                            size="sm"
-                        >
-                            {node.index}
-                        </ToggleButton>
-                    ))}
-                </ButtonGroup>
-                <Button size="sm" onClick={createLessonNode}>
-                    <FaPlus />
-                </Button>
+        <>
+            <div className="p-2">
+                <h4>{lesson.title}</h4>
+                <div className="d-flex justify-content-between my-3">
+                    <ButtonGroup size="sm">
+                        {lesson.nodes.map((node, i) => (
+                            <ToggleButton
+                                key={i}
+                                id={`current-lesson-input-${node.index}`}
+                                type="radio"
+                                variant="outline-primary"
+                                name="current-lesson"
+                                value={node.id}
+                                checked={currentNodeId === node.id}
+                                onChange={(e) => handleNodeChange(e.currentTarget.value)}
+                                size="sm"
+                            >
+                                {node.index}
+                            </ToggleButton>
+                        ))}
+                    </ButtonGroup>
+                    <Button size="sm" onClick={createLessonNode}>
+                        <FaPlus />
+                    </Button>
+                </div>
+                {
+                    currentNodeId !== null &&
+                    (nodePreviewVisible ?
+                        <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
+                            <div className="flex-grow-1 border border-2">
+                                <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
+                            </div>
+                            <div className="d-flex justify-content-end mt-2">
+                                <Button variant="secondary" size="sm" onClick={handleExitPreview}>Exit Preview</Button>
+                            </div>
+                        </div>
+                        :
+                        <LessonNodeEditor nodeId={currentNodeId} nodeCount={lesson.nodeCount} onChangeIndex={onLessonNodeChangeIndex} onDelete={onLessonNodeDelete} onPreview={onNodePreview} />
+                    )
+                }
             </div>
-            {
-                currentNodeId !== null &&
-                (nodePreviewVisible ?
-                    <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
-                        <div className="flex-grow-1 border border-2">
-                            <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
-                        </div>
-                        <div className="d-flex justify-content-end mt-2">
-                            <Button variant="secondary" size="sm" onClick={handleExitPreview}>Exit Preview</Button>
-                        </div>
-                    </div>
-                    :
-                    <LessonNodeEditor nodeId={currentNodeId} nodeCount={lesson.nodeCount} onChangeIndex={onLessonNodeChangeIndex} onDelete={onLessonNodeDelete} onPreview={onNodePreview} />
-                )
-            }
-        </div>
+        </>
     );
 }
 

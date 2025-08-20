@@ -9,9 +9,11 @@ import { FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";
 import CodesSection from "../components/CodesSection";
-import Code from "../../codes/components/Code";
+import Code, { ICode } from "../../codes/components/Code";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import Question, { IQuestion } from "../../discuss/components/Question";
+import QuestionsSection from "../components/QuestionsSection";
 
 export interface UserDetails {
     id: string;
@@ -52,8 +54,11 @@ const Profile = () => {
 
     const [followListVisible, setFollowListVisible] = useState(0);
 
-    const [codes, setCodes] = useState<any[]>([])
+    const [codes, setCodes] = useState<ICode[]>([]);
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
+
+    const [questions, setQuestions] = useState<IQuestion[]>([]);
+    const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
 
     const navigate = useNavigate();
 
@@ -67,7 +72,8 @@ const Profile = () => {
                     setUserDetails(data.userDetails);
                     setFollowingCount(data.userDetails.following);
                     setFollowersCount(data.userDetails.followers);
-                    setCodes(data.userDetails.codes.slice(0, 3))
+                    setCodes(data.userDetails.codes.slice(0, 3));
+                    setQuestions(data.userDetails.questions.slice(0, 3));
                 }
                 else {
                     setUserDetails(null);
@@ -136,6 +142,14 @@ const Profile = () => {
         setCodesSectionVisible(false)
     }
 
+    const showQuestionsSection = () => {
+        setQuestionsSectionVisible(true);
+    }
+
+    const closeQuestionsSection = () => {
+        setQuestionsSectionVisible(false);
+    }
+
     const setPageTitle = (userName: string) => {
         { document.title = userName + " | Webler" }
     }
@@ -143,11 +157,15 @@ const Profile = () => {
     const openPlaygroundMenu = () => {
         navigate("/Compiler-Playground")
     }
+
+    const openDiscussAsk = () => {
+        navigate("/Discuss/New");
+    }
     const handleMessage = async () => {
         const result = await sendJsonRequest('/Channels/CreateDirectMessages', 'POST', {
             userId
         })
-        if(result && result.channel) {
+        if (result && result.channel) {
             navigate("/Channels/" + result.channel.id);
         }
     }
@@ -207,6 +225,40 @@ const Profile = () => {
         :
         <></>
 
+    let questionSectionContent = isCurrentUser || codes.length > 0 ?
+        <Col>
+            <Card className="p-2 wb-p-section__card">
+                <div className="d-flex justify-content-between align-items-center">
+                    <h3>Questions</h3>
+                    <Button onClick={showQuestionsSection} variant="link">Show All</Button>
+                </div>
+                <div className="mt-2">
+                    {
+                        questions.length > 0 ?
+                            questions.map(question => {
+                                return (
+                                    <div className="mt-2" key={question.id}>
+                                        <Question question={question} searchQuery="" showUserProfile={false} />
+                                    </div>
+                                );
+                            })
+                            :
+                            <div className="text-center py-4">
+                                <p className="text-secondary">You have not asked any questions</p>
+                            </div>
+                    }
+                    {
+                        isCurrentUser &&
+                        <div className="mt-3">
+                            <Button onClick={openDiscussAsk} className="w-100">Ask</Button>
+                        </div>
+                    }
+                </div>
+            </Card>
+        </Col>
+        :
+        <></>
+
     let badge = (() => {
         if (userDetails?.roles.includes("Moderator")) {
             return <Badge className="wb-p-details__avatar-badge" bg="secondary">Moderator</Badge>
@@ -223,6 +275,10 @@ const Profile = () => {
                         {
                             codesSectionVisible &&
                             <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
+                        }
+                        {
+                            questionsSectionVisible &&
+                            <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />
                         }
                         {
                             followListVisible == 1 &&
@@ -311,9 +367,12 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </Card>
-                            <Row className="mx-0 mt-2 row-cols-1 row-cols-lg-2 row-gap-2">
+                            <Row className="mt-2 row-cols-1 row-cols-md-2 row-gap-2">
                                 {
                                     codesSectionContent
+                                }
+                                {
+                                    questionSectionContent
                                 }
                             </Row>
                         </Container>

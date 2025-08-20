@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react"
 import {useApi} from "../../../context/apiCommunication"
+import { ICode } from "../../codes/components/Code";
 
 const useCodes = (userId: string, count: number, pageNum: number) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<any[]>([])
+    const [results, setResults] = useState<ICode[]>([])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const [hasNextPage, setHasNextPage] = useState(false)

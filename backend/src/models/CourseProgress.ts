@@ -38,9 +38,11 @@ courseProgressSchema.methods.getLastUnlockedLessonIndex = async function () {
         const lastCompletedLessonNode = await LessonNode.findById(this.lastLessonNodeId)
             .select("index")
             .populate("lessonId", "nodes index") as any;
-        lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
-            lastCompletedLessonNode.lessonId.index + 1 :
-            lastCompletedLessonNode.lessonId.index;
+        if (lastCompletedLessonNode) {
+            lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
+                lastCompletedLessonNode.lessonId.index + 1 :
+                lastCompletedLessonNode.lessonId.index;
+        }
     }
     return lastUnlockedLessonIndex;
 }
@@ -54,10 +56,13 @@ courseProgressSchema.methods.getLessonNodeInfo = async function (lessonNodeId: s
     let unlocked = false;
     let isLast = false;
 
-    if (this.lastLessonNodeId) {
-        const lastCompletedLessonNode = await LessonNode.findById(this.lastLessonNodeId)
+    let lastCompletedLessonNode = null;
+    if(this.lastLessonNodeId) {
+        lastCompletedLessonNode = await LessonNode.findById(this.lastLessonNodeId)
             .select("index")
             .populate("lessonId", "nodes index") as any;
+    }
+    if (lastCompletedLessonNode) {
         const lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
             lastCompletedLessonNode.lessonId.index + 1 :
             lastCompletedLessonNode.lessonId.index;

@@ -50,7 +50,7 @@ const sendMail = (to, subject, html) => __awaiter(void 0, void 0, void 0, functi
 });
 exports.sendMail = sendMail;
 const sendPasswordResetEmail = (userName, userEmail, userId, emailToken) => __awaiter(void 0, void 0, void 0, function* () {
-    const resetLink = `${confg_1.config.homeUrl}Users/Reset-Password?id=${userId}&token=${emailToken}`;
+    const resetLink = `${confg_1.config.allowedOrigins[0]}/Users/Reset-Password?id=${userId}&token=${emailToken}`;
     const html = `
         <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
@@ -69,7 +69,7 @@ const sendPasswordResetEmail = (userName, userEmail, userId, emailToken) => __aw
 });
 exports.sendPasswordResetEmail = sendPasswordResetEmail;
 const sendActivationEmail = (userName, userEmail, userId, emailToken) => __awaiter(void 0, void 0, void 0, function* () {
-    const activationLink = `${confg_1.config.homeUrl}Users/Activate?id=${userId}&token=${emailToken}`;
+    const activationLink = `${confg_1.config.allowedOrigins[0]}/Users/Activate?id=${userId}&token=${emailToken}`;
     const html = `
         <html>
             <body style="font-family: Arial, sans-serif; color: #333;">

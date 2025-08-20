@@ -1,4 +1,4 @@
-import { FaPencil, FaTrash } from "react-icons/fa6";
+import { FaPencil, FaTrash, FaArrowUp, FaArrowDown } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 
 interface ILesson {
@@ -22,25 +22,56 @@ interface LessonProps {
     courseCode: string;
     onEdit: (id: string, title: string) => void;
     onDelete: (id: string) => void;
+    onChangeIndex: (id: string, newIndex: number) => void;
+    isFirst: boolean;
+    isLast: boolean;
 }
 
-const Lesson = ({ lesson, courseCode, onEdit, onDelete }: LessonProps) => {
+const Lesson = ({ lesson, courseCode, onEdit, onDelete, onChangeIndex, isFirst, isLast }: LessonProps) => {
 
     const handleEdit = () => {
         onEdit(lesson.id, lesson.title);
-    }
+    };
 
     const handleDelete = () => {
         onDelete(lesson.id);
-    }
+    };
+
+    const handleMoveUp = () => {
+        if (!isFirst) {
+            onChangeIndex(lesson.id, lesson.index - 1);
+        }
+    };
+
+    const handleMoveDown = () => {
+        if (!isLast) {
+            onChangeIndex(lesson.id, lesson.index + 1);
+        }
+    };
 
     return (
-        <div className="border p-2 bg-white d-flex justify-content-between gap-3">
-            <div>
-                <b className="me-2">{lesson.index}.</b>
-                <Link to={"/Courses/Editor/" + courseCode + "/Lesson/" + lesson.id}>
-                    {lesson.title}
-                </Link>
+        <div className="border p-2 bg-white d-flex justify-content-between gap-3 align-items-center">
+            <div className="d-flex gap-2">
+                <span
+                    className={`wb-user-comment__options__item ${isFirst ? "text-muted" : ""}`}
+                    onClick={handleMoveUp}
+                    style={{ cursor: isFirst ? "not-allowed" : "pointer" }}
+                >
+                    <FaArrowUp />
+                </span>
+                <span
+                    className={`wb-user-comment__options__item ${isLast ? "text-muted" : ""}`}
+                    onClick={handleMoveDown}
+                    style={{ cursor: isLast ? "not-allowed" : "pointer" }}
+                >
+                    <FaArrowDown />
+                </span>
+                <div>
+                    <b className="me-1">{lesson.index}.</b>
+                    <Link to={"/Courses/Editor/" + courseCode + "/Lesson/" + lesson.id}>
+                        {lesson.title}
+                    </Link>
+                </div>
             </div>
             <div className="d-flex gap-2">
                 <span className="wb-user-comment__options__item" onClick={handleEdit}>
@@ -52,10 +83,10 @@ const Lesson = ({ lesson, courseCode, onEdit, onDelete }: LessonProps) => {
             </div>
         </div>
     );
-}
+};
 
 export type {
     ILesson
-}
+};
 
 export default Lesson;

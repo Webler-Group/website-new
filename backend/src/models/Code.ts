@@ -48,18 +48,37 @@ const codeSchema = new mongoose.Schema({
     hidden: {
         type: Boolean,
         default: false
-    }
-}, {
-    timestamps: true
+    },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
 });
 
-codeSchema.statics.deleteAndCleanup = async function(codeId: mongoose.Types.ObjectId) {
+// Add manual updatedAt
+codeSchema.add({
+    updatedAt: { type: Date, default: Date.now }
+});
+
+// Pre-save hook: only bump updatedAt when *content fields* change
+codeSchema.pre("save", function (next) {
+    if (
+        this.isModified("name") ||
+        this.isModified("source") ||
+        this.isModified("cssSource") ||
+        this.isModified("jsSource") ||
+        this.isModified("isPublic")
+    ) {
+        this.set("updatedAt", new Date());
+    }
+    next();
+});
+
+codeSchema.statics.deleteAndCleanup = async function (codeId: mongoose.Types.ObjectId) {
     await Post.deleteAndCleanup({ codeId: codeId, parentId: null });
     await Upvote.deleteMany({ parentId: codeId });
     await Code.deleteOne({ _id: codeId });
-}
+};
 
-declare interface ICode extends InferSchemaType<typeof codeSchema> {}
+declare interface ICode extends InferSchemaType<typeof codeSchema> { }
 
 interface CodeModel extends Model<ICode> {
     deleteAndCleanup(codeId: mongoose.Types.ObjectId): Promise<void>;

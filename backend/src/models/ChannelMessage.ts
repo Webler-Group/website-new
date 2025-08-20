@@ -3,6 +3,7 @@ import { getIO, uidRoom } from "../config/socketServer";
 import ChannelParticipant from "./ChannelParticipant";
 import User from "./User";
 import Channel from "./Channel";
+import PostAttachment from "./PostAttachment";
 
 const channelMessageSchema = new Schema({
     /*
@@ -37,12 +38,23 @@ const channelMessageSchema = new Schema({
     },
 }, { timestamps: true });
 
+channelMessageSchema.pre("save", async function(next) {
+    if (!this.isModified("content")) {
+        next();
+        return
+    }
+
+    await PostAttachment.updateAttachments(this.content, { channelMessage: this._id });
+});
+
 channelMessageSchema.post("save", async function() {
     await Channel.updateOne({ _id: this.channel }, { lastMessage: this._id });
     const io = getIO();
     if(io) {
         const user = await User.findById(this.user, "name avatarImage level roles").lean();
         if(!user) return;
+
+        const attachments = await PostAttachment.getByPostId({ channelMessage: this._id });
 
         const userIds = (await ChannelParticipant.find({ channel: this.channel }, "user").lean()).map(x => x.user);
         if(this._type == 3) {
@@ -58,7 +70,8 @@ channelMessageSchema.post("save", async function() {
             userId: user._id.toString(),
             userName: user.name,
             userAvatar: user.avatarImage,
-            viewed: false
+            viewed: false,
+            attachments
         });
     }
 });

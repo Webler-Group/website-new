@@ -15,6 +15,7 @@ import courseEditorRoutes from "./routes/courseEditorRoutes";
 import courseRoutes from "./routes/courseRoutes";
 import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
+import tagRoutes from "./routes/tagRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
@@ -43,6 +44,9 @@ async function main() {
 
     app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
     app.use(logger);
+
+    app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
+
     if (config.nodeEnv == "production") {
         app.use(cors(corsOptions));
     }
@@ -57,7 +61,7 @@ async function main() {
     app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
     app.use(`${apiPrefix}/Courses`, courseRoutes);
     app.use(`${apiPrefix}/Channels`, channelRoutes);
-    app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
+    app.use(`${apiPrefix}/Tag`, tagRoutes);
 
     app.all("*", (req, res) => {
         res.status(404).json({ message: "404 Not Found" });

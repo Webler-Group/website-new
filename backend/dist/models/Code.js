@@ -61,9 +61,24 @@ const codeSchema = new mongoose_1.default.Schema({
     hidden: {
         type: Boolean,
         default: false
+    },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now }
+});
+// Add manual updatedAt
+codeSchema.add({
+    updatedAt: { type: Date, default: Date.now }
+});
+// Pre-save hook: only bump updatedAt when *content fields* change
+codeSchema.pre("save", function (next) {
+    if (this.isModified("name") ||
+        this.isModified("source") ||
+        this.isModified("cssSource") ||
+        this.isModified("jsSource") ||
+        this.isModified("isPublic")) {
+        this.set("updatedAt", new Date());
     }
-}, {
-    timestamps: true
+    next();
 });
 codeSchema.statics.deleteAndCleanup = function (codeId) {
     return __awaiter(this, void 0, void 0, function* () {

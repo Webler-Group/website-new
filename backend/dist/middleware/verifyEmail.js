@@ -16,7 +16,7 @@ const User_1 = __importDefault(require("../models/User"));
 const verifyEmail = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     if (!((_a = (yield User_1.default.findById(req.userId))) === null || _a === void 0 ? void 0 : _a.emailVerified)) {
-        return res.status(403).json({ message: "Verify your email address" });
+        return res.status(403).json({ message: "Please verify your email address in your profile settings (Email section)." });
     }
     next();
 });

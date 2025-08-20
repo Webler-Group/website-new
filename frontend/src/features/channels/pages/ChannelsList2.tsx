@@ -135,10 +135,10 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onE
         <>
             <Modal show={createGroupModalVisible} onHide={closeCreateGroupModal} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Save code</Modal.Title>
+                    <Modal.Title>Create group</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <p>How would you like to name your code?</p>
+                    <p>How would you like to name your group?</p>
                     <FormControl className="mt-2" type="text" placeholder="Group title" value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} />
                 </Modal.Body>
                 <Modal.Footer>
