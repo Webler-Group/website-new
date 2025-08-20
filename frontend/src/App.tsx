@@ -39,6 +39,7 @@ import { languagesInfo } from './data/compilerLanguages';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
 import ChannelsPage from './features/channels/pages/ChannelsPage';
+import TagHome from './features/tags/pages/TagHome';
 
 
 function App() {
@@ -152,12 +153,14 @@ function App() {
       </Route>
 
       <Route path="Channels">
-
         <Route element={<RequireAuth allowedRoles={allRoles} />}>
           <Route index element={<ChannelsPage />} />
           <Route path=":channelId" element={<ChannelsPage />} />
         </Route>
+      </Route>
 
+      <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+        <Route path="Tags" element={<TagHome />} />
       </Route>
 
       <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
