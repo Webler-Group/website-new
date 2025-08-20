@@ -19,6 +19,7 @@ const Upvote_1 = __importDefault(require("../models/Upvote"));
 const templates_1 = __importDefault(require("../data/templates"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const socketServer_1 = require("../config/socketServer");
+const regex_1 = require("../utils/regex");
 const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { name, language, source, cssSource, jsSource } = req.body;
     const currentUserId = req.userId;
@@ -67,11 +68,13 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
+    const safeQuery = (0, regex_1.escapeRegex)(searchQuery.trim());
+    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
     let dbQuery = Code_1.default.find({ hidden: false });
-    if (searchQuery.trim().length > 2) {
+    if (searchQuery.trim().length > 0) {
         dbQuery.where({
             $or: [
-                { name: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") }
+                { name: searchRegex }
             ]
         });
     }

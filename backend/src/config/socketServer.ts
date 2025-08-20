@@ -1,14 +1,14 @@
 import { Server, Socket } from "socket.io";
 import http from "http";
-import allowedOrigins from "./allowedOrigins";
 import verifyJWTWebSocket from "../middleware/verifyJWTWebSocket";
+import { config } from "../confg";
 
 let io: Server;
 
 const init = (server: http.Server, registerHandlers: (socket: Socket) => void) => {
     io = new Server(server, {
         cors: {
-            origin: allowedOrigins,
+            origin: config.allowedOrigins,
             methods: ["POST", "GET"],
             credentials: true
         }

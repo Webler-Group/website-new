@@ -1,106 +1,269 @@
-import { useState } from 'react';
-import { Badge, Button, FormControl } from 'react-bootstrap';
-import { FaPlus } from 'react-icons/fa6';
+import { useEffect, useRef, useState } from 'react';
+import { Badge, FormControl } from 'react-bootstrap';
+import { FaTimes } from 'react-icons/fa';
+import { useApi } from '../context/apiCommunication';
 
-interface InputTagsProps {
-    values: string[];
-    setValues: (callback: (data: string[]) => string[]) => void;
-    placeholder: string;
-    validTags: string[];
-    setValidTags: (callback: (data: string[]) => string[]) => void;
-}
-
-interface IWeblerBadgeProps {
+interface WeblerBadgeProps {
     name: string,
     state: "neutral" | "cancellable" | "followable";
     className?: string;
     onClick?: () => void;
 }
 
-
-export const WeblerBadge = ({ name, state, className, onClick }: IWeblerBadgeProps) => {
-
+export const WeblerBadge = ({ name, state, className, onClick }: WeblerBadgeProps) => {
     const callback = () => {
-        if(typeof onClick == "function") onClick();
-    }
-    const _cls = 'bg-secondary-subtle text-secondary ' + className;
+        if (typeof onClick == "function") onClick();
+    };
+    const _cls = 'bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-1 ' + (className ?? "");
     return (
-        <Badge className={_cls} style={{ cursor: "pointer" }}>
-            {name}
+        <Badge className={_cls} style={{ cursor: "default", padding: "0.4rem 0.6rem" }}>
+            <span>{name}</span>
             {
-                state == "cancellable" ?
-                    <button className="ms-2 text-danger fw-bold" onClick={callback} style={{ outline: "none", background: "none", border: "none" }}>&times;</button>
-                : ""
+                state === "cancellable" &&
+                <button
+                    className="d-flex align-items-center justify-content-center text-danger fw-bold"
+                    onClick={callback}
+                    style={{
+                        outline: "none",
+                        background: "none",
+                        border: "none",
+                        fontSize: "1.1rem",
+                        lineHeight: 1,
+                        cursor: "pointer"
+                    }}
+                >
+                    <FaTimes />
+                </button>
+
             }
         </Badge>
-    )
+    );
+};
+
+interface TagSearchProps {
+    query: string;
+    onSelect: (tag: string) => void;
+    onChange?: (value: string) => void;
+    placeholder?: string;
+    maxWidthPx?: number;
 }
 
+export const TagSearch = ({
+    query,
+    onSelect,
+    onChange,
+    placeholder = "Search...",
+    maxWidthPx = 360,
+}: TagSearchProps) => {
+    const { sendJsonRequest } = useApi();
+    const [validTags, setValidTags] = useState<string[]>([]);
+    const [input, setInput] = useState(query ?? "");
+    const [filtered, setFiltered] = useState<string[]>([]);
+    const [isFocused, setIsFocused] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
 
-const InputTags = ({ values, setValues, placeholder, validTags, setValidTags }: InputTagsProps) => {
+    useEffect(() => {
+        getValidTags();
+    }, []);
 
+    useEffect(() => {
+        setInput(query ?? "");
+        setFiltered(filterBy(query ?? "", validTags));
+    }, [query, validTags]);
+
+    const getValidTags = async () => {
+        const result = await sendJsonRequest(`/Tag`, "POST");
+        if (result) {
+            const resArr = result.map((t: any) => t.name);
+            setValidTags(resArr);
+        }
+    };
+
+    const filterBy = (val: string, pool: string[]) => {
+        const trimmed = val.trim();
+        if (trimmed.length === 0) {
+            return pool.slice(0, 10);
+        } else {
+            return pool
+                .filter((i) => i.toLowerCase().startsWith(trimmed.toLowerCase()) && i.toLowerCase() !== trimmed.toLowerCase())
+                .slice(0, 10);
+        }
+    };
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+        setInput(val);
+        setFiltered(filterBy(val, validTags));
+        onChange?.(val);
+    };
+
+    const handleSelectTag = (tagName: string) => {
+        setInput(tagName);
+        setFiltered([]);
+        onSelect(tagName);
+        setIsFocused(false);
+    };
+
+    return (
+        <div className="position-relative" style={{ width: "100%" }} ref={containerRef}>
+            <FormControl
+                type="search"
+                size="sm"
+                placeholder={placeholder}
+                value={input}
+                onChange={handleInputChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+                style={{ width: "100%" }}
+                aria-autocomplete="list"
+                aria-expanded={filtered.length > 0}
+            />
+            {isFocused && filtered.length > 0 && input.trim().length > 0 && (
+                <ul
+                    className="position-absolute list-unstyled m-0 p-1"
+                    style={{
+                        top: "100%",
+                        left: 0,
+                        zIndex: 1000,
+                        background: "white",
+                        border: "1px solid #ccc",
+                        borderRadius: "0.25rem",
+                        maxHeight: "150px",
+                        overflowY: "auto",
+                        width: `min(100%, ${maxWidthPx}px)`,
+                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                    }}
+                    role="listbox"
+                >
+                    {filtered.map((tag) => (
+                        <li
+                            key={`filtered-tag-${tag}`}
+                            style={{ cursor: "pointer", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
+                            onClick={() => handleSelectTag(tag)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            className="hover-bg-light"
+                            role="option"
+                            aria-selected={false}
+                        >
+                            {tag}
+                        </li>
+                    ))}
+                </ul>
+            )}
+        </div>
+    );
+};
+
+interface InputTagsProps {
+    values: string[];
+    setValues: (callback: (data: string[]) => string[]) => void;
+    placeholder: string;
+}
+
+const InputTags = ({ values, setValues, placeholder }: InputTagsProps) => {
     const [input, setInput] = useState("");
     const [filtered, setFiltered] = useState<string[]>([]);
+    const [validTags, setValidTags] = useState<string[]>([]);
+    const { sendJsonRequest } = useApi();
+
+    useEffect(() => {
+        getValidTags();
+    }, []);
+
+    const getValidTags = async () => {
+        const result = await sendJsonRequest(`/Tag`, "POST");
+        if (result) {
+            const resArr = result.map((tag: any) => tag.name);
+            setValidTags(resArr);
+        }
+    }
 
     const handleInputChange = (e: any) => {
-        setInput(e.target.value.toLowerCase().trim());
-        setFiltered(validTags.filter(i => i.startsWith(input)).splice(0, 3));
-    }
+        const val = e.target.value.toLowerCase().trim();
+        setInput(val);
 
-    // add tag to list
-    const appendTag = (tagName: string) => {
-        setValues(values=> values.includes(tagName) ? [...values]: [...values, tagName]);
-        setInput("");
-    }
-
-    const handleSubmit = () => {
-        if (input.length === 0 || values.length >= 10 || !validTags.includes(input)) {
-            setInput("");
-            return
+        if (val.length > 0) {
+            setFiltered(
+                validTags
+                    .filter(i => i.startsWith(val) && !values.includes(i))
+                    .slice(0, 10)
+            );
+        } else {
+            setFiltered([]);
         }
-        appendTag(input);
-    }
+    };
+
+    const appendTag = (tagName: string) => {
+        if (values.length >= 10) return;
+        setValues(values => values.includes(tagName) ? [...values] : [...values, tagName]);
+        setInput("");
+        setFiltered([]);
+    };
 
     let content = values.map(tagName => {
         const handleRemove = () => {
-            setValues(values => values.filter(val => val !== tagName))
-        }
+            setValues(values => values.filter(val => val !== tagName));
+        };
 
         return (
             <WeblerBadge name={tagName} state="cancellable" onClick={handleRemove} key={tagName} />
-        )
-    });
-
-    const filteredContent = filtered.map(tagName => {
-        return (
-            <li key={"filtered-tag-"+tagName} style={{ cursor: "pointer" }} onClick={() => appendTag(tagName)}>
-                {tagName}
-            </li>
-        )
+        );
     });
 
     return (
-        <div className="d-flex flex-wrap gap-1">
+        <div
+            className="d-flex flex-wrap align-items-center position-relative"
+            style={{ minWidth: "200px", gap: "0.25rem" }}
+        >
             {content}
-            <div className="d-flex gap-1">
-                <FormControl
-                    type="text"
-                    size="sm"
-                    style={{ width: "80px" }}
-                    value={input} onChange={e => handleInputChange(e) }
-                    placeholder={placeholder}
-                />
-                <Button size="sm" onClick={handleSubmit}>
-                    <FaPlus />
-                </Button>
-            </div>
-            {
-                filtered.length > 0 && input.length > 0 ? 
-                (<ul className="d-block bg-success-subtle"> {filteredContent} </ul>) 
-                : ""
-            }
-        </div>
-    )
-}
 
-export default InputTags
+            {values.length < 10 && (
+                <div className="d-flex position-relative">
+                    <FormControl
+                        type="text"
+                        size="sm"
+                        style={{ width: "120px", marginLeft: values.length > 0 ? "0.25rem" : "0" }}
+                        value={input}
+                        onChange={e => handleInputChange(e)}
+                        placeholder={placeholder}
+                    />
+                    {filtered.length > 0 && input.length > 0 && (
+                        <ul
+                            className="position-absolute list-unstyled m-0 p-1"
+                            style={{
+                                top: "100%",
+                                left: 0,
+                                zIndex: 1000,
+                                background: "white",
+                                border: "1px solid #ccc",
+                                borderRadius: "0.25rem",
+                                maxHeight: "150px",
+                                overflowY: "auto",
+                                width: "150px",
+                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
+                            }}
+                        >
+                            {filtered.map(tagName => (
+                                <li
+                                    key={"filtered-tag-" + tagName}
+                                    style={{
+                                        cursor: "pointer",
+                                        padding: "0.25rem 0.5rem",
+                                        borderRadius: "0.25rem"
+                                    }}
+                                    onClick={() => appendTag(tagName)}
+                                    onMouseDown={e => e.preventDefault()}
+                                    className="hover-bg-light"
+                                >
+                                    {tagName}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default InputTags;

@@ -20,9 +20,8 @@ const tagSchema = new mongoose_1.default.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        maxLength: 20,
-        minLength: 1,
-        validate: [(val) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, 'Tag can only contain words separated by "-"']
+        maxLength: 64,
+        minLength: 1
     }
 });
 tagSchema.statics.getOrCreateTagByName = function (tagName) {

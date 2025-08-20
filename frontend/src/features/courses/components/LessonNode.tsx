@@ -26,6 +26,10 @@ interface LessonNodeProps {
     onContinue: (id: string) => void;
 }
 
+const allowedUrls = [
+    /^https?:\/\/.+/i
+];
+
 const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
     const [node, setNode] = useState<ILessonNode | null>(null);
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
@@ -138,14 +142,14 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
         content = (
             <Form className="h-100 d-flex flex-column">
                 <div className="wb-lesson-node-question p-2 flex-grow-1">
-                    <MarkdownRenderer content={node.text!} />
+                    <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
 
                     {node.type === 2 || node.type === 3 ? (
                         renderAnswers()
                     ) : node.type === 4 ? (
                         <div className="d-flex justify-content-center">
                             <FormControl
-                            className={"wb-course-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
+                                className={"wb-course-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "120px" }}
                                 value={textAnswer}
                                 readOnly={isCorrect !== null}

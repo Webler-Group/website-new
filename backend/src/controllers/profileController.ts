@@ -13,6 +13,7 @@ import { config } from "../confg";
 import path from "path";
 import fs from "fs";
 import { v4 as uuid } from "uuid";
+import Post from "../models/Post";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 1024 * 1024 },
@@ -69,8 +70,19 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ updatedAt: "desc" })
 
     const codes = await codesQuery
-        .limit(10)
-        .select("-source -cssSource -jsSource") as any[]
+        .limit(5)
+        .select("-source -cssSource -jsSource");
+
+    const questions = await Post.find({ user: userId, _type: 1 })
+        .sort({ createdAt: "desc" })
+        .limit(5)
+        .populate<{ tags: any[] }>("tags", "name")
+        .select("-message");
+
+    const answers = await Post.find({ user: userId, _type: 2 })
+        .sort({ createdAt: "desc" })
+        .limit(5)
+        .select("-message");
 
     res.json({
         userDetails: {
@@ -98,6 +110,21 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 votes: x.votes,
                 isPublic: x.isPublic,
                 language: x.language
+            })),
+            questions: questions.map(x => ({
+                id: x._id,
+                title: x.title,
+                date: x.createdAt,
+                answers: x.answers,
+                votes: x.votes,
+                tags: x.tags.map(x => x.name)
+            })),
+            answers: answers.map(x => ({
+                id: x._id,
+                title: x.title,
+                date: x.createdAt,
+                answers: x.answers,
+                votes: x.votes
             }))
         }
     });

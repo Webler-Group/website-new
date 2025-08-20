@@ -45,10 +45,16 @@ const useInvites = (count: number, fromDate: Date | null) => {
             setResults(prev => [data, ...prev]);
         }
 
+        const handleInviteCanceled = (data: any) => {
+            setResults(prev => prev.filter(x => x.id != data.inviteId));
+        }
+
         socket.on("channels:new_invite", handleNewInvite);
+        socket.on("channels:invite_canceled", handleInviteCanceled);
 
         return () => {
             socket.off("channels:new_invite", handleNewInvite);
+            socket.off("channels:invite_canceled", handleInviteCanceled);
         };
     }, [socket]);
 

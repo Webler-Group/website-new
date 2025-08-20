@@ -477,6 +477,43 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 });
 
+const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { lessonId, newIndex } = req.body;
+
+    const lesson = await CourseLesson.findById(lessonId);
+    if (!lesson) {
+        res.status(404).json({ message: "Lesson not found" });
+        return;
+    }
+
+    const otherLesson = await CourseLesson.findOne({ course: lesson.course, index: newIndex });
+    if (!otherLesson) {
+        res.status(404).json({ message: "New index is not valid" });
+        return;
+    }
+
+    otherLesson.index = lesson.index;
+    lesson.index = newIndex;
+
+    try {
+        await lesson.save();
+        await otherLesson.save();
+
+        res.json({
+            success: true,
+            data: {
+                index: newIndex
+            }
+        });
+    } catch(err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+});
+
 const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId, newIndex } = req.body;
 
@@ -532,6 +569,7 @@ const courseEditorController = {
     deleteLessonNode,
     editLessonNode,
     changeLessonNodeIndex,
+    changeLessonIndex,
     coverImageUpload
 };
 

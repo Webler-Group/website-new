@@ -34,11 +34,11 @@ const Codes = ({ MainPage }: CodesProps) => {
 
     return (
         <Container>
-            <div className="wb-discuss-questions-list-page d-block d-lg-flex mt-3 gap-3">
+            <div className="wb-discuss-questions-list-page d-block d-lg-flex mt-2 gap-3">
                 <div className="flex-grow-1">{MainPage}</div>
                 <div style={{ minWidth: "300px" }}>
                     <h2>Hot today</h2>
-                    <div className="mt-4">
+                    <div className="mt-2">
                         {
                             codes.map(code => {
                                 return (

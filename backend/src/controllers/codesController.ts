@@ -7,6 +7,7 @@ import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
 import { devRoom, getIO } from "../config/socketServer";
 import { Socket } from "socket.io";
+import { escapeRegex } from "../utils/regex";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -64,12 +65,15 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
+    const safeQuery = escapeRegex(searchQuery.trim());
+    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
+
     let dbQuery = Code.find({ hidden: false })
 
-    if (searchQuery.trim().length > 2) {
+    if (searchQuery.trim().length > 0) {
         dbQuery.where({
             $or: [
-                { name: new RegExp(`(^|\\b)${searchQuery.trim()}`, "i") }
+                { name: searchRegex }
             ]
         })
     }

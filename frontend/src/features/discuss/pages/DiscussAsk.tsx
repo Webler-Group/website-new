@@ -1,5 +1,5 @@
-import { FormEvent, useEffect, useState } from 'react'
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
+import { useEffect, useState } from 'react'
+import { Alert, Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
 import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
 import { useNavigate } from 'react-router-dom';
@@ -15,35 +15,19 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
     const [title, setTitle] = useState("");
     const [message, setMessage] = useState("");
     const [tags, setTags] = useState<string[]>([]);
-    const [validTags, setValidTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
 
     useEffect(() => {
-        getValidTags();
-    });
-
-    if (questionId) {
-        useEffect(() => {
+        if (questionId) {
             getQuestion();
-        }, [])
-    }
-
-    const getValidTags = async() => {
-        const result = await sendJsonRequest(`/Tag`, "POST");
-        const resArr = [];
-        if(result) {
-            for(const tag of result) resArr.push(tag.name);
-            setValidTags(resArr);
         }
-    }
+    }, [questionId]);
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
-            questionId
-        });
+        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", { questionId });
         if (result && result.question) {
             setTitle(result.question.title);
             setMessage(result.question.message);
@@ -52,41 +36,36 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         setLoading(false);
     }
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault()
-
+    const handleSubmit = async () => {
         setLoading(true);
-        questionId ?
-            await editQuestion()
-            :
-            await createQuestion();
-        setLoading(false);
+        setError("");
 
+        if (questionId) {
+            await editQuestion();
+        } else {
+            await createQuestion();
+        }
+
+        setLoading(false);
     }
 
     const createQuestion = async () => {
-        setError("");
         const result = await sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
         if (result && result.question) {
             navigate("/Discuss");
-        }
-        else {
+        } else {
             setError(result.error ? result.error.message : result.message);
         }
     }
 
     const editQuestion = async () => {
-        setError("");
         const result = await sendJsonRequest("/Discussion/EditQuestion", "PUT", { questionId, title, message, tags });
         if (result && result.success) {
             navigate("/Discuss/" + questionId);
-        }
-        else {
+        } else {
             setError(result.error ? result.error.message : result.message);
         }
     }
-
-
 
     const closeDeleteModal = () => {
         setDeleteModalVisible(false);
@@ -97,13 +76,14 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId });
         if (result && result.success) {
             closeDeleteModal();
-            navigate("/Discuss")
-        }
-        else {
+            navigate("/Discuss");
+        } else {
             setError(result.error ? result.error.message : result.message);
         }
         setLoading(false);
     }
+
+    let disabled = loading || title.trim().length == 0 || message.trim().length == 0 || tags.length == 0;
 
     return (
         <>
@@ -117,44 +97,94 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
                     <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+
             {questionId === null && <h2 className="mb-4">Ask the community a question</h2>}
-            <Form onSubmit={handleSubmit}>
-                {error && <Alert variant="danger">{error}</Alert>}
+
+            <div className='small'>
+                {error && <Alert variant="danger" dismissible>{error}</Alert>}
+
                 <FormGroup>
                     <FormLabel>Your question</FormLabel>
-                    <FormControl placeholder="What would you like to know?" type="text" required value={title} onChange={(e) => setTitle(e.target.value)} />
-                    <p className="text-secondary">Tip: write as if asking a friend, being as specific as possible</p>
+                    <FormControl
+                        size='sm'
+                        placeholder="What would you like to know?"
+                        type="text"
+                        required
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                    />
+                    <p className="text-secondary">
+                        Tip: write as if asking a friend, being as specific as possible
+                    </p>
                 </FormGroup>
+
                 <FormGroup>
                     <FormLabel>Description</FormLabel>
-                    <FormControl placeholder="Include as much detail as possible to get the most relevant answers." as="textarea" rows={8} maxLength={4096} required value={message} onChange={(e) => setMessage(e.target.value)} />
+                    <FormControl
+                        size='sm'
+                        placeholder="Include as much detail as possible to get the most relevant answers."
+                        as="textarea"
+                        rows={8}
+                        maxLength={4096}
+                        required
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                    />
                 </FormGroup>
+
                 <FormGroup>
                     <FormLabel>Tags</FormLabel>
-                    <InputTags values={tags} setValues={setTags} validTags={validTags} setValidTags={setValidTags} placeholder="Add tag..." />
-                    {
-                        tags.length <= 9 ?
-                            <p className="text-secondary">You can add up to 10 tags</p>
-                        : <p className="text-danger">Tag limit exceeded</p>
-                    }
+                    <InputTags
+                        values={tags}
+                        setValues={setTags}
+                        placeholder="Add tag..."
+                    />
                 </FormGroup>
-                <div className="d-flex justify-content-end">
+
+                <div className="mt-2 d-flex justify-content-end">
                     <LinkContainer to={questionId ? "/Discuss/" + questionId : "/Discuss"}>
-                        <Button type="button" variant="secondary" disabled={loading}>Cancel</Button>
+                        <Button size='sm' type="button" variant="secondary" disabled={loading}>
+                            Cancel
+                        </Button>
                     </LinkContainer>
-                    {
-                        questionId ?
-                            <>
-                                <Button variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                <Button variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
-                            </>
-                            :
-                            <>
-                                <Button className="ms-2" variant="primary" type="submit" disabled={loading}>Post question</Button>
-                            </>
-                    }
+
+                    {questionId ? (
+                        <>
+                            <Button
+                                size='sm'
+                                variant="secondary"
+                                className="ms-2"
+                                type="button"
+                                onClick={() => setDeleteModalVisible(true)}
+                                disabled={loading}
+                            >
+                                Delete
+                            </Button>
+                            <Button
+                                size='sm'
+                                variant="primary"
+                                className="ms-2"
+                                type="button"
+                                onClick={handleSubmit}
+                                disabled={disabled}
+                            >
+                                Save changes
+                            </Button>
+                        </>
+                    ) : (
+                        <Button
+                            size='sm'
+                            className="ms-2"
+                            variant="primary"
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={disabled}
+                        >
+                            Post question
+                        </Button>
+                    )}
                 </div>
-            </Form>
+            </div>
         </>
     )
 }

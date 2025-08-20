@@ -7,7 +7,6 @@ const config = {
     rootDir: process.env.ROOT_DIR as string,
 
     port: Number(process.env.PORT) || 5500,
-    homeUrl: process.env.HOME_URL as string,
     domainName: process.env.DOMAIN_NAME as string,
 
     databaseUri: process.env.DATABASE_URI as string,
@@ -29,12 +28,21 @@ const config = {
     emailPort: (process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined) as number,
     emailUser: process.env.EMAIL_USER as string,
     emailPassword: process.env.EMAIL_PASSWORD as string,
-    emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined) as boolean
+    emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined) as boolean,
+
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(";") as string[]
 };
 
+const required = config.nodeEnv === "development" ? 
+    ["rootDir", "port", "allowedOrigins", "domainName", "databaseUri", "refreshTokenSecret", "accessTokenSecret", "adminEmail", "adminPassword", "logDir"] :
+    ["rootDir", "port", "allowedOrigins", "domainName", "databaseUri", "refreshTokenSecret", "accessTokenSecret", "adminEmail", "adminPassword", "logDir", "emailTokenSecret", "dumpDir", "emailHost", "emailPort", "emailUser", "emailPassword", "emailSecure"]
+
 for(let [k, v] of Object.entries(config)) {
-    if(typeof v === "undefined") {
-        console.warn(`Config: Varible ${k} is not set`);
+    if(v !== undefined) continue;
+    if(k in required) {
+        throw new Error(`Environment varible ${k} is required but missing`);
+    } else {
+        console.warn(`Environment varible ${k} is not set`);
     }
 }
 

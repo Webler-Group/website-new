@@ -10,6 +10,7 @@ import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import allowedUrls from "../../../data/discussAllowedUrls";
 
 interface IAnswer {
     id: string;
@@ -88,7 +89,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         }
                     </div>
                     <div className="wb-discuss-question__description">
-                        <MarkdownRenderer content={answer.message} />
+                        <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
                     </div>
                     <div className="mt-2">
                         {

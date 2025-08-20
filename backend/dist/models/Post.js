@@ -18,7 +18,6 @@ const Code_1 = __importDefault(require("./Code"));
 const PostFollowing_1 = __importDefault(require("./PostFollowing"));
 const Notification_1 = __importDefault(require("./Notification"));
 const PostAttachment_1 = __importDefault(require("./PostAttachment"));
-const confg_1 = require("../confg");
 const postSchema = new mongoose_1.default.Schema({
     /*
     * 1 - question
@@ -83,66 +82,9 @@ postSchema.pre("save", function (next) {
     return __awaiter(this, void 0, void 0, function* () {
         if (!this.isModified("message")) {
             next();
+            return;
         }
-        const currentAttachments = yield PostAttachment_1.default
-            .find({ postId: this._id })
-            .select("_type codeId questionId");
-        const newAttachmentIds = [];
-        const pattern = new RegExp(confg_1.config.homeUrl + "([\\w\-]+)\/([\\w\-]+)", "gi");
-        const matches = this.message.matchAll(pattern);
-        for (let match of matches) {
-            let attachment = null;
-            switch (match[1]) {
-                case "Compiler-Playground": {
-                    const codeId = match[2];
-                    try {
-                        const code = yield Code_1.default.findById(codeId);
-                        if (!code) {
-                            continue;
-                        }
-                        attachment = currentAttachments.find(x => x.code && x.code.toString() === codeId);
-                        if (!attachment) {
-                            attachment = yield PostAttachment_1.default.create({
-                                postId: this._id,
-                                _type: 1,
-                                code: codeId,
-                                user: code.user
-                            });
-                        }
-                    }
-                    catch (_a) { }
-                    break;
-                }
-                case "Discuss": {
-                    const questionId = match[2];
-                    try {
-                        const question = yield Post.findById(questionId);
-                        if (!question) {
-                            continue;
-                        }
-                        attachment = currentAttachments.find(x => x.question && x.question.toString() === questionId);
-                        if (!attachment) {
-                            attachment = yield PostAttachment_1.default.create({
-                                postId: this._id,
-                                _type: 2,
-                                question: questionId,
-                                user: question.user
-                            });
-                        }
-                    }
-                    catch (_b) { }
-                    break;
-                }
-            }
-            if (attachment) {
-                newAttachmentIds.push(attachment._id);
-            }
-        }
-        const idsToDelete = currentAttachments.map(x => x._id)
-            .filter(id => !newAttachmentIds.includes(id));
-        yield PostAttachment_1.default.deleteMany({
-            _id: { $in: idsToDelete }
-        });
+        yield PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
     });
 });
 postSchema.statics.deleteAndCleanup = function (filter) {

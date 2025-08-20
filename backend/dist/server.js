@@ -29,6 +29,7 @@ const courseEditorRoutes_1 = __importDefault(require("./routes/courseEditorRoute
 const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
 const channelsRoutes_1 = __importDefault(require("./routes/channelsRoutes"));
 const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
+const tagRoutes_1 = __importDefault(require("./routes/tagRoutes"));
 const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
@@ -64,6 +65,7 @@ function main() {
         app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
         app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
         app.use(`${apiPrefix}/Sitemap`, sitemapRoutes_1.default);
+        app.use(`${apiPrefix}/Tag`, tagRoutes_1.default);
         app.all("*", (req, res) => {
             res.status(404).json({ message: "404 Not Found" });
         });

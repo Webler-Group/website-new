@@ -37,7 +37,7 @@ const sendMail = async (to: string[] | string, subject: string, html: string): P
 }
 
 const sendPasswordResetEmail = async (userName: string, userEmail: string, userId: string, emailToken: string) => {
-    const resetLink = `${config.homeUrl}Users/Reset-Password?id=${userId}&token=${emailToken}`;
+    const resetLink = `${config.allowedOrigins[0]}/Users/Reset-Password?id=${userId}&token=${emailToken}`;
     
     const html = `
         <html>
@@ -58,7 +58,7 @@ const sendPasswordResetEmail = async (userName: string, userEmail: string, userI
 }
 
 const sendActivationEmail = async (userName: string, userEmail: string, userId: string, emailToken: string) => {
-    const activationLink = `${config.homeUrl}Users/Activate?id=${userId}&token=${emailToken}`;
+    const activationLink = `${config.allowedOrigins[0]}/Users/Activate?id=${userId}&token=${emailToken}`;
 
     const html = `
         <html>

@@ -3,7 +3,7 @@ import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import React from 'react';
-import { FaLock } from 'react-icons/fa6';
+import { FaComment, FaLock } from 'react-icons/fa6';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import { compilerLanguages, languagesInfo } from '../../../data/compilerLanguages';
 
@@ -33,7 +33,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
     const match = code.name!.match(regex);
 
     let title;
-    if (searchQuery.trim().length > 2 && match && match.index !== undefined) {
+    if (searchQuery.trim().length > 0 && match && match.index !== undefined) {
         const start = match.index;
         const end = start + match[0].length;
 
@@ -59,10 +59,14 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                     <Link to={"/Compiler-Playground/" + code.id}>
                         <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
                     </Link>
-                    <div className="d-flex small mt-3 align-items-center gap-2">
+                    <div className="d-flex small mt-3 align-items-center gap-3">
                         <div className="d-flex align-items-center">
                             <FaThumbsUp />
-                            <span className="ms-2">{code.votes} Votes</span>
+                            <span className="ms-1">{code.votes}</span>
+                        </div>
+                        <div className="d-flex align-items-center">
+                            <FaComment />
+                            <span className="ms-1">{code.comments}</span>
                         </div>
                         {
                             showUserProfile === false &&
