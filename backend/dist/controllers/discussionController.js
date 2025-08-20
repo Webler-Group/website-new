@@ -21,7 +21,7 @@ const PostFollowing_1 = __importDefault(require("../models/PostFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
-const regex_1 = require("../utils/regex");
+const regexUtils_1 = require("../utils/regexUtils");
 const createQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -79,7 +79,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const safeQuery = (0, regex_1.escapeRegex)(searchQuery.trim());
+    const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
     const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
     let pipeline = [
         { $match: { _type: 1, hidden: false } },

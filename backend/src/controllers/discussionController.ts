@@ -9,7 +9,7 @@ import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
-import { escapeRegex } from "../utils/regex";
+import { escapeRegex } from "../utils/regexUtils";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;

@@ -7,7 +7,7 @@ import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
 import { devRoom, getIO } from "../config/socketServer";
 import { Socket } from "socket.io";
-import { escapeRegex } from "../utils/regex";
+import { escapeRegex } from "../utils/regexUtils";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
