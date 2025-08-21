@@ -202,10 +202,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             return;
         }
 
-
-        // Validate file size (max 1 MB)
-        if (avatarImageFile.size > 2 * 1024 * 1024) {
-            setAvatarMessage([false, "File size must be less than or equal to 2 MB."]);
+        if (avatarImageFile.size > 10 * 1024 * 1024) {
+            setAvatarMessage([false, "File size must be less than or equal to 10 MB."]);
             return;
         }
 

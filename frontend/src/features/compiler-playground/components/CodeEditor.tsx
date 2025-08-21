@@ -73,6 +73,9 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                                                     paddingBottom: tabHeight
                                                 }
                                             }),
+                                            EditorView.scrollMargins.of(() => ({
+                                                bottom: 64
+                                            })),
                                             EditorView.updateListener.of((update) => {
                                                 // Only trigger scroll if selection changed (user moved cursor)
                                                 if (update.selectionSet) {
