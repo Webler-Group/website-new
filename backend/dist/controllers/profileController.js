@@ -527,7 +527,6 @@ const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __await
 }));
 const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
-    console.log(1);
     if (!req.file) {
         res.status(400).json({
             success: false,
@@ -535,30 +534,26 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
         });
         return;
     }
-    console.log(2);
     const user = yield User_1.default.findById(currentUserId);
     if (!user) {
         fs_1.default.unlinkSync(req.file.path);
         res.status(404).json({ message: "User not found" });
         return;
     }
-    console.log(3);
     try {
-        const compressedBuffer = yield (0, fileUtils_1.compressImageToSize)(req.file.path, req.file.mimetype, 1 * 1024 * 1024);
-        console.log(4);
+        const compressedBuffer = yield (0, fileUtils_1.compressAvatar)({
+            inputPath: req.file.path,
+        });
         // Overwrite original file
         fs_1.default.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
-        console.log(5);
         if (user.avatarImage) {
             const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
             if (fs_1.default.existsSync(oldPath)) {
                 fs_1.default.unlinkSync(oldPath);
             }
         }
-        console.log(6);
         user.avatarImage = req.file.filename;
         yield user.save();
-        console.log(7);
         res.json({
             success: true,
             data: {

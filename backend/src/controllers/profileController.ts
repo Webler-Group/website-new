@@ -14,7 +14,7 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
-import { compressImageToSize } from "../utils/fileUtils";
+import { compressAvatar } from "../utils/fileUtils";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -631,8 +631,6 @@ const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
-    console.log(1);
-
     if (!req.file) {
         res.status(400).json({
             success: false,
@@ -640,8 +638,6 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         });
         return;
     }
-
-    console.log(2);
 
     const user = await User.findById(currentUserId);
     if (!user) {
@@ -651,18 +647,14 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         return;
     }
 
-    console.log(3);
-
     try {
 
-        const compressedBuffer = await compressImageToSize(req.file.path, req.file.mimetype, 1 * 1024 * 1024);
-
-        console.log(4);
+        const compressedBuffer = await compressAvatar({
+            inputPath: req.file.path,
+        });
 
         // Overwrite original file
         fs.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
-
-        console.log(5);
 
         if (user.avatarImage) {
             const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
@@ -671,13 +663,9 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
             }
         }
 
-        console.log(6);
-
         user.avatarImage = req.file.filename;
 
         await user.save();
-
-        console.log(7);
 
         res.json({
             success: true,

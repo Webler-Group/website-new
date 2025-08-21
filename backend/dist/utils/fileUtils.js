@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.compressImageToSize = exports.safeReadFile = void 0;
+exports.compressAvatar = exports.safeReadFile = void 0;
 const fs_1 = __importDefault(require("fs"));
 const sharp_1 = __importDefault(require("sharp"));
 function safeReadFile(filePath, maxSaveSize) {
@@ -31,38 +31,30 @@ function safeReadFile(filePath, maxSaveSize) {
     }
 }
 exports.safeReadFile = safeReadFile;
-function compressImageToSize(inputPath, mimetype, targetSizeInBytes) {
-    var _a;
+function compressAvatar({ inputPath, size = 256, quality = 80, }) {
     return __awaiter(this, void 0, void 0, function* () {
-        let quality = 80;
+        // Load image, auto-rotate, resize
+        const image = (0, sharp_1.default)(inputPath)
+            .rotate() // fix EXIF orientation
+            .resize({ width: size, height: size, fit: "cover" }); // square avatar
+        // Detect format from input and compress
+        const metadata = yield image.metadata();
         let buffer;
-        const format = (_a = mimetype.split('/')[1]) === null || _a === void 0 ? void 0 : _a.toLowerCase(); // e.g., jpeg, png, gif
-        const sharpInstance = (0, sharp_1.default)(inputPath).resize({ width: 1024, withoutEnlargement: true });
-        while (quality >= 10) {
-            switch (format) {
-                case "jpeg":
-                case "jpg":
-                    buffer = yield sharpInstance.clone().jpeg({ quality }).toBuffer();
-                    break;
-                case "png":
-                    buffer = yield sharpInstance.clone().png({ quality }).toBuffer();
-                    break;
-                case "webp":
-                    buffer = yield sharpInstance.clone().webp({ quality }).toBuffer();
-                    break;
-                case "gif":
-                    // Sharp doesn't support animated GIFs well, only static
-                    // Could convert first frame to PNG or throw error
-                    throw new Error("GIF compression is not supported by sharp. Consider converting to PNG.");
-                default:
-                    throw new Error(`Unsupported image format: ${format}`);
-            }
-            if (buffer.length <= targetSizeInBytes) {
-                return buffer;
-            }
-            quality -= 10;
+        switch (metadata.format) {
+            case "jpeg":
+            case "jpg":
+                buffer = yield image.jpeg({ quality }).toBuffer();
+                break;
+            case "png":
+                buffer = yield image.png({ compressionLevel: 6 }).toBuffer();
+                break;
+            case "webp":
+                buffer = yield image.webp({ quality }).toBuffer();
+                break;
+            default:
+                throw new Error(`Unsupported image format: ${metadata.format}`);
         }
-        throw new Error(`Unable to compress image to under ${targetSizeInBytes} bytes`);
+        return buffer;
     });
 }
-exports.compressImageToSize = compressImageToSize;
+exports.compressAvatar = compressAvatar;

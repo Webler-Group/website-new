@@ -15,43 +15,40 @@ export function safeReadFile(filePath: string, maxSaveSize: number): string {
     }
 }
 
-export async function compressImageToSize(
-    inputPath: string,
-    mimetype: string,
-    targetSizeInBytes: number
-): Promise<Buffer> {
-    let quality = 80;
+interface CompressAvatarOptions {
+    inputPath: string;
+    size?: number; // max width/height, default 256px
+    quality?: number; // compression quality, default 80
+}
+
+export async function compressAvatar({
+    inputPath,
+    size = 256,
+    quality = 80,
+}: CompressAvatarOptions): Promise<Buffer> {
+    // Load image, auto-rotate, resize
+    const image = sharp(inputPath)
+        .rotate() // fix EXIF orientation
+        .resize({ width: size, height: size, fit: "cover" }); // square avatar
+
+    // Detect format from input and compress
+    const metadata = await image.metadata();
     let buffer: Buffer;
 
-    const format = mimetype.split('/')[1]?.toLowerCase(); // e.g., jpeg, png, gif
-    const sharpInstance = sharp(inputPath).resize({ width: 1024, withoutEnlargement: true });
-
-    while (quality >= 10) {
-        switch (format) {
-            case "jpeg":
-            case "jpg":
-                buffer = await sharpInstance.clone().jpeg({ quality }).toBuffer();
-                break;
-            case "png":
-                buffer = await sharpInstance.clone().png({ quality }).toBuffer();
-                break;
-            case "webp":
-                buffer = await sharpInstance.clone().webp({ quality }).toBuffer();
-                break;
-            case "gif":
-                // Sharp doesn't support animated GIFs well, only static
-                // Could convert first frame to PNG or throw error
-                throw new Error("GIF compression is not supported by sharp. Consider converting to PNG.");
-            default:
-                throw new Error(`Unsupported image format: ${format}`);
-        }
-
-        if (buffer.length <= targetSizeInBytes) {
-            return buffer;
-        }
-
-        quality -= 10;
+    switch (metadata.format) {
+        case "jpeg":
+        case "jpg":
+            buffer = await image.jpeg({ quality }).toBuffer();
+            break;
+        case "png":
+            buffer = await image.png({ compressionLevel: 6 }).toBuffer();
+            break;
+        case "webp":
+            buffer = await image.webp({ quality }).toBuffer();
+            break;
+        default:
+            throw new Error(`Unsupported image format: ${metadata.format}`);
     }
 
-    throw new Error(`Unable to compress image to under ${targetSizeInBytes} bytes`);
+    return buffer;
 }
