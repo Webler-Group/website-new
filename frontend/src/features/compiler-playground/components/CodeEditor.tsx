@@ -73,17 +73,26 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                                                     paddingBottom: tabHeight
                                                 }
                                             }),
-                                            EditorView.scrollMargins.of(() => ({
-                                                bottom: 100
-                                            })),
                                             EditorView.updateListener.of((update) => {
-                                                // Check if a line break or cursor move happened
-                                                if (update.selectionSet || update.docChanged) {
-                                                    update.view.dispatch({
-                                                        effects: EditorView.scrollIntoView(update.state.selection.main.head, {
-                                                            y: "nearest"
-                                                        })
-                                                    });
+                                                // Only trigger scroll if selection changed (user moved cursor)
+                                                if (update.selectionSet) {
+                                                    const selectionPos = update.state.selection.main.head;
+                                                    const visibleRanges = update.view.visibleRanges;
+
+                                                    // Check if cursor is inside any visible range
+                                                    let inView = false;
+                                                    for (const range of visibleRanges) {
+                                                        if (selectionPos >= range.from && selectionPos <= range.to) {
+                                                            inView = true;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if (!inView) {
+                                                        update.view.dispatch({
+                                                            effects: EditorView.scrollIntoView(selectionPos, { y: "nearest" })
+                                                        });
+                                                    }
                                                 }
                                             })
                                         ]}
@@ -92,13 +101,6 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                             )
                         })
                     }
-
-
-
-
-
-
-
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?

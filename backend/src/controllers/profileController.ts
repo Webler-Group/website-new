@@ -14,9 +14,10 @@ import path from "path";
 import fs from "fs";
 import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
+import { compressImageToSize } from "../utils/fileUtils";
 
 const avatarImageUpload = multer({
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
         // povolí image/png, image/jpg, image/jpeg, image/gif
         if (/^image\/(png|jpe?g|gif)$/i.test(file.mimetype)) {
@@ -646,16 +647,22 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         return;
     }
 
-    if (user.avatarImage) {
-        const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-        }
-    }
-
-    user.avatarImage = req.file.filename;
-
     try {
+
+        const compressedBuffer = await compressImageToSize(req.file.path, req.file.mimetype, 1 * 1024 * 1024);
+
+        // Overwrite original file
+        fs.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
+
+        if (user.avatarImage) {
+            const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+        }
+
+        user.avatarImage = req.file.filename;
+
         await user.save();
 
         res.json({

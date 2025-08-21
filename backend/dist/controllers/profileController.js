@@ -25,8 +25,9 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
+const fileUtils_1 = require("../utils/fileUtils");
 const avatarImageUpload = (0, multer_1.default)({
-    limits: { fileSize: 2 * 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
         // povolí image/png, image/jpg, image/jpeg, image/gif
         if (/^image\/(png|jpe?g|gif)$/i.test(file.mimetype)) {
@@ -539,14 +540,17 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
         res.status(404).json({ message: "User not found" });
         return;
     }
-    if (user.avatarImage) {
-        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs_1.default.existsSync(oldPath)) {
-            fs_1.default.unlinkSync(oldPath);
-        }
-    }
-    user.avatarImage = req.file.filename;
     try {
+        const compressedBuffer = yield (0, fileUtils_1.compressImageToSize)(req.file.path, req.file.mimetype, 1 * 1024 * 1024);
+        // Overwrite original file
+        fs_1.default.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
+        if (user.avatarImage) {
+            const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
+            if (fs_1.default.existsSync(oldPath)) {
+                fs_1.default.unlinkSync(oldPath);
+            }
+        }
+        user.avatarImage = req.file.filename;
         yield user.save();
         res.json({
             success: true,
