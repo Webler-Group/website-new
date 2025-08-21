@@ -13,11 +13,22 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const User_1 = __importDefault(require("../models/User"));
-const protectRoute = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
-    if (!req.userId || !((_a = (yield User_1.default.findById(req.userId))) === null || _a === void 0 ? void 0 : _a.active)) {
-        return res.status(403).json({ message: "Forbidden" });
-    }
-    next();
-});
+const protectRoute = (requiredRoles = []) => {
+    return (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+        if (!req.userId) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+        const user = yield User_1.default.findById(req.userId, "active");
+        if (!user || !user.active) {
+            return res.status(403).json({ message: "Forbidden" });
+        }
+        if (requiredRoles.length > 0) {
+            const hasRole = req.roles.some((role) => requiredRoles.includes(role));
+            if (!hasRole) {
+                return res.status(403).json({ message: "Insufficient role" });
+            }
+        }
+        next();
+    });
+};
 exports.default = protectRoute;

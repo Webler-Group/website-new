@@ -16,12 +16,13 @@ import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
 
 const avatarImageUpload = multer({
-    limits: { fileSize: 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter(req, file, cb) {
-        if (file.mimetype === 'image/png') {
+        // povolí image/png, image/jpg, image/jpeg, image/gif
+        if (/^image\/(png|jpe?g|gif)$/i.test(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(null, false);
+            cb(new Error("Only .png, .jpg, .jpeg and .gif files are allowed"));
         }
     },
     storage: multer.diskStorage({
@@ -597,13 +598,7 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
 })
 
 const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const roles = req.roles;
     const { userId, active } = req.body;
-
-    if (!roles || !roles.some(role => ["Admin", "Moderator"].includes(role))) {
-        res.status(401).json({ message: "Unauthorized" });
-        return
-    }
 
     const user = await User.findById(userId);
 

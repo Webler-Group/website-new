@@ -23,7 +23,7 @@ const mailTransport = nodemailer.createTransport({
  */
 const sendMail = async (to: string[] | string, subject: string, html: string): Promise<void> => {
     const mailOptions = {
-        from: `Webler Codes Team <${config.emailUser}>`,
+        from: `WeblerCodes Team <${config.emailUser}>`,
         to,
         subject,
         html
@@ -65,17 +65,17 @@ const sendActivationEmail = async (userName: string, userEmail: string, userId: 
             <body style="font-family: Arial, sans-serif; color: #333;">
                 <h2>Account Activation</h2>
                 <p>Welcome ${userName},</p>
-                <p>Thanks for joining Webler! Click the link below to verify your email address and activate your account:</p>
+                <p>Thanks for joining WeblerCodes! Click the link below to verify your email address and activate your account:</p>
                 <p><a href="${activationLink}" style="color: #007bff;">Activate your account</a></p>
                 <p>Keep Coding,</p>
-                <p>Your Webler Team</p>
+                <p>Your WeblerCodes Team</p>
                 <hr />
                 <small>&copy; ${(new Date).getFullYear()} Webler Inc. All rights reserved.</small>
             </body>
         </html>
     `;
 
-    return await sendMail(userEmail, `${userName}, activate your Webler account!`, html);
+    return await sendMail(userEmail, `${userName}, activate your WeblerCodes account!`, html);
 }
 
 

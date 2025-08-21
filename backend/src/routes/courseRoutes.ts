@@ -8,13 +8,14 @@ const router = express.Router();
 router.use(verifyJWT);
 
 router.route("/").post(courseController.getCourseList);
+
+router.use(protectRoute());
+
 router.route("/GetUserCourses").post(courseController.getUserCourseList);
 router.route("/GetCourse").post(courseController.getCourse);
 router.route("/GetLesson").post(courseController.getLesson);
 router.route("/GetLessonNode").post(courseController.getLessonNode);
 router.route("/SolveNode").post(courseController.solve);
 router.route("/ResetCourseProgress").post(courseController.resetCourseProgress);
-
-router.use(protectRoute);
 
 export default router;

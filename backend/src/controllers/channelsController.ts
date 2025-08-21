@@ -14,6 +14,11 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
     const currentUserId = req.userId;
 
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
+
     const channel = await Channel.create({ _type: 2, createdBy: currentUserId, title });
 
     await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: "Owner" });
@@ -434,6 +439,121 @@ const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
     });
 });
 
+const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { channelId, title } = req.body;
+    const currentUserId = req.userId;
+
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
+
+    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    if (!participant || !["Owner", "Admin"].includes(participant.role)) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        await Channel.updateOne({ _id: channelId }, { title });
+
+        await ChannelMessage.create({
+            _type: 4,
+            content: "{action_user} renamed the group to " + title,
+            channel: channelId,
+            user: currentUserId
+        });
+
+        res.json({
+            success: true,
+            data: {
+                title
+            }
+        });
+    } catch (err: any) {
+        res.json({
+            success: false,
+            message: err?.message
+        });
+    }
+});
+
+const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { userId, channelId, role } = req.body;
+    const currentUserId = req.userId;
+
+    if (!["Owner", "Admin", "Member"].includes(role)) {
+        res.status(400).json({ message: "Invalid role" });
+        return;
+    }
+
+    const currentParticipant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    if (!currentParticipant || currentParticipant.role !== "Owner") {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+
+    const targetParticipant = await ChannelParticipant.findOne({ channel: channelId, user: userId });
+    if (!targetParticipant) {
+        res.status(404).json({ message: "Target user is not a participant" });
+        return;
+    }
+
+    if (userId === currentUserId) {
+        res.status(400).json({ message: "You cannot change your own role" });
+        return;
+    }
+
+    if (role === "Owner") {
+        await ChannelParticipant.updateOne(
+            { channel: channelId, user: currentUserId },
+            { role: "Admin" }
+        );
+    }
+
+    targetParticipant.role = role;
+    await targetParticipant.save();
+
+    res.json({ success: true, data: { userId, role } });
+});
+
+
+const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { channelId } = req.body;
+    const currentUserId = req.userId;
+
+    const channel = await Channel.findById(channelId);
+    if (!channel) {
+        res.status(404).json({ message: "Channel not found" });
+        return;
+    }
+
+    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+
+    if (channel._type !== 1 && "Owner" !== participant.role) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+
+    const participants = await ChannelParticipant.find({ channel: channelId });
+
+    await channel.deleteOne();
+
+    const io = getIO();
+    if (io) {
+        io.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", {
+            channelId
+        });
+    }
+
+    res.json({ success: true });
+});
+
+
 const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
@@ -498,7 +618,10 @@ const channelsController = {
     groupRemoveUser,
     leaveChannel,
     groupCancelInvite,
-    getUnseenMessagesCount
+    getUnseenMessagesCount,
+    groupRename,
+    groupChangeRole,
+    deleteChannel
 }
 
 export {

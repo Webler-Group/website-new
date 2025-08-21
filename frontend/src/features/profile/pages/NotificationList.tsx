@@ -89,7 +89,7 @@ const NotificationList = () => {
         </div>
 
     return (
-        <Dropdown show={opened} onToggle={handleNotificationListToggle} autoClose="outside" align={{ lg: "start" }} className='ms-1 me-3'>
+        <Dropdown show={opened} onToggle={handleNotificationListToggle} autoClose="outside" align={{ lg: "start" }}>
             <Dropdown.Toggle size='sm'>
                 <FaBell />
                 {

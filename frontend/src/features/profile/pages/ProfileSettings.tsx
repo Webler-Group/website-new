@@ -197,14 +197,15 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         }
 
         // Validate file type
-        if (avatarImageFile.type !== 'image/png') {
-            setAvatarMessage([false, "Only PNG images are allowed."]);
+        if (!/^image\/(png|jpe?g|gif)$/i.test(avatarImageFile.type)) {
+            setAvatarMessage([false, "Only PNG, JPG, JPEG or GIF images are allowed."]);
             return;
         }
 
+
         // Validate file size (max 1 MB)
-        if (avatarImageFile.size > 1024 * 1024) {
-            setAvatarMessage([false, "File size must be less than or equal to 1 MB."]);
+        if (avatarImageFile.size > 2 * 1024 * 1024) {
+            setAvatarMessage([false, "File size must be less than or equal to 2 MB."]);
             return;
         }
 
@@ -352,7 +353,13 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             {avatarMessage[1] && <Alert variant={avatarMessage[0] ? "success" : "danger"}>{avatarMessage[1]}</Alert>}
                             <FormGroup>
                                 <FormLabel>Avatar image</FormLabel>
-                                <FormControl size="sm" type="file" required accept="image/png" onChange={handleAvatarChange} />
+                                <FormControl
+                                    size="sm"
+                                    type="file"
+                                    required
+                                    accept="image/png, image/jpeg, image/jpg, image/gif"
+                                    onChange={handleAvatarChange}
+                                />
                             </FormGroup>
                             <div className="d-flex justify-content-end mt-2">
                                 <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>

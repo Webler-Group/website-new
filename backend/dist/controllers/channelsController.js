@@ -24,6 +24,10 @@ const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title } = req.body;
     const currentUserId = req.userId;
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
     const channel = yield Channel_1.default.create({ _type: 2, createdBy: currentUserId, title });
     yield ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Owner" });
     res.json({
@@ -379,6 +383,95 @@ const groupCancelInvite = (0, express_async_handler_1.default)((req, res) => __a
         success: true
     });
 }));
+const groupRename = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId, title } = req.body;
+    const currentUserId = req.userId;
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant || !["Owner", "Admin"].includes(participant.role)) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    try {
+        yield Channel_1.default.updateOne({ _id: channelId }, { title });
+        yield ChannelMessage_1.default.create({
+            _type: 4,
+            content: "{action_user} renamed the group to " + title,
+            channel: channelId,
+            user: currentUserId
+        });
+        res.json({
+            success: true,
+            data: {
+                title
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            message: err === null || err === void 0 ? void 0 : err.message
+        });
+    }
+}));
+const groupChangeRole = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId, channelId, role } = req.body;
+    const currentUserId = req.userId;
+    if (!["Owner", "Admin", "Member"].includes(role)) {
+        res.status(400).json({ message: "Invalid role" });
+        return;
+    }
+    const currentParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!currentParticipant || currentParticipant.role !== "Owner") {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    const targetParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
+    if (!targetParticipant) {
+        res.status(404).json({ message: "Target user is not a participant" });
+        return;
+    }
+    if (userId === currentUserId) {
+        res.status(400).json({ message: "You cannot change your own role" });
+        return;
+    }
+    if (role === "Owner") {
+        yield ChannelParticipant_1.default.updateOne({ channel: channelId, user: currentUserId }, { role: "Admin" });
+    }
+    targetParticipant.role = role;
+    yield targetParticipant.save();
+    res.json({ success: true, data: { userId, role } });
+}));
+const deleteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId } = req.body;
+    const currentUserId = req.userId;
+    const channel = yield Channel_1.default.findById(channelId);
+    if (!channel) {
+        res.status(404).json({ message: "Channel not found" });
+        return;
+    }
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+    if (channel._type !== 1 && "Owner" !== participant.role) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    const participants = yield ChannelParticipant_1.default.find({ channel: channelId });
+    yield channel.deleteOne();
+    const io = (0, socketServer_1.getIO)();
+    if (io) {
+        io.to(participants.map(x => (0, socketServer_1.uidRoom)(x.user.toString()))).emit("channels:channel_deleted", {
+            channelId
+        });
+    }
+    res.json({ success: true });
+}));
 const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
 }));
@@ -433,6 +526,9 @@ const channelsController = {
     groupRemoveUser,
     leaveChannel,
     groupCancelInvite,
-    getUnseenMessagesCount
+    getUnseenMessagesCount,
+    groupRename,
+    groupChangeRole,
+    deleteChannel
 };
 exports.default = channelsController;

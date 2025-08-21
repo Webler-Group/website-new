@@ -76,7 +76,7 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
                 setResults(prev => {
                     const updated = prev.map(ch =>
                         ch.id === data.channelId
-                            ? { ...ch, updatedAt: data.createdAt, lastMessage: data }
+                            ? { ...ch, updatedAt: data.createdAt, lastMessage: data, title: data.type == 4 ? data.channelTitle : ch.title }
                             : ch
                     );
                     const channelToMove = updated.find(ch => ch.id === data.channelId);

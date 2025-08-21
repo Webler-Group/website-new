@@ -20,7 +20,7 @@ router.route("/GetTags")
 router.route("/GetCodeComments")
     .post(discussionController.getCodeComments)
 
-router.use(protectRoute);
+router.use(protectRoute());
 
 router.route("/CreateQuestion")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), discussionController.createQuestion);

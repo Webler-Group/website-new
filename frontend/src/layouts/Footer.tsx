@@ -1,33 +1,26 @@
 import Container from 'react-bootstrap/Container';
-import Row from 'react-bootstrap/Row';
-import Col from 'react-bootstrap/Col';
 import { Link } from 'react-router-dom';
 import { FaHeart } from 'react-icons/fa6';
 
 function Footer() {
-  return (
-    <>
-        <footer className='bg-black'>
-            <Container>
-                <div className="wb-home-footer">
-                    <Row>
-                        <Col className='p-3'><Link to={"/"}>Home</Link></Col>
-                        <Col className='p-3'>Pro</Col>
-                        <Col className='p-3'>FAQ</Col>
-                        <Col className='p-3'><Link to={"/Contact"}>Contact</Link></Col>
-                        <Col className='p-3'><Link to={"/Terms-of-use"}>Terms of Use</Link></Col>
-                        <Col className='p-3'>Privacy Policy</Col>
-                    </Row>
-                    <Row  className='p-2 w-100'>
-                    <div className="text-center wb-made-by">
-                        Made with <FaHeart /> by <b>Webler</b>
+    return (
+        <>
+            <footer className='bg-black'>
+                <Container>
+                    <div className="wb-home-footer p-3 d-flex flex-column gap-3">
+                        <div className='d-flex justify-content-around'>
+                            <Link to={"/"}>Home</Link>
+                            <Link to={"/Contact"}>Contact</Link>
+                            <Link to={"/Terms-of-use"}>Terms of Use</Link>
+                        </div>
+                        <div className="text-center wb-made-by">
+                            Made with <FaHeart /> by <b>Webler</b>
+                        </div>
                     </div>
-                    </Row>
-                </div>
-            </Container>
-        </footer>
-    </>
-  )
+                </Container>
+            </footer>
+        </>
+    )
 }
 
 export default Footer

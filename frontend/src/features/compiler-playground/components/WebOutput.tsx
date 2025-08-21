@@ -51,7 +51,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
                 iframeRef.current.srcdoc = "<!DOCTYPE HTML><html><head></head><body></body></html>";
             }
         }
-    }, [tabOpen, source]);
+    }, [tabOpen, source, jsSource, cssSource]);
 
     const clearConsole = () => {
         setConsoleLogs(() => []);
@@ -341,9 +341,9 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
                 </Modal.Body>
             </Modal>
             <div className="h-100">
-                <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts"></iframe>
+                <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
                 <div className="wb-web-wrapper__frame-wrapper__console-btn">
-                    <Button size="sm" variant="secondary" onClick={onConsoleShow}>Console</Button>
+                    <Button size="sm" variant="link" onClick={onConsoleShow}>Console</Button>
                 </div>
             </div>
         </>

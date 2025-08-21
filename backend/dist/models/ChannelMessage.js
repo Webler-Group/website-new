@@ -83,6 +83,7 @@ channelMessageSchema.pre("save", function (next) {
     });
 });
 channelMessageSchema.post("save", function () {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         yield Channel_1.default.updateOne({ _id: this.channel }, { lastMessage: this._id });
         const io = (0, socketServer_1.getIO)();
@@ -91,14 +92,19 @@ channelMessageSchema.post("save", function () {
             if (!user)
                 return;
             const attachments = yield PostAttachment_1.default.getByPostId({ channelMessage: this._id });
+            let channelTitle = undefined;
             const userIds = (yield ChannelParticipant_1.default.find({ channel: this.channel }, "user").lean()).map(x => x.user);
             if (this._type == 3) {
                 userIds.push(user._id);
+            }
+            else if (this._type == 4) {
+                channelTitle = (_a = (yield Channel_1.default.findById(this.channel, "title").lean())) === null || _a === void 0 ? void 0 : _a.title;
             }
             const rooms = userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()));
             io.to(rooms).emit("channels:new_message", {
                 type: this._type,
                 channelId: this.channel.toString(),
+                channelTitle,
                 content: this.content,
                 createdAt: this.createdAt,
                 userId: user._id.toString(),

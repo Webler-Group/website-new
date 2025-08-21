@@ -64,10 +64,10 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount, hide
     }
 
     const body = (
-        <div className="d-flex gap-2 justify-content-between">
-            <div className='d-flex align-items-start gap-1'>
+        <div className="d-flex justify-content-between">
+            <div className='d-flex align-items-start gap-2'>
                 <div className="wb-p-follow-item__avatar">
-                    <ProfileAvatar size={32} avatarImage={user.avatar} />
+                    <ProfileAvatar size={42} avatarImage={user.avatar} />
                 </div>
                 <div className='d-flex flex-column gap-1'>
                     <ProfileName userId={user.id} userName={user.name} />

@@ -68,17 +68,22 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                                         theme={vscodeDark}
                                         extensions={[
                                             loadLanguage(lang) as any,
+                                            EditorView.theme({
+                                                ".cm-content": {
+                                                    paddingBottom: tabHeight
+                                                }
+                                            }),
+                                            EditorView.scrollMargins.of(() => ({
+                                                bottom: 100
+                                            })),
                                             EditorView.updateListener.of((update) => {
                                                 // Check if a line break or cursor move happened
                                                 if (update.selectionSet || update.docChanged) {
-                                                    setTimeout(() => {
-                                                        update.view.dispatch({
-                                                            effects: EditorView.scrollIntoView(update.state.selection.main.head, {
-                                                                y: "center", // or "nearest"
-                                                                yMargin: 40  // extra space so it's nicely centered
-                                                            })
-                                                        });
-                                                    }, 0);
+                                                    update.view.dispatch({
+                                                        effects: EditorView.scrollIntoView(update.state.selection.main.head, {
+                                                            y: "nearest"
+                                                        })
+                                                    });
                                                 }
                                             })
                                         ]}
@@ -87,6 +92,13 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                             )
                         })
                     }
+
+
+
+
+
+
+
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?

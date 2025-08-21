@@ -61,13 +61,14 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         getChannel();
         setMessagesFromDate(null);
         setJustChangedChannel(true);
+        setSettingsVisible(false);
     }, [channelId]);
 
     useEffect(() => {
         if (channel && !channel.lastActiveAt) {
             messages.markMessagesSeen();
         }
-    }, [channel]);
+    }, [channel?.id]);
 
     useEffect(() => {
         const textarea = textareaRef.current;
@@ -96,7 +97,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         );
 
         if (message) messagesIntObserver.current.observe(message);
-    }, [messages.isLoading, messages.hasNextPage, messages.results]);
+    }, [messages.isLoading, messages.hasNextPage, messages.results.length]);
 
     useEffect(() => {
         const container = messagesContainerRef.current;
@@ -121,7 +122,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [messages.results, channel, unreadCount]);
+    }, [messages.results.length, channel?.id, unreadCount]);
 
     useEffect(() => {
         if (messages.results.length > 0) {
@@ -136,13 +137,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             }
             prevLatest.current = currentLatestDate;
         }
-    }, [messages.results]);
+    }, [messages.results.length]);
 
     useEffect(() => {
         if (messages.results.length > 0 && messages.results[0].userId == userInfo?.id) {
             setAllMessagesVisible(channel?.lastActiveAt != null && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt));
         }
-    }, [messages.results, channel, userInfo]);
+    }, [messages.results.length, channel?.id, userInfo]);
 
     useEffect(() => {
         setAllMessagesVisible(prev => {
@@ -233,6 +234,30 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
+    const onTitleChange = (title: string) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return { ...prev, title };
+        });
+    }
+
+    const onRoleChange = (userId: string, role: string) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                participants: prev.participants!.map(x => {
+                    if (x.userId == userId) {
+                        return { ...x, role };
+                    } else if (x.userId == userInfo?.id && role === "Owner") {
+                        return { ...x, role: "Admin" }
+                    }
+                    return x;
+                })
+            }
+        });
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
     const messagesListContent = renderMessages.map((message, i) => {
@@ -292,14 +317,27 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                     </Button>
                     <h5 className="mb-0">{channel.title}</h5>
                 </div>
-                <Button variant="outline-secondary" size="sm" onClick={toggleSettings}>
-                    <FaCog />
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={toggleSettings}
+                >
+                    {settingsVisible ? (
+                        <>
+                            <FaTimes className="me-1" /> Close settings
+                        </>
+                    ) : (
+                        <>
+                            <FaCog className="me-1" /> Open settings
+                        </>
+                    )}
                 </Button>
+
             </div>
 
             <div className="d-flex flex-column flex-grow-1 overflow-hidden">
                 <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
-                    <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} />
+                    <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} />
                 </div>
                 <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                     {messagesListContent}

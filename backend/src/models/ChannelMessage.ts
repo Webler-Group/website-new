@@ -56,15 +56,19 @@ channelMessageSchema.post("save", async function() {
 
         const attachments = await PostAttachment.getByPostId({ channelMessage: this._id });
 
+        let channelTitle = undefined;
         const userIds = (await ChannelParticipant.find({ channel: this.channel }, "user").lean()).map(x => x.user);
         if(this._type == 3) {
             userIds.push(user._id);
+        } else if(this._type == 4) {
+            channelTitle = (await Channel.findById(this.channel, "title").lean())?.title;
         }
         const rooms = userIds.map(x => uidRoom(x.toString()));
 
         io.to(rooms).emit("channels:new_message", {
             type: this._type,
             channelId: this.channel.toString(),
+            channelTitle,
             content: this.content,
             createdAt: this.createdAt,
             userId: user._id.toString(),
