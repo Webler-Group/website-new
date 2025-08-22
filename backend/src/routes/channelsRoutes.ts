@@ -24,5 +24,6 @@ router.route("/GroupRename").post(channelsController.groupRename);
 router.route("/GroupChangeRole").post(channelsController.groupChangeRole);
 router.route("/DeleteChannel").post(channelsController.deleteChannel);
 router.route("/GetUnseenMessagesCount").post(channelsController.getUnseenMessagesCount);
+router.route("/MuteChannel").post(channelsController.muteChannel);
 
 export default router;

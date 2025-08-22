@@ -19,6 +19,7 @@ import ProfileName from "../../../components/ProfileName";
 import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import { FaPen } from "react-icons/fa6";
+import ToggleSwitch from "../../../components/ToggleSwitch";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
@@ -26,13 +27,15 @@ interface ChannelRoomSettingsProps {
     onUserInvite: (invite: IChannelInvite) => void;
     onCancelInvite: (inviteId: string) => void;
     onTitleChange: (title: string) => void;
-    onRoleChange: (userId: string, role: string) => void; // NEW
+    onRoleChange: (userId: string, role: string) => void;
+    onToggleNotifications: (enabled: boolean) => void;
 }
 
-const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvite, onTitleChange, onRoleChange }: ChannelRoomSettingsProps) => {
+const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvite, onTitleChange, onRoleChange, onToggleNotifications }: ChannelRoomSettingsProps) => {
     const [activeTab, setActiveTab] = useState("general");
     const [inviteUsername, setInviteUsername] = useState("");
     const [newTitle, setNewTitle] = useState("");
+    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const { userInfo } = useAuth();
     const { sendJsonRequest } = useApi();
     const [inviteMessage, setInviteMessage] = useState(["", ""]);
@@ -49,8 +52,9 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     useEffect(() => {
         setInviteMessage(["", ""]);
         setChangeTitleMessage(["", ""]);
-        if(activeTab == "general") {
+        if (activeTab == "general") {
             setNewTitle(channel.title ?? "");
+            setNotificationsEnabled(!channel.muted);
         }
     }, [activeTab]);
 
@@ -149,6 +153,20 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
         });
         if (result && result.success) {
             onCancelInvite(inviteId);
+        }
+    }
+
+    const toggleNotifications = async (enabled: boolean) => {
+        const result = await sendJsonRequest("/Channels/MuteChannel", "POST", {
+            channelId: channel.id,
+            muted: !enabled
+        });
+        if (result && result.success) {
+            onToggleNotifications(enabled);
+            setNotificationsEnabled(!result.data.muted);
+        }
+        else {
+
         }
     }
 
@@ -347,6 +365,11 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                         {changeTitleMessage[1] && <Alert className="mt-2" variant={changeTitleMessage[0]} onClose={() => setChangeTitleMessage(["", ""])} dismissible>{changeTitleMessage[1]}</Alert>}
                                     </div>
                                 )}
+
+                                <div className="mb-3">
+                                    <span className="me-3">Notifications</span>
+                                    <ToggleSwitch value={notificationsEnabled} onChange={(e) => toggleNotifications((e.target as HTMLInputElement).checked)} />
+                                </div>
 
                                 {(channel.type == 1 || isOwner) ? (
                                     <div>

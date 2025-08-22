@@ -138,7 +138,8 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
-        unreadCount
+        unreadCount,
+        muted: participant.muted
     };
 
     if (includeInvites) {
@@ -180,7 +181,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     // First find all channels where user is participant
     const participantChannels = await ChannelParticipant.find({ user: currentUserId })
-        .select('channel lastActiveAt');
+        .select('channel lastActiveAt muted');
 
     const channelIds = participantChannels.map(p => p.channel);
 
@@ -204,7 +205,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         })
         .lean();
 
-    const unreadCounts = await Promise.all(
+    const participantData = await Promise.all(
         channels.map(async (channel) => {
             const participant = participantChannels.find(y => y.channel.equals(channel._id));
             const lastActiveAt = participant?.lastActiveAt || new Date(0);
@@ -214,11 +215,11 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 createdAt: { $gt: lastActiveAt }
             });
 
-            return { channelId: channel._id.toString(), unreadCount };
+            return { channelId: channel._id.toString(), unreadCount, muted: participant?.muted };
         })
     );
 
-    const unreadCountMap = Object.fromEntries(unreadCounts.map(u => [u.channelId, u.unreadCount]));
+    const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, { ...u }]));
 
     res.json({
         channels: channels.map(x => {
@@ -230,7 +231,8 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
-                unreadCount: unreadCountMap[x._id.toString()] || 0,
+                unreadCount: participantDataMap[x._id.toString()]?.unreadCount || 0,
+                muted: participantDataMap[x._id.toString()]?.muted,
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
@@ -604,7 +606,8 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
                                             { $eq: ["$lastActiveAt", null] },
                                             { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
                                         ]
-                                    }
+                                    },
+                                    { $eq: ["$muted", false] }
                                 ]
                             }
                         }
@@ -626,6 +629,27 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
     const totalCount = unseenMessagesCount + invitesCount;
 
     res.json({ count: totalCount });
+});
+
+const muteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { channelId, muted } = req.body;
+    const currentUserId = req.userId;
+
+    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+
+    participant.muted = muted;
+    await participant.save();
+
+    res.json({
+        success: true,
+        data: {
+            muted: participant.muted
+        }
+    });
 });
 
 
@@ -690,7 +714,8 @@ const channelsController = {
     getUnseenMessagesCount,
     groupRename,
     groupChangeRole,
-    deleteChannel
+    deleteChannel,
+    muteChannel
 }
 
 export {

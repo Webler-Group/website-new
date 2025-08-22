@@ -128,7 +128,8 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
-        unreadCount
+        unreadCount,
+        muted: participant.muted
     };
     if (includeInvites) {
         const invites = yield ChannelInvite_1.default.find({ channel: channelId })
@@ -165,7 +166,7 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
     const currentUserId = req.userId;
     // First find all channels where user is participant
     const participantChannels = yield ChannelParticipant_1.default.find({ user: currentUserId })
-        .select('channel lastActiveAt');
+        .select('channel lastActiveAt muted');
     const channelIds = participantChannels.map(p => p.channel);
     let query = Channel_1.default.find({ _id: { $in: channelIds } });
     if (fromDate) {
@@ -185,19 +186,19 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
         }
     })
         .lean();
-    const unreadCounts = yield Promise.all(channels.map((channel) => __awaiter(void 0, void 0, void 0, function* () {
+    const participantData = yield Promise.all(channels.map((channel) => __awaiter(void 0, void 0, void 0, function* () {
         const participant = participantChannels.find(y => y.channel.equals(channel._id));
         const lastActiveAt = (participant === null || participant === void 0 ? void 0 : participant.lastActiveAt) || new Date(0);
         const unreadCount = yield ChannelMessage_1.default.countDocuments({
             channel: channel._id,
             createdAt: { $gt: lastActiveAt }
         });
-        return { channelId: channel._id.toString(), unreadCount };
+        return { channelId: channel._id.toString(), unreadCount, muted: participant === null || participant === void 0 ? void 0 : participant.muted };
     })));
-    const unreadCountMap = Object.fromEntries(unreadCounts.map(u => [u.channelId, u.unreadCount]));
+    const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, Object.assign({}, u)]));
     res.json({
         channels: channels.map(x => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f, _g;
             const lastActiveAt = (_a = participantChannels.find(y => y.channel.equals(x._id))) === null || _a === void 0 ? void 0 : _a.lastActiveAt;
             return {
                 id: x._id,
@@ -206,7 +207,8 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
                 coverImage: ((_d = x.DMUser) === null || _d === void 0 ? void 0 : _d._id) == currentUserId ? x.createdBy.avatarImage : (_e = x.DMUser) === null || _e === void 0 ? void 0 : _e.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
-                unreadCount: unreadCountMap[x._id.toString()] || 0,
+                unreadCount: ((_f = participantDataMap[x._id.toString()]) === null || _f === void 0 ? void 0 : _f.unreadCount) || 0,
+                muted: (_g = participantDataMap[x._id.toString()]) === null || _g === void 0 ? void 0 : _g.muted,
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
@@ -511,7 +513,8 @@ const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) =
                                             { $eq: ["$lastActiveAt", null] },
                                             { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
                                         ]
-                                    }
+                                    },
+                                    { $eq: ["$muted", false] }
                                 ]
                             }
                         }
@@ -529,6 +532,23 @@ const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) =
     // Sum up
     const totalCount = unseenMessagesCount + invitesCount;
     res.json({ count: totalCount });
+}));
+const muteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId, muted } = req.body;
+    const currentUserId = req.userId;
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+    participant.muted = muted;
+    yield participant.save();
+    res.json({
+        success: true,
+        data: {
+            muted: participant.muted
+        }
+    });
 }));
 const markMessagesSeenWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { channelId } = payload;
@@ -584,6 +604,7 @@ const channelsController = {
     getUnseenMessagesCount,
     groupRename,
     groupChangeRole,
-    deleteChannel
+    deleteChannel,
+    muteChannel
 };
 exports.default = channelsController;

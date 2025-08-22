@@ -23,6 +23,7 @@ interface IChannel {
     participants?: IChannelParticipant[];
     lastActiveAt?: string;
     unreadCount: number;
+    muted: boolean;
 }
 
 interface ChannelListItemProps {
@@ -85,7 +86,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                     <div>
                         {channel.unreadCount > 0 && (
                             <span
-                                className="badge bg-danger"
+                                className={"badge " + (channel.muted ? "bg-secondary" : "bg-danger")}
                                 style={{ fontSize: "0.7rem" }}
                             >
                                 {channel.unreadCount > 99 ? "99+" : channel.unreadCount}

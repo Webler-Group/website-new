@@ -37,10 +37,10 @@ const ChannelsButton = () => {
 
         socket.on("channels:new_invite", handleNewInvite);
         socket.on("channels:invite_canceled", handleInviteCanceled);
-        socket.on("channels:new_message", handleNewMessage);
+        socket.on("channels:new_message_info", handleNewMessage);
 
         return () => {
-            socket.off("channels:new_message", handleNewMessage);
+            socket.off("channels:new_message_info", handleNewMessage);
             socket.off("channels:new_invite", handleNewInvite);
             socket.off("channels:invite_canceled", handleInviteCanceled);
         };

@@ -258,6 +258,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
+    const onToggleNotifications = (enabled: boolean) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return { ...prev, muted: !enabled };
+        })
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
     const messagesListContent = renderMessages.map((message, i) => {
@@ -336,7 +343,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
                         <div className="d-flex flex-column flex-grow-1 overflow-hidden">
                             <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
-                                <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} />
+                                <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                                 {messagesListContent}

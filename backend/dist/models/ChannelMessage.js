@@ -46,6 +46,7 @@ const channelMessageSchema = new mongoose_1.Schema({
     1 - Basic
     2 - System: user joined
     3 - System: user left
+    4 - System: user changed title
     */
     _type: {
         type: Number,
@@ -93,15 +94,16 @@ channelMessageSchema.post("save", function () {
                 return;
             const attachments = yield PostAttachment_1.default.getByPostId({ channelMessage: this._id });
             let channelTitle = undefined;
-            const userIds = (yield ChannelParticipant_1.default.find({ channel: this.channel }, "user").lean()).map(x => x.user);
+            const participants = yield ChannelParticipant_1.default.find({ channel: this.channel }, "user muted").lean();
+            const userIds = participants.map(x => x.user);
+            const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
             if (this._type == 3) {
                 userIds.push(user._id);
             }
             else if (this._type == 4) {
                 channelTitle = (_a = (yield Channel_1.default.findById(this.channel, "title").lean())) === null || _a === void 0 ? void 0 : _a.title;
             }
-            const rooms = userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()));
-            io.to(rooms).emit("channels:new_message", {
+            io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message", {
                 type: this._type,
                 channelId: this.channel.toString(),
                 channelTitle,
@@ -113,6 +115,7 @@ channelMessageSchema.post("save", function () {
                 viewed: false,
                 attachments
             });
+            io.to(userIdsNotMuted.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message_info", {});
         }
     });
 });
