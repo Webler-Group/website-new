@@ -22,14 +22,14 @@ import { FaPen } from "react-icons/fa6";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
-    onUserKick: (userId: string) => void;
+    onUserRemove: (userId: string) => void;
     onUserInvite: (invite: IChannelInvite) => void;
     onCancelInvite: (inviteId: string) => void;
     onTitleChange: (title: string) => void;
     onRoleChange: (userId: string, role: string) => void; // NEW
 }
 
-const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite, onTitleChange, onRoleChange }: ChannelRoomSettingsProps) => {
+const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvite, onTitleChange, onRoleChange }: ChannelRoomSettingsProps) => {
     const [activeTab, setActiveTab] = useState("general");
     const [inviteUsername, setInviteUsername] = useState("");
     const [newTitle, setNewTitle] = useState("");
@@ -91,14 +91,14 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite
         }
     };
 
-    const handleKick = async () => {
+    const handleRemove = async () => {
         if (!editedParticipantId) return;
         const result = await sendJsonRequest("/Channels/GroupRemoveUser", "POST", {
             channelId: channel.id,
             userId: editedParticipantId
         });
         if (result && result.success) {
-            onUserKick(editedParticipantId);
+            onUserRemove(editedParticipantId);
             closeParticipantModal();
         }
     };
@@ -138,7 +138,9 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite
     };
 
     const handleDeleteChannel = async () => {
-        // TODO: Implement deletion logic
+        await sendJsonRequest("/Channels/DeleteChannel", "POST", {
+            channelId: channel.id
+        })
     };
 
     const handleCancelInvite = async (inviteId: string) => {
@@ -198,7 +200,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite
                                 <option value="Member">Member</option>
                             </Form.Select>
 
-                            {(editedParticipantRole === "Owner") && (
+                            {(editedParticipantRole === "Owner" && isOwner) && (
                                 <div className="mt-2 text-sm text-warning">
                                     By assigning this user as Owner, your role will be changed to Admin.
                                 </div>
@@ -209,8 +211,8 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite
 
                 <Modal.Footer>
                     <Button size="sm" variant="secondary" onClick={closeParticipantModal}>Cancel</Button>
-                    <Button size="sm" variant="danger" onClick={handleKick}>Kick</Button>
-                    {isAdmin && (
+                    <Button size="sm" variant="danger" onClick={handleRemove}>Remove</Button>
+                    {isOwner && (
                         <Button size="sm" variant="primary" onClick={handleRoleSave}>Save</Button>
                     )}
                 </Modal.Footer>
@@ -307,7 +309,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserKick, onCancelInvite
                                                     </Badge>
                                                 </div>
 
-                                                {isAdmin && x.userId !== userInfo?.id && (
+                                                {isAdmin && x.role != "Owner" && x.userId !== userInfo?.id && (
                                                     <div className="d-flex align-items-center gap-2">
                                                         <Button
                                                             variant="outline-primary"

@@ -35,10 +35,10 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
             headers["Content-Type"] = "application/json";
             body = JSON.stringify(options.body);
         }
-        if(options.accessToken) {
+        if (options.accessToken) {
             headers["Authorization"] = "Bearer " + options.accessToken;
         }
-        if(options.deviceId) {
+        if (options.deviceId) {
             headers["X-Device-Id"] = options.deviceId;
         }
         return await fetch(baseUrl + path, {
@@ -67,16 +67,20 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     }
 
     const reauthenticate = async (): Promise<any> => {
-        const result = await fetchQuery("/Auth/Refresh", {
-            method: "POST",
-            headers: {
-                "X-Device-Id": deviceId
+        try {
+            const response = await fetchQuery("/Auth/Refresh", {
+                method: "POST",
+                headers: {
+                    "X-Device-Id": deviceId
+                }
+            });
+            const result = await response.json();
+            if (result && result.accessToken && result.expiresIn) {
+                authenticate(result.accessToken, result.expiresIn);
+                return result;
             }
-        })
-            .then(response => response.json());
-        if (result && result.accessToken && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
-            return result;
+        } catch {
+
         }
 
         authenticate(null);
@@ -84,17 +88,21 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     }
 
     const sendJsonRequest = async (path: string, method: string, body: any = {}, options: any = {}, isMultipart: boolean = false) => {
-        const response = await fetchQueryWithReauthentication(path, {
-            method,
-            body,
-            accessToken,
-            deviceId,
-            ...options
-        }, isMultipart);
+        try {
+            const response = await fetchQueryWithReauthentication(path, {
+                method,
+                body,
+                accessToken,
+                deviceId,
+                ...options
+            }, isMultipart);
 
-        const data = await response.json();
+            const data = await response.json();
 
-        return data;
+            return data;
+        } catch {
+            return null;
+        }
     }
 
     const value: ApiState = {

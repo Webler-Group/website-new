@@ -148,6 +148,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setCss(result.code.cssSource);
             setJs(result.code.jsSource);
             setCommentCount(result.code.comments);
+        } else {
+            navigate("/Codes");
         }
     }
 

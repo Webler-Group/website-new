@@ -9,6 +9,7 @@ import ChannelMessage from "../models/ChannelMessage";
 import { Socket } from "socket.io";
 import { getIO, uidRoom } from "../config/socketServer";
 import PostAttachment from "../models/PostAttachment";
+import mongoose from "mongoose";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
@@ -124,6 +125,11 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
+    const unreadCount = await ChannelMessage.countDocuments({
+        channel: channel._id,
+        createdAt: { $gt: participant.lastActiveAt }
+    });
+
     const data: any = {
         id: channel._id,
         title: channel._type == 2 ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
@@ -131,7 +137,8 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         type: channel._type,
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
-        lastActiveAt: participant.lastActiveAt
+        lastActiveAt: participant.lastActiveAt,
+        unreadCount
     };
 
     if (includeInvites) {
@@ -197,6 +204,22 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         })
         .lean();
 
+    const unreadCounts = await Promise.all(
+        channels.map(async (channel) => {
+            const participant = participantChannels.find(y => y.channel.equals(channel._id));
+            const lastActiveAt = participant?.lastActiveAt || new Date(0);
+
+            const unreadCount = await ChannelMessage.countDocuments({
+                channel: channel._id,
+                createdAt: { $gt: lastActiveAt }
+            });
+
+            return { channelId: channel._id.toString(), unreadCount };
+        })
+    );
+
+    const unreadCountMap = Object.fromEntries(unreadCounts.map(u => [u.channelId, u.unreadCount]));
+
     res.json({
         channels: channels.map(x => {
             const lastActiveAt = participantChannels.find(y => y.channel.equals(x._id))?.lastActiveAt;
@@ -207,6 +230,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
+                unreadCount: unreadCountMap[x._id.toString()] || 0,
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
@@ -241,17 +265,20 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
         .populate<{ channel: any }>("channel", "title _type")
         .lean();
 
+    const totalCount = await ChannelInvite.countDocuments({ invitedUser: currentUserId });
+
     res.json({
         invites: invites.map(x => ({
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
             authorAvatar: x.author.avatarImage,
-            channelId: x.channel.id,
+            channelId: x.channel._id,
             channelType: x.channel._type,
             channelTitle: x.channel.title,
             createdAt: x.createdAt
-        }))
+        })),
+        count: totalCount
     });
 });
 
@@ -295,20 +322,22 @@ const groupRemoveUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const result = await ChannelParticipant.deleteOne({ user: userId, channel: channelId });
-
-    if (result.deletedCount === 1) {
-        await ChannelMessage.create({
-            _type: 3,
-            content: "{action_user} left",
-            channel: channelId,
-            user: userId
-        });
-
-        res.json({ success: true });
-    } else {
-        res.json({ success: false });
+    const targetParticipant = await ChannelParticipant.findOne({ channel: channelId, user: userId });
+    if (!targetParticipant || targetParticipant.role == "Owner" || participant.role == targetParticipant.role) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
     }
+
+    await targetParticipant.deleteOne();
+
+    await ChannelMessage.create({
+        _type: 3,
+        content: "{action_user} was removed",
+        channel: channelId,
+        user: userId
+    });
+
+    res.json({ success: true });
 });
 
 const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -449,7 +478,7 @@ const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
-    if (!participant || !["Owner", "Admin"].includes(participant.role)) {
+    if (!participant || participant.role !== "Owner") {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
@@ -557,8 +586,48 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
+    // Count unseen messages
+    const results = await ChannelMessage.aggregate([
+        {
+            $lookup: {
+                from: "channelparticipants",
+                let: { channelId: "$channel", msgCreatedAt: "$createdAt" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$user", new mongoose.Types.ObjectId(currentUserId)] },
+                                    { $eq: ["$channel", "$$channelId"] },
+                                    {
+                                        $or: [
+                                            { $eq: ["$lastActiveAt", null] },
+                                            { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
+                                        ]
+                                    }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "participant"
+            }
+        },
+        { $match: { participant: { $ne: [] }, deleted: false } },
+        { $count: "total" }
+    ]);
 
+    const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
+
+    // Count invites
+    const invitesCount = await ChannelInvite.countDocuments({ invitedUser: currentUserId });
+
+    // Sum up
+    const totalCount = unseenMessagesCount + invitesCount;
+
+    res.json({ count: totalCount });
 });
+
 
 const markMessagesSeenWS = async (socket: Socket, payload: any) => {
     const { channelId } = payload;

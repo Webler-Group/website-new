@@ -97,6 +97,8 @@ const DiscussPost = () => {
         });
         if (result && result.question) {
             setQuestion(result.question)
+        } else {
+            navigate("/Discuss");
         }
         setLoading(false);
     }

@@ -26,7 +26,7 @@ function Header({ variant }: HeaderProps) {
           {
             userInfo &&
             <div className='d-flex gap-3'>
-              <ChannelsButton unseenCount={0} />
+              <ChannelsButton />
               <NotificationList />
             </div>
           }

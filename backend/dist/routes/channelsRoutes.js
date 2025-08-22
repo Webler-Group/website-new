@@ -24,4 +24,5 @@ router.route("/GroupCancelInvite").post(channelsController_1.default.groupCancel
 router.route("/GroupRename").post(channelsController_1.default.groupRename);
 router.route("/GroupChangeRole").post(channelsController_1.default.groupChangeRole);
 router.route("/DeleteChannel").post(channelsController_1.default.deleteChannel);
+router.route("/GetUnseenMessagesCount").post(channelsController_1.default.getUnseenMessagesCount);
 exports.default = router;

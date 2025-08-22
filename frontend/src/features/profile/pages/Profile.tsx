@@ -171,7 +171,7 @@ const Profile = () => {
     }
 
     const openSettings = () => {
-        if(!userDetails) return;
+        if (!userDetails) return;
         navigate("/Profile/" + userDetails.id + "?settings=true");
     }
 
@@ -392,9 +392,13 @@ const Profile = () => {
                     </>
                     :
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <h3>Sorry, couldn't find anything</h3>
-                        <p className="text-secondary">This user has just started their journey, try checking out their profile later.</p>
+                        <div className="wb-loader">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </div>
+
             }
         </div>
     )

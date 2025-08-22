@@ -6,6 +6,7 @@ import { useWS } from "../../../context/wsCommunication";
 const useInvites = (count: number, fromDate: Date | null) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<IChannelInvite[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [hasNextPage, setHasNextPage] = useState(false);
@@ -30,6 +31,7 @@ const useInvites = (count: number, fromDate: Date | null) => {
                     return;
                 }
                 setResults(prev => [...prev, ...result.invites]);
+                setTotalCount(result.count);
                 setHasNextPage(result.invites.length === count);
                 setIsLoading(false);
             })
@@ -43,10 +45,12 @@ const useInvites = (count: number, fromDate: Date | null) => {
 
         const handleNewInvite = (data: any) => {
             setResults(prev => [data, ...prev]);
+            setTotalCount(prev => prev + 1);
         }
 
         const handleInviteCanceled = (data: any) => {
             setResults(prev => prev.filter(x => x.id != data.inviteId));
+            setTotalCount(prev => prev - 1);
         }
 
         socket.on("channels:new_invite", handleNewInvite);
@@ -64,12 +68,14 @@ const useInvites = (count: number, fromDate: Date | null) => {
 
     const remove = (id: string) => {
         setResults(prev => prev.filter(x => x.id !== id));
+        setTotalCount(prev => prev - 1);
     }
 
     return { 
         isLoading, 
         error, 
-        results, 
+        results,
+        totalCount,
         hasNextPage, 
         add,
         remove

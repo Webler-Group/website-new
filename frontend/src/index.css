@@ -7,6 +7,41 @@ ul {
     list-style: none;
 }
 
+.wb-loader {
+    display: flex;
+    gap: 8px;
+}
+
+.wb-loader span {
+    width: 10px;
+    height: 10px;
+    background: #6c757d;
+    /* bootstrap secondary color */
+    border-radius: 50%;
+    animation: wb-loader__bounce 0.6s infinite alternate;
+}
+
+.wb-loader span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.wb-loader span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes wb-loader__bounce {
+    from {
+        transform: translateY(0);
+        opacity: 0.6;
+    }
+
+    to {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+
 .wb-login-wrapper {
     min-height: 100vh;
     display: flex;
@@ -21,9 +56,11 @@ ul {
 .wb-user__image {
     border-radius: 50%;
 }
-.channel-message:hover{
+
+.channel-message:hover {
     background-color: lightgray;
 }
+
 @media(max-width: 449px) {
     .wb-login-container {
         width: 100%;
