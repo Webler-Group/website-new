@@ -5,6 +5,7 @@ import { LinkContainer } from 'react-router-bootstrap';
 import AuthNavigation from '../features/auth/components/AuthNavigation';
 import NotificationList from '../features/profile/pages/NotificationList';
 import { useAuth } from '../features/auth/context/authContext';
+import { isAdminOrModRole } from '../data/roles';
 
 interface HeaderProps {
   variant?: string;
@@ -42,14 +43,11 @@ function Header({ variant }: HeaderProps) {
               <Nav.Link>Channels</Nav.Link>
             </LinkContainer>
             {
-              ["Creator", "Admin"].some(role => userInfo?.roles.includes(role)) &&
-              <LinkContainer to="/Courses/Editor">
-                <Nav.Link>Course Editor</Nav.Link>
+              isAdminOrModRole(userInfo?.roles) &&
+              <LinkContainer to="/Tools">
+                <Nav.Link>Tools</Nav.Link>
               </LinkContainer>
             }
-            <LinkContainer to="/Tags">
-              <Nav.Link>Tags</Nav.Link>
-            </LinkContainer>
           </Nav>
           <AuthNavigation />
         </Navbar.Collapse>
