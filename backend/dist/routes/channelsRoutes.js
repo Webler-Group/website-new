@@ -9,7 +9,7 @@ const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const channelsController_1 = __importDefault(require("../controllers/channelsController"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
-router.use(protectRoute_1.default);
+router.use((0, protectRoute_1.default)());
 router.route("/").post(channelsController_1.default.getChannelsList);
 router.route("/CreateDirectMessages").post(channelsController_1.default.createDirectMessages);
 router.route("/CreateGroup").post(channelsController_1.default.createGroup);
@@ -21,4 +21,9 @@ router.route("/GroupRemoveUser").post(channelsController_1.default.groupRemoveUs
 router.route("/Messages").post(channelsController_1.default.getMessages);
 router.route("/LeaveChannel").post(channelsController_1.default.leaveChannel);
 router.route("/GroupCancelInvite").post(channelsController_1.default.groupCancelInvite);
+router.route("/GroupRename").post(channelsController_1.default.groupRename);
+router.route("/GroupChangeRole").post(channelsController_1.default.groupChangeRole);
+router.route("/DeleteChannel").post(channelsController_1.default.deleteChannel);
+router.route("/GetUnseenMessagesCount").post(channelsController_1.default.getUnseenMessagesCount);
+router.route("/MuteChannel").post(channelsController_1.default.muteChannel);
 exports.default = router;

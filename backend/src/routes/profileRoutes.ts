@@ -15,7 +15,7 @@ router.route("/GetFollowing")
 router.route("/GetFollowers")
     .post(profileController.getFollowers);
 
-router.use(protectRoute);
+router.use(protectRoute());
 
 router.route("/UpdateProfile")
     .put(profileController.updateProfile);
@@ -38,7 +38,7 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
 router.route("/ToggleUserBan")
-    .post(profileController.toggleUserBan);
+    .post(protectRoute(["Moderator"]), profileController.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
 

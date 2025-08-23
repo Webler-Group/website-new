@@ -27,7 +27,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader }: ChannelMessage
     const messageParts = message.content.split("{action_user}");
     let body = message.type !== 1 ? (
         <div className="d-flex justify-content-center">
-            <div className="p-2 rounded small bg-light">
+            <div className="p-2 rounded small bg-light text-center">
                 {messageParts[0]}
                 <ProfileName
                     userId={message.userId}

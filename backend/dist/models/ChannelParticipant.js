@@ -47,6 +47,10 @@ const channelParticipantSchema = new mongoose_1.Schema({
     lastActiveAt: {
         type: Date,
         default: null
+    },
+    muted: {
+        type: Boolean,
+        default: false
     }
 });
 const ChannelParticipant = mongoose_1.default.model("ChannelParticipant", channelParticipantSchema);

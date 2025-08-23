@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.use(protectRoute);
+router.use(protectRoute());
 
 router.route("/").post(channelsController.getChannelsList);
 router.route("/CreateDirectMessages").post(channelsController.createDirectMessages);
@@ -20,5 +20,10 @@ router.route("/GroupRemoveUser").post(channelsController.groupRemoveUser);
 router.route("/Messages").post(channelsController.getMessages);
 router.route("/LeaveChannel").post(channelsController.leaveChannel);
 router.route("/GroupCancelInvite").post(channelsController.groupCancelInvite);
+router.route("/GroupRename").post(channelsController.groupRename);
+router.route("/GroupChangeRole").post(channelsController.groupChangeRole);
+router.route("/DeleteChannel").post(channelsController.deleteChannel);
+router.route("/GetUnseenMessagesCount").post(channelsController.getUnseenMessagesCount);
+router.route("/MuteChannel").post(channelsController.muteChannel);
 
 export default router;

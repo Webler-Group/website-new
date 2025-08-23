@@ -22,27 +22,34 @@ const NotificationList = () => {
     const { socket } = useWS();
 
     useEffect(() => {
+        const getUnseenNotificationCount = async () => {
+            const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
+            if (result && result.count !== undefined) {
+                setUnseenCount(result.count);
+            }
+        }
         getUnseenNotificationCount();
+    }, []);
 
+    useEffect(() => {
         if (!socket) return;
 
-        const handleNotification = () => {
+        const handleNew = () => {
             setUnseenCount((prev) => prev + 1);
         };
 
-        socket.on("notification:new", handleNotification);
+        const handleDeleted = () => {
+            setUnseenCount((prev) => prev - 1);
+        }
+
+        socket.on("notification:new", handleNew);
+        socket.on("notification:deleted", handleDeleted);
 
         return () => {
-            socket.off("notification:new", handleNotification);
+            socket.off("notification:new", handleNew);
+            socket.off("notification:deleted", handleDeleted);
         };
     }, [socket]);
-
-    const getUnseenNotificationCount = async () => {
-        const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
-        if (result && result.count !== undefined) {
-            setUnseenCount(result.count);
-        }
-    }
 
     const markAllAsRead = async () => {
         await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", {});
@@ -89,7 +96,7 @@ const NotificationList = () => {
         </div>
 
     return (
-        <Dropdown show={opened} onToggle={handleNotificationListToggle} autoClose="outside" align={{ lg: "start" }} className='ms-1 me-3'>
+        <Dropdown show={opened} onToggle={handleNotificationListToggle} autoClose="outside" align={{ lg: "start" }}>
             <Dropdown.Toggle size='sm'>
                 <FaBell />
                 {

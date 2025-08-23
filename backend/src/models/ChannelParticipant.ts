@@ -20,6 +20,10 @@ const channelParticipantSchema = new Schema({
     lastActiveAt: {
         type: Date,
         default: null
+    },
+    muted: {
+        type: Boolean,
+        default: false
     }
 });
 

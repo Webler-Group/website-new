@@ -68,17 +68,34 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                                         theme={vscodeDark}
                                         extensions={[
                                             loadLanguage(lang) as any,
+                                            EditorView.theme({
+                                                ".cm-content": {
+                                                    paddingBottom: tabHeight
+                                                }
+                                            }),
+                                            EditorView.scrollMargins.of(() => ({
+                                                bottom: 64
+                                            })),
                                             EditorView.updateListener.of((update) => {
-                                                // Check if a line break or cursor move happened
-                                                if (update.selectionSet || update.docChanged) {
-                                                    setTimeout(() => {
+                                                // Only trigger scroll if selection changed (user moved cursor)
+                                                if (update.selectionSet) {
+                                                    const selectionPos = update.state.selection.main.head;
+                                                    const visibleRanges = update.view.visibleRanges;
+
+                                                    // Check if cursor is inside any visible range
+                                                    let inView = false;
+                                                    for (const range of visibleRanges) {
+                                                        if (selectionPos >= range.from && selectionPos <= range.to) {
+                                                            inView = true;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    if (!inView) {
                                                         update.view.dispatch({
-                                                            effects: EditorView.scrollIntoView(update.state.selection.main.head, {
-                                                                y: "center", // or "nearest"
-                                                                yMargin: 40  // extra space so it's nicely centered
-                                                            })
+                                                            effects: EditorView.scrollIntoView(selectionPos, { y: "nearest" })
                                                         });
-                                                    }, 0);
+                                                    }
                                                 }
                                             })
                                         ]}

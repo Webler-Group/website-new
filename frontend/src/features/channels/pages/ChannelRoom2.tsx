@@ -61,13 +61,14 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         getChannel();
         setMessagesFromDate(null);
         setJustChangedChannel(true);
+        setSettingsVisible(false);
     }, [channelId]);
 
     useEffect(() => {
         if (channel && !channel.lastActiveAt) {
             messages.markMessagesSeen();
         }
-    }, [channel]);
+    }, [channel?.id]);
 
     useEffect(() => {
         const textarea = textareaRef.current;
@@ -96,7 +97,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         );
 
         if (message) messagesIntObserver.current.observe(message);
-    }, [messages.isLoading, messages.hasNextPage, messages.results]);
+    }, [messages.isLoading, messages.hasNextPage, messages.results.length]);
 
     useEffect(() => {
         const container = messagesContainerRef.current;
@@ -121,7 +122,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [messages.results, channel, unreadCount]);
+    }, [messages.results.length, channel?.id, unreadCount]);
 
     useEffect(() => {
         if (messages.results.length > 0) {
@@ -136,13 +137,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             }
             prevLatest.current = currentLatestDate;
         }
-    }, [messages.results]);
+    }, [messages.results.length]);
 
     useEffect(() => {
         if (messages.results.length > 0 && messages.results[0].userId == userInfo?.id) {
             setAllMessagesVisible(channel?.lastActiveAt != null && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt));
         }
-    }, [messages.results, channel, userInfo]);
+    }, [messages.results.length, channel?.id, userInfo]);
 
     useEffect(() => {
         setAllMessagesVisible(prev => {
@@ -203,7 +204,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setSettingsVisible(value => !value);
     }
 
-    const onUserKick = (userId: string) => {
+    const onUserRemove = (userId: string) => {
         setChannel(prev => {
             if (!prev) return null;
             return {
@@ -231,6 +232,37 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 invites: prev.invites!.filter(x => x.id != inviteId)
             }
         });
+    }
+
+    const onTitleChange = (title: string) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return { ...prev, title };
+        });
+    }
+
+    const onRoleChange = (userId: string, role: string) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return {
+                ...prev,
+                participants: prev.participants!.map(x => {
+                    if (x.userId == userId) {
+                        return { ...x, role };
+                    } else if (x.userId == userInfo?.id && role === "Owner") {
+                        return { ...x, role: "Admin" }
+                    }
+                    return x;
+                })
+            }
+        });
+    }
+
+    const onToggleNotifications = (enabled: boolean) => {
+        setChannel(prev => {
+            if (!prev) return null;
+            return { ...prev, muted: !enabled };
+        })
     }
 
     let firstTime: number;
@@ -279,67 +311,89 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         );
     });
 
-
-    if (!channel) return <div>Loading...</div>;
-
     return (
         <div className="d-flex flex-column" style={{ height: "calc(100dvh - 44px)" }}>
+            {
+                channel !== null ?
+                    <>
+                        <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
+                            <div className="d-flex align-items-center">
+                                <Button variant="link" className="text-secondary" onClick={onExit}>
+                                    <FaTimes />
+                                </Button>
+                                <h5 className="mb-0">{channel.title}</h5>
+                            </div>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={toggleSettings}
+                            >
+                                {settingsVisible ? (
+                                    <>
+                                        <FaTimes className="me-1" /> Close settings
+                                    </>
+                                ) : (
+                                    <>
+                                        <FaCog className="me-1" /> Open settings
+                                    </>
+                                )}
+                            </Button>
 
-            <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
-                <div className="d-flex align-items-center">
-                    <Button variant="link" className="text-secondary" onClick={onExit}>
-                        <FaTimes />
-                    </Button>
-                    <h5 className="mb-0">{channel.title}</h5>
-                </div>
-                <Button variant="outline-secondary" size="sm" onClick={toggleSettings}>
-                    <FaCog />
-                </Button>
-            </div>
+                        </div>
 
-            <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-                <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
-                    <ChannelRoomSettings channel={channel} onUserKick={onUserKick} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} />
-                </div>
-                <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
-                    {messagesListContent}
-                </div>
-                <div className="position-relative p-2 border-top d-flex align-items-center">
-                    {showJumpButton && (
-                        <Button
-                            size="sm"
-                            variant="secondary"
-                            className="position-absolute end-0 me-3 mt-1 z-1"
-                            style={{ top: "-50px" }}
-                            onClick={() => {
-                                scrollToBottom('smooth');
-                                setUnreadCount(0);
-                            }}
-                        >
-                            {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
-                            <FaArrowCircleDown />
-                        </Button>
-                    )}
-                    <Form.Control
-                        ref={textareaRef}
-                        as="textarea"
-                        rows={1}
-                        placeholder="Type your message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyDown={handleTextareaKeydown}
-                        className="me-2"
-                        maxLength={1024}
-                        style={{ resize: "none" }}
-                    />
-                    {
-                        newMessage.trim().length > 0 &&
-                        <Button variant="primary" onClick={handleSendMessage}>
-                            <FaPaperPlane />
-                        </Button>
-                    }
-                </div>
-            </div>
+                        <div className="d-flex flex-column flex-grow-1 overflow-hidden">
+                            <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
+                                <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
+                            </div>
+                            <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
+                                {messagesListContent}
+                            </div>
+                            <div className="position-relative p-2 border-top d-flex align-items-center">
+                                {showJumpButton && (
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        className="position-absolute end-0 me-3 mt-1 z-1"
+                                        style={{ top: "-50px" }}
+                                        onClick={() => {
+                                            scrollToBottom('smooth');
+                                            setUnreadCount(0);
+                                        }}
+                                    >
+                                        {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
+                                        <FaArrowCircleDown />
+                                    </Button>
+                                )}
+                                <Form.Control
+                                    ref={textareaRef}
+                                    as="textarea"
+                                    rows={1}
+                                    placeholder="Type your message..."
+                                    value={newMessage}
+                                    onChange={(e) => setNewMessage(e.target.value)}
+                                    onKeyDown={handleTextareaKeydown}
+                                    className="me-2"
+                                    maxLength={1024}
+                                    style={{ resize: "none" }}
+                                />
+                                {
+                                    newMessage.trim().length > 0 &&
+                                    <Button variant="primary" onClick={handleSendMessage}>
+                                        <FaPaperPlane />
+                                    </Button>
+                                }
+                            </div>
+                        </div>
+                    </>
+                    :
+                    <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                        <div className="wb-loader">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+            }
         </div>
     );
 };

@@ -36,7 +36,7 @@ const mailTransport = nodemailer_1.default.createTransport({
  */
 const sendMail = (to, subject, html) => __awaiter(void 0, void 0, void 0, function* () {
     const mailOptions = {
-        from: `Webler Codes Team <${confg_1.config.emailUser}>`,
+        from: `WeblerCodes Team <${confg_1.config.emailUser}>`,
         to,
         subject,
         html
@@ -75,15 +75,15 @@ const sendActivationEmail = (userName, userEmail, userId, emailToken) => __await
             <body style="font-family: Arial, sans-serif; color: #333;">
                 <h2>Account Activation</h2>
                 <p>Welcome ${userName},</p>
-                <p>Thanks for joining Webler! Click the link below to verify your email address and activate your account:</p>
+                <p>Thanks for joining WeblerCodes! Click the link below to verify your email address and activate your account:</p>
                 <p><a href="${activationLink}" style="color: #007bff;">Activate your account</a></p>
                 <p>Keep Coding,</p>
-                <p>Your Webler Team</p>
+                <p>Your WeblerCodes Team</p>
                 <hr />
                 <small>&copy; ${(new Date).getFullYear()} Webler Inc. All rights reserved.</small>
             </body>
         </html>
     `;
-    return yield sendMail(userEmail, `${userName}, activate your Webler account!`, html);
+    return yield sendMail(userEmail, `${userName}, activate your WeblerCodes account!`, html);
 });
 exports.sendActivationEmail = sendActivationEmail;

@@ -76,7 +76,7 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
                 setResults(prev => {
                     const updated = prev.map(ch =>
                         ch.id === data.channelId
-                            ? { ...ch, updatedAt: data.createdAt, lastMessage: data }
+                            ? { ...ch, updatedAt: data.createdAt, unreadCount: ch.unreadCount + 1, lastMessage: data, title: data.type == 4 ? data.channelTitle : ch.title }
                             : ch
                     );
                     const channelToMove = updated.find(ch => ch.id === data.channelId);
@@ -91,6 +91,7 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
             setResults(prev => {
                 for(let i = 0; i < prev.length; ++i) {
                     if(prev[i].id == data.channelId) {
+                        prev[i].unreadCount = 0;
                         if(prev[i].lastMessage) {
                             prev[i].lastMessage!.viewed = true;
                         }
@@ -100,12 +101,19 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
             });
         }
 
+        const handleChannelDeleted = (data: any) => {
+            setResults(prev => prev.filter(x => x.id != data.channelId));
+            onLeaveChannelRef.current?.(data.channelId);
+        }
+
         socket.on("channels:new_message", handleNewMessage);
         socket.on("channels:messages_seen", handleMessagesSeen);
+        socket.on("channels:channel_deleted", handleChannelDeleted);
 
         return () => {
             socket.off("channels:new_message", handleNewMessage);
             socket.off("channels:messages_seen", handleMessagesSeen);
+            socket.off("channels:channel_deleted", handleChannelDeleted);
         };
     }, [socket]);
 

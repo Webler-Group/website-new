@@ -25,14 +25,16 @@ const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
+const fileUtils_1 = require("../utils/fileUtils");
 const avatarImageUpload = (0, multer_1.default)({
-    limits: { fileSize: 1024 * 1024 },
+    limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
-        if (file.mimetype === 'image/png') {
+        // povolí image/png, image/jpg, image/jpeg, image/gif
+        if (/^image\/(png|jpe?g|gif)$/i.test(file.mimetype)) {
             cb(null, true);
         }
         else {
-            cb(null, false);
+            cb(new Error("Only .png, .jpg, .jpeg and .gif files are allowed"));
         }
     },
     storage: multer_1.default.diskStorage({
@@ -501,12 +503,7 @@ const markNotificationsClicked = (0, express_async_handler_1.default)((req, res)
     res.json({});
 }));
 const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const roles = req.roles;
     const { userId, active } = req.body;
-    if (!roles || !roles.some(role => ["Admin", "Moderator"].includes(role))) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
     const user = yield User_1.default.findById(userId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
@@ -543,14 +540,19 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
         res.status(404).json({ message: "User not found" });
         return;
     }
-    if (user.avatarImage) {
-        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs_1.default.existsSync(oldPath)) {
-            fs_1.default.unlinkSync(oldPath);
-        }
-    }
-    user.avatarImage = req.file.filename;
     try {
+        const compressedBuffer = yield (0, fileUtils_1.compressAvatar)({
+            inputPath: req.file.path,
+        });
+        // Overwrite original file
+        fs_1.default.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
+        if (user.avatarImage) {
+            const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
+            if (fs_1.default.existsSync(oldPath)) {
+                fs_1.default.unlinkSync(oldPath);
+            }
+        }
+        user.avatarImage = req.file.filename;
         yield user.save();
         res.json({
             success: true,

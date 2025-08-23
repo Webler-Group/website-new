@@ -22,6 +22,8 @@ interface IChannel {
     invites?: IChannelInvite[];
     participants?: IChannelParticipant[];
     lastActiveAt?: string;
+    unreadCount: number;
+    muted: boolean;
 }
 
 interface ChannelListItemProps {
@@ -56,38 +58,42 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                     <ProfileAvatar size={32} avatarImage={channel.coverImage} />
             }
             <div className="flex-grow-1">
-                <div className="d-flex justify-content-between">
-                    <div className="fw-bold d-flex align-items-center gap-2">
+                <div className="d-flex justify-content-between align-items-center">
+                    <div className="fw-bold">
                         {channel.title}
-                        {channel.lastMessage && channel.lastMessage.viewed === false && (
-                            <span
-                                className="badge bg-danger"
-                                style={{ fontSize: "0.7rem" }}
-                            >
-                                NEW
-                            </span>
-                        )}
                     </div>
                     <div className="small text-muted">
                         {DateUtils.format2(new Date(channel.updatedAt))}
                     </div>
                 </div>
-                {channel.lastMessage && (
+                <div className="d-flex justify-content-between align-items-center">
                     <div className="small">
-                        {channel.lastMessage.type === 1 ? (
-                            <>
-                                <span className="text-primary">{channel.lastMessage.userName}:</span>{" "}
+                        {channel.lastMessage != null && (
+                            channel.lastMessage.type === 1 ? (
+                                <>
+                                    <span className="text-primary">{channel.lastMessage.userName}:</span>{" "}
+                                    <span className="text-muted">
+                                        {formatMessageContent(channel.lastMessage.content)}
+                                    </span>
+                                </>
+                            ) : (
                                 <span className="text-muted">
-                                    {formatMessageContent(channel.lastMessage.content)}
+                                    {formatMessageContent(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.userName))}
                                 </span>
-                            </>
-                        ) : (
-                            <span className="text-muted">
-                                {formatMessageContent(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.userName))}
+                            )
+                        )}
+                    </div>
+                    <div>
+                        {channel.unreadCount > 0 && (
+                            <span
+                                className={"badge " + (channel.muted ? "bg-secondary" : "bg-danger")}
+                                style={{ fontSize: "0.7rem" }}
+                            >
+                                {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
                             </span>
                         )}
                     </div>
-                )}
+                </div>
             </div>
         </div>
     );

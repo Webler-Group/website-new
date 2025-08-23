@@ -5,7 +5,7 @@ import { useAuth } from "../../auth/context/authContext";
 import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
 import countries from "../../../data/countries";
-import { FaStar } from "react-icons/fa6";
+import { FaGear, FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";
 import CodesSection from "../components/CodesSection";
@@ -169,6 +169,12 @@ const Profile = () => {
             navigate("/Channels/" + result.channel.id);
         }
     }
+
+    const openSettings = () => {
+        if (!userDetails) return;
+        navigate("/Profile/" + userDetails.id + "?settings=true");
+    }
+
     const toggleUserBan = async () => {
         if (!userDetails) {
             return;
@@ -289,13 +295,20 @@ const Profile = () => {
                             <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
                         }
                         {setPageTitle(userDetails.name)}
-                        <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
+                        {
+                            isCurrentUser &&
+                            <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
+                        }
                         <Container className="p-2">
                             <Card className="p-2">
                                 <div className="wb-discuss-reply__edit-button">
                                     <Dropdown drop="start">
                                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
                                         <Dropdown.Menu>
+                                            {
+                                                isCurrentUser &&
+                                                <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
+                                            }
                                             {
                                                 (userInfo &&
                                                     userInfo.roles.some(role => ["Moderator", "Admin"].includes(role)) &&
@@ -379,9 +392,13 @@ const Profile = () => {
                     </>
                     :
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <h3>Sorry, couldn't find anything</h3>
-                        <p className="text-secondary">This user has just started their journey, try checking out their profile later.</p>
+                        <div className="wb-loader">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
                     </div>
+
             }
         </div>
     )

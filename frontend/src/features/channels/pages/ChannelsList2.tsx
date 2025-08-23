@@ -90,7 +90,7 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onE
     const onDeclineInvite = async (inviteId: string) => {
         const result = await sendJsonRequest("/Channels/AcceptInvite", "POST", {
             inviteId,
-            accepted: true
+            accepted: false
         });
         if (result && result.success) {
             invites.remove(inviteId);
@@ -160,12 +160,19 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onE
                     </div>
 
                     <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "channels")}>
-                        <Nav variant="pills" className="mb-3">
-                            <Nav.Item>
-                                <Nav.Link eventKey="channels">Channels</Nav.Link>
+                        <Nav variant="pills" className="mb-3 gap-2">
+                            <Nav.Item className="position-relative">
+                                <Nav.Link className="border border-primary" eventKey="channels">Channels</Nav.Link>
                             </Nav.Item>
-                            <Nav.Item>
-                                <Nav.Link eventKey="invites">Invites</Nav.Link>
+                            <Nav.Item className="position-relative">
+                                <Nav.Link className="border border-primary" eventKey="invites">Invites</Nav.Link>
+
+                                {invites.totalCount > 0 && (
+                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                        {invites.totalCount > 99 ? "99+" : invites.totalCount}
+                                        <span className="visually-hidden">pending invites</span>
+                                    </span>
+                                )}
                             </Nav.Item>
                         </Nav>
 

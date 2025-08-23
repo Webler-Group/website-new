@@ -38,11 +38,11 @@ const Codes = ({ MainPage }: CodesProps) => {
                 <div className="flex-grow-1">{MainPage}</div>
                 <div style={{ minWidth: "300px" }}>
                     <h2>Hot today</h2>
-                    <div className="mt-2">
+                    <div className="my-3">
                         {
                             codes.map(code => {
                                 return (
-                                    <div className="mt-2" key={code.id}>
+                                    <div className="mb-2" key={code.id}>
                                         <Code code={code} searchQuery="" showUserProfile={false} />
                                     </div>
                                 );

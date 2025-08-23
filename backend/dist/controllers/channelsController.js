@@ -21,9 +21,14 @@ const User_1 = __importDefault(require("../models/User"));
 const ChannelMessage_1 = __importDefault(require("../models/ChannelMessage"));
 const socketServer_1 = require("../config/socketServer");
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title } = req.body;
     const currentUserId = req.userId;
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
     const channel = yield Channel_1.default.create({ _type: 2, createdBy: currentUserId, title });
     yield ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Owner" });
     res.json({
@@ -111,6 +116,10 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         res.status(404).json({ message: "Channel not found" });
         return;
     }
+    const unreadCount = yield ChannelMessage_1.default.countDocuments({
+        channel: channel._id,
+        createdAt: { $gt: participant.lastActiveAt }
+    });
     const data = {
         id: channel._id,
         title: channel._type == 2 ? channel.title : ((_a = channel.DMUser) === null || _a === void 0 ? void 0 : _a._id) == currentUserId ? channel.createdBy.name : (_b = channel.DMUser) === null || _b === void 0 ? void 0 : _b.name,
@@ -118,7 +127,9 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         type: channel._type,
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
-        lastActiveAt: participant.lastActiveAt
+        lastActiveAt: participant.lastActiveAt,
+        unreadCount,
+        muted: participant.muted
     };
     if (includeInvites) {
         const invites = yield ChannelInvite_1.default.find({ channel: channelId })
@@ -155,7 +166,7 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
     const currentUserId = req.userId;
     // First find all channels where user is participant
     const participantChannels = yield ChannelParticipant_1.default.find({ user: currentUserId })
-        .select('channel lastActiveAt');
+        .select('channel lastActiveAt muted');
     const channelIds = participantChannels.map(p => p.channel);
     let query = Channel_1.default.find({ _id: { $in: channelIds } });
     if (fromDate) {
@@ -175,9 +186,19 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
         }
     })
         .lean();
+    const participantData = yield Promise.all(channels.map((channel) => __awaiter(void 0, void 0, void 0, function* () {
+        const participant = participantChannels.find(y => y.channel.equals(channel._id));
+        const lastActiveAt = (participant === null || participant === void 0 ? void 0 : participant.lastActiveAt) || new Date(0);
+        const unreadCount = yield ChannelMessage_1.default.countDocuments({
+            channel: channel._id,
+            createdAt: { $gt: lastActiveAt }
+        });
+        return { channelId: channel._id.toString(), unreadCount, muted: participant === null || participant === void 0 ? void 0 : participant.muted };
+    })));
+    const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, Object.assign({}, u)]));
     res.json({
         channels: channels.map(x => {
-            var _a, _b, _c, _d, _e;
+            var _a, _b, _c, _d, _e, _f, _g;
             const lastActiveAt = (_a = participantChannels.find(y => y.channel.equals(x._id))) === null || _a === void 0 ? void 0 : _a.lastActiveAt;
             return {
                 id: x._id,
@@ -186,6 +207,8 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
                 coverImage: ((_d = x.DMUser) === null || _d === void 0 ? void 0 : _d._id) == currentUserId ? x.createdBy.avatarImage : (_e = x.DMUser) === null || _e === void 0 ? void 0 : _e.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
+                unreadCount: ((_f = participantDataMap[x._id.toString()]) === null || _f === void 0 ? void 0 : _f.unreadCount) || 0,
+                muted: (_g = participantDataMap[x._id.toString()]) === null || _g === void 0 ? void 0 : _g.muted,
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
@@ -215,17 +238,19 @@ const getInvitesList = (0, express_async_handler_1.default)((req, res) => __awai
         .populate("author", "name avatarImage level roles")
         .populate("channel", "title _type")
         .lean();
+    const totalCount = yield ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
     res.json({
         invites: invites.map(x => ({
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
             authorAvatar: x.author.avatarImage,
-            channelId: x.channel.id,
+            channelId: x.channel._id,
             channelType: x.channel._type,
             channelTitle: x.channel.title,
             createdAt: x.createdAt
-        }))
+        })),
+        count: totalCount
     });
 }));
 const acceptInvite = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
@@ -259,19 +284,19 @@ const groupRemoveUser = (0, express_async_handler_1.default)((req, res) => __awa
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const result = yield ChannelParticipant_1.default.deleteOne({ user: userId, channel: channelId });
-    if (result.deletedCount === 1) {
-        yield ChannelMessage_1.default.create({
-            _type: 3,
-            content: "{action_user} left",
-            channel: channelId,
-            user: userId
-        });
-        res.json({ success: true });
+    const targetParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
+    if (!targetParticipant || targetParticipant.role == "Owner" || participant.role == targetParticipant.role) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
     }
-    else {
-        res.json({ success: false });
-    }
+    yield targetParticipant.deleteOne();
+    yield ChannelMessage_1.default.create({
+        _type: 3,
+        content: "{action_user} was removed",
+        channel: channelId,
+        user: userId
+    });
+    res.json({ success: true });
 }));
 const leaveChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { channelId } = req.body;
@@ -379,8 +404,151 @@ const groupCancelInvite = (0, express_async_handler_1.default)((req, res) => __a
         success: true
     });
 }));
+const groupRename = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId, title } = req.body;
+    const currentUserId = req.userId;
+    if (typeof title !== "string" || title.length < 3 || title.length > 20) {
+        res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
+        return;
+    }
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant || participant.role !== "Owner") {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    try {
+        yield Channel_1.default.updateOne({ _id: channelId }, { title });
+        yield ChannelMessage_1.default.create({
+            _type: 4,
+            content: "{action_user} renamed the group to " + title,
+            channel: channelId,
+            user: currentUserId
+        });
+        res.json({
+            success: true,
+            data: {
+                title
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            message: err === null || err === void 0 ? void 0 : err.message
+        });
+    }
+}));
+const groupChangeRole = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { userId, channelId, role } = req.body;
+    const currentUserId = req.userId;
+    if (!["Owner", "Admin", "Member"].includes(role)) {
+        res.status(400).json({ message: "Invalid role" });
+        return;
+    }
+    const currentParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!currentParticipant || currentParticipant.role !== "Owner") {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    const targetParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
+    if (!targetParticipant) {
+        res.status(404).json({ message: "Target user is not a participant" });
+        return;
+    }
+    if (userId === currentUserId) {
+        res.status(400).json({ message: "You cannot change your own role" });
+        return;
+    }
+    if (role === "Owner") {
+        yield ChannelParticipant_1.default.updateOne({ channel: channelId, user: currentUserId }, { role: "Admin" });
+    }
+    targetParticipant.role = role;
+    yield targetParticipant.save();
+    res.json({ success: true, data: { userId, role } });
+}));
+const deleteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId } = req.body;
+    const currentUserId = req.userId;
+    const channel = yield Channel_1.default.findById(channelId);
+    if (!channel) {
+        res.status(404).json({ message: "Channel not found" });
+        return;
+    }
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+    if (channel._type !== 1 && "Owner" !== participant.role) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+    const participants = yield ChannelParticipant_1.default.find({ channel: channelId });
+    yield channel.deleteOne();
+    const io = (0, socketServer_1.getIO)();
+    if (io) {
+        io.to(participants.map(x => (0, socketServer_1.uidRoom)(x.user.toString()))).emit("channels:channel_deleted", {
+            channelId
+        });
+    }
+    res.json({ success: true });
+}));
 const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const currentUserId = req.userId;
+    // Count unseen messages
+    const results = yield ChannelMessage_1.default.aggregate([
+        {
+            $lookup: {
+                from: "channelparticipants",
+                let: { channelId: "$channel", msgCreatedAt: "$createdAt" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$user", new mongoose_1.default.Types.ObjectId(currentUserId)] },
+                                    { $eq: ["$channel", "$$channelId"] },
+                                    {
+                                        $or: [
+                                            { $eq: ["$lastActiveAt", null] },
+                                            { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
+                                        ]
+                                    },
+                                    { $eq: ["$muted", false] }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "participant"
+            }
+        },
+        { $match: { participant: { $ne: [] }, deleted: false } },
+        { $count: "total" }
+    ]);
+    const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
+    // Count invites
+    const invitesCount = yield ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
+    // Sum up
+    const totalCount = unseenMessagesCount + invitesCount;
+    res.json({ count: totalCount });
+}));
+const muteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { channelId, muted } = req.body;
+    const currentUserId = req.userId;
+    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    if (!participant) {
+        res.status(403).json({ message: "Not a member of this channel" });
+        return;
+    }
+    participant.muted = muted;
+    yield participant.save();
+    res.json({
+        success: true,
+        data: {
+            muted: participant.muted
+        }
+    });
 }));
 const markMessagesSeenWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { channelId } = payload;
@@ -433,6 +601,10 @@ const channelsController = {
     groupRemoveUser,
     leaveChannel,
     groupCancelInvite,
-    getUnseenMessagesCount
+    getUnseenMessagesCount,
+    groupRename,
+    groupChangeRole,
+    deleteChannel,
+    muteChannel
 };
 exports.default = channelsController;

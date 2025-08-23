@@ -65,6 +65,8 @@ server {
     include /etc/letsencrypt/options-ssl-nginx.conf;
     ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
+    client_max_body_size 10M;
+
     location / {
         root ${path.join(projectDir, "frontend/dist")};
         index index.html index.htm;
