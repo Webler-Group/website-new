@@ -259,7 +259,8 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 isPublic: code.isPublic,
                 source: code.source,
                 cssSource: code.cssSource,
-                jsSource: code.jsSource
+                jsSource: code.jsSource,
+                updatedAt: code.updatedAt
             }
         })
     }

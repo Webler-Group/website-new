@@ -226,7 +226,8 @@ const editCode = (0, express_async_handler_1.default)(async (req, res) => {
                 isPublic: code.isPublic,
                 source: code.source,
                 cssSource: code.cssSource,
-                jsSource: code.jsSource
+                jsSource: code.jsSource,
+                updatedAt: code.updatedAt
             }
         });
     }

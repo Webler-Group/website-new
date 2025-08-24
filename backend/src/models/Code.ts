@@ -61,11 +61,9 @@ codeSchema.add({
 // Pre-save hook: only bump updatedAt when *content fields* change
 codeSchema.pre("save", function (next) {
     if (
-        this.isModified("name") ||
         this.isModified("source") ||
         this.isModified("cssSource") ||
-        this.isModified("jsSource") ||
-        this.isModified("isPublic")
+        this.isModified("jsSource")
     ) {
         this.set("updatedAt", new Date());
     }
