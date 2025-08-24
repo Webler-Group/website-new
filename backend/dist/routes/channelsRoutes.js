@@ -9,7 +9,7 @@ const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const channelsController_1 = __importDefault(require("../controllers/channelsController"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
-router.use((0, protectRoute_1.default)());
+router.use(protectRoute_1.default);
 router.route("/").post(channelsController_1.default.getChannelsList);
 router.route("/CreateDirectMessages").post(channelsController_1.default.createDirectMessages);
 router.route("/CreateGroup").post(channelsController_1.default.createGroup);

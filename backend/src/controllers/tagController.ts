@@ -16,13 +16,6 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { tags, action } = req.body;
     const roles = req.roles;
 
-    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
-
-    if(!isModerator) {
-        res.status(403).json({ message: "Unauthorized Access" });
-        return;
-    }
-
     if(tags.length < 1 || !(typeof action == "string") || action == "" ) {
         res.status(200).json({ message: "0 job done" });
         return;

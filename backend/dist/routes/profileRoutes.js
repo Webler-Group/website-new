@@ -7,6 +7,7 @@ const express_1 = __importDefault(require("express"));
 const profileController_1 = __importDefault(require("../controllers/profileController"));
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
+const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/GetProfile")
@@ -15,7 +16,7 @@ router.route("/GetFollowing")
     .post(profileController_1.default.getFollowing);
 router.route("/GetFollowers")
     .post(profileController_1.default.getFollowers);
-router.use((0, protectRoute_1.default)());
+router.use(protectRoute_1.default);
 router.route("/UpdateProfile")
     .put(profileController_1.default.updateProfile);
 router.route("/ChangeEmail")
@@ -37,7 +38,7 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController_1.default.sendActivationCode);
 router.route("/ToggleUserBan")
-    .post((0, protectRoute_1.default)(["Moderator"]), profileController_1.default.toggleUserBan); // TODO: Move to Admin routes
+    .post((0, requireRoles_1.default)(["Moderator", "Admin"]), profileController_1.default.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController_1.default.avatarImageUpload.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")

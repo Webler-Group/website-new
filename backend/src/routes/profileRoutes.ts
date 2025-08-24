@@ -2,6 +2,7 @@ import express from "express";
 import profileController from "../controllers/profileController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
+import requireRoles from "../middleware/requireRoles";
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.route("/GetFollowing")
 router.route("/GetFollowers")
     .post(profileController.getFollowers);
 
-router.use(protectRoute());
+router.use(protectRoute);
 
 router.route("/UpdateProfile")
     .put(profileController.updateProfile);
@@ -38,7 +39,7 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
 router.route("/ToggleUserBan")
-    .post(protectRoute(["Moderator"]), profileController.toggleUserBan); // TODO: Move to Admin routes
+    .post(requireRoles(["Moderator", "Admin"]), profileController.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")

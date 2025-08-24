@@ -507,10 +507,6 @@ const toggleUserBan = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    if (user.roles.some(role => ["Admin", "Moderator"].includes(role))) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
     user.active = active;
     try {
         await user.save();

@@ -616,11 +616,6 @@ const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (user.roles.some(role => ["Admin", "Moderator"].includes(role))) {
-        res.status(401).json({ message: "Unauthorized" });
-        return
-    }
-
     user.active = active;
 
     try {

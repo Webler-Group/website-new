@@ -10,7 +10,7 @@ const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/").post(courseController_1.default.getCourseList);
-router.use((0, protectRoute_1.default)());
+router.use(protectRoute_1.default);
 router.route("/GetUserCourses").post(courseController_1.default.getUserCourseList);
 router.route("/GetCourse").post(courseController_1.default.getCourse);
 router.route("/GetLesson").post(courseController_1.default.getLesson);

@@ -2,12 +2,14 @@ import express from "express";
 import verifyJWT from "../middleware/verifyJWT";
 import courseEditorController from "../controllers/courseEditorController";
 import protectRoute from "../middleware/protectRoute";
+import requireRoles from "../middleware/requireRoles";
 
 const router = express.Router();
 
 router.use(verifyJWT);
 
-router.use(protectRoute(["Admin", "Creator"]));
+router.use(protectRoute);
+router.use(requireRoles(["Admin", "Creator"]))
 
 router.route("/").post(courseEditorController.getCoursesList);
 router.route("/GetCourse").post(courseEditorController.getCourse);

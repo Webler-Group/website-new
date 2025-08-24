@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.use(protectRoute());
+router.use(protectRoute);
 
 router.route("/GetPublicKey").post(notificationController.getPublicKey);
 router.route("/Subscribe").post(notificationController.subscribe);
