@@ -15,6 +15,8 @@ import fs from "fs";
 import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
 import { compressAvatar } from "../utils/fileUtils";
+import { sendToUsers } from "../services/pushService";
+import mongoose from "mongoose";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -47,8 +49,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
 
-    const user = await User.findById(userId);
-
+    const user = await User.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
         return
@@ -103,6 +104,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             level: user.level,
             xp: user.xp,
             active: user.active,
+            notifications: user.notifications,
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
@@ -336,7 +338,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const exists = await UserFollowing.findOne({ user: currentUserId, following: userId });
+    const exists = await UserFollowing.findOne({ user: currentUserId, following: userId })
     if (exists) {
         res.status(204).json({ success: true })
         return
@@ -348,6 +350,12 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     if (userFollowing) {
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers([userId], {
+            title: "Follower",
+            body: currentUserName + " followed you"
+        },"followers");
         await Notification.create({
             user: userId,
             actionUser: currentUserId,
@@ -682,6 +690,61 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
 
 });
 
+const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { notifications } = req.body;
+
+    if (!notifications || typeof notifications !== "object") {
+        res.status(400).json({ message: "Invalid notifications object" });
+        return;
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
+    }
+
+    if (!user.notifications) {
+        user.notifications = {
+            followers: true,
+            codes: true,
+            discuss: true,
+            channels: true
+        };
+    }
+
+    if (typeof notifications.followers !== "undefined") {
+        user.notifications.followers = notifications.followers;
+    }
+    if (typeof notifications.codes !== "undefined") {
+        user.notifications.codes = notifications.codes;
+    }
+    if (typeof notifications.discuss !== "undefined") {
+        user.notifications.discuss = notifications.discuss;
+    }
+    if (typeof notifications.channels !== "undefined") {
+        user.notifications.channels = notifications.channels;
+    }
+
+    try {
+        await user.save();
+
+        res.json({
+            success: true,
+            data: {
+                notifications: user.notifications
+            }
+        });
+    } catch (err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+});
+
 const controller = {
     getProfile,
     updateProfile,
@@ -698,7 +761,8 @@ const controller = {
     sendActivationCode,
     toggleUserBan,
     uploadProfileAvatarImage,
-    avatarImageUpload
+    avatarImageUpload,
+    updateNotifications
 };
 
 export default controller;

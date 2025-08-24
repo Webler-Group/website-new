@@ -18,7 +18,6 @@ const QuestionList = () => {
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState(1);
-    const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -39,7 +38,6 @@ const QuestionList = () => {
         }
         if (searchParams.has("query")) {
             setSearchQuery(searchParams.get("query")!)
-            setSearchInput(searchParams.get("query")!)
         }
     }, []);
 
@@ -52,8 +50,7 @@ const QuestionList = () => {
         setCurrentPage(page);
     }
 
-    const handleSearch = () => {
-        const value = searchInput.trim();
+    const handleSearch = (value: string) => {
         searchParams.set("query", value);
         setSearchParams(searchParams, { replace: true });
         setSearchQuery(value);
@@ -93,19 +90,13 @@ const QuestionList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Q&A Discussions</h2>
-            <div className="d-flex mt-2" style={{ gap: "0.5rem" }}>
-                <div style={{ flex: 1 }}>
-                    <TagSearch
-                        query={searchInput}
-                        onChange={(val) => setSearchInput(val)}
-                        onSelect={(tag) => {
-                            setSearchInput(tag);
-                        }}
-                        placeholder="Search by tags or title..."
-                        maxWidthPx={360}
-                    />
-                </div>
-                <Button size="sm" onClick={handleSearch}>Search</Button>
+            <div className="mt-2">
+                <TagSearch
+                    placeholder="Search by tags or title..."
+                    maxWidthPx={360}
+                    query={searchQuery}
+                    handleSearch={handleSearch}
+                />
             </div>
             <div className="mt-2 d-flex justify-content-between">
                 <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>

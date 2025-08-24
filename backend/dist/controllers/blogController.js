@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -18,7 +9,7 @@ const path_1 = __importDefault(require("path"));
 const showdown_1 = __importDefault(require("showdown"));
 const confg_1 = require("../confg");
 const blogsDir = path_1.default.join(confg_1.config.rootDir, "uploads", "blogs");
-const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getBlogEntries = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, searchQuery } = req.body;
     if (typeof page === "undefined" || typeof count === "undefined" || typeof searchQuery === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -46,8 +37,8 @@ const getBlogEntries = (0, express_async_handler_1.default)((req, res) => __awai
         posts,
         count: postCount
     });
-}));
-const getBlogEntry = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getBlogEntry = (0, express_async_handler_1.default)(async (req, res) => {
     const { entryName } = req.body;
     try {
         const jsonFileData = fs_1.default.readFileSync(path_1.default.join(blogsDir, entryName, 'info.json'));
@@ -69,7 +60,7 @@ const getBlogEntry = (0, express_async_handler_1.default)((req, res) => __awaite
             message: "Blog not found"
         });
     }
-}));
+});
 const controller = {
     getBlogEntries,
     getBlogEntry

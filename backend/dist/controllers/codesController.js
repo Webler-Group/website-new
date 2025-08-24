@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,18 +11,18 @@ const templates_1 = __importDefault(require("../data/templates"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const socketServer_1 = require("../config/socketServer");
 const regexUtils_1 = require("../utils/regexUtils");
-const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createCode = (0, express_async_handler_1.default)(async (req, res) => {
     const { name, language, source, cssSource, jsSource } = req.body;
     const currentUserId = req.userId;
     if (typeof name === "undefined" || typeof language === "undefined" || typeof source === "undefined" || typeof cssSource === "undefined" || typeof jsSource === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    if ((yield Code_1.default.countDocuments({ user: currentUserId })) >= 500) {
+    if (await Code_1.default.countDocuments({ user: currentUserId }) >= 500) {
         res.status(403).json({ message: "You already have max count of codes" });
         return;
     }
-    const code = yield Code_1.default.create({
+    const code = await Code_1.default.create({
         name,
         language,
         user: currentUserId,
@@ -60,8 +51,8 @@ const createCode = (0, express_async_handler_1.default)((req, res) => __awaiter(
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getCodeList = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, filter, searchQuery, userId, language } = req.body;
     const currentUserId = req.userId;
     if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined" || typeof language === "undefined") {
@@ -121,8 +112,8 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
         default:
             throw new Error("Unknown filter");
     }
-    const codeCount = yield dbQuery.clone().countDocuments();
-    const result = yield dbQuery
+    const codeCount = await dbQuery.clone().countDocuments();
+    const result = await dbQuery
         .skip((page - 1) * count)
         .limit(count)
         .select("-source -cssSource -jsSource")
@@ -152,20 +143,20 @@ const getCodeList = (0, express_async_handler_1.default)((req, res) => __awaiter
                 }));
             }
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.status(200).json({ count: codeCount, codes: data });
     }
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const getCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId } = req.body;
-    const code = yield Code_1.default.findById(codeId)
+    const code = await Code_1.default.findById(codeId)
         .populate("user", "name avatarImage countryCode level roles");
     if (code) {
-        const isUpvoted = currentUserId ? yield Upvote_1.default.findOne({ parentId: codeId, user: currentUserId }) : false;
+        const isUpvoted = currentUserId ? await Upvote_1.default.findOne({ parentId: codeId, user: currentUserId }) : false;
         res.json({
             code: {
                 id: code._id,
@@ -191,8 +182,8 @@ const getCode = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
     else {
         res.status(404).json({ message: "Question not found" });
     }
-}));
-const getTemplate = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getTemplate = (0, express_async_handler_1.default)(async (req, res) => {
     const language = req.params.language;
     const template = templates_1.default.find(x => x.language === language);
     if (template) {
@@ -203,15 +194,15 @@ const getTemplate = (0, express_async_handler_1.default)((req, res) => __awaiter
     else {
         res.status(404).json({ message: "Unknown language" });
     }
-}));
-const editCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId, name, isPublic, source, cssSource, jsSource } = req.body;
     if (typeof name === "undefined" || typeof isPublic === "undefined" || typeof source === "undefined" || typeof cssSource === "undefined" || typeof jsSource === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const code = yield Code_1.default.findById(codeId);
+    const code = await Code_1.default.findById(codeId);
     if (code === null) {
         res.status(404).json({ message: "Code not found" });
         return;
@@ -226,7 +217,7 @@ const editCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     code.cssSource = cssSource;
     code.jsSource = jsSource;
     try {
-        yield code.save();
+        await code.save();
         res.json({
             success: true,
             data: {
@@ -246,11 +237,11 @@ const editCode = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
             data: null
         });
     }
-}));
-const deleteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId } = req.body;
-    const code = yield Code_1.default.findById(codeId);
+    const code = await Code_1.default.findById(codeId);
     if (code === null) {
         res.status(404).json({ message: "Code not found" });
         return;
@@ -260,47 +251,47 @@ const deleteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(
         return;
     }
     try {
-        yield Code_1.default.deleteAndCleanup(codeId);
+        await Code_1.default.deleteAndCleanup(codeId);
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const voteCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const voteCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId, vote } = req.body;
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const code = yield Code_1.default.findById(codeId);
+    const code = await Code_1.default.findById(codeId);
     if (code === null) {
         res.status(404).json({ message: "Code not found" });
         return;
     }
-    let upvote = yield Upvote_1.default.findOne({ parentId: codeId, user: currentUserId });
+    let upvote = await Upvote_1.default.findOne({ parentId: codeId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
-            upvote = yield Upvote_1.default.create({ user: currentUserId, parentId: codeId });
+            upvote = await Upvote_1.default.create({ user: currentUserId, parentId: codeId });
             code.$inc("votes", 1);
-            yield code.save();
+            await code.save();
         }
     }
     else if (vote === 0) {
         if (upvote) {
-            yield Upvote_1.default.deleteOne({ _id: upvote._id });
+            await Upvote_1.default.deleteOne({ _id: upvote._id });
             upvote = null;
             code.$inc("votes", -1);
-            yield code.save();
+            await code.save();
         }
     }
     res.json({ vote: upvote ? 1 : 0 });
-}));
-const createJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createJob = (0, express_async_handler_1.default)(async (req, res) => {
     const { language, source, stdin } = req.body;
     const deviceId = req.deviceId;
-    const job = yield EvaluationJob_1.default.create({
+    const job = await EvaluationJob_1.default.create({
         language,
         source,
         stdin,
@@ -309,10 +300,10 @@ const createJob = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     res.json({
         jobId: job._id
     });
-}));
-const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getJob = (0, express_async_handler_1.default)(async (req, res) => {
     const { jobId } = req.body;
-    const job = yield EvaluationJob_1.default.findById(jobId).select("-source");
+    const job = await EvaluationJob_1.default.findById(jobId).select("-source");
     if (!job) {
         res.status(404).json({ message: "Job does not exist" });
         return;
@@ -328,10 +319,10 @@ const getJob = (0, express_async_handler_1.default)((req, res) => __awaiter(void
             stderr: job.stderr
         }
     });
-}));
-const getJobWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getJobWS = async (socket, payload) => {
     const { jobId } = payload;
-    const job = yield EvaluationJob_1.default.findById(jobId).select("-source");
+    const job = await EvaluationJob_1.default.findById(jobId).select("-source");
     if (!job) {
         console.log("404 Job " + jobId + " not found");
         return;
@@ -348,7 +339,7 @@ const getJobWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function
             stderr: job.stderr
         }
     });
-});
+};
 const registerHandlersWS = (socket) => {
     if (socket.data.roles && socket.data.roles.includes("Admin")) {
         socket.on("job:finished", (payload) => getJobWS(socket, payload));

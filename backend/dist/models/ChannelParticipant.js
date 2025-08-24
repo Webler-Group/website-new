@@ -51,6 +51,10 @@ const channelParticipantSchema = new mongoose_1.Schema({
     muted: {
         type: Boolean,
         default: false
+    },
+    unreadCount: {
+        type: Number,
+        default: 0
     }
 });
 const ChannelParticipant = mongoose_1.default.model("ChannelParticipant", channelParticipantSchema);

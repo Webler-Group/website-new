@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -83,31 +74,33 @@ const userSchema = new mongoose_1.default.Schema({
     avatarImage: {
         type: String,
         required: false
+    },
+    notifications: {
+        followers: { type: Boolean, default: true },
+        codes: { type: Boolean, default: true },
+        discuss: { type: Boolean, default: true },
+        channels: { type: Boolean, default: true },
     }
 }, {
     timestamps: true
 });
-userSchema.methods.matchPassword = function (inputPassword) {
-    return __awaiter(this, void 0, void 0, function* () {
-        return yield bcrypt_1.default.compare(inputPassword, this.password);
-    });
+userSchema.methods.matchPassword = async function (inputPassword) {
+    return await bcrypt_1.default.compare(inputPassword, this.password);
 };
-userSchema.pre('save', function (next) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (this.isModified("password")) {
-            if (this.password.length < 6) {
-                return next(new Error("Password must contain at least 6 characters"));
-            }
-            const salt = yield bcrypt_1.default.genSalt(10);
-            this.password = yield bcrypt_1.default.hash(this.password, salt);
+userSchema.pre('save', async function (next) {
+    if (this.isModified("password")) {
+        if (this.password.length < 6) {
+            return next(new Error("Password must contain at least 6 characters"));
         }
-        if (this.isModified("active")) {
-            yield Post_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
-            yield Code_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
-            yield Notification_1.default.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
-        }
-        return next();
-    });
+        const salt = await bcrypt_1.default.genSalt(10);
+        this.password = await bcrypt_1.default.hash(this.password, salt);
+    }
+    if (this.isModified("active")) {
+        await Post_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+        await Code_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
+        await Notification_1.default.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
+    }
+    return next();
 });
 const User = mongoose_1.default.model('User', userSchema);
 exports.default = User;

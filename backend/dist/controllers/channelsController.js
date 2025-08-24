@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -22,15 +13,15 @@ const ChannelMessage_1 = __importDefault(require("../models/ChannelMessage"));
 const socketServer_1 = require("../config/socketServer");
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createGroup = (0, express_async_handler_1.default)(async (req, res) => {
     const { title } = req.body;
     const currentUserId = req.userId;
     if (typeof title !== "string" || title.length < 3 || title.length > 20) {
         res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
         return;
     }
-    const channel = yield Channel_1.default.create({ _type: 2, createdBy: currentUserId, title });
-    yield ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Owner" });
+    const channel = await Channel_1.default.create({ _type: 2, createdBy: currentUserId, title });
+    await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Owner" });
     res.json({
         channel: {
             id: channel._id,
@@ -39,25 +30,25 @@ const createGroup = (0, express_async_handler_1.default)((req, res) => __awaiter
             updatedAt: channel.updatedAt
         }
     });
-}));
-const createDirectMessages = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createDirectMessages = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId } = req.body;
     const currentUserId = req.userId;
-    const DMUser = yield User_1.default.findById(userId, "name avatarImage level roles");
+    const DMUser = await User_1.default.findById(userId, "name avatarImage level roles");
     if (!DMUser) {
         res.status(404).json({ message: "User not found" });
         return;
     }
-    let channel = yield Channel_1.default.where({ _type: 1, createdBy: { $in: [userId, currentUserId] }, DMUser: { $in: [userId, currentUserId] } }).findOne();
+    let channel = await Channel_1.default.where({ _type: 1, createdBy: { $in: [userId, currentUserId] }, DMUser: { $in: [userId, currentUserId] } }).findOne();
     if (!channel) {
-        channel = yield Channel_1.default.create({ _type: 1, createdBy: currentUserId, DMUser: userId });
-        yield ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Member" });
-        yield ChannelInvite_1.default.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+        channel = await Channel_1.default.create({ _type: 1, createdBy: currentUserId, DMUser: userId });
+        await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: "Member" });
+        await ChannelInvite_1.default.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
     }
     else {
-        const myInvite = yield ChannelInvite_1.default.findOne({ channel: channel._id, invitedUser: currentUserId });
+        const myInvite = await ChannelInvite_1.default.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
-            yield myInvite.accept();
+            await myInvite.accept();
         }
     }
     res.json({
@@ -65,30 +56,30 @@ const createDirectMessages = (0, express_async_handler_1.default)((req, res) => 
             id: channel._id
         }
     });
-}));
-const groupInviteUser = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const groupInviteUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, username } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant || !["Owner", "Admin"].includes(participant.role)) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const invitedUser = yield User_1.default.findOne({ name: username }, "_id name avatarImage");
+    const invitedUser = await User_1.default.findOne({ name: username }, "_id name avatarImage");
     if (!invitedUser) {
         res.status(404).json({ message: "User not found" });
         return;
     }
-    if ((yield ChannelParticipant_1.default.findOne({ channel: channelId, user: invitedUser._id }, "_id")) != null) {
+    if ((await ChannelParticipant_1.default.findOne({ channel: channelId, user: invitedUser._id }, "_id")) != null) {
         res.status(400).json({ message: "Invited user is already participant" });
         return;
     }
-    let invite = yield ChannelInvite_1.default.findOne({ invitedUser: invitedUser._id, channel: channelId });
+    let invite = await ChannelInvite_1.default.findOne({ invitedUser: invitedUser._id, channel: channelId });
     if (invite) {
         res.status(400).json({ message: "Invite already exists" });
         return;
     }
-    invite = yield ChannelInvite_1.default.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
+    invite = await ChannelInvite_1.default.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
     res.json({
         invite: {
             id: invite._id,
@@ -98,17 +89,16 @@ const groupInviteUser = (0, express_async_handler_1.default)((req, res) => __awa
             createdAt: invite.createdAt
         }
     });
-}));
-const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d;
+});
+const getChannel = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, includeParticipants, includeInvites } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
     }
-    const channel = yield Channel_1.default.findById(channelId)
+    const channel = await Channel_1.default.findById(channelId)
         .populate("DMUser", "name avatarImage level roles")
         .populate("createdBy", "name avatarImage level roles")
         .lean();
@@ -116,23 +106,19 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         res.status(404).json({ message: "Channel not found" });
         return;
     }
-    const unreadCount = yield ChannelMessage_1.default.countDocuments({
-        channel: channel._id,
-        createdAt: { $gt: participant.lastActiveAt }
-    });
     const data = {
         id: channel._id,
-        title: channel._type == 2 ? channel.title : ((_a = channel.DMUser) === null || _a === void 0 ? void 0 : _a._id) == currentUserId ? channel.createdBy.name : (_b = channel.DMUser) === null || _b === void 0 ? void 0 : _b.name,
-        coverImage: ((_c = channel.DMUser) === null || _c === void 0 ? void 0 : _c._id) == currentUserId ? channel.createdBy.avatarImage : (_d = channel.DMUser) === null || _d === void 0 ? void 0 : _d.avatarImage,
+        title: channel._type == 2 ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
+        coverImage: channel.DMUser?._id == currentUserId ? channel.createdBy.avatarImage : channel.DMUser?.avatarImage,
         type: channel._type,
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
-        unreadCount,
+        unreadCount: participant.unreadCount,
         muted: participant.muted
     };
     if (includeInvites) {
-        const invites = yield ChannelInvite_1.default.find({ channel: channelId })
+        const invites = await ChannelInvite_1.default.find({ channel: channelId })
             .populate("author", "name avatarImage level roles")
             .populate("invitedUser", "name avatarImage level roles")
             .lean();
@@ -147,7 +133,7 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
         }));
     }
     if (includeParticipants) {
-        const participants = yield ChannelParticipant_1.default.find({ channel: channelId })
+        const participants = await ChannelParticipant_1.default.find({ channel: channelId })
             .populate("user", "name avatarImage level roles") // Assumes user ref is populated
             .lean();
         data.participants = participants.map((x) => ({
@@ -160,19 +146,19 @@ const getChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(
     res.json({
         channel: data
     });
-}));
-const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getChannelsList = (0, express_async_handler_1.default)(async (req, res) => {
     const { fromDate, count } = req.body;
     const currentUserId = req.userId;
     // First find all channels where user is participant
-    const participantChannels = yield ChannelParticipant_1.default.find({ user: currentUserId })
-        .select('channel lastActiveAt muted');
+    const participantChannels = await ChannelParticipant_1.default.find({ user: currentUserId })
+        .select('channel lastActiveAt muted unreadCount');
     const channelIds = participantChannels.map(p => p.channel);
     let query = Channel_1.default.find({ _id: { $in: channelIds } });
     if (fromDate) {
         query = query.where({ updatedAt: { $lt: new Date(fromDate) } });
     }
-    const channels = yield query
+    const channels = await query
         .sort({ updatedAt: -1 })
         .limit(count)
         .populate("DMUser", "name avatarImage level roles")
@@ -186,29 +172,23 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
         }
     })
         .lean();
-    const participantData = yield Promise.all(channels.map((channel) => __awaiter(void 0, void 0, void 0, function* () {
+    const participantData = channels.map((channel) => {
         const participant = participantChannels.find(y => y.channel.equals(channel._id));
-        const lastActiveAt = (participant === null || participant === void 0 ? void 0 : participant.lastActiveAt) || new Date(0);
-        const unreadCount = yield ChannelMessage_1.default.countDocuments({
-            channel: channel._id,
-            createdAt: { $gt: lastActiveAt }
-        });
-        return { channelId: channel._id.toString(), unreadCount, muted: participant === null || participant === void 0 ? void 0 : participant.muted };
-    })));
-    const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, Object.assign({}, u)]));
+        return { channelId: channel._id.toString(), unreadCount: participant?.unreadCount || 0, muted: participant?.muted };
+    });
+    const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, { ...u }]));
     res.json({
         channels: channels.map(x => {
-            var _a, _b, _c, _d, _e, _f, _g;
-            const lastActiveAt = (_a = participantChannels.find(y => y.channel.equals(x._id))) === null || _a === void 0 ? void 0 : _a.lastActiveAt;
+            const lastActiveAt = participantChannels.find(y => y.channel.equals(x._id))?.lastActiveAt;
             return {
                 id: x._id,
                 type: x._type,
-                title: x._type == 2 ? x.title : ((_b = x.DMUser) === null || _b === void 0 ? void 0 : _b._id) == currentUserId ? x.createdBy.name : (_c = x.DMUser) === null || _c === void 0 ? void 0 : _c.name,
-                coverImage: ((_d = x.DMUser) === null || _d === void 0 ? void 0 : _d._id) == currentUserId ? x.createdBy.avatarImage : (_e = x.DMUser) === null || _e === void 0 ? void 0 : _e.avatarImage,
+                title: x._type == 2 ? x.title : x.DMUser?._id == currentUserId ? x.createdBy.name : x.DMUser?.name,
+                coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
-                unreadCount: ((_f = participantDataMap[x._id.toString()]) === null || _f === void 0 ? void 0 : _f.unreadCount) || 0,
-                muted: (_g = participantDataMap[x._id.toString()]) === null || _g === void 0 ? void 0 : _g.muted,
+                unreadCount: participantDataMap[x._id.toString()]?.unreadCount || 0,
+                muted: participantDataMap[x._id.toString()]?.muted,
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
@@ -224,21 +204,21 @@ const getChannelsList = (0, express_async_handler_1.default)((req, res) => __awa
             };
         })
     });
-}));
-const getInvitesList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getInvitesList = (0, express_async_handler_1.default)(async (req, res) => {
     const { fromDate, count } = req.body;
     const currentUserId = req.userId;
     let query = ChannelInvite_1.default.find({ invitedUser: currentUserId });
     if (fromDate) {
         query = query.where({ createdAt: { $lt: new Date(fromDate) } });
     }
-    const invites = yield query
+    const invites = await query
         .sort({ createdAt: -1 })
         .limit(count)
         .populate("author", "name avatarImage level roles")
         .populate("channel", "title _type")
         .lean();
-    const totalCount = yield ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
+    const totalCount = await ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
     res.json({
         invites: invites.map(x => ({
             id: x._id,
@@ -252,11 +232,11 @@ const getInvitesList = (0, express_async_handler_1.default)((req, res) => __awai
         })),
         count: totalCount
     });
-}));
-const acceptInvite = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const acceptInvite = (0, express_async_handler_1.default)(async (req, res) => {
     const { inviteId, accepted } = req.body;
     const currentUserId = req.userId;
-    const invite = yield ChannelInvite_1.default.findById(inviteId);
+    const invite = await ChannelInvite_1.default.findById(inviteId);
     if (!invite) {
         res.status(403).json({ message: "Invite not found" });
         return;
@@ -265,9 +245,9 @@ const acceptInvite = (0, express_async_handler_1.default)((req, res) => __awaite
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    yield invite.accept(accepted);
+    await invite.accept(accepted);
     if (accepted) {
-        yield ChannelMessage_1.default.create({
+        await ChannelMessage_1.default.create({
             _type: 2,
             content: "{action_user} joined",
             channel: invite.channel,
@@ -275,40 +255,40 @@ const acceptInvite = (0, express_async_handler_1.default)((req, res) => __awaite
         });
     }
     res.json({ success: true, data: { accepted } });
-}));
-const groupRemoveUser = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const groupRemoveUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, userId } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant || !["Owner", "Admin"].includes(participant.role)) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const targetParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
+    const targetParticipant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
     if (!targetParticipant || targetParticipant.role == "Owner" || participant.role == targetParticipant.role) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    yield targetParticipant.deleteOne();
-    yield ChannelMessage_1.default.create({
+    await targetParticipant.deleteOne();
+    await ChannelMessage_1.default.create({
         _type: 3,
         content: "{action_user} was removed",
         channel: channelId,
         user: userId
     });
     res.json({ success: true });
-}));
-const leaveChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const leaveChannel = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
     }
-    const result = yield ChannelParticipant_1.default.deleteOne({ user: currentUserId, channel: channelId });
+    const result = await ChannelParticipant_1.default.deleteOne({ user: currentUserId, channel: channelId });
     if (result.deletedCount === 1) {
-        yield ChannelMessage_1.default.create({
+        await ChannelMessage_1.default.create({
             _type: 3,
             content: "{action_user} left",
             channel: channelId,
@@ -319,16 +299,16 @@ const leaveChannel = (0, express_async_handler_1.default)((req, res) => __awaite
     else {
         res.json({ success: false });
     }
-}));
-const createMessage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createMessage = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, content } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
     }
-    const message = yield ChannelMessage_1.default.create({
+    const message = await ChannelMessage_1.default.create({
         _type: 1,
         content,
         channel: channelId,
@@ -341,11 +321,11 @@ const createMessage = (0, express_async_handler_1.default)((req, res) => __await
             createdAt: message.createdAt
         }
     });
-}));
-const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
@@ -354,7 +334,7 @@ const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter
     if (fromDate) {
         query = query.where({ createdAt: { $lt: new Date(fromDate) } });
     }
-    const messages = yield query
+    const messages = await query
         .sort({ createdAt: -1 })
         .limit(count)
         .populate("user", "name avatarImage level roles")
@@ -375,25 +355,25 @@ const getMessages = (0, express_async_handler_1.default)((req, res) => __awaiter
     for (let i = 0; i < data.length; ++i) {
         promises.push(PostAttachment_1.default.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
-    yield Promise.all(promises);
+    await Promise.all(promises);
     res.json({
         messages: data
     });
-}));
-const groupCancelInvite = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const groupCancelInvite = (0, express_async_handler_1.default)(async (req, res) => {
     const { inviteId } = req.body;
     const currentUserId = req.userId;
-    const invite = yield ChannelInvite_1.default.findById(inviteId);
+    const invite = await ChannelInvite_1.default.findById(inviteId);
     if (!invite) {
         res.status(404).json({ message: "Invite not found" });
         return;
     }
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: invite.channel, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: invite.channel, user: currentUserId });
     if (!participant || !["Owner", "Admin"].includes(participant.role)) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    yield invite.deleteOne();
+    await invite.deleteOne();
     const io = (0, socketServer_1.getIO)();
     if (io) {
         io.to((0, socketServer_1.uidRoom)(invite.invitedUser.toString())).emit("channels:invite_canceled", {
@@ -403,22 +383,22 @@ const groupCancelInvite = (0, express_async_handler_1.default)((req, res) => __a
     res.json({
         success: true
     });
-}));
-const groupRename = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const groupRename = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, title } = req.body;
     const currentUserId = req.userId;
     if (typeof title !== "string" || title.length < 3 || title.length > 20) {
         res.status(400).json({ message: "Title must be string of 3 - 20 characters" });
         return;
     }
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant || participant.role !== "Owner") {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
     try {
-        yield Channel_1.default.updateOne({ _id: channelId }, { title });
-        yield ChannelMessage_1.default.create({
+        await Channel_1.default.updateOne({ _id: channelId }, { title });
+        await ChannelMessage_1.default.create({
             _type: 4,
             content: "{action_user} renamed the group to " + title,
             channel: channelId,
@@ -434,23 +414,23 @@ const groupRename = (0, express_async_handler_1.default)((req, res) => __awaiter
     catch (err) {
         res.json({
             success: false,
-            message: err === null || err === void 0 ? void 0 : err.message
+            message: err?.message
         });
     }
-}));
-const groupChangeRole = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const groupChangeRole = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, channelId, role } = req.body;
     const currentUserId = req.userId;
     if (!["Owner", "Admin", "Member"].includes(role)) {
         res.status(400).json({ message: "Invalid role" });
         return;
     }
-    const currentParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const currentParticipant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!currentParticipant || currentParticipant.role !== "Owner") {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const targetParticipant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
+    const targetParticipant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: userId });
     if (!targetParticipant) {
         res.status(404).json({ message: "Target user is not a participant" });
         return;
@@ -460,21 +440,21 @@ const groupChangeRole = (0, express_async_handler_1.default)((req, res) => __awa
         return;
     }
     if (role === "Owner") {
-        yield ChannelParticipant_1.default.updateOne({ channel: channelId, user: currentUserId }, { role: "Admin" });
+        await ChannelParticipant_1.default.updateOne({ channel: channelId, user: currentUserId }, { role: "Admin" });
     }
     targetParticipant.role = role;
-    yield targetParticipant.save();
+    await targetParticipant.save();
     res.json({ success: true, data: { userId, role } });
-}));
-const deleteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteChannel = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId } = req.body;
     const currentUserId = req.userId;
-    const channel = yield Channel_1.default.findById(channelId);
+    const channel = await Channel_1.default.findById(channelId);
     if (!channel) {
         res.status(404).json({ message: "Channel not found" });
         return;
     }
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
@@ -483,8 +463,8 @@ const deleteChannel = (0, express_async_handler_1.default)((req, res) => __await
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const participants = yield ChannelParticipant_1.default.find({ channel: channelId });
-    yield channel.deleteOne();
+    const participants = await ChannelParticipant_1.default.find({ channel: channelId });
+    await channel.deleteOne();
     const io = (0, socketServer_1.getIO)();
     if (io) {
         io.to(participants.map(x => (0, socketServer_1.uidRoom)(x.user.toString()))).emit("channels:channel_deleted", {
@@ -492,93 +472,78 @@ const deleteChannel = (0, express_async_handler_1.default)((req, res) => __await
         });
     }
     res.json({ success: true });
-}));
-const getUnseenMessagesCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getUnseenMessagesCount = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     // Count unseen messages
-    const results = yield ChannelMessage_1.default.aggregate([
+    const results = await ChannelParticipant_1.default.aggregate([
         {
-            $lookup: {
-                from: "channelparticipants",
-                let: { channelId: "$channel", msgCreatedAt: "$createdAt" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$user", new mongoose_1.default.Types.ObjectId(currentUserId)] },
-                                    { $eq: ["$channel", "$$channelId"] },
-                                    {
-                                        $or: [
-                                            { $eq: ["$lastActiveAt", null] },
-                                            { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
-                                        ]
-                                    },
-                                    { $eq: ["$muted", false] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "participant"
+            $match: {
+                user: new mongoose_1.default.Types.ObjectId(currentUserId),
+                muted: false
             }
         },
-        { $match: { participant: { $ne: [] }, deleted: false } },
-        { $count: "total" }
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$unreadCount" }
+            }
+        }
     ]);
     const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
     // Count invites
-    const invitesCount = yield ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
+    const invitesCount = await ChannelInvite_1.default.countDocuments({ invitedUser: currentUserId });
     // Sum up
     const totalCount = unseenMessagesCount + invitesCount;
     res.json({ count: totalCount });
-}));
-const muteChannel = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const muteChannel = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, muted } = req.body;
     const currentUserId = req.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
         return;
     }
     participant.muted = muted;
-    yield participant.save();
+    await participant.save();
     res.json({
         success: true,
         data: {
             muted: participant.muted
         }
     });
-}));
-const markMessagesSeenWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const markMessagesSeenWS = async (socket, payload) => {
     const { channelId } = payload;
     const currentUserId = socket.data.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ user: currentUserId, channel: channelId });
+    const participant = await ChannelParticipant_1.default.findOne({ user: currentUserId, channel: channelId });
     if (!participant) {
         return;
     }
     participant.lastActiveAt = new Date();
-    yield participant.save();
+    participant.unreadCount = 0;
+    await participant.save();
     socket.emit("channels:messages_seen", {
         channelId,
         userId: currentUserId,
         lastActiveAt: participant.lastActiveAt
     });
-});
-const createMessageWS = (socket, payload) => __awaiter(void 0, void 0, void 0, function* () {
+};
+const createMessageWS = async (socket, payload) => {
     const { channelId, content } = payload;
     const currentUserId = socket.data.userId;
-    const participant = yield ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         return;
     }
-    yield ChannelMessage_1.default.create({
+    await ChannelMessage_1.default.create({
         _type: 1,
         content,
         channel: channelId,
         user: currentUserId
     });
-});
+};
 const registerHandlersWS = (socket) => {
     socket.on("channels:messages_seen", (payload) => {
         markMessagesSeenWS(socket, payload);

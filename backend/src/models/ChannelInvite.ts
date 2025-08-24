@@ -3,6 +3,7 @@ import ChannelParticipant from "./ChannelParticipant";
 import { getIO, uidRoom } from "../config/socketServer";
 import User from "./User";
 import Channel from "./Channel";
+import { sendToUsers } from "../services/pushService";
 
 const channelInviteSchema = new Schema({
     invitedUser: {
@@ -30,6 +31,12 @@ channelInviteSchema.post("save", async function () {
         const author = await User.findById(this.author, "name avatarImage level roles").lean();
         const channel = await Channel.findById(this.channel, "title _type title");
         if (!author || !channel) return;
+
+        await sendToUsers([this.invitedUser.toString()], {
+            title: "Channels",
+            body: `${author.name} invited you to channel`,
+            url: "/Channels"
+        }, "channels");
 
         io.to(uidRoom(this.invitedUser.toString())).emit("channels:new_invite", {
             id: this._id,

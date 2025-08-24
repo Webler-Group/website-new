@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,7 +11,7 @@ const email_1 = require("../services/email");
 const captcha_1 = require("../utils/captcha");
 const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const confg_1 = require("../confg");
-const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const login = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, password } = req.body;
     const deviceId = req.headers["x-device-id"];
     if (!deviceId) {
@@ -31,13 +22,13 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const user = yield User_1.default.findOne({ email });
-    if (user && (yield user.matchPassword(password))) {
+    const user = await User_1.default.findOne({ email });
+    if (user && (await user.matchPassword(password))) {
         if (!user.active) {
             res.status(401).json({ message: "Account is deactivated" });
             return;
         }
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -64,8 +55,8 @@ const login = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     else {
         res.status(401).json({ message: "Invalid email or password" });
     }
-}));
-const register = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const register = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, name, password, solution, captchaId } = req.body;
     const deviceId = req.headers["x-device-id"];
     if (!deviceId) {
@@ -76,25 +67,25 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const record = yield CaptchaRecord_1.default.findById(captchaId);
+    const record = await CaptchaRecord_1.default.findById(captchaId);
     if (record === null || !(0, captcha_1.verifyCaptcha)(solution, record.encrypted)) {
         res.status(403).json({ message: "Captcha verification failed" });
         return;
     }
-    yield CaptchaRecord_1.default.deleteOne({ _id: captchaId });
-    const userExists = yield User_1.default.findOne({ email });
+    await CaptchaRecord_1.default.deleteOne({ _id: captchaId });
+    const userExists = await User_1.default.findOne({ email });
     if (userExists) {
         res.status(400).json({ message: "Email is already registered" });
         return;
     }
-    const user = yield User_1.default.create({
+    const user = await User_1.default.create({
         email,
         name,
         password,
         emailVerified: confg_1.config.nodeEnv == "development"
     });
     if (user) {
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -107,11 +98,11 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         });
         if (confg_1.config.nodeEnv === "production") {
             try {
-                yield (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
+                await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
                 user.lastVerificationEmailTimestamp = Date.now();
-                yield user.save();
+                await user.save();
             }
-            catch (_a) {
+            catch {
                 console.log("Activation email could not be sent");
             }
         }
@@ -135,33 +126,33 @@ const register = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
     else {
         res.status(401).json({ message: "Invalid email or password" });
     }
-}));
-const logout = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const logout = (0, express_async_handler_1.default)(async (req, res) => {
     const cookies = req.cookies;
-    if (cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken) {
+    if (cookies?.refreshToken) {
         (0, tokenUtils_1.clearRefreshToken)(res);
     }
     res.json({});
-}));
-const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const refresh = (0, express_async_handler_1.default)(async (req, res) => {
     const deviceId = req.headers["x-device-id"];
     const cookies = req.cookies;
-    if (!(cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken) || !deviceId) {
+    if (!cookies?.refreshToken || !deviceId) {
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
     const refreshToken = cookies.refreshToken;
-    jsonwebtoken_1.default.verify(refreshToken, confg_1.config.refreshTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+    jsonwebtoken_1.default.verify(refreshToken, confg_1.config.refreshTokenSecret, async (err, decoded) => {
         if (err) {
             res.status(403).json({ message: "Forbidden" });
             return;
         }
-        const user = yield User_1.default.findById(decoded.userId);
+        const user = await User_1.default.findById(decoded.userId);
         if (!user || !user.active) {
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
-        const { accessToken, data: tokenInfo } = yield (0, tokenUtils_1.signAccessToken)({
+        const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
         }, deviceId);
@@ -171,15 +162,15 @@ const refresh = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
             accessToken,
             expiresIn
         });
-    }));
-}));
-const sendPasswordResetCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    });
+});
+const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;
     if (typeof email === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const user = yield User_1.default.findOne({ email });
+    const user = await User_1.default.findOne({ email });
     if (user === null) {
         res.status(404).json({ message: "Email is not registered" });
         return;
@@ -189,36 +180,36 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)((req, res) =>
         email: user.email
     });
     try {
-        yield (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
+        await (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
         res.json({ success: true });
     }
-    catch (_b) {
+    catch {
         res.status(500).json({ message: "Email could not be sent" });
     }
-}));
-const resetPassword = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
     const { token, password, resetId } = req.body;
     if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+    jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
         if (!err) {
             const userId = decoded.userId;
             if (userId !== resetId) {
                 res.json({ success: false });
                 return;
             }
-            const user = yield User_1.default.findById(resetId);
+            const user = await User_1.default.findById(resetId);
             if (user === null) {
                 res.status(404).json({ message: "User not found" });
                 return;
             }
             user.password = password;
             try {
-                yield user.save();
+                await user.save();
                 const cookies = req.cookies;
-                if (cookies === null || cookies === void 0 ? void 0 : cookies.refreshToken) {
+                if (cookies?.refreshToken) {
                     (0, tokenUtils_1.clearRefreshToken)(res);
                 }
                 res.json({ success: true });
@@ -230,25 +221,25 @@ const resetPassword = (0, express_async_handler_1.default)((req, res) => __await
         else {
             res.json({ success: false });
         }
-    }));
-}));
-const generateCaptcha = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { base64ImageDataURI, encrypted } = yield (0, captcha_1.getCaptcha)();
-    const record = yield CaptchaRecord_1.default.create({ encrypted });
+    });
+});
+const generateCaptcha = (0, express_async_handler_1.default)(async (req, res) => {
+    const { base64ImageDataURI, encrypted } = await (0, captcha_1.getCaptcha)();
+    const record = await CaptchaRecord_1.default.create({ encrypted });
     const date = new Date(Date.now() - 15 * 60 * 1000);
-    yield CaptchaRecord_1.default.deleteMany({ createdAt: { $lt: date } });
+    await CaptchaRecord_1.default.deleteMany({ createdAt: { $lt: date } });
     res.json({
         captchaId: record._id,
         imageData: base64ImageDataURI,
     });
-}));
-const verifyEmail = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
     const { token, userId } = req.body;
     if (typeof token === "undefined" || typeof userId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, (err, decoded) => __awaiter(void 0, void 0, void 0, function* () {
+    jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
         if (!err) {
             const userId2 = decoded.userId;
             const email = decoded.email;
@@ -256,7 +247,7 @@ const verifyEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
                 res.json({ success: false });
                 return;
             }
-            const user = yield User_1.default.findById(userId);
+            const user = await User_1.default.findById(userId);
             if (user === null) {
                 res.status(404).json({ message: "User not found" });
                 return;
@@ -267,7 +258,7 @@ const verifyEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
             }
             user.emailVerified = true;
             try {
-                yield user.save();
+                await user.save();
                 res.json({ success: true });
             }
             catch (err) {
@@ -277,8 +268,8 @@ const verifyEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
         else {
             res.json({ success: false });
         }
-    }));
-}));
+    });
+});
 const controller = {
     login,
     register,

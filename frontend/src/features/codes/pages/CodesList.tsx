@@ -111,9 +111,21 @@ const CodesList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Codes</h2>
-            <div className="d-flex mt-2">
-                <FormControl type="search" size='sm' placeholder="Search..." value={searchInput} onChange={(e) => setSearchInput(e.target.value)} />
-                <Button className="ms-2" size='sm' onClick={handleSearch}>Search</Button>
+            <div className="d-flex mt-2 gap-2">
+                <FormControl
+                    type="search"
+                    size='sm'
+                    placeholder="Search..."
+                    value={searchInput}
+                    onChange={(e) => setSearchInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSearch();
+                        }
+                    }}
+                />
+                <Button size='sm' onClick={handleSearch}>Search</Button>
             </div>
             <div className="mt-2 d-sm-flex flex-row-reverse justify-content-between">
                 <div className="mb-2 mb-sm-0 d-flex justify-content-end">

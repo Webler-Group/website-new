@@ -568,6 +568,16 @@ ul {
     padding: 0 4px;
 }
 
+.wb-playground-public {
+    min-width: 35px;
+    display: flex;
+    justify-content: center;
+}
+
+.wb-playground-public > span {
+    padding: 0 4px;
+}
+
 .wb-playground-comments__message {
     font-size: 13px;
     line-height: 1.3;

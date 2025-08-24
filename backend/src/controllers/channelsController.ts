@@ -125,11 +125,6 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const unreadCount = await ChannelMessage.countDocuments({
-        channel: channel._id,
-        createdAt: { $gt: participant.lastActiveAt }
-    });
-
     const data: any = {
         id: channel._id,
         title: channel._type == 2 ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
@@ -138,7 +133,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
-        unreadCount,
+        unreadCount: participant.unreadCount,
         muted: participant.muted
     };
 
@@ -181,7 +176,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     // First find all channels where user is participant
     const participantChannels = await ChannelParticipant.find({ user: currentUserId })
-        .select('channel lastActiveAt muted');
+        .select('channel lastActiveAt muted unreadCount');
 
     const channelIds = participantChannels.map(p => p.channel);
 
@@ -205,19 +200,10 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         })
         .lean();
 
-    const participantData = await Promise.all(
-        channels.map(async (channel) => {
-            const participant = participantChannels.find(y => y.channel.equals(channel._id));
-            const lastActiveAt = participant?.lastActiveAt || new Date(0);
-
-            const unreadCount = await ChannelMessage.countDocuments({
-                channel: channel._id,
-                createdAt: { $gt: lastActiveAt }
-            });
-
-            return { channelId: channel._id.toString(), unreadCount, muted: participant?.muted };
-        })
-    );
+    const participantData = channels.map((channel) => {
+        const participant = participantChannels.find(y => y.channel.equals(channel._id));
+        return { channelId: channel._id.toString(), unreadCount: participant?.unreadCount || 0, muted: participant?.muted };
+    });
 
     const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, { ...u }]));
 
@@ -589,35 +575,19 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
     const currentUserId = req.userId;
 
     // Count unseen messages
-    const results = await ChannelMessage.aggregate([
+    const results = await ChannelParticipant.aggregate([
         {
-            $lookup: {
-                from: "channelparticipants",
-                let: { channelId: "$channel", msgCreatedAt: "$createdAt" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$user", new mongoose.Types.ObjectId(currentUserId)] },
-                                    { $eq: ["$channel", "$$channelId"] },
-                                    {
-                                        $or: [
-                                            { $eq: ["$lastActiveAt", null] },
-                                            { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
-                                        ]
-                                    },
-                                    { $eq: ["$muted", false] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "participant"
+            $match: {
+                user: new mongoose.Types.ObjectId(currentUserId),
+                muted: false
             }
         },
-        { $match: { participant: { $ne: [] }, deleted: false } },
-        { $count: "total" }
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$unreadCount" }
+            }
+        }
     ]);
 
     const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
@@ -663,6 +633,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
     }
 
     participant.lastActiveAt = new Date();
+    participant.unreadCount = 0;
     await participant.save();
 
     socket.emit("channels:messages_seen", {

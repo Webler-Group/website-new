@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -30,47 +21,48 @@ const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
 const channelsRoutes_1 = __importDefault(require("./routes/channelsRoutes"));
 const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
 const tagRoutes_1 = __importDefault(require("./routes/tagRoutes"));
+const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
 const socketServer_1 = require("./config/socketServer");
 const channelsController_1 = require("./controllers/channelsController");
-function main() {
-    return __awaiter(this, void 0, void 0, function* () {
-        console.log("Environment:", confg_1.config.nodeEnv);
-        const app = (0, express_1.default)();
-        const server = http_1.default.createServer(app);
-        (0, socketServer_1.init)(server, (socket) => {
-            // codesRegisterHandlersWS(socket);
-            (0, channelsController_1.registerHandlersWS)(socket);
-        });
-        const apiPrefix = "/api";
-        yield (0, dbConn_1.default)();
-        if (confg_1.config.nodeEnv == "production") {
-            (0, cronJobs_1.initCronJobs)();
-        }
-        app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
-        app.use(logger_1.logger);
-        app.use(`${apiPrefix}/Sitemap`, sitemapRoutes_1.default);
-        if (confg_1.config.nodeEnv == "production") {
-            app.use((0, cors_1.default)(corsOptions_1.default));
-        }
-        app.use(express_1.default.json({ limit: "2mb" }));
-        app.use((0, cookie_parser_1.default)());
-        app.use(`${apiPrefix}/Auth`, authRoutes_1.default);
-        app.use(`${apiPrefix}/Profile`, profileRoutes_1.default);
-        app.use(`${apiPrefix}/Discussion`, discussionRoutes_1.default);
-        app.use(`${apiPrefix}/Blog`, blogRoutes_1.default);
-        app.use(`${apiPrefix}/Codes`, codesRoutes_1.default);
-        app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes_1.default);
-        app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
-        app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
-        app.use(`${apiPrefix}/Tag`, tagRoutes_1.default);
-        app.all("*", (req, res) => {
-            res.status(404).json({ message: "404 Not Found" });
-        });
-        app.use(errorHandler_1.default);
-        server.listen(confg_1.config.port, () => console.log(`Server running on port ${confg_1.config.port}`));
+const pushService_1 = require("./services/pushService");
+async function main() {
+    console.log("Environment:", confg_1.config.nodeEnv);
+    const app = (0, express_1.default)();
+    const server = http_1.default.createServer(app);
+    (0, socketServer_1.init)(server, (socket) => {
+        (0, channelsController_1.registerHandlersWS)(socket);
     });
+    const apiPrefix = "/api";
+    await (0, dbConn_1.default)();
+    await (0, pushService_1.initKeystore)();
+    if (confg_1.config.nodeEnv == "production") {
+        (0, cronJobs_1.initCronJobs)();
+    }
+    app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
+    app.use(logger_1.logger);
+    app.use(`${apiPrefix}/Sitemap`, sitemapRoutes_1.default);
+    if (confg_1.config.nodeEnv == "production") {
+        app.use((0, cors_1.default)(corsOptions_1.default));
+    }
+    app.use(express_1.default.json({ limit: "2mb" }));
+    app.use((0, cookie_parser_1.default)());
+    app.use(`${apiPrefix}/Auth`, authRoutes_1.default);
+    app.use(`${apiPrefix}/Profile`, profileRoutes_1.default);
+    app.use(`${apiPrefix}/Discussion`, discussionRoutes_1.default);
+    app.use(`${apiPrefix}/Blog`, blogRoutes_1.default);
+    app.use(`${apiPrefix}/Codes`, codesRoutes_1.default);
+    app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes_1.default);
+    app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
+    app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
+    app.use(`${apiPrefix}/Tag`, tagRoutes_1.default);
+    app.use(`${apiPrefix}/PushNotifications`, notificationRoutes_1.default);
+    app.all("*", (req, res) => {
+        res.status(404).json({ message: "404 Not Found" });
+    });
+    app.use(errorHandler_1.default);
+    server.listen(confg_1.config.port, () => console.log(`Server running on port ${confg_1.config.port}`));
 }
 main();

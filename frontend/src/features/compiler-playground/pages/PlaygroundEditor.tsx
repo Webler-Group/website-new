@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaGlobe, FaLock, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -15,6 +15,7 @@ import CommentList2 from "./CommentList2";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { truncate } from "../../../utils/StringUtils";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -340,10 +341,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
-    const formatTitle = (title: string) => {
-        return title.length > 10 ? title.slice(0, 10) + "..." : title;
-    }
-
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -423,7 +420,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 code &&
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
-                        <div className="d-flex align-items-center">
+                        <div className="d-flex">
                             {
                                 code.id &&
                                 <>
@@ -431,24 +428,34 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
                                         <div>
                                             <div>
-                                                <b>{formatTitle(code.name!)}</b>
+                                                <b>{truncate(code.name!, 10)}</b>
                                             </div>
                                             <div className="d-flex justify-content-start small">
                                                 <ProfileName userId={code.userId!} userName={code.userName!} />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="ms-2 wb-playground-voting small">
+                                    <div className="wb-playground-voting small">
                                         <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
                                             <FaThumbsUp />
                                         </span>
                                         <span>{code.votes}</span>
                                     </div>
-                                    <div className="ms-2 wb-playground-comments small">
+                                    <div className="wb-playground-comments small">
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>
                                             <FaComment />
                                         </span>
                                         <span>{commentCount}</span>
+                                    </div>
+                                    <div className="wb-playground-public small">
+                                        <span>
+                                            {
+                                                code.isPublic ?
+                                                    <FaGlobe />
+                                                    :
+                                                    <FaLock />
+                                            }
+                                        </span>
                                     </div>
                                 </>
                             }

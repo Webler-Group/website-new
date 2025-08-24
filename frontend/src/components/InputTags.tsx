@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Badge, FormControl } from 'react-bootstrap';
+import { Badge, Button, FormControl } from 'react-bootstrap';
 import { FaTimes } from 'react-icons/fa';
 import { useApi } from '../context/apiCommunication';
 
@@ -42,34 +42,35 @@ export const WeblerBadge = ({ name, state, className, onClick }: WeblerBadgeProp
 
 interface TagSearchProps {
     query: string;
-    onSelect: (tag: string) => void;
-    onChange?: (value: string) => void;
     placeholder?: string;
     maxWidthPx?: number;
+    handleSearch: (value: string) => void;
 }
 
 export const TagSearch = ({
     query,
-    onSelect,
-    onChange,
     placeholder = "Search...",
     maxWidthPx = 360,
+    handleSearch
 }: TagSearchProps) => {
     const { sendJsonRequest } = useApi();
     const [validTags, setValidTags] = useState<string[]>([]);
-    const [input, setInput] = useState(query ?? "");
+    const [input, setInput] = useState(query);
     const [filtered, setFiltered] = useState<string[]>([]);
     const [isFocused, setIsFocused] = useState(false);
-    const containerRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         getValidTags();
     }, []);
 
     useEffect(() => {
-        setInput(query ?? "");
-        setFiltered(filterBy(query ?? "", validTags));
-    }, [query, validTags]);
+        setInput(query);
+    }, [query]);
+
+    useEffect(() => {
+        setFiltered(filterBy(input, validTags));
+    }, [input, validTags]);
 
     const getValidTags = async () => {
         const result = await sendJsonRequest(`/Tag`, "POST");
@@ -90,66 +91,69 @@ export const TagSearch = ({
         }
     };
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value;
-        setInput(val);
-        setFiltered(filterBy(val, validTags));
-        onChange?.(val);
-    };
-
     const handleSelectTag = (tagName: string) => {
         setInput(tagName);
-        setFiltered([]);
-        onSelect(tagName);
-        setIsFocused(false);
-    };
+    }
 
     return (
-        <div className="position-relative" style={{ width: "100%" }} ref={containerRef}>
-            <FormControl
-                type="search"
-                size="sm"
-                placeholder={placeholder}
-                value={input}
-                onChange={handleInputChange}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                style={{ width: "100%" }}
-                aria-autocomplete="list"
-                aria-expanded={filtered.length > 0}
-            />
-            {isFocused && filtered.length > 0 && input.trim().length > 0 && (
-                <ul
-                    className="position-absolute list-unstyled m-0 p-1"
-                    style={{
-                        top: "100%",
-                        left: 0,
-                        zIndex: 1000,
-                        background: "white",
-                        border: "1px solid #ccc",
-                        borderRadius: "0.25rem",
-                        maxHeight: "150px",
-                        overflowY: "auto",
-                        width: `min(100%, ${maxWidthPx}px)`,
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        <div className='d-flex gap-2'>
+            <div className="position-relative" style={{ width: "100%" }}>
+                <FormControl
+                    ref={inputRef}
+                    type="search"
+                    size="sm"
+                    placeholder={placeholder}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    style={{ width: "100%" }}
+                    aria-autocomplete="list"
+                    aria-expanded={filtered.length > 0}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSearch(input);
+                            if(inputRef.current) {
+                                inputRef.current.blur();
+                            }
+                        }
                     }}
-                    role="listbox"
-                >
-                    {filtered.map((tag) => (
-                        <li
-                            key={`filtered-tag-${tag}`}
-                            style={{ cursor: "pointer", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
-                            onClick={() => handleSelectTag(tag)}
-                            onMouseDown={(e) => e.preventDefault()}
-                            className="hover-bg-light"
-                            role="option"
-                            aria-selected={false}
-                        >
-                            {tag}
-                        </li>
-                    ))}
-                </ul>
-            )}
+                />
+                {isFocused && filtered.length > 0 && (
+                    <ul
+                        className="position-absolute list-unstyled m-0 p-1"
+                        style={{
+                            top: "100%",
+                            left: 0,
+                            zIndex: 1000,
+                            background: "white",
+                            border: "1px solid #ccc",
+                            borderRadius: "0.25rem",
+                            maxHeight: "150px",
+                            overflowY: "auto",
+                            width: `min(100%, ${maxWidthPx}px)`,
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                        }}
+                        role="listbox"
+                    >
+                        {filtered.map((tag) => (
+                            <li
+                                key={`filtered-tag-${tag}`}
+                                style={{ cursor: "pointer", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
+                                onClick={() => handleSelectTag(tag)}
+                                onMouseDown={(e) => e.preventDefault()}
+                                className="hover-bg-light"
+                                role="option"
+                                aria-selected={false}
+                            >
+                                {tag}
+                            </li>
+                        ))}
+                    </ul>
+                )}
+            </div>
+            <Button size="sm" onClick={() => handleSearch(input)}>Search</Button>
         </div>
     );
 };

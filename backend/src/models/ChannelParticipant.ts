@@ -24,6 +24,10 @@ const channelParticipantSchema = new Schema({
     muted: {
         type: Boolean,
         default: false
+    },
+    unreadCount: {
+        type: Number,
+        default: 0
     }
 });
 

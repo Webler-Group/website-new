@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import mongoose, { InferSchemaType, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import rolesEnum from "../data/roles";
@@ -72,6 +72,12 @@ const userSchema = new mongoose.Schema({
     avatarImage: {
         type: String,
         required: false
+    },
+    notifications: {
+        followers: { type: Boolean, default: true },
+        codes: { type: Boolean, default: true },
+        discuss: { type: Boolean, default: true },
+        channels: { type: Boolean, default: true },
     }
 },
     {
@@ -104,9 +110,12 @@ userSchema.pre('save', async function (next) {
 })
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {
-    matchPassword(inputPassword: string): Promise<boolean>
+    matchPassword(inputPassword: string): Promise<boolean>;
 }
 
-const User = mongoose.model<IUser>('User', userSchema);
+interface UserModel extends Model<IUser> {
+}
+
+const User = mongoose.model<IUser, UserModel>('User', userSchema);
 
 export default User;

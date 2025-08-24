@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -22,7 +13,9 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const regexUtils_1 = require("../utils/regexUtils");
-const createQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const pushService_1 = require("../services/pushService");
+const User_1 = __importDefault(require("../models/User"));
+const createQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
@@ -31,7 +24,7 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
     }
     const tagIds = [];
     for (let tagName of tags) {
-        const tag = yield Tag_1.default.findOne({ name: tagName });
+        const tag = await Tag_1.default.findOne({ name: tagName });
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -42,7 +35,7 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         res.status(400).json({ message: `Empty Tag` });
         return;
     }
-    const question = yield Post_1.default.create({
+    const question = await Post_1.default.create({
         _type: 1,
         title,
         message,
@@ -50,7 +43,7 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         user: currentUserId
     });
     if (question) {
-        yield PostFollowing_1.default.create({
+        await PostFollowing_1.default.create({
             user: currentUserId,
             following: question._id
         });
@@ -71,8 +64,8 @@ const createQuestion = (0, express_async_handler_1.default)((req, res) => __awai
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getQuestionList = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
     if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
@@ -95,7 +88,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         hidden: false
     });
     if (searchQuery.trim().length > 0) {
-        const tagIds = (yield Tag_1.default.find({ name: searchQuery.trim() }))
+        const tagIds = (await Tag_1.default.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
@@ -156,7 +149,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
                 res.status(400).json({ message: "Invalid request" });
                 return;
             }
-            const replies = yield Post_1.default.find({ user: userId, _type: 2 }).select("parentId");
+            const replies = await Post_1.default.find({ user: userId, _type: 2 }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
             pipeline.push({
                 $match: { _id: { $in: questionIds } }
@@ -193,7 +186,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         default:
             throw new Error("Unknown filter");
     }
-    const questionCount = yield dbQuery.clone().countDocuments();
+    const questionCount = await dbQuery.clone().countDocuments();
     pipeline.push({
         $skip: (page - 1) * count
     }, {
@@ -211,7 +204,7 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
         .select("-message")
         .populate("user", "name avatarUrl countryCode level roles")
         .populate("tags", "name") as any[];*/
-    const result = yield Post_1.default.aggregate(pipeline);
+    const result = await Post_1.default.aggregate(pipeline);
     if (result) {
         const data = result.map(x => ({
             id: x._id,
@@ -243,25 +236,25 @@ const getQuestionList = (0, express_async_handler_1.default)((req, res) => __awa
                 }));
             }
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.status(200).json({ count: questionCount, questions: data });
     }
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { questionId } = req.body;
-    const question = yield Post_1.default.findById(questionId)
+    const question = await Post_1.default.findById(questionId)
         .populate("user", "name avatarImage countryCode level roles")
         .populate("tags", "name");
     if (question) {
         //const answers = await Post.countDocuments({ parentId: questionId });
         //const votes = await Upvote.countDocuments({ parentId: questionId });
-        const isUpvoted = currentUserId ? (yield Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
-        const isFollowed = currentUserId ? (yield PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
-        const attachments = yield PostAttachment_1.default.getByPostId({ post: questionId });
+        const isUpvoted = currentUserId ? (await Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
+        const isFollowed = currentUserId ? (await PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
+        const attachments = await PostAttachment_1.default.getByPostId({ post: questionId });
         res.json({
             question: {
                 id: question._id,
@@ -286,37 +279,46 @@ const getQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter
     else {
         res.status(404).json({ message: "Question not found" });
     }
-}));
-const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createReply = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { message, questionId } = req.body;
-    const question = yield Post_1.default.findById(questionId);
+    const question = await Post_1.default.findById(questionId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
         return;
     }
-    const reply = yield Post_1.default.create({
+    const reply = await Post_1.default.create({
         _type: 2,
         message,
         parentId: questionId,
         user: currentUserId
     });
     if (reply) {
-        const questionFollowed = yield PostFollowing_1.default.findOne({
+        const questionFollowed = await PostFollowing_1.default.findOne({
             user: currentUserId,
             following: question._id
         });
         if (questionFollowed === null) {
-            yield PostFollowing_1.default.create({
+            await PostFollowing_1.default.create({
                 user: currentUserId,
                 following: question._id
             });
         }
-        const followers = new Set((yield PostFollowing_1.default.find({ following: question._id })).map(x => x.user.toString()));
+        const followers = new Set((await PostFollowing_1.default.find({ following: question._id })).map(x => x.user.toString()));
         followers.add(question.user.toString());
         followers.delete(currentUserId);
+        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+        await (0, pushService_1.sendToUsers)(Array.from(followers).filter(x => x !== question.user.toString()), {
+            title: "Discuss",
+            body: `${currentUserName} posted in "${question.title}"`
+        }, "discuss");
+        await (0, pushService_1.sendToUsers)([question.user.toString()], {
+            title: "Discuss",
+            body: `${currentUserName} answered your question "${question.title}"`
+        }, "discuss");
         for (let userToNotify of followers) {
-            yield Notification_1.default.create({
+            await Notification_1.default.create({
                 _type: 201,
                 user: userToNotify,
                 actionUser: currentUserId,
@@ -329,8 +331,8 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
             });
         }
         question.$inc("answers", 1);
-        yield question.save();
-        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
+        await question.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             post: {
                 id: reply._id,
@@ -348,8 +350,8 @@ const createReply = (0, express_async_handler_1.default)((req, res) => __awaiter
     else {
         res.status(500).json({ message: "error" });
     }
-}));
-const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getReplies = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { questionId, index, count, filter, findPostId } = req.body;
     if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
@@ -359,12 +361,12 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
     let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2, hidden: false });
     let skipCount = index;
     if (findPostId) {
-        const reply = yield Post_1.default.findById(findPostId);
+        const reply = await Post_1.default.findById(findPostId);
         if (reply === null) {
             res.status(404).json({ message: "Post not found" });
             return;
         }
-        skipCount = Math.floor((yield dbQuery
+        skipCount = Math.floor((await dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
             .countDocuments()) / count) * count;
@@ -395,7 +397,7 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
                 throw new Error("Unknown filter");
         }
     }
-    const result = yield dbQuery
+    const result = await dbQuery
         .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarImage countryCode level roles");
@@ -429,14 +431,14 @@ const getReplies = (0, express_async_handler_1.default)((req, res) => __awaiter(
             }
             promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.status(200).json({ posts: data });
     }
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const getTags = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getTags = (0, express_async_handler_1.default)(async (req, res) => {
     const { query } = req.body;
     if (typeof query === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -446,50 +448,50 @@ const getTags = (0, express_async_handler_1.default)((req, res) => __awaiter(voi
         res.json({ tags: [] });
     }
     else {
-        const result = yield Tag_1.default.find({ name: new RegExp("^" + query) });
+        const result = await Tag_1.default.find({ name: new RegExp("^" + query) });
         res.json({
             tags: result.map(x => x.name)
         });
     }
-}));
-const toggleAcceptedAnswer = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const toggleAcceptedAnswer = (0, express_async_handler_1.default)(async (req, res) => {
     const { accepted, postId } = req.body;
-    const post = yield Post_1.default.findById(postId);
+    const post = await Post_1.default.findById(postId);
     if (post === null) {
         res.status(404).json({ success: false, message: "Post not found" });
         return;
     }
-    const question = yield Post_1.default.findById(post.parentId);
+    const question = await Post_1.default.findById(post.parentId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
         return;
     }
     if (accepted || post.isAccepted) {
         question.isAccepted = accepted;
-        yield question.save();
+        await question.save();
     }
     post.isAccepted = accepted;
-    yield post.save();
+    await post.save();
     if (accepted) {
-        const currentAcceptedPost = yield Post_1.default.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
+        const currentAcceptedPost = await Post_1.default.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
         if (currentAcceptedPost) {
             currentAcceptedPost.isAccepted = false;
-            yield currentAcceptedPost.save();
+            await currentAcceptedPost.save();
         }
     }
     res.json({
         success: true,
         accepted
     });
-}));
-const editQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { questionId, title, message, tags } = req.body;
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const question = yield Post_1.default.findById(questionId);
+    const question = await Post_1.default.findById(questionId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
         return;
@@ -506,12 +508,12 @@ const editQuestion = (0, express_async_handler_1.default)((req, res) => __awaite
             tagIds.push(tag._id);
         }));
     }
-    yield Promise.all(promises);
+    await Promise.all(promises);
     question.title = title;
     question.message = message;
     question.tags = tagIds;
     try {
-        yield question.save();
+        await question.save();
         res.json({
             success: true,
             data: {
@@ -529,11 +531,11 @@ const editQuestion = (0, express_async_handler_1.default)((req, res) => __awaite
             data: null
         });
     }
-}));
-const deleteQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { questionId } = req.body;
-    const question = yield Post_1.default.findById(questionId);
+    const question = await Post_1.default.findById(questionId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
         return;
@@ -543,21 +545,21 @@ const deleteQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         return;
     }
     try {
-        yield Post_1.default.deleteAndCleanup({ _id: questionId });
+        await Post_1.default.deleteAndCleanup({ _id: questionId });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const editReply = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editReply = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { replyId, message } = req.body;
     if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const reply = yield Post_1.default.findById(replyId);
+    const reply = await Post_1.default.findById(replyId);
     if (reply === null) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -568,8 +570,8 @@ const editReply = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     }
     reply.message = message;
     try {
-        yield reply.save();
-        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
+        await reply.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             success: true,
             data: {
@@ -586,11 +588,11 @@ const editReply = (0, express_async_handler_1.default)((req, res) => __awaiter(v
             data: null
         });
     }
-}));
-const deleteReply = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteReply = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { replyId } = req.body;
-    const reply = yield Post_1.default.findById(replyId);
+    const reply = await Post_1.default.findById(replyId);
     if (reply === null) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -599,50 +601,50 @@ const deleteReply = (0, express_async_handler_1.default)((req, res) => __awaiter
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
-    const question = yield Post_1.default.findById(reply.parentId);
+    const question = await Post_1.default.findById(reply.parentId);
     if (question === null) {
         res.status(404).json({ message: "Question not found" });
         return;
     }
     try {
-        yield Post_1.default.deleteAndCleanup({ _id: replyId });
+        await Post_1.default.deleteAndCleanup({ _id: replyId });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const votePost = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const votePost = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { postId, vote } = req.body;
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const post = yield Post_1.default.findById(postId);
+    const post = await Post_1.default.findById(postId);
     if (post === null) {
         res.status(404).json({ message: "Post not found" });
         return;
     }
-    let upvote = yield Upvote_1.default.findOne({ parentId: postId, user: currentUserId });
+    let upvote = await Upvote_1.default.findOne({ parentId: postId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
-            upvote = yield Upvote_1.default.create({ user: currentUserId, parentId: postId });
+            upvote = await Upvote_1.default.create({ user: currentUserId, parentId: postId });
             post.$inc("votes", 1);
-            yield post.save();
+            await post.save();
         }
     }
     else if (vote === 0) {
         if (upvote) {
-            yield Upvote_1.default.deleteOne({ _id: upvote._id });
+            await Upvote_1.default.deleteOne({ _id: upvote._id });
             upvote = null;
             post.$inc("votes", -1);
-            yield post.save();
+            await post.save();
         }
     }
     res.json({ vote: upvote ? 1 : 0 });
-}));
-const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getCodeComments = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
     if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
@@ -651,25 +653,25 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
     }
     let parentPost = null;
     if (parentId) {
-        parentPost = yield Post_1.default
+        parentPost = await Post_1.default
             .findById(parentId)
             .populate("user", "name avatarImage countryCode level roles");
     }
     let dbQuery = Post_1.default.find({ codeId, _type: 3, hidden: false });
     let skipCount = index;
     if (findPostId) {
-        const reply = yield Post_1.default.findById(findPostId);
+        const reply = await Post_1.default.findById(findPostId);
         if (reply === null) {
             res.status(404).json({ message: "Post not found" });
             return;
         }
-        parentPost = reply.parentId ? yield Post_1.default
+        parentPost = reply.parentId ? await Post_1.default
             .findById(reply.parentId)
             .populate("user", "name avatarImage countryCode level roles")
             :
                 null;
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
-        skipCount = Math.max(0, (yield dbQuery
+        skipCount = Math.max(0, (await dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
             .countDocuments()));
@@ -701,7 +703,7 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
                 throw new Error("Unknown filter");
         }
     }
-    const result = yield dbQuery
+    const result = await dbQuery
         .skip(skipCount)
         .limit(count)
         .populate("user", "name avatarImage countryCode level roles");
@@ -738,30 +740,30 @@ const getCodeComments = (0, express_async_handler_1.default)((req, res) => __awa
             }
             promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.status(200).json({ posts: data });
     }
     else {
         res.status(500).json({ message: "Error" });
     }
-}));
-const createCodeComment = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId, message, parentId } = req.body;
-    const code = yield Code_1.default.findById(codeId);
+    const code = await Code_1.default.findById(codeId);
     if (code === null) {
         res.status(404).json({ message: "Code not found" });
         return;
     }
     let parentPost = null;
     if (parentId !== null) {
-        parentPost = yield Post_1.default.findById(parentId);
+        parentPost = await Post_1.default.findById(parentId);
         if (parentPost === null) {
             res.status(404).json({ message: "Parent post not found" });
             return;
         }
     }
-    const reply = yield Post_1.default.create({
+    const reply = await Post_1.default.create({
         _type: 3,
         message,
         codeId,
@@ -775,8 +777,17 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
             usersToNotify.add(parentPost.user.toString());
         }
         usersToNotify.delete(currentUserId);
+        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+        await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
+            title: "Code playgorund",
+            body: `${currentUserName} replied to your comment on "${code.name}"`
+        }, "codes");
+        await (0, pushService_1.sendToUsers)([code.user.toString()], {
+            title: "Code playgorund",
+            body: `${currentUserName} posted comment on your code "${code.name}"`
+        }, "codes");
         for (let userToNotify of usersToNotify) {
-            yield Notification_1.default.create({
+            await Notification_1.default.create({
                 _type: 202,
                 user: userToNotify,
                 actionUser: currentUserId,
@@ -789,12 +800,12 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
             });
         }
         code.$inc("comments", 1);
-        yield code.save();
+        await code.save();
         if (parentPost) {
             parentPost.$inc("answers", 1);
-            yield parentPost.save();
+            await parentPost.save();
         }
-        const attachments = yield PostAttachment_1.default.getByPostId({ post: reply._id });
+        const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
         res.json({
             post: {
                 id: reply._id,
@@ -813,15 +824,15 @@ const createCodeComment = (0, express_async_handler_1.default)((req, res) => __a
     else {
         res.status(500).json({ message: "error" });
     }
-}));
-const editCodeComment = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { commentId, message } = req.body;
     if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const comment = yield Post_1.default.findById(commentId);
+    const comment = await Post_1.default.findById(commentId);
     if (comment === null) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -832,8 +843,8 @@ const editCodeComment = (0, express_async_handler_1.default)((req, res) => __awa
     }
     comment.message = message;
     try {
-        yield comment.save();
-        const attachments = yield PostAttachment_1.default.getByPostId({ post: comment._id });
+        await comment.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: comment._id });
         res.json({
             success: true,
             data: {
@@ -850,11 +861,11 @@ const editCodeComment = (0, express_async_handler_1.default)((req, res) => __awa
             data: null
         });
     }
-}));
-const deleteCodeComment = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { commentId } = req.body;
-    const comment = yield Post_1.default.findById(commentId);
+    const comment = await Post_1.default.findById(commentId);
     if (comment === null) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -863,27 +874,27 @@ const deleteCodeComment = (0, express_async_handler_1.default)((req, res) => __a
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
-    const code = yield Code_1.default.findById(comment.codeId);
+    const code = await Code_1.default.findById(comment.codeId);
     if (code === null) {
         res.status(404).json({ message: "Code not found" });
         return;
     }
     try {
-        yield Post_1.default.deleteAndCleanup({ _id: commentId });
+        await Post_1.default.deleteAndCleanup({ _id: commentId });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const followQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const followQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { postId } = req.body;
     if (typeof postId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const postExists = yield Post_1.default.findOne({ _id: postId });
+    const postExists = await Post_1.default.findOne({ _id: postId });
     if (!postExists) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -892,12 +903,12 @@ const followQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         res.status(405).json({ message: "Post is not a question" });
         return;
     }
-    const exists = yield PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
+    const exists = await PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
     if (exists) {
         res.status(204).json({ success: true });
         return;
     }
-    const postFollowing = yield PostFollowing_1.default.create({
+    const postFollowing = await PostFollowing_1.default.create({
         user: currentUserId,
         following: postId
     });
@@ -906,15 +917,15 @@ const followQuestion = (0, express_async_handler_1.default)((req, res) => __awai
         return;
     }
     res.status(500).json({ success: false });
-}));
-const unfollowQuestion = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const unfollowQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { postId } = req.body;
     if (typeof postId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const postExists = yield Post_1.default.findOne({ _id: postId });
+    const postExists = await Post_1.default.findOne({ _id: postId });
     if (!postExists) {
         res.status(404).json({ message: "Post not found" });
         return;
@@ -923,18 +934,18 @@ const unfollowQuestion = (0, express_async_handler_1.default)((req, res) => __aw
         res.status(405).json({ message: "Post is not a question" });
         return;
     }
-    const postFollowing = yield PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
+    const postFollowing = await PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
     if (postFollowing === null) {
         res.status(204).json({ success: true });
         return;
     }
-    const result = yield PostFollowing_1.default.deleteOne({ user: currentUserId, following: postId });
+    const result = await PostFollowing_1.default.deleteOne({ user: currentUserId, following: postId });
     if (result.deletedCount == 1) {
         res.json({ success: true });
         return;
     }
     res.status(500).json({ success: false });
-}));
+});
 const discussController = {
     createQuestion,
     getQuestionList,

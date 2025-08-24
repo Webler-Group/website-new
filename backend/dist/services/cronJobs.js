@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -20,9 +11,9 @@ const confg_1 = require("../confg");
 const logger_1 = require("../middleware/logger");
 const initCronJobs = () => {
     // This will run every day at midnight
-    node_cron_1.default.schedule("0 * * * *", () => __awaiter(void 0, void 0, void 0, function* () {
+    node_cron_1.default.schedule("0 * * * *", async () => {
         try {
-            const result = yield EvaluationJob_1.default.deleteMany({
+            const result = await EvaluationJob_1.default.deleteMany({
                 createdAt: { $lt: new Date(Date.now() - 1000 * 60) }
             });
             (0, logger_1.logEvents)(`Deleted ${result.deletedCount} old evaluation jobs`, "cronLog.log");
@@ -30,9 +21,9 @@ const initCronJobs = () => {
         catch (err) {
             (0, logger_1.logEvents)("Deleting old evaluation jobs failed with error: " + err.message, "cronErrLog.log");
         }
-    }));
-    node_cron_1.default.schedule("0 0 * * *", () => __awaiter(void 0, void 0, void 0, function* () {
+    });
+    node_cron_1.default.schedule("0 0 * * *", async () => {
         (0, dbUtils_1.dump)(confg_1.config.dumpDir);
-    }));
+    });
 };
 exports.initCronJobs = initCronJobs;

@@ -5,6 +5,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { ILesson } from "../components/Lesson";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
+import { truncate } from "../../../utils/StringUtils";
 
 interface ICourse {
     id: string;
@@ -75,7 +76,7 @@ const CoursePage = () => {
                         <div className="d-flex gap-2 py-2">
                             <Link to="/Courses">Courses</Link>
                             <span>&rsaquo;</span>
-                            <span>{course.title.length > 20 ? course.title.slice(0, 20) + "..." : course.title}</span>
+                            <span>{truncate(course.title, 20)}</span>
                         </div>
 
                         <h3>{course.title}</h3>

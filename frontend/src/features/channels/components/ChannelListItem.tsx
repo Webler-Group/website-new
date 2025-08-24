@@ -3,6 +3,7 @@ import { IChannelMessage } from "./ChannelMessage";
 import { IChannelInvite } from "./InvitesListItem";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { truncate } from "../../../utils/StringUtils";
 
 interface IChannelParticipant {
     userId: string;
@@ -33,11 +34,6 @@ interface ChannelListItemProps {
 }
 
 const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: ChannelListItemProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-    const formatMessageContent = (content: string) => {
-        return content.length > 20
-            ? content.slice(0, 20) + "..."
-            : content
-    }
 
     let body = (
         <div
@@ -73,12 +69,12 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                                 <>
                                     <span className="text-primary">{channel.lastMessage.userName}:</span>{" "}
                                     <span className="text-muted">
-                                        {formatMessageContent(channel.lastMessage.content)}
+                                        {truncate(channel.lastMessage.content, 20)}
                                     </span>
                                 </>
                             ) : (
                                 <span className="text-muted">
-                                    {formatMessageContent(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.userName))}
+                                    {truncate(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.userName), 20)}
                                 </span>
                             )
                         )}

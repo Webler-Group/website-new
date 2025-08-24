@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -26,6 +17,7 @@ const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
 const fileUtils_1 = require("../utils/fileUtils");
+const pushService_1 = require("../services/pushService");
 const avatarImageUpload = (0, multer_1.default)({
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
@@ -50,21 +42,21 @@ const avatarImageUpload = (0, multer_1.default)({
         }
     })
 });
-const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const roles = req.roles;
     const { userId } = req.body;
     const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
-    const user = yield User_1.default.findById(userId);
+    const user = await User_1.default.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
     const isFollowing = currentUserId ?
-        (yield UserFollowing_1.default.findOne({ user: currentUserId, following: userId })) !== null :
+        await UserFollowing_1.default.findOne({ user: currentUserId, following: userId }) !== null :
         false;
-    const followers = yield UserFollowing_1.default.countDocuments({ following: userId });
-    const following = yield UserFollowing_1.default.countDocuments({ user: userId });
+    const followers = await UserFollowing_1.default.countDocuments({ following: userId });
+    const following = await UserFollowing_1.default.countDocuments({ user: userId });
     let codesQuery = Code_1.default
         .find({ user: userId });
     if (currentUserId !== userId) {
@@ -72,15 +64,15 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
     }
     codesQuery = codesQuery
         .sort({ updatedAt: "desc" });
-    const codes = yield codesQuery
+    const codes = await codesQuery
         .limit(5)
         .select("-source -cssSource -jsSource");
-    const questions = yield Post_1.default.find({ user: userId, _type: 1 })
+    const questions = await Post_1.default.find({ user: userId, _type: 1 })
         .sort({ createdAt: "desc" })
         .limit(5)
         .populate("tags", "name")
         .select("-message");
-    const answers = yield Post_1.default.find({ user: userId, _type: 2 })
+    const answers = await Post_1.default.find({ user: userId, _type: 2 })
         .sort({ createdAt: "desc" })
         .limit(5)
         .select("-message");
@@ -101,6 +93,7 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             level: user.level,
             xp: user.xp,
             active: user.active,
+            notifications: user.notifications,
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
@@ -128,8 +121,8 @@ const getProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(
             }))
         }
     });
-}));
-const updateProfile = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const updateProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { userId, name, bio, countryCode } = req.body;
     if (typeof name === "undefined" ||
@@ -142,7 +135,7 @@ const updateProfile = (0, express_async_handler_1.default)((req, res) => __await
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
-    const user = yield User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(currentUserId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
         return;
@@ -151,7 +144,7 @@ const updateProfile = (0, express_async_handler_1.default)((req, res) => __await
     user.bio = bio;
     user.countryCode = countryCode;
     try {
-        const updatedUser = yield user.save();
+        const updatedUser = await user.save();
         res.json({
             success: true,
             data: {
@@ -169,8 +162,8 @@ const updateProfile = (0, express_async_handler_1.default)((req, res) => __await
             data: null
         });
     }
-}));
-const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const changeEmail = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { email, password } = req.body;
     if (typeof email === "undefined" ||
@@ -178,12 +171,12 @@ const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const user = yield User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(currentUserId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    const matchPassword = yield user.matchPassword(password);
+    const matchPassword = await user.matchPassword(password);
     if (!matchPassword) {
         res.json({
             success: false,
@@ -195,7 +188,7 @@ const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
     try {
         user.email = email;
         user.emailVerified = false;
-        yield user.save();
+        await user.save();
         res.json({
             success: true,
             data: {
@@ -211,10 +204,10 @@ const changeEmail = (0, express_async_handler_1.default)((req, res) => __awaiter
             data: null
         });
     }
-}));
-const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const sendActivationCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
-    const user = yield User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(currentUserId);
     if (user === null) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -224,16 +217,16 @@ const sendActivationCode = (0, express_async_handler_1.default)((req, res) => __
         email: user.email
     });
     try {
-        yield (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
+        await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
         user.lastVerificationEmailTimestamp = Date.now();
-        yield user.save();
+        await user.save();
         res.json({ success: true });
     }
-    catch (_a) {
+    catch {
         res.status(500).json({ message: "Activation email could not be sent" });
     }
-}));
-const changePassword = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const changePassword = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { currentPassword, newPassword } = req.body;
     if (typeof currentPassword === "undefined" ||
@@ -245,12 +238,12 @@ const changePassword = (0, express_async_handler_1.default)((req, res) => __awai
         res.status(400).json({ message: "Passwords cannot be same" });
         return;
     }
-    const user = yield User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(currentUserId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    const matchPassword = yield user.matchPassword(currentPassword);
+    const matchPassword = await user.matchPassword(currentPassword);
     if (!matchPassword) {
         res.json({
             success: false,
@@ -261,7 +254,7 @@ const changePassword = (0, express_async_handler_1.default)((req, res) => __awai
     }
     try {
         user.password = newPassword;
-        yield user.save();
+        await user.save();
         res.json({
             success: true,
             data: true
@@ -274,8 +267,8 @@ const changePassword = (0, express_async_handler_1.default)((req, res) => __awai
             data: false
         });
     }
-}));
-const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const follow = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { userId } = req.body;
     if (typeof userId === "undefined") {
@@ -286,22 +279,27 @@ const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void
         res.status(400).json({ message: "Fields 'user' and 'following' cannot be same" });
         return;
     }
-    const userExists = yield User_1.default.findOne({ _id: userId });
+    const userExists = await User_1.default.findOne({ _id: userId });
     if (!userExists) {
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    const exists = yield UserFollowing_1.default.findOne({ user: currentUserId, following: userId });
+    const exists = await UserFollowing_1.default.findOne({ user: currentUserId, following: userId });
     if (exists) {
         res.status(204).json({ success: true });
         return;
     }
-    const userFollowing = yield UserFollowing_1.default.create({
+    const userFollowing = await UserFollowing_1.default.create({
         user: currentUserId,
         following: userId
     });
     if (userFollowing) {
-        yield Notification_1.default.create({
+        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+        await (0, pushService_1.sendToUsers)([userId], {
+            title: "Follower",
+            body: currentUserName + " followed you"
+        }, "followers");
+        await Notification_1.default.create({
             user: userId,
             actionUser: currentUserId,
             _type: 101,
@@ -311,8 +309,8 @@ const follow = (0, express_async_handler_1.default)((req, res) => __awaiter(void
         return;
     }
     res.status(500).json({ success: false });
-}));
-const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const unfollow = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { userId } = req.body;
     if (typeof userId === "undefined") {
@@ -323,14 +321,14 @@ const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         res.status(400).json({ message: "Fields 'user' and 'following' cannot be same" });
         return;
     }
-    const userFollowing = yield UserFollowing_1.default.findOne({ user: currentUserId, following: userId });
+    const userFollowing = await UserFollowing_1.default.findOne({ user: currentUserId, following: userId });
     if (userFollowing === null) {
         res.status(204).json({ success: true });
         return;
     }
-    const result = yield UserFollowing_1.default.deleteOne({ user: currentUserId, following: userId });
+    const result = await UserFollowing_1.default.deleteOne({ user: currentUserId, following: userId });
     if (result.deletedCount == 1) {
-        yield Notification_1.default.deleteOne({
+        await Notification_1.default.deleteOne({
             user: userId,
             actionUser: currentUserId,
             _type: 101
@@ -339,15 +337,15 @@ const unfollow = (0, express_async_handler_1.default)((req, res) => __awaiter(vo
         return;
     }
     res.status(500).json({ success: false });
-}));
-const getFollowers = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getFollowers = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, page, count } = req.body;
     const currentUserId = req.userId;
     if (typeof page === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
         return;
     }
-    const result = yield UserFollowing_1.default.find({ following: userId })
+    const result = await UserFollowing_1.default.find({ following: userId })
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
@@ -371,21 +369,21 @@ const getFollowers = (0, express_async_handler_1.default)((req, res) => __awaite
                 data[i].isFollowing = exists !== null;
             }));
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.json({ success: true, data });
     }
     else {
         res.status(500).json({ success: false });
     }
-}));
-const getFollowing = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getFollowing = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, page, count } = req.body;
     const currentUserId = req.userId;
     if (typeof page === "undefined" || typeof count === "undefined") {
         res.status(400).json({ message: "Some fileds are missing" });
         return;
     }
-    const result = yield UserFollowing_1.default.find({ user: userId })
+    const result = await UserFollowing_1.default.find({ user: userId })
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
@@ -409,14 +407,14 @@ const getFollowing = (0, express_async_handler_1.default)((req, res) => __awaite
                 data[i].isFollowing = exists !== null;
             }));
         }
-        yield Promise.all(promises);
+        await Promise.all(promises);
         res.json({ success: true, data });
     }
     else {
         res.status(500).json({ success: false });
     }
-}));
-const getNotifications = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getNotifications = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { count, fromId } = req.body;
     if (typeof count === "undefined") {
@@ -427,13 +425,13 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
         .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
     if (typeof fromId !== "undefined") {
-        const prevNotification = yield Notification_1.default.findById(fromId);
+        const prevNotification = await Notification_1.default.findById(fromId);
         if (prevNotification !== null) {
             dbQuery = dbQuery
                 .where({ createdAt: { $lt: prevNotification.createdAt } });
         }
     }
-    const result = yield dbQuery
+    const result = await dbQuery
         .limit(count)
         .populate("user", "name avatarUrl countryCode level roles")
         .populate("actionUser", "name avatarImage countryCode level roles")
@@ -476,13 +474,13 @@ const getNotifications = (0, express_async_handler_1.default)((req, res) => __aw
     else {
         res.status(500).json({ message: "error" });
     }
-}));
-const getUnseenNotificationCount = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getUnseenNotificationCount = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
-    const count = yield Notification_1.default.countDocuments({ user: currentUserId, isClicked: false, hidden: false });
+    const count = await Notification_1.default.countDocuments({ user: currentUserId, isClicked: false, hidden: false });
     res.json({ count });
-}));
-const markNotificationsSeen = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const markNotificationsSeen = (0, express_async_handler_1.default)(async (req, res) => {
     const { fromId } = req.body;
     if (typeof fromId === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -490,21 +488,21 @@ const markNotificationsSeen = (0, express_async_handler_1.default)((req, res) =>
     }
     // TODO
     res.json({});
-}));
-const markNotificationsClicked = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const markNotificationsClicked = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { ids } = req.body;
     if (typeof ids !== "undefined") {
-        yield Notification_1.default.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } });
+        await Notification_1.default.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } });
     }
     else {
-        yield Notification_1.default.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } });
+        await Notification_1.default.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } });
     }
     res.json({});
-}));
-const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const toggleUserBan = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, active } = req.body;
-    const user = yield User_1.default.findById(userId);
+    const user = await User_1.default.findById(userId);
     if (!user) {
         res.status(404).json({ message: "Profile not found" });
         return;
@@ -515,7 +513,7 @@ const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __await
     }
     user.active = active;
     try {
-        yield user.save();
+        await user.save();
         res.json({ success: true, active });
     }
     catch (err) {
@@ -524,8 +522,8 @@ const toggleUserBan = (0, express_async_handler_1.default)((req, res) => __await
             error: err
         });
     }
-}));
-const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const uploadProfileAvatarImage = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     if (!req.file) {
         res.status(400).json({
@@ -534,14 +532,14 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
         });
         return;
     }
-    const user = yield User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(currentUserId);
     if (!user) {
         fs_1.default.unlinkSync(req.file.path);
         res.status(404).json({ message: "User not found" });
         return;
     }
     try {
-        const compressedBuffer = yield (0, fileUtils_1.compressAvatar)({
+        const compressedBuffer = await (0, fileUtils_1.compressAvatar)({
             inputPath: req.file.path,
         });
         // Overwrite original file
@@ -553,7 +551,7 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
             }
         }
         user.avatarImage = req.file.filename;
-        yield user.save();
+        await user.save();
         res.json({
             success: true,
             data: {
@@ -567,7 +565,56 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)((req, res)
             error: err
         });
     }
-}));
+});
+const updateNotifications = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { notifications } = req.body;
+    if (!notifications || typeof notifications !== "object") {
+        res.status(400).json({ message: "Invalid notifications object" });
+        return;
+    }
+    const user = await User_1.default.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return;
+    }
+    if (!user.notifications) {
+        user.notifications = {
+            followers: true,
+            codes: true,
+            discuss: true,
+            channels: true
+        };
+    }
+    if (typeof notifications.followers !== "undefined") {
+        user.notifications.followers = notifications.followers;
+    }
+    if (typeof notifications.codes !== "undefined") {
+        user.notifications.codes = notifications.codes;
+    }
+    if (typeof notifications.discuss !== "undefined") {
+        user.notifications.discuss = notifications.discuss;
+    }
+    if (typeof notifications.channels !== "undefined") {
+        user.notifications.channels = notifications.channels;
+    }
+    try {
+        await user.save();
+        res.json({
+            success: true,
+            data: {
+                notifications: user.notifications
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+});
 const controller = {
     getProfile,
     updateProfile,
@@ -584,6 +631,7 @@ const controller = {
     sendActivationCode,
     toggleUserBan,
     uploadProfileAvatarImage,
-    avatarImageUpload
+    avatarImageUpload,
+    updateNotifications
 };
 exports.default = controller;

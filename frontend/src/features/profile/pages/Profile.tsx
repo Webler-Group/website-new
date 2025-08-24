@@ -15,6 +15,13 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import Question, { IQuestion } from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
 
+export interface IUserNotifications {
+    codes: boolean;
+    discuss: boolean;
+    followers: boolean;
+    channels: boolean;
+}
+
 export interface UserDetails {
     id: string;
     name: string;
@@ -31,6 +38,7 @@ export interface UserDetails {
     emailVerified: boolean;
     active: boolean;
     roles: string[];
+    notifications: IUserNotifications;
 }
 
 export interface UserMinimal {

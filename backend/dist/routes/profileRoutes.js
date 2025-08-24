@@ -40,4 +40,6 @@ router.route("/ToggleUserBan")
     .post((0, protectRoute_1.default)(["Moderator"]), profileController_1.default.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController_1.default.avatarImageUpload.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
+router.route("/UpdateNotifications")
+    .post(profileController_1.default.updateNotifications);
 exports.default = router;

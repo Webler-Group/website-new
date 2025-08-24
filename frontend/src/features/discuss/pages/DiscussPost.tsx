@@ -17,6 +17,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
+import { truncate } from "../../../utils/StringUtils";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -320,7 +321,7 @@ const DiscussPost = () => {
             <div className="d-flex gap-2 py-2">
                 <Link to="/Discuss">Q&A</Link>
                 <span>&rsaquo;</span>
-                <span>{question.title.length > 20 ? question.title.slice(0, 20) + "..." : question.title}</span>
+                <span>{truncate(question.title, 20)}</span>
             </div>
             <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
                 {

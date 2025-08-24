@@ -10,6 +10,8 @@ import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
+import { sendToUsers } from "../services/pushService";
+import User from "../models/User";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -24,16 +26,16 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     for (let tagName of tags) {
         const tag = await Tag.findOne({ name: tagName });
-        if(!tag) {
+        if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
         }
         tagIds.push(tag._id);
     }
 
-    if(tagIds.length < 1) {
+    if (tagIds.length < 1) {
         res.status(400).json({ message: `Empty Tag` });
-        return;        
+        return;
     }
 
     const question = await Post.create({
@@ -341,6 +343,18 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const followers = new Set(((await PostFollowing.find({ following: question._id })) as any[]).map(x => x.user.toString()));
         followers.add(question.user.toString())
         followers.delete(currentUserId)
+
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers(Array.from(followers).filter(x => x !== question.user.toString()), {
+            title: "Discuss",
+            body: `${currentUserName} posted in "${question.title}"`
+        }, "discuss");
+
+        await sendToUsers([question.user.toString()], {
+            title: "Discuss",
+            body: `${currentUserName} answered your question "${question.title}"`
+        }, "discuss");
 
         for (let userToNotify of followers) {
 
@@ -900,12 +914,23 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     if (reply) {
 
-        const usersToNotify = new Set();
+        const usersToNotify = new Set<string>();
         usersToNotify.add(code.user.toString())
         if (parentPost !== null) {
             usersToNotify.add(parentPost.user.toString())
         }
-        usersToNotify.delete(currentUserId)
+        usersToNotify.delete(currentUserId!);
+
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
+            title: "Code playgorund",
+            body: `${currentUserName} replied to your comment on "${code.name}"`
+        }, "codes");
+        await sendToUsers([code.user.toString()], {
+            title: "Code playgorund",
+            body: `${currentUserName} posted comment on your code "${code.name}"`
+        }, "codes");
 
         for (let userToNotify of usersToNotify) {
 

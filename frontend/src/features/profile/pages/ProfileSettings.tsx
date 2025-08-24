@@ -8,6 +8,7 @@ import PasswordFormControl from "../../../components/PasswordFormControl";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
+import PushNotificationsTab from "../components/PushNotificationsTab";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -237,6 +238,9 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         }
     }
 
+    const onUserNotificationsUpdate = () => {
+    }
+
     return (
         <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
             <Modal.Header closeButton>
@@ -364,8 +368,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             </div>
                         </Form>
                     </Tab>
-                    <Tab eventKey="delete-account" title="Delete Account">
-                        Tab content for Delete Account
+                    <Tab eventKey="notifications" title="Push Notifications">
+                        <PushNotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
                     </Tab>
                 </Tabs>
             </Modal.Body>
