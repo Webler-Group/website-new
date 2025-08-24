@@ -58,21 +58,27 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
             roles: x.user.roles
         };
         switch (x._type) {
-            case 1: return {
-                id: x._id,
-                type: 1,
-                ...userDetails,
-                codeId: x.code._id,
-                codeName: x.code.name,
-                codeLanguage: x.code.language
-            };
-            case 2: return {
-                id: x._id,
-                type: 2,
-                ...userDetails,
-                questionId: x.question._id,
-                questionTitle: x.question.title
-            };
+            case 1:
+                if (!x.code)
+                    return null;
+                return {
+                    id: x._id,
+                    type: 1,
+                    ...userDetails,
+                    codeId: x.code._id,
+                    codeName: x.code.name,
+                    codeLanguage: x.code.language
+                };
+            case 2:
+                if (!x.question)
+                    return null;
+                return {
+                    id: x._id,
+                    type: 2,
+                    ...userDetails,
+                    questionId: x.question._id,
+                    questionTitle: x.question.title
+                };
         }
         return null;
     })

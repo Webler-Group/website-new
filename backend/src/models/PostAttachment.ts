@@ -55,7 +55,9 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
             roles: x.user.roles
         }
         switch (x._type) {
-            case 1: return {
+            case 1: 
+            if (!x.code) return null;
+            return {
                 id: x._id,
                 type: 1,
                 ...userDetails,
@@ -63,7 +65,9 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                 codeName: x.code.name,
                 codeLanguage: x.code.language
             }
-            case 2: return {
+            case 2: 
+            if (!x.question) return null;
+            return {
                 id: x._id,
                 type: 2,
                 ...userDetails,
