@@ -9,6 +9,7 @@ const confg_1 = require("../confg");
 const NotificationKeystore_1 = __importDefault(require("../models/NotificationKeystore"));
 const NotificationSubscription_1 = __importDefault(require("../models/NotificationSubscription"));
 const User_1 = __importDefault(require("../models/User"));
+const socketServer_1 = require("../config/socketServer");
 async function initKeystore() {
     const active = await NotificationKeystore_1.default.findOne({ version: "active" });
     if (active)
@@ -25,8 +26,12 @@ async function initKeystore() {
 }
 exports.initKeystore = initKeystore;
 async function sendToUsers(userIds, payload, category) {
+    // filter out online users
+    const offlineUserIds = userIds.filter(userId => !socketServer_1.onlineUsers.has(userId));
+    if (offlineUserIds.length === 0)
+        return;
     const allowedUserDocs = await User_1.default.find({
-        _id: { $in: userIds },
+        _id: { $in: offlineUserIds },
         [`notifications.${category}`]: true
     }).select('_id');
     const allowedUserIds = allowedUserDocs.map(doc => doc._id);

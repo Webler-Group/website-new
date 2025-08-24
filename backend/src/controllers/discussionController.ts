@@ -347,12 +347,12 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
         await sendToUsers(Array.from(followers).filter(x => x !== question.user.toString()), {
-            title: "Discuss",
+            title: "New answer",
             body: `${currentUserName} posted in "${question.title}"`
         }, "discuss");
 
         await sendToUsers([question.user.toString()], {
-            title: "Discuss",
+            title: "New answer",
             body: `${currentUserName} answered your question "${question.title}"`
         }, "discuss");
 
@@ -924,11 +924,11 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
         await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-            title: "Code playgorund",
+            title: "New reply",
             body: `${currentUserName} replied to your comment on "${code.name}"`
         }, "codes");
         await sendToUsers([code.user.toString()], {
-            title: "Code playgorund",
+            title: "New comment",
             body: `${currentUserName} posted comment on your code "${code.name}"`
         }, "codes");
 

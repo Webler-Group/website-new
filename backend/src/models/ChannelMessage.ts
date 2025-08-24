@@ -76,7 +76,7 @@ channelMessageSchema.post("save", async function () {
     await sendToUsers(participants
         .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
         .map(p => p.user.toString()), { 
-            title: "Channels",
+            title: "New message",
             body: channel._type == 1 ? user.name + " sent you message" : " New messages in group " + channel.title, 
             url: "/Channels/" + channel._id 
         }, "channels");

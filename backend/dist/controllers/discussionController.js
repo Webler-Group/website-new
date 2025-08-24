@@ -310,11 +310,11 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
         followers.delete(currentUserId);
         const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
         await (0, pushService_1.sendToUsers)(Array.from(followers).filter(x => x !== question.user.toString()), {
-            title: "Discuss",
+            title: "New answer",
             body: `${currentUserName} posted in "${question.title}"`
         }, "discuss");
         await (0, pushService_1.sendToUsers)([question.user.toString()], {
-            title: "Discuss",
+            title: "New answer",
             body: `${currentUserName} answered your question "${question.title}"`
         }, "discuss");
         for (let userToNotify of followers) {
@@ -779,11 +779,11 @@ const createCodeComment = (0, express_async_handler_1.default)(async (req, res) 
         usersToNotify.delete(currentUserId);
         const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
         await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-            title: "Code playgorund",
+            title: "New reply",
             body: `${currentUserName} replied to your comment on "${code.name}"`
         }, "codes");
         await (0, pushService_1.sendToUsers)([code.user.toString()], {
-            title: "Code playgorund",
+            title: "New comment",
             body: `${currentUserName} posted comment on your code "${code.name}"`
         }, "codes");
         for (let userToNotify of usersToNotify) {

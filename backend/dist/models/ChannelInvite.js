@@ -59,7 +59,7 @@ channelInviteSchema.post("save", async function () {
         if (!author || !channel)
             return;
         await (0, pushService_1.sendToUsers)([this.invitedUser.toString()], {
-            title: "Channels",
+            title: "New invite",
             body: `${author.name} invited you to channel`,
             url: "/Channels"
         }, "channels");

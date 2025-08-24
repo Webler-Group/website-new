@@ -353,7 +353,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
         await sendToUsers([userId], {
-            title: "Follower",
+            title: "New follower",
             body: currentUserName + " followed you"
         },"followers");
         await Notification.create({

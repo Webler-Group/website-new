@@ -3,6 +3,7 @@ import { config } from "../confg";
 import NotificationKeystore from "../models/NotificationKeystore";
 import NotificationSubscription from "../models/NotificationSubscription";
 import User from "../models/User";
+import { onlineUsers } from "../config/socketServer";
 
 export async function initKeystore() {
     const active = await NotificationKeystore.findOne({ version: "active" });
@@ -26,8 +27,12 @@ export async function sendToUsers(
     payload: { title: string; body: string; url?: string },
     category: string
 ) {
+    // filter out online users
+    const offlineUserIds = userIds.filter(userId => !onlineUsers.has(userId));
+    if (offlineUserIds.length === 0) return;
+
     const allowedUserDocs = await User.find({
-        _id: { $in: userIds },
+        _id: { $in: offlineUserIds },
         [`notifications.${category}`]: true
     }).select('_id');
 

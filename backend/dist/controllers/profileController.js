@@ -296,7 +296,7 @@ const follow = (0, express_async_handler_1.default)(async (req, res) => {
     if (userFollowing) {
         const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
         await (0, pushService_1.sendToUsers)([userId], {
-            title: "Follower",
+            title: "New follower",
             body: currentUserName + " followed you"
         }, "followers");
         await Notification_1.default.create({
