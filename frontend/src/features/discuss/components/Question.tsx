@@ -30,26 +30,9 @@ interface QuestionProps {
     showUserProfile: boolean;
 }
 
-const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
-    const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
-    const match = question.title.match(regex);
-
-    let title;
-    if (searchQuery.trim().length > 0 && match && match.index !== undefined) {
-        const start = match.index;
-        const end = start + match[0].length;
-
-        title = (
-            <>
-                {question.title.slice(0, start)}
-                <span className="bg-warning">{question.title.slice(start, end)}</span>
-                {question.title.slice(end)}
-            </>
-        );
-    } else {
-        title = <>{question.title}</>;
-    }
+    let title = question.title;
 
     let body = (
         <div className="rounded border p-2 mb-2 bg-white d-md-flex">
@@ -61,7 +44,7 @@ const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: Q
                     {
                         question.tags.map((tag, idx) => {
                             return (
-                                <WeblerBadge key={idx} name={tag} state="neutral" className={"me-2 " + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")} />
+                                <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
                             )
                         })
                     }

@@ -25,9 +25,8 @@ const getBlogEntries = (0, express_async_handler_1.default)(async (req, res) => 
             return json;
         });
         if (searchQuery.trim().length) {
-            const regex = new RegExp("^" + searchQuery.trim(), "i");
             posts = posts.filter(post => {
-                return regex.test(post.title);
+                return true;
             });
         }
         postCount = posts.length;

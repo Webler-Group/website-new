@@ -29,9 +29,8 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
     })
 
     if (searchQuery.trim().length) {
-      const regex = new RegExp("^" + searchQuery.trim(), "i")
       posts = posts.filter(post => {
-        return regex.test(post.title);
+        return true;
       })
     }
 
