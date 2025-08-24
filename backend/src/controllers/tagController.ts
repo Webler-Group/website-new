@@ -3,6 +3,41 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import Tag from "../models/Tag";
 
+/**
+ * REQUIRES AUTH AND ROLES ["Admin", "Moderator"]
+ * Create a tag if not exists. This controller does not try to recreate an existing tag
+ * 
+ * body: {
+ *  tags: Array of tags,
+ *  action: "create" / "delete"
+ * }
+ */
+const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { tags, action } = req.body;
+    const roles = req.roles;
+
+    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
+
+    if(!isModerator) {
+        res.status(403).json({ message: "Unauthorized Access" });
+        return;
+    }
+
+    if(tags.length < 1 || !(typeof action == "string") || action == "" ) {
+        res.status(200).json({ message: "0 job done" });
+        return;
+    }
+
+    const p_action = action.toLowerCase().trim();
+    for(let name of tags) {
+        if(p_action == "create")
+            await Tag.getOrCreateTagByName(name);
+        if(p_action == "delete") 
+            await Tag.deleteOne({ name });
+    }
+    
+    res.status(200).json({ message: `${tags.length} job ${p_action}d!` });
+});
 
 
 const getTagList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -32,6 +67,7 @@ const getTag = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const controller = {
+    executeTagJobs,
     getTagList,
     getTag
 }
