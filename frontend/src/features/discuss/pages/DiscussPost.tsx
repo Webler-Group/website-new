@@ -324,30 +324,39 @@ const DiscussPost = () => {
                 <span>{truncate(question.title, 20)}</span>
             </div>
             <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
-                {
-                    userInfo &&
-                    <div className="wb-discuss-reply__edit-button">
-                        <Dropdown drop="start">
-                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                            <Dropdown.Menu>
-                                {
-                                    (question && question.userId === userInfo.id) &&
-                                    <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                                        <Dropdown.Item>Edit</Dropdown.Item>
-                                    </LinkContainer>
-                                }
-                                <Dropdown.Item onClick={handleFollowQuestion}>
+                <div className="wb-discuss-reply__edit-button">
+                    <Dropdown drop="start">
+                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                        <Dropdown.Menu>
+                            {
+                                userInfo &&
+                                <>
                                     {
-                                        question.isFollowed ?
-                                            "Unfollow"
-                                            :
-                                            "Follow"
+                                        (question && question.userId === userInfo.id) &&
+                                        <LinkContainer to={"/Discuss/Edit/" + questionId}>
+                                            <Dropdown.Item>Edit</Dropdown.Item>
+                                        </LinkContainer>
                                     }
-                                </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </div>
-                }
+                                    <Dropdown.Item onClick={handleFollowQuestion}>
+                                        {
+                                            question.isFollowed ?
+                                                "Unfollow"
+                                                :
+                                                "Follow"
+                                        }
+                                    </Dropdown.Item>
+                                </>
+                            }
+                            <Dropdown.Item
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                }}
+                            >
+                                Share
+                            </Dropdown.Item>
+                        </Dropdown.Menu>
+                    </Dropdown>
+                </div>
 
                 <div className="d-flex gap-2">
                     <div className="d-flex flex-column align-items-center">

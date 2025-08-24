@@ -5,7 +5,6 @@ import { LinkContainer } from 'react-router-bootstrap';
 import AuthNavigation from '../features/auth/components/AuthNavigation';
 import NotificationList from '../features/profile/pages/NotificationList';
 import { useAuth } from '../features/auth/context/authContext';
-import { isAdminOrModRole } from '../data/roles';
 import ChannelsButton from '../features/channels/components/ChannelsButton';
 
 interface HeaderProps {
@@ -47,7 +46,7 @@ function Header({ variant }: HeaderProps) {
               <Nav.Link>Blog</Nav.Link>
             </LinkContainer>
             {
-              isAdminOrModRole(userInfo?.roles) &&
+              userInfo && userInfo.roles.some(role => role !== "User") &&
               <LinkContainer to="/Tools">
                 <Nav.Link>Tools</Nav.Link>
               </LinkContainer>

@@ -497,7 +497,16 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     </Dropdown.ItemText>
                                     {
                                         (code && code.id) &&
-                                        <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                        <>
+                                            <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                            <Dropdown.Item
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(window.location.href);
+                                                }}
+                                            >
+                                                Share
+                                            </Dropdown.Item>
+                                        </>
                                     }
                                 </Dropdown.Menu>
                             </Dropdown>

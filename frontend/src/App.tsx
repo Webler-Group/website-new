@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import RequireAuth from './features/auth/components/RequireAuth';
-import roles, { adminAndModRole, adminRole } from './data/roles';
 import Home from './pages/Home';
 import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
 import NoAuth from './features/auth/components/NoAuth';
@@ -41,6 +40,7 @@ import CourseLessonPage from './features/courses/pages/CourseLessonPage';
 import ChannelsPage from './features/channels/pages/ChannelsPage';
 import ToolsHome from './tools/ToolsHome';
 import TagHome from './tools/tags/pages/TagHome';
+import roles from './data/roles';
 
 
 function App() {
@@ -165,24 +165,9 @@ function App() {
 
       <Route path="Tools">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
-          <Route element={<RequireAuth allowedRoles={adminAndModRole} />}>
-            <Route index element={<ToolsHome />}/>
+          <Route index element={<ToolsHome />} />
+          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
             <Route path="Tags" element={<TagHome />} />
-            {/* FOR ADMIN ONLY */}
-            <Route element={<RequireAuth allowedRoles={adminRole} />}>
-
-              <Route path="Courses">
-                  <Route path="Editor">
-                    <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
-                    <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null} />} />} />
-                    <Route path="Edit/:courseCode" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
-                    <Route path=":courseCode">
-                      <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-                      <Route path="Lesson/:lessonId" element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-                    </Route>
-                  </Route>
-                </Route>
-            </Route>
           </Route>
         </Route>
       </Route>
