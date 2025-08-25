@@ -921,6 +921,14 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
+    // only moderators or admins can pin a message
+    const user = await User.findById(currentUserId);
+
+    if (!user || !user.roles.includes('Moderator') && !user.roles.includes('Admin')) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
     if (!feedId) {
         res.status(400).json({ message: "Feed ID is required" });
         return;
@@ -944,6 +952,21 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.status(200).json({ success: true });
 });
 
+const getPinnedFeeds = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    // const currentUserId = req.userId;
+    const currentUserId = '68a7400f3dd5eef60a166911';
+
+    if(!currentUserId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    const pinnedFeeds = await Post.find({ user: currentUserId, isPinned: true });
+
+    res.status(200).json({ pinnedFeeds });
+});
+
+
 const feedController = {
     createFeed,
     editFeed,
@@ -959,7 +982,8 @@ const feedController = {
     getFeedList,
     getFeed,
     getReplies,
-    togglePinFeed
+    togglePinFeed,
+    getPinnedFeeds
 }
 
 export default feedController;

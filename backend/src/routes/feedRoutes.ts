@@ -7,7 +7,7 @@ import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 
-// router.use(verifyJWT);
+router.use(verifyJWT);
 
 router.route("/")
     .post(feedController.getFeedList);
@@ -15,8 +15,9 @@ router.route("/GetFeed")
     .post(feedController.getFeed);
 router.route("/GetFeedReplies")
     .post(feedController.getReplies);
+router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds);
 
-// router.use(protectRoute);
+router.use(protectRoute);
 
 router.route("/PinFeed").post(feedController.togglePinFeed)
 
@@ -41,7 +42,6 @@ router.route("/FollowFeed")
     .post(feedController.followFeed)
 router.route("/UnfollowFeed")
     .post(feedController.unfollowFeed)
-
 
 router.route("/ShareFeed").post(feedController.shareFeed)
 
