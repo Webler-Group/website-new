@@ -105,12 +105,13 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let promises: Promise<void>[] = [];
 
     for (let tagName of tags) {
-        promises.push(Tag.getOrCreateTagByName(tagName)
-            .then(tag => {
-                tagIds.push(tag._id);
-            })
-        )
-    }
+  promises.push(
+    Tag.findOne({ name: tagName })
+      .then(tag => {
+        if (tag) tagIds.push(tag._id);
+      })
+  );
+}
 
     await Promise.all(promises);
 
@@ -506,7 +507,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.getOrCreateTagByName(tagName); // Create tag on fly --revisit
+        const tag = await Tag.findOne(tagName); // Create tag on fly --revisit
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -915,6 +916,34 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { feedId } = req.body;
+    const currentUserId = req.userId;
+    // const currentUserId = '68a7400f3dd5eef60a166911';
+
+    if (!feedId) {
+        res.status(400).json({ message: "Feed ID is required" });
+        return;
+    }
+
+    const feed = await Post.findById(feedId);
+
+    if (feed === null) {
+        res.status(404).json({ message: "Feed not found" });
+        return;
+    }
+
+    if (feed.user != currentUserId) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    feed.isPinned = !feed.isPinned;
+    await feed.save();
+
+    res.status(200).json({ success: true });
+});
+
 const feedController = {
     createFeed,
     editFeed,
@@ -929,7 +958,8 @@ const feedController = {
     shareFeed,
     getFeedList,
     getFeed,
-    getReplies
+    getReplies,
+    togglePinFeed
 }
 
 export default feedController;

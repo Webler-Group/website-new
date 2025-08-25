@@ -7,7 +7,7 @@ import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 
-router.use(verifyJWT);
+// router.use(verifyJWT);
 
 router.route("/")
     .post(feedController.getFeedList);
@@ -16,7 +16,9 @@ router.route("/GetFeed")
 router.route("/GetFeedReplies")
     .post(feedController.getReplies);
 
-router.use(protectRoute);
+// router.use(protectRoute);
+
+router.route("/PinFeed").post(feedController.togglePinFeed)
 
 router.route("/CreateFeed")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), feedController.createFeed);

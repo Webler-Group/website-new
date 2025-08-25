@@ -23,6 +23,10 @@ const postSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    isPinned: {
+        type: Boolean,
+        default: false
+    },
     codeId: {
         type: mongoose.Types.ObjectId,
         ref: "Code",
