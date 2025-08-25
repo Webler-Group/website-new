@@ -17,8 +17,8 @@ import PostSharing from "../models/PostShare";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
+    const currentUserId = req.userId;
+    // const currentUserId = '68a7400f3dd5eef60a166911';
 
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -28,7 +28,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.getOrCreateTagByName(tagName); // Create tag on fly --revisit
+        const tag = await Tag.findOne(tagName);
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -170,8 +170,8 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 })
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = "68a7400f3dd5eef60a166911";
+    const currentUserId = req.userId;
+    // const currentUserId = "68a7400f3dd5eef60a166911";
     const { message, feedId } = req.body;
 
     const feed = await Post.findById(feedId);
@@ -257,8 +257,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = "68a7400f3dd5eef60a166911";
+    const currentUserId = req.userId;
+    // const currentUserId = "68a7400f3dd5eef60a166911";
     const { replyId, message } = req.body;
 
     if (typeof message === "undefined") {
@@ -273,10 +273,10 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    // if (currentUserId != reply.user) {
-    //     res.status(401).json({ message: "Unauthorized" });
-    //     return
-    // }
+    if (currentUserId != reply.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
 
     reply.message = message;
 
@@ -306,8 +306,8 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = "68a7400f3dd5eef60a166911";
+    const currentUserId = req.userId;
+    // const currentUserId = "68a7400f3dd5eef60a166911";
 
     const { replyId } = req.body;
 
@@ -318,10 +318,10 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    // if (currentUserId != reply.user) {
-    //     res.status(401).json({ message: "Unauthorized" });
-    //     return
-    // }
+    if (currentUserId != reply.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
 
     const feed = await Post.findById(reply.parentId);
     if (feed === null) {
@@ -381,8 +381,8 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
 });
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = "68a7400f3dd5eef60a166911";
+    const currentUserId = req.userId;
+    // const currentUserId = "68a7400f3dd5eef60a166911";
     const { postId, vote } = req.body;
 
     if (typeof vote === "undefined") {
@@ -495,8 +495,8 @@ const unfollowFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { feedId, title, message, tags } = req.body;
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
+    const currentUserId = req.userId;
+    // const currentUserId = '68a7400f3dd5eef60a166911';
 
     if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -574,8 +574,8 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId } = req.body;
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
+    const currentUserId = req.userId;
+    // const currentUserId = '68a7400f3dd5eef60a166911';
 
     if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
@@ -851,7 +851,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         { 
             $match: { 
                 parentId: new mongoose.Types.ObjectId(feedId), 
-                _type: 3, // Comments/replies
+                _type: 2, // Comments/replies
                 hidden: false 
             } 
         },
@@ -865,7 +865,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         { 
             $match: { 
                 parentId: new mongoose.Types.ObjectId(feedId), 
-                _type: 3,
+                _type: 2,
                 hidden: false 
             } 
         },
@@ -915,29 +915,6 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
-const getTags = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { searchQuery = "", limit = 20 } = req.body;
-
-    let query = {};
-    if (searchQuery.trim().length > 0) {
-        const safeQuery = escapeRegex(searchQuery.trim());
-        const searchRegex = new RegExp(safeQuery, "i");
-        query = { name: searchRegex };
-    }
-
-    const tags = await Tag.find(query)
-        .select("name")
-        .limit(limit)
-        .sort({ name: 1 });
-
-    const tagData = tags.map(tag => ({
-        id: tag._id,
-        name: tag.name
-    }));
-
-    res.status(200).json({ tags: tagData });
-});
-
 const feedController = {
     createFeed,
     editFeed,
@@ -952,8 +929,7 @@ const feedController = {
     shareFeed,
     getFeedList,
     getFeed,
-    getReplies,
-    getTags
+    getReplies
 }
 
 export default feedController;
