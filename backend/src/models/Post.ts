@@ -4,6 +4,7 @@ import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
+import PostSharing from "./PostShare";
 import { config } from "../confg";
 
 const postSchema = new mongoose.Schema({
@@ -11,6 +12,8 @@ const postSchema = new mongoose.Schema({
     * 1 - question
     * 2 - answer
     * 3 - comment
+    * 4 - feed
+    * 5 - sharedFeed
     */
     _type: {
         type: Number,
@@ -47,6 +50,10 @@ const postSchema = new mongoose.Schema({
     },
     answers: {
         type: Number,
+        default: 0
+    },
+    shares: {
+        type: Number, 
         default: 0
     },
     title: {
@@ -123,6 +130,20 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 })
                 break;
             }
+
+            case 4: {
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await PostFollowing.deleteMany({ following: post._id });
+                break;
+            }
+
+            case 5: {
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await PostFollowing.deleteMany({ following: post._id });
+                // await PostSharing.deleteOne({ sharedPost: post._id })
+                break;
+            }
+
         }
         await Upvote.deleteMany({ parentId: post._id });
         await PostAttachment.deleteMany({ postId: post._id });

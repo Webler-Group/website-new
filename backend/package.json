@@ -29,6 +29,7 @@
     "typescript": "^5.1.6"
   },
   "dependencies": {
+    "@jest/globals": "^30.0.5",
     "bcrypt": "^5.1.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
@@ -48,6 +49,8 @@
     "sitemap": "^8.0.0",
     "socket.io": "^4.8.1",
     "socket.io-client": "^4.8.1",
+    "superset": "^2.0.1",
+    "supertest": "^7.1.4",
     "uuid": "^9.0.0",
     "web-push": "^3.6.7"
   }
