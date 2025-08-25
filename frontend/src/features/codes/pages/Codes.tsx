@@ -9,7 +9,7 @@ interface CodesProps {
 }
 
 const Codes = ({ MainPage }: CodesProps) => {
-    PageTitle("Webler - Codes", false);
+    PageTitle("Code Playground | Webler Code", false);
 
     const { sendJsonRequest } = useApi();
     const [codes, setCodes] = useState<ICode[]>([]);

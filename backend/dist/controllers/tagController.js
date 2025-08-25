@@ -16,18 +16,15 @@ const Tag_1 = __importDefault(require("../models/Tag"));
  */
 const executeTagJobs = (0, express_async_handler_1.default)(async (req, res) => {
     const { tags, action } = req.body;
-    const roles = req.roles;
     if (tags.length < 1 || !(typeof action == "string") || action == "") {
         res.status(200).json({ message: "0 job done" });
         return;
     }
     const p_action = action.toLowerCase().trim();
-    for (let name of tags) {
-        if (p_action == "create")
-            await Tag_1.default.getOrCreateTagByName(name);
-        if (p_action == "delete")
-            await Tag_1.default.deleteOne({ name });
-    }
+    if (p_action == "create")
+        await Tag_1.default.getOrCreateTagsByNames(tags);
+    if (p_action == "delete")
+        await Tag_1.default.deleteMany({ name: { $in: tags } });
     res.status(200).json({ message: `${tags.length} job ${p_action}d!` });
 });
 const getTagList = (0, express_async_handler_1.default)(async (req, res) => {

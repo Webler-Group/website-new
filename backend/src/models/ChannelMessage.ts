@@ -41,75 +41,109 @@ const channelMessageSchema = new Schema({
 }, { timestamps: true });
 
 channelMessageSchema.pre("save", async function (next) {
-    if (!this.isModified("content")) {
-        next();
-        return
+    (this as any).wasNew = this.isNew;
+
+    if (this.isModified("content")) {
+        await PostAttachment.updateAttachments(this.content, { channelMessage: this._id });
+
+        if (!this.isNew) {
+            const participants = await ChannelParticipant.find({ channel: this.channel }, "user").lean();
+
+            if (this.isModified("content")) {
+                const userIds = participants.map(x => x.user);
+
+                const io = getIO();
+                if (io) {
+                    io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_edited", {
+                        messageId: this._id.toString(),
+                        channelId: this.channel.toString(),
+                        content: this.content
+                    });
+                }
+            } else if (this.isModified("deleted") && this.deleted == true) {
+
+                const io = getIO();
+                if (io) {
+                    const userIds = participants.map(x => x.user);
+
+                    io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_deleted", {
+                        messageId: this._id.toString(),
+                        channelId: this.channel.toString()
+                    });
+                }
+            }
+        }
     }
 
-    await PostAttachment.updateAttachments(this.content, { channelMessage: this._id });
+    next();
 });
 
 channelMessageSchema.post("save", async function () {
-    const channel = await Channel.findById(this.channel);
-    if (!channel) return;
+    if ((this as any).wasNew) {
 
-    channel.lastMessage = this._id;
-    await channel.save();
+        const channel = await Channel.findById(this.channel);
+        if (!channel) return;
 
-    await ChannelParticipant.updateMany(
-        {
-            channel: this.channel,
-            user: { $ne: this.user },
-            $or: [
-                { lastActiveAt: null },
-                { lastActiveAt: { $lt: this.createdAt } }
-            ]
-        },
-        { $inc: { unreadCount: 1 } }
-    );
+        channel.lastMessage = this._id;
+        await channel.save();
 
-    const user = await User.findById(this.user, "name avatarImage level roles").lean();
-    if (!user) return;
+        await ChannelParticipant.updateMany(
+            {
+                channel: this.channel,
+                user: { $ne: this.user },
+                $or: [
+                    { lastActiveAt: null },
+                    { lastActiveAt: { $lt: this.createdAt } }
+                ]
+            },
+            { $inc: { unreadCount: 1 } }
+        );
 
-    const participants = await ChannelParticipant.find({ channel: this.channel }, "user muted unreadCount").lean();
+        const user = await User.findById(this.user, "name avatarImage level roles").lean();
+        if (!user) return;
 
-    await sendToUsers(participants
-        .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
-        .map(p => p.user.toString()), { 
+        const participants = await ChannelParticipant.find({ channel: this.channel }, "user muted unreadCount").lean();
+
+        await sendToUsers(participants
+            .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
+            .map(p => p.user.toString()), {
             title: "New message",
-            body: channel._type == 1 ? user.name + " sent you message" : " New messages in group " + channel.title, 
-            url: "/Channels/" + channel._id 
+            body: channel._type == 1 ? user.name + " sent you message" : " New messages in group " + channel.title,
+            url: "/Channels/" + channel._id
         }, "channels");
 
-    const io = getIO();
-    if (io) {
-        const attachments = await PostAttachment.getByPostId({ channelMessage: this._id });
+        const io = getIO();
+        if (io) {
+            const attachments = await PostAttachment.getByPostId({ channelMessage: this._id });
 
-        let channelTitle = undefined;
+            let channelTitle = undefined;
 
-        const userIds = participants.map(x => x.user);
-        const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
+            const userIds = participants.map(x => x.user);
+            const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
 
-        if (this._type == 3) {
-            userIds.push(user._id);
-        } else if (this._type == 4) {
-            channelTitle = channel.title;
+            if (this._type == 3) {
+                userIds.push(user._id);
+            } else if (this._type == 4) {
+                channelTitle = channel.title;
+            }
+
+            io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
+                type: this._type,
+                channelId: this.channel.toString(),
+                channelTitle,
+                content: this.content,
+                createdAt: this.createdAt,
+                userId: user._id.toString(),
+                userName: user.name,
+                userAvatar: user.avatarImage,
+                viewed: false,
+                deleted: this.deleted,
+                attachments
+            });
+
+            io.to(userIdsNotMuted.map(x => uidRoom(x.toString()))).emit("channels:new_message_info", {});
         }
-
-        io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
-            type: this._type,
-            channelId: this.channel.toString(),
-            channelTitle,
-            content: this.content,
-            createdAt: this.createdAt,
-            userId: user._id.toString(),
-            userName: user.name,
-            userAvatar: user.avatarImage,
-            viewed: false,
-            attachments
-        });
-
-        io.to(userIdsNotMuted.map(x => uidRoom(x.toString()))).emit("channels:new_message_info", {});
+        return;
     }
 });
 

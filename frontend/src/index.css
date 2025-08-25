@@ -783,4 +783,10 @@ ul {
     max-width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
+    user-select: none;
+    background-color: #f8f9fa;
+}
+
+.wb-channels-message__body:hover {
+    background-color: #e9ecef;
 }

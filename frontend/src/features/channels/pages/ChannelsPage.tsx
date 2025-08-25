@@ -3,11 +3,14 @@ import { useEffect, useState } from "react";
 import ChannelsList2 from "./ChannelsList2";
 import ChannelRoom2 from "./ChannelRoom2";
 import { FaComments } from "react-icons/fa6";
+import PageTitle from "../../../layouts/PageTitle";
 
 const ChannelsPage = () => {
     const [channelListVisible, setChannelListVisible] = useState(false);
     const { channelId } = useParams<{ channelId?: string }>();
     const navigate = useNavigate();
+
+    PageTitle("Channels | Webler Codes");
 
     useEffect(() => {
         if(!channelId) {

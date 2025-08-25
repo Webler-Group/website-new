@@ -6,6 +6,7 @@ import { ILesson } from "../components/Lesson";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
 
 interface ICourse {
     id: string;
@@ -27,6 +28,9 @@ const CoursePage = () => {
 
     const [course, setCourse] = useState<ICourse | null>(null);
     const [loading, setLoading] = useState(true);
+    const [pageTitle, setPageTitle] = useState("Webler Codes");
+
+    PageTitle(pageTitle);
 
     useEffect(() => {
         getCourse();
@@ -41,6 +45,7 @@ const CoursePage = () => {
 
         if (result && result.course) {
             setCourse(result.course);
+            setPageTitle("Courses - " + result.course.title + " | Webler Codes");
         }
         setLoading(false);
     };

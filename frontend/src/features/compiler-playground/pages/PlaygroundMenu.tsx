@@ -1,8 +1,11 @@
 import { Container } from "react-bootstrap"
 import { Link } from "react-router-dom"
 import { languagesInfo } from "../../../data/compilerLanguages"
+import PageTitle from "../../../layouts/PageTitle"
 
 const PlaygroundMenu = () => {
+    PageTitle("Online Code Editors, Compilers & Playground | Webler Codes");
+
     return (
         <div className="wb-playground-wrapper">
             <div className="bg-dark text-light">

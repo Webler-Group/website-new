@@ -15,12 +15,20 @@ const tagSchema = new mongoose_1.default.Schema({
         minLength: 1
     }
 });
-tagSchema.statics.getOrCreateTagByName = async function (tagName) {
-    let tag = await Tag.findOne({ name: tagName });
-    if (tag === null) {
-        tag = await Tag.create({ name: tagName });
-    }
-    return tag;
+tagSchema.statics.getOrCreateTagsByNames = async function (tagNames) {
+    // Remove duplicates to avoid unnecessary queries
+    const uniqueNames = [...new Set(tagNames)];
+    // Find already existing tags
+    const existingTags = await Tag.find({ name: { $in: uniqueNames } });
+    const existingNames = existingTags.map(tag => tag.name);
+    // Determine which names are missing
+    const missingNames = uniqueNames.filter(name => !existingNames.includes(name));
+    // Create missing tags (if any)
+    const newTags = missingNames.length > 0
+        ? await Tag.insertMany(missingNames.map(name => ({ name })))
+        : [];
+    // Return combined array of existing + new tags
+    return [...existingTags, ...newTags];
 };
 const Tag = mongoose_1.default.model("Tag", tagSchema);
 exports.default = Tag;

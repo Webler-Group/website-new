@@ -14,6 +14,7 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import Question, { IQuestion } from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
+import PageTitle from "../../../layouts/PageTitle";
 
 export interface IUserNotifications {
     codes: boolean;
@@ -67,8 +68,11 @@ const Profile = () => {
 
     const [questions, setQuestions] = useState<IQuestion[]>([]);
     const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
+    const [pageTitle, setPageTitle] = useState("Webler Codes");
 
     const navigate = useNavigate();
+
+    PageTitle(pageTitle);
 
     useEffect(() => {
         setFollowListVisible(0);
@@ -82,6 +86,7 @@ const Profile = () => {
                     setFollowersCount(data.userDetails.followers);
                     setCodes(data.userDetails.codes.slice(0, 3));
                     setQuestions(data.userDetails.questions.slice(0, 3));
+                    setPageTitle(data.userDetails.name);
                 }
                 else {
                     setUserDetails(null);
@@ -156,10 +161,6 @@ const Profile = () => {
 
     const closeQuestionsSection = () => {
         setQuestionsSectionVisible(false);
-    }
-
-    const setPageTitle = (userName: string) => {
-        { document.title = userName + " | Webler" }
     }
 
     const openPlaygroundMenu = () => {
@@ -302,7 +303,6 @@ const Profile = () => {
                             followListVisible == 2 &&
                             <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
                         }
-                        {setPageTitle(userDetails.name)}
                         {
                             isCurrentUser &&
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />

@@ -18,6 +18,7 @@ import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -44,6 +45,15 @@ const DiscussPost = () => {
     const [postId, setPostId] = useState<string | null>(null);
     const findPostRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
+    const [pageTitle, setPageTitle] = useState("");
+    
+    PageTitle(pageTitle);
+
+    useEffect(() => {
+        if(question) {
+            setPageTitle(question.title + " | Webler Codes");
+        }
+    }, [question]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -98,6 +108,8 @@ const DiscussPost = () => {
         });
         if (result && result.question) {
             setQuestion(result.question)
+        } else {
+            navigate("/PageNotFound")
         }
         setLoading(false);
     }

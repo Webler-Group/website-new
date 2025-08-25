@@ -325,6 +325,10 @@ const createMessage = (0, express_async_handler_1.default)(async (req, res) => {
 const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
+    if (typeof channelId === "undefined" || typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Invalid body" });
+        return;
+    }
     const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
@@ -346,13 +350,16 @@ const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
         userName: x.user.name,
         userAvatar: x.user.avatarImage,
         createdAt: x.createdAt,
-        content: x.content,
+        content: x.deleted ? "" : x.content,
+        deleted: x.deleted,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
     }));
     let promises = [];
     for (let i = 0; i < data.length; ++i) {
+        if (data[i].deleted)
+            continue;
         promises.push(PostAttachment_1.default.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
     await Promise.all(promises);
@@ -544,12 +551,38 @@ const createMessageWS = async (socket, payload) => {
         user: currentUserId
     });
 };
+const deleteMessageWS = async (socket, payload) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+    const message = await ChannelMessage_1.default.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+    message.deleted = true;
+    await message.save();
+};
+const editMessageWS = async (socket, payload) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+    const message = await ChannelMessage_1.default.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+    message.content = payload.content;
+    await message.save();
+};
 const registerHandlersWS = (socket) => {
     socket.on("channels:messages_seen", (payload) => {
         markMessagesSeenWS(socket, payload);
     });
     socket.on("channels:send_message", (payload) => {
         createMessageWS(socket, payload);
+    });
+    socket.on("channels:delete_message", (payload) => {
+        deleteMessageWS(socket, payload);
+    });
+    socket.on("channels:edit_message", (payload) => {
+        editMessageWS(socket, payload);
     });
 };
 exports.registerHandlersWS = registerHandlersWS;

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
+import PageTitle from "../layouts/PageTitle";
 
 export interface IPriviledgeInfo {
     name: string;
@@ -33,6 +34,8 @@ const makePriviledgeContent = (props: IPriviledgeInfo[]) => {
 }
 
 function ToolsHome() {
+    PageTitle("Tools");
+
     return(
         <div className="d-flex flex-column">
             <ul>

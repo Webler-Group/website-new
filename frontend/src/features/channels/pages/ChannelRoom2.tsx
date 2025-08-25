@@ -8,7 +8,10 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
-import { FaPaperPlane } from "react-icons/fa6";
+import { FaCheck, FaPaperPlane } from "react-icons/fa6";
+import { IChannelMessage } from "../components/ChannelMessage";
+import MessageContextMenu from "../components/MessageContextMenu";
+import { truncate } from "../../../utils/StringUtils";
 
 interface ChannelRoomProps {
     channelId: string;
@@ -56,6 +59,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const isAtBottomRef = useRef(true);
     const prevLatest = useRef<Date | null>(null);
+    const [contextVisible, setContextVisible] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState<IChannelMessage | null>(null);
+    const anchorRef = useRef<HTMLElement | null>(null);
+    const [editingMessage, setEditingMessage] = useState<IChannelMessage | null>(null);
 
     useEffect(() => {
         getChannel();
@@ -81,6 +88,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         const rows = Math.ceil(textarea.scrollHeight / lineHeight) - 1; // -1 feels more natural
         textarea.rows = Math.min(rows, 10);
     }, [newMessage]);
+
+    useEffect(() => {
+        if (editingMessage) {
+            setNewMessage(editingMessage.content);
+            textareaRef.current?.focus();
+        }
+    }, [editingMessage]);
 
     const messagesIntObserver = useRef<IntersectionObserver>();
     const lastMessageRef = useCallback((message: Element | null) => {
@@ -187,10 +201,15 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const handleSendMessage = async () => {
         if (newMessage.trim().length === 0) return;
-        messages.sendMessage(newMessage);
+
+        if (editingMessage) {
+            messages.editMessage(editingMessage.id, newMessage);
+            setEditingMessage(null);
+        } else {
+            messages.sendMessage(newMessage);
+        }
         setNewMessage("");
     };
-
 
     const handleTextareaKeydown = (e: KeyboardEvent) => {
         if (isMobileDevice()) return;
@@ -265,6 +284,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         })
     }
 
+    const onContextMenu = (message: IChannelMessage, target: HTMLElement | null) => {
+        if (!target || message.type !== 1 || message.deleted) return;
+        setSelectedMessage(message);
+        anchorRef.current = target;
+        setContextVisible(true);
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
     const messagesListContent = renderMessages.map((message, i) => {
@@ -300,11 +326,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         ref={lastMessageRef}
                         message={message}
                         showHeader={isLastFromUser}
+                        onContextMenu={onContextMenu}
                     />
                 ) : (
                     <ChannelMessage
                         message={message}
                         showHeader={isLastFromUser}
+                        onContextMenu={onContextMenu}
                     />
                 )}
             </div>
@@ -330,11 +358,11 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                             >
                                 {settingsVisible ? (
                                     <>
-                                        <FaTimes className="me-1" /> Close settings
+                                        <FaTimes className="me-1" /> Settings
                                     </>
                                 ) : (
                                     <>
-                                        <FaCog className="me-1" /> Open settings
+                                        <FaCog className="me-1" /> Settings
                                     </>
                                 )}
                             </Button>
@@ -348,40 +376,53 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                                 {messagesListContent}
                             </div>
-                            <div className="position-relative p-2 border-top d-flex align-items-center">
-                                {showJumpButton && (
-                                    <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        className="position-absolute end-0 me-3 mt-1 z-1"
-                                        style={{ top: "-50px" }}
-                                        onClick={() => {
-                                            scrollToBottom('smooth');
-                                            setUnreadCount(0);
-                                        }}
-                                    >
-                                        {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
-                                        <FaArrowCircleDown />
-                                    </Button>
+                            <div className="position-relative p-2 border-top">
+                                {editingMessage && (
+                                    <div className="mb-2 bg-light p-2 rounded">
+                                        <div className="fw-bold text-info">Edit message</div>
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <span>{truncate(editingMessage.content, 50)}</span>
+                                            <Button variant="link" className="text-muted" onClick={() => { setEditingMessage(null); setNewMessage(""); }}>
+                                                <FaTimes />
+                                            </Button>
+                                        </div>
+                                    </div>
                                 )}
-                                <Form.Control
-                                    ref={textareaRef}
-                                    as="textarea"
-                                    rows={1}
-                                    placeholder="Type your message..."
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    onKeyDown={handleTextareaKeydown}
-                                    className="me-2"
-                                    maxLength={1024}
-                                    style={{ resize: "none" }}
-                                />
-                                {
-                                    newMessage.trim().length > 0 &&
-                                    <Button variant="primary" onClick={handleSendMessage}>
-                                        <FaPaperPlane />
-                                    </Button>
-                                }
+                                <div className="d-flex align-items-center">
+                                    {showJumpButton && (
+                                        <Button
+                                            size="sm"
+                                            variant="secondary"
+                                            className="position-absolute end-0 me-3 mt-1 z-1"
+                                            style={{ top: "-50px" }}
+                                            onClick={() => {
+                                                scrollToBottom('smooth');
+                                                setUnreadCount(0);
+                                            }}
+                                        >
+                                            {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
+                                            <FaArrowCircleDown />
+                                        </Button>
+                                    )}
+                                    <Form.Control
+                                        ref={textareaRef}
+                                        as="textarea"
+                                        rows={1}
+                                        placeholder="Type your message..."
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        onKeyDown={handleTextareaKeydown}
+                                        className="me-2"
+                                        maxLength={1024}
+                                        style={{ resize: "none" }}
+                                    />
+                                    {
+                                        newMessage.trim().length > 0 &&
+                                        <Button variant="primary" onClick={handleSendMessage}>
+                                            {editingMessage ? <FaCheck /> : <FaPaperPlane />}
+                                        </Button>
+                                    }
+                                </div>
                             </div>
                         </div>
                     </>
@@ -394,6 +435,28 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         </div>
                     </div>
             }
+            <MessageContextMenu
+                visible={contextVisible}
+                onClose={() => setContextVisible(false)}
+                onCopy={() => {
+                    if (selectedMessage) {
+                        navigator.clipboard.writeText(selectedMessage.content);
+                    }
+                    setContextVisible(false);
+                }}
+                onEdit={() => {
+                    setEditingMessage(selectedMessage);
+                    setContextVisible(false);
+                }}
+                onDelete={() => {
+                    if (selectedMessage) {
+                        messages.deleteMessage(selectedMessage.id);
+                    }
+                    setContextVisible(false);
+                }}
+                isOwn={selectedMessage?.userId === userInfo?.id}
+                anchorRef={anchorRef}
+            />
         </div>
     );
 };

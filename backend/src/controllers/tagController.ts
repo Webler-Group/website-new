@@ -14,7 +14,6 @@ import Tag from "../models/Tag";
  */
 const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { tags, action } = req.body;
-    const roles = req.roles;
 
     if(tags.length < 1 || !(typeof action == "string") || action == "" ) {
         res.status(200).json({ message: "0 job done" });
@@ -22,12 +21,10 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     const p_action = action.toLowerCase().trim();
-    for(let name of tags) {
-        if(p_action == "create")
-            await Tag.getOrCreateTagByName(name);
-        if(p_action == "delete") 
-            await Tag.deleteOne({ name });
-    }
+    if(p_action == "create")
+        await Tag.getOrCreateTagsByNames(tags);
+    if(p_action == "delete") 
+        await Tag.deleteMany({ name: { $in: tags } });
     
     res.status(200).json({ message: `${tags.length} job ${p_action}d!` });
 });

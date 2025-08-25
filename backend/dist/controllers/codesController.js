@@ -55,8 +55,8 @@ const createCode = (0, express_async_handler_1.default)(async (req, res) => {
 const getCodeList = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, filter, searchQuery, userId, language } = req.body;
     const currentUserId = req.userId;
-    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined" || typeof language === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined" || typeof language === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return;
     }
     const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());

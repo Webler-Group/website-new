@@ -33,7 +33,7 @@ import CreateCourse from './features/courses/pages/CreateCourse';
 import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
-import { languagesInfo } from './data/compilerLanguages';
+import { compilerLanguages, languagesInfo } from './data/compilerLanguages';
 // import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
@@ -96,10 +96,10 @@ function App() {
         </Route>
         {
           Object.keys(languagesInfo).map((lang, i) => {
-            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang} />} />);
+            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang as compilerLanguages} />} />);
           })
         }
-        <Route path=":codeId" element={<PlaygroundEditor language="" />} />
+        <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
       </Route>
 
       <Route path="Feed">

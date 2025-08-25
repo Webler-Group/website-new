@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 
 function Home() {
 
-  PageTitle("Webler - Home", false);
+  PageTitle("Webler Codes", false);
 
   const { userInfo } = useAuth();
   const [isRegisterForm, toggleForm] = useState(true);
