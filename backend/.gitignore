@@ -2,3 +2,4 @@ node_modules
 .env
 .allowed-origins
 logs
+uploads

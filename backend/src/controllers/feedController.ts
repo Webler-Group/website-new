@@ -28,7 +28,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.findOne(tagName);
+        const tag = await Tag.getOrCreateTagByName(tagName);
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -39,6 +39,15 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (tagIds.length < 1) {
         res.status(400).json({ message: `Empty Tag` });
         return;
+    }
+
+    // tag names
+    const tagNames: string[] = [];
+    for (let tagId of tagIds) {
+        const tag = await Tag.findById(tagId);
+        if (tag) {
+            tagNames.push(tag.name);
+        }
     }
 
     const feed = await Post.create({
@@ -59,10 +68,11 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         res.json({
             feed: {
+                type: 4,
                 id: feed._id,
                 title: feed.title,
                 message: feed.message,
-                tags: feed.tags,
+                tags: tagNames,
                 date: feed.createdAt,
                 userId: feed.user,
                 isAccepted: feed.isAccepted,
@@ -507,7 +517,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.findOne(tagName); // Create tag on fly --revisit
+        const tag = await Tag.getOrCreateTagByName(tagName); // Create tag on fly --revisit
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -519,6 +529,15 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         res.status(400).json({ message: `Empty Tag` });
         return;
     }
+
+    const tagNames: string[] = [];
+    for (let tagId of tagIds) {
+        const tag = await Tag.findById(tagId);
+        if (tag) {
+            tagNames.push(tag.name);
+        }
+    }
+
 
     const feed = await Post.create({
         _type: 5,
@@ -556,7 +575,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: feed._id,
                 title: feed.title,
                 message: feed.message,
-                tags: feed.tags,
+                tags: tagNames,
                 date: feed.createdAt,
                 userId: feed.user,
                 isAccepted: feed.isAccepted,
@@ -574,7 +593,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { page, count, filter, searchQuery, userId } = req.body;
+    const { page, count, filter, searchQuery } = req.body;
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
@@ -619,12 +638,12 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
         // My Feed Posts
         case 2: {
-            if (!userId) {
+            if (!currentUserId) {
                 res.status(400).json({ message: "Invalid request - userId required" });
                 return;
             }
             pipeline.push({
-                $match: { user: new mongoose.Types.ObjectId(userId) }
+                $match: { user: new mongoose.Types.ObjectId(currentUserId) }
             }, {
                 $sort: { createdAt: -1 }
             });
@@ -685,10 +704,49 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     pipeline.push(
         { $skip: (page - 1) * count },
         { $limit: count },
-        { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" } },
-        { $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" } },
-        { $lookup: { from: "posts", localField: "_id", foreignField: "parentId", as: "originalPost", 
-            pipeline: [{ $match: { _type: 4 } }] } } // For shared posts
+        {
+            $lookup: {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "users"
+            }
+        },
+        {
+            $lookup: {
+                from: "tags",
+                localField: "tags",
+                foreignField: "_id",
+                as: "tags"
+            }
+        },
+        {
+            $lookup: {
+                from: "posts",
+                localField: "parentId",
+                foreignField: "_id",
+                as: "originalPost",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "user",
+                            foreignField: "_id",
+                            as: "users"
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: "tags",
+                            localField: "tags",
+                            foreignField: "_id",
+                            as: "tags"
+                        }
+                    },
+                    { $limit: 1 }
+                ]
+            }
+        }
     );
 
     const result = await Post.aggregate(pipeline);
@@ -703,9 +761,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             date: x.createdAt,
             userId: x.user,
             userName: x.users.length ? x.users[0].name : "Unknown User",
-            userAvatar: x.users.length ? x.users[0].avatarImage : null,
-            level: x.users.length ? x.users[0].level : 0,
-            roles: x.users.length ? x.users[0].roles : [],
+            userAvatarImage: x.users.length ? x.users[0].avatarImage || null : null,
             answers: x.answers || 0,
             votes: x.votes || 0,
             shares: x.shares || 0,
@@ -713,7 +769,16 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isShared: false,
             isFollowing: false,
             score: x.score || 0,
-            originalPost: x.originalPost.length > 0 ? x.originalPost[0] : null // For shared posts
+            originalPost: x.originalPost.length ? {
+                id: x.originalPost[0]._id,
+                title: x.originalPost[0].title || null,
+                message: x.originalPost[0].message,
+                tags: x.originalPost[0].tags.map((t: any) => t.name),
+                userId: x.originalPost[0].user,
+                userName: x.originalPost[0].users.length ? x.originalPost[0].users[0].name : "Unknown User",
+                userAvatarImage: x.originalPost[0].users.length ? x.originalPost[0].users[0].avatarImage || null : null,
+                date: x.originalPost[0].createdAt
+            } : null
         }));
 
         // Check user interactions
@@ -740,8 +805,8 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         await Promise.all(promises);
 
-        res.status(200).json({ 
-            count: feedCount, 
+        res.status(200).json({
+            count: feedCount,
             feeds: data,
             currentPage: page,
             totalPages: Math.ceil(feedCount / count)

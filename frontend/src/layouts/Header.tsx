@@ -45,6 +45,9 @@ function Header({ variant }: HeaderProps) {
             <LinkContainer to="/blog">
               <Nav.Link>Blog</Nav.Link>
             </LinkContainer>
+                        <LinkContainer to="/Feed">
+              <Nav.Link>Feed</Nav.Link>
+            </LinkContainer>
             {
               userInfo && userInfo.roles.some(role => role !== "User") &&
               <LinkContainer to="/Tools">
