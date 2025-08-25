@@ -124,7 +124,6 @@ async function handleSharePost() {
     if (result && result.feeds) {
       setPosts(result.feeds);
     }
-    console.log(result);
   }
 
   useEffect(() => {
@@ -134,11 +133,11 @@ async function handleSharePost() {
   async function handleCreatePost() {
     const result = await sendJsonRequest("/Feed/CreateFeed", "POST", {
         title: title,
-        message: content,
-        tags: ["c++"]
+        message: content
     });
 
-    if (!result) {
+    if (!result.feed) {
+      alert(result.message)
       return;
     }
 
@@ -480,7 +479,7 @@ async function handleSharePost() {
                             )}
                             <h5 className="card-title">{item.originalPost.title}</h5>
                             <p className="card-text">{item.originalPost.message}</p>
-                            {/* {renderTags(item.originalPost.tags)} */}
+                            {renderTags(item.originalPost.tags)}
                           </div>
                         </div>
                         {renderStats(item)}
@@ -492,7 +491,7 @@ async function handleSharePost() {
                         {renderUserHeader(item.userName, item.userAvatarImage || null, item.date)}
                         <h5 className="card-title">{item.title}</h5>
                         <p className="card-text">{item.message}</p>
-                        {/* {renderTags(item.tags)} */}
+                        {renderTags(item.tags)}
                         {renderStats(item)}
                         {renderReplies(item.id)}
                       </>

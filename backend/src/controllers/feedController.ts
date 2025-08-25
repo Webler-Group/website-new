@@ -16,19 +16,22 @@ import PostSharing from "../models/PostShare";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { title, message, tags } = req.body;
+    const { title, message } = req.body;
+    let { tags } = req.body;
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
-    if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
+    if (typeof title === "undefined" || typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
     const tagIds: any[] = [];
 
+    if(!tags) tags = [];
+
     for (let tagName of tags) {
-        const tag = await Tag.getOrCreateTagByName(tagName);
+        const tag = await Tag.findOne({ name: tagName });
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -36,10 +39,10 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         tagIds.push(tag._id);
     }
 
-    if (tagIds.length < 1) {
-        res.status(400).json({ message: `Empty Tag` });
-        return;
-    }
+    // if (tagIds.length < 1) {
+    //     res.status(400).json({ message: `Empty Tag` });
+    //     return;
+    // }
 
     // tag names
     const tagNames: string[] = [];
@@ -505,11 +508,12 @@ const unfollowFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId, title, message, tags } = req.body;
+    const { feedId, title, message } = req.body;
+    let { tags } = req.body;
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
-    if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
+    if (typeof title === "undefined" || typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
@@ -517,7 +521,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.getOrCreateTagByName(tagName); // Create tag on fly --revisit
+        const tag = await Tag.findOne({ name: tagName });
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
@@ -525,10 +529,12 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         tagIds.push(tag._id);
     }
 
-    if (tagIds.length < 1) {
-        res.status(400).json({ message: `Empty Tag` });
-        return;
-    }
+    // if (tagIds.length < 1) {
+    //     res.status(400).json({ message: `Empty Tag` });
+    //     return;
+    // }
+
+    if(!tags) tags = [];
 
     const tagNames: string[] = [];
     for (let tagId of tagIds) {
