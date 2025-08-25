@@ -69,8 +69,7 @@ async function handleSharePost() {
   const result = await sendJsonRequest("/Feed/ShareFeed", "POST", {
     feedId: sharePostId,
     title: shareTitle,
-    message: shareMessage,
-    tags: ["c++"] 
+    message: shareMessage
   });
 
   if (result && result.feed) {

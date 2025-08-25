@@ -520,7 +520,10 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const tagIds: any[] = [];
 
+    if(!tags) tags = []
+
     for (let tagName of tags) {
+        console.log(tagName)
         const tag = await Tag.findOne({ name: tagName });
         if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
@@ -534,7 +537,6 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     //     return;
     // }
 
-    if(!tags) tags = [];
 
     const tagNames: string[] = [];
     for (let tagId of tagIds) {
