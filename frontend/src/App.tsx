@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-
+import "bootstrap/dist/js/bootstrap.bundle.min.js";
 import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
 import Login from './features/auth/pages/Login';
@@ -12,6 +12,8 @@ import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
 import Contact from './pages/Contact';
 import Feed from './features/feed/pages/Feed';
+import FeedDetails from './features/feed/components/FeedDetail';
+import FeedList from './features/feed/components/FeedList';
 import QuestionList from './features/discuss/pages/DiscussList';
 import AskQuestion from './features/discuss/pages/DiscussAsk';
 import DiscussPost from './features/discuss/pages/DiscussPost';
@@ -104,9 +106,14 @@ function App() {
 
       <Route path="Feed">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<Feed />} />
+          {/* Feed List */}
+          <Route index element={<FeedList />} />
+
+          {/* Single Feed Detail */}
+          <Route path=":id" element={<FeedDetails/>} />
         </Route>
       </Route>
+
 
       <Route path="Blog">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>

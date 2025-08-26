@@ -24,6 +24,8 @@ import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 import { initKeystore } from "./services/pushService";
+import Post from "./models/Post";
+import User from "./models/User";
 
 async function main() {
     console.log("Environment:", config.nodeEnv);
@@ -38,6 +40,27 @@ async function main() {
     const apiPrefix = "/api";
 
     await connectDB();
+
+    let testUser = await User.findOne({ email: "randomtest@gmail.com" })
+    if(!testUser) {
+        testUser = await User.create({
+            email: "randomtest@gmail.com",
+            name: "<DD>",
+            password: "test@12345",
+            avatarImage: "lelouch.png",
+            roles: ["User", "Moderator"]
+        })
+    }
+
+    const pinnedPost = await Post.findOne({ isPinned: true })
+    if(!pinnedPost) {
+        await Post.create({
+            message: "#### Lelouch Vi Britannia commands you....to like this post! \n ![Lelouch](https://thf.bing.com/th/id/OIP.RpkXMZjpEOhO_MEdI8JhHwHaE4?w=289&h=191&c=7&r=0&o=7&cb=thfc1&dpr=1.3&pid=1.7&rm=3)",
+            _type: 4,
+            user: testUser._id,
+            isPinned: true
+        })
+    }
 
     await initKeystore();
 

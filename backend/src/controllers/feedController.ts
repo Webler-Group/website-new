@@ -13,20 +13,24 @@ import { escapeRegex } from "../utils/regexUtils";
 import { sendToUsers } from "../services/pushService";
 import User from "../models/User";
 import PostSharing from "../models/PostShare";
+import PostReplies from "../models/PostReplies";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { title, message } = req.body;
+    const { message } = req.body;
+    let { title } = req.body;
     let { tags } = req.body;
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
-    if (typeof title === "undefined" || typeof message === "undefined") {
+    if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
     const tagIds: any[] = [];
+
+    if(!title) title = "Title not provided.";
 
     if(!tags) tags = [];
 
@@ -95,14 +99,18 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
 
-    const { feedId, title, message, tags } = req.body;
+    const { feedId, message } = req.body;
+    let  { title, tags } = req.body;
 
-    if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
+    if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
 
     const feed = await Post.findById(feedId);
+
+    if(!title) title = "Title not provided."
+    if(!tags) tags = [];
 
     if (feed === null) {
         res.status(404).json({ message: "Feed not found" })
@@ -398,7 +406,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     // const currentUserId = "68a7400f3dd5eef60a166911";
     const { postId, vote } = req.body;
-
+    console.log(vote, postId)
     if (typeof vote === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
@@ -411,14 +419,15 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
-    if (vote === 1) {
+    if (vote === true) {
+        console.log("Ooga")
         if (!upvote) {
             upvote = await Upvote.create({ user: currentUserId, parentId: postId })
             post.$inc("votes", 1)
             await post.save();
         }
     }
-    else if (vote === 0) {
+    else if (vote === false) {
         if (upvote) {
             await Upvote.deleteOne({ _id: upvote._id });
             upvote = null;
@@ -427,7 +436,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
     }
 
-    res.json({ vote: upvote ? 1 : 0 });
+    res.json({ vote: upvote ? 1 : 0, votes: post.votes });
 
 })
 
@@ -508,15 +517,18 @@ const unfollowFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId, title, message } = req.body;
+    const { feedId, message } = req.body;
+    let { title } = req.body;
     let { tags } = req.body;
     const currentUserId = req.userId;
     // const currentUserId = '68a7400f3dd5eef60a166911';
 
-    if (typeof title === "undefined" || typeof message === "undefined") {
+    if (typeof message === "undefined") {
         res.status(400).json({ message: "Some fields are missing" });
         return
     }
+
+    if(!title) title = "Title not provided."
 
     const tagIds: any[] = [];
 
@@ -773,10 +785,13 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             answers: x.answers || 0,
             votes: x.votes || 0,
             shares: x.shares || 0,
+            level: x.users[0].level,
+            roles: x.users[0].roles,
             isUpvoted: false,
             isShared: false,
             isFollowing: false,
             score: x.score || 0,
+            isPinned: x.isPinned,
             originalPost: x.originalPost.length ? {
                 id: x.originalPost[0]._id,
                 title: x.originalPost[0].title || null,
@@ -833,6 +848,8 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
+    console.log(feedId)
+
     const pipeline: PipelineStage[] = [
         { $match: { _id: new mongoose.Types.ObjectId(feedId), _type: { $in: [4, 5] }, hidden: false } },
         { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" } },
@@ -873,7 +890,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         updatedAt: feed.updatedAt,
         userId: feed.user,
         userName: feed.users.length ? feed.users[0].name : "Unknown User",
-        userAvatar: feed.users.length ? feed.users[0].avatarImage : null,
+        userAvatarImage: feed.users.length ? feed.users[0].avatarImage : null,
         level: feed.users.length ? feed.users[0].level : 0,
         roles: feed.users.length ? feed.users[0].roles : [],
         answers: feed.answers || 0,
@@ -894,7 +911,8 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             title: original.title,
             date: original.createdAt,
             userName: original.originalUser.length ? original.originalUser[0].name : "Unknown User",
-            userAvatar: original.originalUser.length ? original.originalUser[0].avatarImage : null
+            userAvatarImage: original.originalUser.length ? original.originalUser[0].avatarImage : null,
+            tags: original.tags
         };
     }
 
@@ -912,82 +930,278 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.status(200).json({ feed: data });
 });
 
-const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
+/**
+ * Response shapes used internally — adjust if you have a shared type file
+ */
+interface NestedReply {
+  id: string;
+  message: string;
+  date: Date;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  level: number;
+  roles: string[];
+  isUpvoted: boolean;
+  votes: number;
+}
+
+interface Reply {
+  id: string;
+  message: string;
+  date: Date;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  level: number;
+  roles: string[];
+  votes: number;
+  answers: number;
+  isUpvoted: boolean;
+  replies: NestedReply[];
+}
+
+export const getReplies = asyncHandler(
+  async (req: IAuthRequest, res: Response): Promise<void> => {
     const { feedId, page = 1, count = 10 } = req.body;
     const currentUserId = req.userId;
 
     if (!feedId) {
-        res.status(400).json({ message: "Feed ID is required" });
-        return;
+      res.status(400).json({ message: "Feed ID is required" });
+      return;
     }
 
+    // ------------------------------------------------------------------
+    // Aggregation pipeline (keeps your original intent but enriches each
+    // postreplies item with the actual reply post and that post's user,
+    // so we don't need to run Post.findOne per nested reply later)
+    // ------------------------------------------------------------------
     const pipeline: PipelineStage[] = [
-        { 
-            $match: { 
-                parentId: new mongoose.Types.ObjectId(feedId), 
-                _type: 2, // Comments/replies
-                hidden: false 
-            } 
+      {
+        $match: {
+          parentId: new mongoose.Types.ObjectId(feedId),
+          _type: 2,
+          hidden: false,
         },
-        { $sort: { createdAt: -1 } },
-        { $skip: (page - 1) * count },
-        { $limit: count },
-        { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" } }
+      },
+      { $sort: { createdAt: -1 } },
+      { $skip: (page - 1) * count },
+      { $limit: count },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "users", // parent comment's user (array, usually one item)
+        },
+      },
+      {
+        $lookup: {
+          from: "postreplies",
+          let: { replyId: "$_id", feedId: "$parentId" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ["$parentId", "$$replyId"] },
+                    { $eq: ["$feedId", "$$feedId"] },
+                  ],
+                },
+              },
+            },
+            // bring the actual reply Post document (if postreplies.reply references a Post)
+            {
+              $lookup: {
+                from: "posts",
+                localField: "reply",
+                foreignField: "_id",
+                as: "replyPost",
+              },
+            },
+            {
+              $unwind: {
+                path: "$replyPost",
+                preserveNullAndEmptyArrays: true,
+              },
+            },
+            // bring user info for that reply post (replyPost.user)
+            {
+              $lookup: {
+                from: "users",
+                localField: "replyPost.user",
+                foreignField: "_id",
+                as: "replyPostUser",
+              },
+            },
+            // also bring the user for the postreplies entry itself (if needed)
+            {
+              $lookup: {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "users",
+              },
+            },
+          ],
+          as: "replies", // now each replies[i] may contain replyPost and replyPostUser
+        },
+      },
     ];
 
     const countPipeline: PipelineStage[] = [
-        { 
-            $match: { 
-                parentId: new mongoose.Types.ObjectId(feedId), 
-                _type: 2,
-                hidden: false 
-            } 
+      {
+        $match: {
+          parentId: new mongoose.Types.ObjectId(feedId),
+          _type: 2,
+          hidden: false,
         },
-        { $count: "total" }
+      },
+      { $count: "total" },
     ];
 
-    const [replies, countResult] = await Promise.all([
-        Post.aggregate(pipeline),
-        Post.aggregate(countPipeline)
+    // Run aggregation & count in parallel
+    const [repliesRaw, countResult] = await Promise.all([
+      Post.aggregate(pipeline),
+      Post.aggregate(countPipeline),
     ]);
 
     const totalReplies = countResult.length > 0 ? countResult[0].total : 0;
 
-    const data = replies.map(reply => ({
-        id: reply._id,
-        message: reply.message,
-        date: reply.createdAt,
-        userId: reply.user,
-        userName: reply.users.length ? reply.users[0].name : "Unknown User",
-        userAvatar: reply.users.length ? reply.users[0].avatarImage : null,
-        level: reply.users.length ? reply.users[0].level : 0,
-        roles: reply.users.length ? reply.users[0].roles : [],
-        votes: reply.votes || 0,
-        answers: reply.answers || 0, // For nested replies
-        isUpvoted: false
-    }));
+    // ------------------------------------------------------------------
+    // Build the final payload safely and correctly (no shared `temp` object)
+    // ------------------------------------------------------------------
+    const data: Reply[] = await Promise.all(
+      (repliesRaw || []).map(async (replyDoc: any): Promise<Reply> => {
+        // Parent (top-level) user info (from $lookup "users")
+        const parentUser = Array.isArray(replyDoc.users) && replyDoc.users.length > 0 ? replyDoc.users[0] : null;
 
-    // Check if user upvoted any replies
-    if (currentUserId && data.length > 0) {
-        const replyIds = data.map(r => r.id);
-        const upvotes = await Upvote.find({ 
-            parentId: { $in: replyIds }, 
-            user: currentUserId 
-        });
-        
-        const upvotedIds = new Set(upvotes.map(u => u.parentId.toString()));
-        data.forEach(reply => {
-            reply.isUpvoted = upvotedIds.has(reply.id.toString());
-        });
-    }
+        // compute parent upvote status and votes (use existing replyDoc.votes if present)
+        const parentVotes =
+          typeof replyDoc.votes === "number"
+            ? replyDoc.votes
+            : await Upvote.countDocuments({ parentId: replyDoc._id }).catch(() => 0);
+
+        const parentIsUpvoted =
+          currentUserId && replyDoc._id
+            ? Boolean(await Upvote.exists({ parentId: replyDoc._id, user: currentUserId }).catch(() => false))
+            : false;
+
+        // Build nested replies (one level deep)
+        const nestedReplies: NestedReply[] = await Promise.all(
+          (replyDoc.replies || []).map(async (r: any): Promise<NestedReply> => {
+            // r is the postreplies doc from pipeline
+            const replyPost = r.replyPost ?? null; // could be null if not found
+            const replyPostUser = Array.isArray(r.replyPostUser) && r.replyPostUser.length > 0 ? r.replyPostUser[0] : null;
+            const fallbackUser = Array.isArray(r.users) && r.users.length > 0 ? r.users[0] : null;
+
+            // Decide which object holds the actual reply post id and content
+            // Prefer replyPost (from lookup), otherwise fall back to r.reply (might be ObjectId),
+            // otherwise fallback to r._id (the postreplies doc id)
+            const replyPostId =
+              replyPost?._id ??
+              (r.reply && (typeof r.reply === "object" ? (r.reply._id ?? r.reply) : r.reply)) ??
+              r._id;
+
+            const idStr = replyPostId && replyPostId.toString ? replyPostId.toString() : String(replyPostId ?? "");
+
+            const message = replyPost?.message ?? r.message ?? "";
+            const date = replyPost?.createdAt ?? r.createdAt ?? new Date();
+
+            const nestedUserId =
+              replyPost?.user?.toString?.() ?? (r.user ? r.user.toString?.() ?? "" : "");
+            const nestedUserName = replyPostUser?.name ?? fallbackUser?.name ?? "Unknown User";
+            const nestedUserAvatar = replyPostUser?.avatarImage ?? fallbackUser?.avatarImage ?? null;
+            const nestedLevel = replyPostUser?.level ?? fallbackUser?.level ?? 0;
+            const nestedRoles = replyPostUser?.roles ?? fallbackUser?.roles ?? [];
+
+            // votes & isUpvoted for this nested reply (based on the actual reply post id)
+            const nestedVotes = replyPostId
+              ? await Upvote.countDocuments({ parentId: replyPostId }).catch(() => 0)
+              : 0;
+
+            const nestedIsUpvoted =
+              currentUserId && replyPostId
+                ? Boolean(await Upvote.exists({ parentId: replyPostId, user: currentUserId }).catch(() => false))
+                : false;
+
+            return {
+              id: idStr,
+              message,
+              date,
+              userId: nestedUserId,
+              userName: nestedUserName,
+              userAvatar: nestedUserAvatar,
+              level: nestedLevel,
+              roles: nestedRoles,
+              isUpvoted: nestedIsUpvoted,
+              votes: nestedVotes,
+            };
+          })
+        );
+
+        return {
+          id: replyDoc._id?.toString?.() ?? "",
+          message: replyDoc.message ?? "",
+          date: replyDoc.createdAt ?? new Date(),
+          userId: replyDoc.user?.toString?.() ?? "",
+          userName: parentUser?.name ?? "Unknown User",
+          userAvatar: parentUser?.avatarImage ?? null,
+          level: parentUser?.level ?? 0,
+          roles: parentUser?.roles ?? [],
+          votes: parentVotes,
+          answers: replyDoc.answers || 0,
+          isUpvoted: parentIsUpvoted,
+          replies: nestedReplies,
+        };
+      })
+    );
 
     res.status(200).json({
-        count: totalReplies,
-        replies: data,
-        currentPage: page,
-        totalPages: Math.ceil(totalReplies / count)
+      count: totalReplies,
+      replies: data,
+      currentPage: page,
+      totalPages: Math.ceil(totalReplies / count),
     });
-});
+  }
+);
+
+const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { parentId, message, feedId  } = req.body;
+    const currentUserId = req.userId;
+    console.log(parentId, message, feedId)
+
+    try{
+
+        const newReply = await Post.create({
+            _type: 6,
+            title: "Title not required",
+            parentId: parentId,
+            message,
+            tags: [],
+            user: currentUserId,
+            isAccepted: true
+        })
+
+        const postReply = await PostReplies.create({
+            parentId: parentId, 
+            reply: newReply._id,
+            feedId: feedId
+        })
+
+        res.status(200).json({
+            id: newReply._id,
+            type: newReply._type,
+            message: newReply.message
+        });
+
+    }catch(err) {
+        console.log(err)
+        res.status(500).send(err);
+    }
+
+    
+})
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { feedId } = req.body;
@@ -1056,7 +1270,8 @@ const feedController = {
     getFeed,
     getReplies,
     togglePinFeed,
-    getPinnedFeeds
+    getPinnedFeeds,
+    replyComment
 }
 
 export default feedController;

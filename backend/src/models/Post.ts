@@ -14,6 +14,7 @@ const postSchema = new mongoose.Schema({
     * 3 - comment
     * 4 - feed
     * 5 - sharedFeed
+    * 6 - Feed Comment Reply
     */
     _type: {
         type: Number,
