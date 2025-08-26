@@ -43,34 +43,33 @@ const channelMessageSchema = new Schema({
 channelMessageSchema.pre("save", async function (next) {
     (this as any).wasNew = this.isNew;
 
-    if (this.isModified("content")) {
+    if (this.isModified("content"))
         await PostAttachment.updateAttachments(this.content, { channelMessage: this._id });
 
-        if (!this.isNew) {
-            const participants = await ChannelParticipant.find({ channel: this.channel }, "user").lean();
+    if (!this.isNew) {
+        const participants = await ChannelParticipant.find({ channel: this.channel }, "user").lean();
 
-            if (this.isModified("content")) {
+        if (this.isModified("content")) {
+            const userIds = participants.map(x => x.user);
+
+            const io = getIO();
+            if (io) {
+                io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_edited", {
+                    messageId: this._id.toString(),
+                    channelId: this.channel.toString(),
+                    content: this.content
+                });
+            }
+        } else if (this.isModified("deleted") && this.deleted == true) {
+
+            const io = getIO();
+            if (io) {
                 const userIds = participants.map(x => x.user);
 
-                const io = getIO();
-                if (io) {
-                    io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_edited", {
-                        messageId: this._id.toString(),
-                        channelId: this.channel.toString(),
-                        content: this.content
-                    });
-                }
-            } else if (this.isModified("deleted") && this.deleted == true) {
-
-                const io = getIO();
-                if (io) {
-                    const userIds = participants.map(x => x.user);
-
-                    io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_deleted", {
-                        messageId: this._id.toString(),
-                        channelId: this.channel.toString()
-                    });
-                }
+                io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:message_deleted", {
+                    messageId: this._id.toString(),
+                    channelId: this.channel.toString()
+                });
             }
         }
     }
@@ -116,7 +115,7 @@ channelMessageSchema.post("save", async function () {
         if (io) {
             const attachments = await PostAttachment.getByPostId({ channelMessage: this._id });
 
-            let channelTitle = undefined;
+            let channelTitle = "";
 
             const userIds = participants.map(x => x.user);
             const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
@@ -124,10 +123,11 @@ channelMessageSchema.post("save", async function () {
             if (this._type == 3) {
                 userIds.push(user._id);
             } else if (this._type == 4) {
-                channelTitle = channel.title;
+                channelTitle = channel.title!;
             }
 
             io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
+                id: this._id,
                 type: this._type,
                 channelId: this.channel.toString(),
                 channelTitle,

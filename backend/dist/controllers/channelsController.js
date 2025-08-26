@@ -165,7 +165,7 @@ const getChannelsList = (0, express_async_handler_1.default)(async (req, res) =>
         .populate("createdBy", "name avatarImage level roles")
         .populate({
         path: "lastMessage",
-        select: "user content _type createdAt",
+        select: "user content _type createdAt deleted",
         populate: {
             path: "user",
             select: "name avatarImage"
@@ -192,7 +192,8 @@ const getChannelsList = (0, express_async_handler_1.default)(async (req, res) =>
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
-                    content: x.lastMessage.content,
+                    deleted: x.lastMessage.deleted,
+                    content: x.lastMessage.deleted ? "" : x.lastMessage.content,
                     createdAt: x.lastMessage.createdAt,
                     userId: x.lastMessage.user._id,
                     userName: x.lastMessage.user.name,

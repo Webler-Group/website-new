@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
 import { IChannel, IChannelParticipant } from "../components/ChannelListItem";
 import ChannelMessage from "../components/ChannelMessage";
-import { Button, Form, Badge } from "react-bootstrap";
+import { Button, Form, Badge, Modal } from "react-bootstrap";
 import { FaArrowCircleDown, FaCog, FaTimes } from "react-icons/fa";
 import ChannelRoomSettings from "./ChannelRoomSettings";
 import { useApi } from "../../../context/apiCommunication";
@@ -61,8 +61,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const prevLatest = useRef<Date | null>(null);
     const [contextVisible, setContextVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<IChannelMessage | null>(null);
+    const [editedMessage, setEditedMessage] = useState<IChannelMessage | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
-    const [editingMessage, setEditingMessage] = useState<IChannelMessage | null>(null);
+    const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
 
     useEffect(() => {
         getChannel();
@@ -86,15 +87,18 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
         const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight, 10);
         const rows = Math.ceil(textarea.scrollHeight / lineHeight) - 1; // -1 feels more natural
-        textarea.rows = Math.min(rows, 10);
+        textarea.rows = Math.min(rows, 5);
     }, [newMessage]);
 
     useEffect(() => {
-        if (editingMessage) {
-            setNewMessage(editingMessage.content);
+        if (editedMessage) {
+            setNewMessage(editedMessage.content);
             textareaRef.current?.focus();
+        } else {
+            setNewMessage("");
+            textareaRef.current?.blur();
         }
-    }, [editingMessage]);
+    }, [editedMessage]);
 
     const messagesIntObserver = useRef<IntersectionObserver>();
     const lastMessageRef = useCallback((message: Element | null) => {
@@ -128,6 +132,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             }
 
             if (isAtBottomNow && messages.results.length > 0 && channel?.lastActiveAt && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt)) {
+                setChannel(prev => {
+                    if (!prev) return null;
+                    return { ...prev, lastActiveAt: messages.results[0].createdAt };
+                });
                 messages.markMessagesSeen();
             }
         };
@@ -160,12 +168,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }, [messages.results.length, channel?.id, userInfo]);
 
     useEffect(() => {
-        setAllMessagesVisible(prev => {
-            if (prev) {
-                scrollToBottom();
-            }
-            return false;
-        });
+        if (allMessagesVisible) {
+            scrollToBottom("smooth");
+        }
+        setAllMessagesVisible(false);
     }, [allMessagesVisible]);
 
     // NEW: Effect to scroll to bottom after channel change and messages load
@@ -202,9 +208,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const handleSendMessage = async () => {
         if (newMessage.trim().length === 0) return;
 
-        if (editingMessage) {
-            messages.editMessage(editingMessage.id, newMessage);
-            setEditingMessage(null);
+        if (editedMessage) {
+            messages.editMessage(editedMessage.id, newMessage);
+            setEditedMessage(null);
         } else {
             messages.sendMessage(newMessage);
         }
@@ -291,6 +297,38 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setContextVisible(true);
     }
 
+    const closeDeleteModal = () => {
+        setDeleteModalVisible(false);
+    }
+
+    const handleDeleteMessage = () => {
+        if (selectedMessage) {
+            messages.deleteMessage(selectedMessage.id);
+        }
+        closeDeleteModal();
+    }
+
+    const handleEditCancel = () => {
+        setEditedMessage(null);
+    }
+
+    const onContextCopy = () => {
+        if (selectedMessage) {
+            navigator.clipboard.writeText(selectedMessage.content);
+        }
+        setContextVisible(false);
+    }
+
+    const onContextDelete = () => {
+        setDeleteModalVisible(true);
+        setContextVisible(false);
+    }
+
+    const onContextEdit = () => {
+        setEditedMessage(selectedMessage);
+        setContextVisible(false);
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
     const messagesListContent = renderMessages.map((message, i) => {
@@ -344,6 +382,16 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             {
                 channel !== null ?
                     <>
+                        <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Are you sure?</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>Selected message will be deleted.</Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
+                                <Button variant="danger" onClick={handleDeleteMessage}>Delete</Button>
+                            </Modal.Footer>
+                        </Modal>
                         <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
                             <div className="d-flex align-items-center">
                                 <Button variant="link" className="text-secondary" onClick={onExit}>
@@ -377,12 +425,12 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 {messagesListContent}
                             </div>
                             <div className="position-relative p-2 border-top">
-                                {editingMessage && (
-                                    <div className="mb-2 bg-light p-2 rounded">
+                                {editedMessage && (
+                                    <div className="small mb-2 bg-light p-2 rounded">
                                         <div className="fw-bold text-info">Edit message</div>
                                         <div className="d-flex justify-content-between align-items-center">
-                                            <span>{truncate(editingMessage.content, 50)}</span>
-                                            <Button variant="link" className="text-muted" onClick={() => { setEditingMessage(null); setNewMessage(""); }}>
+                                            <span>{truncate(editedMessage.content, 50)}</span>
+                                            <Button variant="link" className="text-muted" onClick={handleEditCancel}>
                                                 <FaTimes />
                                             </Button>
                                         </div>
@@ -405,6 +453,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </Button>
                                     )}
                                     <Form.Control
+                                        size="sm"
                                         ref={textareaRef}
                                         as="textarea"
                                         rows={1}
@@ -418,8 +467,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     />
                                     {
                                         newMessage.trim().length > 0 &&
-                                        <Button variant="primary" onClick={handleSendMessage}>
-                                            {editingMessage ? <FaCheck /> : <FaPaperPlane />}
+                                        <Button size="sm" variant="primary" onClick={handleSendMessage}>
+                                            {selectedMessage ? <FaCheck /> : <FaPaperPlane />}
                                         </Button>
                                     }
                                 </div>
@@ -438,22 +487,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             <MessageContextMenu
                 visible={contextVisible}
                 onClose={() => setContextVisible(false)}
-                onCopy={() => {
-                    if (selectedMessage) {
-                        navigator.clipboard.writeText(selectedMessage.content);
-                    }
-                    setContextVisible(false);
-                }}
-                onEdit={() => {
-                    setEditingMessage(selectedMessage);
-                    setContextVisible(false);
-                }}
-                onDelete={() => {
-                    if (selectedMessage) {
-                        messages.deleteMessage(selectedMessage.id);
-                    }
-                    setContextVisible(false);
-                }}
+                onCopy={onContextCopy}
+                onEdit={onContextEdit}
+                onDelete={onContextDelete}
                 isOwn={selectedMessage?.userId === userInfo?.id}
                 anchorRef={anchorRef}
             />

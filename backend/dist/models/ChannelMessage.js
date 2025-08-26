@@ -68,30 +68,29 @@ const channelMessageSchema = new mongoose_1.Schema({
 }, { timestamps: true });
 channelMessageSchema.pre("save", async function (next) {
     this.wasNew = this.isNew;
-    if (this.isModified("content")) {
+    if (this.isModified("content"))
         await PostAttachment_1.default.updateAttachments(this.content, { channelMessage: this._id });
-        if (!this.isNew) {
-            const participants = await ChannelParticipant_1.default.find({ channel: this.channel }, "user").lean();
-            if (this.isModified("content")) {
-                const userIds = participants.map(x => x.user);
-                const io = (0, socketServer_1.getIO)();
-                if (io) {
-                    io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:message_edited", {
-                        messageId: this._id.toString(),
-                        channelId: this.channel.toString(),
-                        content: this.content
-                    });
-                }
+    if (!this.isNew) {
+        const participants = await ChannelParticipant_1.default.find({ channel: this.channel }, "user").lean();
+        if (this.isModified("content")) {
+            const userIds = participants.map(x => x.user);
+            const io = (0, socketServer_1.getIO)();
+            if (io) {
+                io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:message_edited", {
+                    messageId: this._id.toString(),
+                    channelId: this.channel.toString(),
+                    content: this.content
+                });
             }
-            else if (this.isModified("deleted") && this.deleted == true) {
-                const io = (0, socketServer_1.getIO)();
-                if (io) {
-                    const userIds = participants.map(x => x.user);
-                    io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:message_deleted", {
-                        messageId: this._id.toString(),
-                        channelId: this.channel.toString()
-                    });
-                }
+        }
+        else if (this.isModified("deleted") && this.deleted == true) {
+            const io = (0, socketServer_1.getIO)();
+            if (io) {
+                const userIds = participants.map(x => x.user);
+                io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:message_deleted", {
+                    messageId: this._id.toString(),
+                    channelId: this.channel.toString()
+                });
             }
         }
     }
@@ -126,7 +125,7 @@ channelMessageSchema.post("save", async function () {
         const io = (0, socketServer_1.getIO)();
         if (io) {
             const attachments = await PostAttachment_1.default.getByPostId({ channelMessage: this._id });
-            let channelTitle = undefined;
+            let channelTitle = "";
             const userIds = participants.map(x => x.user);
             const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
             if (this._type == 3) {
@@ -136,6 +135,7 @@ channelMessageSchema.post("save", async function () {
                 channelTitle = channel.title;
             }
             io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message", {
+                id: this._id,
                 type: this._type,
                 channelId: this.channel.toString(),
                 channelTitle,
