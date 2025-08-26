@@ -62,7 +62,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [selectedMessage, setSelectedMessage] = useState<IChannelMessage | null>(null);
     const [editedMessage, setEditedMessage] = useState<IChannelMessage | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
-    const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
+    const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
 
     useEffect(() => {
         getChannel();
@@ -296,13 +296,14 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     const closeDeleteModal = () => {
-        setDeleteModalVisible(false);
+        setDeleteMessageId(null);
     }
 
     const handleDeleteMessage = () => {
-        if (selectedMessage) {
-            messages.deleteMessage(selectedMessage.id);
+        if (deleteMessageId) {
+            messages.deleteMessage(deleteMessageId);
         }
+        setDeleteMessageId(null);
         closeDeleteModal();
     }
 
@@ -318,13 +319,23 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     const onContextDelete = () => {
-        setDeleteModalVisible(true);
-        setSelectedMessage(null);
+        setEditedMessage(null);
+        setSelectedMessage(prev => {
+            if(prev) {
+                setDeleteMessageId(prev.id);
+            }
+            return null;
+        });
     }
 
     const onContextEdit = () => {
-        setEditedMessage(selectedMessage);
-        setSelectedMessage(null);
+        setDeleteMessageId(null);
+        setSelectedMessage(prev => {
+            if(prev) {
+                setEditedMessage(prev);
+            }
+            return null;
+        });
     }
 
     let firstTime: number;
@@ -380,7 +391,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             {
                 channel !== null ?
                     <>
-                        <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
+                        <Modal show={deleteMessageId !== null} onHide={closeDeleteModal} centered>
                             <Modal.Header closeButton>
                                 <Modal.Title>Are you sure?</Modal.Title>
                             </Modal.Header>
@@ -466,7 +477,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     {
                                         newMessage.trim().length > 0 &&
                                         <Button size="sm" variant="primary" onClick={handleSendMessage}>
-                                            {selectedMessage ? <FaCheck /> : <FaPaperPlane />}
+                                            {editedMessage ? <FaCheck /> : <FaPaperPlane />}
                                         </Button>
                                     }
                                 </div>
