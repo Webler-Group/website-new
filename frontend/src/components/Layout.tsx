@@ -10,7 +10,7 @@ const Layout = ({ Header, Footer }: LayoutProps) => {
     return (
         <>
             {Header !== null && Header}
-            <main>
+            <main className="pt-16">
                 <Outlet />
             </main>
             {Footer !== null && Footer}

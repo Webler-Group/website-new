@@ -41,6 +41,7 @@ import CourseLessonPage from './features/courses/pages/CourseLessonPage';
 import ChannelsPage from './features/channels/pages/ChannelsPage';
 import ToolsHome from './tools/ToolsHome';
 import TagHome from './tools/tags/pages/TagHome';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 
 function App() {
@@ -50,6 +51,15 @@ function App() {
   return (
     <Routes>
 
+      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+        <Route element={<NoAuth />}>
+          <Route path="/" element={<Home />}/>
+        </Route>
+        <Route path="Terms-of-use" element={<TermsOfUse />} />
+        <Route path="Contact" element={<Contact />} />
+        <Route path="Privacy-policy" element={<PrivacyPolicy />} />
+      </Route>
+
       <Route element={<NoAuth />}>
         <Route path="Users">
           <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
@@ -58,12 +68,6 @@ function App() {
             <Route path="Forgot-Password" element={<ForgotPassword />} />
           </Route>
         </Route>
-      </Route>
-
-      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-        <Route index element={<Home />} />
-        <Route path="Terms-of-use" element={<TermsOfUse />} />
-        <Route path="Contact" element={<Contact />} />
       </Route>
 
       <Route path="Users">

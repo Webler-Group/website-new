@@ -2,6 +2,9 @@ export const adminRole = ["Admin"];
 
 export const adminAndModRole = ["Admin", "Moderator"];
 
+export const isAuthenticatedRole = (roles: string[] | undefined) => 
+    roles && roles.some(role => role == "User");
+
 export const isAdminRole = (roles: string[] | undefined) => 
     roles && roles.some(role => role == "Admin");
 
