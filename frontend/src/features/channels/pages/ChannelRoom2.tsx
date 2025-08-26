@@ -59,7 +59,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const isAtBottomRef = useRef(true);
     const prevLatest = useRef<Date | null>(null);
-    const [contextVisible, setContextVisible] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState<IChannelMessage | null>(null);
     const [editedMessage, setEditedMessage] = useState<IChannelMessage | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
@@ -294,7 +293,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (!target || message.type !== 1 || message.deleted) return;
         setSelectedMessage(message);
         anchorRef.current = target;
-        setContextVisible(true);
     }
 
     const closeDeleteModal = () => {
@@ -316,17 +314,17 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (selectedMessage) {
             navigator.clipboard.writeText(selectedMessage.content);
         }
-        setContextVisible(false);
+        setSelectedMessage(null);
     }
 
     const onContextDelete = () => {
         setDeleteModalVisible(true);
-        setContextVisible(false);
+        setSelectedMessage(null);
     }
 
     const onContextEdit = () => {
         setEditedMessage(selectedMessage);
-        setContextVisible(false);
+        setSelectedMessage(null);
     }
 
     let firstTime: number;
@@ -485,8 +483,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                     </div>
             }
             <MessageContextMenu
-                visible={contextVisible}
-                onClose={() => setContextVisible(false)}
+                visible={selectedMessage !== null}
+                onClose={() => setSelectedMessage(null)}
                 onCopy={onContextCopy}
                 onEdit={onContextEdit}
                 onDelete={onContextDelete}
