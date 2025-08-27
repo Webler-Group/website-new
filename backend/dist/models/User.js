@@ -15,6 +15,21 @@ const isEmail = (value) => {
     const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
     return value.match(validEmailRegex) !== null;
 };
+const banSchema = new mongoose_1.default.Schema({
+    author: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    note: {
+        type: String,
+        trim: true
+    },
+    date: {
+        type: Date,
+        required: true
+    }
+}, { _id: false });
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
@@ -80,6 +95,10 @@ const userSchema = new mongoose_1.default.Schema({
         codes: { type: Boolean, default: true },
         discuss: { type: Boolean, default: true },
         channels: { type: Boolean, default: true },
+    },
+    ban: {
+        type: banSchema,
+        default: null
     }
 }, {
     timestamps: true

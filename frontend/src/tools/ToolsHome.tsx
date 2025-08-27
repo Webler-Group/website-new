@@ -10,7 +10,8 @@ export interface IPriviledgeInfo {
 
 const tools = [
     { name: "Tag Executor", url: "/Tools/Tags", roles: ["Moderator"] },
-    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] }
+    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] },
+    { name: "Admin Panel", url: "/Admin", roles: ["Moderator"] }
 ];
 
 const makePriviledgeContent = (props: IPriviledgeInfo[]) => {

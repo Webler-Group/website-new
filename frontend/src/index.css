@@ -790,3 +790,18 @@ ul {
 .wb-channels-message__body:hover {
     background-color: #e9ecef;
 }
+
+.wb-channels-message__body.indented {
+    max-width: calc(100% - 3rem); /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */
+}
+
+.wb-channels-message-enter {
+    opacity: 0;
+    height: 0;
+}
+
+.wb-channels-message-enter-active {
+    opacity: 1;
+    transition: opacity 0.4s ease-out, height 0.8s ease-out;
+    height: 100%;
+}

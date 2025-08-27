@@ -1,10 +1,9 @@
-import express from "express";
 import profileController from "../controllers/profileController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
-import requireRoles from "../middleware/requireRoles";
+import { Router } from "express";
 
-const router = express.Router();
+const router = Router();
 
 router.use(verifyJWT);
 
@@ -38,8 +37,6 @@ router.route("/MarkNotificationsClicked")
     .post(profileController.markNotificationsClicked)
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
-router.route("/ToggleUserBan")
-    .post(requireRoles(["Moderator", "Admin"]), profileController.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")

@@ -41,6 +41,9 @@ import ChannelsPage from './features/channels/pages/ChannelsPage';
 import ToolsHome from './tools/ToolsHome';
 import TagHome from './tools/tags/pages/TagHome';
 import roles from './data/roles';
+import AdminHome from './tools/admin/pages/AdminHome';
+import AdminUserList from './tools/admin/pages/AdminUserList';
+import ModView from './tools/admin/pages/ModView';
 
 
 function App() {
@@ -162,6 +165,17 @@ function App() {
 
       </Route>
 
+      <Route path="Admin">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+            <Route index element={<AdminHome />} />
+            <Route path="UserSearch">
+              <Route index element={<AdminUserList />} />
+              <Route path=":userId" element={<ModView />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
 
       <Route path="Tools">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>

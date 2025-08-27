@@ -17,6 +17,7 @@ import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import tagRoutes from "./routes/tagRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
+import adminRoutes from "./routes/adminRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
@@ -65,6 +66,7 @@ async function main() {
     app.use(`${apiPrefix}/Channels`, channelRoutes);
     app.use(`${apiPrefix}/Tag`, tagRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
+    app.use(`${apiPrefix}/Admin`, adminRoutes);
 
     app.all("*", (req, res) => {
         res.status(404).json({ message: "404 Not Found" });

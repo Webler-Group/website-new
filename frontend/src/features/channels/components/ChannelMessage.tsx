@@ -85,7 +85,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
 
                     <div
                         ref={bodyRef}
-                        className={`p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5" : ""}`}
+                        className={`p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5 indented" : ""}`}
                         onContextMenu={handleContextMenu}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
@@ -110,7 +110,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
     body = <div style={{ maxWidth: "720px" }}>{body}</div>;
 
     return (
-        <div ref={ref}>
+        <div ref={ref} className="wb-channels-message">
             {body}
         </div>
     );

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
+import { TransitionGroup, CSSTransition } from "react-transition-group"; // Updated: Imported react-transition-group for controlled enter animations
 import { IChannel, IChannelParticipant } from "../components/ChannelListItem";
 import ChannelMessage from "../components/ChannelMessage";
 import { Button, Form, Badge, Modal } from "react-bootstrap";
@@ -63,12 +64,14 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [editedMessage, setEditedMessage] = useState<IChannelMessage | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
+    const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
 
     useEffect(() => {
         getChannel();
         setMessagesFromDate(null);
         setJustChangedChannel(true);
         setSettingsVisible(false);
+        setSkipTransition(true); // Reset skip on channel change
     }, [channelId]);
 
     useEffect(() => {
@@ -178,6 +181,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (justChangedChannel && !messages.isLoading && messages.results.length > 0) {
             scrollToBottom('auto');
             setJustChangedChannel(false);
+            setSkipTransition(false); // Updated: Enable transitions after initial load to allow animations only for new messages
         }
     }, [justChangedChannel, messages.isLoading, messages.results]);
 
@@ -340,51 +344,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
-    const messagesListContent = renderMessages.map((message, i) => {
-        const nextMessage = i < renderMessages.length - 1 ? renderMessages[i + 1] : null;
-
-        let isLastFromUser = false;
-        if (!nextMessage) {
-            // No next message = always show header
-            isLastFromUser = true;
-        } else if (nextMessage.userId !== message.userId || nextMessage.type !== 1) {
-            // Different user = show header
-            isLastFromUser = true;
-            const nextTime = new Date(nextMessage.createdAt).getTime();
-            firstTime = nextTime;
-        } else {
-            // Same user, check time difference
-            const currentTime = new Date(message.createdAt).getTime();
-            if (i === 0) {
-                firstTime = currentTime;
-            }
-            const nextTime = new Date(nextMessage.createdAt).getTime();
-
-            if (Math.abs(nextTime - firstTime) > 2 * 60 * 1000) {
-                isLastFromUser = true;
-                firstTime = nextTime;
-            }
-        }
-
-        return (
-            <div key={i} className="mt-2">
-                {i === renderMessages.length - 1 ? (
-                    <ChannelMessage
-                        ref={lastMessageRef}
-                        message={message}
-                        showHeader={isLastFromUser}
-                        onContextMenu={onContextMenu}
-                    />
-                ) : (
-                    <ChannelMessage
-                        message={message}
-                        showHeader={isLastFromUser}
-                        onContextMenu={onContextMenu}
-                    />
-                )}
-            </div>
-        );
-    });
 
     return (
         <div className="d-flex flex-column" style={{ height: "calc(100dvh - 44px)" }}>
@@ -431,7 +390,59 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
-                                {messagesListContent}
+                                <TransitionGroup component={null}>
+                                    {renderMessages.map((message, i) => {
+                                        const nextMessage = i < renderMessages.length - 1 ? renderMessages[i + 1] : null;
+
+                                        let isLastFromUser = false;
+                                        if (!nextMessage) {
+                                            // No next message = always show header
+                                            isLastFromUser = true;
+                                        } else if (nextMessage.userId !== message.userId || nextMessage.type !== 1) {
+                                            // Different user = show header
+                                            isLastFromUser = true;
+                                            const nextTime = new Date(nextMessage.createdAt).getTime();
+                                            firstTime = nextTime;
+                                        } else {
+                                            // Same user, check time difference
+                                            const currentTime = new Date(message.createdAt).getTime();
+                                            if (i === 0) {
+                                                firstTime = currentTime;
+                                            }
+                                            const nextTime = new Date(nextMessage.createdAt).getTime();
+
+                                            if (Math.abs(nextTime - firstTime) > 2 * 60 * 1000) {
+                                                isLastFromUser = true;
+                                                firstTime = nextTime;
+                                            }
+                                        }
+
+                                        return (
+                                            <CSSTransition
+                                                key={message.id}
+                                                timeout={300}
+                                                classNames={skipTransition ? "" : "wb-channels-message"}
+                                            >
+                                                <div className="mt-2">
+                                                    {i === renderMessages.length - 1 ? (
+                                                        <ChannelMessage
+                                                            ref={lastMessageRef}
+                                                            message={message}
+                                                            showHeader={isLastFromUser}
+                                                            onContextMenu={onContextMenu}
+                                                        />
+                                                    ) : (
+                                                        <ChannelMessage
+                                                            message={message}
+                                                            showHeader={isLastFromUser}
+                                                            onContextMenu={onContextMenu}
+                                                        />
+                                                    )}
+                                                </div>
+                                            </CSSTransition>
+                                        );
+                                    })}
+                                </TransitionGroup>
                             </div>
                             <div className="position-relative p-2 border-top">
                                 {editedMessage && (

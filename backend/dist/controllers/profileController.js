@@ -500,25 +500,6 @@ const markNotificationsClicked = (0, express_async_handler_1.default)(async (req
     }
     res.json({});
 });
-const toggleUserBan = (0, express_async_handler_1.default)(async (req, res) => {
-    const { userId, active } = req.body;
-    const user = await User_1.default.findById(userId);
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return;
-    }
-    user.active = active;
-    try {
-        await user.save();
-        res.json({ success: true, active });
-    }
-    catch (err) {
-        res.json({
-            success: false,
-            error: err
-        });
-    }
-});
 const uploadProfileAvatarImage = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     if (!req.file) {
@@ -625,7 +606,6 @@ const controller = {
     markNotificationsSeen,
     markNotificationsClicked,
     sendActivationCode,
-    toggleUserBan,
     uploadProfileAvatarImage,
     avatarImageUpload,
     updateNotifications

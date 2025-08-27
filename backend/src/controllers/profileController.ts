@@ -7,7 +7,6 @@ import Notification from "../models/Notification";
 import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail } from "../services/email";
-import { intervalToDuration } from "date-fns";
 import multer from "multer";
 import { config } from "../confg";
 import path from "path";
@@ -16,7 +15,6 @@ import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
 import { compressAvatar } from "../utils/fileUtils";
 import { sendToUsers } from "../services/pushService";
-import mongoose from "mongoose";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -604,31 +602,6 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
     }
 
     res.json({});
-})
-
-const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId, active } = req.body;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return
-    }
-
-    user.active = active;
-
-    try {
-        await user.save();
-
-        res.json({ success: true, active })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err
-        })
-    }
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -754,7 +727,6 @@ const controller = {
     markNotificationsSeen,
     markNotificationsClicked,
     sendActivationCode,
-    toggleUserBan,
     uploadProfileAvatarImage,
     avatarImageUpload,
     updateNotifications
