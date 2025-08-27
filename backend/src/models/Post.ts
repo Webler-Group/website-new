@@ -37,6 +37,15 @@ const postSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         default: null
     },
+    sharedFrom: {
+        type: mongoose.Types.ObjectId,
+        ref: "Post",
+        default: null
+    },
+    isOriginalPostDeleted: {
+        type: Number,
+        default: 2
+    },
     message: {
         type: String,
         required: true,
@@ -89,7 +98,7 @@ postSchema.pre("save", async function (next) {
 })
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
-    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");
+    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId sharedFrom");
 
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
@@ -97,6 +106,15 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
             case 1: {
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing.deleteMany({ following: post._id });
+                
+                // Mark shared posts as having their original post deleted
+                await Post.updateMany(
+                    { sharedFrom: post._id },
+                    { isOriginalPostDeleted: 1 }
+                );
+                
+                // Delete PostSharing records for this original post
+                await PostSharing.deleteMany({ originalPost: post._id });
                 break;
             }
             case 2: {
@@ -139,13 +157,39 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
             case 4: {
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing.deleteMany({ following: post._id });
+                
+                // Mark shared posts as having their original post deleted
+                await Post.updateMany(
+                    { sharedFrom: post._id },
+                    { isOriginalPostDeleted: 1 }
+                );
+                
+                // Delete PostSharing records for this original post
+                await PostSharing.deleteMany({ originalPost: post._id });
                 break;
             }
 
             case 5: {
+                // Delete replies/comments on this shared feed
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing.deleteMany({ following: post._id });
-                // await PostSharing.deleteOne({ sharedPost: post._id })
+
+                // Mark posts that shared from this sharedFeed as having their source deleted
+                await Post.updateMany(
+                    { sharedFrom: post._id },
+                    { isOriginalPostDeleted: 1 }
+                );
+
+                // Delete PostSharing records for this shared feed
+                await PostSharing.deleteMany({ originalPost: post._id });
+
+                // Decrement share count on the parent/original post if it still exists
+                if (post.sharedFrom) {
+                    await Post.updateOne(
+                        { _id: post.sharedFrom }, 
+                        { $inc: { shares: -1 } }
+                    );
+                }
                 break;
             }
 

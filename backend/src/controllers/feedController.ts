@@ -566,7 +566,8 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         tags: tagIds,
         user: currentUserId,
         isAccepted: true,
-        parentId: feedId
+        sharedFrom: feedId,
+        isOriginalPostDeleted: 0
     })
 
     if (feed) {
@@ -743,7 +744,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         {
             $lookup: {
                 from: "posts",
-                localField: "parentId",
+                localField: "sharedFrom",
                 foreignField: "_id",
                 as: "originalPost",
                 pipeline: [
@@ -792,6 +793,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isFollowing: false,
             score: x.score || 0,
             isPinned: x.isPinned,
+            isOriginalPostDeleted: x.isOriginalPostDeleted,
             originalPost: x.originalPost.length ? {
                 id: x.originalPost[0]._id,
                 title: x.originalPost[0].title || null,
@@ -862,7 +864,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         pipeline.push({
             $lookup: {
                 from: "posts",
-                localField: "parentId",
+                localField: "sharedFrom",
                 foreignField: "_id",
                 as: "originalPost",
                 pipeline: [
@@ -899,7 +901,8 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         attachments: feed.attachments || [],
         isUpvoted: false,
         isFollowing: false,
-        originalPost: null
+        originalPost: null,
+        isOriginalPostDeleted: feed.isOriginalPostDeleted
     };
 
     // Handle shared post data
@@ -961,198 +964,102 @@ interface Reply {
   replies: NestedReply[];
 }
 
+export interface ReplyNode {
+  id: string;
+  message: string;
+  date: Date;
+  userId: string;
+  userName: string;
+  userAvatar: string | null;
+  level: number;
+  roles: string[];
+  votes: number;
+  isUpvoted: boolean;
+  replies: ReplyNode[];
+}
+
+// Recursive builder
+async function getRepliesRecursive(
+  parentId: mongoose.Types.ObjectId,
+  currentUserId?: string
+): Promise<ReplyNode[]> {
+  const replies = await Post.find({ parentId, hidden: false }).sort({ createdAt: -1 });
+
+  return Promise.all(
+    replies.map(async (reply): Promise<ReplyNode> => {
+      const votes = await Upvote.countDocuments({ parentId: reply._id });
+      const isUpvoted = currentUserId
+        ? Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }))
+        : false;
+
+      const user = await User.findById(reply.user);
+
+      const children: ReplyNode[] = await getRepliesRecursive(reply._id, currentUserId);
+
+      return {
+        id: reply._id.toString(),
+        message: reply.message,
+        date: reply.createdAt,
+        userId: reply.user.toString(),
+        userName: user?.name ?? "Unknown User",
+        userAvatar: user?.avatarImage ?? null,
+        level: user?.level ?? 0,
+        roles: user?.roles ?? [],
+        votes,
+        isUpvoted,
+        replies: children, // nested replies (infinite depth)
+      };
+    })
+  );
+}
+
+// Controller with pagination at top-level
 export const getReplies = asyncHandler(
   async (req: IAuthRequest, res: Response): Promise<void> => {
     const { feedId, page = 1, count = 10 } = req.body;
-    const currentUserId = req.userId;
+    const currentUserId = (req as any).userId; // from auth middleware
 
     if (!feedId) {
       res.status(400).json({ message: "Feed ID is required" });
       return;
     }
 
-    // ------------------------------------------------------------------
-    // Aggregation pipeline (keeps your original intent but enriches each
-    // postreplies item with the actual reply post and that post's user,
-    // so we don't need to run Post.findOne per nested reply later)
-    // ------------------------------------------------------------------
-    const pipeline: PipelineStage[] = [
-      {
-        $match: {
-          parentId: new mongoose.Types.ObjectId(feedId),
-          _type: 2,
-          hidden: false,
-        },
-      },
-      { $sort: { createdAt: -1 } },
-      { $skip: (page - 1) * count },
-      { $limit: count },
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "users", // parent comment's user (array, usually one item)
-        },
-      },
-      {
-        $lookup: {
-          from: "postreplies",
-          let: { replyId: "$_id", feedId: "$parentId" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ["$parentId", "$$replyId"] },
-                    { $eq: ["$feedId", "$$feedId"] },
-                  ],
-                },
-              },
-            },
-            // bring the actual reply Post document (if postreplies.reply references a Post)
-            {
-              $lookup: {
-                from: "posts",
-                localField: "reply",
-                foreignField: "_id",
-                as: "replyPost",
-              },
-            },
-            {
-              $unwind: {
-                path: "$replyPost",
-                preserveNullAndEmptyArrays: true,
-              },
-            },
-            // bring user info for that reply post (replyPost.user)
-            {
-              $lookup: {
-                from: "users",
-                localField: "replyPost.user",
-                foreignField: "_id",
-                as: "replyPostUser",
-              },
-            },
-            // also bring the user for the postreplies entry itself (if needed)
-            {
-              $lookup: {
-                from: "users",
-                localField: "user",
-                foreignField: "_id",
-                as: "users",
-              },
-            },
-          ],
-          as: "replies", // now each replies[i] may contain replyPost and replyPostUser
-        },
-      },
-    ];
+    const filter = {
+      parentId: new mongoose.Types.ObjectId(feedId),
+      hidden: false,
+    };
 
-    const countPipeline: PipelineStage[] = [
-      {
-        $match: {
-          parentId: new mongoose.Types.ObjectId(feedId),
-          _type: 2,
-          hidden: false,
-        },
-      },
-      { $count: "total" },
-    ];
+    const totalReplies = await Post.countDocuments(filter);
 
-    // Run aggregation & count in parallel
-    const [repliesRaw, countResult] = await Promise.all([
-      Post.aggregate(pipeline),
-      Post.aggregate(countPipeline),
-    ]);
+    const topLevelReplies = await Post.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * count)
+      .limit(count);
 
-    const totalReplies = countResult.length > 0 ? countResult[0].total : 0;
+    const data: ReplyNode[] = await Promise.all(
+      topLevelReplies.map(async (reply) => {
+        const votes = await Upvote.countDocuments({ parentId: reply._id });
+        const isUpvoted = currentUserId
+          ? Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }))
+          : false;
 
-    // ------------------------------------------------------------------
-    // Build the final payload safely and correctly (no shared `temp` object)
-    // ------------------------------------------------------------------
-    const data: Reply[] = await Promise.all(
-      (repliesRaw || []).map(async (replyDoc: any): Promise<Reply> => {
-        // Parent (top-level) user info (from $lookup "users")
-        const parentUser = Array.isArray(replyDoc.users) && replyDoc.users.length > 0 ? replyDoc.users[0] : null;
+        const user = await User.findById(reply.user);
 
-        // compute parent upvote status and votes (use existing replyDoc.votes if present)
-        const parentVotes =
-          typeof replyDoc.votes === "number"
-            ? replyDoc.votes
-            : await Upvote.countDocuments({ parentId: replyDoc._id }).catch(() => 0);
-
-        const parentIsUpvoted =
-          currentUserId && replyDoc._id
-            ? Boolean(await Upvote.exists({ parentId: replyDoc._id, user: currentUserId }).catch(() => false))
-            : false;
-
-        // Build nested replies (one level deep)
-        const nestedReplies: NestedReply[] = await Promise.all(
-          (replyDoc.replies || []).map(async (r: any): Promise<NestedReply> => {
-            // r is the postreplies doc from pipeline
-            const replyPost = r.replyPost ?? null; // could be null if not found
-            const replyPostUser = Array.isArray(r.replyPostUser) && r.replyPostUser.length > 0 ? r.replyPostUser[0] : null;
-            const fallbackUser = Array.isArray(r.users) && r.users.length > 0 ? r.users[0] : null;
-
-            // Decide which object holds the actual reply post id and content
-            // Prefer replyPost (from lookup), otherwise fall back to r.reply (might be ObjectId),
-            // otherwise fallback to r._id (the postreplies doc id)
-            const replyPostId =
-              replyPost?._id ??
-              (r.reply && (typeof r.reply === "object" ? (r.reply._id ?? r.reply) : r.reply)) ??
-              r._id;
-
-            const idStr = replyPostId && replyPostId.toString ? replyPostId.toString() : String(replyPostId ?? "");
-
-            const message = replyPost?.message ?? r.message ?? "";
-            const date = replyPost?.createdAt ?? r.createdAt ?? new Date();
-
-            const nestedUserId =
-              replyPost?.user?.toString?.() ?? (r.user ? r.user.toString?.() ?? "" : "");
-            const nestedUserName = replyPostUser?.name ?? fallbackUser?.name ?? "Unknown User";
-            const nestedUserAvatar = replyPostUser?.avatarImage ?? fallbackUser?.avatarImage ?? null;
-            const nestedLevel = replyPostUser?.level ?? fallbackUser?.level ?? 0;
-            const nestedRoles = replyPostUser?.roles ?? fallbackUser?.roles ?? [];
-
-            // votes & isUpvoted for this nested reply (based on the actual reply post id)
-            const nestedVotes = replyPostId
-              ? await Upvote.countDocuments({ parentId: replyPostId }).catch(() => 0)
-              : 0;
-
-            const nestedIsUpvoted =
-              currentUserId && replyPostId
-                ? Boolean(await Upvote.exists({ parentId: replyPostId, user: currentUserId }).catch(() => false))
-                : false;
-
-            return {
-              id: idStr,
-              message,
-              date,
-              userId: nestedUserId,
-              userName: nestedUserName,
-              userAvatar: nestedUserAvatar,
-              level: nestedLevel,
-              roles: nestedRoles,
-              isUpvoted: nestedIsUpvoted,
-              votes: nestedVotes,
-            };
-          })
-        );
+        // recursive children builder
+        const children = await getRepliesRecursive(reply._id, currentUserId);
 
         return {
-          id: replyDoc._id?.toString?.() ?? "",
-          message: replyDoc.message ?? "",
-          date: replyDoc.createdAt ?? new Date(),
-          userId: replyDoc.user?.toString?.() ?? "",
-          userName: parentUser?.name ?? "Unknown User",
-          userAvatar: parentUser?.avatarImage ?? null,
-          level: parentUser?.level ?? 0,
-          roles: parentUser?.roles ?? [],
-          votes: parentVotes,
-          answers: replyDoc.answers || 0,
-          isUpvoted: parentIsUpvoted,
-          replies: nestedReplies,
+          id: reply._id.toString(),
+          message: reply.message,
+          date: reply.createdAt,
+          userId: reply.user.toString(),
+          userName: user?.name ?? "Unknown User",
+          userAvatar: user?.avatarImage ?? null,
+          level: user?.level ?? 0,
+          roles: user?.roles ?? [],
+          votes,
+          isUpvoted,
+          replies: children,
         };
       })
     );
@@ -1166,10 +1073,16 @@ export const getReplies = asyncHandler(
   }
 );
 
+
+
 const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { parentId, message, feedId  } = req.body;
     const currentUserId = req.userId;
-    console.log(parentId, message, feedId)
+
+    if(!currentUserId) {
+        res.status(403).json({message: "Unauthorized"})
+        return;
+    }
 
     try{
 
@@ -1189,11 +1102,23 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             feedId: feedId
         })
 
-        res.status(200).json({
-            id: newReply._id,
-            type: newReply._type,
-            message: newReply.message
-        });
+        const user = await User.findOne({ _id: currentUserId })
+
+        const formattedReply = {
+            id: newReply._id.toString(),
+            message: newReply.message,
+            date: newReply.createdAt,
+            userId: currentUserId.toString(),
+            userName: user?.name ?? "Unknown User",
+            userAvatar: user?.avatarImage ?? null,
+            level: user?.level ?? 0,
+            roles: user?.roles ?? [],
+            votes: 0,
+            isUpvoted: false,
+            replies: [],
+        };
+
+        res.status(200).json({ reply: formattedReply });
 
     }catch(err) {
         console.log(err)
@@ -1228,10 +1153,6 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    if (feed.user != currentUserId) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
 
     feed.isPinned = !feed.isPinned;
     await feed.save();

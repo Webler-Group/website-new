@@ -42,6 +42,8 @@ export interface Feed {
   isFollowing: boolean;
   originalPost: OriginalPost | null;
   isPinned: boolean;
+  isOriginalPostDeleted: Number;
+  isShared: boolean;
 }
 
 export interface Comment {

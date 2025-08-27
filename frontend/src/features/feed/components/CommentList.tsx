@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Comment } from './types';
-import { Heart, Clock, Loader2, Reply } from 'lucide-react';
+import { Heart, Clock, Loader2, Reply, ChevronDown, ChevronUp } from 'lucide-react';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 
 interface CommentListProps {
@@ -18,6 +18,10 @@ const CommentList: React.FC<CommentListProps> = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // ✅ New: Keep UI states outside comment tree
+  const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
+  const [replyBoxes, setReplyBoxes] = useState<Record<string, boolean>>({});
+
   const fetchComments = async () => {
     try {
       setLoading(true);
@@ -26,8 +30,8 @@ const CommentList: React.FC<CommentListProps> = ({
       });
 
       if (response && response.replies) {
-        // ensure replies have unique IDs by stringifying
         setComments(response.replies);
+        console.log(response.replies);
       }
     } catch (err) {
       setError("Failed to load comments");
@@ -64,7 +68,6 @@ const CommentList: React.FC<CommentListProps> = ({
   };
 
   const handleCommentVote = async (commentId: string, currentlyUpvoted: boolean) => {
-    // recursive function to update a comment or its replies
     const updateCommentVotes = (commentsList: Comment[]): Comment[] => {
       return commentsList.map((comment) => {
         if (comment.id === commentId) {
@@ -87,7 +90,6 @@ const CommentList: React.FC<CommentListProps> = ({
     };
 
     try {
-      // optimistic update for UI
       setComments((prevComments) => updateCommentVotes(prevComments));
 
       await sendJsonRequest("/Feed/VotePost", "POST", {
@@ -95,7 +97,6 @@ const CommentList: React.FC<CommentListProps> = ({
         postId: commentId,
       });
     } catch (error) {
-      // rollback if API fails
       setComments((prevComments) => updateCommentVotes(prevComments));
       console.error("Failed to vote on comment:", error);
     }
@@ -110,14 +111,40 @@ const CommentList: React.FC<CommentListProps> = ({
     </div>
   );
 
-  // Component to render a comment (recursive for replies, but only 1 level deep)
-  const CommentItem: React.FC<{ comment: Comment; depth?: number; index?: number }> = ({
+  const CommentItem: React.FC<{
+    comment: Comment;
+    depth?: number;
+    index?: number;
+    expandedReplies: Record<string, boolean>;
+    setExpandedReplies: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+    replyBoxes: Record<string, boolean>;
+    setReplyBoxes: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
+  }> = ({
     comment,
     depth = 0,
     index = 0,
+    expandedReplies,
+    setExpandedReplies,
+    replyBoxes,
+    setReplyBoxes,
   }) => {
-    const [showReplyBox, setShowReplyBox] = useState(false);
+    const showReplies = expandedReplies[comment.id] || false;
+    const showReplyBox = replyBoxes[comment.id] || false;
     const [replyText, setReplyText] = useState("");
+
+    const toggleReplies = () => {
+      setExpandedReplies((prev) => ({
+        ...prev,
+        [comment.id]: !showReplies,
+      }));
+    };
+
+    const toggleReplyBox = () => {
+      setReplyBoxes((prev) => ({
+        ...prev,
+        [comment.id]: !showReplyBox,
+      }));
+    };
 
     const handleReplySubmit = async () => {
       if (!replyText.trim()) return;
@@ -130,18 +157,17 @@ const CommentList: React.FC<CommentListProps> = ({
         });
 
         setReplyText("");
-        setShowReplyBox(false);
-        fetchComments(); // refresh thread
+        setReplyBoxes((prev) => ({ ...prev, [comment.id]: false }));
+        fetchComments();
       } catch (err) {
         console.error("Failed to post reply:", err);
       }
     };
 
-
     return (
       <div
-        className="bg-white rounded shadow-sm border p-3 mb-3"
-        style={{ marginLeft: depth * 30 }}
+        className={`mb-3 ${depth === 0 ? "p-3 bg-white rounded border shadow-sm" : ""}`}
+        style={{ marginLeft: depth > 0 ? depth * 20 : 0 }}
       >
         <div className="d-flex align-items-start gap-3">
           <UserAvatar src={comment.userAvatar} name={comment.userName} />
@@ -159,7 +185,7 @@ const CommentList: React.FC<CommentListProps> = ({
             <p className="text-secondary mb-2">{comment.message}</p>
 
             <div className="d-flex gap-2">
-              {/* Like button (works for both comments and replies) */}
+              {/* Like button */}
               <button
                 onClick={() => handleCommentVote(comment.id, comment.isUpvoted)}
                 className={`btn btn-sm d-inline-flex align-items-center gap-1 px-2 py-1 ${
@@ -170,19 +196,18 @@ const CommentList: React.FC<CommentListProps> = ({
                 <span className="small fw-medium">{comment.votes}</span>
               </button>
 
-              {/* Only show reply button for top-level comments */}
-              {depth === 0 && (
-                <button
-                  onClick={() => setShowReplyBox(!showReplyBox)}
-                  className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
-                >
-                  <Reply size={14} />
-                  Reply
-                </button>
-              )}
+              {/* Reply button */}
+              <button
+                onClick={toggleReplyBox}
+                className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
+              >
+                <Reply size={14} />
+                Reply
+              </button>
             </div>
 
-            {showReplyBox && depth === 0 && (
+            {/* Reply box */}
+            {showReplyBox && (
               <div className="mt-2">
                 <textarea
                   className="form-control mb-2"
@@ -191,14 +216,11 @@ const CommentList: React.FC<CommentListProps> = ({
                   onChange={(e) => setReplyText(e.target.value)}
                   placeholder="Write a reply..."
                 />
-                <button
-                  onClick={handleReplySubmit}
-                  className="btn btn-sm btn-primary me-2"
-                >
+                <button onClick={handleReplySubmit} className="btn btn-sm btn-primary me-2">
                   Post Reply
                 </button>
                 <button
-                  onClick={() => setShowReplyBox(false)}
+                  onClick={toggleReplyBox}
                   className="btn btn-sm btn-outline-secondary"
                 >
                   Cancel
@@ -206,16 +228,39 @@ const CommentList: React.FC<CommentListProps> = ({
               </div>
             )}
 
-            {/* Render replies only once (1 level depth) */}
-            {depth === 0 && comment.replies && comment.replies.length > 0 && (
+            {/* Replies toggle */}
+            {comment.replies && comment.replies.length > 0 && (
+              <div className="mt-2">
+                <button
+                  className="btn btn-link small p-0 text-muted d-inline-flex align-items-center gap-1"
+                  onClick={toggleReplies}
+                >
+                  {showReplies ? (
+                    <>
+                      <ChevronUp size={14} /> Hide replies
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown size={14} /> Show replies ({comment.replies.length})
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+
+            {/* Recursive replies */}
+            {showReplies && comment.replies && comment.replies.length > 0 && (
               <div className="mt-3">
                 {comment.replies.map((reply, i) => (
-                  // 👇 key fixed: combine reply.id + depth + index
                   <CommentItem
                     key={`${reply.id}-${depth + 1}-${i}`}
                     comment={reply}
                     depth={depth + 1}
                     index={i}
+                    expandedReplies={expandedReplies}
+                    setExpandedReplies={setExpandedReplies}
+                    replyBoxes={replyBoxes}
+                    setReplyBoxes={setReplyBoxes}
                   />
                 ))}
               </div>
@@ -260,7 +305,16 @@ const CommentList: React.FC<CommentListProps> = ({
       </h3>
 
       {comments.map((comment, i) => (
-        <CommentItem key={`${comment.id}-0-${i}`} comment={comment} depth={0} index={i} />
+        <CommentItem
+          key={`${comment.id}-0-${i}`}
+          comment={comment}
+          depth={0}
+          index={i}
+          expandedReplies={expandedReplies}
+          setExpandedReplies={setExpandedReplies}
+          replyBoxes={replyBoxes}
+          setReplyBoxes={setReplyBoxes}
+        />
       ))}
     </div>
   );

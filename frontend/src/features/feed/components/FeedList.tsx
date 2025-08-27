@@ -47,7 +47,6 @@ const FeedList: React.FC<FeedListProps> = () => {
         })
       ]);
 
-      console.log(feedsResponse)
       
     const mappedFeeds = feedsResponse.feeds.map((feed: any) => ({
         id: feed.id,
@@ -63,17 +62,15 @@ const FeedList: React.FC<FeedListProps> = () => {
         answers: feed.answers,
         shares: feed.shares,
         isUpvoted: feed.isUpvoted,
-        isShared: feed.originalPost ? true : false,
         isFollowing: feed.isFollowing,
         score: feed.score,
         originalPost: feed.originalPost,
         level: feed.level,
         roles: feed.roles,
         isPinned: feed.isPinned,
+        isOriginalPostDeleted: feed.isOriginalPostDeleted ?? 2
     }))
     .sort((a: Feed, b: Feed) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)); 
-// Pinned first
-
 
 
       if (reset || page === 1) {
@@ -256,6 +253,7 @@ const FeedList: React.FC<FeedListProps> = () => {
                   onUpdate={handleFeedUpdate}
                   onDelete={handleFeedDelete}
                   onCommentsClick={handleCommentsClick}
+                  onRefresh={fetchFeeds}
                 />
               </div>
             ))

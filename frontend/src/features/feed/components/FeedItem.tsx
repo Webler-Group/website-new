@@ -44,11 +44,11 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const [votes, setVotes] = useState(feed.votes);
 
   const isOwner = currentUserId === feed.userId;
-  const isSharedPost = feed.type === 5 && feed.originalPost;
+  const isSharedPost = feed.isOriginalPostDeleted !== 2;
   const navigate = useNavigate();
 
   const allowedUrls = [/^https?:\/\/.+/i];
-  
+  console.log(feed)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -205,8 +205,13 @@ const FeedItem: React.FC<FeedItemProps> = ({
 
         {/* Content */}
         <div className="mt-3">
-          <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls}/>
-          {isSharedPost && feed.originalPost && <OriginalPostCard originalPost={feed.originalPost} />}
+            {<MarkdownRenderer content={feed.message} allowedUrls={allowedUrls}/>}
+            {feed.isOriginalPostDeleted === 1 && (
+              <div className="alert alert-warning text-center my-3" role="alert">
+                <h5 className="mb-0">This post is unavailable.</h5>
+              </div>
+            )}
+            {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
           {feed.tags?.length > 0 && (
             <div className="d-flex flex-wrap gap-2 mt-3">
               {feed.tags.map(tag => (

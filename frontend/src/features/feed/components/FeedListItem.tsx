@@ -6,6 +6,7 @@ import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
 import { useNavigate } from "react-router-dom"; 
 import ShareModal from './ShareModal';
+import { useAuth } from '../../auth/context/authContext';
 
 interface FeedListItemProps {
   feed: Feed;
@@ -15,6 +16,7 @@ interface FeedListItemProps {
   onDelete: (feed: Feed) => void;
   onCommentsClick: (feedId: string) => void;
   isPinned?: boolean;
+  onRefresh: () => void;
 }
 
 const FeedListItem: React.FC<FeedListItemProps> = ({
@@ -24,6 +26,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   onUpdate,
   onDelete,
   onCommentsClick,
+  onRefresh,
   isPinned = false
 }) => {
   const [showDropdown, setShowDropdown] = useState(false);
@@ -33,10 +36,20 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   // New modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const isSharedPost = feed.originalPost ? true: false;
   const navigate = useNavigate();
-  console.log(isSharedPost)
-
+  const { userInfo } = useAuth()
+  const canModerate = userInfo?.roles.includes("Admin") || userInfo?.roles.includes("Moderator");
+  const handlePinToggle = async () => {
+    try {
+      const endpoint = "/Feed/PinFeed"
+      await sendJsonRequest(endpoint, "POST", { feedId: feed.id });
+      onUpdate({ ...feed, isPinned: !feed.isPinned });
+      setShowDropdown(false);
+      onRefresh();
+    } catch (err) {
+      console.error("Error pinning/unpinning feed:", err);
+    }
+};
   const handleEdit = async (updatedContent: string) => {
     try {
       await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
@@ -84,7 +97,6 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
         console.error("Error sharing feed:", err);
     }
     };
-
   const canEdit = feed.userId === currentUserId;
   const allowedUrls = [/^https?:\/\/.+/i];
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
@@ -119,10 +131,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
             <ProfileAvatar avatarImage={feed.userAvatarImage} size={42} />
             <div>
               <div className="d-flex align-items-center gap-2 flex-wrap">
-                <h6 className="fw-bold mb-0">{feed.userName || "Anonymous"}</h6>
-                {feed.level > 0 && (
-                  <span className="badge bg-warning text-dark">Level {feed.level}</span>
-                )}
+                <h6 className="fw-bold mb-0">{feed.userName || "Anonymous"}<span style={{fontWeight:400}}>{feed.isOriginalPostDeleted !== 2 ? " shared a post" : ""}</span></h6>
                 <small className="text-muted d-flex align-items-center gap-1">
                   <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
                 </small>
@@ -134,6 +143,9 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
               </div>
               {feed.roles?.length > 0 && (
                 <div className="d-flex gap-1 mt-1 flex-wrap">
+                  {feed.level > 0 && (
+                    <span className="badge bg-warning text-dark">Level {feed.level}</span>
+                  )}
                   {feed.roles.map((role, i) => (
                     <span key={i} className="badge bg-success">{role}</span>
                   ))}
@@ -143,7 +155,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
           </div>
 
 
-          {canEdit && (
+          {(canEdit || canModerate) && (
             <div className="dropdown">
               <button
                 className="btn btn-sm btn-outline-secondary border-0"
@@ -153,36 +165,58 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
               </button>
               {showDropdown && (
                 <div className="dropdown-menu show position-absolute end-0">
-                  <button
-                    className="dropdown-item d-flex align-items-center gap-2"
-                    onClick={() => {
-                      setShowEditModal(true);
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Edit size={14} />
-                    Edit
-                  </button>
-                  <button
-                    className="dropdown-item d-flex align-items-center gap-2 text-danger"
-                    onClick={() => {
-                      handleDelete();
-                      setShowDropdown(false);
-                    }}
-                  >
-                    <Trash2 size={14} />
-                    Delete
-                  </button>
+                  {/* If user is owner → Edit/Delete */}
+                  {canEdit && (
+                    <>
+                      <button
+                        className="dropdown-item d-flex align-items-center gap-2"
+                        onClick={() => {
+                          setShowEditModal(true);
+                          setShowDropdown(false);
+                        }}
+                      >
+                        <Edit size={14} />
+                        Edit
+                      </button>
+                      <button
+                        className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                        onClick={() => {
+                          handleDelete();
+                          setShowDropdown(false);
+                        }}
+                      >
+                        <Trash2 size={14} />
+                        Delete
+                      </button>
+                    </>
+                  )}
+
+                  {/* If user is Admin/Moderator → Pin/Unpin */}
+                  {canModerate && (
+                    <button
+                      className="dropdown-item d-flex align-items-center gap-2"
+                      onClick={handlePinToggle}
+                    >
+                      <Pin size={14} />
+                      {feed.isPinned ? "Unpin Post" : "Pin Post"}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
           )}
+  
         </div>
 
         {/* Content */}
         <div className="mb-3">
           <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
-            {isSharedPost && <OriginalPostCard originalPost={feed.originalPost} />}
+            {feed.isOriginalPostDeleted === 1 && (
+              <div className="alert alert-warning text-center my-3" role="alert">
+                <h5 className="mb-0">This post is unavailable.</h5>
+              </div>
+            )}
+            {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
 
         </div>
 
@@ -209,10 +243,11 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
           </div>
 
           <button
-            className="btn btn-sm border-0 text-muted"
+            className="btn btn-sm border-0 text-muted d-flex align-items-center gap-2"
             onClick={() => setShowShareModal(true)}
           >
             <Share2 size={16} />
+            <span>{feed.shares || 0}</span>
           </button>
         </div>
       </div>
