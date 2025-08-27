@@ -49,12 +49,12 @@ const ModView = () => {
     }, [userId, sendJsonRequest]);
 
     const handleBanToggle = async () => {
-        if (!userId) return;
+        if (!user) return;
         try {
             const res = await sendJsonRequest("/Admin/BanUser", "POST", {
-                userId,
-                active: !!user?.ban, // if banned → unban
-                note: !user?.ban ? banNote || undefined : undefined,
+                userId: user.id,
+                active: !user.active,
+                note: banNote,
             });
 
             if (res.success) {
@@ -80,10 +80,10 @@ const ModView = () => {
         <>
             <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>{user.ban ? "Unban User" : "Ban User"}</Modal.Title>
+                    <Modal.Title>{!user.active ? "Unban User" : "Ban User"}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    {user.ban ? (
+                    {!user.active ? (
                         <p>Are you sure you want to unban <b>{user.name}</b>?</p>
                     ) : (
                         <>
@@ -105,10 +105,10 @@ const ModView = () => {
                         Cancel
                     </Button>
                     <Button
-                        variant={user.ban ? "success" : "danger"}
+                        variant={user.active ? "danger" : "success"}
                         onClick={handleBanToggle}
                     >
-                        {user.ban ? "Unban" : "Ban"}
+                        {user.active ? "Ban" : "Unban"}
                     </Button>
                 </Modal.Footer>
             </Modal>
@@ -169,10 +169,10 @@ const ModView = () => {
                 {/* Show Ban/Unban only if not admin */}
                 {!isAdmin && (
                     <Button
-                        variant={user.ban ? "success" : "danger"}
+                        variant={user.active ? "danger" : "success"}
                         onClick={() => setShowModal(true)}
                     >
-                        {user.ban ? "Unban User" : "Ban User"}
+                        {user.active ? "Ban User" : "Unban User"}
                     </Button>
                 )}
             </Container>
