@@ -21,8 +21,8 @@ router.route("/UpdateProfile")
     .put(profileController.updateProfile);
 router.route("/ChangeEmail")
     .post(profileController.changeEmail);
-router.route("/ChangePassword")
-    .post(profileController.changePassword);
+router.route("/VerifyEmailChange")
+    .post(profileController.verifyEmailChange);
 router.route("/Follow")
     .post(profileController.follow);
 router.route("/Unfollow")
@@ -41,6 +41,8 @@ router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController.updateNotifications);
+router.route("/Search")
+    .post(profileController.searchProfiles);
 
 
 export default router;

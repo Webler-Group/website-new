@@ -67,7 +67,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 });
 
 const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { channelId, username } = req.body;
+    const { channelId, userId } = req.body;
     const currentUserId = req.userId;
 
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
@@ -76,7 +76,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const invitedUser = await User.findOne({ name: username }, "_id name avatarImage");
+    const invitedUser = await User.findById(userId, "name avatarImage roles level");
     if (!invitedUser) {
         res.status(404).json({ message: "User not found" });
         return;

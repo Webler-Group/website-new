@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
-import { TransitionGroup, CSSTransition } from "react-transition-group"; // Updated: Imported react-transition-group for controlled enter animations
+import { TransitionGroup, CSSTransition } from "react-transition-group";
 import { IChannel, IChannelParticipant } from "../components/ChannelListItem";
 import ChannelMessage from "../components/ChannelMessage";
 import { Button, Form, Badge, Modal } from "react-bootstrap";
@@ -9,15 +9,16 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
-import { FaCheck, FaPaperPlane } from "react-icons/fa6";
+import { FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
-import { truncate } from "../../../utils/StringUtils";
 
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
 }
+
+const MAX_ROWS = 5;
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [channel, setChannel] = useState<IChannel | null>(null);
@@ -89,7 +90,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
         const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight, 10);
         const rows = Math.ceil(textarea.scrollHeight / lineHeight) - 1; // -1 feels more natural
-        textarea.rows = Math.min(rows, 5);
+        textarea.rows = Math.min(rows, MAX_ROWS);
     }, [newMessage]);
 
     useEffect(() => {
@@ -346,7 +347,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
 
     return (
-        <div className="d-flex flex-column" style={{ height: "calc(100dvh - 44px)" }}>
+        <div className="d-flex flex-column" style={{ height: "100dvh" }}>
             {
                 channel !== null ?
                     <>
@@ -446,10 +447,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                             </div>
                             <div className="position-relative p-2 border-top">
                                 {editedMessage && (
-                                    <div className="small mb-2 bg-light p-2 rounded">
-                                        <div className="fw-bold text-info">Edit message</div>
+                                    <div className="small">
                                         <div className="d-flex justify-content-between align-items-center">
-                                            <span>{truncate(editedMessage.content, 50)}</span>
+                                            <div className="fw-bold text-info"><FaPen /> Edit message</div>
                                             <Button variant="link" className="text-muted" onClick={handleEditCancel}>
                                                 <FaTimes />
                                             </Button>
@@ -481,9 +481,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         value={newMessage}
                                         onChange={(e) => setNewMessage(e.target.value)}
                                         onKeyDown={handleTextareaKeydown}
-                                        className="me-2"
+                                        className="me-2 border-0"
                                         maxLength={1024}
-                                        style={{ resize: "none" }}
+                                        style={{ resize: "none", boxShadow: "none" }}
                                     />
                                     {
                                         newMessage.trim().length > 0 &&

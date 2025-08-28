@@ -18,6 +18,9 @@ const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
 const fileUtils_1 = require("../utils/fileUtils");
 const pushService_1 = require("../services/pushService");
+const regexUtils_1 = require("../utils/regexUtils");
+const EmailChangeRecord_1 = __importDefault(require("../models/EmailChangeRecord"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const avatarImageUpload = (0, multer_1.default)({
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
@@ -186,24 +189,60 @@ const changeEmail = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     try {
-        user.email = email;
-        user.emailVerified = false;
-        await user.save();
+        const code = await EmailChangeRecord_1.default.generate(new mongoose_1.default.Types.ObjectId(currentUserId), email);
+        await (0, email_1.sendEmailChangeVerification)(user.name, user.email, email, code);
         res.json({
             success: true,
-            data: {
-                id: user._id,
-                email: user.email
-            }
+            data: {}
         });
     }
     catch (err) {
         res.json({
             success: false,
             error: err,
+            message: err?.message,
             data: null
         });
     }
+});
+const verifyEmailChange = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { code } = req.body;
+    if (!code) {
+        res.status(400).json({ message: "Missing code" });
+        return;
+    }
+    const record = await EmailChangeRecord_1.default.findOne({ userId: currentUserId, code });
+    if (!record) {
+        res.status(400).json({ message: "Invalid or expired code" });
+        return;
+    }
+    // Check expiration (15 minutes = 900000 ms)
+    const now = Date.now();
+    if (now - record.createdAt.getTime() > 15 * 60 * 1000) {
+        await EmailChangeRecord_1.default.deleteOne({ _id: record._id }); // clean up expired record
+        res.status(400).json({ message: "Code has expired" });
+        return;
+    }
+    const user = await User_1.default.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+    let result;
+    try {
+        user.email = record.newEmail;
+        user.emailVerified = false; // must verify new email again
+        await user.save();
+        result = { success: true, data: { email: user.email } };
+    }
+    catch (err) {
+        result = { success: false, data: null, error: err };
+    }
+    finally {
+        await EmailChangeRecord_1.default.deleteOne({ _id: record._id });
+    }
+    res.json(result);
 });
 const sendActivationCode = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
@@ -214,7 +253,8 @@ const sendActivationCode = (0, express_async_handler_1.default)(async (req, res)
     }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
         userId: currentUserId,
-        email: user.email
+        email: user.email,
+        action: "verify-email"
     });
     try {
         await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
@@ -226,48 +266,49 @@ const sendActivationCode = (0, express_async_handler_1.default)(async (req, res)
         res.status(500).json({ message: "Activation email could not be sent" });
     }
 });
-const changePassword = (0, express_async_handler_1.default)(async (req, res) => {
-    const currentUserId = req.userId;
-    const { currentPassword, newPassword } = req.body;
-    if (typeof currentPassword === "undefined" ||
-        typeof newPassword === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return;
-    }
-    if (currentPassword === newPassword) {
-        res.status(400).json({ message: "Passwords cannot be same" });
-        return;
-    }
-    const user = await User_1.default.findById(currentUserId);
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return;
-    }
-    const matchPassword = await user.matchPassword(currentPassword);
-    if (!matchPassword) {
-        res.json({
-            success: false,
-            error: { _message: "Incorrect information" },
-            data: false
-        });
-        return;
-    }
-    try {
-        user.password = newPassword;
-        await user.save();
-        res.json({
-            success: true,
-            data: true
-        });
-    }
-    catch (err) {
-        res.json({
-            success: false,
-            error: err,
-            data: false
-        });
-    }
-});
+// const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
+//     const currentUserId = req.userId;
+//     const { currentPassword, newPassword } = req.body;
+//     if (typeof currentPassword === "undefined" ||
+//         typeof newPassword === "undefined"
+//     ) {
+//         res.status(400).json({ message: "Some fields are missing" });
+//         return
+//     }
+//     if (currentPassword === newPassword) {
+//         res.status(400).json({ message: "Passwords cannot be same" });
+//         return
+//     }
+//     const user = await User.findById(currentUserId);
+//     if (!user) {
+//         res.status(404).json({ message: "Profile not found" });
+//         return
+//     }
+//     const matchPassword = await user.matchPassword(currentPassword);
+//     if (!matchPassword) {
+//         res.json({
+//             success: false,
+//             error: { _message: "Incorrect information" },
+//             data: false
+//         })
+//         return
+//     }
+//     try {
+//         user.password = newPassword;
+//         await user.save();
+//         res.json({
+//             success: true,
+//             data: true
+//         })
+//     }
+//     catch (err: any) {
+//         res.json({
+//             success: false,
+//             error: err,
+//             data: false
+//         })
+//     }
+// })
 const follow = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { userId } = req.body;
@@ -592,11 +633,58 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
         });
     }
 });
+const searchProfiles = (0, express_async_handler_1.default)(async (req, res) => {
+    const { searchQuery } = req.body;
+    const match = { active: true };
+    if (searchQuery && searchQuery.trim() !== "") {
+        const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
+        const searchRegex = new RegExp(`^${safeQuery}`, "i");
+        match.name = searchRegex;
+    }
+    const users = await User_1.default.aggregate([
+        { $match: match },
+        {
+            $lookup: {
+                from: "userfollowings",
+                localField: "_id",
+                foreignField: "following",
+                as: "followers"
+            }
+        },
+        {
+            $addFields: {
+                followersCount: { $size: "$followers" }
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                avatarImage: 1,
+                level: 1,
+                roles: 1,
+                followersCount: 1,
+                countryCode: 1
+            }
+        },
+        { $sort: { followersCount: -1 } },
+        { $limit: 10 }
+    ]);
+    res.json({
+        users: users.map(u => ({
+            id: u._id,
+            name: u.name,
+            avatar: u.avatarImage,
+            level: u.level,
+            roles: u.roles,
+            countryCode: u.countryCode
+        }))
+    });
+});
 const controller = {
     getProfile,
     updateProfile,
     changeEmail,
-    changePassword,
+    //changePassword,
     follow,
     unfollow,
     getFollowers,
@@ -608,6 +696,8 @@ const controller = {
     sendActivationCode,
     uploadProfileAvatarImage,
     avatarImageUpload,
-    updateNotifications
+    updateNotifications,
+    searchProfiles,
+    verifyEmailChange
 };
 exports.default = controller;

@@ -754,9 +754,7 @@ ul {
 }
 
 .wb-channels-container {
-    position: fixed;
     width: 100%;
-    height: 100%;
 }
 
 .wb-channels-list__button {
@@ -767,7 +765,7 @@ ul {
 .wb-channels-settings {
     position: absolute;
     width: 100%;
-    height: calc(100% - 88px);
+    height: calc(100% - 44px);
     transition: 500ms transform;
     overflow: auto;
 }

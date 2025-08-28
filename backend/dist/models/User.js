@@ -11,10 +11,7 @@ const Post_1 = __importDefault(require("./Post"));
 const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
 const uuid_1 = require("uuid");
-const isEmail = (value) => {
-    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-    return value.match(validEmailRegex) !== null;
-};
+const regexUtils_1 = require("../utils/regexUtils");
 const banSchema = new mongoose_1.default.Schema({
     author: {
         type: mongoose_1.default.Schema.Types.ObjectId,
@@ -37,7 +34,7 @@ const userSchema = new mongoose_1.default.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [isEmail, 'invalid email']
+        validate: [regexUtils_1.isEmail, 'invalid email']
     },
     password: {
         required: true,
@@ -99,6 +96,10 @@ const userSchema = new mongoose_1.default.Schema({
     ban: {
         type: banSchema,
         default: null
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

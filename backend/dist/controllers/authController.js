@@ -34,7 +34,7 @@ const login = (0, express_async_handler_1.default)(async (req, res) => {
         }, deviceId);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
-        (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
+        await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         res.json({
             accessToken,
             expiresIn,
@@ -91,10 +91,11 @@ const register = (0, express_async_handler_1.default)(async (req, res) => {
         }, deviceId);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
-        (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
+        await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
         const { emailToken } = (0, tokenUtils_1.signEmailToken)({
             userId: user._id.toString(),
-            email: user.email
+            email: user.email,
+            action: "verify-email"
         });
         if (confg_1.config.nodeEnv === "production") {
             try {
@@ -147,8 +148,9 @@ const refresh = (0, express_async_handler_1.default)(async (req, res) => {
             res.status(403).json({ message: "Forbidden" });
             return;
         }
-        const user = await User_1.default.findById(decoded.userId);
-        if (!user || !user.active) {
+        const payload = decoded;
+        const user = await User_1.default.findById(payload.userId).select('roles active tokenVersion');
+        if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) { // NEW: Check version
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
@@ -170,16 +172,18 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, r
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const user = await User_1.default.findOne({ email });
+    const user = await User_1.default.findOne({ email }).lean();
     if (user === null) {
         res.status(404).json({ message: "Email is not registered" });
         return;
     }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
         userId: user._id.toString(),
-        email: user.email
+        email: user.email,
+        action: "reset-password"
     });
     try {
+        console.log(user.name);
         await (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
         res.json({ success: true });
     }
@@ -196,7 +200,7 @@ const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
     jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
         if (!err) {
             const userId = decoded.userId;
-            if (userId !== resetId) {
+            if (userId !== resetId || decoded.action != "reset-password") {
                 res.json({ success: false });
                 return;
             }
@@ -206,6 +210,7 @@ const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
                 return;
             }
             user.password = password;
+            user.tokenVersion = (user.tokenVersion || 0) + 1;
             try {
                 await user.save();
                 const cookies = req.cookies;
@@ -243,7 +248,7 @@ const verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
         if (!err) {
             const userId2 = decoded.userId;
             const email = decoded.email;
-            if (userId2 !== userId) {
+            if (userId2 !== userId || decoded.action != "verify-email") {
                 res.json({ success: false });
                 return;
             }

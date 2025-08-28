@@ -9,9 +9,10 @@ import ChannelsButton from '../features/channels/components/ChannelsButton';
 
 interface HeaderProps {
   variant?: string;
+  hideChannelsButton?: boolean;
 }
 
-function Header({ variant }: HeaderProps) {
+function Header({ variant, hideChannelsButton }: HeaderProps) {
 
   const { userInfo } = useAuth();
 
@@ -26,7 +27,7 @@ function Header({ variant }: HeaderProps) {
           {
             userInfo &&
             <div className='d-flex gap-3'>
-              <ChannelsButton />
+              { !hideChannelsButton && <ChannelsButton /> }
               <NotificationList />
             </div>
           }

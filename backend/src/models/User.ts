@@ -6,11 +6,7 @@ import Post from "./Post";
 import Code from "./Code";
 import Notification from "./Notification";
 import { v4 as uuid } from "uuid";
-
-const isEmail = (value: string) => {
-    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-    return value.match(validEmailRegex) !== null;
-}
+import { isEmail } from "../utils/regexUtils";
 
 const banSchema = new mongoose.Schema({
     author: {
@@ -97,6 +93,10 @@ const userSchema = new mongoose.Schema({
     ban: {
         type: banSchema,
         default: null
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 },
     {

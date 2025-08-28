@@ -58,14 +58,14 @@ const createDirectMessages = (0, express_async_handler_1.default)(async (req, re
     });
 });
 const groupInviteUser = (0, express_async_handler_1.default)(async (req, res) => {
-    const { channelId, username } = req.body;
+    const { channelId, userId } = req.body;
     const currentUserId = req.userId;
     const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
     if (!participant || !["Owner", "Admin"].includes(participant.role)) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
-    const invitedUser = await User_1.default.findOne({ name: username }, "_id name avatarImage");
+    const invitedUser = await User_1.default.findById(userId, "name avatarImage roles level");
     if (!invitedUser) {
         res.status(404).json({ message: "User not found" });
         return;

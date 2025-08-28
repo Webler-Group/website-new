@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import { Modal, Button, Form, Card, Spinner, Alert, Breadcrumb, Badge, Container } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { LinkContainer } from "react-router-bootstrap";
 
 interface IAdminUser {
     id: string;
@@ -139,6 +140,11 @@ const ModView = () => {
                             <div>Verified: {user.verified ? "Yes" : "No"}</div>
                             <div>Active: {user.active ? "Yes" : "No"}</div>
                             <div>Registered: {new Date(user.registerDate).toLocaleString()}</div>
+                            <div className="mt-3">
+                                <LinkContainer to={`/Profile/${user.id}`}>
+                                    <Button variant="primary">View Profile</Button>
+                                </LinkContainer>
+                            </div>
                         </div>
                     </Card.Body>
                 </Card>

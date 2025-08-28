@@ -6,7 +6,7 @@ import UserFollowing from "../models/UserFollowing";
 import Notification from "../models/Notification";
 import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
-import { sendActivationEmail } from "../services/email";
+import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import multer from "multer";
 import { config } from "../confg";
 import path from "path";
@@ -15,6 +15,9 @@ import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
 import { compressAvatar } from "../utils/fileUtils";
 import { sendToUsers } from "../services/pushService";
+import { escapeRegex } from "../utils/regexUtils";
+import EmailChangeRecord from "../models/EmailChangeRecord";
+import mongoose from "mongoose";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -213,28 +216,71 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     try {
-
-        user.email = email;
-        user.emailVerified = false;
-        await user.save();
+        const code = await EmailChangeRecord.generate(new mongoose.Types.ObjectId(currentUserId), email);
+        await sendEmailChangeVerification(user.name, user.email, email, code);
 
         res.json({
             success: true,
-            data: {
-                id: user._id,
-                email: user.email
-            }
+            data: {}
         })
     }
     catch (err: any) {
         res.json({
             success: false,
             error: err,
+            message: err?.message,
             data: null
         })
     }
 
-})
+});
+
+const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { code } = req.body;
+
+    if (!code) {
+        res.status(400).json({ message: "Missing code" });
+        return;
+    }
+
+    const record = await EmailChangeRecord.findOne({ userId: currentUserId, code });
+
+    if (!record) {
+        res.status(400).json({ message: "Invalid or expired code" });
+        return;
+    }
+
+    // Check expiration (15 minutes = 900000 ms)
+    const now = Date.now();
+    if (now - record.createdAt.getTime() > 15 * 60 * 1000) {
+        await EmailChangeRecord.deleteOne({ _id: record._id }); // clean up expired record
+        res.status(400).json({ message: "Code has expired" });
+        return;
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    let result: any;
+    try {
+        user.email = record.newEmail;
+        user.emailVerified = false; // must verify new email again
+        await user.save();
+
+        result = { success: true, data: { email: user.email } };
+    } catch (err: any) {
+        result = { success: false, data: null, error: err };
+    } finally {
+        await EmailChangeRecord.deleteOne({ _id: record._id });
+    }
+
+    res.json(result);
+});
+
 
 const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -247,7 +293,8 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const { emailToken } = signEmailToken({
         userId: currentUserId as string,
-        email: user.email
+        email: user.email,
+        action: "verify-email"
     });
 
     try {
@@ -263,58 +310,58 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
     }
 })
 
-const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { currentPassword, newPassword } = req.body;
+// const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
+//     const currentUserId = req.userId;
+//     const { currentPassword, newPassword } = req.body;
 
-    if (typeof currentPassword === "undefined" ||
-        typeof newPassword === "undefined"
-    ) {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
+//     if (typeof currentPassword === "undefined" ||
+//         typeof newPassword === "undefined"
+//     ) {
+//         res.status(400).json({ message: "Some fields are missing" });
+//         return
+//     }
 
-    if (currentPassword === newPassword) {
-        res.status(400).json({ message: "Passwords cannot be same" });
-        return
-    }
+//     if (currentPassword === newPassword) {
+//         res.status(400).json({ message: "Passwords cannot be same" });
+//         return
+//     }
 
-    const user = await User.findById(currentUserId);
+//     const user = await User.findById(currentUserId);
 
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return
-    }
+//     if (!user) {
+//         res.status(404).json({ message: "Profile not found" });
+//         return
+//     }
 
-    const matchPassword = await user.matchPassword(currentPassword);
-    if (!matchPassword) {
-        res.json({
-            success: false,
-            error: { _message: "Incorrect information" },
-            data: false
-        })
-        return
-    }
+//     const matchPassword = await user.matchPassword(currentPassword);
+//     if (!matchPassword) {
+//         res.json({
+//             success: false,
+//             error: { _message: "Incorrect information" },
+//             data: false
+//         })
+//         return
+//     }
 
-    try {
+//     try {
 
-        user.password = newPassword;
-        await user.save();
+//         user.password = newPassword;
+//         await user.save();
 
-        res.json({
-            success: true,
-            data: true
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: false
-        })
-    }
+//         res.json({
+//             success: true,
+//             data: true
+//         })
+//     }
+//     catch (err: any) {
+//         res.json({
+//             success: false,
+//             error: err,
+//             data: false
+//         })
+//     }
 
-})
+// })
 
 const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -353,7 +400,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         await sendToUsers([userId], {
             title: "New follower",
             body: currentUserName + " followed you"
-        },"followers");
+        }, "followers");
         await Notification.create({
             user: userId,
             actionUser: currentUserId,
@@ -713,11 +760,63 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
     }
 });
 
+const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { searchQuery } = req.body;
+
+    const match: any = { active: true };
+
+    if (searchQuery && searchQuery.trim() !== "") {
+        const safeQuery = escapeRegex(searchQuery.trim());
+        const searchRegex = new RegExp(`^${safeQuery}`, "i");
+        match.name = searchRegex;
+    }
+
+    const users = await User.aggregate([
+        { $match: match },
+        {
+            $lookup: {
+                from: "userfollowings",
+                localField: "_id",
+                foreignField: "following",
+                as: "followers"
+            }
+        },
+        {
+            $addFields: {
+                followersCount: { $size: "$followers" }
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                avatarImage: 1,
+                level: 1,
+                roles: 1,
+                followersCount: 1,
+                countryCode: 1
+            }
+        },
+        { $sort: { followersCount: -1 } },
+        { $limit: 10 }
+    ]);
+
+    res.json({
+        users: users.map(u => ({
+            id: u._id,
+            name: u.name,
+            avatar: u.avatarImage,
+            level: u.level,
+            roles: u.roles,
+            countryCode: u.countryCode
+        }))
+    });
+});
+
 const controller = {
     getProfile,
     updateProfile,
     changeEmail,
-    changePassword,
+    //changePassword,
     follow,
     unfollow,
     getFollowers,
@@ -729,7 +828,9 @@ const controller = {
     sendActivationCode,
     uploadProfileAvatarImage,
     avatarImageUpload,
-    updateNotifications
+    updateNotifications,
+    searchProfiles,
+    verifyEmailChange
 };
 
 export default controller;
