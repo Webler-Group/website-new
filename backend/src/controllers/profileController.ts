@@ -602,7 +602,8 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
             post: {
                 parentId: x.postId ? x.postId.parentId : null
             },
-            questionId: x.questionId
+            questionId: x.questionId,
+            feedId: x.feedId
         }));
 
         res.json({
@@ -725,7 +726,8 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
             followers: true,
             codes: true,
             discuss: true,
-            channels: true
+            channels: true,
+            mentions: true
         };
     }
 

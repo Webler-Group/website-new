@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock } from 'lucide-react';
-import { Feed } from './types';
+import { IFeed } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import ShareModal from './ShareModal';
 import { useAuth } from '../../auth/context/authContext';
 import { Link } from "react-router-dom";
@@ -13,17 +13,17 @@ import NotificationToast from './comments/NotificationToast';
 
 
 interface FeedListItemProps {
-  feed: Feed;
+  feed: IFeed;
   currentUserId: string;
   sendJsonRequest: any;
-  onUpdate: (feed: Feed) => void;
-  onDelete: (feed: Feed) => void;
+  onUpdate: (feed: IFeed) => void;
+  onDelete: (feed: IFeed) => void;
   onCommentsClick: (feedId: string) => void;
   isPinned?: boolean;
   onRefresh: () => void;
 }
 
-const FeedListItem: React.FC<FeedListItemProps> = ({
+const FeedListItem = React.forwardRef(({
   feed,
   currentUserId,
   sendJsonRequest,
@@ -32,7 +32,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   onCommentsClick,
   onRefresh,
   isPinned = false
-}) => {
+}: FeedListItemProps, ref: React.ForwardedRef<HTMLDivElement>) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLiked, setIsLiked] = useState(feed.isUpvoted || false);
   const [likesCount, setLikesCount] = useState(feed.votes || 0);
@@ -44,8 +44,8 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   const { userInfo } = useAuth()
   const canModerate = userInfo?.roles.includes("Admin") || userInfo?.roles.includes("Moderator");
 
-  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
@@ -56,7 +56,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
       const endpoint = "/Feed/PinFeed"
       const response = await sendJsonRequest(endpoint, "POST", { feedId: feed.id });
       setShowDropdown(false);
-      if(!response.success) {
+      if (!response.success) {
         throw new Error(response.message)
       }
       onUpdate({ ...feed, isPinned: !feed.isPinned });
@@ -64,12 +64,12 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
     } catch (err) {
       console.error("Error pinning/unpinning feed:", err);
     }
-};
+  };
   const handleEdit = async (updatedContent: string) => {
     try {
       const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
       setShowEditModal(false);
-      if(!response.success) {
+      if (!response.success) {
         throw new Error(response.message)
       }
       onUpdate({ ...feed, message: updatedContent });
@@ -83,7 +83,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
         const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
-        if(!response.success) {
+        if (!response.success) {
           throw new Error(response.message)
         }
         onDelete(feed);
@@ -97,7 +97,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   const handleLike = async () => {
     try {
       const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: !isLiked });
-      if(!response.success) {
+      if (!response.success) {
         throw new Error(response.message)
       }
       setIsLiked(!isLiked);
@@ -108,34 +108,34 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
     }
   };
 
-    const handleShare = async (shareMessage: string) => {
+  const handleShare = async (shareMessage: string) => {
     try {
-        const response = await sendJsonRequest("/Feed/ShareFeed", "POST", {
+      const response = await sendJsonRequest("/Feed/ShareFeed", "POST", {
         feedId: feed.id,
         message: shareMessage,
-        });
+      });
 
-        if(!response.success) {
-          throw new Error(response.message)
-        }
+      if (!response.success) {
+        throw new Error(response.message)
+      }
 
-        if (response?.feed?.id) {
-          navigate(`/feed/${response.feed.id}`);  
-        }
+      if (response?.feed?.id) {
+        navigate(`/feed/${response.feed.id}`);
+      }
 
-        setShowShareModal(false);
+      setShowShareModal(false);
     } catch (err) {
-        console.error("Error sharing feed:", err);
-        showNotification("error", String(err))
+      console.error("Error sharing feed:", err);
+      showNotification("error", String(err))
     }
-    };
+  };
   const canEdit = feed.userId === currentUserId;
-  const allowedUrls = [/^https?:\/\/.+/i];
-// Inside FeedListItem.tsx
+  const allowedUrls = [/^https?:\/\/.+/i, /^\/.*/];
+  // Inside FeedListItem.tsx
 
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
-    <Link 
-      to={`/feed/${originalPost.id}`} 
+    <Link
+      to={`/feed/${originalPost.id}`}
       className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
     >
       <div className="d-flex gap-2">
@@ -143,8 +143,8 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
         <div>
           {/* User profile link */}
           <strong>
-            <Link 
-              to={`/Profile/${originalPost.userId}`} 
+            <Link
+              to={`/Profile/${originalPost.userId}`}
               className="text-dark text-decoration-none"
             >
               {originalPost.userName}
@@ -166,24 +166,24 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
     });
   };
 
-  return (
+  let body = (
     <div className={`card shadow-sm border-0 rounded-4 ${isPinned ? 'border-warning border-2' : ''}`}>
-      <NotificationToast 
-        notification={notification} 
-        onClose={() => setNotification(null)} 
+      <NotificationToast
+        notification={notification}
+        onClose={() => setNotification(null)}
       />
       <div className="card-body">
         {/* Header */}
 
         <div className="d-flex justify-content-between align-items-start mb-3">
-            
+
           <div className="d-flex align-items-center gap-3">
             <ProfileAvatar avatarImage={feed.userAvatarImage} size={42} />
             <div>
               <div className="d-flex align-items-center gap-2 flex-wrap">
                 <h6 className="fw-bold mb-0">
-                  <Link 
-                    to={`/Profile/${feed.userId}`} 
+                  <Link
+                    to={`/Profile/${feed.userId}`}
                     className="text-primary text-decoration-none"
                   >
                     {feed.userName || "Anonymous"}
@@ -197,7 +197,7 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
                 </small>
                 {isPinned && <Pin className="text-warning" size={14} />}
                 <div className="d-flex align-items-center gap-2">
-                    {feed.isPinned && <Pin size={20} className="text-warning" />}
+                  {feed.isPinned && <Pin size={20} className="text-warning" />}
                 </div>
 
               </div>
@@ -265,18 +265,18 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
               )}
             </div>
           )}
-  
+
         </div>
 
         {/* Content */}
         <div className="mb-3">
           <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
-            {feed.isOriginalPostDeleted === 1 && (
-              <div className="alert alert-warning text-center my-3" role="alert">
-                <h5 className="mb-0">This post is unavailable.</h5>
-              </div>
-            )}
-            {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
+          {feed.isOriginalPostDeleted === 1 && (
+            <div className="alert alert-warning text-center my-3" role="alert">
+              <h5 className="mb-0">This post is unavailable.</h5>
+            </div>
+          )}
+          {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
 
         </div>
 
@@ -284,33 +284,32 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
         {feed.attachments?.length > 0 && (
           <div className="mb-3 d-flex flex-column gap-3">
             {feed.attachments.map(att => {
-              if (!att.details) return null;
 
               let icon = null;
               let title = "";
               let subtitle = "";
               let to = "#";
 
-              switch (att.details.type) {
+              switch (att.type) {
                 case 1: // Code
                   icon = <FileCode size={20} className="text-primary" />;
-                  title = att.details.codeName;
-                  subtitle = `${att.details.codeLanguage} • by ${att.details.userName}`;
-                  to = `/Compiler-Playground/${att.details.codeId}`;
+                  title = att.codeName;
+                  subtitle = `${att.codeLanguage} • by ${att.userName}`;
+                  to = `/Compiler-Playground/${att.codeId}`;
                   break;
 
                 case 2: // Question / Discussion
                   icon = <MessageSquare size={20} className="text-success" />;
-                  title = att.details.questionTitle;
-                  subtitle = `by ${att.details.userName}`;
-                  to = `/Discuss/${att.details.questionId}`;
+                  title = att.questionTitle;
+                  subtitle = `by ${att.userName}`;
+                  to = `/Discuss/${att.questionId}`;
                   break;
 
-                case 3: // Feed
+                case 4: // Feed
                   icon = <Link2 size={20} className="text-info" />;
                   title = "Feed";
-                  subtitle = `${att.details.userName}: ${att.details.feedMessage}`;
-                  to = `/feed/${att.details.feedId}`;
+                  subtitle = `${att.userName}: ${att.feedMessage}`;
+                  to = `/feed/${att.feedId}`;
                   break;
               }
 
@@ -349,9 +348,8 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
         <div className="d-flex align-items-center justify-content-between pt-2 border-top">
           <div className="d-flex align-items-center gap-4">
             <button
-              className={`btn btn-sm border-0 d-flex align-items-center gap-2 ${
-                isLiked ? "text-danger" : "text-muted"
-              }`}
+              className={`btn btn-sm border-0 d-flex align-items-center gap-2 ${isLiked ? "text-danger" : "text-muted"
+                }`}
               onClick={handleLike}
             >
               <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
@@ -394,6 +392,11 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
       )}
     </div>
   );
-};
+  const content = ref ?
+    <div ref={ref}>{body}</div>
+    :
+    <div>{body}</div>
+  return content;
+});
 
 export default FeedListItem;

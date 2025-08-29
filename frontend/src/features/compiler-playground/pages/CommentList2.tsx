@@ -1,5 +1,5 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas, Toast } from "react-bootstrap";
+import { Button, Form, FormGroup, FormLabel, Modal, Offcanvas, Toast } from "react-bootstrap";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,7 @@ import CommentNode, { ICodeComment } from "../components/CommentNode";
 import { FaLeftLong } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import { IPostAttachment } from "../../discuss/components/PostAttachment";
+import PostTextareaControl from "../../../components/PostTextareaControl";
 
 interface CommentListProps {
     code: ICode;
@@ -230,7 +231,14 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                         <div hidden={answerFormVisible === false}>
                             <FormGroup>
                                 <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                                <FormControl ref={formInputRef} size="sm" value={answerFormMessage} onChange={(e) => setAnswerFormMessage(e.target.value)} as="textarea" rows={3} placeholder="Write your comment here..." />
+                                <PostTextareaControl
+                                    ref={formInputRef}
+                                    size="sm"
+                                    value={answerFormMessage}
+                                    setValue={setAnswerFormMessage}
+                                    placeholder="Write your comment here..."
+                                    rows={5}
+                                />
                             </FormGroup>
                             <div className="d-flex justify-content-end mt-2">
                                 <Button size="sm" variant="secondary" className="ms-2" onClick={hideAnswerForm}>Cancel</Button>

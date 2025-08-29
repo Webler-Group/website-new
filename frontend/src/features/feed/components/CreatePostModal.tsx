@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
+import PostTextareaControl from '../../../components/PostTextareaControl';
 
 interface CreatePostModalProps {
   show: boolean;
@@ -52,7 +53,7 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ show, onHide, onSubmi
             >
             </button>
           </div>
-          
+
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
               {error && (
@@ -60,22 +61,20 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ show, onHide, onSubmi
                   {error}
                 </div>
               )}
-              
-              <textarea
-                className="form-control border-0 bg-light"
+
+              <PostTextareaControl
                 rows={4}
                 placeholder="What's on your mind?"
                 value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                disabled={isSubmitting}
+                setValue={setMessage}
                 required
               />
-              
+
               <div className="mt-2 text-muted small">
                 {message.length}/2000 characters
               </div>
             </div>
-            
+
             <div className="modal-footer border-0 pt-0">
               <button
                 type="button"

@@ -169,7 +169,7 @@ const CodesList = () => {
                             codes.map(code => {
                                 return (
                                     <div className="mt-2" key={code.id}>
-                                        <Code code={code} searchQuery={searchQuery} showUserProfile={true} />
+                                        <Code code={code} searchQuery={searchQuery} showUserProfile={filter != 3} />
                                     </div>
                                 )
                             })

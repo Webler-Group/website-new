@@ -92,6 +92,7 @@ const userSchema = new mongoose_1.default.Schema({
         codes: { type: Boolean, default: true },
         discuss: { type: Boolean, default: true },
         channels: { type: Boolean, default: true },
+        mentions: { type: Boolean, default: true },
     },
     ban: {
         type: banSchema,

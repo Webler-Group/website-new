@@ -131,10 +131,12 @@ const banUser = (0, express_async_handler_1.default)(async (req, res) => {
     }
     try {
         await user.save();
-        res.json({ success: true, data: {
+        res.json({
+            success: true, data: {
                 active: user.active,
                 ban: user.active ? null : user.ban
-            } });
+            }
+        });
     }
     catch (err) {
         res.json({
@@ -143,9 +145,30 @@ const banUser = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
 });
+const updateRoles = (0, express_async_handler_1.default)(async (req, res) => {
+    const { userId, roles } = req.body;
+    if (!Array.isArray(roles) || roles.some(r => typeof r !== "string")) {
+        res.status(400).json({ message: "Invalid body" });
+        return;
+    }
+    const user = await User_1.default.findById(userId);
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+    try {
+        user.roles = roles;
+        await user.save();
+        res.json({ success: true, data: { roles: user.roles } });
+    }
+    catch (err) {
+        res.json({ message: "Roles not valid" });
+    }
+});
 const controller = {
     getUsersList,
     banUser,
-    getUser
+    getUser,
+    updateRoles
 };
 exports.default = controller;

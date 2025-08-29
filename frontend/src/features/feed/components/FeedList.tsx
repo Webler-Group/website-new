@@ -1,185 +1,169 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, MessageCircle, Heart, Share2, Pin, Loader2, Search, Filter } from 'lucide-react';
+import { Plus, MessageCircle, Loader2, Filter } from 'lucide-react';
 import { useApi } from '../../../context/apiCommunication';
-import { getCurrentUserId } from './utils';
-import { Feed } from './types';
-import CreatePostModal from './CreatePostModal';
+import { IFeed } from './types';
 import FeedListItem from './FeedListItem';
 import NotificationToast from './comments/NotificationToast';
+import useFeed from '../hook/useFeeds';
+import { useAuth } from '../../auth/context/authContext';
 
+const filterOptions = [
+  { value: 1, label: 'Most Recent' },
+  { value: 2, label: 'My Posts' },
+  { value: 3, label: 'Following' },
+  { value: 4, label: 'Hot Today' },
+  { value: 5, label: 'Most Popular' },
+  { value: 6, label: 'Most Shared' }
+];
 
-interface FeedListProps {}
+const postsPerPage = 10;
+
+interface FeedListProps { }
 
 const FeedList: React.FC<FeedListProps> = () => {
-  const [feeds, setFeeds] = useState<Feed[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState(1); // 1 = Most Recent
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
-  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
-  };
-  const postsPerPage = 10;
-  
+  const [currentPage, setCurrentPage] = useState({ page: 1, _state: 0 });
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const { userInfo } = useAuth();
+  const {
+    results,
+    isLoading,
+    totalCount,
+    hasNextPage,
+    deleteFeed,
+    editFeed
+  } = useFeed(postsPerPage, currentPage, selectedFilter);
   const { sendJsonRequest } = useApi();
   const navigate = useNavigate();
-  const currentUserId = getCurrentUserId();
-
-  const filterOptions = [
-    { value: 1, label: 'Most Recent' },
-    { value: 2, label: 'My Posts' },
-    { value: 3, label: 'Following' },
-    { value: 4, label: 'Hot Today' },
-    { value: 5, label: 'Most Popular' },
-    { value: 6, label: 'Most Shared' }
-  ];
-
-  const fetchFeeds = async (page = 1, reset = false) => {
-    try {
-      setLoading(true);
-
-      const feedsResponse = await sendJsonRequest("/Feed/", "POST", {
-        page,
-        count: postsPerPage,
-        filter: selectedFilter,
-        searchQuery
-      });
-
-      if(!feedsResponse.success) {
-        throw new Error(feedsResponse.message)
-      }
-
-      // Step 1: Collect all attachment IDs
-      const allAttachmentIds = feedsResponse.feeds
-        .flatMap((feed: any) => feed.attachments?.map((att: any) => att.id) || []);
-
-      let attachmentDetails: any[] = [];
-      if (allAttachmentIds.length > 0) {
-        // Step 2: Fetch attachment details
-        attachmentDetails = await sendJsonRequest(
-          "/PostAttachments/GetPostAttachments",
-          "POST",
-          { attachmentIds: allAttachmentIds }
-        );
-      }
-
-      // Step 3: Create lookup by attachmentId
-      const attachmentMap: Record<string, any> = {};
-      attachmentDetails.forEach((att: any) => {
-        attachmentMap[att.id] = att;
-      });
-
-      // Step 4: Map feeds and inject attachment details
-      const mappedFeeds = feedsResponse.feeds.map((feed: any) => ({
-        id: feed.id,
-        type: feed.type,
-        title: feed.title,
-        message: feed.message,
-        userId: feed.userId,
-        userName: feed.userName,
-        userAvatarImage: feed.userAvatarImage,
-        date: feed.date,
-        tags: feed.tags,
-        votes: feed.votes,
-        answers: feed.answers,
-        shares: feed.shares,
-        isUpvoted: feed.isUpvoted,
-        isFollowing: feed.isFollowing,
-        score: feed.score,
-        originalPost: feed.originalPost,
-        level: feed.level,
-        roles: feed.roles,
-        isPinned: feed.isPinned,
-        isOriginalPostDeleted: feed.isOriginalPostDeleted ?? 2,
-        attachments: (feed.attachments || []).map((att: any) => ({
-          ...att,
-          details: attachmentMap[att.id] || null   // 👈 inject details here
-        }))
-      }))
-      .sort((a: Feed, b: Feed) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
-
-      if (reset || page === 1) {
-        setFeeds(mappedFeeds);
-      } else {
-        setFeeds(prev => [...prev, ...mappedFeeds]);
-      }
-
-      setCurrentPage(feedsResponse.currentPage);
-      setTotalPages(feedsResponse.totalPages);
-      setTotalCount(feedsResponse.count);
-
-    } catch (err) {
-      setError('Failed to load feeds');
-      console.error('Error fetching feeds:', err);
-      showNotification("error", String(err))
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const currentUserId = userInfo?.id;
 
   useEffect(() => {
-    fetchFeeds(1, true);
-  }, [selectedFilter, searchQuery]);
+    setCurrentPage({ page: 1, _state: 1 });
+  }, [selectedFilter]);
 
-  useEffect(() => {
-    fetchFeeds();
-  }, [sendJsonRequest]);
+  const intObserver = useRef<IntersectionObserver>()
+  const lastFeedElemRef = useCallback((elem: any) => {
+    if (isLoading) return
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setCurrentPage(1);
-    fetchFeeds(1, true);
-  };
+    if (intObserver.current) intObserver.current.disconnect()
+
+    intObserver.current = new IntersectionObserver(elems => {
+
+      if (elems[0].isIntersecting && hasNextPage) {
+
+        setCurrentPage(prev => ({ page: prev.page + 1, _state: 1 }));
+      }
+    })
+
+    if (elem) intObserver.current.observe(elem)
+  }, [isLoading, hasNextPage]);
+
+  // const showNotification = (type: 'success' | 'error', message: string) => {
+  //   setNotification({ type, message });
+  //   setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  // };
+
+  // const fetchFeeds = async (page = 1, reset = false) => {
+  //   try {
+  //     setLoading(true);
+
+  //     const feedsResponse = await sendJsonRequest("/Feed/", "POST", {
+  //       page,
+  //       count: postsPerPage,
+  //       filter: selectedFilter,
+  //       searchQuery
+  //     });
+
+  //     if(!feedsResponse.success) {
+  //       throw new Error(feedsResponse.message)
+  //     }
+
+  //     // Step 1: Collect all attachment IDs
+  //     const allAttachmentIds = feedsResponse.feeds
+  //       .flatMap((feed: any) => feed.attachments?.map((att: any) => att.id) || []);
+
+  //     let attachmentDetails: any[] = [];
+  //     if (allAttachmentIds.length > 0) {
+  //       // Step 2: Fetch attachment details
+  //       attachmentDetails = await sendJsonRequest(
+  //         "/PostAttachments/GetPostAttachments",
+  //         "POST",
+  //         { attachmentIds: allAttachmentIds }
+  //       );
+  //     }
+
+  //     // Step 3: Create lookup by attachmentId
+  //     const attachmentMap: Record<string, any> = {};
+  //     attachmentDetails.forEach((att: any) => {
+  //       attachmentMap[att.id] = att;
+  //     });
+
+  //     // Step 4: Map feeds and inject attachment details
+  //     const mappedFeeds = feedsResponse.feeds.map((feed: any) => ({
+  //       id: feed.id,
+  //       type: feed.type,
+  //       title: feed.title,
+  //       message: feed.message,
+  //       userId: feed.userId,
+  //       userName: feed.userName,
+  //       userAvatarImage: feed.userAvatarImage,
+  //       date: feed.date,
+  //       tags: feed.tags,
+  //       votes: feed.votes,
+  //       answers: feed.answers,
+  //       shares: feed.shares,
+  //       isUpvoted: feed.isUpvoted,
+  //       isFollowing: feed.isFollowing,
+  //       score: feed.score,
+  //       originalPost: feed.originalPost,
+  //       level: feed.level,
+  //       roles: feed.roles,
+  //       isPinned: feed.isPinned,
+  //       isOriginalPostDeleted: feed.isOriginalPostDeleted ?? 2,
+  //       attachments: (feed.attachments || []).map((att: any) => ({
+  //         ...att,
+  //         details: attachmentMap[att.id] || null   // 👈 inject details here
+  //       }))
+  //     }))
+  //     .sort((a: IFeed, b: IFeed) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
+
+  //     if (reset || page === 1) {
+  //       setFeeds(mappedFeeds);
+  //     } else {
+  //       setFeeds(prev => [...prev, ...mappedFeeds]);
+  //     }
+
+  //     setCurrentPage(feedsResponse.currentPage);
+  //     setTotalPages(feedsResponse.totalPages);
+  //     setTotalCount(feedsResponse.count);
+
+  //   } catch (err) {
+  //     setError('Failed to load feeds');
+  //     console.error('Error fetching feeds:', err);
+  //     showNotification("error", String(err))
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
 
   const handleFilterChange = (filter: number) => {
     setSelectedFilter(filter);
-    setCurrentPage(1);
   };
 
-  const handleLoadMore = () => {
-    if (currentPage < totalPages && !loading) {
-      fetchFeeds(currentPage + 1, false);
-    }
+  const handleFeedUpdate = (updatedFeed: IFeed) => {
+    editFeed(updatedFeed);
   };
 
-  const handleCreatePost = async (message: string) => {
-    try {
-      const response = await sendJsonRequest("/Feed/CreateFeed", "POST", { message });
-      setShowCreateModal(false);
-      if(!response.success) {
-        throw new Error(response.message)
-      }
-      fetchFeeds(1, true); // Refresh the feed list
-    } catch (err) {
-      console.error('Error creating post:', err);
-      showNotification("error", String(err))
-    }
-  };
-
-  const handleFeedUpdate = (updatedFeed: Feed) => {
-    setFeeds(prev => prev.map(feed => 
-      feed.id === updatedFeed.id ? updatedFeed : feed
-    ));
-  };
-
-  const handleFeedDelete = (deletedFeed: Feed) => {
-    setFeeds(prev => prev.filter(feed => feed.id !== deletedFeed.id));
+  const handleFeedDelete = (deletedFeed: IFeed) => {
+    deleteFeed(deletedFeed.id);
   };
 
   const handleCommentsClick = (feedId: string) => {
-    navigate(`/feed/${feedId}`);
+    navigate(`/Feed/${feedId}`);
   };
 
-  if (loading && feeds.length === 0) {
+  if (isLoading && results.length === 0) {
     return (
       <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
         <Loader2 className="text-primary" style={{ width: "2.5rem", height: "2.5rem" }} />
@@ -187,37 +171,21 @@ const FeedList: React.FC<FeedListProps> = () => {
     );
   }
 
-  if (error && feeds.length === 0) {
-    return (
-      <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-        <div className="text-center">
-          <h2 className="fw-semibold text-danger mb-3">{error}</h2>
-          <button
-            onClick={() => fetchFeeds(1, true)}
-            className="btn btn-primary"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-vh-100 bg-light">
-      <NotificationToast 
-        notification={notification} 
-        onClose={() => setNotification(null)} 
+      <NotificationToast
+        notification={notification}
+        onClose={() => setNotification(null)}
       />
       <div className="container py-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h1 className="fw-bold text-dark mb-0">
-            Feed 
+            Feed
             <small className="text-muted ms-2">({totalCount} posts)</small>
           </h1>
           <button
-            onClick={() => setShowCreateModal(true)}
+            onClick={() => navigate("/Feed/New")}
             className="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-4"
           >
             <Plus size={18} />
@@ -227,19 +195,7 @@ const FeedList: React.FC<FeedListProps> = () => {
 
         {/* Search and Filters */}
         <div className="row g-3 mb-4">
-          <div className="col-md-8">
-            <form onSubmit={handleSearch} className="position-relative">
-              <Search className="position-absolute top-50 translate-middle-y ms-3 text-muted" size={18} />
-              <input
-                type="text"
-                className="form-control ps-5 rounded-pill border-0 shadow-sm"
-                placeholder="Search posts, tags, or users..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </form>
-          </div>
-          <div className="col-md-4">
+          <div className="col-md-12">
             <div className="dropdown w-100">
               <button
                 className="btn btn-outline-secondary dropdown-toggle w-100 d-flex align-items-center justify-content-between rounded-pill"
@@ -267,68 +223,31 @@ const FeedList: React.FC<FeedListProps> = () => {
         </div>
         {/* Regular Posts */}
         <div className="row g-3">
-          {feeds.length === 0 ? (
+          {results.length === 0 ? (
             <div className="col-12 text-center py-5">
               <div className="text-muted mb-3">
                 <MessageCircle size={48} />
               </div>
               <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
-              <p className="text-muted">
-                {searchQuery ? 'Try adjusting your search or filters' : 'Be the first to share something!'}
-              </p>
-              {!searchQuery && (
-                <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="btn btn-primary rounded-pill px-4"
-                >
-                  Create First Post
-                </button>
-              )}
             </div>
           ) : (
-            feeds.map(feed => (
+            results.map(feed => (
               <div key={feed.id} className="col-12">
                 <FeedListItem
+                  ref={lastFeedElemRef}
                   feed={feed}
                   currentUserId={currentUserId ?? ""}
                   sendJsonRequest={sendJsonRequest}
                   onUpdate={handleFeedUpdate}
                   onDelete={handleFeedDelete}
                   onCommentsClick={handleCommentsClick}
-                  onRefresh={fetchFeeds}
+                  onRefresh={() => { }}
                 />
               </div>
             ))
           )}
-          
-          {/* Load More Button */}
-          {currentPage < totalPages && (
-            <div className="col-12 text-center mt-4">
-              <button
-                onClick={handleLoadMore}
-                className="btn btn-outline-primary rounded-pill px-4"
-                disabled={loading}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 size={16} className="me-2" />
-                    Loading...
-                  </>
-                ) : (
-                  'Load More'
-                )}
-              </button>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Create Post Modal */}
-      <CreatePostModal
-        show={showCreateModal}
-        onHide={() => setShowCreateModal(false)}
-        onSubmit={handleCreatePost}
-      />
     </div>
   );
 };

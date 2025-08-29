@@ -70,11 +70,13 @@ const postSchema = new mongoose_1.default.Schema({
     timestamps: true
 });
 postSchema.pre("save", async function (next) {
-    if (!this.isModified("message")) {
-        next();
-        return;
+    this._messageWasModified = this.isModified("message");
+    next();
+});
+postSchema.post("save", async function () {
+    if (this._messageWasModified) {
+        await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
     }
-    await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
 });
 postSchema.statics.deleteAndCleanup = async function (filter) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");

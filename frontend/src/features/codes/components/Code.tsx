@@ -72,7 +72,7 @@ const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.
                     <div className="d-flex align-items-center">
                         <div>
                             <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(code.updatedAt!))}</small>
+                                <small className="text-secondary">{DateUtils.format(new Date(code.createdAt!))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
                                 <ProfileName userId={code.userId!} userName={code.userName!} />

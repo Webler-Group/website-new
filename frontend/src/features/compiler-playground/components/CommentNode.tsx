@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import PostAttachment, { IPostAttachment } from '../../discuss/components/PostAttachment';
+import { parseMessage } from '../../../components/PostTextareaControl';
 
 interface ICodeComment {
     id: string;
@@ -249,7 +250,9 @@ const CommentNode = React.forwardRef(({
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
-                            <p className="wb-playground-comments__message mt-2">{data.message}</p>
+                            <div className="wb-playground-comments__message mt-2">
+                                {parseMessage(data.message)}
+                            </div>
                             <div className="mt-2">
                                 {
                                     data.attachments.map(attachment => {

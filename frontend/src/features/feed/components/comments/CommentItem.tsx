@@ -5,6 +5,7 @@ import UserAvatar from './UserAvatar';
 import CommentHeader from './CommentHeader';
 import CommentActions from './CommentAction';
 import ReplyBox from './ReplyBox';
+import PostTextareaControl, { parseMessage } from '../../../../components/PostTextareaControl';
 
 interface CommentItemProps {
   comment: Comment;
@@ -104,14 +105,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
           {/* Comment content OR Edit textarea */}
           {!isEditing ? (
-            <p className="text-secondary mb-2">{comment.message}</p>
+            <p className="text-secondary mb-2">{parseMessage(comment.message)}</p>
           ) : (
             <div className="mb-2">
-              <textarea
-                className="form-control mb-2"
+              <PostTextareaControl 
                 rows={2}
                 value={editText}
-                onChange={(e) => setEditText(e.target.value)}
+                setValue={setEditText}
               />
               <button onClick={handleEditSubmit} className="btn btn-sm btn-primary me-2">
                 Save

@@ -601,7 +601,8 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
             followers: true,
             codes: true,
             discuss: true,
-            channels: true
+            channels: true,
+            mentions: true
         };
     }
     if (typeof notifications.followers !== "undefined") {

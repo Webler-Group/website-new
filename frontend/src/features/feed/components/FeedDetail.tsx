@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Loader2, FileCode, MessageSquare, Link2 } from 'lucide-react';
-import { Feed } from './types';
+import { IFeed } from './types';
 import FeedItem from './FeedItem';
 import CommentForm from './CommentForm';
 import CommentList from './comments/CommentList';
@@ -12,7 +12,7 @@ import NotificationToast from './comments/NotificationToast';
 const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [feed, setFeed] = useState<Feed | null>(null);
+  const [feed, setFeed] = useState<IFeed | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { sendJsonRequest } = useApi();
@@ -88,7 +88,7 @@ const FeedDetails: React.FC = () => {
     fetchFeed();
   }, [id, sendJsonRequest]);
 
-  const handleFeedUpdate = async (updatedFeed: Feed) => {
+  const handleFeedUpdate = async (updatedFeed: IFeed) => {
     const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: updatedFeed.id, message: updatedFeed.message });
     if(!response.success) {
       showNotification("error", response.message)
@@ -97,7 +97,7 @@ const FeedDetails: React.FC = () => {
     setFeed(updatedFeed);
   };
 
-  const handleFeedDelete = async (feed: Feed) => {
+  const handleFeedDelete = async (feed: IFeed) => {
     const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
     if(!response.success) {
       showNotification("error", response.message);

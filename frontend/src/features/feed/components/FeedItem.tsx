@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Feed } from './types';
+import { IFeed } from './types';
 import { Link } from 'react-router-dom';
 import { FileCode, MessageSquare, Link2 } from 'lucide-react';
 import NotificationToast from './comments/NotificationToast';
@@ -22,10 +22,10 @@ import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import { useNavigate } from "react-router-dom";
 
 interface FeedItemProps {
-  feed: Feed;
+  feed: IFeed;
   currentUserId?: string;
   sendJsonRequest: (url: string, method: string, reqBody?: any) => Promise<any>;
-  onUpdate?: (updatedFeed: Feed) => void;
+  onUpdate?: (updatedFeed: IFeed) => void;
   onDelete?: () => void;
   onCommentsClick?: (feedId: string) => void;
   showFullContent?: boolean;
@@ -289,7 +289,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
                   to = `/Discuss/${att.details.questionId}`;
                   break;
 
-                case 3: // Feed
+                case 4: // Feed
                   icon = <Link2 size={20} className="text-info" />;
                   title = "Feed";
                   subtitle = `${att.details.userName}: ${att.details.feedMessage}`;

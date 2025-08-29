@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
 import NotificationToast from './comments/NotificationToast';
+import PostTextareaControl from '../../../components/PostTextareaControl';
 
 
 interface CommentFormProps {
@@ -16,8 +17,8 @@ const CommentForm: React.FC<CommentFormProps> = ({
 }) => {
   const [comment, setComment] = useState('');
   const [isPosting, setIsPosting] = useState(false);
-  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
-  
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -27,21 +28,21 @@ const CommentForm: React.FC<CommentFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!comment.trim()) return;
 
     try {
       setIsPosting(true);
-      
-      let response = await sendJsonRequest("/Feed/CreateReply", "POST", { 
+
+      let response = await sendJsonRequest("/Feed/CreateReply", "POST", {
         message: comment.trim(),
         feedId: feedId
       });
 
-      if(!response.success) {
+      if (!response.success) {
         throw new Error(response.message)
       }
-      
+
       setComment('');
       onCommentPosted();
     } catch (error) {
@@ -55,24 +56,22 @@ const CommentForm: React.FC<CommentFormProps> = ({
   return (
     <div className="bg-white rounded shadow-sm border p-4 mb-4">
       {/* Notification Toast */}
-      <NotificationToast 
-        notification={notification} 
-        onClose={() => setNotification(null)} 
+      <NotificationToast
+        notification={notification}
+        onClose={() => setNotification(null)}
       />
       <form onSubmit={handleSubmit}>
         <div className="d-flex gap-3">
           <div className="flex-grow-1">
-            <textarea
+            <PostTextareaControl
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              setValue={setComment}
               placeholder="Write a comment..."
               rows={3}
-              className="form-control"
-              disabled={isPosting}
             />
           </div>
         </div>
-        
+
         <div className="d-flex justify-content-end mt-3">
           <button
             type="submit"

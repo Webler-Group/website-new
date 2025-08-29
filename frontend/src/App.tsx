@@ -11,7 +11,6 @@ import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
 import Contact from './pages/Contact';
-import Feed from './features/feed/pages/Feed';
 import FeedDetails from './features/feed/components/FeedDetail';
 import FeedList from './features/feed/components/FeedList';
 import QuestionList from './features/discuss/pages/DiscussList';
@@ -46,6 +45,7 @@ import roles from './data/roles';
 import AdminHome from './tools/admin/pages/AdminHome';
 import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
+import FeedCreate from './features/feed/components/FeedCreate';
 
 
 function App() {
@@ -108,9 +108,10 @@ function App() {
       </Route>
 
       <Route path="Feed">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+        <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
           {/* Feed List */}
           <Route index element={<FeedList />} />
+          <Route path='New' element={<FeedCreate />} />
 
           {/* Single Feed Detail */}
           <Route path=":id" element={<FeedDetails/>} />

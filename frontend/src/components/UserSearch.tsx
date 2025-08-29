@@ -7,7 +7,7 @@ import { Form, ListGroup } from "react-bootstrap";
 interface UserSearchProps {
     value: string;
     setValue: (value: string) => void;
-    onSelect: (userId: string) => void;
+    onSelect: (user: UserMinimal) => void;
     placeholder?: string;
     maxWidthPx?: number;
 }
@@ -37,8 +37,8 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
         return () => clearTimeout(delayDebounce);
     }, [value]);
 
-    const handleSelect = (userId: string) => {
-        onSelect(userId);
+    const handleSelect = (user: UserMinimal) => {
+        onSelect(user);
         if (inputRef.current) inputRef.current.blur();
     };
 
@@ -71,7 +71,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
                         background: "white",
                         border: "1px solid #ccc",
                         borderRadius: "0.25rem",
-                        maxHeight: "200px",
+                        maxHeight: "150px",
                         overflowY: "auto",
                         width: "100%",
                         boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
@@ -81,7 +81,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
                         <ListGroup.Item
                             key={user.id}
                             action
-                            onClick={() => handleSelect(user.id)}
+                            onClick={() => handleSelect(user)}
                             onMouseDown={(e) => e.preventDefault()}
                             style={{ cursor: "pointer" }}
                             className="d-flex align-items-start gap-2"

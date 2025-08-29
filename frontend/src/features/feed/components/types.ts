@@ -21,7 +21,7 @@ export interface OriginalPost {
   tags: Tag[];
 }
 
-export interface Feed {
+export interface IFeed {
   id: string;
   type: number;
   title: string | null;

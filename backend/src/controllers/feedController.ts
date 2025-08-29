@@ -86,7 +86,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 user: follower.user,
                 actionUser: currentUserId,
                 message: `{action_user} made a new post "${notificationMessage(feed.message)}"`,
-                codeId: feed._id,    
+                feedId: feed._id,    
             });
         })
 
@@ -246,7 +246,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 user: feed.user,
                 actionUser: currentUserId,
                 message: `{action_user} commented on your Post "${notificationMessage(feed.message)}"`,
-                codeId: feed._id,    
+                feedId: feed._id,    
                 postId: reply._id   
             });
         }
@@ -448,7 +448,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     user: post.user,
                     actionUser: currentUserId,
                     message: (post._type !== 4 && post._type !== 5) ? `{action_user} ${midfix} "${notificationMessage(post.message)}" on post "${notificationMessage(feed?.message)}"` : `{action_user} ${midfix} "${notificationMessage(post.message)}"`,
-                    codeId: codeId 
+                    feedId: codeId 
                 });
             }
         
@@ -628,7 +628,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 user: originalFeed.user,
                 actionUser: currentUserId,
                 message: `{action_user} shared your Post "${notificationMessage(originalFeed.message)}"`,
-                codeId: feed._id,    
+                feedId: feed._id,    
             });
         }
 
@@ -685,7 +685,6 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             $match: {
                 $or: [
                     { message: searchRegex },
-                    { title: searchRegex },
                     { "tags": { $in: tagIds } }
                 ]
             }
@@ -883,17 +882,20 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
                             data[i].isFollowing = !(following === null);
                         })
                 );
+
+                promises.push(PostAttachment.getByPostId({ post: data[i].id })
+                    .then(attachments => {
+                        data[i].attachments = attachments;
+                    }));
             }
         }
 
         await Promise.all(promises);
 
         res.status(200).json({
-            success: true,
             count: feedCount,
             feeds: data,
-            currentPage: page,
-            totalPages: Math.ceil(feedCount / count)
+            success: true
         });
     } else {
         res.status(500).json({ success: false, message: "Error fetching feed" });
@@ -1234,7 +1236,7 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 user: feed.user,
                 actionUser: currentUserId,
                 message: `{action_user} replied to your comment "${notificationMessage(feed.message)}" on post "${notificationMessage(originalFeed?.message)}"`,
-                codeId: originalFeed._id,    
+                feedId: originalFeed._id,    
                 postId: postReply._id   
             });
         }
@@ -1282,7 +1284,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             user: feed.user,
             actionUser: currentUserId,
             message: `{action_user} pinned your Post "${notificationMessage(feed.message)}"`,
-            codeId: feed._id,    
+            feedId: feed._id,    
         });
     }
 

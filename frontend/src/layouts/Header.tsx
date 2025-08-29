@@ -43,7 +43,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/blog">
+            <LinkContainer to="/Blog">
               <Nav.Link>Blog</Nav.Link>
             </LinkContainer>
                         <LinkContainer to="/Feed">

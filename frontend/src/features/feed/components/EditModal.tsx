@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Save } from 'lucide-react';
+import PostTextareaControl from '../../../components/PostTextareaControl';
 
 interface EditModalProps {
   initialContent: string;
@@ -31,21 +32,21 @@ const EditModal: React.FC<EditModalProps> = ({ initialContent, onSave, onClose }
   };
 
   return (
-    <div 
+    <div
       className="modal fade show d-block"
       style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', zIndex: 1050 }}
       onClick={handleBackdropClick}
     >
       <div className="modal-dialog modal-dialog-centered modal-lg">
         <div className="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-          
+
           {/* Header */}
           <div className="modal-header bg-light border-0">
             <h5 className="modal-title d-flex align-items-center gap-2 fw-semibold text-dark mb-0">
               <Save size={18} />
               Edit Post
             </h5>
-            <button 
+            <button
               type="button"
               className="btn btn-sm btn-icon btn-outline-secondary rounded-circle"
               aria-label="Close"
@@ -60,13 +61,11 @@ const EditModal: React.FC<EditModalProps> = ({ initialContent, onSave, onClose }
           <div className="modal-body bg-white">
             <div className="mb-3">
               <label className="form-label fw-medium text-muted">Post Content</label>
-              <textarea
+              <PostTextareaControl
                 value={content}
-                onChange={(e) => setContent(e.target.value)}
+                setValue={setContent}
                 placeholder="What's on your mind?"
                 rows={6}
-                className="form-control rounded-3 shadow-sm"
-                disabled={isSaving}
               />
             </div>
           </div>
