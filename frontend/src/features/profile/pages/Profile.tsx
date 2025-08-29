@@ -21,6 +21,7 @@ export interface IUserNotifications {
     discuss: boolean;
     followers: boolean;
     channels: boolean;
+    mentions: boolean;
 }
 
 export interface UserDetails {

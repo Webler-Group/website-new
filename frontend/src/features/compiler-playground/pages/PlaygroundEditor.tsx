@@ -61,7 +61,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         } else if (language) {
             setPageTitle(languagesInfo[language].displayName + " Playground | Webler Codes");
         }
-    }, [language, codeName]);
+    }, [language, code]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {

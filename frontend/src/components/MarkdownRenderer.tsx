@@ -20,6 +20,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
         );
     };
 
+    const transformedContent = content.replace(
+        /\[user id="([^"]+)"\](.*?)\[\/user\]/g,
+        (_match, userId, username) => `[@${username}](/Profile/${userId})`
+    );
+
     const components: Components = {
         code({ className, children }) {
             const match = /language-(\w+)/.exec(className || '');
@@ -62,7 +67,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
             components={components}
             remarkPlugins={[remarkGfm, remarkBreaks]}
         >
-            {content}
+            {transformedContent}
         </ReactMarkdown>
     );
 };

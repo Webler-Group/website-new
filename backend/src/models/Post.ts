@@ -4,7 +4,6 @@ import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
-import { config } from "../confg";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -68,13 +67,14 @@ const postSchema = new mongoose.Schema({
 });
 
 postSchema.pre("save", async function (next) {
-    if (!this.isModified("message")) {
-        next();
-        return
+    (this as any)._messageWasModified = this.isModified("message");
+    next();
+});
+postSchema.post("save", async function () {
+    if ((this as any)._messageWasModified) {
+        await PostAttachment.updateAttachments(this.message, { post: this._id });
     }
-
-    await PostAttachment.updateAttachments(this.message, { post: this._id });
-})
+});
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");

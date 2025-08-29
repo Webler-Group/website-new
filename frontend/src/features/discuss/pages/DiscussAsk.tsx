@@ -4,6 +4,7 @@ import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
+import PostTextareaControl from '../../../components/PostTextareaControl';
 
 interface AskQuestionProps {
     questionId: string | null;
@@ -83,7 +84,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         setLoading(false);
     }
 
-    let disabled = loading || title.trim().length == 0 || message.trim().length == 0 || tags.length == 0;
+    let disabled = loading || title.trim().length == 0 || message.trim().length == 0;
 
     return (
         <>
@@ -120,15 +121,14 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
                 <FormGroup>
                     <FormLabel>Description</FormLabel>
-                    <FormControl
+                    <PostTextareaControl
                         size='sm'
                         placeholder="Include as much detail as possible to get the most relevant answers."
-                        as="textarea"
-                        rows={8}
+                        rows={10}
                         maxLength={4096}
                         required
                         value={message}
-                        onChange={(e) => setMessage(e.target.value)}
+                        setValue={setMessage}
                     />
                 </FormGroup>
 

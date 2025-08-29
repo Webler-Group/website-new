@@ -160,10 +160,12 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await user.save();
 
-        res.json({ success: true, data: {
-            active: user.active,
-            ban: user.active ? null : user.ban
-        } })
+        res.json({
+            success: true, data: {
+                active: user.active,
+                ban: user.active ? null : user.ban
+            }
+        })
     }
     catch (err: any) {
         res.json({
@@ -173,10 +175,37 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 });
 
+const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { userId, roles } = req.body as { userId?: string; roles?: string[] };
+
+    if (!Array.isArray(roles) || roles.some(r => typeof r !== "string")) {
+        res.status(400).json({ message: "Invalid body" });
+        return;
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    try {
+        user.roles = roles;
+        await user.save();
+
+        res.json({ success: true, data: { roles: user.roles } });
+    } catch(err: any) {
+        res.json({ message: "Roles not valid" });
+    }
+});
+
+
 const controller = {
     getUsersList,
     banUser,
-    getUser
+    getUser,
+    updateRoles
 };
 
 export default controller;

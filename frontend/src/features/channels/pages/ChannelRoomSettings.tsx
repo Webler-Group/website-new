@@ -265,7 +265,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                             <UserSearch
                                                 value={inviteUsername}
                                                 setValue={setInviteUsername}
-                                                onSelect={handleInvite}
+                                                onSelect={(user) => handleInvite(user.id)}
                                             />
                                             {inviteMessage[1] && (
                                                 <Alert

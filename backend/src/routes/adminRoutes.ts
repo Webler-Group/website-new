@@ -13,5 +13,6 @@ router.use(protectRoute);
 router.route("/BanUser").post(requireRoles(["Admin", "Moderator"]), adminController.banUser);
 router.route("/Users").post(requireRoles(["Admin", "Moderator"]), adminController.getUsersList);
 router.route("/GetUser").post(requireRoles(["Admin", "Moderator"]), adminController.getUser);
+router.route("/UpdateRoles").post(requireRoles(["Admin"]), adminController.updateRoles);
 
 export default router;

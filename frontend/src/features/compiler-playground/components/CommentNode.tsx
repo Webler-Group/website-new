@@ -6,7 +6,7 @@ import DateUtils from '../../../utils/DateUtils';
 import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
 import { ICode } from '../../codes/components/Code';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import PostAttachment, { IPostAttachment } from '../../discuss/components/PostAttachment';
@@ -44,6 +44,26 @@ interface CommentNodeProps {
     setShowAllComments: (callback: (data: boolean) => boolean) => void;
     isActivePostReply: boolean;
     defaultReplies: ICodeComment[] | null;
+}
+
+function parseMessage(message: string): JSX.Element[] {
+    const regex = /\[user id="([0-9a-fA-F]{24})"\](.*?)\[\/user\]/g;
+    const parts: JSX.Element[] = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(message)) !== null) {
+        if (match.index > lastIndex) {
+            parts.push(<React.Fragment key={parts.length}>{message.substring(lastIndex, match.index)}</React.Fragment>);
+        }
+        const userid = match[1];
+        const username = match[2];
+        parts.push(<Link key={parts.length} to={`/Profile/${userid}`}>@{username}</Link>);
+        lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < message.length) {
+        parts.push(<React.Fragment key={parts.length}>{message.substring(lastIndex)}</React.Fragment>);
+    }
+    return parts;
 }
 
 const CommentNode = React.forwardRef(({
@@ -249,7 +269,9 @@ const CommentNode = React.forwardRef(({
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
-                            <p className="wb-playground-comments__message mt-2">{data.message}</p>
+                            <div className="wb-playground-comments__message mt-2">
+                                {parseMessage(data.message)}
+                            </div>
                             <div className="mt-2">
                                 {
                                     data.attachments.map(attachment => {

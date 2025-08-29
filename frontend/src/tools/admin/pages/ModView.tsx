@@ -4,6 +4,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { Modal, Button, Form, Card, Spinner, Alert, Breadcrumb, Badge, Container } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
+import { useAuth } from "../../../features/auth/context/authContext";
 
 interface IAdminUser {
     id: string;
@@ -25,13 +26,16 @@ interface IAdminUser {
 const ModView = () => {
     const { userId } = useParams();
     const { sendJsonRequest } = useApi();
-
+    const { userInfo } = useAuth();
     const [user, setUser] = useState<IAdminUser | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [banNote, setBanNote] = useState("");
+
+    const [rolesInput, setRolesInput] = useState("");
+    const [rolesAlert, setRolesAlert] = useState<{ type: "success" | "danger"; message: string } | null>(null);
 
     // Load user
     useEffect(() => {
@@ -40,6 +44,7 @@ const ModView = () => {
                 setLoading(true);
                 const res = await sendJsonRequest("/Admin/GetUser", "POST", { userId });
                 setUser(res.user);
+                setRolesInput(res.user.roles.join(", "));
             } catch (err: any) {
                 setError(err.message || "Failed to load user");
             } finally {
@@ -70,6 +75,33 @@ const ModView = () => {
             setError(err.message || "Action failed");
         }
     };
+
+    const handleUpdateRoles = async () => {
+        if (!user) return;
+        const newRoles = rolesInput.split(",").map(r => r.trim()).filter(r => r.length > 0);
+        if (newRoles.length === 0) return;
+
+        setLoading(true);
+        const res = await sendJsonRequest("/Admin/UpdateRoles", "POST", {
+            userId: user.id,
+            roles: newRoles
+        });
+
+        if (res.success) {
+            setUser(prev => prev ? { ...prev, roles: res.data.roles } : null);
+            setRolesAlert({ type: "success", message: "Roles updated successfully." });
+            setRolesInput(res.data.roles.join(", "));
+        } else {
+            setRolesAlert({ type: "danger", message: res.message ?? "Roles update failed." });
+        }
+
+        setLoading(false);
+    };
+
+    const handleResetRoles = () => {
+        if (!user) return;
+        setRolesInput(user.roles.join(", "));
+    }
 
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
     if (error) return <Alert variant="danger">{error}</Alert>;
@@ -169,10 +201,8 @@ const ModView = () => {
                             )}
                         </dl>
                     </Alert>
-
                 )}
 
-                {/* Show Ban/Unban only if not admin */}
                 {!isAdmin && (
                     <Button
                         variant={user.active ? "danger" : "success"}
@@ -180,6 +210,43 @@ const ModView = () => {
                     >
                         {user.active ? "Ban User" : "Unban User"}
                     </Button>
+                )}
+
+                {userInfo?.roles.includes("Admin") && (
+                    <Card className="mt-3">
+                        <Card.Body>
+                            {rolesAlert && (
+                                <Alert
+                                    variant={rolesAlert.type}
+                                    dismissible
+                                    onClose={() => setRolesAlert(null)}
+                                >
+                                    {rolesAlert.message}
+                                </Alert>
+                            )}
+                            <Form.Group className="mb-2">
+                                <Form.Label>Roles (comma separated)</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    value={rolesInput}
+                                    onChange={e => setRolesInput(e.target.value)}
+                                    placeholder="Enter roles separated by ,"
+                                />
+                            </Form.Group>
+                            <div className="d-flex gap-2">
+                                <Button
+                                variant="primary"
+                                onClick={handleUpdateRoles}
+                                disabled={loading}
+                            >
+                                Update roles
+                            </Button>
+                            <Button variant="secondary" onClick={handleResetRoles}>
+                                Reset Roles
+                            </Button>
+                            </div>
+                        </Card.Body>
+                    </Card>
                 )}
             </Container>
         </>

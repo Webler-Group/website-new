@@ -65,6 +65,18 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
+            case 203:
+                link.to = "/Discuss/" + notification.questionId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                break;
+            case 204:
+                link.to = "/Discuss/" + notification.questionId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                break;
+            case 205:
+                link.to = "/Compiler-Playground/" + notification.codeId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                break;
         }
         navigate(link.to, { state: link.state })
     }

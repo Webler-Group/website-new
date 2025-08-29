@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { Alert, Button, Dropdown, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
+import { Alert, Button, Dropdown, Form, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
@@ -19,6 +19,7 @@ import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
+import PostTextareaControl from "../../../components/PostTextareaControl";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -427,7 +428,7 @@ const DiscussPost = () => {
                 <Form ref={form}>
                     <FormGroup>
                         <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <FormControl ref={formInputRef} as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        <PostTextareaControl ref={formInputRef}rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">

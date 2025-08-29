@@ -725,7 +725,8 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
             followers: true,
             codes: true,
             discuss: true,
-            channels: true
+            channels: true,
+            mentions: true
         };
     }
 
