@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Comment } from './types';
 import { Heart, Clock, Loader2, Reply, ChevronDown, ChevronUp } from 'lucide-react';
 import ProfileAvatar from '../../../components/ProfileAvatar';
+import { MoreVertical } from "lucide-react";
+
 
 interface CommentListProps {
   feedId: string;
@@ -17,6 +19,8 @@ const CommentList: React.FC<CommentListProps> = ({
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+
 
   // ✅ New: Keep UI states outside comment tree
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
@@ -131,6 +135,11 @@ const CommentList: React.FC<CommentListProps> = ({
     const showReplies = expandedReplies[comment.id] || false;
     const showReplyBox = replyBoxes[comment.id] || false;
     const [replyText, setReplyText] = useState("");
+    const [menuOpen, setMenuOpen] = useState(false);
+
+    // Editing state
+    const [isEditing, setIsEditing] = useState(false);
+    const [editText, setEditText] = useState(comment.message);
 
     const toggleReplies = () => {
       setExpandedReplies((prev) => ({
@@ -164,6 +173,34 @@ const CommentList: React.FC<CommentListProps> = ({
       }
     };
 
+    const handleEditSubmit = async () => {
+      if (!editText.trim()) return;
+
+      try {
+        await sendJsonRequest("/Feed/EditReply", "PUT", {
+          replyId: comment.id,
+          message: editText.trim(),
+        });
+
+        // update UI without full reload
+        comment.message = editText.trim();
+        setIsEditing(false);
+      } catch (err) {
+        console.error("Failed to edit reply:", err);
+      }
+    };
+
+    const handleDelete = async () => {
+      try {
+        await sendJsonRequest("/Feed/DeleteReply", "DELETE", {
+          replyId: comment.id
+        });
+        fetchComments();
+      } catch (err) {
+        console.error("Failed to delete reply:", err);
+      }
+    };
+
     return (
       <div
         className={`mb-3 ${depth === 0 ? "p-3 bg-white rounded border shadow-sm" : ""}`}
@@ -173,38 +210,107 @@ const CommentList: React.FC<CommentListProps> = ({
           <UserAvatar src={comment.userAvatar} name={comment.userName} />
 
           <div className="flex-grow-1">
-            <div className="d-flex align-items-center gap-2 mb-1">
-              <h4 className="fw-semibold text-dark mb-0">{comment.userName}</h4>
-              <span className="text-muted small">•</span>
+            {/* Header row */}
+            <div className="d-flex align-items-center mb-1">
+              <h4 className="fw-semibold text-dark mb-0 me-2">{comment.userName}</h4>
               <span className="text-muted small d-flex align-items-center gap-1">
                 <Clock size={12} />
                 {formatDate(comment.date)}
               </span>
+
+              {/* Spacer pushes menu right */}
+              <div className="ms-auto position-relative">
+                <button
+                  className="btn btn-sm btn-link text-muted p-0"
+                  onClick={() => setMenuOpen((prev) => !prev)}
+                >
+                  <MoreVertical size={18} />
+                </button>
+
+                {menuOpen && (
+                  <div
+                    className="dropdown-menu show position-absolute end-0 mt-2"
+                    style={{ minWidth: 120, zIndex: 1000 }}
+                  >
+                    {comment.userId === currentUserId && (
+                      <>
+                        <button
+                          className="dropdown-item"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            setIsEditing(true);
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="dropdown-item text-danger"
+                          onClick={() => {
+                            setMenuOpen(false);
+                            handleDelete();
+                          }}
+                        >
+                          Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <p className="text-secondary mb-2">{comment.message}</p>
+            {/* Comment content OR Edit textarea */}
+            {!isEditing ? (
+              <p className="text-secondary mb-2">{comment.message}</p>
+            ) : (
+              <div className="mb-2">
+                <textarea
+                  className="form-control mb-2"
+                  rows={2}
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                />
+                <button onClick={handleEditSubmit} className="btn btn-sm btn-primary me-2">
+                  Save
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditText(comment.message);
+                  }}
+                  className="btn btn-sm btn-outline-secondary"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
 
-            <div className="d-flex gap-2">
-              {/* Like button */}
-              <button
-                onClick={() => handleCommentVote(comment.id, comment.isUpvoted)}
-                className={`btn btn-sm d-inline-flex align-items-center gap-1 px-2 py-1 ${
-                  comment.isUpvoted ? "btn-outline-danger active" : "btn-outline-secondary"
-                }`}
-              >
-                <Heart size={14} fill={comment.isUpvoted ? "currentColor" : "none"} />
-                <span className="small fw-medium">{comment.votes}</span>
-              </button>
+            {/* Actions */}
+            {!isEditing && (
+              <div className="d-flex gap-2">
+                {/* Like button */}
+                <button
+                  onClick={() => handleCommentVote(comment.id, comment.isUpvoted)}
+                  className={`btn btn-sm d-inline-flex align-items-center gap-1 px-2 py-1 ${
+                    comment.isUpvoted ? "btn-outline-danger active" : "btn-outline-secondary"
+                  }`}
+                >
+                  <Heart size={14} fill={comment.isUpvoted ? "currentColor" : "none"} />
+                  <span className="small fw-medium">{comment.votes}</span>
+                </button>
 
-              {/* Reply button */}
-              <button
-                onClick={toggleReplyBox}
-                className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
-              >
-                <Reply size={14} />
-                Reply
-              </button>
-            </div>
+                {/* Reply button - only up to 3 levels */}
+                {depth < 2 && (
+                  <button
+                    onClick={toggleReplyBox}
+                    className="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1"
+                  >
+                    <Reply size={14} />
+                    Reply
+                  </button>
+                )}
+              </div>
+            )}
 
             {/* Reply box */}
             {showReplyBox && (
@@ -270,6 +376,7 @@ const CommentList: React.FC<CommentListProps> = ({
       </div>
     );
   };
+
 
   if (loading) {
     return (

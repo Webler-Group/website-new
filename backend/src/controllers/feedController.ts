@@ -126,13 +126,13 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let promises: Promise<void>[] = [];
 
     for (let tagName of tags) {
-  promises.push(
-    Tag.findOne({ name: tagName })
-      .then(tag => {
-        if (tag) tagIds.push(tag._id);
-      })
-  );
-}
+    promises.push(
+        Tag.findOne({ name: tagName })
+        .then(tag => {
+            if (tag) tagIds.push(tag._id);
+        })
+    );
+    }
 
     await Promise.all(promises);
 

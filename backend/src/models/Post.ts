@@ -5,6 +5,7 @@ import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
 import PostSharing from "./PostShare";
+import PostReplies from "./PostReplies";
 import { config } from "../confg";
 
 const postSchema = new mongoose.Schema({
@@ -99,9 +100,27 @@ postSchema.pre("save", async function (next) {
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId sharedFrom");
+    async function deleteRepliesRecursive(parentPostId: mongoose.Types.ObjectId | string) {
+        const replies = await PostReplies.find({ parentId: parentPostId });
+
+        for (const reply of replies) {
+            // Make sure reply.reply is treated as an ObjectId
+            const replyPostId = reply.reply as mongoose.Types.ObjectId;
+
+            // Delete the actual Post document for the reply
+            await Post.deleteAndCleanup({ _id: replyPostId });
+
+            // Recursively delete its nested replies
+            await deleteRepliesRecursive(replyPostId);
+        }
+
+        // Remove mapping entries
+        await PostReplies.deleteMany({ parentId: parentPostId });
+    }
 
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
+        await deleteRepliesRecursive(post._id);
         switch (post._type) {
             case 1: {
                 await Post.deleteAndCleanup({ parentId: post._id });
