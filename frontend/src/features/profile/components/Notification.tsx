@@ -8,6 +8,7 @@ import {useApi} from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface INotification {
+    feedId: string;
     id: string;
     type: number;
     message: string;
@@ -65,7 +66,12 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
+            case 301:
+                link.to = "/feed/" + notification.codeId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
+                break;
         }
+        // console.log(notification, link.to)
         navigate(link.to, { state: link.state })
     }
 

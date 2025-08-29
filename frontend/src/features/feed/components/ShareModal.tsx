@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Share2 } from 'lucide-react';
+import { X, Share2, Copy } from 'lucide-react';
 
 interface ShareModalProps {
   feedId: string;
@@ -10,6 +10,9 @@ interface ShareModalProps {
 const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => {
   const [shareMessage, setShareMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const shareUrl = `https://weblercodes.com/feed/${feedId}`;
 
   const handleShare = async () => {
     try {
@@ -20,6 +23,16 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
       console.error('Failed to share:', error);
     } finally {
       setIsSharing(false);
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // reset after 2s
+    } catch (err) {
+      console.error('Failed to copy:', err);
     }
   };
 
@@ -47,8 +60,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
               type="button" 
               className="btn-close" 
               onClick={onClose}
-            >
-            </button>
+            />
           </div>
 
           {/* Body */}
@@ -63,6 +75,21 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
                 className="form-control"
                 disabled={isSharing}
               />
+            </div>
+
+            {/* Copy link section */}
+            <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+              <span className="text-truncate me-2" style={{ maxWidth: '75%' }}>
+                {shareUrl}
+              </span>
+              <button 
+                type="button" 
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1"
+                onClick={handleCopyLink}
+              >
+                <Copy size={14} />
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
             </div>
           </div>
 

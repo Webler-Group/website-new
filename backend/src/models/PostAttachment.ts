@@ -32,6 +32,11 @@ const postAttachmentSchema = new mongoose.Schema({
         ref: "Post",
         default: null
     },
+    feed: {
+        type: mongoose.Types.ObjectId,
+        ref: "Post",
+        default: null
+    },
     user: {
         type: mongoose.Types.ObjectId,
         ref: "User",
@@ -74,6 +79,17 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                 questionId: x.question._id,
                 questionTitle: x.question.title
             }
+            case 3:
+                if (!x.feed) return null;
+                return {
+                    id: x._id,
+                    type: 3,
+                    ...userDetails,
+                    feedId: x.feed._id,
+                    feedMessage: x.feed.message,
+                    feedType: x.feed._type 
+                }
+
         }
         return null
     })
@@ -91,7 +107,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
 
     for (let match of matches) {
         if (match.length < 4) continue;
-
+        console.log(match)
         let attachment = null;
         switch (match[2]) {
             case "Compiler-Playground": {
@@ -144,6 +160,31 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
                 }
                 break;
             }
+            case "feed": {
+                const postId = match[3];
+                try {
+                    const post = await Post.findById(postId);
+                    if (!post) continue;
+
+                    // accept both feed (4) and sharedFeed (5)
+                    if (post._type !== 4 && post._type !== 5) continue;
+
+                    attachment = currentAttachments.find(x => x.feed && x.feed == postId);
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: id.post ?? null,
+                            channelMessageId: id.channelMessage ?? null,
+                            _type: 3, // just "feed attachment"
+                            feed: postId,
+                            user: post.user
+                        });
+                    }
+                } catch (err: any) {
+                    console.log(err?.message);
+                }
+                break;
+            }
+
         }
         if (attachment) {
             newAttachmentIds.push(attachment._id.toString());

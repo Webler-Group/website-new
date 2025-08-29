@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { ArrowLeft, Loader2, FileCode, MessageSquare, Link2 } from 'lucide-react';
 import { Feed } from './types';
 import FeedItem from './FeedItem';
 import CommentForm from './CommentForm';
-import CommentList from './CommentList';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import CommentList from './comments/CommentList';
 import { useApi } from '../../../context/apiCommunication';
 import { getCurrentUserId } from './utils';
+import NotificationToast from './comments/NotificationToast';
 
-interface FeedDetailsProps {}
-
-const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
+const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [feed, setFeed] = useState<Feed | null>(null);
@@ -18,18 +17,69 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
   const [error, setError] = useState<string | null>(null);
   const { sendJsonRequest } = useApi();
   const currentUserId = getCurrentUserId();
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
 
   useEffect(() => {
     const fetchFeed = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
+
         const response = await sendJsonRequest("/Feed/GetFeed", "POST", { feedId: id });
-        setFeed(response.feed);
+        if(!response.success) {
+          throw new Error(response.message)
+        }
+        const feed = response.feed;
+
+        const allAttachmentIds = [
+          ...(feed.attachments?.map((att: any) => att.id) || []),
+          ...(feed.originalPost?.attachments?.map((att: any) => att.id) || [])
+        ];
+
+        let attachmentDetails: any[] = [];
+        if (allAttachmentIds.length > 0) {
+          attachmentDetails = await sendJsonRequest(
+            "/PostAttachments/GetPostAttachments",
+            "POST",
+            { attachmentIds: allAttachmentIds }
+          );
+        }
+
+        const attachmentMap: Record<string, any> = {};
+        attachmentDetails.forEach((att: any) => {
+          attachmentMap[att.id] = att;
+        });
+
+        const mappedFeed = {
+          ...feed,
+          attachments: (feed.attachments || []).map((att: any) => ({
+            ...att,
+            details: attachmentMap[att.id] || null
+          })),
+          originalPost: feed.originalPost
+            ? {
+                ...feed.originalPost,
+                attachments: (feed.originalPost.attachments || []).map((att: any) => ({
+                  ...att,
+                  details: attachmentMap[att.id] || null
+                }))
+              }
+            : null
+        };
+
+        setFeed(mappedFeed);
       } catch (err) {
-        setError('Failed to load feed');
-        console.error('Error fetching feed:', err);
+        setError("Failed to load feed");
+        console.error("Error fetching feed:", err);
+        showNotification("error", String(err))
       } finally {
         setLoading(false);
       }
@@ -39,12 +89,20 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
   }, [id, sendJsonRequest]);
 
   const handleFeedUpdate = async (updatedFeed: Feed) => {
-    await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: updatedFeed.id, message: updatedFeed.message })
+    const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: updatedFeed.id, message: updatedFeed.message });
+    if(!response.success) {
+      showNotification("error", response.message)
+      throw new Error(response.message)
+    }
     setFeed(updatedFeed);
   };
 
   const handleFeedDelete = async (feed: Feed) => {
-    await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id })
+    const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
+    if(!response.success) {
+      showNotification("error", response.message);
+      throw new Error(response.message)
+    }
     navigate('/feed');
   };
 
@@ -59,6 +117,10 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
   if (error || !feed) {
     return (
       <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
+        <NotificationToast 
+          notification={notification} 
+          onClose={() => setNotification(null)} 
+        />
         <div className="text-center">
           <h2 className="fw-semibold text-dark mb-3">
             {error || 'Feed not found'}
@@ -100,6 +162,7 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
               onDelete={() => { handleFeedDelete(feed) }}
               showFullContent={true}
             />
+
           </div>
         </div>
 
@@ -107,8 +170,7 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
         <div className="card shadow-sm border-0 rounded-4">
           <div className="card-body">
             <h5 className="fw-semibold text-dark mb-3">Comments</h5>
-            
-            {/* Comment Form */}
+
             <div className="mb-4">
               <CommentForm
                 feedId={feed.id}
@@ -119,7 +181,6 @@ const FeedDetails: React.FC<FeedDetailsProps> = ({ }) => {
               />
             </div>
 
-            {/* Comment List */}
             <CommentList
               feedId={feed.id}
               sendJsonRequest={sendJsonRequest}

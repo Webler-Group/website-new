@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
 import { Feed } from './types';
+import { Link } from 'react-router-dom';
+import { FileCode, MessageSquare, Link2 } from 'lucide-react';
+import NotificationToast from './comments/NotificationToast';
+
 import { 
   Heart, 
   MessageCircle, 
@@ -42,13 +46,17 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const [showEditModal, setShowEditModal] = useState(false);
   const [isUpvoted, setIsUpvoted] = useState(feed.isUpvoted);
   const [votes, setVotes] = useState(feed.votes);
-
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
   const isOwner = currentUserId === feed.userId;
   const isSharedPost = feed.isOriginalPostDeleted !== 2;
   const navigate = useNavigate();
 
   const allowedUrls = [/^https?:\/\/.+/i];
-  console.log(feed)
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -64,12 +72,16 @@ const FeedItem: React.FC<FeedItemProps> = ({
     try {
       setIsUpvoted(!isUpvoted);
       setVotes(prev => isUpvoted ? prev - 1 : prev + 1);
-      await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: !isUpvoted });
+      const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: !isUpvoted });
+      if(!response.success) {
+        throw new Error(response.message)
+      }
     } catch (error) {
       // rollback
       setIsUpvoted(isUpvoted);
       setVotes(votes);
       console.error('Failed to vote:', error);
+      showNotification("error", String(error))
     }
   };
 
@@ -99,12 +111,16 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const handleShare = async (shareMessage: string) => {
     try {
       const response = await sendJsonRequest("/Feed/ShareFeed", 'POST', { feedId: feed.id, message: shareMessage });
+      if(!response.success) {
+        throw new Error(response.message)
+      }
       if (response?.feed) {
         navigate(`/feed/${response.feed.id}`);
       }
       setShowShareModal(false);
     } catch (err) {
       console.error('Error sharing feed:', err);
+      showNotification("error", String(err))
     }
   };
 
@@ -118,13 +134,25 @@ const FeedItem: React.FC<FeedItemProps> = ({
     </div>
   );
 
+
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
-    <div className="mt-3 border rounded bg-light p-3">
+    <Link 
+      to={`/feed/${originalPost.id}`} 
+      className="mt-3 border rounded bg-light p-3 d-block text-dark text-decoration-none"
+    >
       <div className="d-flex gap-3">
         <UserAvatar src={originalPost.userAvatarImage} name={originalPost.userName} />
         <div>
           <div className="d-flex align-items-center gap-2">
-            <h6 className="fw-semibold mb-0">{originalPost.userName}</h6>
+            <h6 className="fw-semibold mb-0">
+              <Link 
+                to={`/Profile/${originalPost.userId}`} 
+                className="text-primary text-decoration-none"
+                onClick={(e) => e.stopPropagation()} // prevent feed card click from firing
+              >
+                {originalPost.userName}
+              </Link>
+            </h6>
             <small className="text-muted">{formatDate(originalPost.date)}</small>
           </div>
           <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
@@ -139,27 +167,39 @@ const FeedItem: React.FC<FeedItemProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </Link>
   );
+
 
   return (
     <div className={`card shadow-sm border-0 mb-4 rounded-4 ${isPinned ? 'border-warning border-2' : ''}`}>
+      <NotificationToast 
+        notification={notification} 
+        onClose={() => setNotification(null)} 
+      />
       <div className="card-body">
         {/* Header */}
         <div className="d-flex justify-content-between">
           <div className="d-flex gap-3">
             <UserAvatar src={feed.userAvatarImage} name={feed.userName} />
             <div>
-              <div className="d-flex align-items-center gap-2 flex-wrap">
-                <h6 className="fw-bold mb-0">{feed.userName || "Anonymous"}</h6>
-                {feed.level > 0 && (
-                  <span className="badge bg-warning text-dark">Level {feed.level}</span>
-                )}
-                <small className="text-muted d-flex align-items-center gap-1">
-                  <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
-                </small>
-                {isPinned && <Pin className="text-warning" size={14} />}
-              </div>
+            <div className="d-flex align-items-center gap-2 flex-wrap">
+              <h6 className="fw-bold mb-0">
+                <Link 
+                  to={`/Profile/${feed.userId}`} 
+                  className="text-primary text-decoration-none"
+                >
+                  {feed.userName || "Anonymous"}
+                </Link>
+              </h6>
+              {feed.level > 0 && (
+                <span className="badge bg-warning text-dark">Level {feed.level}</span>
+              )}
+              <small className="text-muted d-flex align-items-center gap-1">
+                <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
+              </small>
+              {isPinned && <Pin className="text-warning" size={14} />}
+            </div>
               {feed.roles?.length > 0 && (
                 <div className="d-flex gap-1 mt-1 flex-wrap">
                   {feed.roles.map((role, i) => (
@@ -222,6 +262,66 @@ const FeedItem: React.FC<FeedItemProps> = ({
             </div>
           )}
         </div>
+
+                    {/* Attachments */}
+        {feed.attachments?.length > 0 && (
+          <div className="mt-4 d-flex flex-column gap-3">
+            {feed.attachments.map(att => {
+              if (!att.details) return null;
+
+              let icon = null;
+              let title = "";
+              let subtitle = "";
+              let to = "#";
+
+              switch (att.details.type) {
+                case 1: // Code
+                  icon = <FileCode size={20} className="text-primary" />;
+                  title = att.details.codeName;
+                  subtitle = `${att.details.codeLanguage} • by ${att.details.userName}`;
+                  to = `/Compiler-Playground/${att.details.codeId}`;
+                  break;
+
+                case 2: // Question / Discussion
+                  icon = <MessageSquare size={20} className="text-success" />;
+                  title = att.details.questionTitle;
+                  subtitle = `by ${att.details.userName}`;
+                  to = `/Discuss/${att.details.questionId}`;
+                  break;
+
+                case 3: // Feed
+                  icon = <Link2 size={20} className="text-info" />;
+                  title = "Feed";
+                  subtitle = `${att.details.userName}: ${att.details.feedMessage}`;
+                  to = `/feed/${att.details.feedId}`;
+                  break;
+              }
+
+              return (
+                <Link
+                  key={att.id}
+                  to={to}
+                  className="d-flex align-items-start gap-3 p-3 border rounded bg-white text-dark text-decoration-none shadow-sm"
+                  style={{
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "translateY(-2px)")
+                  }
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
+                >
+                  <div className="flex-shrink-0">{icon}</div>
+                  <div className="flex-grow-1 overflow-hidden">
+                    <h6 className="fw-semibold mb-1 text-truncate">{title}</h6>
+                    <small className="text-muted d-block text-truncate">
+                      {subtitle}
+                    </small>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="d-flex gap-4 pt-3 border-top mt-3">

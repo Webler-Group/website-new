@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Send } from 'lucide-react';
+import NotificationToast from './comments/NotificationToast';
+
 
 interface CommentFormProps {
   feedId: string;
@@ -14,6 +16,14 @@ const CommentForm: React.FC<CommentFormProps> = ({
 }) => {
   const [comment, setComment] = useState('');
   const [isPosting, setIsPosting] = useState(false);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,14 +38,15 @@ const CommentForm: React.FC<CommentFormProps> = ({
         feedId: feedId
       });
 
-      if(!response.post) {
-        alert(response.message)
+      if(!response.success) {
+        throw new Error(response.message)
       }
       
       setComment('');
       onCommentPosted();
     } catch (error) {
       console.error('Failed to post comment:', error);
+      showNotification("error", String(error))
     } finally {
       setIsPosting(false);
     }
@@ -43,6 +54,11 @@ const CommentForm: React.FC<CommentFormProps> = ({
 
   return (
     <div className="bg-white rounded shadow-sm border p-4 mb-4">
+      {/* Notification Toast */}
+      <NotificationToast 
+        notification={notification} 
+        onClose={() => setNotification(null)} 
+      />
       <form onSubmit={handleSubmit}>
         <div className="d-flex gap-3">
           <div className="flex-grow-1">

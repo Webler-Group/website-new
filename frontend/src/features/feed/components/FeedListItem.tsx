@@ -7,6 +7,10 @@ import EditModal from './EditModal';
 import { useNavigate } from "react-router-dom"; 
 import ShareModal from './ShareModal';
 import { useAuth } from '../../auth/context/authContext';
+import { Link } from "react-router-dom";
+import { FileCode, MessageSquare, Link2 } from "lucide-react";
+import NotificationToast from './comments/NotificationToast';
+
 
 interface FeedListItemProps {
   feed: Feed;
@@ -39,12 +43,23 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
   const navigate = useNavigate();
   const { userInfo } = useAuth()
   const canModerate = userInfo?.roles.includes("Admin") || userInfo?.roles.includes("Moderator");
+
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
+
   const handlePinToggle = async () => {
     try {
       const endpoint = "/Feed/PinFeed"
-      await sendJsonRequest(endpoint, "POST", { feedId: feed.id });
-      onUpdate({ ...feed, isPinned: !feed.isPinned });
+      const response = await sendJsonRequest(endpoint, "POST", { feedId: feed.id });
       setShowDropdown(false);
+      if(!response.success) {
+        throw new Error(response.message)
+      }
+      onUpdate({ ...feed, isPinned: !feed.isPinned });
       onRefresh();
     } catch (err) {
       console.error("Error pinning/unpinning feed:", err);
@@ -52,32 +67,44 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
 };
   const handleEdit = async (updatedContent: string) => {
     try {
-      await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
-      onUpdate({ ...feed, message: updatedContent });
+      const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
       setShowEditModal(false);
+      if(!response.success) {
+        throw new Error(response.message)
+      }
+      onUpdate({ ...feed, message: updatedContent });
     } catch (err) {
       console.error("Error updating feed:", err);
+      showNotification("error", String(err))
     }
   };
 
   const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
-        await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
+        const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
+        if(!response.success) {
+          throw new Error(response.message)
+        }
         onDelete(feed);
       } catch (err) {
         console.error("Error deleting feed:", err);
+        showNotification("error", String(err))
       }
     }
   };
 
   const handleLike = async () => {
     try {
-      await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: !isLiked });
+      const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: !isLiked });
+      if(!response.success) {
+        throw new Error(response.message)
+      }
       setIsLiked(!isLiked);
       setLikesCount(prev => (isLiked ? prev - 1 : prev + 1));
     } catch (err) {
       console.error("Error voting post:", err);
+      showNotification("error", String(err))
     }
   };
 
@@ -88,28 +115,47 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
         message: shareMessage,
         });
 
+        if(!response.success) {
+          throw new Error(response.message)
+        }
+
         if (response?.feed?.id) {
-        navigate(`/feed/${response.feed.id}`);  
+          navigate(`/feed/${response.feed.id}`);  
         }
 
         setShowShareModal(false);
     } catch (err) {
         console.error("Error sharing feed:", err);
+        showNotification("error", String(err))
     }
     };
   const canEdit = feed.userId === currentUserId;
   const allowedUrls = [/^https?:\/\/.+/i];
+// Inside FeedListItem.tsx
+
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
-    <div className="mt-2 border rounded bg-light p-2">
-        <div className="d-flex gap-2">
+    <Link 
+      to={`/feed/${originalPost.id}`} 
+      className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
+    >
+      <div className="d-flex gap-2">
         <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
         <div>
-            <strong>{originalPost.userName}</strong>
-            <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+          {/* User profile link */}
+          <strong>
+            <Link 
+              to={`/Profile/${originalPost.userId}`} 
+              className="text-dark text-decoration-none"
+            >
+              {originalPost.userName}
+            </Link>
+          </strong>
+          <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
         </div>
-        </div>
-    </div>
-);
+      </div>
+    </Link>
+  );
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -122,6 +168,10 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
 
   return (
     <div className={`card shadow-sm border-0 rounded-4 ${isPinned ? 'border-warning border-2' : ''}`}>
+      <NotificationToast 
+        notification={notification} 
+        onClose={() => setNotification(null)} 
+      />
       <div className="card-body">
         {/* Header */}
 
@@ -131,7 +181,17 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
             <ProfileAvatar avatarImage={feed.userAvatarImage} size={42} />
             <div>
               <div className="d-flex align-items-center gap-2 flex-wrap">
-                <h6 className="fw-bold mb-0">{feed.userName || "Anonymous"}<span style={{fontWeight:400}}>{feed.isOriginalPostDeleted !== 2 ? " shared a post" : ""}</span></h6>
+                <h6 className="fw-bold mb-0">
+                  <Link 
+                    to={`/Profile/${feed.userId}`} 
+                    className="text-primary text-decoration-none"
+                  >
+                    {feed.userName || "Anonymous"}
+                  </Link>
+                  <span style={{ fontWeight: 400 }}>
+                    {feed.isOriginalPostDeleted !== 2 ? " shared a post" : ""}
+                  </span>
+                </h6>
                 <small className="text-muted d-flex align-items-center gap-1">
                   <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
                 </small>
@@ -219,6 +279,71 @@ const FeedListItem: React.FC<FeedListItemProps> = ({
             {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
 
         </div>
+
+        {/* Attachments */}
+        {feed.attachments?.length > 0 && (
+          <div className="mb-3 d-flex flex-column gap-3">
+            {feed.attachments.map(att => {
+              if (!att.details) return null;
+
+              let icon = null;
+              let title = "";
+              let subtitle = "";
+              let to = "#";
+
+              switch (att.details.type) {
+                case 1: // Code
+                  icon = <FileCode size={20} className="text-primary" />;
+                  title = att.details.codeName;
+                  subtitle = `${att.details.codeLanguage} • by ${att.details.userName}`;
+                  to = `/Compiler-Playground/${att.details.codeId}`;
+                  break;
+
+                case 2: // Question / Discussion
+                  icon = <MessageSquare size={20} className="text-success" />;
+                  title = att.details.questionTitle;
+                  subtitle = `by ${att.details.userName}`;
+                  to = `/Discuss/${att.details.questionId}`;
+                  break;
+
+                case 3: // Feed
+                  icon = <Link2 size={20} className="text-info" />;
+                  title = "Feed";
+                  subtitle = `${att.details.userName}: ${att.details.feedMessage}`;
+                  to = `/feed/${att.details.feedId}`;
+                  break;
+              }
+
+              return (
+                <Link
+                  key={att.id}
+                  to={to}
+                  className="
+                    d-flex align-items-start gap-3 p-3 border rounded bg-white text-dark text-decoration-none
+                    shadow-sm
+                    transition-all
+                    hover-shadow
+                  "
+                  style={{
+                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.transform = "translateY(-2px)")
+                  }
+                  onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
+                >
+                  <div className="flex-shrink-0">{icon}</div>
+                  <div className="flex-grow-1 overflow-hidden">
+                    <h6 className="fw-semibold mb-1 text-truncate">{title}</h6>
+                    <small className="text-muted d-block text-truncate">
+                      {subtitle}
+                    </small>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="d-flex align-items-center justify-content-between pt-2 border-top">

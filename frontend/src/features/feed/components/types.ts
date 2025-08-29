@@ -49,11 +49,11 @@ export interface Feed {
 export interface Comment {
   id: string;
   message: string;
-  date: string;
-  userId: string;
   userName: string;
   userAvatar: string | null;
+  userId: string;
+  date: string;
   votes: number;
   isUpvoted: boolean;
-  replies: Comment[];
+  replies?: Comment[];
 }

@@ -17,6 +17,7 @@ import courseRoutes from "./routes/courseRoutes";
 import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import tagRoutes from "./routes/tagRoutes";
+import postAttachmentRoutes from "./routes/postAttachmentRoutes"
 import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import http from "http";
@@ -41,27 +42,6 @@ async function main() {
     const apiPrefix = "/api";
 
     await connectDB();
-
-    // let testUser = await User.findOne({ email: "randomtest@gmail.com" })
-    // if(!testUser) {
-    //     testUser = await User.create({
-    //         email: "randomtest@gmail.com",
-    //         name: "<DD>",
-    //         password: "test@12345",
-    //         avatarImage: "lelouch.png",
-    //         roles: ["User", "Moderator"]
-    //     })
-    // }
-
-    // const pinnedPost = await Post.findOne({ isPinned: true })
-    // if(!pinnedPost) {
-    //     await Post.create({
-    //         message: "#### Lelouch Vi Britannia commands you....to like this post! \n ![Lelouch](https://thf.bing.com/th/id/OIP.RpkXMZjpEOhO_MEdI8JhHwHaE4?w=289&h=191&c=7&r=0&o=7&cb=thfc1&dpr=1.3&pid=1.7&rm=3)",
-    //         _type: 4,
-    //         user: testUser._id,
-    //         isPinned: true
-    //     })
-    // }
 
     await initKeystore();
 
@@ -95,9 +75,10 @@ async function main() {
     app.use(`${apiPrefix}/Tag`, tagRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
+    app.use(`${apiPrefix}/PostAttachments`, postAttachmentRoutes)
 
     app.all("*", (req, res) => {
-        res.status(404).json({ message: "404 Not Found" });
+        res.status(404).json({ success: false, message: "404 Not Found" });
     });
 
     app.use(errorHandler);

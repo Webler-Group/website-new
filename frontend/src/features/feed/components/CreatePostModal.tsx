@@ -50,7 +50,6 @@ const CreatePostModal: React.FC<CreatePostModalProps> = ({ show, onHide, onSubmi
               onClick={handleClose}
               disabled={isSubmitting}
             >
-              <X size={20} />
             </button>
           </div>
           

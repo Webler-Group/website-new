@@ -12,7 +12,7 @@ const getBlogEntries = asyncHandler(async (req: Request, res: Response) => {
   const { page, count, searchQuery } = req.body;
 
   if (typeof page === "undefined" || typeof count === "undefined" || typeof searchQuery === "undefined") {
-    res.status(400).json({ message: "Some fields are missing" });
+    res.status(400).json({ success: false, message: "Some fields are missing" });
     return
   }
 
@@ -66,6 +66,7 @@ const getBlogEntry = asyncHandler(async (req: Request, res: Response) => {
   catch (e) {
     res.status(404)
       .json({
+        success: false,
         message: "Blog not found"
       });
   }

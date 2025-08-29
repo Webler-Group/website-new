@@ -95,7 +95,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = req.body as { userId?: string };
 
     if (!userId || typeof userId !== "string") {
-        res.status(400).json({ message: "Invalid body" });
+        res.status(400).json({ success: false, message: "Invalid body" });
         return;
     }
 
@@ -103,7 +103,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
 
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ success: false, message: "User not found" });
         return;
     }
 
@@ -138,12 +138,12 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const user = await User.findById(userId);
 
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ success: false, message: "User not found" });
         return
     }
 
     if (user.roles.includes("Admin")) {
-        res.status(404).json({ message: "Unauthorized" });
+        res.status(404).json({ success: false, message: "Unauthorized" });
         return
     }
 

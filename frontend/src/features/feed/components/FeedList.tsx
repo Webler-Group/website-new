@@ -6,6 +6,8 @@ import { getCurrentUserId } from './utils';
 import { Feed } from './types';
 import CreatePostModal from './CreatePostModal';
 import FeedListItem from './FeedListItem';
+import NotificationToast from './comments/NotificationToast';
+
 
 interface FeedListProps {}
 
@@ -19,6 +21,12 @@ const FeedList: React.FC<FeedListProps> = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
   const postsPerPage = 10;
   
   const { sendJsonRequest } = useApi();
@@ -37,18 +45,40 @@ const FeedList: React.FC<FeedListProps> = () => {
   const fetchFeeds = async (page = 1, reset = false) => {
     try {
       setLoading(true);
-      
-      const [feedsResponse] = await Promise.all([
-        sendJsonRequest("/Feed/", "POST", {
-          page: page,
-          count: postsPerPage,
-          filter: selectedFilter,
-          searchQuery: searchQuery
-        })
-      ]);
 
-      
-    const mappedFeeds = feedsResponse.feeds.map((feed: any) => ({
+      const feedsResponse = await sendJsonRequest("/Feed/", "POST", {
+        page,
+        count: postsPerPage,
+        filter: selectedFilter,
+        searchQuery
+      });
+
+      if(!feedsResponse.success) {
+        throw new Error(feedsResponse.message)
+      }
+
+      // Step 1: Collect all attachment IDs
+      const allAttachmentIds = feedsResponse.feeds
+        .flatMap((feed: any) => feed.attachments?.map((att: any) => att.id) || []);
+
+      let attachmentDetails: any[] = [];
+      if (allAttachmentIds.length > 0) {
+        // Step 2: Fetch attachment details
+        attachmentDetails = await sendJsonRequest(
+          "/PostAttachments/GetPostAttachments",
+          "POST",
+          { attachmentIds: allAttachmentIds }
+        );
+      }
+
+      // Step 3: Create lookup by attachmentId
+      const attachmentMap: Record<string, any> = {};
+      attachmentDetails.forEach((att: any) => {
+        attachmentMap[att.id] = att;
+      });
+
+      // Step 4: Map feeds and inject attachment details
+      const mappedFeeds = feedsResponse.feeds.map((feed: any) => ({
         id: feed.id,
         type: feed.type,
         title: feed.title,
@@ -68,28 +98,33 @@ const FeedList: React.FC<FeedListProps> = () => {
         level: feed.level,
         roles: feed.roles,
         isPinned: feed.isPinned,
-        isOriginalPostDeleted: feed.isOriginalPostDeleted ?? 2
-    }))
-    .sort((a: Feed, b: Feed) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0)); 
-
+        isOriginalPostDeleted: feed.isOriginalPostDeleted ?? 2,
+        attachments: (feed.attachments || []).map((att: any) => ({
+          ...att,
+          details: attachmentMap[att.id] || null   // 👈 inject details here
+        }))
+      }))
+      .sort((a: Feed, b: Feed) => (b.isPinned ? 1 : 0) - (a.isPinned ? 1 : 0));
 
       if (reset || page === 1) {
         setFeeds(mappedFeeds);
       } else {
         setFeeds(prev => [...prev, ...mappedFeeds]);
       }
-      
+
       setCurrentPage(feedsResponse.currentPage);
       setTotalPages(feedsResponse.totalPages);
       setTotalCount(feedsResponse.count);
-      
+
     } catch (err) {
       setError('Failed to load feeds');
       console.error('Error fetching feeds:', err);
+      showNotification("error", String(err))
     } finally {
       setLoading(false);
     }
   };
+
 
   useEffect(() => {
     fetchFeeds(1, true);
@@ -118,12 +153,15 @@ const FeedList: React.FC<FeedListProps> = () => {
 
   const handleCreatePost = async (message: string) => {
     try {
-      await sendJsonRequest("/Feed/CreateFeed", "POST", { message });
+      const response = await sendJsonRequest("/Feed/CreateFeed", "POST", { message });
       setShowCreateModal(false);
+      if(!response.success) {
+        throw new Error(response.message)
+      }
       fetchFeeds(1, true); // Refresh the feed list
     } catch (err) {
       console.error('Error creating post:', err);
-      throw err;
+      showNotification("error", String(err))
     }
   };
 
@@ -167,6 +205,10 @@ const FeedList: React.FC<FeedListProps> = () => {
 
   return (
     <div className="min-vh-100 bg-light">
+      <NotificationToast 
+        notification={notification} 
+        onClose={() => setNotification(null)} 
+      />
       <div className="container py-4">
         {/* Header */}
         <div className="d-flex justify-content-between align-items-center mb-4">

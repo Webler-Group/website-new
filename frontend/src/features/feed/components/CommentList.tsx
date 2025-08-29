@@ -3,6 +3,7 @@ import { Comment } from './types';
 import { Heart, Clock, Loader2, Reply, ChevronDown, ChevronUp } from 'lucide-react';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import { MoreVertical } from "lucide-react";
+import NotificationToast from './comments/NotificationToast';
 
 
 interface CommentListProps {
@@ -22,9 +23,15 @@ const CommentList: React.FC<CommentListProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
 
 
-  // ✅ New: Keep UI states outside comment tree
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [replyBoxes, setReplyBoxes] = useState<Record<string, boolean>>({});
+  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+  };
 
   const fetchComments = async () => {
     try {
@@ -33,13 +40,18 @@ const CommentList: React.FC<CommentListProps> = ({
         feedId: feedId,
       });
 
+      if(!response.success) {
+        throw new Error(response.message)
+      }
+
       if (response && response.replies) {
         setComments(response.replies);
-        console.log(response.replies);
+        console.log(response.replies)
       }
     } catch (err) {
       setError("Failed to load comments");
       console.error("Error fetching comments:", err);
+      showNotification("error", String(err))
     } finally {
       setLoading(false);
     }
@@ -96,13 +108,17 @@ const CommentList: React.FC<CommentListProps> = ({
     try {
       setComments((prevComments) => updateCommentVotes(prevComments));
 
-      await sendJsonRequest("/Feed/VotePost", "POST", {
+      const response = await sendJsonRequest("/Feed/VotePost", "POST", {
         vote: !currentlyUpvoted,
         postId: commentId,
       });
+      if(!response.success) {
+        throw new Error(response.message)
+      }
     } catch (error) {
       setComments((prevComments) => updateCommentVotes(prevComments));
       console.error("Failed to vote on comment:", error);
+      showNotification("error", String(error))
     }
   };
 
@@ -159,17 +175,22 @@ const CommentList: React.FC<CommentListProps> = ({
       if (!replyText.trim()) return;
 
       try {
-        await sendJsonRequest("/Feed/ReplyComment", "POST", {
+        const response = await sendJsonRequest("/Feed/ReplyComment", "POST", {
           message: replyText.trim(),
           feedId: feedId,
           parentId: comment.id,
         });
 
         setReplyText("");
+        if(!response.success) {
+          throw new Error(response.message)
+        }
+
         setReplyBoxes((prev) => ({ ...prev, [comment.id]: false }));
         fetchComments();
       } catch (err) {
         console.error("Failed to post reply:", err);
+        showNotification("error", String(err))
       }
     };
 
@@ -177,27 +198,35 @@ const CommentList: React.FC<CommentListProps> = ({
       if (!editText.trim()) return;
 
       try {
-        await sendJsonRequest("/Feed/EditReply", "PUT", {
+        const response = await sendJsonRequest("/Feed/EditReply", "PUT", {
           replyId: comment.id,
           message: editText.trim(),
         });
+        setIsEditing(false);
+        if(!response.success) {
+          throw new Error(response.message)
+        }
 
         // update UI without full reload
         comment.message = editText.trim();
-        setIsEditing(false);
       } catch (err) {
         console.error("Failed to edit reply:", err);
+        showNotification("error", String(err))
       }
     };
 
     const handleDelete = async () => {
       try {
-        await sendJsonRequest("/Feed/DeleteReply", "DELETE", {
+        const response = await sendJsonRequest("/Feed/DeleteReply", "DELETE", {
           replyId: comment.id
         });
+        if(!response.success) {
+          throw new Error(response.message)
+        }
         fetchComments();
       } catch (err) {
         console.error("Failed to delete reply:", err);
+        showNotification("error", String(err))
       }
     };
 
@@ -206,6 +235,10 @@ const CommentList: React.FC<CommentListProps> = ({
         className={`mb-3 ${depth === 0 ? "p-3 bg-white rounded border shadow-sm" : ""}`}
         style={{ marginLeft: depth > 0 ? depth * 20 : 0 }}
       >
+        <NotificationToast 
+          notification={notification} 
+          onClose={() => setNotification(null)} 
+        />
         <div className="d-flex align-items-start gap-3">
           <UserAvatar src={comment.userAvatar} name={comment.userName} />
 
