@@ -49,6 +49,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
     return (
         <div className="position-relative" style={wrapperStyle}>
             <Form.Control
+                autoComplete="off"
                 ref={inputRef}
                 type="text"
                 value={value}
@@ -57,8 +58,6 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
                 size="sm"
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setTimeout(() => setIsFocused(false), 100)}
-                aria-autocomplete="list"
-                aria-expanded={isFocused}
             />
 
             {isFocused && (

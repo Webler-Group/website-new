@@ -230,8 +230,6 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
     })
 
     try {
-        console.log(user.name);
-
         await sendPasswordResetEmail(user.name, user.email, user._id.toString(), emailToken);
 
         res.json({ success: true })
