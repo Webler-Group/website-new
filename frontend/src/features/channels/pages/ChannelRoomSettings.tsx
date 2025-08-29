@@ -20,6 +20,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import { FaPen } from "react-icons/fa6";
 import ToggleSwitch from "../../../components/ToggleSwitch";
+import UserSearch from "../../../components/UserSearch";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
@@ -76,11 +77,12 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
         setEditedParticipantRole("");
     }
 
-    const handleInvite = async () => {
+    const handleInvite = async (userId: string) => {
         const result = await sendJsonRequest("/Channels/GroupInviteUser", "POST", {
             channelId: channel.id,
-            username: inviteUsername.trim()
+            userId: userId
         });
+
         if (result && result.invite) {
             setInviteMessage(["success", "Invite created successfully"]);
             onUserInvite({
@@ -89,11 +91,11 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                 authorName: userInfo?.name,
                 authorAvatar: userInfo?.avatarImage
             });
-            setInviteUsername("");
         } else {
-            setInviteMessage(["danger", result.message ?? "Invite failed"])
+            setInviteMessage(["danger", result?.message ?? "Invite failed"]);
         }
-    };
+        setInviteUsername("");
+    }
 
     const handleRemove = async () => {
         if (!editedParticipantId) return;
@@ -259,18 +261,22 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                 <Tab.Pane eventKey="members">
                                     {isAdmin && (
                                         <div className="mb-3">
-                                            <Form.Label>Invite by username</Form.Label>
-                                            <InputGroup size="sm">
-                                                <Form.Control
-                                                    value={inviteUsername}
-                                                    onChange={(e) => setInviteUsername(e.target.value)}
-                                                    placeholder="Username"
-                                                />
-                                                <Button onClick={handleInvite} variant="primary" disabled={inviteUsername.trim().length < 3}>
-                                                    Invite
-                                                </Button>
-                                            </InputGroup>
-                                            {inviteMessage[1] && <Alert className="mt-2" variant={inviteMessage[0]} onClose={() => setInviteMessage(["", ""])} dismissible>{inviteMessage[1]}</Alert>}
+                                            <Form.Label>Invite user</Form.Label>
+                                            <UserSearch
+                                                value={inviteUsername}
+                                                setValue={setInviteUsername}
+                                                onSelect={handleInvite}
+                                            />
+                                            {inviteMessage[1] && (
+                                                <Alert
+                                                    className="mt-2"
+                                                    variant={inviteMessage[0]}
+                                                    onClose={() => setInviteMessage(["", ""])}
+                                                    dismissible
+                                                >
+                                                    {inviteMessage[1]}
+                                                </Alert>
+                                            )}
                                         </div>
                                     )}
 

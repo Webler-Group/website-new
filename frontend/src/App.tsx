@@ -35,7 +35,7 @@ import CreateCourse from './features/courses/pages/CreateCourse';
 import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
-import { languagesInfo } from './data/compilerLanguages';
+import { compilerLanguages, languagesInfo } from './data/compilerLanguages';
 // import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
@@ -43,6 +43,9 @@ import ChannelsPage from './features/channels/pages/ChannelsPage';
 import ToolsHome from './tools/ToolsHome';
 import TagHome from './tools/tags/pages/TagHome';
 import roles from './data/roles';
+import AdminHome from './tools/admin/pages/AdminHome';
+import AdminUserList from './tools/admin/pages/AdminUserList';
+import ModView from './tools/admin/pages/ModView';
 
 
 function App() {
@@ -98,10 +101,10 @@ function App() {
         </Route>
         {
           Object.keys(languagesInfo).map((lang, i) => {
-            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang} />} />);
+            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang as compilerLanguages} />} />);
           })
         }
-        <Route path=":codeId" element={<PlaygroundEditor language="" />} />
+        <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
       </Route>
 
       <Route path="Feed">
@@ -162,13 +165,26 @@ function App() {
 
       <Route path="Channels">
 
-        <Route element={<RequireAuth allowedRoles={allRoles} />}>
-          <Route index element={<ChannelsPage />} />
-          <Route path=":channelId" element={<ChannelsPage />} />
+        <Route element={<Layout Header={<Header variant="light" hideChannelsButton />} Footer={null} />}>
+          <Route element={<RequireAuth allowedRoles={allRoles} />}>
+            <Route index element={<ChannelsPage />} />
+            <Route path=":channelId" element={<ChannelsPage />} />
+          </Route>
         </Route>
 
       </Route>
 
+      <Route path="Admin">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+            <Route index element={<AdminHome />} />
+            <Route path="UserSearch">
+              <Route index element={<AdminUserList />} />
+              <Route path=":userId" element={<ModView />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
 
       <Route path="Tools">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>

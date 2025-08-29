@@ -16,11 +16,13 @@ import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
+import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
 interface PlaygroundEditorProps {
-    language: any;
+    language: compilerLanguages | null;
 }
 
 const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
@@ -48,8 +50,18 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [postId, setPostId] = useState<string | null>(null);
     const [isReply, setIsReply] = useState(false);
     const location = useLocation();
-
     const [message, setMessage] = useState([true, ""]);
+    const [pageTitle, setPageTitle] = useState("");
+
+    PageTitle(pageTitle);
+
+    useEffect(() => {
+        if (code) {
+            setPageTitle(languagesInfo[code.language].displayName + " Playground - " + code.name + " | Webler Codes");
+        } else if (language) {
+            setPageTitle(languagesInfo[language].displayName + " Playground | Webler Codes");
+        }
+    }, [language, codeName]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -168,6 +180,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setJs(result.code.jsSource);
             }
             setCommentCount(result.code.comments);
+        } else {
+            navigate("/PageNotFound")
         }
     }
 
@@ -176,7 +190,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (result && result.template) {
             const template = result.template;
             setCode({
-                language,
+                language: language as compilerLanguages,
                 isUpvoted: false,
                 comments: 0,
                 votes: 0,
@@ -204,7 +218,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const localSave = () => {
-        if(!code || !code.id) return;
+        if (!code || !code.id) return;
         const data = {
             source,
             css,

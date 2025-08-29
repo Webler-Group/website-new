@@ -2,7 +2,7 @@
 import PageTitle from "../layouts/PageTitle";
 
 const Contact = () => {
-  PageTitle("Webler - Contact", false);
+  PageTitle("Contact", false);
   return (
     <>
       <div className="wb-contact-page">

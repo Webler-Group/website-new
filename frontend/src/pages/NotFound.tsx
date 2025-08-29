@@ -2,7 +2,7 @@ import { Container } from "react-bootstrap";
 import PageTitle from "../layouts/PageTitle";
 
 function NotFound() {
-    PageTitle("Page not found")
+    PageTitle("Webler Codes")
     return (
         <Container>
             <div style={{ minHeight: "100vh" }}>

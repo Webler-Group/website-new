@@ -2,6 +2,7 @@ import express from "express";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import channelsController from "../controllers/channelsController";
+import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 

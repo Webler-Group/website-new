@@ -11,10 +11,22 @@ const Post_1 = __importDefault(require("./Post"));
 const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
 const uuid_1 = require("uuid");
-const isEmail = (value) => {
-    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-    return value.match(validEmailRegex) !== null;
-};
+const regexUtils_1 = require("../utils/regexUtils");
+const banSchema = new mongoose_1.default.Schema({
+    author: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    note: {
+        type: String,
+        trim: true
+    },
+    date: {
+        type: Date,
+        required: true
+    }
+}, { _id: false });
 const userSchema = new mongoose_1.default.Schema({
     email: {
         required: true,
@@ -22,7 +34,7 @@ const userSchema = new mongoose_1.default.Schema({
         unique: true,
         trim: true,
         lowercase: true,
-        validate: [isEmail, 'invalid email']
+        validate: [regexUtils_1.isEmail, 'invalid email']
     },
     password: {
         required: true,
@@ -80,6 +92,14 @@ const userSchema = new mongoose_1.default.Schema({
         codes: { type: Boolean, default: true },
         discuss: { type: Boolean, default: true },
         channels: { type: Boolean, default: true },
+    },
+    ban: {
+        type: banSchema,
+        default: null
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

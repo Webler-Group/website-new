@@ -1,4 +1,4 @@
-import { Offcanvas, Button, Tab, Nav, Modal, FormControl } from "react-bootstrap";
+import { Button, Tab, Nav, Modal, FormControl } from "react-bootstrap";
 import ChannelListItem from "../components/ChannelListItem";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
@@ -7,14 +7,12 @@ import useInvites from "../hooks/useInvites";
 import InvitesListItem from "../components/InvitesListItem";
 
 interface ChannelsListProps {
-    visible: boolean;
-    onHide: () => void;
     onChannelSelect: (channelId: string) => void;
     currentChannelId: string | null;
     onExit: () => void;
 }
 
-const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
+const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
     const [activeTab, setActiveTab] = useState("channels");
     const [groupTitle, setGroupTitle] = useState("");
     const [createGroupModalVisible, setCreateGroupModalVisible] = useState(false);
@@ -146,49 +144,43 @@ const ChannelsList2 = ({ visible, onHide, onChannelSelect, currentChannelId, onE
                     <Button variant="primary" onClick={handleCreateGroup} disabled={groupTitle.length < 3}>Create</Button>
                 </Modal.Footer>
             </Modal>
-            <Offcanvas show={visible} onHide={onHide} placement="end">
-                <Offcanvas.Header closeButton>
-                    <Offcanvas.Title>Channels & Invites</Offcanvas.Title>
-                </Offcanvas.Header>
+            <div className="d-flex flex-column p-2">
 
-                <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                <div className="mb-3">
+                    <Button variant="primary" onClick={() => setCreateGroupModalVisible(true)}>
+                        + Create Group
+                    </Button>
+                </div>
 
-                    <div className="mb-3">
-                        <Button variant="primary" onClick={() => setCreateGroupModalVisible(true)} className="w-100">
-                            + Create Group
-                        </Button>
-                    </div>
+                <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "channels")}>
+                    <Nav variant="pills" className="mb-3 gap-2">
+                        <Nav.Item className="position-relative">
+                            <Nav.Link className="border border-primary" eventKey="channels">Channels</Nav.Link>
+                        </Nav.Item>
+                        <Nav.Item className="position-relative">
+                            <Nav.Link className="border border-primary" eventKey="invites">Invites</Nav.Link>
 
-                    <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "channels")}>
-                        <Nav variant="pills" className="mb-3 gap-2">
-                            <Nav.Item className="position-relative">
-                                <Nav.Link className="border border-primary" eventKey="channels">Channels</Nav.Link>
-                            </Nav.Item>
-                            <Nav.Item className="position-relative">
-                                <Nav.Link className="border border-primary" eventKey="invites">Invites</Nav.Link>
+                            {invites.totalCount > 0 && (
+                                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    {invites.totalCount > 99 ? "99+" : invites.totalCount}
+                                    <span className="visually-hidden">pending invites</span>
+                                </span>
+                            )}
+                        </Nav.Item>
+                    </Nav>
 
-                                {invites.totalCount > 0 && (
-                                    <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                        {invites.totalCount > 99 ? "99+" : invites.totalCount}
-                                        <span className="visually-hidden">pending invites</span>
-                                    </span>
-                                )}
-                            </Nav.Item>
-                        </Nav>
+                    <Tab.Content className="flex-grow-1 overflow-auto">
+                        <Tab.Pane eventKey="channels">
+                            {channelsListContent}
+                        </Tab.Pane>
 
-                        <Tab.Content className="flex-grow-1 overflow-auto">
-                            <Tab.Pane eventKey="channels">
-                                {channelsListContent}
-                            </Tab.Pane>
+                        <Tab.Pane eventKey="invites">
+                            {invitesListContent}
+                        </Tab.Pane>
 
-                            <Tab.Pane eventKey="invites">
-                                {invitesListContent}
-                            </Tab.Pane>
-
-                        </Tab.Content>
-                    </Tab.Container>
-                </Offcanvas.Body>
-            </Offcanvas>
+                    </Tab.Content>
+                </Tab.Container>
+            </div>
         </>
     );
 };

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
+import PageTitle from "../layouts/PageTitle";
 
 export interface IPriviledgeInfo {
     name: string;
@@ -9,7 +10,8 @@ export interface IPriviledgeInfo {
 
 const tools = [
     { name: "Tag Executor", url: "/Tools/Tags", roles: ["Moderator"] },
-    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] }
+    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] },
+    { name: "Admin Panel", url: "/Admin", roles: ["Moderator"] }
 ];
 
 const makePriviledgeContent = (props: IPriviledgeInfo[]) => {
@@ -33,6 +35,8 @@ const makePriviledgeContent = (props: IPriviledgeInfo[]) => {
 }
 
 function ToolsHome() {
+    PageTitle("Tools");
+
     return(
         <div className="d-flex flex-column">
             <ul>

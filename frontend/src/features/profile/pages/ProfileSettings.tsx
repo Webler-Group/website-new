@@ -31,11 +31,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     const [emailMessage, setEmailMessage] = useState([true, ""]);
     const [emailPassword, setEmailPassword] = useState("");
+    const [verificationCode, setVerificationCode] = useState("");
     const [emailStep, setEmailStep] = useState(0);
     const [emailVerified, setEmailVerified] = useState(false);
 
-    const [currentPassword, setCurrentPassword] = useState("");
-    const [newPassword, setNewPassword] = useState("");
     const [passwordMessage, setPasswordMessage] = useState([true, ""]);
 
     const [avatarImageFile, setAvatarImageFile] = useState<File | null>(null);
@@ -90,7 +89,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setInfoMessage([true, "Information saved successfully"]);
         }
         else {
-            setInfoMessage([false, data.error._message ? data.error._message : "Bad request"])
+            setInfoMessage([false, data.error?._message ? data.error._message : "Bad request"])
         }
     }
 
@@ -103,7 +102,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         setInfoMessage([true, ""])
     }
 
-    const changeEmail = async () => {
+    const initiateEmailChange = async () => {
         setEmailMessage([true, ""]);
         if (!userInfo) {
             return;
@@ -113,21 +112,39 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             password: emailPassword
         });
         if (data.success) {
-            userInfo.email = data.data.email;
-            updateUser(userInfo);
-            onUpdate({ email: data.data.email, emailVerified: false });
-            setEmailMessage([true, "Email changed successfully"])
-            setEmailStep(0);
-            setEmailVerified(false)
+            setEmailStep(2);
+            setEmailMessage([true, "Verification code sent to your current email."])
+            setEmailPassword("");
         }
         else {
             if (data.error.code === 11000) {
                 setEmailMessage([false, "Email already exists"]);
             }
             else {
-                setEmailMessage([false, data.error._message ? data.error._message : "Bad request"])
+                setEmailMessage([false, data.error?._message ? data.error._message : data.message ?? "Bad request"])
             }
             setEmailPassword("")
+        }
+    }
+
+    const verifyEmailChange = async () => {
+        if(!userInfo) return;
+        setEmailMessage([true, ""]);
+        const data = await sendJsonRequest(`/Profile/VerifyEmailChange`, "POST", {
+            code: verificationCode
+        });
+        if (data.success) {
+            userInfo.email = data.data.email;
+            updateUser(userInfo);
+            onUpdate({ email: data.data.email, emailVerified: false });
+            setEmailMessage([true, "Email changed successfully"])
+            setEmailStep(0);
+            setEmailVerified(false)
+            setVerificationCode("");
+        }
+        else {
+            setEmailMessage([false, data.error?._message ? data.error._message : data.message ?? "Invalid code or error"])
+            setVerificationCode("")
         }
     }
 
@@ -137,41 +154,14 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         }
         setEmailStep(0);
         setEmailPassword("")
+        setVerificationCode("")
         setEmailMessage([true, ""])
-    }
-
-    const changePassword = async () => {
-        setPasswordMessage([true, ""]);
-        if (!userInfo) {
-            return;
-        }
-        if (currentPassword === newPassword) {
-            setPasswordMessage([false, "Passwords cannot be same"]);
-            return
-        }
-        const data = await sendJsonRequest(`/Profile/ChangePassword`, "POST", {
-            currentPassword,
-            newPassword
-        });
-        if (data.success) {
-            setPasswordMessage([true, "Password changed successfully"])
-            setCurrentPassword("");
-            setNewPassword("");
-        }
-        else {
-            setPasswordMessage([false, data.error._message ? data.error._message : "Bad request"])
-        }
-    }
-
-    const resetPassword = () => {
-        setPasswordMessage([true, ""])
-        setCurrentPassword("");
-        setNewPassword("");
     }
 
     const handleEmailNext = () => {
-        setEmailStep(1)
-        setEmailMessage([true, ""])
+        setEmailStep(1);
+        setEmail("");
+        setEmailMessage([true, ""]);
     }
 
     const handleSendVerificationEmail = async () => {
@@ -241,6 +231,19 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const onUserNotificationsUpdate = () => {
     }
 
+    const handleSendPasswordResetEmail = async () => {
+        setLoading(true);
+        setPasswordMessage([true, ""]);
+        const result = await sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email: userInfo?.email });
+        if (result && result.success) {
+            setPasswordMessage([true, "Email sent successfully"]);
+        }
+        else {
+            setPasswordMessage([false, result.message ? result.message : "Email could not be sent"])
+        }
+        setLoading(false);
+    }
+
     return (
         <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
             <Modal.Header closeButton>
@@ -279,11 +282,11 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         </Form>
                     </Tab>
                     <Tab eventKey="email" title="Email" onEnter={resetEmail}>
-                        <Form onSubmit={(e) => handleSubmit(e, changeEmail)}>
+                        <Form onSubmit={(e) => handleSubmit(e, emailStep === 1 ? initiateEmailChange : (emailStep === 2 ? verifyEmailChange : async () => {}))}>
                             {emailMessage[1] && <Alert variant={emailMessage[0] ? "success" : "danger"}>{emailMessage[1]}</Alert>}
                             <FormGroup>
                                 <FormLabel>{emailStep === 0 ? "Email" : "New Email"}</FormLabel>
-                                <FormControl readOnly={emailStep === 0} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                                <FormControl readOnly={emailStep === 0 || emailStep === 2} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                             </FormGroup>
                             {
                                 emailStep === 0 ?
@@ -319,7 +322,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                             </div>
                                         </FormGroup>
                                     </>
-                                    :
+                                    : null
+                            }
+                            {
+                                emailStep === 1 ?
                                     <>
                                         <FormGroup>
                                             <FormLabel>Current Password</FormLabel>
@@ -330,25 +336,30 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                             <Button variant="secondary" onClick={resetEmail} className="ms-2" type="button" disabled={loading}>Cancel</Button>
                                         </FormGroup>
                                     </>
+                                    : null
+                            }
+                            {
+                                emailStep === 2 ?
+                                    <>
+                                        <FormGroup>
+                                            <FormLabel>Verification Code</FormLabel>
+                                            <FormControl type="text" value={verificationCode} onChange={(e) => setVerificationCode(e.target.value)} />
+                                            <small className="text-muted">A verification code was sent to your current email address. Please enter it here.</small>
+                                        </FormGroup>
+                                        <FormGroup className="mt-2">
+                                            <Button type="submit" disabled={loading}>Verify</Button>
+                                            <Button variant="secondary" onClick={resetEmail} className="ms-2" type="button" disabled={loading}>Cancel</Button>
+                                        </FormGroup>
+                                    </>
+                                    : null
                             }
                         </Form>
                     </Tab>
                     <Tab eventKey="password" title="Password">
-                        <Form onSubmit={(e) => handleSubmit(e, changePassword)}>
+                        <div>
                             {passwordMessage[1] && <Alert variant={passwordMessage[0] ? "success" : "danger"}>{passwordMessage[1]}</Alert>}
-                            <FormGroup>
-                                <FormLabel>Current Password</FormLabel>
-                                <PasswordFormControl password={currentPassword} setPassword={setCurrentPassword} />
-                            </FormGroup>
-                            <FormGroup>
-                                <FormLabel>New Password</FormLabel>
-                                <PasswordFormControl password={newPassword} setPassword={setNewPassword} />
-                            </FormGroup>
-                            <FormGroup className="mt-2">
-                                <Button type="submit" disabled={loading}>Change</Button>
-                                <Button onClick={resetPassword} className="ms-2" type="button" disabled={loading}>Reset</Button>
-                            </FormGroup>
-                        </Form>
+                            <Button onClick={handleSendPasswordResetEmail} disabled={loading}>Send password reset email</Button>
+                        </div>
                     </Tab>
                     <Tab eventKey="avatar" title="Avatar">
                         <Form onSubmit={handleAvatarUpload}>

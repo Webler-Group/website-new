@@ -7,7 +7,7 @@ const Login = () => {
 
     const [searchParams, _] = useSearchParams();
     const navigate = useNavigate();
-    PageTitle("Webler - Login", false);
+    PageTitle("Webler Codes", false);
 
     const toggle = () => {
         navigate("/Users/Register" + (searchParams.has("returnUrl") ? `?returnUrl=${searchParams.get("returnUrl")!}` : ""));

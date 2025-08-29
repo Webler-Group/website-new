@@ -6,12 +6,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const confg_1 = require("../confg");
 const dbConn_1 = __importDefault(require("../config/dbConn"));
 const tags_1 = __importDefault(require("../config/tags"));
+const roles_1 = __importDefault(require("../data/roles"));
 const Tag_1 = __importDefault(require("../models/Tag"));
 const User_1 = __importDefault(require("../models/User"));
 async function main() {
     await (0, dbConn_1.default)();
-    await Tag_1.default.deleteMany({});
-    console.log("All existing tags deleted.");
     const tagDocs = tags_1.default.map(name => ({ name }));
     await Tag_1.default.insertMany(tagDocs);
     console.log("New tags added successfully.");
@@ -23,8 +22,8 @@ async function main() {
         adminUser = await User_1.default.create({
             email: confg_1.config.adminEmail,
             password: confg_1.config.adminPassword,
-            name: "WeblerCodes",
-            roles: ["Admin"],
+            name: "Webler Codes",
+            roles: [...roles_1.default],
             emailVerified: true
         });
         console.log("Admin user created successfully.");

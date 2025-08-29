@@ -77,8 +77,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
 
-    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return
     }
 
@@ -399,8 +399,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { questionId, index, count, filter, findPostId } = req.body;
 
-    if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof findPostId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return
     }
 
@@ -581,18 +581,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const tagIds: any[] = [];
-    let promises: Promise<void>[] = [];
-
-    for (let tagName of tags) {
-        promises.push(Tag.getOrCreateTagByName(tagName)
-            .then(tag => {
-                tagIds.push(tag._id);
-            })
-        )
-    }
-
-    await Promise.all(promises);
+    const tagIds = (await Tag.getOrCreateTagsByNames(tags)).map(x => x._id);
 
     question.title = title;
     question.message = message;
@@ -767,7 +756,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const currentUserId = req.userId;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
 
-    if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
+    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
         res.status(400).json({ message: "Some fileds are missing" });
         return
     }

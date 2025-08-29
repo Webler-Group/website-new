@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const confg_1 = require("../confg");
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const User_1 = __importDefault(require("../models/User"));
 const verifyJWT = (req, res, next) => {
     const authHeader = req.headers.authorization || req.headers.Authorization;
     const deviceId = req.headers["x-device-id"];
@@ -18,9 +19,13 @@ const verifyJWT = (req, res, next) => {
                 const rawFingerprint = deviceId;
                 const match = await bcrypt_1.default.compare(rawFingerprint, accessTokenPayload.fingerprint);
                 if (match) {
-                    const userInfo = accessTokenPayload.userInfo;
-                    req.userId = userInfo.userId;
-                    req.roles = userInfo.roles;
+                    // NEW: Fetch user and check tokenVersion
+                    const user = await User_1.default.findById(accessTokenPayload.userInfo.userId).select('tokenVersion active');
+                    if (user && user.active && accessTokenPayload.tokenVersion === user.tokenVersion) {
+                        const userInfo = accessTokenPayload.userInfo;
+                        req.userId = userInfo.userId;
+                        req.roles = userInfo.roles;
+                    }
                 }
             }
             next();

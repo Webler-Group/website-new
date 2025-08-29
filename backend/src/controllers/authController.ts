@@ -39,7 +39,7 @@ const login = asyncHandler(async (req, res) => {
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
             (tokenInfo as JwtPayload).exp! * 1000 : 0;
 
-        generateRefreshToken(res, { userId: user._id.toString() });
+        await generateRefreshToken(res, { userId: user._id.toString() });
 
         res.json({
             accessToken,
@@ -112,11 +112,12 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
             (tokenInfo as JwtPayload).exp! * 1000 : 0;
 
-        generateRefreshToken(res, { userId: user._id.toString() });
+        await generateRefreshToken(res, { userId: user._id.toString() });
 
         const { emailToken } = signEmailToken({
             userId: user._id.toString(),
-            email: user.email
+            email: user.email,
+            action: "verify-email"
         });
 
         if (config.nodeEnv === "production") {
@@ -183,9 +184,10 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
                 return
             }
 
-            const user = await User.findById((decoded as RefreshTokenPayload).userId);
+            const payload = decoded as RefreshTokenPayload;
+            const user = await User.findById(payload.userId).select('roles active tokenVersion');
 
-            if (!user || !user.active) {
+            if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) {  // NEW: Check version
                 res.status(401).json({ message: "Unauthorized" });
                 return
             }
@@ -214,7 +216,7 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
         return
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).lean();
 
     if (user === null) {
         res.status(404).json({ message: "Email is not registered" });
@@ -223,10 +225,13 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
 
     const { emailToken } = signEmailToken({
         userId: user._id.toString(),
-        email: user.email
+        email: user.email,
+        action: "reset-password"
     })
 
     try {
+        console.log(user.name);
+
         await sendPasswordResetEmail(user.name, user.email, user._id.toString(), emailToken);
 
         res.json({ success: true })
@@ -252,7 +257,7 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
             if (!err) {
                 const userId = decoded.userId as string;
 
-                if (userId !== resetId) {
+                if (userId !== resetId || decoded.action != "reset-password") {
                     res.json({ success: false });
                     return
                 }
@@ -265,6 +270,7 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
                 }
 
                 user.password = password;
+                user.tokenVersion = (user.tokenVersion || 0) + 1;
 
                 try {
                     await user.save();
@@ -319,7 +325,7 @@ const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
                 const userId2 = decoded.userId as string;
                 const email = decoded.email as string;
 
-                if (userId2 !== userId) {
+                if (userId2 !== userId || decoded.action != "verify-email") {
                     res.json({ success: false });
                     return
                 }

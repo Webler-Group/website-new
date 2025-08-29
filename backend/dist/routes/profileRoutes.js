@@ -3,12 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
 const profileController_1 = __importDefault(require("../controllers/profileController"));
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
-const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
-const router = express_1.default.Router();
+const express_1 = require("express");
+const router = (0, express_1.Router)();
 router.use(verifyJWT_1.default);
 router.route("/GetProfile")
     .post(profileController_1.default.getProfile);
@@ -21,8 +20,8 @@ router.route("/UpdateProfile")
     .put(profileController_1.default.updateProfile);
 router.route("/ChangeEmail")
     .post(profileController_1.default.changeEmail);
-router.route("/ChangePassword")
-    .post(profileController_1.default.changePassword);
+router.route("/VerifyEmailChange")
+    .post(profileController_1.default.verifyEmailChange);
 router.route("/Follow")
     .post(profileController_1.default.follow);
 router.route("/Unfollow")
@@ -37,10 +36,10 @@ router.route("/MarkNotificationsClicked")
     .post(profileController_1.default.markNotificationsClicked);
 router.route("/SendActivationCode")
     .post(profileController_1.default.sendActivationCode);
-router.route("/ToggleUserBan")
-    .post((0, requireRoles_1.default)(["Moderator", "Admin"]), profileController_1.default.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController_1.default.avatarImageUpload.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController_1.default.updateNotifications);
+router.route("/Search")
+    .post(profileController_1.default.searchProfiles);
 exports.default = router;

@@ -1,10 +1,9 @@
-import express from "express";
 import profileController from "../controllers/profileController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
-import requireRoles from "../middleware/requireRoles";
+import { Router } from "express";
 
-const router = express.Router();
+const router = Router();
 
 router.use(verifyJWT);
 
@@ -22,8 +21,8 @@ router.route("/UpdateProfile")
     .put(profileController.updateProfile);
 router.route("/ChangeEmail")
     .post(profileController.changeEmail);
-router.route("/ChangePassword")
-    .post(profileController.changePassword);
+router.route("/VerifyEmailChange")
+    .post(profileController.verifyEmailChange);
 router.route("/Follow")
     .post(profileController.follow);
 router.route("/Unfollow")
@@ -38,12 +37,12 @@ router.route("/MarkNotificationsClicked")
     .post(profileController.markNotificationsClicked)
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
-router.route("/ToggleUserBan")
-    .post(requireRoles(["Moderator", "Admin"]), profileController.toggleUserBan); // TODO: Move to Admin routes
 router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController.updateNotifications);
+router.route("/Search")
+    .post(profileController.searchProfiles);
 
 
 export default router;

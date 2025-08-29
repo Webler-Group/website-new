@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
 import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
 import ProfileSettings from "./ProfileSettings";
 import countries from "../../../data/countries";
-import { FaGear, FaStar } from "react-icons/fa6";
+import { FaGear, FaHammer, FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "./FollowList";
 import CodesSection from "../components/CodesSection";
@@ -14,6 +14,7 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import Question, { IQuestion } from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
+import PageTitle from "../../../layouts/PageTitle";
 
 export interface IUserNotifications {
     codes: boolean;
@@ -67,8 +68,11 @@ const Profile = () => {
 
     const [questions, setQuestions] = useState<IQuestion[]>([]);
     const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
+    const [pageTitle, setPageTitle] = useState("Webler Codes");
 
     const navigate = useNavigate();
+
+    PageTitle(pageTitle);
 
     useEffect(() => {
         setFollowListVisible(0);
@@ -82,6 +86,7 @@ const Profile = () => {
                     setFollowersCount(data.userDetails.followers);
                     setCodes(data.userDetails.codes.slice(0, 3));
                     setQuestions(data.userDetails.questions.slice(0, 3));
+                    setPageTitle(data.userDetails.name);
                 }
                 else {
                     setUserDetails(null);
@@ -158,10 +163,6 @@ const Profile = () => {
         setQuestionsSectionVisible(false);
     }
 
-    const setPageTitle = (userName: string) => {
-        { document.title = userName + " | Webler" }
-    }
-
     const openPlaygroundMenu = () => {
         navigate("/Compiler-Playground")
     }
@@ -181,26 +182,6 @@ const Profile = () => {
     const openSettings = () => {
         if (!userDetails) return;
         navigate("/Profile/" + userDetails.id + "?settings=true");
-    }
-
-    const toggleUserBan = async () => {
-        if (!userDetails) {
-            return;
-        }
-
-        if (confirm(userDetails.active ? "Are you sure you want to deactivate this user?" : "Are you sure you want to activate this user?")) {
-            const result = await sendJsonRequest(`/Profile/ToggleUserBan`, "POST", { userId, active: !userDetails.active });
-            if (result.success) {
-                setUserDetails(details => {
-                    return details ? { ...details, active: result.active } : null
-                })
-                alert(result.active ? "User is activated" : "User is deactivated");
-            }
-            else {
-                alert("Something went wrong")
-            }
-        }
-
     }
 
     let isCurrentUser = userInfo && userInfo.id === userId;
@@ -302,7 +283,6 @@ const Profile = () => {
                             followListVisible == 2 &&
                             <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
                         }
-                        {setPageTitle(userDetails.name)}
                         {
                             isCurrentUser &&
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
@@ -321,7 +301,9 @@ const Profile = () => {
                                                 (userInfo &&
                                                     userInfo.roles.some(role => ["Moderator", "Admin"].includes(role)) &&
                                                     !userDetails.roles.some(role => ["Moderator", "Admin"].includes(role))) &&
-                                                <Dropdown.Item onClick={toggleUserBan}>{userDetails.active ? "Deactivate" : "Activate"}</Dropdown.Item>
+                                                <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
+                                                    <FaHammer /> Open in Mod View
+                                                </Dropdown.Item>
                                             }
                                         </Dropdown.Menu>
                                     </Dropdown>

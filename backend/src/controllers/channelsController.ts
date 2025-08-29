@@ -67,7 +67,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 });
 
 const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { channelId, username } = req.body;
+    const { channelId, userId } = req.body;
     const currentUserId = req.userId;
 
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
@@ -76,7 +76,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const invitedUser = await User.findOne({ name: username }, "_id name avatarImage");
+    const invitedUser = await User.findById(userId, "name avatarImage roles level");
     if (!invitedUser) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -192,7 +192,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
         .populate<{ lastMessage: any }>({
             path: "lastMessage",
-            select: "user content _type createdAt",
+            select: "user content _type createdAt deleted",
             populate: {
                 path: "user",
                 select: "name avatarImage"
@@ -222,7 +222,8 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
-                    content: x.lastMessage.content,
+                    deleted: x.lastMessage.deleted,
+                    content: x.lastMessage.deleted ? "" : x.lastMessage.content,
                     createdAt: x.lastMessage.createdAt,
                     userId: x.lastMessage.user._id,
                     userName: x.lastMessage.user.name,
@@ -383,6 +384,11 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
 
+    if (typeof channelId === "undefined" || typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Invalid body" });
+        return;
+    }
+
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId })
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
@@ -407,7 +413,8 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userName: x.user.name,
         userAvatar: x.user.avatarImage,
         createdAt: x.createdAt,
-        content: x.content,
+        content: x.deleted ? "" : x.content,
+        deleted: x.deleted,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
@@ -416,6 +423,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let promises = [];
 
     for (let i = 0; i < data.length; ++i) {
+        if (data[i].deleted) continue;
         promises.push(PostAttachment.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
@@ -660,12 +668,44 @@ const createMessageWS = async (socket: Socket, payload: any) => {
     });
 }
 
+const deleteMessageWS = async (socket: Socket, payload: any) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+
+    const message = await ChannelMessage.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+
+    message.deleted = true;
+    await message.save();
+}
+
+const editMessageWS = async (socket: Socket, payload: any) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+
+    const message = await ChannelMessage.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+
+    message.content = payload.content;
+    await message.save();
+}
+
 const registerHandlersWS = (socket: Socket) => {
     socket.on("channels:messages_seen", (payload) => {
         markMessagesSeenWS(socket, payload);
     });
     socket.on("channels:send_message", (payload) => {
         createMessageWS(socket, payload);
+    });
+    socket.on("channels:delete_message", (payload) => {
+        deleteMessageWS(socket, payload);
+    });
+    socket.on("channels:edit_message", (payload) => {
+        editMessageWS(socket, payload);
     });
 }
 

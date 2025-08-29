@@ -67,10 +67,15 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                         {channel.lastMessage != null && (
                             channel.lastMessage.type === 1 ? (
                                 <>
-                                    <span className="text-primary">{channel.lastMessage.userName}:</span>{" "}
-                                    <span className="text-muted">
-                                        {truncate(channel.lastMessage.content, 20)}
-                                    </span>
+                                    <span className="text-primary">{channel.lastMessage.userName}: </span>
+                                    {
+                                        channel.lastMessage.deleted ?
+                                            <i className="text-muted">Message was deleted</i>
+                                            :
+                                            <span className="text-muted">
+                                                {truncate(channel.lastMessage.content, 20)}
+                                            </span>
+                                    }
                                 </>
                             ) : (
                                 <span className="text-muted">

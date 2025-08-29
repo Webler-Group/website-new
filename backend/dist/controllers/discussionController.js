@@ -68,8 +68,8 @@ const createQuestion = (0, express_async_handler_1.default)(async (req, res) => 
 const getQuestionList = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
-    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return;
     }
     const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
@@ -354,8 +354,8 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
 const getReplies = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { questionId, index, count, filter, findPostId } = req.body;
-    if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof findPostId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return;
     }
     let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2, hidden: false });
@@ -500,15 +500,7 @@ const editQuestion = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(401).json({ message: "Unauthorized" });
         return;
     }
-    const tagIds = [];
-    let promises = [];
-    for (let tagName of tags) {
-        promises.push(Tag_1.default.getOrCreateTagByName(tagName)
-            .then(tag => {
-            tagIds.push(tag._id);
-        }));
-    }
-    await Promise.all(promises);
+    const tagIds = (await Tag_1.default.getOrCreateTagsByNames(tags)).map(x => x._id);
     question.title = title;
     question.message = message;
     question.tags = tagIds;
@@ -647,7 +639,7 @@ const votePost = (0, express_async_handler_1.default)(async (req, res) => {
 const getCodeComments = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
-    if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
+    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
         res.status(400).json({ message: "Some fileds are missing" });
         return;
     }

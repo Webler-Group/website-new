@@ -22,6 +22,7 @@ const channelsRoutes_1 = __importDefault(require("./routes/channelsRoutes"));
 const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
 const tagRoutes_1 = __importDefault(require("./routes/tagRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
+const adminRoutes_1 = __importDefault(require("./routes/adminRoutes"));
 const http_1 = __importDefault(require("http"));
 const confg_1 = require("./confg");
 const cronJobs_1 = require("./services/cronJobs");
@@ -59,6 +60,7 @@ async function main() {
     app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
     app.use(`${apiPrefix}/Tag`, tagRoutes_1.default);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes_1.default);
+    app.use(`${apiPrefix}/Admin`, adminRoutes_1.default);
     app.all("*", (req, res) => {
         res.status(404).json({ message: "404 Not Found" });
     });

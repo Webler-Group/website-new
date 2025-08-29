@@ -9,7 +9,7 @@ import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useSearchParams } from "react-router-dom";
 
 const Blog = () => {
-  PageTitle("Webler - Blog", false);
+  PageTitle("Blog | Webler Codes", false);
 
   const { sendJsonRequest } = useApi();
   const entriesPerPage = 10;
