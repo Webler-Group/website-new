@@ -717,9 +717,14 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             const followingUserIds = followingUsers.map(f => f.following);
 
             if (followingUserIds.length === 0) {
-                res.json({ success: true, data: [] });
+                res.status(200).json({
+                    count: 0,
+                    feeds: [],
+                    success: true
+                });
                 return;
             }
+
 
             pipeline.push(
                 { $match: { user: { $in: followingUserIds } } },

@@ -23,13 +23,14 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
 
         setIsLoading(true);
 
-        const result = await sendJsonRequest("/Feed", "POST", {
+        let result = await sendJsonRequest("/Feed", "POST", {
             count,
             page: page.page,
             filter,
             searchQuery: ""
         },
             signal)
+
 
         if (signal.aborted) {
             setError("Something went wrong");
