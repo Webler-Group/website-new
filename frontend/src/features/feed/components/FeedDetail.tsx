@@ -21,7 +21,7 @@ const FeedDetails: React.FC = () => {
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+    setTimeout(() => setNotification(null), 5000);
   };
 
   useEffect(() => {

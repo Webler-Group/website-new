@@ -659,7 +659,6 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery } = req.body;
     const currentUserId = req.userId;
-    // const currentUserId = '68a7400f3dd5eef60a166911';
 
     if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
@@ -718,18 +717,26 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 res.status(400).json({ success: false, message: "Authentication required" });
                 return;
             }
-            const followingUsers = await PostFollowing.find({ 
+
+            const followingUsers = await UserFollowing.find({ 
                 user: currentUserId 
             }).select("following");
+
             const followingUserIds = followingUsers.map(f => f.following);
-            
-            pipeline.push({
-                $match: { user: { $in: followingUserIds } }
-            }, {
-                $sort: { createdAt: -1 }
-            });
+
+            if (followingUserIds.length === 0) {
+                res.json({ success: true, data: [] });
+                return;
+            }
+
+            pipeline.push(
+                { $match: { user: { $in: followingUserIds } } },
+                { $sort: { createdAt: -1 } }
+            );
+
             break;
         }
+
         // Hot Today (trending in last 24 hours)
         case 4: {
             const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
