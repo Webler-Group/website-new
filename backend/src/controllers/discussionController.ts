@@ -12,6 +12,7 @@ import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
 import { sendToUsers } from "../services/pushService";
 import User from "../models/User";
+import UserFollowing from "../models/UserFollowing";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -1122,6 +1123,44 @@ const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) =
     res.status(500).json({ success: false });
 });
 
+const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { parentId, page, count } = req.body;
+    const currentUserId = req.userId;
+
+    const result = await Upvote.find({ parentId })
+        .sort({ createdAt: "desc" })
+        .skip((page - 1) * count)
+        .limit(count)
+        .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
+        .select("user");
+
+    const promises: Promise<void>[] = [];
+    const data = result.map(x => ({
+        id: x.user._id,
+        name: x.user.name,
+        avatar: x.user.avatarImage,
+        countryCode: x.user.countryCode,
+        level: x.user.level,
+        roles: x.user.roles,
+        isFollowing: false
+    }));
+
+    for (let i = 0; i < data.length; ++i) {
+        const user = data[i];
+        promises.push(UserFollowing.countDocuments({ user: currentUserId, following: user.id })
+            .then(exists => {
+                data[i].isFollowing = exists !== null;
+            }));
+    }
+
+    await Promise.all(promises);
+
+    res.json({
+        success: true,
+        data
+    });
+});
+
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -1140,7 +1179,8 @@ const discussController = {
     editCodeComment,
     deleteCodeComment,
     followQuestion,
-    unfollowQuestion
+    unfollowQuestion,
+    getVotersList
 }
 
 export default discussController;

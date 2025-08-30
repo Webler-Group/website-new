@@ -8,6 +8,7 @@ import { FaLeftLong } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import { IPostAttachment } from "../../discuss/components/PostAttachment";
 import PostTextareaControl from "../../../components/PostTextareaControl";
+import FollowList from "../../profile/pages/FollowList";
 
 interface CommentListProps {
     code: ICode;
@@ -39,8 +40,9 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [showAllComments, setShowAllComments] = useState(!(isReply && postId))
-
     const [message, setMessage] = useState([true, ""]);
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
 
     useEffect(() => {
         if (postId) {
@@ -153,6 +155,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         setDeletedAnswersCount(answers);
     }
 
+    const onShowVoters = (commentId: string) => {
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: commentId } });
+        setVotersModalVisible(true);
+    }
+
     const closeDeleteModal = () => setDeleteModalVisible(false);
 
     const handleFilterSelect = (e: ChangeEvent) => {
@@ -177,6 +184,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                     <Button variant="danger" onClick={handleDeleteComment}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
             <Offcanvas show={visible} onHide={onHide} placement="end">
                 <Offcanvas.Header closeButton>
                     <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
@@ -209,6 +217,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                             onEdit={onEdit}
                             onDelete={onDelete}
                             onVote={() => { }}
+                            onShowVoters={onShowVoters}
                             setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                             addReplyToParent={() => { }}
                             editParentReply={() => { }}

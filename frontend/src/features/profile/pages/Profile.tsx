@@ -73,6 +73,9 @@ const Profile = () => {
 
     const navigate = useNavigate();
 
+    const [followerListOptions, setFollowerListOptions] = useState({ urlPath: "", params: {} });
+    const [followingListOptions, setFollowingListOptions] = useState({ urlPath: "", params: {} });
+
     PageTitle(pageTitle);
 
     useEffect(() => {
@@ -93,6 +96,8 @@ const Profile = () => {
                     setUserDetails(null);
                 }
             })
+        setFollowerListOptions({ urlPath: `/Profile/GetFollowers`, params: { userId } });
+        setFollowingListOptions({ urlPath: `/Profile/GetFollowing`, params: { userId } });
     }, [userId]);
 
     const onUserUpdate = (data: any) => {
@@ -276,14 +281,8 @@ const Profile = () => {
                             questionsSectionVisible &&
                             <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />
                         }
-                        {
-                            followListVisible == 1 &&
-                            <FollowList onClose={closeFollowList} options={{ title: "Followers", urlPath: `/Profile/GetFollowers`, setCount: setFollowingCount, userId: userDetails.id }} />
-                        }
-                        {
-                            followListVisible == 2 &&
-                            <FollowList onClose={closeFollowList} options={{ title: "Following", urlPath: `/Profile/GetFollowing`, setCount: setFollowingCount, userId: userDetails.id }} />
-                        }
+                        <FollowList visible={followListVisible == 1} title="Followers" onClose={closeFollowList} setCount={setFollowingCount} userId={userDetails.id} options={followerListOptions} />
+                        <FollowList visible={followListVisible == 2} title="Following" onClose={closeFollowList} setCount={setFollowingCount} userId={userDetails.id} options={followingListOptions} />
                         {
                             isCurrentUser &&
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />

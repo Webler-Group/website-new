@@ -18,7 +18,9 @@ router.route("/GetQuestionReplies")
 router.route("/GetTags")
     .post(discussionController.getTags);
 router.route("/GetCodeComments")
-    .post(discussionController.getCodeComments)
+    .post(discussionController.getCodeComments);
+router.route("/GetVoters")
+    .post(discussionController.getVotersList);
 
 router.use(protectRoute);
 

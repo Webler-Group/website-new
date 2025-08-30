@@ -21,6 +21,8 @@ router.route("/GetTags")
     .post(discussionController_1.default.getTags);
 router.route("/GetCodeComments")
     .post(discussionController_1.default.getCodeComments);
+router.route("/GetVoters")
+    .post(discussionController_1.default.getVotersList);
 router.use(protectRoute_1.default);
 router.route("/CreateQuestion")
     .post(verifyEmail_1.default, (0, requestLimiter_1.default)(3600, 5, "Too many requests, try again later"), discussionController_1.default.createQuestion);

@@ -15,6 +15,7 @@ const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const regexUtils_1 = require("../utils/regexUtils");
 const pushService_1 = require("../services/pushService");
 const User_1 = __importDefault(require("../models/User"));
+const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const createQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -938,6 +939,38 @@ const unfollowQuestion = (0, express_async_handler_1.default)(async (req, res) =
     }
     res.status(500).json({ success: false });
 });
+const getVotersList = (0, express_async_handler_1.default)(async (req, res) => {
+    const { parentId, page, count } = req.body;
+    const currentUserId = req.userId;
+    const result = await Upvote_1.default.find({ parentId })
+        .sort({ createdAt: "desc" })
+        .skip((page - 1) * count)
+        .limit(count)
+        .populate("user", "name avatarImage countryCode level roles")
+        .select("user");
+    const promises = [];
+    const data = result.map(x => ({
+        id: x.user._id,
+        name: x.user.name,
+        avatar: x.user.avatarImage,
+        countryCode: x.user.countryCode,
+        level: x.user.level,
+        roles: x.user.roles,
+        isFollowing: false
+    }));
+    for (let i = 0; i < data.length; ++i) {
+        const user = data[i];
+        promises.push(UserFollowing_1.default.countDocuments({ user: currentUserId, following: user.id })
+            .then(exists => {
+            data[i].isFollowing = exists !== null;
+        }));
+    }
+    await Promise.all(promises);
+    res.json({
+        success: true,
+        data
+    });
+});
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -956,6 +989,7 @@ const discussController = {
     editCodeComment,
     deleteCodeComment,
     followQuestion,
-    unfollowQuestion
+    unfollowQuestion,
+    getVotersList
 };
 exports.default = discussController;

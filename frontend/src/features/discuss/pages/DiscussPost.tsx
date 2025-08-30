@@ -20,6 +20,7 @@ import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import PostTextareaControl from "../../../components/PostTextareaControl";
+import FollowList from "../../profile/pages/FollowList";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -47,6 +48,8 @@ const DiscussPost = () => {
     const findPostRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [pageTitle, setPageTitle] = useState("");
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
     
     PageTitle(pageTitle);
 
@@ -314,6 +317,17 @@ const DiscussPost = () => {
         }
     }
 
+    const handleShowVoters = () => {
+        if(!questionId) return;
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: questionId } });
+        setVotersModalVisible(true);
+    }
+
+    const onShowAnswerVoters = (id: string) => {
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: id } });
+        setVotersModalVisible(true);
+    }
+
     let charactersRemaining = maxCharacters - formInput.length;
 
     return (
@@ -329,6 +343,7 @@ const DiscussPost = () => {
                     <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
             <div className="d-flex gap-2 py-2">
                 <Link to="/Discuss">Q&A</Link>
                 <span>&rsaquo;</span>
@@ -375,7 +390,7 @@ const DiscussPost = () => {
                             <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
                                 <FaThumbsUp />
                             </span>
-                            <b>{question.votes}</b>
+                            <b className="wb-discuss-voting__button text-black" onClick={handleShowVoters}>{question.votes}</b>
                         </div>
                         <div>
                             <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
@@ -469,7 +484,8 @@ const DiscussPost = () => {
                                 isQuestionOwner={userInfo?.id === question.userId}
                                 key={answer.id}
                                 showEditAnswer={showEditAnswer}
-                                newlyCreatedAnswer={postId} />
+                                newlyCreatedAnswer={postId}
+                                onShowVoters={onShowAnswerVoters} />
                         }
                         return <Answer
                             answer={answer}
@@ -478,7 +494,8 @@ const DiscussPost = () => {
                             isQuestionOwner={userInfo?.id === question!.userId}
                             key={answer.id}
                             showEditAnswer={showEditAnswer}
-                            newlyCreatedAnswer={postId} />
+                            newlyCreatedAnswer={postId}
+                            onShowVoters={onShowAnswerVoters} />
                     })
                 }
             </div>

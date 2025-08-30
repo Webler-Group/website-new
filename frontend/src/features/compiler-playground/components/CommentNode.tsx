@@ -34,6 +34,7 @@ interface CommentNodeProps {
     onEdit: (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => void;
     onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
     onVote: (id: string, vote: number) => void;
+    onShowVoters: (id: string) => void;
     setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
     addReplyToParent: (data: ICodeComment) => void;
     editParentReply: (id: string, message: string, attachments: IPostAttachment[]) => void;
@@ -74,6 +75,7 @@ const CommentNode = React.forwardRef(({
     onEdit,
     onDelete,
     onVote,
+    onShowVoters,
     setDefaultOnReplyCallback,
     addReplyToParent,
     editParentReply,
@@ -216,6 +218,13 @@ const CommentNode = React.forwardRef(({
         }
     }
 
+    const handleShowVoters = () => {
+        if (data === null) {
+            return;
+        }
+        onShowVoters(data.id);
+    }
+
     const addReply = (data: ICodeComment) => {
         add(data)
         setReplyCount(count => count + 1)
@@ -290,7 +299,7 @@ const CommentNode = React.forwardRef(({
                                     <span className={"wb-discuss-voting__button" + (data.isUpvoted ? " text-black" : "")} onClick={handleVote}>
                                         <FaThumbsUp />
                                     </span>
-                                    <span className="ms-1">{data.votes}</span>
+                                    <span className="ms-1 wb-playground-comments__button" onClick={handleShowVoters}>{data.votes}</span>
                                 </div>
                                 <button className="small wb-user-comment-footer__reply" onClick={handleReply}>
                                     Reply
@@ -337,6 +346,7 @@ const CommentNode = React.forwardRef(({
                                                 onEdit={onEdit}
                                                 onDelete={onDelete}
                                                 onVote={voteReply}
+                                                onShowVoters={onShowVoters}
                                                 setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                 addReplyToParent={addReply}
                                                 editParentReply={editReply}
@@ -362,6 +372,7 @@ const CommentNode = React.forwardRef(({
                                                     onEdit={onEdit}
                                                     onDelete={onDelete}
                                                     onVote={voteReply}
+                                                    onShowVoters={onShowVoters}
                                                     setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                     addReplyToParent={addReply}
                                                     editParentReply={editReply}
@@ -383,6 +394,7 @@ const CommentNode = React.forwardRef(({
                                                     onEdit={onEdit}
                                                     onDelete={onDelete}
                                                     onVote={voteReply}
+                                                    onShowVoters={onShowVoters}
                                                     setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                     addReplyToParent={addReply}
                                                     editParentReply={editReply}
