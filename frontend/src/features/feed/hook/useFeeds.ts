@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { IFeed } from "../components/types";
 import { useApi } from "../../../context/apiCommunication";
 
-const useFeed = (count: number, page: { page: number; _state: number; }, filter: number) => {
+const useFeed = (count: number, store: { page: number; filter: number; query: string; }) => {
     const [results, setResults] = useState<IFeed[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const { sendJsonRequest } = useApi();
@@ -14,10 +14,10 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
     const { signal } = controller
 
     useEffect(() => {
-        if(page._state != 0) {
+        if(store.page > 0) {
             getFeeds();
         }
-    }, [page]);
+    }, [store]);
 
     const getFeeds = async () => {
 
@@ -25,9 +25,9 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
 
         let result = await sendJsonRequest("/Feed", "POST", {
             count,
-            page: page.page,
-            filter,
-            searchQuery: ""
+            page: store.page,
+            filter: store.filter,
+            searchQuery: store.query
         },
             signal)
 
@@ -38,7 +38,7 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
         }
 
         if (result && result.success) {
-            if(page.page == 1) {
+            if(store.page == 1) {
                 setResults(result.feeds)
             } else {
                 setResults(prev => [...prev, ...result.feeds])

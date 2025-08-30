@@ -1,19 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, MessageCircle, Loader2, Filter, ChevronDown, ChevronUp, Pin } from 'lucide-react';
 import { IFeed } from './types';
 import FeedListItem from './FeedListItem';
 import NotificationToast from './comments/NotificationToast';
 import useFeed from '../hook/useFeeds';
-
-const filterOptions = [
-  { value: 1, label: 'Most Recent' },
-  { value: 2, label: 'My Posts' },
-  { value: 3, label: 'Following' },
-  { value: 4, label: 'Hot Today' },
-  { value: 5, label: 'Most Popular' },
-  { value: 6, label: 'Most Shared' }
-];
+import { TagSearch } from '../../../components/InputTags';
+import { useAuth } from '../../auth/context/authContext';
 
 const postsPerPage = 10;
 
@@ -21,10 +14,14 @@ interface FeedListProps { }
 
 const FeedList: React.FC<FeedListProps> = () => {
   const [selectedFilter, setSelectedFilter] = useState(1); // 1 = Most Recent
-  const [currentPage, setCurrentPage] = useState({ page: 1, _state: 0 });
-  const [pinnedPage, setPinnedPage] = useState({ page: 1, _state: 0 });
   const [pinnedPostsExpanded, setPinnedPostsExpanded] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { userInfo } = useAuth();
+  const [feedsStore, setFeedStore] = useState({ page: 0, filter: 1, query: "" });
+  const [pinnedFeedsStore, _] = useState({ page: 1, filter: 7, query: "" });
 
   // Main feed hook
   const {
@@ -34,7 +31,7 @@ const FeedList: React.FC<FeedListProps> = () => {
     hasNextPage,
     deleteFeed,
     editFeed
-  } = useFeed(postsPerPage, currentPage, selectedFilter);
+  } = useFeed(postsPerPage, feedsStore);
 
   // Pinned posts hook - fetch pinned posts (filter 7)
   const {
@@ -43,18 +40,29 @@ const FeedList: React.FC<FeedListProps> = () => {
     deleteFeed: deletePinnedFeed,
     editFeed: editPinnedFeed,
     addFeed: addPinnedFeed
-  } = useFeed(50, pinnedPage, 7); // Fetch up to 50 pinned posts
-
-  const navigate = useNavigate();
+  } = useFeed(50, pinnedFeedsStore); // Fetch up to 50 pinned posts
 
   useEffect(() => {
-    setCurrentPage({ page: 1, _state: 1 });
-  }, [selectedFilter]);
-
-  // Initialize pinned posts loading on component mount
-  useEffect(() => {
-    setPinnedPage({ page: 1, _state: 1 });
+    if (searchParams.has("filter")) {
+      setSelectedFilter(Number(searchParams.get("filter")))
+    }
+    if (searchParams.has("query")) {
+      setSearchQuery(searchParams.get("query")!)
+    }
   }, []);
+
+  useEffect(() => {
+    const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
+      const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
+    if (searchParams.has("filter")) {
+      setSelectedFilter(Number(searchParams.get("filter")))
+    }
+    if (searchParams.has("query")) {
+      setSearchQuery(searchParams.get("query")!)
+    }
+    console.log(1);
+    setFeedStore({ page: 1, filter, query: searchQuery });
+  }, [searchParams]);
 
   const intObserver = useRef<IntersectionObserver>()
   const lastFeedElemRef = useCallback((elem: any) => {
@@ -64,16 +72,38 @@ const FeedList: React.FC<FeedListProps> = () => {
 
     intObserver.current = new IntersectionObserver(elems => {
       if (elems[0].isIntersecting && hasNextPage) {
-        setCurrentPage(prev => ({ page: prev.page + 1, _state: 1 }));
+        setFeedStore(prev => ({ ...prev, page: prev.page + 1 }));
       }
     })
 
     if (elem) intObserver.current.observe(elem)
   }, [isLoading, hasNextPage]);
 
+  const filterOptions = userInfo ? [
+    { value: 1, label: 'Most Recent' },
+    { value: 2, label: 'My Posts' },
+    { value: 3, label: 'Following' },
+    { value: 4, label: 'Hot Today' },
+    { value: 5, label: 'Most Popular' },
+    { value: 6, label: 'Most Shared' }
+  ] : [
+    { value: 1, label: 'Most Recent' },
+    { value: 4, label: 'Hot Today' },
+    { value: 5, label: 'Most Popular' },
+    { value: 6, label: 'Most Shared' }
+  ];
+
   const handleFilterChange = (filter: number) => {
+    searchParams.set("filter", filter.toString());
+    setSearchParams(searchParams, { replace: true });
     setSelectedFilter(filter);
   };
+
+  const handleSearch = (value: string) => {
+    searchParams.set("query", value);
+    setSearchParams(searchParams, { replace: true });
+    setSearchQuery(value);
+  }
 
   const handleFeedUpdate = (updatedFeed: IFeed) => {
     // If pin status changed, refresh pinned posts list
@@ -150,8 +180,11 @@ const FeedList: React.FC<FeedListProps> = () => {
         </div>
 
         {/* Search and Filters */}
-        <div className="row g-3 mb-4">
-          <div className="col-md-12">
+        <div className="row g-3 mb-4 align-items-center">
+          <div className='col-md-8'>
+            <TagSearch query={searchQuery} handleSearch={handleSearch} placeholder='Search by tags or content' />
+          </div>
+          <div className="col-md-4">
             <div className="dropdown w-100">
               <button
                 className="btn btn-outline-secondary dropdown-toggle w-100 d-flex align-items-center justify-content-between rounded-pill"

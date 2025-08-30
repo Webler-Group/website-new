@@ -45,13 +45,15 @@ interface TagSearchProps {
     placeholder?: string;
     maxWidthPx?: number;
     handleSearch: (value: string) => void;
+    size?: "sm" | "lg";
 }
 
 export const TagSearch = ({
     query,
     placeholder = "Search...",
     maxWidthPx = 360,
-    handleSearch
+    handleSearch,
+    size
 }: TagSearchProps) => {
     const { sendJsonRequest } = useApi();
     const [validTags, setValidTags] = useState<string[]>([]);
@@ -101,7 +103,7 @@ export const TagSearch = ({
                 <FormControl
                     ref={inputRef}
                     type="search"
-                    size="sm"
+                    size={size}
                     placeholder={placeholder}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
@@ -153,7 +155,7 @@ export const TagSearch = ({
                     </ul>
                 )}
             </div>
-            <Button size="sm" onClick={() => handleSearch(input)}>Search</Button>
+            <Button size={size} onClick={() => handleSearch(input)}>Search</Button>
         </div>
     );
 };
