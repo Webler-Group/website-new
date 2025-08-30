@@ -778,61 +778,78 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const countResult = await Post.aggregate(countPipeline);
     const feedCount = countResult.length > 0 ? countResult[0].total : 0;
 
-    pipeline.push(
-        { $skip: (page - 1) * count },
-        { $limit: count },
-        {
-            $lookup: {
-                from: "users",
-                localField: "user",
-                foreignField: "_id",
-                as: "users"
-            }
-        },
-        {
-            $lookup: {
-                from: "tags",
-                localField: "tags",
-                foreignField: "_id",
-                as: "tags"
-            }
-        },
-        {
+pipeline.push(
+    { $skip: (page - 1) * count },
+    { $limit: count },
+    {
+        $lookup: {
+            from: "users",
+            localField: "user",
+            foreignField: "_id",
+            as: "users"
+        }
+    },
+    {
+        $lookup: {
+            from: "tags",
+            localField: "tags",
+            foreignField: "_id",
+            as: "tags"
+        }
+    },
+    {
         $lookup: {
             from: "postattachments",
             localField: "_id",
             foreignField: "postId",
             as: "attachments"
-            }
-        },
-        {
-            $lookup: {
-                from: "posts",
-                localField: "sharedFrom",
-                foreignField: "_id",
-                as: "originalPost",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "users",
-                            localField: "user",
-                            foreignField: "_id",
-                            as: "users"
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: "tags",
-                            localField: "tags",
-                            foreignField: "_id",
-                            as: "tags"
-                        }
-                    },
-                    { $limit: 1 }
-                ]
-            }
         }
-    );
+    },
+    {
+        $lookup: {
+            from: "posts",
+            localField: "sharedFrom",
+            foreignField: "_id",
+            as: "originalPost",
+            pipeline: [
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "user",
+                        foreignField: "_id",
+                        as: "users"
+                    }
+                },
+                {
+                    $lookup: {
+                        from: "tags",
+                        localField: "tags",
+                        foreignField: "_id",
+                        as: "tags"
+                    }
+                },
+                { $limit: 1 }
+            ]
+        }
+    },
+
+  
+    {
+        $graphLookup: {
+            from: "posts",
+            startWith: "$_id",
+            connectFromField: "_id",
+            connectToField: "parentId",
+            as: "allReplies",
+            restrictSearchWithMatch: { hidden: false }
+        }
+    },
+    {
+        $addFields: {
+            answers: { $size: "$allReplies" }
+        }
+    }
+);
 
     const result = await Post.aggregate(pipeline);
 
@@ -982,6 +999,23 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     { $limit: 1 }
                 ]
             }
+        },
+
+        // 🔹 NEW: recursively collect replies (nested)
+        {
+            $graphLookup: {
+                from: "posts",
+                startWith: "$_id",
+                connectFromField: "_id",
+                connectToField: "parentId",
+                as: "allReplies",
+                restrictSearchWithMatch: { hidden: false }
+            }
+        },
+        {
+            $addFields: {
+                answers: { $size: "$allReplies" }
+            }
         }
     ];
 
@@ -1006,7 +1040,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userId: feed.user,
         userName: feed.users.length ? feed.users[0].name : "Unknown User",
         userAvatarImage: feed.users.length ? feed.users[0].avatarImage || null : null,
-        answers: feed.answers || 0,
+        answers: feed.answers || 0,   // ✅ now recursive
         votes: feed.votes || 0,
         shares: feed.shares || 0,
         level: feed.users[0]?.level,
@@ -1030,7 +1064,6 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         } : null
     };
 
-    // Check user interactions
     if (currentUserId) {
         const [upvote, following] = await Promise.all([
             Upvote.findOne({ parentId: data.id, user: currentUserId }),
@@ -1042,6 +1075,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.status(200).json({ feed: data, success: true });
 });
+
 
 
 /**
@@ -1188,16 +1222,16 @@ export const getReplies = asyncHandler(
 
 
 const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { parentId, message, feedId  } = req.body;
+    const { parentId, message, feedId } = req.body;
     const currentUserId = req.userId;
 
-    if(!currentUserId) {
-        res.status(403).json({message: "Unauthorized"})
+    if (!currentUserId) {
+        res.status(403).json({ message: "Unauthorized" });
         return;
     }
 
-    try{
-
+    try {
+        // 1. Create new reply
         const newReply = await Post.create({
             _type: 6,
             title: "Title not required",
@@ -1206,15 +1240,22 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             tags: [],
             user: currentUserId,
             isAccepted: true
-        })
+        });
 
+        // 2. Add reply mapping
         const postReply = await PostReplies.create({
-            parentId: parentId, 
+            parentId: parentId,
             reply: newReply._id,
             feedId: feedId
-        })
+        });
 
-        const user = await User.findOne({ _id: currentUserId })
+        // 3. Increment answers count of the parent comment
+        await Post.findByIdAndUpdate(parentId, {
+            $inc: { answers: 1 }
+        });
+
+        // 4. Fetch reply user details
+        const user = await User.findOne({ _id: currentUserId });
 
         const formattedReply = {
             id: newReply._id.toString(),
@@ -1228,40 +1269,42 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             votes: 0,
             isUpvoted: false,
             replies: [],
+            answers: 0 
         };
 
+        // 5. Validate parent + feed
         const feed = await Post.findById(parentId);
-        if(!feed) {
+        if (!feed) {
             res.status(404).json({ success: false, message: "Comment is not available" });
             return;
         }
 
-        const originalFeed = await Post.findById(feedId)
-        if(!originalFeed){
+        const originalFeed = await Post.findById(feedId);
+        if (!originalFeed) {
             res.status(404).json({ success: false, message: "Feed is not available" });
             return;
         }
 
-        if(currentUserId != feed.user) {
+        // 6. Send notification if reply is not from same user
+        if (currentUserId != feed.user.toString()) {
             await Notification.create({
                 _type: 301,
                 user: feed.user,
                 actionUser: currentUserId,
                 message: `{action_user} replied to your comment "${notificationMessage(feed.message)}" on post "${notificationMessage(originalFeed?.message)}"`,
-                feedId: originalFeed._id,    
-                postId: postReply._id   
+                feedId: originalFeed._id,
+                postId: postReply._id
             });
         }
 
         res.status(200).json({ reply: formattedReply, success: true });
 
-    }catch(err) {
-        console.log(err)
+    } catch (err) {
+        console.log(err);
         res.status(500).json({ message: err, success: false });
     }
+});
 
-    
-})
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { feedId } = req.body;

@@ -145,6 +145,7 @@ const FeedDetails: React.FC = () => {
               feedId={feed.id}
               sendJsonRequest={sendJsonRequest}
               currentUserId={currentUserId}
+              noOfComments = {feed.answers}
             />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Comment } from '../types';
 import { Loader2 } from 'lucide-react';
 import CommentItem from './CommentItem';
@@ -8,57 +8,140 @@ interface CommentListProps {
   feedId: string;
   sendJsonRequest: (method: string, url: string, reqBody?: any) => Promise<any>;
   currentUserId?: string;
+  noOfComments: number;
 }
 
 const CommentList: React.FC<CommentListProps> = ({
   feedId,
   sendJsonRequest,
-  currentUserId
+  currentUserId,
+  noOfComments
 }) => {
   const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  
+  // Pagination states
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalLoaded, setTotalLoaded] = useState(0);
   
   // UI states
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [replyBoxes, setReplyBoxes] = useState<Record<string, boolean>>({});
+  
+  // Refs for infinite scroll
+  const observerRef = useRef<IntersectionObserver>();
+  const lastCommentElementRef = useCallback((node: HTMLDivElement) => {
+    if (loadingMore) return;
+    if (observerRef.current) observerRef.current.disconnect();
+    
+    observerRef.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        loadMoreComments();
+      }
+    }, {
+      threshold: 0.1,
+      rootMargin: '100px'
+    });
+    
+    if (node) observerRef.current.observe(node);
+  }, [loadingMore, hasMore, loading]);
+
+  const COMMENTS_PER_PAGE = 10;
 
   // Show notification helper
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+    setTimeout(() => setNotification(null), 5000);
   };
 
-  const fetchComments = async () => {
+  const fetchComments = async (pageNum: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (!append) {
+        setLoading(true);
+        setError(null);
+      } else {
+        setLoadingMore(true);
+      }
+
       const response = await sendJsonRequest("/Feed/GetFeedReplies", "POST", {
         feedId: feedId,
+        count: COMMENTS_PER_PAGE,
+        page: pageNum // Assuming your API supports pagination
       });
 
       if (response && response.replies) {
-        const sortedComments = sortComments(response.replies);
-        setComments(sortedComments);
+        const newComments = response.replies;
+        const sortedComments = sortComments(newComments);
+        
+        if (append) {
+          setComments(prevComments => {
+            const combined = [...prevComments, ...sortedComments];
+            return sortComments(combined);
+          });
+        } else {
+          setComments(sortedComments);
+        }
+        
+        setTotalLoaded(prev => append ? prev + sortedComments.length : sortedComments.length);
+        
+        // Check if we have more comments to load
+        const hasMoreData = sortedComments.length === COMMENTS_PER_PAGE && 
+                           (append ? totalLoaded + sortedComments.length : sortedComments.length) < noOfComments;
+        setHasMore(hasMoreData);
+        
+        if (append) {
+          setPage(pageNum);
+        }
       }
     } catch (err) {
-      setError("Failed to load comments");
+      const errorMsg = "Failed to load comments";
+      setError(errorMsg);
       console.error("Error fetching comments:", err);
-      setNotification({
-        type: "error",
-        message: "Failed to fetch the feed replies. Please try again later."
-      })
+      if (!append) {
+        showNotification("error", "Failed to fetch the feed replies. Please try again later.");
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
+  const loadMoreComments = useCallback(() => {
+    if (!hasMore || loadingMore || loading) return;
+    fetchComments(page + 1, true);
+  }, [hasMore, loadingMore, loading, page]);
+
   useEffect(() => {
-    fetchComments();
+    // Reset pagination state when feedId changes
+    setPage(1);
+    setTotalLoaded(0);
+    setHasMore(true);
+    setComments([]);
+    
+    fetchComments(1, false);
 
     const handleCommentPosted = (event: CustomEvent) => {
       if (event.detail.feedId === feedId) {
-        fetchComments();
+        // Instead of refetching all comments, just add the new comment
+        if (event.detail.comment) {
+          const newComment = event.detail.comment;
+          setComments(prevComments => {
+            // Add new comment at the beginning (latest first for top-level)
+            const updated = [newComment, ...prevComments];
+            return sortComments(updated);
+          });
+          setTotalLoaded(prev => prev + 1);
+        } else {
+          // Fallback: only refresh first page if no comment data provided
+          fetchComments(1, false);
+          setPage(1);
+          setTotalLoaded(0);
+          setHasMore(true);
+        }
       }
     };
 
@@ -85,7 +168,7 @@ const CommentList: React.FC<CommentListProps> = ({
   const getTotalCommentCount = (commentsList: Comment[]): number => {
     return commentsList.reduce((total, comment) => {
       const replyCount = comment.replies ? getTotalCommentCount(comment.replies) : 0;
-      return total + 1 + replyCount; // 1 for the comment itself + all its replies
+      return total + 1 + replyCount;
     }, 0);
   };
 
@@ -189,12 +272,11 @@ const CommentList: React.FC<CommentListProps> = ({
         parentId: parentId,
       });
 
-      // Check if response contains an error message
       if (!response.success) {
         throw new Error(response.message);
       }
 
-      // If API returns the complete reply data, use it; otherwise refresh
+      // If API returns the complete reply data, use it
       if (response && response.reply) {
         // Add the actual reply from server response
         setComments((prevComments) => {
@@ -202,8 +284,10 @@ const CommentList: React.FC<CommentListProps> = ({
           return sortComments(updated);
         });
       } else {
-        // Fallback: refresh comments if server doesn't return reply data
-        await fetchComments();
+        // Fallback: Only refresh if server doesn't return reply data
+        // But try to maintain current page state
+        await fetchComments(1, false);
+        setPage(1);
       }
       
       // Close reply box and expand replies to show new comment
@@ -224,7 +308,6 @@ const CommentList: React.FC<CommentListProps> = ({
         message: newText.trim(),
       });
 
-      // Check if response contains an error message
       if (!response.success) {
         throw new Error(response.message);
       }
@@ -243,7 +326,7 @@ const CommentList: React.FC<CommentListProps> = ({
       const errorMessage = error?.message || "Failed to edit comment. Please try again.";
       showNotification('error', errorMessage);
       console.error("Failed to edit reply:", error);
-      throw error; // Re-throw so CommentItem can handle the error
+      throw error;
     }
   };
 
@@ -253,7 +336,6 @@ const CommentList: React.FC<CommentListProps> = ({
         replyId: commentId
       });
 
-      // Check if response contains an error message
       if (!response.success) {
         throw new Error(response.message);
       }
@@ -264,6 +346,9 @@ const CommentList: React.FC<CommentListProps> = ({
         return sortComments(updated);
       });
 
+      // Update total loaded count
+      setTotalLoaded(prev => prev - 1);
+
       showNotification('success', 'Comment deleted successfully!');
 
     } catch (error: any) {
@@ -273,7 +358,15 @@ const CommentList: React.FC<CommentListProps> = ({
     }
   };
 
-  if (loading) {
+  const handleRefresh = () => {
+    setPage(1);
+    setTotalLoaded(0);
+    setHasMore(true);
+    setComments([]);
+    fetchComments(1, false);
+  };
+
+  if (loading && comments.length === 0) {
     return (
       <div className="d-flex justify-content-center py-5">
         <Loader2 className="spinner-border text-secondary" />
@@ -281,18 +374,18 @@ const CommentList: React.FC<CommentListProps> = ({
     );
   }
 
-  if (error) {
+  if (error && comments.length === 0) {
     return (
       <div className="text-center py-5">
         <p className="text-muted">{error}</p>
-        <button onClick={fetchComments} className="btn btn-link text-primary">
+        <button onClick={handleRefresh} className="btn btn-link text-primary">
           Try again
         </button>
       </div>
     );
   }
 
-  if (comments.length === 0) {
+  if (comments.length === 0 && !loading) {
     return (
       <div className="text-center py-5">
         <p className="text-muted">No comments yet. Be the first to comment!</p>
@@ -310,10 +403,10 @@ const CommentList: React.FC<CommentListProps> = ({
 
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h3 className="fw-semibold text-dark fs-5 mb-0">
-          Comments ({getTotalCommentCount(comments)})
+          Comments ({noOfComments})
         </h3>
         <button 
-          onClick={fetchComments} 
+          onClick={handleRefresh} 
           className="btn btn-sm btn-outline-secondary"
           disabled={loading}
         >
@@ -321,24 +414,58 @@ const CommentList: React.FC<CommentListProps> = ({
         </button>
       </div>
 
-      {sortComments(comments).map((comment, i) => (
-        <CommentItem
+      {comments.map((comment, i) => (
+        <div
           key={`${comment.id}-0-${i}`}
-          comment={comment}
-          depth={0}
-          index={i}
-          parentId={undefined} // Top-level comments don't have parents
-          expandedReplies={expandedReplies}
-          setExpandedReplies={setExpandedReplies}
-          replyBoxes={replyBoxes}
-          setReplyBoxes={setReplyBoxes}
-          currentUserId={currentUserId}
-          onVote={handleCommentVote}
-          onReplySubmit={handleReplySubmit}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
+          ref={i === comments.length - 1 ? lastCommentElementRef : undefined}
+        >
+          <CommentItem
+            comment={comment}
+            depth={0}
+            index={i}
+            parentId={undefined}
+            expandedReplies={expandedReplies}
+            setExpandedReplies={setExpandedReplies}
+            replyBoxes={replyBoxes}
+            setReplyBoxes={setReplyBoxes}
+            currentUserId={currentUserId}
+            onVote={handleCommentVote}
+            onReplySubmit={handleReplySubmit}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </div>
       ))}
+
+      {/* Loading more indicator */}
+      {loadingMore && (
+        <div className="d-flex justify-content-center py-3">
+          <Loader2 className="spinner-border text-secondary" />
+          <span className="ms-2 text-muted">Loading more comments...</span>
+        </div>
+      )}
+
+      {/* End of comments indicator */}
+      {!hasMore && comments.length > 0 && (
+        <div className="text-center py-3">
+          <p className="text-muted small mb-0">
+            You've reached the end of the comments
+          </p>
+        </div>
+      )}
+
+      {/* Error loading more */}
+      {error && comments.length > 0 && (
+        <div className="text-center py-3">
+          <p className="text-muted small mb-2">{error}</p>
+          <button 
+            onClick={() => loadMoreComments()} 
+            className="btn btn-sm btn-link text-primary"
+          >
+            Try loading more
+          </button>
+        </div>
+      )}
     </div>
   );
 };
