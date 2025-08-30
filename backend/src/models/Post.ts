@@ -26,6 +26,7 @@ const postSchema = new mongoose.Schema({
     },
     parentId: {
         type: mongoose.Types.ObjectId,
+        ref: "Post",
         default: null
     },
     message: {
