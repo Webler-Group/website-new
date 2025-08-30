@@ -96,8 +96,6 @@ const Profile = () => {
                     setUserDetails(null);
                 }
             })
-        setFollowerListOptions({ urlPath: `/Profile/GetFollowers`, params: { userId } });
-        setFollowingListOptions({ urlPath: `/Profile/GetFollowing`, params: { userId } });
     }, [userId]);
 
     const onUserUpdate = (data: any) => {
@@ -146,10 +144,12 @@ const Profile = () => {
     }
 
     const showFollowers = () => {
+        setFollowerListOptions({ urlPath: `/Profile/GetFollowers`, params: { userId } });
         setFollowListVisible(1);
     }
 
     const showFollowing = () => {
+        setFollowingListOptions({ urlPath: `/Profile/GetFollowing`, params: { userId } });
         setFollowListVisible(2);
     }
 
