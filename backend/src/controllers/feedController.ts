@@ -979,6 +979,9 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     let feed = result[0];
+    
+    const attachments = await PostAttachment.getByPostId({ post: feed._id })
+
     let data = {
         id: feed._id,
         type: feed._type,
@@ -1000,12 +1003,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         score: feed.score || 0,
         isPinned: feed.isPinned,
         isOriginalPostDeleted: feed.isOriginalPostDeleted,
-        attachments: feed.attachments?.map((a: any) => ({
-            id: a._id,
-            type: a.type,
-            url: a.url,
-            meta: a.meta || null
-        })) || [],
+        attachments: attachments,
         originalPost: feed.originalPost.length ? {
             id: feed.originalPost[0]._id,
             title: feed.originalPost[0].title || null,

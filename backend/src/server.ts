@@ -17,7 +17,6 @@ import courseRoutes from "./routes/courseRoutes";
 import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import tagRoutes from "./routes/tagRoutes";
-import postAttachmentRoutes from "./routes/postAttachmentRoutes"
 import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import http from "http";
@@ -75,7 +74,6 @@ async function main() {
     app.use(`${apiPrefix}/Tag`, tagRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
-    app.use(`${apiPrefix}/PostAttachments`, postAttachmentRoutes)
 
     app.all("*", (req, res) => {
         res.status(404).json({ success: false, message: "404 Not Found" });

@@ -263,38 +263,39 @@ const FeedItem: React.FC<FeedItemProps> = ({
           )}
         </div>
 
-                    {/* Attachments */}
+        {/* Attachments */}
         {feed.attachments?.length > 0 && (
           <div className="mt-4 d-flex flex-column gap-3">
             {feed.attachments.map(att => {
-              if (!att.details) return null;
-
               let icon = null;
               let title = "";
               let subtitle = "";
               let to = "#";
 
-              switch (att.details.type) {
+              switch (att.type) {
                 case 1: // Code
                   icon = <FileCode size={20} className="text-primary" />;
-                  title = att.details.codeName;
-                  subtitle = `${att.details.codeLanguage} • by ${att.details.userName}`;
-                  to = `/Compiler-Playground/${att.details.codeId}`;
+                  title = att.codeName || "Untitled Code";
+                  subtitle = `${att.codeLanguage} • by ${att.userName}`;
+                  to = `/Compiler-Playground/${att.codeId}`;
                   break;
 
                 case 2: // Question / Discussion
                   icon = <MessageSquare size={20} className="text-success" />;
-                  title = att.details.questionTitle;
-                  subtitle = `by ${att.details.userName}`;
-                  to = `/Discuss/${att.details.questionId}`;
+                  title = att.questionTitle || "Question";
+                  subtitle = `by ${att.userName}`;
+                  to = `/Discuss/${att.questionId}`;
                   break;
 
                 case 4: // Feed
                   icon = <Link2 size={20} className="text-info" />;
                   title = "Feed";
-                  subtitle = `${att.details.userName}: ${att.details.feedMessage}`;
-                  to = `/feed/${att.details.feedId}`;
+                  subtitle = `${att.userName}: ${att.feedMessage}`;
+                  to = `/feed/${att.feedId}`;
                   break;
+
+                default:
+                  return null; // unknown type
               }
 
               return (
@@ -322,6 +323,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
             })}
           </div>
         )}
+
 
         {/* Actions */}
         <div className="d-flex gap-4 pt-3 border-top mt-3">
