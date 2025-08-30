@@ -49,6 +49,10 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
         setIsLoading(false);
     }
 
+    const addFeed = (feed: IFeed) => {
+        setResults(prev => [feed, ...prev]);
+    }
+
     const deleteFeed = (feedId: string) => {
         setResults(prev => prev.filter(x => x.id != feedId));
     }
@@ -63,6 +67,7 @@ const useFeed = (count: number, page: { page: number; _state: number; }, filter:
         error,
         hasNextPage,
         totalCount,
+        addFeed,
         deleteFeed,
         editFeed
     }

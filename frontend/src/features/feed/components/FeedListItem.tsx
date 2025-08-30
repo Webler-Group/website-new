@@ -10,38 +10,35 @@ import { useAuth } from '../../auth/context/authContext';
 import { Link } from "react-router-dom";
 import { FileCode, MessageSquare, Link2 } from "lucide-react";
 import NotificationToast from './comments/NotificationToast';
+import { useApi } from '../../../context/apiCommunication';
 
 
 interface FeedListItemProps {
   feed: IFeed;
-  currentUserId: string;
-  sendJsonRequest: any;
   onUpdate: (feed: IFeed) => void;
   onDelete: (feed: IFeed) => void;
   onCommentsClick: (feedId: string) => void;
   isPinned?: boolean;
-  onRefresh: () => void;
 }
 
 const FeedListItem = React.forwardRef(({
   feed,
-  currentUserId,
-  sendJsonRequest,
   onUpdate,
   onDelete,
   onCommentsClick,
-  onRefresh,
   isPinned = false
 }: FeedListItemProps, ref: React.ForwardedRef<HTMLDivElement>) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLiked, setIsLiked] = useState(feed.isUpvoted || false);
   const [likesCount, setLikesCount] = useState(feed.votes || 0);
+  const { sendJsonRequest } = useApi();
+  const { userInfo } = useAuth();
 
   // New modal states
   const [showEditModal, setShowEditModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const navigate = useNavigate();
-  const { userInfo } = useAuth()
+  const currentUserId = userInfo?.id;
   const canModerate = userInfo?.roles.includes("Admin") || userInfo?.roles.includes("Moderator");
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -60,7 +57,6 @@ const FeedListItem = React.forwardRef(({
         throw new Error(response.message)
       }
       onUpdate({ ...feed, isPinned: !feed.isPinned });
-      onRefresh();
     } catch (err) {
       console.error("Error pinning/unpinning feed:", err);
     }
@@ -274,7 +270,7 @@ const FeedListItem = React.forwardRef(({
                   )}
 
                   {/* If user is Admin/Moderator → Pin/Unpin */}
-                  {canModerate && (
+                  {true && (
                     <button
                       className="dropdown-item d-flex align-items-center gap-2"
                       onClick={handlePinToggle}

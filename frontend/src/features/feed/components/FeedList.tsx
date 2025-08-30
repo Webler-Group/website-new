@@ -1,12 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, MessageCircle, Loader2, Filter, ChevronDown, ChevronUp, Pin } from 'lucide-react';
-import { useApi } from '../../../context/apiCommunication';
 import { IFeed } from './types';
 import FeedListItem from './FeedListItem';
 import NotificationToast from './comments/NotificationToast';
 import useFeed from '../hook/useFeeds';
-import { useAuth } from '../../auth/context/authContext';
 
 const filterOptions = [
   { value: 1, label: 'Most Recent' },
@@ -27,8 +25,7 @@ const FeedList: React.FC<FeedListProps> = () => {
   const [pinnedPage, setPinnedPage] = useState({ page: 1, _state: 0 });
   const [pinnedPostsExpanded, setPinnedPostsExpanded] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const { userInfo } = useAuth();
-  
+
   // Main feed hook
   const {
     results,
@@ -43,14 +40,12 @@ const FeedList: React.FC<FeedListProps> = () => {
   const {
     results: pinnedPosts,
     isLoading: pinnedLoading,
-    totalCount: pinnedCount,
     deleteFeed: deletePinnedFeed,
-    editFeed: editPinnedFeed
+    editFeed: editPinnedFeed,
+    addFeed: addPinnedFeed
   } = useFeed(50, pinnedPage, 7); // Fetch up to 50 pinned posts
 
-  const { sendJsonRequest } = useApi();
   const navigate = useNavigate();
-  const currentUserId = userInfo?.id;
 
   useEffect(() => {
     setCurrentPage({ page: 1, _state: 1 });
@@ -80,27 +75,19 @@ const FeedList: React.FC<FeedListProps> = () => {
     setSelectedFilter(filter);
   };
 
-  const refreshPinnedPosts = () => {
-    setPinnedPage(prev => ({ ...prev, _state: prev._state + 1 }));
-  };
-
-  const refreshMainFeed = () => {
-    setCurrentPage(prev => ({ ...prev, _state: prev._state + 1 }));
-  };
-
   const handleFeedUpdate = (updatedFeed: IFeed) => {
-    editFeed(updatedFeed);
     // If pin status changed, refresh pinned posts list
     if (updatedFeed.isPinned !== results.find(f => f.id === updatedFeed.id)?.isPinned) {
-      refreshPinnedPosts();
-    }
-    // Also update pinned posts if the updated feed is pinned
-    if (updatedFeed.isPinned) {
-      editPinnedFeed(updatedFeed);
+      if (updatedFeed.isPinned) {
+        addPinnedFeed({ ...updatedFeed });
+      } else {
+        // If unpinned, remove from pinned list
+        deletePinnedFeed(updatedFeed.id);
+      }
     } else {
-      // If unpinned, remove from pinned list
-      deletePinnedFeed(updatedFeed.id);
+      editPinnedFeed(updatedFeed);
     }
+    editFeed(updatedFeed);
   };
 
   const handleFeedDelete = (deletedFeed: IFeed) => {
@@ -112,16 +99,13 @@ const FeedList: React.FC<FeedListProps> = () => {
   };
 
   const handlePinnedFeedUpdate = (updatedFeed: IFeed) => {
-    editPinnedFeed(updatedFeed);
-    // If pin status changed, refresh pinned posts list
-    if (updatedFeed.isPinned !== pinnedPosts.find(f => f.id === updatedFeed.id)?.isPinned) {
-      refreshPinnedPosts();
-    }
-    // Also update main feed if the updated feed appears there
+    // Update main feed if the updated feed appears there
     editFeed(updatedFeed);
     // If unpinned, remove from pinned list
     if (!updatedFeed.isPinned) {
       deletePinnedFeed(updatedFeed.id);
+    } else {
+      editPinnedFeed(updatedFeed);
     }
   };
 
@@ -194,10 +178,10 @@ const FeedList: React.FC<FeedListProps> = () => {
           </div>
         </div>
         {/* Pinned Posts Section */}
-        {pinnedCount > 0 && (
+        {pinnedPosts.length > 0 && (
           <div className="mb-4">
             <div className="card border-warning">
-              <div 
+              <div
                 className="card-header bg-warning bg-opacity-10 border-warning cursor-pointer"
                 onClick={() => setPinnedPostsExpanded(!pinnedPostsExpanded)}
                 style={{ cursor: 'pointer' }}
@@ -206,7 +190,7 @@ const FeedList: React.FC<FeedListProps> = () => {
                   <div className="d-flex align-items-center gap-2">
                     <Pin size={16} className="text-warning" />
                     <span className="fw-semibold text-black">
-                      Pinned Posts ({pinnedCount})
+                      Pinned Posts ({pinnedPosts.length})
                     </span>
                   </div>
                   {pinnedPostsExpanded ? (
@@ -216,7 +200,7 @@ const FeedList: React.FC<FeedListProps> = () => {
                   )}
                 </div>
               </div>
-              
+
               {pinnedPostsExpanded && (
                 <div className="card-body p-0">
                   {pinnedLoading ? (
@@ -230,12 +214,9 @@ const FeedList: React.FC<FeedListProps> = () => {
                           <div className="p-3">
                             <FeedListItem
                               feed={feed}
-                              currentUserId={currentUserId ?? ""}
-                              sendJsonRequest={sendJsonRequest}
                               onUpdate={handlePinnedFeedUpdate}
                               onDelete={handlePinnedFeedDelete}
                               onCommentsClick={handleCommentsClick}
-                              onRefresh={refreshPinnedPosts}
                             />
                           </div>
                         </div>
@@ -258,32 +239,26 @@ const FeedList: React.FC<FeedListProps> = () => {
               <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
             </div>
           ) : (
-              results.map((feed, i) => (
-                i == results.length - 1 ?
-                  <div key={feed.id} className="col-12">
-                    <FeedListItem
-                      ref={lastFeedElemRef}
-                      feed={feed}
-                      currentUserId={currentUserId ?? ""}
-                      sendJsonRequest={sendJsonRequest}
-                      onUpdate={handleFeedUpdate}
-                      onDelete={handleFeedDelete}
-                      onCommentsClick={handleCommentsClick}
-                      onRefresh={() => { }}
-                    />
-                  </div>
-                  :
-                  <div key={feed.id} className="col-12">
-                    <FeedListItem
-                      feed={feed}
-                      currentUserId={currentUserId ?? ""}
-                      sendJsonRequest={sendJsonRequest}
-                      onUpdate={handleFeedUpdate}
-                      onDelete={handleFeedDelete}
-                      onCommentsClick={handleCommentsClick}
-                      onRefresh={() => { }}
-                    />
-                  </div>
+            results.map((feed, i) => (
+              i == results.length - 1 ?
+                <div key={feed.id} className="col-12">
+                  <FeedListItem
+                    ref={lastFeedElemRef}
+                    feed={feed}
+                    onUpdate={handleFeedUpdate}
+                    onDelete={handleFeedDelete}
+                    onCommentsClick={handleCommentsClick}
+                  />
+                </div>
+                :
+                <div key={feed.id} className="col-12">
+                  <FeedListItem
+                    feed={feed}
+                    onUpdate={handleFeedUpdate}
+                    onDelete={handleFeedDelete}
+                    onCommentsClick={handleCommentsClick}
+                  />
+                </div>
             ))
           )}
           {isLoading && results.length > 0 && (
