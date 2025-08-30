@@ -4,9 +4,11 @@ import { Button, Container, Form, FormGroup } from "react-bootstrap";
 import PostTextareaControl from "../../../components/PostTextareaControl";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
+import InputTags from "../../../components/InputTags";
 
 const FeedCreate = () => {
     const [message, setMessage] = useState('');
+    const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
@@ -19,7 +21,11 @@ const FeedCreate = () => {
         setLoading(true);
         setError(null);
 
-        const response = await sendJsonRequest("/Feed/CreateFeed", "POST", { message });
+        const response = await sendJsonRequest("/Feed/CreateFeed", "POST", { 
+            message,
+            tags 
+        });
+
         if (response.success) {
             navigate("/Feed/" + response.feed.id);
         } else {
@@ -43,7 +49,8 @@ const FeedCreate = () => {
                     </div>
                 )}
 
-                <FormGroup>
+                {/* Message Box */}
+                <FormGroup className="mb-3">
                     <PostTextareaControl
                         rows={10}
                         placeholder="What's on your mind?"
@@ -52,12 +59,25 @@ const FeedCreate = () => {
                         required
                         maxLength={2000}
                     />
-
                     <div className="mt-2 text-muted small">
                         {message.length}/2000 characters
                     </div>
                 </FormGroup>
 
+                {/* Tags */}
+                <FormGroup className="mb-3">
+                    <label className="form-label fw-semibold">Tags</label>
+                    <InputTags 
+                        values={tags} 
+                        setValues={setTags} 
+                        placeholder="Add tags..." 
+                    />
+                    <div className="mt-1 text-muted small">
+                        {tags.length}/10 tags selected
+                    </div>
+                </FormGroup>
+
+                {/* Actions */}
                 <div className="d-flex justify-content-end gap-2">
                     <Button
                         type="button"

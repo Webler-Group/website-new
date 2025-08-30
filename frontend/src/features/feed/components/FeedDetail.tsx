@@ -35,7 +35,6 @@ const FeedDetails: React.FC = () => {
         if (!response.success) {
           throw new Error(response.message);
         }
-
         setFeed(response.feed);
 
       } catch (err) {

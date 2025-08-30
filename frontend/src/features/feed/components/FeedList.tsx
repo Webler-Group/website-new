@@ -258,19 +258,32 @@ const FeedList: React.FC<FeedListProps> = () => {
               <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
             </div>
           ) : (
-            results.map(feed => (
-              <div key={feed.id} className="col-12">
-                <FeedListItem
-                  ref={lastFeedElemRef}
-                  feed={feed}
-                  currentUserId={currentUserId ?? ""}
-                  sendJsonRequest={sendJsonRequest}
-                  onUpdate={handleFeedUpdate}
-                  onDelete={handleFeedDelete}
-                  onCommentsClick={handleCommentsClick}
-                  onRefresh={refreshMainFeed}
-                />
-              </div>
+              results.map((feed, i) => (
+                i == results.length - 1 ?
+                  <div key={feed.id} className="col-12">
+                    <FeedListItem
+                      ref={lastFeedElemRef}
+                      feed={feed}
+                      currentUserId={currentUserId ?? ""}
+                      sendJsonRequest={sendJsonRequest}
+                      onUpdate={handleFeedUpdate}
+                      onDelete={handleFeedDelete}
+                      onCommentsClick={handleCommentsClick}
+                      onRefresh={() => { }}
+                    />
+                  </div>
+                  :
+                  <div key={feed.id} className="col-12">
+                    <FeedListItem
+                      feed={feed}
+                      currentUserId={currentUserId ?? ""}
+                      sendJsonRequest={sendJsonRequest}
+                      onUpdate={handleFeedUpdate}
+                      onDelete={handleFeedDelete}
+                      onCommentsClick={handleCommentsClick}
+                      onRefresh={() => { }}
+                    />
+                  </div>
             ))
           )}
           {isLoading && results.length > 0 && (

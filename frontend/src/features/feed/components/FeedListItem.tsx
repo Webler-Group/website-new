@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock } from 'lucide-react';
+import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon, } from 'lucide-react';
 import { IFeed } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
@@ -108,11 +108,12 @@ const FeedListItem = React.forwardRef(({
     }
   };
 
-  const handleShare = async (shareMessage: string) => {
+  const handleShare = async (shareMessage: string, tags: string[]) => {
     try {
       const response = await sendJsonRequest("/Feed/ShareFeed", "POST", {
         feedId: feed.id,
         message: shareMessage,
+        tags
       });
 
       if (!response.success) {
@@ -129,32 +130,53 @@ const FeedListItem = React.forwardRef(({
       showNotification("error", String(err))
     }
   };
+
   const canEdit = feed.userId === currentUserId;
   const allowedUrls = [/^https?:\/\/.+/i, /^\/.*/];
   // Inside FeedListItem.tsx
 
-  const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
-    <Link
-      to={`/feed/${originalPost.id}`}
-      className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
-    >
-      <div className="d-flex gap-2">
-        <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
-        <div>
-          {/* User profile link */}
-          <strong>
-            <Link
-              to={`/Profile/${originalPost.userId}`}
-              className="text-dark text-decoration-none"
-            >
-              {originalPost.userName}
-            </Link>
-          </strong>
-          <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+  const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
+    const navigate = useNavigate();
+
+    return (
+      <div
+        onClick={() => navigate(`/feed/${originalPost.id}`)}
+        className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
+        style={{ cursor: "pointer" }}
+      >
+        <div className="d-flex gap-2">
+          <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
+          <div>
+            {/* User profile link */}
+            <strong>
+              <Link
+                to={`/Profile/${originalPost.userId}`}
+                className="text-dark text-decoration-none"
+                onClick={(e) => e.stopPropagation()} // prevent outer click from firing
+              >
+                {originalPost.userName}
+              </Link>
+            </strong>
+
+            <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+
+            {originalPost.tags?.length > 0 && (
+              <div className="d-flex flex-wrap gap-1">
+                {originalPost.tags.map((tag: any) => (
+                  <span
+                    key={tag._id}
+                    className="badge bg-info text-dark d-flex align-items-center gap-1"
+                  >
+                    <TagIcon size={12} /> {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </Link>
-  );
+    );
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -192,9 +214,6 @@ const FeedListItem = React.forwardRef(({
                     {feed.isOriginalPostDeleted !== 2 ? " shared a post" : ""}
                   </span>
                 </h6>
-                <small className="text-muted d-flex align-items-center gap-1">
-                  <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
-                </small>
                 {isPinned && <Pin className="text-warning" size={14} />}
                 <div className="d-flex align-items-center gap-2">
                   {feed.isPinned && <Pin size={20} className="text-warning" />}
@@ -203,12 +222,15 @@ const FeedListItem = React.forwardRef(({
               </div>
               {feed.roles?.length > 0 && (
                 <div className="d-flex gap-1 mt-1 flex-wrap">
-                  {feed.level > 0 && (
+                <small className="text-muted d-flex align-items-center gap-1">
+                  <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
+                </small>
+                  {/* {feed.level > 0 && (
                     <span className="badge bg-warning text-dark">Level {feed.level}</span>
                   )}
-                  {feed.roles.map((role, i) => (
+                  {feed.roles.slice(1).map((role, i) => (
                     <span key={i} className="badge bg-success">{role}</span>
-                  ))}
+                  ))} */}
                 </div>
               )}
             </div>
@@ -277,7 +299,6 @@ const FeedListItem = React.forwardRef(({
             </div>
           )}
           {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
-
         </div>
 
         {/* Attachments */}
@@ -341,6 +362,16 @@ const FeedListItem = React.forwardRef(({
                 </Link>
               );
             })}
+          </div>
+        )}
+
+        {feed.tags?.length > 0 && (
+            <div className="d-flex flex-wrap gap-2 mt-3 mb-2">
+            {feed.tags.map((tag: any) => (
+                <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
+                  <TagIcon size={12} /> {tag.name}
+                </span>
+            ))}
           </div>
         )}
 

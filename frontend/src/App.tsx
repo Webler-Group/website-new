@@ -115,6 +115,8 @@ function App() {
 
           {/* Single Feed Detail */}
           <Route path=":id" element={<FeedDetails/>} />
+
+          <Route path=":id/:commentId" element={<FeedDetails/>} />
         </Route>
       </Route>
 

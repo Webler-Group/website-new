@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { X, Share2, Copy } from 'lucide-react';
+import InputTags from '../../../components/InputTags'; 
 
 interface ShareModalProps {
   feedId: string;
-  onShare: (message: string) => void;
+  onShare: (message: string, tags: string[]) => void; 
   onClose: () => void;
 }
 
@@ -11,13 +12,14 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
   const [shareMessage, setShareMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [tags, setTags] = useState<string[]>([]); 
 
   const shareUrl = `https://weblercodes.com/feed/${feedId}`;
 
   const handleShare = async () => {
     try {
       setIsSharing(true);
-      await onShare(shareMessage);
+      await onShare(shareMessage, tags);
       onClose(); // close after successful share
     } catch (error) {
       console.error('Failed to share:', error);
@@ -30,7 +32,7 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000); // reset after 2s
+      setTimeout(() => setCopied(false), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -77,7 +79,20 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
               />
             </div>
 
-            {/* Copy link section */}
+            {/* Tags input */}
+            <div className="mb-3">
+              <label className="form-label">Tags</label>
+              <InputTags
+                values={tags}
+                setValues={setTags}
+                placeholder="Add tags..."
+              />
+              <div className="mt-1 text-muted small">
+                {tags.length}/10 tags selected
+              </div>
+            </div>
+
+            {/* Copy link */}
             <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
               <span className="text-truncate me-2" style={{ maxWidth: '75%' }}>
                 {shareUrl}

@@ -42,6 +42,7 @@ const FeedItem: React.FC<FeedItemProps> = ({
   showFullContent = false,
   isPinned = false
 }) => {
+  console.log(feed)
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isUpvoted, setIsUpvoted] = useState(feed.isUpvoted);
@@ -100,8 +101,12 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const handleDelete = async () => {
     if (window.confirm('Are you sure you want to delete this post?')) {
       try {
-        await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
-        if (onDelete) onDelete();
+        const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
+        if(response.success) {
+          navigate("/feed/")
+        }else{
+          throw new Error(response.message)
+        }
       } catch (err) {
         console.error('Error deleting feed:', err);
       }
@@ -135,40 +140,45 @@ const FeedItem: React.FC<FeedItemProps> = ({
   );
 
 
-  const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
-    <Link 
-      to={`/feed/${originalPost.id}`} 
-      className="mt-3 border rounded bg-light p-3 d-block text-dark text-decoration-none"
-    >
-      <div className="d-flex gap-3">
-        <UserAvatar src={originalPost.userAvatarImage} name={originalPost.userName} />
-        <div>
-          <div className="d-flex align-items-center gap-2">
-            <h6 className="fw-semibold mb-0">
-              <Link 
-                to={`/Profile/${originalPost.userId}`} 
-                className="text-primary text-decoration-none"
-                onClick={(e) => e.stopPropagation()} // prevent feed card click from firing
-              >
-                {originalPost.userName}
-              </Link>
-            </h6>
-            <small className="text-muted">{formatDate(originalPost.date)}</small>
-          </div>
-          <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
-          {originalPost.tags?.length > 0 && (
-            <div className="d-flex flex-wrap gap-1">
-              {originalPost.tags.map((tag: any) => (
-                <span key={tag.id} className="badge bg-info text-dark d-flex align-items-center gap-1">
-                  <TagIcon size={12} /> {tag.name}
-                </span>
-              ))}
+  const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
+    const navigate = useNavigate();
+
+    return (
+      <div 
+        onClick={() => navigate(`/feed/${originalPost.id}`)}
+        className="mt-3 border rounded bg-light p-3 d-block text-dark text-decoration-none"
+        style={{ cursor: "pointer" }}
+      >
+        <div className="d-flex gap-3">
+          <UserAvatar src={originalPost.userAvatarImage} name={originalPost.userName} />
+          <div>
+            <div className="d-flex align-items-center gap-2">
+              <h6 className="fw-semibold mb-0">
+                <Link 
+                  to={`/Profile/${originalPost.userId}`} 
+                  className="text-primary text-decoration-none"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {originalPost.userName}
+                </Link>
+              </h6>
+              <small className="text-muted">{formatDate(originalPost.date)}</small>
             </div>
-          )}
+            <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+            {originalPost.tags?.length > 0 && (
+              <div className="d-flex flex-wrap gap-1">
+                {originalPost.tags.map((tag: any) => (
+                  <span key={tag._id} className="badge bg-info text-dark d-flex align-items-center gap-1">
+                    <TagIcon size={12} /> {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </Link>
-  );
+    );
+  };
 
 
   return (
@@ -192,9 +202,6 @@ const FeedItem: React.FC<FeedItemProps> = ({
                   {feed.userName || "Anonymous"}
                 </Link>
               </h6>
-              {feed.level > 0 && (
-                <span className="badge bg-warning text-dark">Level {feed.level}</span>
-              )}
               <small className="text-muted d-flex align-items-center gap-1">
                 <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
               </small>
@@ -202,7 +209,10 @@ const FeedItem: React.FC<FeedItemProps> = ({
             </div>
               {feed.roles?.length > 0 && (
                 <div className="d-flex gap-1 mt-1 flex-wrap">
-                  {feed.roles.map((role, i) => (
+                  {feed.level > 0 && (
+                    <span className="badge bg-warning text-dark">Level {feed.level}</span>
+                  )}
+                  {feed.roles.slice(1).map((role, i) => (
                     <span key={i} className="badge bg-success">{role}</span>
                   ))}
                 </div>
@@ -252,15 +262,6 @@ const FeedItem: React.FC<FeedItemProps> = ({
               </div>
             )}
             {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
-          {feed.tags?.length > 0 && (
-            <div className="d-flex flex-wrap gap-2 mt-3">
-              {feed.tags.map(tag => (
-                <span key={tag.id} className="badge bg-primary d-flex align-items-center gap-1">
-                  <TagIcon size={12} /> {tag.name}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Attachments */}
@@ -324,6 +325,15 @@ const FeedItem: React.FC<FeedItemProps> = ({
           </div>
         )}
 
+        {feed.tags?.length > 0 && (
+          <div className="d-flex flex-wrap gap-2 mt-3">
+            {feed.tags.map(tag => (
+              <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
+                <TagIcon size={12} /> {tag.name}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="d-flex gap-4 pt-3 border-top mt-3">

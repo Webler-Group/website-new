@@ -548,7 +548,6 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let { title } = req.body;
     let { tags } = req.body;
     const currentUserId = req.userId;
-    // const currentUserId = '68a7400f3dd5eef60a166911';
 
     if (typeof message === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
@@ -570,20 +569,13 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         tagIds.push(tag._id);
     }
 
-    // if (tagIds.length < 1) {
-    //     res.status(400).json({ success: false, message: `Empty Tag` });
-    //     return;
-    // }
-
-
-    const tagNames: string[] = [];
+    const tagNames: any[] = [];
     for (let tagId of tagIds) {
         const tag = await Tag.findById(tagId);
         if (tag) {
-            tagNames.push(tag.name);
+            tagNames.push(tag);
         }
     }
-
 
     const feed = await Post.create({
         _type: 5,
@@ -770,7 +762,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             break;
         }
 
-        
+
         default:
             res.status(400).json({ success: false, message: "Unknown filter" });
             return;
@@ -845,7 +837,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             type: x._type,
             title: x.title || null,
             message: x.message,
-            tags: x.tags.map((y: any) => y.name),
+            tags: x.tags,
             date: x.createdAt,
             userId: x.user,
             userName: x.users.length ? x.users[0].name : "Unknown User",
@@ -871,7 +863,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: x.originalPost[0]._id,
                 title: x.originalPost[0].title || null,
                 message: x.originalPost[0].message,
-                tags: x.originalPost[0].tags.map((t: any) => t.name),
+                tags: x.originalPost[0].tags,
                 userId: x.originalPost[0].user,
                 userName: x.originalPost[0].users.length ? x.originalPost[0].users[0].name : "Unknown User",
                 userAvatarImage: x.originalPost[0].users.length ? x.originalPost[0].users[0].avatarImage || null : null,
@@ -1004,7 +996,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         type: feed._type,
         title: feed.title || null,
         message: feed.message,
-        tags: feed.tags.map((t: any) => t.name),
+        tags: feed.tags,
         date: feed.createdAt,
         userId: feed.user,
         userName: feed.users.length ? feed.users[0].name : "Unknown User",
@@ -1025,7 +1017,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             id: feed.originalPost[0]._id,
             title: feed.originalPost[0].title || null,
             message: feed.originalPost[0].message,
-            tags: feed.originalPost[0].tags.map((t: any) => t.name),
+            tags: feed.originalPost[0].tags,
             userId: feed.originalPost[0].user,
             userName: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].name : "Unknown User",
             userAvatarImage: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].avatarImage || null : null,

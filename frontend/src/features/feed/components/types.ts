@@ -1,4 +1,5 @@
 export interface Tag {
+  _id: Key | null | undefined;
   id: string;
   name: string;
 }
