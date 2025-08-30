@@ -761,6 +761,16 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             });
             break;
         }
+        
+        case 7: {
+            pipeline.push(
+                { $match: { isPinned: true } },
+                { $sort: { createdAt: -1 } }
+            );
+            break;
+        }
+
+        
         default:
             res.status(400).json({ success: false, message: "Unknown filter" });
             return;
