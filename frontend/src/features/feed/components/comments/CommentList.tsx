@@ -3,6 +3,7 @@ import { Comment } from '../types';
 import { Loader2 } from 'lucide-react';
 import CommentItem from './CommentItem';
 import NotificationToast from './NotificationToast';
+import "./comments.css"
 
 interface CommentListProps {
   feedId: string;
@@ -34,6 +35,9 @@ const CommentList: React.FC<CommentListProps> = ({
   // UI states
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
   const [replyBoxes, setReplyBoxes] = useState<Record<string, boolean>>({});
+
+  const commentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
   
   // Refs for infinite scroll
   const observerRef = useRef<IntersectionObserver>();
@@ -182,7 +186,12 @@ const CommentList: React.FC<CommentListProps> = ({
             return sortComments(updated);
           });
           setTotalLoaded(prev => prev + 1);
-        } else {
+
+          // Scroll and highlight the new comment
+          setTimeout(() => {
+            scrollToAndHighlight(newComment.id);
+          }, 300);
+        }else {
           // fetchComments(1, false);
           setPage(1);
           setTotalLoaded(0);
@@ -409,6 +418,19 @@ const CommentList: React.FC<CommentListProps> = ({
     }
   };
 
+    const scrollToAndHighlight = (commentId: string) => {
+    const element = commentRefs.current[commentId];
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth", block: "center" });
+      element.classList.add("highlight-comment");
+
+      setTimeout(() => {
+        element.classList.remove("highlight-comment");
+      }, 2000);
+    }
+  };
+
+
   const handleRefresh = () => {
     setPage(1);
     setTotalLoaded(0);
@@ -470,7 +492,12 @@ const CommentList: React.FC<CommentListProps> = ({
       {comments.map((comment, i) => (
         <div
           key={`${comment.id}-0-${i}`}
-          ref={i === comments.length - 1 ? lastCommentElementRef : undefined}
+          ref={(el) => {
+            if (el) {
+              commentRefs.current[comment.id] = el;
+              if (i === comments.length - 1) lastCommentElementRef(el);
+            }
+          }}
         >
           <CommentItem
             comment={comment}

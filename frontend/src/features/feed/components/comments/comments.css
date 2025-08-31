@@ -1,0 +1,19 @@
+.highlight-comment {
+  animation: glowPulse 2s ease-out;
+  border-radius: 6px; /* optional: matches card corners */
+}
+
+@keyframes glowPulse {
+  0% {
+    box-shadow: 0 0 12px 4px rgba(255, 230, 0, 0.9);
+  }
+  30% {
+    box-shadow: none;
+  }
+  60% {
+    box-shadow: 0 0 12px 4px rgba(255, 230, 0, 0.9);
+  }
+  100% {
+    box-shadow: none;
+  }
+}
