@@ -1,5 +1,5 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Offcanvas, Toast } from "react-bootstrap";
+import { Button, Form, FormGroup, FormLabel, Modal, Offcanvas, Toast } from "react-bootstrap";
 import { ICode } from "../../codes/components/Code";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
@@ -7,6 +7,8 @@ import CommentNode, { ICodeComment } from "../components/CommentNode";
 import { FaLeftLong } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import { IPostAttachment } from "../../discuss/components/PostAttachment";
+import PostTextareaControl from "../../../components/PostTextareaControl";
+import FollowList from "../../profile/pages/FollowList";
 
 interface CommentListProps {
     code: ICode;
@@ -38,8 +40,9 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [showAllComments, setShowAllComments] = useState(!(isReply && postId))
-
     const [message, setMessage] = useState([true, ""]);
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
 
     useEffect(() => {
         if (postId) {
@@ -152,6 +155,11 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
         setDeletedAnswersCount(answers);
     }
 
+    const onShowVoters = (commentId: string) => {
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: commentId } });
+        setVotersModalVisible(true);
+    }
+
     const closeDeleteModal = () => setDeleteModalVisible(false);
 
     const handleFilterSelect = (e: ChangeEvent) => {
@@ -176,6 +184,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                     <Button variant="danger" onClick={handleDeleteComment}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
             <Offcanvas show={visible} onHide={onHide} placement="end">
                 <Offcanvas.Header closeButton>
                     <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
@@ -208,6 +217,7 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                             onEdit={onEdit}
                             onDelete={onDelete}
                             onVote={() => { }}
+                            onShowVoters={onShowVoters}
                             setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                             addReplyToParent={() => { }}
                             editParentReply={() => { }}
@@ -230,7 +240,14 @@ const CommentList2 = ({ code, visible, onHide, commentCount, setCommentCount, po
                         <div hidden={answerFormVisible === false}>
                             <FormGroup>
                                 <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                                <FormControl ref={formInputRef} size="sm" value={answerFormMessage} onChange={(e) => setAnswerFormMessage(e.target.value)} as="textarea" rows={3} placeholder="Write your comment here..." />
+                                <PostTextareaControl
+                                    ref={formInputRef}
+                                    size="sm"
+                                    value={answerFormMessage}
+                                    setValue={setAnswerFormMessage}
+                                    placeholder="Write your comment here..."
+                                    rows={5}
+                                />
                             </FormGroup>
                             <div className="d-flex justify-content-end mt-2">
                                 <Button size="sm" variant="secondary" className="ms-2" onClick={hideAnswerForm}>Cancel</Button>

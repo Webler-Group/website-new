@@ -19,7 +19,7 @@ const CourseList = ({ }: CourseListProps) => {
     const [resetModalVisible, setResetModalVisible] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-    PageTitle("Webler - Courses");
+    PageTitle("Courses | Webler Codes");
 
     useEffect(() => {
         getCourses();

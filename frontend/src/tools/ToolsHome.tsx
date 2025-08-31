@@ -1,17 +1,27 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
-import AdminTools from "./AdminTools";
-import ModTools from "./ModTools";
-import { isAdminOrModRole, isAdminRole } from "../data/roles";
+import PageTitle from "../layouts/PageTitle";
 
 export interface IPriviledgeInfo {
     name: string;
     url: string;
+    roles: string[];
 }
 
+const tools = [
+    { name: "Tag Executor", url: "/Tools/Tags", roles: ["Moderator"] },
+    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] },
+    { name: "Admin Panel", url: "/Admin", roles: ["Moderator"] }
+];
+
 const makePriviledgeContent = (props: IPriviledgeInfo[]) => {
+    const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const content = props.map(({name, url}, idx) => {
+
+    return props.map(({name, url, roles}, idx) => {
+        if(!userInfo || !userInfo.roles.some(role => ["Admin", ...roles].includes(role))) {
+            return (<></>);
+        }
         return (
             <li key={idx} 
                 className="m-1 p-1 bg-hover-primary" 
@@ -22,23 +32,15 @@ const makePriviledgeContent = (props: IPriviledgeInfo[]) => {
             </li>
         )
     });
-    return content;
 }
 
 function ToolsHome() {
-    const { userInfo } = useAuth();
+    PageTitle("Tools");
 
     return(
         <div className="d-flex flex-column">
             <ul>
-                {
-                    isAdminRole(userInfo?.roles) && makePriviledgeContent(AdminTools)
-                }
-
-                {
-                    isAdminOrModRole(userInfo?.roles) && makePriviledgeContent(ModTools)
-                }
-
+                {makePriviledgeContent(tools)}
             </ul>
         </div>
     )

@@ -4,7 +4,7 @@ import Register from "../features/auth/pages/Register";
 
 function Home() {
 
-  PageTitle("Webler - Home", false);
+  PageTitle("Webler Codes", false);
 
   return (
     <>

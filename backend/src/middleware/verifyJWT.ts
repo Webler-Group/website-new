@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from "express";
 import { config } from "../confg";
 import bcrypt from "bcrypt";
 import { AccessTokenPayload } from "../utils/tokenUtils";
+import User from "../models/User";
 
 interface IAuthRequest extends Request {
     userId?: string;
@@ -27,17 +28,18 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
                 const accessTokenPayload = decoded as AccessTokenPayload;
                 if (!err) {
                     const rawFingerprint = deviceId;
-
                     const match = await bcrypt.compare(rawFingerprint, accessTokenPayload.fingerprint);
 
                     if (match) {
-                        const userInfo = accessTokenPayload.userInfo;
-
-                        req.userId = userInfo.userId;
-                        req.roles = userInfo.roles;
+                        // NEW: Fetch user and check tokenVersion
+                        const user = await User.findById(accessTokenPayload.userInfo.userId).select('tokenVersion active');
+                        if (user && user.active && accessTokenPayload.tokenVersion === user.tokenVersion) {
+                            const userInfo = accessTokenPayload.userInfo;
+                            req.userId = userInfo.userId;
+                            req.roles = userInfo.roles;
+                        }
                     }
                 }
-
                 next();
             }
         )

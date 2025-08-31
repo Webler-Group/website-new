@@ -42,3 +42,8 @@
 .toggle-switch__input:checked+.toggle-switch__span:before {
     transform: translateX(20px);
 }
+
+.toggle-switch__input:disabled + .toggle-switch__span {
+    cursor: default;
+    opacity: 0.6;
+}

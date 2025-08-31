@@ -12,15 +12,19 @@ import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   variant?: string;
+  hideChannelsButton?: boolean;
 }
 
-function Header({ variant }: HeaderProps) {
+function Header({ variant, hideChannelsButton }: HeaderProps) {
 
   const { userInfo } = useAuth();
 
   const toggleMobileMenu = () => {
     (document.getElementById("mobile-menu") as HTMLDivElement).classList.toggle("hidden");
   }
+
+  let a = variant;
+  let b = hideChannelsButton;
 
   return (
     <header className="fixed top-0 left-0 w-full bg-white text-[#222] shadow-md z-50">

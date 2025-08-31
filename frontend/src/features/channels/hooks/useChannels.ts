@@ -87,18 +87,11 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
         };
 
         const handleMessagesSeen = (data: any) => {
-            
-            setResults(prev => {
-                for(let i = 0; i < prev.length; ++i) {
-                    if(prev[i].id == data.channelId) {
-                        prev[i].unreadCount = 0;
-                        if(prev[i].lastMessage) {
-                            prev[i].lastMessage!.viewed = true;
-                        }
-                    }
-                }
-                return prev;
-            });
+            setResults(prev => prev.map(ch =>
+                ch.id === data.channelId
+                    ? { ...ch, lastMessage: ch.lastMessage ? { ...ch.lastMessage, viewed: true } : undefined, unreadCount: 0 }
+                    : ch
+            ));
         }
 
         const handleChannelDeleted = (data: any) => {
@@ -106,14 +99,34 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
             onLeaveChannelRef.current?.(data.channelId);
         }
 
+        const handleMessageDeleted = (data: any) => {
+            setResults(prev => prev.map(ch =>
+                ch.id === data.channelId
+                    ? { ...ch, lastMessage: (ch.lastMessage && ch.lastMessage.id == data.messageId) ? { ...ch.lastMessage, deleted: true, content: "" } : undefined }
+                    : ch
+            ));
+        }
+
+        const handleMessageEdited = (data: any) => {
+            setResults(prev => prev.map(ch =>
+                ch.id === data.channelId
+                    ? { ...ch, lastMessage: (ch.lastMessage && ch.lastMessage.id == data.messageId) ? { ...ch.lastMessage, content: data.content } : undefined }
+                    : ch
+            ));
+        }
+
         socket.on("channels:new_message", handleNewMessage);
         socket.on("channels:messages_seen", handleMessagesSeen);
         socket.on("channels:channel_deleted", handleChannelDeleted);
+        socket.on("channels:message_deleted", handleMessageDeleted);
+        socket.on("channels:message_edited", handleMessageEdited);
 
         return () => {
             socket.off("channels:new_message", handleNewMessage);
             socket.off("channels:messages_seen", handleMessagesSeen);
             socket.off("channels:channel_deleted", handleChannelDeleted);
+            socket.off("channels:message_deleted", handleMessageDeleted);
+            socket.off("channels:message_edited", handleMessageEdited);
         };
     }, [socket]);
 

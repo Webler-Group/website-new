@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaGlobe, FaLock, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -15,11 +15,15 @@ import CommentList2 from "./CommentList2";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
+import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
+import FollowList from "../../profile/pages/FollowList";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
 interface PlaygroundEditorProps {
-    language: any;
+    language: compilerLanguages | null;
 }
 
 const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
@@ -47,8 +51,20 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [postId, setPostId] = useState<string | null>(null);
     const [isReply, setIsReply] = useState(false);
     const location = useLocation();
-
     const [message, setMessage] = useState([true, ""]);
+    const [pageTitle, setPageTitle] = useState("");
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
+
+    PageTitle(pageTitle);
+
+    useEffect(() => {
+        if (code) {
+            setPageTitle(languagesInfo[code.language].displayName + " Playground - " + code.name + " | Webler Codes");
+        } else if (language) {
+            setPageTitle(languagesInfo[language].displayName + " Playground | Webler Codes");
+        }
+    }, [language, code]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -141,15 +157,34 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             codeId
         });
         if (result && result.code) {
+            let isSourceSet = false;
+            if (result.code.id) {
+                const localKey = `code_${result.code.id}`;
+                const localItem = localStorage.getItem(localKey);
+                if (localItem) {
+                    const parsed = JSON.parse(localItem);
+                    const localDate = new Date(parsed.updatedAt);
+                    const serverDate = new Date(result.code.updatedAt);
+                    if (localDate >= serverDate) {
+                        isSourceSet = true;
+                        setSource(parsed.source);
+                        setCss(parsed.css);
+                        setJs(parsed.js);
+                    }
+                }
+            }
+
             setCode(result.code);
             setCodeName(result.code.name);
             setCodePublic(result.code.isPublic);
-            setSource(result.code.source);
-            setCss(result.code.cssSource);
-            setJs(result.code.jsSource);
+            if (!isSourceSet) {
+                setSource(result.code.source);
+                setCss(result.code.cssSource);
+                setJs(result.code.jsSource);
+            }
             setCommentCount(result.code.comments);
         } else {
-            navigate("/Codes");
+            navigate("/PageNotFound")
         }
     }
 
@@ -158,7 +193,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (result && result.template) {
             const template = result.template;
             setCode({
-                language,
+                language: language as compilerLanguages,
                 isUpvoted: false,
                 comments: 0,
                 votes: 0,
@@ -185,6 +220,17 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         return result;
     }
 
+    const localSave = () => {
+        if (!code || !code.id) return;
+        const data = {
+            source,
+            css,
+            js,
+            updatedAt: code.updatedAt
+        };
+        localStorage.setItem(`code_${code.id}`, JSON.stringify(data));
+    }
+
     const getCreditsHeaders = (language: string, username: string) => {
         const message = "Created by " + username;
         switch (language) {
@@ -196,6 +242,12 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             case "c": case "cpp": return [
                 "// " + message
             ];
+            case "python": case "ruby": return [
+                "# " + message
+            ];
+            case "lua": return [
+                "-- " + message
+            ]
             default:
                 return [""];
         }
@@ -233,9 +285,13 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
 
                 setMessage([true, "Code updated successfully"]);
+                if (code.id) {
+                    localStorage.removeItem(`code_${code.id}`);
+                }
             }
             else {
-                setMessage([false, result.message ? result.message : "Code could not be updated"])
+                localSave();
+                setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
             }
             setLoading(false)
         }
@@ -256,9 +312,13 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
 
                 setMessage([true, "Code updated successfully"]);
+                if (code.id) {
+                    localStorage.removeItem(`code_${code.id}`);
+                }
             }
             else {
-                setMessage([false, result.message ? result.message : "Code could not be updated"])
+                localSave();
+                setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
             }
             setLoading(false)
         }
@@ -296,6 +356,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
         if (result && result.success) {
+            localStorage.removeItem(`code_${code.id}`);
             navigate("/Codes", { replace: true })
         }
         else {
@@ -340,8 +401,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
-    const formatTitle = (title: string) => {
-        return title.length > 10 ? title.slice(0, 10) + "..." : title;
+    const showCodeVoters = () => {
+        if(!codeId) return;
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: codeId } });
+        setVotersModalVisible(true);
     }
 
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
@@ -379,6 +442,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             </ul>
                         </Modal.Body>
                     </Modal>
+                    <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
                 </>
             }
             <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -423,7 +487,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 code &&
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
-                        <div className="d-flex align-items-center">
+                        <div className="d-flex">
                             {
                                 code.id &&
                                 <>
@@ -431,24 +495,34 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
                                         <div>
                                             <div>
-                                                <b>{formatTitle(code.name!)}</b>
+                                                <b>{truncate(code.name!, 10)}</b>
                                             </div>
                                             <div className="d-flex justify-content-start small">
                                                 <ProfileName userId={code.userId!} userName={code.userName!} />
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="ms-2 wb-playground-voting small">
+                                    <div className="wb-playground-voting small">
                                         <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
                                             <FaThumbsUp />
                                         </span>
-                                        <span>{code.votes}</span>
+                                        <span className="wb-playground-comments__button" onClick={showCodeVoters}>{code.votes}</span>
                                     </div>
-                                    <div className="ms-2 wb-playground-comments small">
+                                    <div className="wb-playground-comments small">
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>
                                             <FaComment />
                                         </span>
                                         <span>{commentCount}</span>
+                                    </div>
+                                    <div className="wb-playground-public small">
+                                        <span>
+                                            {
+                                                code.isPublic ?
+                                                    <FaGlobe />
+                                                    :
+                                                    <FaLock />
+                                            }
+                                        </span>
                                     </div>
                                 </>
                             }
@@ -490,7 +564,16 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     </Dropdown.ItemText>
                                     {
                                         (code && code.id) &&
-                                        <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                        <>
+                                            <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                            <Dropdown.Item
+                                                onClick={() => {
+                                                    navigator.clipboard.writeText(window.location.href);
+                                                }}
+                                            >
+                                                Share
+                                            </Dropdown.Item>
+                                        </>
                                     }
                                 </Dropdown.Menu>
                             </Dropdown>

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -46,9 +37,9 @@ const coverImageUpload = (0, multer_1.default)({
         }
     })
 });
-const createCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const createCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, description, code } = req.body;
-    const course = yield Course_1.default.create({
+    const course = await Course_1.default.create({
         title,
         description,
         code,
@@ -62,9 +53,9 @@ const createCourse = (0, express_async_handler_1.default)((req, res) => __awaite
             visible: course.visible
         }
     });
-}));
-const getCoursesList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield Course_1.default.find();
+});
+const getCoursesList = (0, express_async_handler_1.default)(async (req, res) => {
+    const result = await Course_1.default.find();
     const data = result.map(course => ({
         id: course._id,
         code: course.code,
@@ -76,15 +67,15 @@ const getCoursesList = (0, express_async_handler_1.default)((req, res) => __awai
     res.json({
         courses: data
     });
-}));
-const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId, courseCode, includeLessons } = req.body;
     let course = null;
     if (courseId) {
-        course = yield Course_1.default.findById(courseId);
+        course = await Course_1.default.findById(courseId);
     }
     else {
-        course = yield Course_1.default.findOne({ code: courseCode });
+        course = await Course_1.default.findOne({ code: courseCode });
     }
     if (!course) {
         res.status(404).json({ message: "Course not found" });
@@ -92,7 +83,7 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     }
     let lessons = [];
     if (includeLessons === true) {
-        lessons = yield CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
+        lessons = await CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
         lessons = lessons.map(lesson => ({
             id: lesson._id,
             title: lesson.title,
@@ -111,25 +102,25 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
             lessons
         }
     });
-}));
-const deleteCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId } = req.body;
-    const course = yield Course_1.default.findById(courseId);
+    const course = await Course_1.default.findById(courseId);
     if (!course) {
         res.status(404).json({ message: "Course not found" });
         return;
     }
     try {
-        yield Course_1.default.deleteAndCleanup(courseId);
+        await Course_1.default.deleteAndCleanup(courseId);
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const editCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId, title, description, visible } = req.body;
-    const course = yield Course_1.default.findById(courseId);
+    const course = await Course_1.default.findById(courseId);
     if (!course) {
         res.status(404).json({ message: "Course not found" });
         return;
@@ -138,7 +129,7 @@ const editCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(
     course.description = description;
     course.visible = visible;
     try {
-        yield course.save();
+        await course.save();
         res.json({
             success: true,
             data: {
@@ -156,10 +147,10 @@ const editCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(
             data: null
         });
     }
-}));
-const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getLesson = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId } = req.body;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
@@ -170,7 +161,7 @@ const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         index: lesson.index,
         nodeCount: lesson.nodes
     };
-    yield LessonNode_1.default.find({ lessonId: lesson.id }).sort({ index: "asc" }).select("_id _type index").then(result => {
+    await LessonNode_1.default.find({ lessonId: lesson.id }).sort({ index: "asc" }).select("_id _type index").then(result => {
         data.nodes = result.map(x => ({
             id: x._id,
             index: x.index,
@@ -180,15 +171,15 @@ const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     res.json({
         lesson: data
     });
-}));
-const getLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId } = req.body;
-    const lessonNode = yield LessonNode_1.default.findById(nodeId);
+    const lessonNode = await LessonNode_1.default.findById(nodeId);
     if (!lessonNode) {
         res.status(404).json({ message: "Lesson node not found" });
         return;
     }
-    const answers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id });
+    const answers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id });
     res.json({
         lessonNode: {
             id: lessonNode._id,
@@ -203,10 +194,10 @@ const getLessonNode = (0, express_async_handler_1.default)((req, res) => __await
             }))
         }
     });
-}));
-const getLessonList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getLessonList = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId } = req.body;
-    let lessons = yield CourseLesson_1.default.find({ course: courseId }).sort({ "index": "asc" });
+    let lessons = await CourseLesson_1.default.find({ course: courseId }).sort({ "index": "asc" });
     lessons = lessons.map(lesson => ({
         id: lesson._id,
         title: lesson.title,
@@ -216,16 +207,16 @@ const getLessonList = (0, express_async_handler_1.default)((req, res) => __await
     res.json({
         lessons
     });
-}));
-const createLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createLesson = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, courseId } = req.body;
-    const course = yield Course_1.default.findById(courseId);
+    const course = await Course_1.default.findById(courseId);
     if (!course) {
         res.status(404).json({ message: "Course not found" });
         return;
     }
-    const lastLessonIndex = yield CourseLesson_1.default.count({ course: courseId });
-    const lesson = yield CourseLesson_1.default.create({
+    const lastLessonIndex = await CourseLesson_1.default.count({ course: courseId });
+    const lesson = await CourseLesson_1.default.create({
         title,
         course: courseId,
         index: lastLessonIndex + 1
@@ -237,17 +228,17 @@ const createLesson = (0, express_async_handler_1.default)((req, res) => __awaite
             index: lesson.index
         }
     });
-}));
-const editLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editLesson = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId, title } = req.body;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
     }
     lesson.title = title;
     try {
-        yield lesson.save();
+        await lesson.save();
         res.json({
             success: true,
             data: {
@@ -264,24 +255,24 @@ const editLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(
             data: null
         });
     }
-}));
-const deleteLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteLesson = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId } = req.body;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
     }
     try {
-        yield CourseLesson_1.default.deleteAndCleanup({ _id: lessonId });
-        yield CourseLesson_1.default.updateMany({ course: lesson.course, index: { $gt: lesson.index } }, { $inc: { index: -1 } });
+        await CourseLesson_1.default.deleteAndCleanup({ _id: lessonId });
+        await CourseLesson_1.default.updateMany({ course: lesson.course, index: { $gt: lesson.index } }, { $inc: { index: -1 } });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const uploadCourseCoverImage = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const uploadCourseCoverImage = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId } = req.body;
     if (!req.file) {
         res.status(400).json({
@@ -290,7 +281,7 @@ const uploadCourseCoverImage = (0, express_async_handler_1.default)((req, res) =
         });
         return;
     }
-    const course = yield Course_1.default.findById(courseId);
+    const course = await Course_1.default.findById(courseId);
     if (!course) {
         fs_1.default.unlinkSync(req.file.path);
         res.status(404).json({ message: "Course not found" });
@@ -304,7 +295,7 @@ const uploadCourseCoverImage = (0, express_async_handler_1.default)((req, res) =
     }
     course.coverImage = req.file.filename;
     try {
-        yield course.save();
+        await course.save();
         res.json({
             success: true
         });
@@ -315,20 +306,20 @@ const uploadCourseCoverImage = (0, express_async_handler_1.default)((req, res) =
             error: err
         });
     }
-}));
-const createLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const createLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId } = req.body;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
     }
     lesson.$inc("nodes", 1);
-    const lessonNode = yield LessonNode_1.default.create({
+    const lessonNode = await LessonNode_1.default.create({
         lessonId,
         index: lesson.nodes
     });
-    yield lesson.save();
+    await lesson.save();
     res.json({
         lessonNode: {
             id: lessonNode._id,
@@ -336,29 +327,29 @@ const createLessonNode = (0, express_async_handler_1.default)((req, res) => __aw
             type: lessonNode._type
         }
     });
-}));
-const deleteLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const deleteLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId } = req.body;
-    const node = yield LessonNode_1.default.findById(nodeId);
+    const node = await LessonNode_1.default.findById(nodeId);
     if (!node) {
         res.status(404).json({ message: "Lesson node not found" });
         return;
     }
     try {
-        yield LessonNode_1.default.deleteAndCleanup({ _id: nodeId });
-        yield CourseLesson_1.default.updateOne({ _id: node.lessonId }, {
+        await LessonNode_1.default.deleteAndCleanup({ _id: nodeId });
+        await CourseLesson_1.default.updateOne({ _id: node.lessonId }, {
             $inc: { nodes: -1 }
         });
-        yield LessonNode_1.default.updateMany({ lessonId: node.lessonId, index: { $gt: node.index } }, { $inc: { index: -1 } });
+        await LessonNode_1.default.updateMany({ lessonId: node.lessonId, index: { $gt: node.index } }, { $inc: { index: -1 } });
         res.json({ success: true });
     }
     catch (err) {
         res.json({ success: false, error: err });
     }
-}));
-const editLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const editLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId, type, text, correctAnswer, answers } = req.body;
-    const node = yield LessonNode_1.default.findById(nodeId);
+    const node = await LessonNode_1.default.findById(nodeId);
     if (!node) {
         res.status(404).json({ message: "Lesson node not found" });
         return;
@@ -366,7 +357,7 @@ const editLessonNode = (0, express_async_handler_1.default)((req, res) => __awai
     node._type = type;
     node.text = text;
     node.correctAnswer = correctAnswer;
-    const currentAnswersIds = (yield QuizAnswer_1.default.find({ courseLessonNodeId: node.id }).select("_id")).map(x => x._id);
+    const currentAnswersIds = (await QuizAnswer_1.default.find({ courseLessonNodeId: node.id }).select("_id")).map(x => x._id);
     const answersToDelete = [];
     for (let answerId of currentAnswersIds) {
         if (!answers.find((x) => new mongoose_1.default.Types.ObjectId(x.id) == answerId)) {
@@ -374,15 +365,15 @@ const editLessonNode = (0, express_async_handler_1.default)((req, res) => __awai
         }
     }
     try {
-        yield node.save();
-        yield QuizAnswer_1.default.deleteMany({ _id: { $in: answersToDelete } });
+        await node.save();
+        await QuizAnswer_1.default.deleteMany({ _id: { $in: answersToDelete } });
         for (let answer of answers) {
             let answerId = new mongoose_1.default.Types.ObjectId(answer.id);
             if (currentAnswersIds.includes(answerId)) {
-                yield QuizAnswer_1.default.updateOne({ _id: answerId }, { text: answer.text, correct: answer.correct });
+                await QuizAnswer_1.default.updateOne({ _id: answerId }, { text: answer.text, correct: answer.correct });
             }
             else {
-                const result = yield QuizAnswer_1.default.create({ text: answer.text, correct: answer.correct, courseLessonNodeId: node.id });
+                const result = await QuizAnswer_1.default.create({ text: answer.text, correct: answer.correct, courseLessonNodeId: node.id });
                 answer.id = result._id;
             }
         }
@@ -405,15 +396,15 @@ const editLessonNode = (0, express_async_handler_1.default)((req, res) => __awai
             data: null
         });
     }
-}));
-const changeLessonIndex = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const changeLessonIndex = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId, newIndex } = req.body;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
     }
-    const otherLesson = yield CourseLesson_1.default.findOne({ course: lesson.course, index: newIndex });
+    const otherLesson = await CourseLesson_1.default.findOne({ course: lesson.course, index: newIndex });
     if (!otherLesson) {
         res.status(404).json({ message: "New index is not valid" });
         return;
@@ -421,8 +412,8 @@ const changeLessonIndex = (0, express_async_handler_1.default)((req, res) => __a
     otherLesson.index = lesson.index;
     lesson.index = newIndex;
     try {
-        yield lesson.save();
-        yield otherLesson.save();
+        await lesson.save();
+        await otherLesson.save();
         res.json({
             success: true,
             data: {
@@ -437,15 +428,15 @@ const changeLessonIndex = (0, express_async_handler_1.default)((req, res) => __a
             data: null
         });
     }
-}));
-const changeLessonNodeIndex = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const changeLessonNodeIndex = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId, newIndex } = req.body;
-    const node = yield LessonNode_1.default.findById(nodeId);
+    const node = await LessonNode_1.default.findById(nodeId);
     if (!node) {
         res.status(404).json({ message: "Lesson node not found" });
         return;
     }
-    const otherNode = yield LessonNode_1.default.findOne({ lessonId: node.lessonId, index: newIndex });
+    const otherNode = await LessonNode_1.default.findOne({ lessonId: node.lessonId, index: newIndex });
     if (!otherNode) {
         res.status(404).json({ message: "New index is not valid" });
         return;
@@ -453,8 +444,8 @@ const changeLessonNodeIndex = (0, express_async_handler_1.default)((req, res) =>
     otherNode.index = node.index;
     node.index = newIndex;
     try {
-        yield node.save();
-        yield otherNode.save();
+        await node.save();
+        await otherNode.save();
         res.json({
             success: true,
             data: {
@@ -469,7 +460,7 @@ const changeLessonNodeIndex = (0, express_async_handler_1.default)((req, res) =>
             data: null
         });
     }
-}));
+});
 const courseEditorController = {
     createCourse,
     getCoursesList,

@@ -6,7 +6,7 @@ import DateUtils from '../../../utils/DateUtils';
 import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
 import { ICode } from '../../codes/components/Code';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import PostAttachment, { IPostAttachment } from '../../discuss/components/PostAttachment';
@@ -34,6 +34,7 @@ interface CommentNodeProps {
     onEdit: (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => void;
     onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
     onVote: (id: string, vote: number) => void;
+    onShowVoters: (id: string) => void;
     setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
     addReplyToParent: (data: ICodeComment) => void;
     editParentReply: (id: string, message: string, attachments: IPostAttachment[]) => void;
@@ -46,6 +47,26 @@ interface CommentNodeProps {
     defaultReplies: ICodeComment[] | null;
 }
 
+function parseMessage(message: string): JSX.Element[] {
+    const regex = /\[user id="([0-9a-fA-F]{24})"\](.*?)\[\/user\]/g;
+    const parts: JSX.Element[] = [];
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(message)) !== null) {
+        if (match.index > lastIndex) {
+            parts.push(<React.Fragment key={parts.length}>{message.substring(lastIndex, match.index)}</React.Fragment>);
+        }
+        const userid = match[1];
+        const username = match[2];
+        parts.push(<Link key={parts.length} to={`/Profile/${userid}`}>@{username}</Link>);
+        lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < message.length) {
+        parts.push(<React.Fragment key={parts.length}>{message.substring(lastIndex)}</React.Fragment>);
+    }
+    return parts;
+}
+
 const CommentNode = React.forwardRef(({
     code,
     data, parentId,
@@ -54,6 +75,7 @@ const CommentNode = React.forwardRef(({
     onEdit,
     onDelete,
     onVote,
+    onShowVoters,
     setDefaultOnReplyCallback,
     addReplyToParent,
     editParentReply,
@@ -196,6 +218,13 @@ const CommentNode = React.forwardRef(({
         }
     }
 
+    const handleShowVoters = () => {
+        if (data === null) {
+            return;
+        }
+        onShowVoters(data.id);
+    }
+
     const addReply = (data: ICodeComment) => {
         add(data)
         setReplyCount(count => count + 1)
@@ -249,7 +278,9 @@ const CommentNode = React.forwardRef(({
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
-                            <p className="wb-playground-comments__message mt-2">{data.message}</p>
+                            <div className="wb-playground-comments__message mt-2">
+                                {parseMessage(data.message)}
+                            </div>
                             <div className="mt-2">
                                 {
                                     data.attachments.map(attachment => {
@@ -268,7 +299,7 @@ const CommentNode = React.forwardRef(({
                                     <span className={"wb-discuss-voting__button" + (data.isUpvoted ? " text-black" : "")} onClick={handleVote}>
                                         <FaThumbsUp />
                                     </span>
-                                    <span className="ms-1">{data.votes}</span>
+                                    <span className="ms-1 wb-playground-comments__button" onClick={handleShowVoters}>{data.votes}</span>
                                 </div>
                                 <button className="small wb-user-comment-footer__reply" onClick={handleReply}>
                                     Reply
@@ -315,6 +346,7 @@ const CommentNode = React.forwardRef(({
                                                 onEdit={onEdit}
                                                 onDelete={onDelete}
                                                 onVote={voteReply}
+                                                onShowVoters={onShowVoters}
                                                 setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                 addReplyToParent={addReply}
                                                 editParentReply={editReply}
@@ -340,6 +372,7 @@ const CommentNode = React.forwardRef(({
                                                     onEdit={onEdit}
                                                     onDelete={onDelete}
                                                     onVote={voteReply}
+                                                    onShowVoters={onShowVoters}
                                                     setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                     addReplyToParent={addReply}
                                                     editParentReply={editReply}
@@ -361,6 +394,7 @@ const CommentNode = React.forwardRef(({
                                                     onEdit={onEdit}
                                                     onDelete={onDelete}
                                                     onVote={voteReply}
+                                                    onShowVoters={onShowVoters}
                                                     setDefaultOnReplyCallback={setDefaultOnReplyCallback}
                                                     addReplyToParent={addReply}
                                                     editParentReply={editReply}

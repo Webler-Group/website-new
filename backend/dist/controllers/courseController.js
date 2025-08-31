@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -19,19 +10,19 @@ const CourseLesson_1 = __importDefault(require("../models/CourseLesson"));
 const LessonNode_1 = __importDefault(require("../models/LessonNode"));
 const QuizAnswer_1 = __importDefault(require("../models/QuizAnswer"));
 const User_1 = __importDefault(require("../models/User"));
-const getCourseList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
     const { excludeUserId } = req.body;
     let result;
     if (typeof excludeUserId !== "undefined") {
-        const progresses = yield CourseProgress_1.default.find({ userId: excludeUserId }).select("course");
+        const progresses = await CourseProgress_1.default.find({ userId: excludeUserId }).select("course");
         const startedCourseIds = progresses.map(x => x.course);
-        result = yield Course_1.default.find({
+        result = await Course_1.default.find({
             visible: true,
             _id: { $nin: startedCourseIds }
         });
     }
     else {
-        result = yield Course_1.default.find({ visible: true });
+        result = await Course_1.default.find({ visible: true });
     }
     const data = result.map(course => ({
         id: course._id,
@@ -44,10 +35,10 @@ const getCourseList = (0, express_async_handler_1.default)((req, res) => __await
     res.json({
         courses: data
     });
-}));
-const getUserCourseList = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getUserCourseList = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId } = req.body;
-    const result = yield CourseProgress_1.default.find({ userId })
+    const result = await CourseProgress_1.default.find({ userId })
         .populate("course");
     const data = result.map(x => ({
         id: x.course._id,
@@ -62,32 +53,32 @@ const getUserCourseList = (0, express_async_handler_1.default)((req, res) => __a
     res.json({
         courses: data
     });
-}));
-const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId, courseCode, includeLessons } = req.body;
     const currentUserId = req.userId;
     let course = null;
     if (courseId) {
-        course = yield Course_1.default.findById(courseId);
+        course = await Course_1.default.findById(courseId);
     }
     else {
-        course = yield Course_1.default.findOne({ code: courseCode });
+        course = await Course_1.default.findOne({ code: courseCode });
     }
     if (!course) {
         res.status(404).json({ message: "Course not found" });
         return;
     }
-    let userProgress = yield CourseProgress_1.default.findOne({ course: course.id, userId: currentUserId });
+    let userProgress = await CourseProgress_1.default.findOne({ course: course.id, userId: currentUserId });
     if (!userProgress) {
-        userProgress = yield CourseProgress_1.default.create({ course: course.id, userId: currentUserId });
+        userProgress = await CourseProgress_1.default.create({ course: course.id, userId: currentUserId });
     }
     let lessons = [];
     if (includeLessons === true) {
-        lessons = yield CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
-        const lastUnlockedLessonIndex = yield userProgress.getLastUnlockedLessonIndex();
+        lessons = await CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
+        const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
         let lastUnlockedNodeIndex = 1;
         if (userProgress.lastLessonNodeId) {
-            const lastLessonNode = yield LessonNode_1.default.findById(userProgress.lastLessonNodeId).select("index");
+            const lastLessonNode = await LessonNode_1.default.findById(userProgress.lastLessonNodeId).select("index");
             if (lastLessonNode) {
                 lastUnlockedNodeIndex = lastLessonNode.index + 1;
             }
@@ -117,22 +108,21 @@ const getCourse = (0, express_async_handler_1.default)((req, res) => __awaiter(v
             }
         }
     });
-}));
-const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+});
+const getLesson = (0, express_async_handler_1.default)(async (req, res) => {
     const { lessonId } = req.body;
     const currentUserId = req.userId;
-    const lesson = yield CourseLesson_1.default.findById(lessonId);
+    const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ message: "Lesson not found" });
         return;
     }
-    const userProgress = yield CourseProgress_1.default.findOne({ course: lesson.course, userId: currentUserId }).populate("lastLessonNodeId", "index lessonId");
+    const userProgress = await CourseProgress_1.default.findOne({ course: lesson.course, userId: currentUserId }).populate("lastLessonNodeId", "index lessonId");
     if (!userProgress) {
         res.status(404).json({ message: "User progress not found" });
         return;
     }
-    const lastUnlockedLessonIndex = yield userProgress.getLastUnlockedLessonIndex();
+    const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
     if (lesson.index > lastUnlockedLessonIndex) {
         res.status(400).json({ message: "Lesson is not unlocked" });
         return;
@@ -144,10 +134,10 @@ const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(v
         nodeCount: lesson.nodes
     };
     let lastUnlockedNodeIndex = 1;
-    if (lesson._id.equals((_a = userProgress.lastLessonNodeId) === null || _a === void 0 ? void 0 : _a.lessonId)) {
+    if (lesson._id.equals(userProgress.lastLessonNodeId?.lessonId)) {
         lastUnlockedNodeIndex = userProgress.lastLessonNodeId.index + 1;
     }
-    const nodes = yield LessonNode_1.default.find({ lessonId: lesson._id }).sort({ index: "asc" }).select("_id _type index");
+    const nodes = await LessonNode_1.default.find({ lessonId: lesson._id }).sort({ index: "asc" }).select("_id _type index");
     data.nodes = nodes.map(x => ({
         id: x._id,
         index: x.index,
@@ -157,40 +147,40 @@ const getLesson = (0, express_async_handler_1.default)((req, res) => __awaiter(v
     res.json({
         lesson: data
     });
-}));
-const getLessonNode = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId, mock } = req.body;
     const currentUserId = req.userId;
-    const lessonNode = yield LessonNode_1.default.findById(nodeId)
+    const lessonNode = await LessonNode_1.default.findById(nodeId)
         .populate("lessonId");
     if (!lessonNode) {
         res.status(404).json({ message: "Lesson node not found" });
         return;
     }
     if (!mock) {
-        const userProgress = yield CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
+        const userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ message: "User progress not found" });
             return;
         }
-        const { unlocked, isLast } = yield userProgress.getLessonNodeInfo(lessonNode._id);
+        const { unlocked, isLast } = await userProgress.getLessonNodeInfo(lessonNode._id);
         if (!unlocked) {
             res.status(400).json({ message: "Node is not unlocked" });
             return;
         }
         if (lessonNode._type == 1 && isLast) {
             userProgress.lastLessonNodeId = lessonNode._id;
-            yield userProgress.save();
+            await userProgress.save();
         }
     }
     else {
-        const user = yield User_1.default.findById(currentUserId).select("roles");
+        const user = await User_1.default.findById(currentUserId).select("roles");
         if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
     }
-    const answers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode._id });
+    const answers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode._id });
     res.json({
         lessonNode: {
             id: lessonNode._id,
@@ -205,11 +195,11 @@ const getLessonNode = (0, express_async_handler_1.default)((req, res) => __await
             }))
         }
     });
-}));
-const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const solve = (0, express_async_handler_1.default)(async (req, res) => {
     const { nodeId, correctAnswer, answers, mock } = req.body;
     const currentUserId = req.userId;
-    const lessonNode = yield LessonNode_1.default.findById(nodeId)
+    const lessonNode = await LessonNode_1.default.findById(nodeId)
         .populate("lessonId");
     if (!lessonNode) {
         res.status(404).json({ message: "Lesson node not found" });
@@ -218,12 +208,12 @@ const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     let userProgress = null;
     let isLast = false;
     if (!mock) {
-        userProgress = (yield CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index"));
+        userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index");
         if (!userProgress) {
             res.status(404).json({ message: "User progress not found" });
             return;
         }
-        const nodeInfo = yield userProgress.getLessonNodeInfo(lessonNode._id);
+        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode._id);
         if (!nodeInfo.unlocked) {
             res.status(400).json({ message: "Node is not unlocked" });
             return;
@@ -231,13 +221,13 @@ const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
         isLast = nodeInfo.isLast;
     }
     else {
-        const user = yield User_1.default.findById(currentUserId).select("roles");
+        const user = await User_1.default.findById(currentUserId).select("roles");
         if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
     }
-    const nodeAnswers = yield QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
+    const nodeAnswers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
     let correct = false;
     switch (lessonNode._type) {
         case 1: {
@@ -259,7 +249,7 @@ const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
     }
     if (!mock && isLast && correct) {
         userProgress.lastLessonNodeId = lessonNode.id;
-        yield userProgress.save();
+        await userProgress.save();
     }
     res.json({
         success: true,
@@ -267,11 +257,11 @@ const solve = (0, express_async_handler_1.default)((req, res) => __awaiter(void 
             correct
         }
     });
-}));
-const resetCourseProgress = (0, express_async_handler_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+});
+const resetCourseProgress = (0, express_async_handler_1.default)(async (req, res) => {
     const { courseId } = req.body;
     const currentUserId = req.userId;
-    const userProgress = yield CourseProgress_1.default.findOne({ course: courseId, userId: currentUserId });
+    const userProgress = await CourseProgress_1.default.findOne({ course: courseId, userId: currentUserId });
     if (!userProgress) {
         res.status(404).json({ message: "Course progress not found" });
         return;
@@ -281,7 +271,7 @@ const resetCourseProgress = (0, express_async_handler_1.default)((req, res) => _
     res.json({
         success: true
     });
-}));
+});
 const courseController = {
     getCourseList,
     getUserCourseList,

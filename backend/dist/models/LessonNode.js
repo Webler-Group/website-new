@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -47,20 +38,18 @@ const lessonNodeSchema = new mongoose_1.default.Schema({
         required: false
     }
 });
-lessonNodeSchema.statics.deleteAndCleanup = function (filter) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const lessonNodesToDelete = yield LessonNode.find(filter).select("_id");
-        for (let i = 0; i < lessonNodesToDelete.length; ++i) {
-            const lessonNode = lessonNodesToDelete[i];
-            const lesson = yield CourseLesson_1.default.findById(lessonNode.lessonId);
-            if (lesson) {
-                lesson.$inc("nodes", -1);
-                yield lesson.save();
-            }
-            yield QuizAnswer_1.default.deleteMany({ courseLessonNodeId: lessonNode._id });
+lessonNodeSchema.statics.deleteAndCleanup = async function (filter) {
+    const lessonNodesToDelete = await LessonNode.find(filter).select("_id");
+    for (let i = 0; i < lessonNodesToDelete.length; ++i) {
+        const lessonNode = lessonNodesToDelete[i];
+        const lesson = await CourseLesson_1.default.findById(lessonNode.lessonId);
+        if (lesson) {
+            lesson.$inc("nodes", -1);
+            await lesson.save();
         }
-        yield LessonNode.deleteMany(filter);
-    });
+        await QuizAnswer_1.default.deleteMany({ courseLessonNodeId: lessonNode._id });
+    }
+    await LessonNode.deleteMany(filter);
 };
 const LessonNode = mongoose_1.default.model("LessonNode", lessonNodeSchema);
 exports.default = LessonNode;

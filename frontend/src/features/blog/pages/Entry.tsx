@@ -7,11 +7,11 @@ import { IBlogEntry } from "../components/BlogEntry";
 
 
 const Entry = () => {
-  PageTitle("Webler - Blog", false);
-
   const { sendJsonRequest } = useApi();
   const [article, setArticle] = useState<IBlogEntry>();
   const { entryName } = useParams();
+
+  PageTitle(entryName ?? "", false);
 
   useEffect(() => {
     const getArticle = async () => {
@@ -32,7 +32,7 @@ const Entry = () => {
           article ?
             <div className="py-2">
               <div className="d-flex gap-2 py-2">
-                <Link to="/Blog">Webler blog</Link>
+                <Link to="/Blog">Webler Codes blog</Link>
                 <span>&rsaquo;</span>
                 <span>{article.title}</span>
               </div>

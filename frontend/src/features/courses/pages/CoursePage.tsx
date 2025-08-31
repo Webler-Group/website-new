@@ -5,6 +5,8 @@ import { useApi } from "../../../context/apiCommunication";
 import { ILesson } from "../components/Lesson";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
+import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
 
 interface ICourse {
     id: string;
@@ -26,6 +28,9 @@ const CoursePage = () => {
 
     const [course, setCourse] = useState<ICourse | null>(null);
     const [loading, setLoading] = useState(true);
+    const [pageTitle, setPageTitle] = useState("Webler Codes");
+
+    PageTitle(pageTitle);
 
     useEffect(() => {
         getCourse();
@@ -40,6 +45,7 @@ const CoursePage = () => {
 
         if (result && result.course) {
             setCourse(result.course);
+            setPageTitle("Courses - " + result.course.title + " | Webler Codes");
         }
         setLoading(false);
     };
@@ -75,7 +81,7 @@ const CoursePage = () => {
                         <div className="d-flex gap-2 py-2">
                             <Link to="/Courses">Courses</Link>
                             <span>&rsaquo;</span>
-                            <span>{course.title.length > 20 ? course.title.slice(0, 20) + "..." : course.title}</span>
+                            <span>{truncate(course.title, 20)}</span>
                         </div>
 
                         <h3>{course.title}</h3>

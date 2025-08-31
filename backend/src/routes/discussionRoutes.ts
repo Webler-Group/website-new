@@ -18,9 +18,11 @@ router.route("/GetQuestionReplies")
 router.route("/GetTags")
     .post(discussionController.getTags);
 router.route("/GetCodeComments")
-    .post(discussionController.getCodeComments)
+    .post(discussionController.getCodeComments);
+router.route("/GetVoters")
+    .post(discussionController.getVotersList);
 
-router.use(protectRoute());
+router.use(protectRoute);
 
 router.route("/CreateQuestion")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), discussionController.createQuestion);

@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -24,14 +15,20 @@ const tagSchema = new mongoose_1.default.Schema({
         minLength: 1
     }
 });
-tagSchema.statics.getOrCreateTagByName = function (tagName) {
-    return __awaiter(this, void 0, void 0, function* () {
-        let tag = yield Tag.findOne({ name: tagName });
-        if (tag === null) {
-            tag = yield Tag.create({ name: tagName });
-        }
-        return tag;
-    });
+tagSchema.statics.getOrCreateTagsByNames = async function (tagNames) {
+    // Remove duplicates to avoid unnecessary queries
+    const uniqueNames = [...new Set(tagNames)];
+    // Find already existing tags
+    const existingTags = await Tag.find({ name: { $in: uniqueNames } });
+    const existingNames = existingTags.map(tag => tag.name);
+    // Determine which names are missing
+    const missingNames = uniqueNames.filter(name => !existingNames.includes(name));
+    // Create missing tags (if any)
+    const newTags = missingNames.length > 0
+        ? await Tag.insertMany(missingNames.map(name => ({ name })))
+        : [];
+    // Return combined array of existing + new tags
+    return [...existingTags, ...newTags];
 };
 const Tag = mongoose_1.default.model("Tag", tagSchema);
 exports.default = Tag;

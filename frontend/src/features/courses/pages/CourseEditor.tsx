@@ -5,6 +5,7 @@ import { Link, useParams } from "react-router-dom";
 import Lesson, { ILesson } from "../components/Lesson";
 import LessonEditor from "./LessonEditor";
 import { useApi } from "../../../context/apiCommunication";
+import { truncate } from "../../../utils/StringUtils";
 
 interface CourseEditorProps {
 }
@@ -158,7 +159,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
         if (!currentLesson) {
             return <></>;
         }
-        const lessonTitle = currentLesson.title.length > 20 ? currentLesson.title.slice(0, 20) + "..." : currentLesson.title;
+        const lessonTitle = truncate(currentLesson.title, 20);
         return (
             <>
                 <span>&rsaquo;</span>
@@ -186,11 +187,11 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                 {
                     lessonId !== null ?
                         <>
-                            <Link to={"/Courses/Editor/" + course.code}>{course.title.length > 20 ? course.title.slice(0, 20) + "..." : course.title}</Link>
+                            <Link to={"/Courses/Editor/" + course.code}>{truncate(course.title, 20)}</Link>
                             {getLessonTitlePath()}
                         </>
                         :
-                        <span>{course.title.length > 20 ? course.title.slice(0, 20) + "..." : course.title}</span>
+                        <span>{truncate(course.title, 20)}</span>
                 }
             </div>
             <div className="mb-3">

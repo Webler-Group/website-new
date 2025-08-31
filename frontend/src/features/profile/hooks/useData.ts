@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useApi } from "../../../context/apiCommunication"
 
-const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum = 1) => {
+const useData = (loadUrlPath: string | null, params: any, count: number, store: { page: number; }) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
@@ -9,10 +9,8 @@ const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum 
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        setResults([]);
-    }, [loadUrlPath]);
+        if(store.page == 0 || !loadUrlPath) return;
 
-    useEffect(() => {
         setIsLoading(true)
         setError("")
 
@@ -20,9 +18,9 @@ const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum 
         const { signal } = controller
 
         sendJsonRequest(`${loadUrlPath}`, "POST", {
-            userId,
+            ...params,
             count,
-            page: pageNum
+            page: store.page
         }, { signal })
             .then(result => {
                 if (!result || !result.data) {
@@ -31,16 +29,20 @@ const useFollows = (loadUrlPath: string, userId: string, count: number, pageNum 
                     setError("Something went wrong");
                     return
                 }
-                setResults(prev => [...prev, ...result.data])
+                if(store.page == 1) {
+                    setResults(result.data)
+                } else {
+                    setResults(prev => [...prev, ...result.data])
+                }
                 setHasNextPage(result.data.length === count)
                 setIsLoading(false)
             })
 
         return () => controller.abort()
 
-    }, [pageNum])
+    }, [store])
 
     return { isLoading, error, results, hasNextPage }
 }
 
-export default useFollows;
+export default useData;

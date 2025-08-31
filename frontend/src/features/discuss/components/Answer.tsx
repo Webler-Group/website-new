@@ -33,9 +33,10 @@ interface AnswerProps {
     isQuestionOwner: boolean;
     showEditAnswer: (postId: string) => void;
     newlyCreatedAnswer: string | null;
+    onShowVoters: (id: string) => void;
 }
 
-const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer, isQuestionOwner, showEditAnswer, newlyCreatedAnswer, onShowVoters }: AnswerProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [upvoted, setUpvoted] = useState(answer.isUpvoted);
@@ -54,6 +55,10 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
             setUpvoted(vote === 1);
             setVotes(votes + (vote ? 1 : -1));
         }
+    }
+
+    const showVoters = () => {
+        onShowVoters(answer.id);
     }
 
     let isAccepted = acceptedAnswer === answer.id;
@@ -75,7 +80,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         <span onClick={voteAnswer} className={"wb-discuss-voting__button" + (upvoted ? " text-black" : "")}>
                             <FaThumbsUp />
                         </span>
-                        <b>{votes}</b>
+                        <b className="wb-discuss-voting__button text-black" onClick={showVoters}>{votes}</b>
                     </div>
                 </div>
 

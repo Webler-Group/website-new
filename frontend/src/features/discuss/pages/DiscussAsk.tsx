@@ -4,6 +4,7 @@ import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
+import PostTextareaControl from '../../../components/PostTextareaControl';
 import ReactMarkdown from "react-markdown"
 import {
   Bold,

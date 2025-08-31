@@ -3,9 +3,11 @@ import jwt from "jsonwebtoken";
 import { config } from "../confg";
 import bcrypt from "bcrypt";
 import { v4 as uuid } from "uuid";
+import User from "../models/User";
 
 interface RefreshTokenPayload {
     userId: string;
+    tokenVersion: number;
 }
 
 interface AccessTokenPayload {
@@ -14,25 +16,34 @@ interface AccessTokenPayload {
         roles: string[];
     },
     fingerprint: string;
+    tokenVersion: number;
 }
 
 interface EmailTokenPayload {
     userId: string;
     email: string;
+    action: string;
 }
 
-const generateRefreshToken = (res: Response, payload: RefreshTokenPayload) => {
+const generateRefreshToken = async (res: Response, payload: { userId: string }) => {
+    const user = await User.findById(payload.userId, "tokenVersion");
+    if (!user) throw new Error("User not found");
+
+    const refreshPayload: RefreshTokenPayload = {
+        userId: payload.userId,
+        tokenVersion: user.tokenVersion
+    };
 
     const refreshToken = jwt.sign(
-        payload,
+        refreshPayload,
         config.refreshTokenSecret,
-        { expiresIn: "7d" }
+        { expiresIn: "14d" }
     );
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: config.nodeEnv === "production",
-        maxAge: 7 * 24 * 60 * 60 * 1000
+        maxAge: 14 * 24 * 60 * 60 * 1000
     });
 }
 
@@ -40,19 +51,23 @@ const clearRefreshToken = (res: Response) => {
     res.clearCookie("refreshToken");
 }
 
-const signAccessToken = async (userInfo: { userId: string; roles: string[]; }, deviceId: string, expiresIn = "30m") => {
+const signAccessToken = async (userInfo: { userId: string; roles: string[]; }, deviceId: string) => {
+    const user = await User.findById(userInfo.userId).select('tokenVersion');
+    if (!user) throw new Error('User not found');
+
     const fingerprintRaw = deviceId;
     const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
 
-    const payload = {
+    const payload: AccessTokenPayload = {
         userInfo,
-        fingerprint
+        fingerprint,
+        tokenVersion: user.tokenVersion  // Include current version
     };
 
     const accessToken = jwt.sign(
         payload,
         config.accessTokenSecret,
-        { expiresIn }
+        { expiresIn: "15m" }
     );
 
     const data = jwt.decode(accessToken);
@@ -68,7 +83,7 @@ const signEmailToken = (payload: EmailTokenPayload) => {
     const emailToken = jwt.sign(
         payload,
         config.emailTokenSecret,
-        { expiresIn: "1h" }
+        { expiresIn: "15m" }
     );
 
     const data = jwt.decode(emailToken);

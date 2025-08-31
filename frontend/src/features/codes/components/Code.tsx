@@ -28,25 +28,8 @@ interface CodeProps {
     showUserProfile: boolean;
 }
 
-const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-    const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
-    const match = code.name!.match(regex);
-
-    let title;
-    if (searchQuery.trim().length > 0 && match && match.index !== undefined) {
-        const start = match.index;
-        const end = start + match[0].length;
-
-        title = (
-            <>
-                {code.name!.slice(0, start)}
-                <span className="bg-warning">{code.name!.slice(start, end)}</span>
-                {code.name!.slice(end)}
-            </>
-        );
-    } else {
-        title = <>{code.name!}</>;
-    }
+const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+    let title = code.name;
 
     let body = (
         <div className="rounded border p-2 bg-white d-md-flex">
@@ -89,7 +72,7 @@ const Code = React.forwardRef(({ code, searchQuery, showUserProfile }: CodeProps
                     <div className="d-flex align-items-center">
                         <div>
                             <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(code.updatedAt!))}</small>
+                                <small className="text-secondary">{DateUtils.format(new Date(code.createdAt!))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
                                 <ProfileName userId={code.userId!} userName={code.userName!} />

@@ -16,12 +16,14 @@ import courseRoutes from "./routes/courseRoutes";
 import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import tagRoutes from "./routes/tagRoutes";
+import notificationRoutes from "./routes/notificationRoutes";
+import adminRoutes from "./routes/adminRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
-import { registerHandlersWS as codesRegisterHandlersWS } from "./controllers/codesController"; 
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
+import { initKeystore } from "./services/pushService";
 
 async function main() {
     console.log("Environment:", config.nodeEnv);
@@ -30,13 +32,14 @@ async function main() {
     const server = http.createServer(app);
 
     init(server, (socket) => {
-        // codesRegisterHandlersWS(socket);
         channelsregisterHandlersWS(socket);
     });
 
     const apiPrefix = "/api";
 
     await connectDB();
+
+    await initKeystore();
 
     if (config.nodeEnv == "production") {
         initCronJobs();
@@ -62,6 +65,8 @@ async function main() {
     app.use(`${apiPrefix}/Courses`, courseRoutes);
     app.use(`${apiPrefix}/Channels`, channelRoutes);
     app.use(`${apiPrefix}/Tag`, tagRoutes);
+    app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
+    app.use(`${apiPrefix}/Admin`, adminRoutes);
 
     app.all("*", (req, res) => {
         res.status(404).json({ message: "404 Not Found" });

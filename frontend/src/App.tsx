@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import Login from './features/auth/pages/Login';
 import Register from './features/auth/pages/Register';
 import RequireAuth from './features/auth/components/RequireAuth';
-import roles, { adminAndModRole, adminRole } from './data/roles';
 import Home from './pages/Home';
 import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
 import NoAuth from './features/auth/components/NoAuth';
@@ -34,7 +33,7 @@ import CreateCourse from './features/courses/pages/CreateCourse';
 import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
-import { languagesInfo } from './data/compilerLanguages';
+import { compilerLanguages, languagesInfo } from './data/compilerLanguages';
 // import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
@@ -42,6 +41,10 @@ import ChannelsPage from './features/channels/pages/ChannelsPage';
 import ToolsHome from './tools/ToolsHome';
 import TagHome from './tools/tags/pages/TagHome';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import roles from './data/roles';
+import AdminHome from './tools/admin/pages/AdminHome';
+import AdminUserList from './tools/admin/pages/AdminUserList';
+import ModView from './tools/admin/pages/ModView';
 
 
 function App() {
@@ -100,10 +103,10 @@ function App() {
         </Route>
         {
           Object.keys(languagesInfo).map((lang, i) => {
-            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang} />} />);
+            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang as compilerLanguages} />} />);
           })
         }
-        <Route path=":codeId" element={<PlaygroundEditor language="" />} />
+        <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
       </Route>
 
       <Route path="Feed">
@@ -159,34 +162,32 @@ function App() {
 
       <Route path="Channels">
 
-        <Route element={<RequireAuth allowedRoles={allRoles} />}>
-          <Route index element={<ChannelsPage />} />
-          <Route path=":channelId" element={<ChannelsPage />} />
+        <Route element={<Layout Header={<Header variant="light" hideChannelsButton />} Footer={null} />}>
+          <Route element={<RequireAuth allowedRoles={allRoles} />}>
+            <Route index element={<ChannelsPage />} />
+            <Route path=":channelId" element={<ChannelsPage />} />
+          </Route>
         </Route>
 
       </Route>
 
+      <Route path="Admin">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+            <Route index element={<AdminHome />} />
+            <Route path="UserSearch">
+              <Route index element={<AdminUserList />} />
+              <Route path=":userId" element={<ModView />} />
+            </Route>
+          </Route>
+        </Route>
+      </Route>
 
       <Route path="Tools">
         <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
-          <Route element={<RequireAuth allowedRoles={adminAndModRole} />}>
-            <Route index element={<ToolsHome />}/>
+          <Route index element={<ToolsHome />} />
+          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
             <Route path="Tags" element={<TagHome />} />
-            {/* FOR ADMIN ONLY */}
-            <Route element={<RequireAuth allowedRoles={adminRole} />}>
-
-              <Route path="Courses">
-                  <Route path="Editor">
-                    <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
-                    <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null} />} />} />
-                    <Route path="Edit/:courseCode" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
-                    <Route path=":courseCode">
-                      <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-                      <Route path="Lesson/:lessonId" element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-                    </Route>
-                  </Route>
-                </Route>
-            </Route>
           </Route>
         </Route>
       </Route>

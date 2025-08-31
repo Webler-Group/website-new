@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FaTag, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
+import PageTitle from "../../../layouts/PageTitle";
 
 
 function TagHome() {
@@ -8,6 +9,8 @@ function TagHome() {
     const [loadingText, setLoadingText] = useState<string>("");
 
     const { sendJsonRequest } = useApi();
+
+    PageTitle("Tag Executor");
 
     const getJobEntry = () => tagJobEntry.replace("\n", "")
         .split(",")

@@ -67,7 +67,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 });
 
 const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { channelId, username } = req.body;
+    const { channelId, userId } = req.body;
     const currentUserId = req.userId;
 
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
@@ -76,7 +76,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const invitedUser = await User.findOne({ name: username }, "_id name avatarImage");
+    const invitedUser = await User.findById(userId, "name avatarImage roles level");
     if (!invitedUser) {
         res.status(404).json({ message: "User not found" });
         return;
@@ -125,11 +125,6 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const unreadCount = await ChannelMessage.countDocuments({
-        channel: channel._id,
-        createdAt: { $gt: participant.lastActiveAt }
-    });
-
     const data: any = {
         id: channel._id,
         title: channel._type == 2 ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
@@ -138,7 +133,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
-        unreadCount,
+        unreadCount: participant.unreadCount,
         muted: participant.muted
     };
 
@@ -181,7 +176,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     // First find all channels where user is participant
     const participantChannels = await ChannelParticipant.find({ user: currentUserId })
-        .select('channel lastActiveAt muted');
+        .select('channel lastActiveAt muted unreadCount');
 
     const channelIds = participantChannels.map(p => p.channel);
 
@@ -197,7 +192,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
         .populate<{ lastMessage: any }>({
             path: "lastMessage",
-            select: "user content _type createdAt",
+            select: "user content _type createdAt deleted",
             populate: {
                 path: "user",
                 select: "name avatarImage"
@@ -205,19 +200,10 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         })
         .lean();
 
-    const participantData = await Promise.all(
-        channels.map(async (channel) => {
-            const participant = participantChannels.find(y => y.channel.equals(channel._id));
-            const lastActiveAt = participant?.lastActiveAt || new Date(0);
-
-            const unreadCount = await ChannelMessage.countDocuments({
-                channel: channel._id,
-                createdAt: { $gt: lastActiveAt }
-            });
-
-            return { channelId: channel._id.toString(), unreadCount, muted: participant?.muted };
-        })
-    );
+    const participantData = channels.map((channel) => {
+        const participant = participantChannels.find(y => y.channel.equals(channel._id));
+        return { channelId: channel._id.toString(), unreadCount: participant?.unreadCount || 0, muted: participant?.muted };
+    });
 
     const participantDataMap = Object.fromEntries(participantData.map(u => [u.channelId, { ...u }]));
 
@@ -236,7 +222,8 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 lastMessage: x.lastMessage ? {
                     type: x.lastMessage._type,
                     id: x.lastMessage._id,
-                    content: x.lastMessage.content,
+                    deleted: x.lastMessage.deleted,
+                    content: x.lastMessage.deleted ? "" : x.lastMessage.content,
                     createdAt: x.lastMessage.createdAt,
                     userId: x.lastMessage.user._id,
                     userName: x.lastMessage.user.name,
@@ -397,6 +384,11 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
 
+    if (typeof channelId === "undefined" || typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Invalid body" });
+        return;
+    }
+
     const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId })
     if (!participant) {
         res.status(403).json({ message: "Not a member of this channel" });
@@ -421,7 +413,8 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userName: x.user.name,
         userAvatar: x.user.avatarImage,
         createdAt: x.createdAt,
-        content: x.content,
+        content: x.deleted ? "" : x.content,
+        deleted: x.deleted,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
@@ -430,6 +423,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let promises = [];
 
     for (let i = 0; i < data.length; ++i) {
+        if (data[i].deleted) continue;
         promises.push(PostAttachment.getByPostId({ channelMessage: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
@@ -589,35 +583,19 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
     const currentUserId = req.userId;
 
     // Count unseen messages
-    const results = await ChannelMessage.aggregate([
+    const results = await ChannelParticipant.aggregate([
         {
-            $lookup: {
-                from: "channelparticipants",
-                let: { channelId: "$channel", msgCreatedAt: "$createdAt" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$user", new mongoose.Types.ObjectId(currentUserId)] },
-                                    { $eq: ["$channel", "$$channelId"] },
-                                    {
-                                        $or: [
-                                            { $eq: ["$lastActiveAt", null] },
-                                            { $lt: ["$lastActiveAt", "$$msgCreatedAt"] }
-                                        ]
-                                    },
-                                    { $eq: ["$muted", false] }
-                                ]
-                            }
-                        }
-                    }
-                ],
-                as: "participant"
+            $match: {
+                user: new mongoose.Types.ObjectId(currentUserId),
+                muted: false
             }
         },
-        { $match: { participant: { $ne: [] }, deleted: false } },
-        { $count: "total" }
+        {
+            $group: {
+                _id: null,
+                total: { $sum: "$unreadCount" }
+            }
+        }
     ]);
 
     const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
@@ -663,6 +641,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
     }
 
     participant.lastActiveAt = new Date();
+    participant.unreadCount = 0;
     await participant.save();
 
     socket.emit("channels:messages_seen", {
@@ -689,12 +668,44 @@ const createMessageWS = async (socket: Socket, payload: any) => {
     });
 }
 
+const deleteMessageWS = async (socket: Socket, payload: any) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+
+    const message = await ChannelMessage.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+
+    message.deleted = true;
+    await message.save();
+}
+
+const editMessageWS = async (socket: Socket, payload: any) => {
+    const { messageId } = payload;
+    const currentUserId = socket.data.userId;
+
+    const message = await ChannelMessage.findById(messageId);
+    if (!message || message.user != currentUserId) {
+        return;
+    }
+
+    message.content = payload.content;
+    await message.save();
+}
+
 const registerHandlersWS = (socket: Socket) => {
     socket.on("channels:messages_seen", (payload) => {
         markMessagesSeenWS(socket, payload);
     });
     socket.on("channels:send_message", (payload) => {
         createMessageWS(socket, payload);
+    });
+    socket.on("channels:delete_message", (payload) => {
+        deleteMessageWS(socket, payload);
+    });
+    socket.on("channels:edit_message", (payload) => {
+        editMessageWS(socket, payload);
     });
 }
 

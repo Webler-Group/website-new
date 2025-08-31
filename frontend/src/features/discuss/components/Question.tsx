@@ -28,7 +28,7 @@ interface QuestionProps {
     showUserProfile: boolean;
 }
 
-const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
     const navigate = useNavigate();
     const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");

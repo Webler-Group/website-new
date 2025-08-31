@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { config } from "../confg";
 import { AccessTokenPayload } from "../utils/tokenUtils";
+import User from "../models/User";
 
 const verifyJWTWebSocket = async (socket: Socket, next: (err?: Error) => void) => {
   const token = socket.handshake.auth?.token;
@@ -21,6 +22,11 @@ const verifyJWTWebSocket = async (socket: Socket, next: (err?: Error) => void) =
 
     const match = await bcrypt.compare(deviceId ?? "", decoded.fingerprint);
     if (!match) {
+      return next();
+    }
+
+    const user = await User.findById(decoded.userInfo.userId).select('tokenVersion active');
+    if (!user || !user.active || decoded.tokenVersion !== user.tokenVersion) {
       return next();
     }
 

@@ -79,12 +79,24 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
             onMessagesSeen(data.lastActiveAt);
         }
 
+        const handleMessageDeleted = (data: any) => {
+            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, deleted: true } : x))
+        }
+
+        const handleMessageEdited = (data: any) => {
+            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, content: data.content } : x))
+        }
+
         socket.on("channels:new_message", handleNewMessage);
         socket.on("channels:messages_seen", handleMessagesSeen);
+        socket.on("channels:message_deleted", handleMessageDeleted);
+        socket.on("channels:message_edited", handleMessageEdited);
 
         return () => {
             socket.off("channels:new_message", handleNewMessage);
             socket.off("channels:messages_seen", handleMessagesSeen);
+            socket.off("channels:message_deleted", handleMessageDeleted);
+            socket.off("channels:message_edited", handleMessageEdited);
         }
     }, [socket, channelId]);
 
@@ -105,13 +117,34 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         });
     }, [socket, channelId]);
 
+    const deleteMessage = useCallback((messageId: string) => {
+        if(!socket) return;
+
+        socket.emit("channels:delete_message", {
+            channelId,
+            messageId
+        });
+    }, [socket, channelId]);
+
+    const editMessage = useCallback((messageId: string, content: string) => {
+        if(!socket) return;
+
+        socket.emit("channels:edit_message", {
+            channelId,
+            messageId,
+            content
+        });
+    }, [socket, channelId]);
+
     return {
         isLoading,
         error,
         results,
         hasNextPage,
         markMessagesSeen,
-        sendMessage
+        sendMessage,
+        deleteMessage,
+        editMessage
     };
 };
 

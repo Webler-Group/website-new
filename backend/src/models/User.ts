@@ -1,17 +1,28 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import mongoose, { InferSchemaType, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import rolesEnum from "../data/roles";
 import Post from "./Post";
 import Code from "./Code";
-import UserFollowing from "./UserFollowing";
 import Notification from "./Notification";
-import { validate, v4 as uuid } from "uuid";
+import { v4 as uuid } from "uuid";
+import { isEmail } from "../utils/regexUtils";
 
-const isEmail = (value: string) => {
-    const validEmailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/;
-    return value.match(validEmailRegex) !== null;
-}
+const banSchema = new mongoose.Schema({
+    author: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        required: true
+    },
+    note: {
+        type: String,
+        trim: true
+    },
+    date: {
+        type: Date,
+        required: true
+    }
+}, { _id: false });
 
 const userSchema = new mongoose.Schema({
     email: {
@@ -72,6 +83,21 @@ const userSchema = new mongoose.Schema({
     avatarImage: {
         type: String,
         required: false
+    },
+    notifications: {
+        followers: { type: Boolean, default: true },
+        codes: { type: Boolean, default: true },
+        discuss: { type: Boolean, default: true },
+        channels: { type: Boolean, default: true },
+        mentions: { type: Boolean, default: true },
+    },
+    ban: {
+        type: banSchema,
+        default: null
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 },
     {
@@ -104,9 +130,12 @@ userSchema.pre('save', async function (next) {
 })
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {
-    matchPassword(inputPassword: string): Promise<boolean>
+    matchPassword(inputPassword: string): Promise<boolean>;
 }
 
-const User = mongoose.model<IUser>('User', userSchema);
+interface UserModel extends Model<IUser> {
+}
+
+const User = mongoose.model<IUser, UserModel>('User', userSchema);
 
 export default User;

@@ -9,7 +9,7 @@ router.use(verifyJWT);
 
 router.route("/").post(courseController.getCourseList);
 
-router.use(protectRoute());
+router.use(protectRoute);
 
 router.route("/GetUserCourses").post(courseController.getUserCourseList);
 router.route("/GetCourse").post(courseController.getCourse);

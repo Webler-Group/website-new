@@ -2,7 +2,7 @@
 import PageTitle from "../layouts/PageTitle";
 
 const Contact = () => {
-  PageTitle("Webler - Contact", false);
+  PageTitle("Contact", false);
   return (
     <>
     <section className="bg-gray-100 py-16" id="contact">

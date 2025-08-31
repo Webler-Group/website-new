@@ -1,31 +1,17 @@
-import { Link, useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import ChannelsList2 from "./ChannelsList2";
 import ChannelRoom2 from "./ChannelRoom2";
-import { FaComments } from "react-icons/fa6";
+import PageTitle from "../../../layouts/PageTitle";
+import { Container, Modal } from "react-bootstrap";
 
 const ChannelsPage = () => {
-    const [channelListVisible, setChannelListVisible] = useState(false);
     const { channelId } = useParams<{ channelId?: string }>();
     const navigate = useNavigate();
 
-    useEffect(() => {
-        if(!channelId) {
-            setChannelListVisible(true);
-        }
-    }, [channelId]);
-
-    const openChannelList = () => {
-        setChannelListVisible(true);
-    };
-
-    const closeChannelList = () => {
-        setChannelListVisible(false);
-    };
+    PageTitle("Channels | Webler Codes");
 
     const onChannelSelect = (id: string) => {
         navigate(`/Channels/${id}`);
-        setChannelListVisible(false);
     };
 
     const onExit = () => {
@@ -34,30 +20,27 @@ const ChannelsPage = () => {
 
     return (
         <>
-            <ChannelsList2
-                visible={channelListVisible}
-                onHide={closeChannelList}
-                onChannelSelect={onChannelSelect}
-                currentChannelId={channelId ?? null}
-                onExit={onExit}
-            />
-            <div className="wb-channels-container">
-                <div className="position-relative d-flex align-items-center justify-content-between p-2 border-bottom z-3 bg-white" style={{ height: "44px" }}>
-                    <div>
-                        <Link to="/">
-                            <img src="/resources/images/logo.png" height="32px" width="96px" />
-                        </Link>
-                    </div>
-                    <div>
-                        <span className="wb-channels-list__button p-2" onClick={openChannelList}>
-                            <FaComments />
-                        </span>
-                    </div>
+            <Modal
+                show={!!channelId}
+                onHide={onExit}
+                fullscreen
+                className="p-0 m-0"
+                contentClassName="h-100"
+            >
+                <Modal.Body className="p-0 m-0 d-flex flex-column">
+                    {channelId && <ChannelRoom2 channelId={channelId} onExit={onExit} />}
+                </Modal.Body>
+            </Modal>
+            <Container fluid>
+                <div className="wb-channels-container">
+
+                    <ChannelsList2
+                        onChannelSelect={onChannelSelect}
+                        currentChannelId={channelId ?? null}
+                        onExit={onExit}
+                    />
                 </div>
-                {channelId && (
-                    <ChannelRoom2 channelId={channelId} onExit={onExit} />
-                )}
-            </div>
+            </Container>
         </>
     );
 };

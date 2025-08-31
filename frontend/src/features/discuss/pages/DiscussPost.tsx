@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams, useSearchParams } from "reac
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { Alert, Button, Dropdown, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
+import { Alert, Button, Dropdown, Form, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
@@ -17,6 +17,10 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
+import { truncate } from "../../../utils/StringUtils";
+import PageTitle from "../../../layouts/PageTitle";
+import PostTextareaControl from "../../../components/PostTextareaControl";
+import FollowList from "../../profile/pages/FollowList";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -43,6 +47,17 @@ const DiscussPost = () => {
     const [postId, setPostId] = useState<string | null>(null);
     const findPostRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
+    const [pageTitle, setPageTitle] = useState("");
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
+    
+    PageTitle(pageTitle);
+
+    useEffect(() => {
+        if(question) {
+            setPageTitle(question.title + " | Webler Codes");
+        }
+    }, [question]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {
@@ -98,7 +113,7 @@ const DiscussPost = () => {
         if (result && result.question) {
             setQuestion(result.question)
         } else {
-            navigate("/Discuss");
+            navigate("/PageNotFound")
         }
         setLoading(false);
     }
@@ -302,6 +317,17 @@ const DiscussPost = () => {
         }
     }
 
+    const handleShowVoters = () => {
+        if(!questionId) return;
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: questionId } });
+        setVotersModalVisible(true);
+    }
+
+    const onShowAnswerVoters = (id: string) => {
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: id } });
+        setVotersModalVisible(true);
+    }
+
     let charactersRemaining = maxCharacters - formInput.length;
 
     return (
@@ -317,36 +343,46 @@ const DiscussPost = () => {
                     <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
             <div className="d-flex gap-2 py-2">
                 <Link to="/Discuss">Q&A</Link>
                 <span>&rsaquo;</span>
-                <span>{question.title.length > 20 ? question.title.slice(0, 20) + "..." : question.title}</span>
+                <span>{truncate(question.title, 20)}</span>
             </div>
             <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
-                {
-                    userInfo &&
-                    <div className="wb-discuss-reply__edit-button">
-                        <Dropdown drop="start">
-                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                            <Dropdown.Menu>
-                                {
-                                    (question && question.userId === userInfo.id) &&
-                                    <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                                        <Dropdown.Item>Edit</Dropdown.Item>
-                                    </LinkContainer>
-                                }
-                                <Dropdown.Item onClick={handleFollowQuestion}>
+                <div className="wb-discuss-reply__edit-button">
+                    <Dropdown drop="start">
+                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                        <Dropdown.Menu>
+                            {
+                                userInfo &&
+                                <>
                                     {
-                                        question.isFollowed ?
-                                            "Unfollow"
-                                            :
-                                            "Follow"
+                                        (question && question.userId === userInfo.id) &&
+                                        <LinkContainer to={"/Discuss/Edit/" + questionId}>
+                                            <Dropdown.Item>Edit</Dropdown.Item>
+                                        </LinkContainer>
                                     }
-                                </Dropdown.Item>
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </div>
-                }
+                                    <Dropdown.Item onClick={handleFollowQuestion}>
+                                        {
+                                            question.isFollowed ?
+                                                "Unfollow"
+                                                :
+                                                "Follow"
+                                        }
+                                    </Dropdown.Item>
+                                </>
+                            }
+                            <Dropdown.Item
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                }}
+                            >
+                                Share
+                            </Dropdown.Item>
+                        </Dropdown.Menu>
+                    </Dropdown>
+                </div>
 
                 <div className="d-flex gap-2">
                     <div className="d-flex flex-column align-items-center">
@@ -354,7 +390,7 @@ const DiscussPost = () => {
                             <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
                                 <FaThumbsUp />
                             </span>
-                            <b>{question.votes}</b>
+                            <b className="wb-discuss-voting__button text-black" onClick={handleShowVoters}>{question.votes}</b>
                         </div>
                         <div>
                             <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
@@ -407,7 +443,7 @@ const DiscussPost = () => {
                 <Form ref={form}>
                     <FormGroup>
                         <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <FormControl ref={formInputRef} as="textarea" rows={8} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        <PostTextareaControl ref={formInputRef}rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">
@@ -448,7 +484,8 @@ const DiscussPost = () => {
                                 isQuestionOwner={userInfo?.id === question.userId}
                                 key={answer.id}
                                 showEditAnswer={showEditAnswer}
-                                newlyCreatedAnswer={postId} />
+                                newlyCreatedAnswer={postId}
+                                onShowVoters={onShowAnswerVoters} />
                         }
                         return <Answer
                             answer={answer}
@@ -457,7 +494,8 @@ const DiscussPost = () => {
                             isQuestionOwner={userInfo?.id === question!.userId}
                             key={answer.id}
                             showEditAnswer={showEditAnswer}
-                            newlyCreatedAnswer={postId} />
+                            newlyCreatedAnswer={postId}
+                            onShowVoters={onShowAnswerVoters} />
                     })
                 }
             </div>

@@ -22,15 +22,6 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -60,63 +51,59 @@ const courseProgressSchema = new mongoose_1.Schema({
 }, {
     timestamps: true
 });
-courseProgressSchema.methods.getLastUnlockedLessonIndex = function () {
-    return __awaiter(this, void 0, void 0, function* () {
-        let lastUnlockedLessonIndex = 1;
-        if (this.lastLessonNodeId) {
-            const lastCompletedLessonNode = yield LessonNode_1.default.findById(this.lastLessonNodeId)
-                .select("index")
-                .populate("lessonId", "nodes index");
-            if (lastCompletedLessonNode) {
-                lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
-                    lastCompletedLessonNode.lessonId.index + 1 :
-                    lastCompletedLessonNode.lessonId.index;
-            }
-        }
-        return lastUnlockedLessonIndex;
-    });
-};
-courseProgressSchema.methods.getLessonNodeInfo = function (lessonNodeId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const lessonNode = yield LessonNode_1.default.findById(lessonNodeId)
+courseProgressSchema.methods.getLastUnlockedLessonIndex = async function () {
+    let lastUnlockedLessonIndex = 1;
+    if (this.lastLessonNodeId) {
+        const lastCompletedLessonNode = await LessonNode_1.default.findById(this.lastLessonNodeId)
             .select("index")
             .populate("lessonId", "nodes index");
-        const lessonIndex = lessonNode.lessonId.index;
-        let unlocked = false;
-        let isLast = false;
-        let lastCompletedLessonNode = null;
-        if (this.lastLessonNodeId) {
-            lastCompletedLessonNode = (yield LessonNode_1.default.findById(this.lastLessonNodeId)
-                .select("index")
-                .populate("lessonId", "nodes index"));
-        }
         if (lastCompletedLessonNode) {
-            const lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
+            lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
                 lastCompletedLessonNode.lessonId.index + 1 :
                 lastCompletedLessonNode.lessonId.index;
-            if (lessonIndex < lastUnlockedLessonIndex) {
-                unlocked = true;
+        }
+    }
+    return lastUnlockedLessonIndex;
+};
+courseProgressSchema.methods.getLessonNodeInfo = async function (lessonNodeId) {
+    const lessonNode = await LessonNode_1.default.findById(lessonNodeId)
+        .select("index")
+        .populate("lessonId", "nodes index");
+    const lessonIndex = lessonNode.lessonId.index;
+    let unlocked = false;
+    let isLast = false;
+    let lastCompletedLessonNode = null;
+    if (this.lastLessonNodeId) {
+        lastCompletedLessonNode = await LessonNode_1.default.findById(this.lastLessonNodeId)
+            .select("index")
+            .populate("lessonId", "nodes index");
+    }
+    if (lastCompletedLessonNode) {
+        const lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
+            lastCompletedLessonNode.lessonId.index + 1 :
+            lastCompletedLessonNode.lessonId.index;
+        if (lessonIndex < lastUnlockedLessonIndex) {
+            unlocked = true;
+        }
+        else if (lessonIndex == lastUnlockedLessonIndex) {
+            if (lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index) {
+                unlocked = lessonNode.index == 1;
+                isLast = unlocked;
             }
-            else if (lessonIndex == lastUnlockedLessonIndex) {
-                if (lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index) {
-                    unlocked = lessonNode.index == 1;
-                    isLast = unlocked;
-                }
-                else {
-                    unlocked = lessonNode.index <= lastCompletedLessonNode.index + 1;
-                    isLast = lessonNode.index == lastCompletedLessonNode.index + 1;
-                }
+            else {
+                unlocked = lessonNode.index <= lastCompletedLessonNode.index + 1;
+                isLast = lessonNode.index == lastCompletedLessonNode.index + 1;
             }
         }
-        else {
-            unlocked = lessonNode.index == 1 && lessonIndex == 1;
-            isLast = unlocked;
-        }
-        return {
-            unlocked,
-            isLast
-        };
-    });
+    }
+    else {
+        unlocked = lessonNode.index == 1 && lessonIndex == 1;
+        isLast = unlocked;
+    }
+    return {
+        unlocked,
+        isLast
+    };
 };
 const CourseProgress = mongoose_1.default.model("CourseProgress", courseProgressSchema);
 exports.default = CourseProgress;

@@ -3,13 +3,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const express_1 = __importDefault(require("express"));
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const courseEditorController_1 = __importDefault(require("../controllers/courseEditorController"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
-const router = express_1.default.Router();
+const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
+const express_1 = require("express");
+const router = (0, express_1.Router)();
 router.use(verifyJWT_1.default);
-router.use((0, protectRoute_1.default)(["Admin", "Creator"]));
+router.use(protectRoute_1.default);
+router.use((0, requireRoles_1.default)(["Admin", "Creator"]));
 router.route("/").post(courseEditorController_1.default.getCoursesList);
 router.route("/GetCourse").post(courseEditorController_1.default.getCourse);
 router.route("/CreateCourse").post(courseEditorController_1.default.createCourse);

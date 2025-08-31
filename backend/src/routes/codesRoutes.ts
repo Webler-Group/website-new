@@ -20,7 +20,7 @@ router.route("/CreateJob")
 router.route("/GetJob")
     .post(codesController.getJob);
 
-router.use(protectRoute());
+router.use(protectRoute);
 
 router.route("/CreateCode")
     .post(codesController.createCode);

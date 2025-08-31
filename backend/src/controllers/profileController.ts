@@ -6,8 +6,7 @@ import UserFollowing from "../models/UserFollowing";
 import Notification from "../models/Notification";
 import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
-import { sendActivationEmail } from "../services/email";
-import { intervalToDuration } from "date-fns";
+import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import multer from "multer";
 import { config } from "../confg";
 import path from "path";
@@ -15,6 +14,10 @@ import fs from "fs";
 import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
 import { compressAvatar } from "../utils/fileUtils";
+import { sendToUsers } from "../services/pushService";
+import { escapeRegex } from "../utils/regexUtils";
+import EmailChangeRecord from "../models/EmailChangeRecord";
+import mongoose from "mongoose";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -47,8 +50,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
 
-    const user = await User.findById(userId);
-
+    const user = await User.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
         return
@@ -103,6 +105,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             level: user.level,
             xp: user.xp,
             active: user.active,
+            notifications: user.notifications,
             codes: codes.map(x => ({
                 id: x._id,
                 name: x.name,
@@ -213,28 +216,71 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     try {
-
-        user.email = email;
-        user.emailVerified = false;
-        await user.save();
+        const code = await EmailChangeRecord.generate(new mongoose.Types.ObjectId(currentUserId), email);
+        await sendEmailChangeVerification(user.name, user.email, email, code);
 
         res.json({
             success: true,
-            data: {
-                id: user._id,
-                email: user.email
-            }
+            data: {}
         })
     }
     catch (err: any) {
         res.json({
             success: false,
             error: err,
+            message: err?.message,
             data: null
         })
     }
 
-})
+});
+
+const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { code } = req.body;
+
+    if (!code) {
+        res.status(400).json({ message: "Missing code" });
+        return;
+    }
+
+    const record = await EmailChangeRecord.findOne({ userId: currentUserId, code });
+
+    if (!record) {
+        res.status(400).json({ message: "Invalid or expired code" });
+        return;
+    }
+
+    // Check expiration (15 minutes = 900000 ms)
+    const now = Date.now();
+    if (now - record.createdAt.getTime() > 15 * 60 * 1000) {
+        await EmailChangeRecord.deleteOne({ _id: record._id }); // clean up expired record
+        res.status(400).json({ message: "Code has expired" });
+        return;
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "User not found" });
+        return;
+    }
+
+    let result: any;
+    try {
+        user.email = record.newEmail;
+        user.emailVerified = false; // must verify new email again
+        await user.save();
+
+        result = { success: true, data: { email: user.email } };
+    } catch (err: any) {
+        result = { success: false, data: null, error: err };
+    } finally {
+        await EmailChangeRecord.deleteOne({ _id: record._id });
+    }
+
+    res.json(result);
+});
+
 
 const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -247,7 +293,8 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const { emailToken } = signEmailToken({
         userId: currentUserId as string,
-        email: user.email
+        email: user.email,
+        action: "verify-email"
     });
 
     try {
@@ -261,59 +308,6 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
     catch {
         res.status(500).json({ message: "Activation email could not be sent" });
     }
-})
-
-const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { currentPassword, newPassword } = req.body;
-
-    if (typeof currentPassword === "undefined" ||
-        typeof newPassword === "undefined"
-    ) {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    if (currentPassword === newPassword) {
-        res.status(400).json({ message: "Passwords cannot be same" });
-        return
-    }
-
-    const user = await User.findById(currentUserId);
-
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return
-    }
-
-    const matchPassword = await user.matchPassword(currentPassword);
-    if (!matchPassword) {
-        res.json({
-            success: false,
-            error: { _message: "Incorrect information" },
-            data: false
-        })
-        return
-    }
-
-    try {
-
-        user.password = newPassword;
-        await user.save();
-
-        res.json({
-            success: true,
-            data: true
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: false
-        })
-    }
-
 })
 
 const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -336,7 +330,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const exists = await UserFollowing.findOne({ user: currentUserId, following: userId });
+    const exists = await UserFollowing.findOne({ user: currentUserId, following: userId })
     if (exists) {
         res.status(204).json({ success: true })
         return
@@ -348,6 +342,12 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     if (userFollowing) {
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers([userId], {
+            title: "New follower",
+            body: currentUserName + " followed you"
+        }, "followers");
         await Notification.create({
             user: userId,
             actionUser: currentUserId,
@@ -596,36 +596,6 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
     }
 
     res.json({});
-})
-
-const toggleUserBan = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId, active } = req.body;
-
-    const user = await User.findById(userId);
-
-    if (!user) {
-        res.status(404).json({ message: "Profile not found" });
-        return
-    }
-
-    if (user.roles.some(role => ["Admin", "Moderator"].includes(role))) {
-        res.status(401).json({ message: "Unauthorized" });
-        return
-    }
-
-    user.active = active;
-
-    try {
-        await user.save();
-
-        res.json({ success: true, active })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err
-        })
-    }
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -682,11 +652,118 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
 
 });
 
+const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { notifications } = req.body;
+
+    if (!notifications || typeof notifications !== "object") {
+        res.status(400).json({ message: "Invalid notifications object" });
+        return;
+    }
+
+    const user = await User.findById(currentUserId);
+    if (!user) {
+        res.status(404).json({ message: "Profile not found" });
+        return
+    }
+
+    if (!user.notifications) {
+        user.notifications = {
+            followers: true,
+            codes: true,
+            discuss: true,
+            channels: true,
+            mentions: true
+        };
+    }
+
+    if (typeof notifications.followers !== "undefined") {
+        user.notifications.followers = notifications.followers;
+    }
+    if (typeof notifications.codes !== "undefined") {
+        user.notifications.codes = notifications.codes;
+    }
+    if (typeof notifications.discuss !== "undefined") {
+        user.notifications.discuss = notifications.discuss;
+    }
+    if (typeof notifications.channels !== "undefined") {
+        user.notifications.channels = notifications.channels;
+    }
+
+    try {
+        await user.save();
+
+        res.json({
+            success: true,
+            data: {
+                notifications: user.notifications
+            }
+        });
+    } catch (err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        });
+    }
+});
+
+const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { searchQuery } = req.body;
+
+    const match: any = { active: true };
+
+    if (searchQuery && searchQuery.trim() !== "") {
+        const safeQuery = escapeRegex(searchQuery.trim());
+        const searchRegex = new RegExp(`^${safeQuery}`, "i");
+        match.name = searchRegex;
+    }
+
+    const users = await User.aggregate([
+        { $match: match },
+        {
+            $lookup: {
+                from: "userfollowings",
+                localField: "_id",
+                foreignField: "following",
+                as: "followers"
+            }
+        },
+        {
+            $addFields: {
+                followersCount: { $size: "$followers" }
+            }
+        },
+        {
+            $project: {
+                name: 1,
+                avatarImage: 1,
+                level: 1,
+                roles: 1,
+                followersCount: 1,
+                countryCode: 1
+            }
+        },
+        { $sort: { followersCount: -1 } },
+        { $limit: 10 }
+    ]);
+
+    res.json({
+        users: users.map(u => ({
+            id: u._id,
+            name: u.name,
+            avatar: u.avatarImage,
+            level: u.level,
+            roles: u.roles,
+            countryCode: u.countryCode
+        }))
+    });
+});
+
 const controller = {
     getProfile,
     updateProfile,
     changeEmail,
-    changePassword,
     follow,
     unfollow,
     getFollowers,
@@ -696,9 +773,11 @@ const controller = {
     markNotificationsSeen,
     markNotificationsClicked,
     sendActivationCode,
-    toggleUserBan,
     uploadProfileAvatarImage,
-    avatarImageUpload
+    avatarImageUpload,
+    updateNotifications,
+    searchProfiles,
+    verifyEmailChange
 };
 
 export default controller;

@@ -17,7 +17,6 @@ const QuestionList = () => {
     const [questionCount, setQuestionCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [filter, setFilter] = useState(1);
-    const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
 
@@ -38,7 +37,6 @@ const QuestionList = () => {
         }
         if (searchParams.has("query")) {
             setSearchQuery(searchParams.get("query")!)
-            setSearchInput(searchParams.get("query")!)
         }
     }, []);
 
@@ -51,8 +49,7 @@ const QuestionList = () => {
         setCurrentPage(page);
     }
 
-    const handleSearch = () => {
-        const value = searchInput.trim();
+    const handleSearch = (value: string) => {
         searchParams.set("query", value);
         setSearchParams(searchParams, { replace: true });
         setSearchQuery(value);

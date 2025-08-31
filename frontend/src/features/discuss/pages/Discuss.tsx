@@ -8,7 +8,7 @@ interface DiscussProps {
 }
 
 const Discuss = ({ MainPage }: DiscussProps) => {
-    PageTitle("Webler - Discuss", false);
+    PageTitle("Q&A Discussions | Webler Codes", false);
 
     const { sendJsonRequest } = useApi();
     const [questions, setQuestions] = useState<IQuestion[]>([]);

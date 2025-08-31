@@ -21,7 +21,7 @@ router.route("/CreateJob")
     .post((0, requestLimiter_1.default)(60, 10, "Too many requests, try again later"), codesController_1.default.createJob);
 router.route("/GetJob")
     .post(codesController_1.default.getJob);
-router.use((0, protectRoute_1.default)());
+router.use(protectRoute_1.default);
 router.route("/CreateCode")
     .post(codesController_1.default.createCode);
 router.route("/EditCode")

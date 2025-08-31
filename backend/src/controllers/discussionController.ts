@@ -10,6 +10,9 @@ import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
+import { sendToUsers } from "../services/pushService";
+import User from "../models/User";
+import UserFollowing from "../models/UserFollowing";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -24,16 +27,16 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     for (let tagName of tags) {
         const tag = await Tag.findOne({ name: tagName });
-        if(!tag) {
+        if (!tag) {
             res.status(400).json({ message: `${tagName} does not exists` });
             return;
         }
         tagIds.push(tag._id);
     }
 
-    if(tagIds.length < 1) {
+    if (tagIds.length < 1) {
         res.status(400).json({ message: `Empty Tag` });
-        return;        
+        return;
     }
 
     const question = await Post.create({
@@ -75,8 +78,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { page, count, filter, searchQuery, userId } = req.body;
     const currentUserId = req.userId;
 
-    if (typeof page === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return
     }
 
@@ -342,6 +345,18 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         followers.add(question.user.toString())
         followers.delete(currentUserId)
 
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers(Array.from(followers).filter(x => x !== question.user.toString()), {
+            title: "New answer",
+            body: `${currentUserName} posted in "${question.title}"`
+        }, "discuss");
+
+        await sendToUsers([question.user.toString()], {
+            title: "New answer",
+            body: `${currentUserName} answered your question "${question.title}"`
+        }, "discuss");
+
         for (let userToNotify of followers) {
 
             await Notification.create({
@@ -385,8 +400,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { questionId, index, count, filter, findPostId } = req.body;
 
-    if (typeof index === "undefined" || typeof count === "undefined" || typeof filter === "undefined" || typeof findPostId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+    if (typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof findPostId === "undefined") {
+        res.status(400).json({ message: "Invalid body" });
         return
     }
 
@@ -567,18 +582,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const tagIds: any[] = [];
-    let promises: Promise<void>[] = [];
-
-    for (let tagName of tags) {
-        promises.push(Tag.getOrCreateTagByName(tagName)
-            .then(tag => {
-                tagIds.push(tag._id);
-            })
-        )
-    }
-
-    await Promise.all(promises);
+    const tagIds = (await Tag.getOrCreateTagsByNames(tags)).map(x => x._id);
 
     question.title = title;
     question.message = message;
@@ -753,7 +757,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const currentUserId = req.userId;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
 
-    if (typeof filter === "undefined" || typeof index === "undefined" || typeof count === "undefined") {
+    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
         res.status(400).json({ message: "Some fileds are missing" });
         return
     }
@@ -900,12 +904,23 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     if (reply) {
 
-        const usersToNotify = new Set();
+        const usersToNotify = new Set<string>();
         usersToNotify.add(code.user.toString())
         if (parentPost !== null) {
             usersToNotify.add(parentPost.user.toString())
         }
-        usersToNotify.delete(currentUserId)
+        usersToNotify.delete(currentUserId!);
+
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
+            title: "New reply",
+            body: `${currentUserName} replied to your comment on "${code.name}"`
+        }, "codes");
+        await sendToUsers([code.user.toString()], {
+            title: "New comment",
+            body: `${currentUserName} posted comment on your code "${code.name}"`
+        }, "codes");
 
         for (let userToNotify of usersToNotify) {
 
@@ -1108,6 +1123,44 @@ const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) =
     res.status(500).json({ success: false });
 });
 
+const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { parentId, page, count } = req.body;
+    const currentUserId = req.userId;
+
+    const result = await Upvote.find({ parentId })
+        .sort({ createdAt: "desc" })
+        .skip((page - 1) * count)
+        .limit(count)
+        .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
+        .select("user");
+
+    const promises: Promise<void>[] = [];
+    const data = result.map(x => ({
+        id: x.user._id,
+        name: x.user.name,
+        avatar: x.user.avatarImage,
+        countryCode: x.user.countryCode,
+        level: x.user.level,
+        roles: x.user.roles,
+        isFollowing: false
+    }));
+
+    for (let i = 0; i < data.length; ++i) {
+        const user = data[i];
+        promises.push(UserFollowing.countDocuments({ user: currentUserId, following: user.id })
+            .then(exists => {
+                data[i].isFollowing = exists !== null;
+            }));
+    }
+
+    await Promise.all(promises);
+
+    res.json({
+        success: true,
+        data
+    });
+});
+
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -1126,7 +1179,8 @@ const discussController = {
     editCodeComment,
     deleteCodeComment,
     followQuestion,
-    unfollowQuestion
+    unfollowQuestion,
+    getVotersList
 }
 
 export default discussController;

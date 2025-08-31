@@ -3,7 +3,7 @@ import PageTitle from "../layouts/PageTitle";
 
 const TermsOfUse = () => {
 
-    PageTitle("Webler - Terms of Use", false);
+    PageTitle("Terms of Use", false);
 
     return (
         <section className="max-w-4xl mx-auto px-6 py-12 text-gray-800 leading-relaxed">

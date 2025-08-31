@@ -8,7 +8,7 @@ interface CoursesPageProps {
 
 const CoursesEditorPage = ({ MainPage }: CoursesPageProps) => {
 
-    PageTitle("Webler - Course Editor", false);
+    PageTitle("Course Editor", false);
 
     return (
         <Container>

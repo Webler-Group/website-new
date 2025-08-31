@@ -1,27 +1,33 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Modal } from "react-bootstrap";
-import useFollows from "../hooks/useFollows";
+import useData from "../hooks/useData";
 import FollowListProfile from "../components/FollowListProfile";
 
 interface FollowListProps {
+    visible: boolean;
     onClose: () => void;
+    title: string;
+    userId?: string;
+    setCount?: (callback: (data: number) => number) => void;
     options: {
-        urlPath: string;
-        title: string;
-        userId: string;
-        setCount: (callback: (data: number) => number) => void;
+        urlPath: string | null;
+        params: any;
     }
 }
 
-const FollowList = ({ onClose, options }: FollowListProps) => {
+const FollowList = ({ visible, title, onClose, userId, setCount, options }: FollowListProps) => {
 
-    const [pageNum, setPageNum] = useState(1)
+    const [store, setStore] = useState({ page: 0 })
     const {
         isLoading,
         error,
         results,
         hasNextPage
-    } = useFollows(options.urlPath, options.userId, 10, pageNum)
+    } = useData(options.urlPath, options.params, 10, store)
+
+    useEffect(() => {
+        setStore({ page: 1 });
+    }, [options]);
 
     const intObserver = useRef<IntersectionObserver>()
     const lastProfileRef = useCallback((profile: any) => {
@@ -33,7 +39,7 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
 
             if (profiles[0].isIntersecting && hasNextPage) {
 
-                setPageNum(prev => prev + 1)
+                setStore(prev => ({ page: prev.page + 1 }))
             }
         })
 
@@ -47,29 +53,37 @@ const FollowList = ({ onClose, options }: FollowListProps) => {
             <div key={user.id} className="mb-3">
                 {
                     results.length === i + 1 ?
-                        <FollowListProfile ref={lastProfileRef} user={user} viewedUserId={options.userId} setCount={options.setCount} />
+                        <FollowListProfile ref={lastProfileRef} user={user} viewedUserId={userId} setCount={setCount} />
                         :
-                        <FollowListProfile user={user} viewedUserId={options.userId} setCount={options.setCount} />
+                        <FollowListProfile user={user} viewedUserId={userId} setCount={setCount} />
                 }
             </div>
         )
     })
 
     return (
-        <Modal show={true} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
+        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
             <Modal.Header closeButton>
-                <Modal.Title>{options.title}</Modal.Title>
+                <Modal.Title>{title}</Modal.Title>
             </Modal.Header>
             <Modal.Body className="overflow-auto">
                 {
                     error ?
                         <p>{error}</p>
                         :
-                        <div>
-                            {
-                                content
-                            }
-                        </div>
+
+                        (isLoading && store.page == 1)
+                            ?
+                            <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                                <div className="wb-loader">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                            </div>
+                            :
+                            content
+
                 }
             </Modal.Body>
         </Modal>

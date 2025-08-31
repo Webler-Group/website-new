@@ -1,8 +1,0 @@
-POST http://localhost:5500/api/Channels/CreateDirectMessages HTTP/1.1
-content-type: application/json
-x-device-id: localhost
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mbyI6eyJ1c2VySWQiOiI2ODQ3NDE4OGY3MWMzMDVjMTliYzM1MTUiLCJyb2xlcyI6WyJBZG1pbiJdfSwiZmluZ2VycHJpbnQiOiIkMmIkMTAkMC96VFRIWHB0aVIxS3ByVVFHbEdiZVhRdVA5TkhINTl3RDBlU2EvZDMwV0xOeHpCbjk4d08iLCJpYXQiOjE3NTQyMjE2NzIsImV4cCI6MTc1NjgxMzY3Mn0.XjgoBx0CKaSflDXi8KmO56a7kBnZFmoPjYkGXj7-Kpw
-
-{
-    "userId": "684d817f5667747c5b041d38"
-}

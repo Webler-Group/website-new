@@ -1,13 +1,4 @@
 "use strict";
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -16,7 +7,7 @@ const express_1 = __importDefault(require("express"));
 const sitemap_1 = require("sitemap");
 const confg_1 = require("../confg");
 const router = express_1.default.Router();
-router.get("/sitemap.xml", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+router.get("/sitemap.xml", async (req, res) => {
     try {
         res.header("Content-Type", "application/xml");
         const smStream = new sitemap_1.SitemapStream({ hostname: confg_1.config.allowedOrigins[0] });
@@ -41,12 +32,12 @@ router.get("/sitemap.xml", (req, res) => __awaiter(void 0, void 0, void 0, funct
         ];
         staticRoutes.forEach(entry => smStream.write(entry));
         smStream.end();
-        const sitemapXml = yield (0, sitemap_1.streamToPromise)(smStream);
+        const sitemapXml = await (0, sitemap_1.streamToPromise)(smStream);
         res.send(sitemapXml.toString());
     }
     catch (err) {
         console.error("Sitemap generation error:", err);
         res.status(500).end();
     }
-}));
+});
 exports.default = router;

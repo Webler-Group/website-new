@@ -14,20 +14,11 @@ interface BlogEntryProps {
   searchQuery: string;
 }
 
-const BlogEntry = ({ entry, searchQuery }: BlogEntryProps) => {
+const BlogEntry = ({ entry }: BlogEntryProps) => {
 
   let link = `/Blog/${entry.name}`;
 
-  let titleMatch = entry.title.match(new RegExp("^" + searchQuery, "i"));
-  let title = titleMatch && titleMatch.length ?
-    <>
-      <span className="bg-warning">{titleMatch[0]}</span>
-      {entry.title.slice(titleMatch[0].length)}
-    </>
-    :
-    <>
-      {entry.title}
-    </>
+  let title = entry.title;
 
   return (
     <div className="bg-light rounded border p-3 d-flex flex-column gap-3">
