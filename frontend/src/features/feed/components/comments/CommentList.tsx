@@ -187,7 +187,6 @@ const CommentList: React.FC<CommentListProps> = ({
           });
           setTotalLoaded(prev => prev + 1);
 
-          // Scroll and highlight the new comment
           setTimeout(() => {
             scrollToAndHighlight(newComment.id);
           }, 300);
@@ -251,9 +250,14 @@ const CommentList: React.FC<CommentListProps> = ({
       if (comment.id === parentId) {
         const existingReplies = comment.replies || [];
         const updatedReplies = append
-          ? [...existingReplies, ...newReplies]
+          ? [
+              ...existingReplies,
+              ...newReplies.filter(
+                (r) => !existingReplies.some((er) => er.id === r.id)
+              ),
+            ]
           : newReplies;
-        
+
         return {
           ...comment,
           replies: updatedReplies,
@@ -348,7 +352,7 @@ const CommentList: React.FC<CommentListProps> = ({
           return sortComments(updated);
         });
         
-        setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
+        // setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
       } else {
         await fetchReplies(parentId, 1, false);
         setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));

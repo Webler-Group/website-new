@@ -1,25 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface ReplyBoxProps {
   onSubmit: (replyText: string) => Promise<void>;
   onCancel: () => void;
   onError?: (message: string) => void;
+  autoFocus?: boolean; 
 }
 
-const ReplyBox: React.FC<ReplyBoxProps> = ({ onSubmit, onCancel, onError }) => {
+const ReplyBox: React.FC<ReplyBoxProps> = ({ onSubmit, onCancel, onError, autoFocus = false }) => {
   const [replyText, setReplyText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (autoFocus) {
+      // Focus textarea
+      textareaRef.current?.focus();
+
+      // Scroll into view + temporary highlight
+      containerRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      containerRef.current?.classList.add("replybox-highlight");
+      const t = setTimeout(() => containerRef.current?.classList.remove("replybox-highlight"), 1200);
+      return () => clearTimeout(t);
+    }
+  }, [autoFocus]);
 
   const handleSubmit = async () => {
     if (!replyText.trim() || isSubmitting) return;
-
     try {
       setIsSubmitting(true);
-      await onSubmit(replyText);
+      await onSubmit(replyText.trim());
       setReplyText("");
     } catch (err: any) {
-      // Error is already handled in parent component
       console.error("Reply submission failed:", err);
+      onError?.("Failed to post reply");
     } finally {
       setIsSubmitting(false);
     }
@@ -31,8 +46,9 @@ const ReplyBox: React.FC<ReplyBoxProps> = ({ onSubmit, onCancel, onError }) => {
   };
 
   return (
-    <div className="mt-2">
+    <div ref={containerRef} className="mt-2">
       <textarea
+        ref={textareaRef}
         className="form-control mb-2"
         rows={2}
         value={replyText}

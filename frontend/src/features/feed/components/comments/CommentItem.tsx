@@ -24,6 +24,7 @@ interface CommentItemProps {
   // New props for lazy loading
   onFetchReplies?: (parentId: string, page?: number, append?: boolean) => Promise<void>;
   replyPagination?: Record<string, { page: number; hasMore: boolean; loading: boolean }>;
+   innerRef?: (el: HTMLDivElement | null) => void;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -42,6 +43,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onDelete,
   onFetchReplies,
   replyPagination = {},
+  innerRef
 }) => {
   const showReplies = expandedReplies[comment.id] || false;
   const showReplyBox = replyBoxes[comment.id] || false;
@@ -55,10 +57,10 @@ const CommentItem: React.FC<CommentItemProps> = ({
   const { hasMore, loading: loadingReplies } = paginationInfo;
 
   const toggleReplies = async () => {
-    if (!showReplies && comment.replies?.length === 0 && onFetchReplies) {
-      // Fetch first page of replies when expanding for the first time
-      await onFetchReplies(comment.id, 1, false);
-    }
+      if (!showReplies && onFetchReplies && (comment.replies?.length === 0 || comment.replyCount > 0)) {
+        await onFetchReplies(comment.id, 1, false);
+      }
+
 
     setExpandedReplies((prev) => ({
       ...prev,
@@ -120,6 +122,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
 
   return (
     <div
+      ref={innerRef}
       className={`mb-3 ${depth === 0 ? "p-3 bg-white rounded border shadow-sm" : ""}`}
       style={{ marginLeft: depth > 0 ? depth * 20 : 0 }}
     >
@@ -170,10 +173,12 @@ const CommentItem: React.FC<CommentItemProps> = ({
           {/* Reply box */}
           {showReplyBox && (
             <ReplyBox
+              autoFocus
               onSubmit={handleReplySubmit}
               onCancel={toggleReplyBox}
             />
           )}
+
 
           {/* Replies toggle - only show for top-level comments or if there are replies */}
           {depth < 1 && (comment.replyCount > 0 || (comment.replies && comment.replies.length > 0)) && (
