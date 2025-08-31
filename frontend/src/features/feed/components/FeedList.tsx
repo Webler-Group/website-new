@@ -60,7 +60,6 @@ const FeedList: React.FC<FeedListProps> = () => {
     if (searchParams.has("query")) {
       setSearchQuery(searchParams.get("query")!)
     }
-    console.log(1);
     setFeedStore({ page: 1, filter, query: searchQuery });
   }, [searchParams]);
 

@@ -27,6 +27,9 @@ const CommentList: React.FC<CommentListProps> = ({
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(1);
   const [totalLoaded, setTotalLoaded] = useState(0);
+  const [replyPagination, setReplyPagination] = useState<
+    Record<string, { page: number; hasMore: boolean; loading: boolean }>
+  >({});
   
   // UI states
   const [expandedReplies, setExpandedReplies] = useState<Record<string, boolean>>({});
@@ -51,11 +54,59 @@ const CommentList: React.FC<CommentListProps> = ({
   }, [loadingMore, hasMore, loading]);
 
   const COMMENTS_PER_PAGE = 10;
+  const REPLIES_PER_PAGE = 10;
 
   // Show notification helper
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
+  };
+
+  const fetchReplies = async (parentId: string, page = 1, append = false) => {
+    try {
+      setReplyPagination(prev => ({
+        ...prev,
+        [parentId]: { 
+          ...(prev[parentId] || { page: 0, hasMore: true }), 
+          loading: true 
+        },
+      }));
+
+      const response = await sendJsonRequest("/Feed/GetNestedReplies", "POST", {
+        parentId,
+        page,
+        count: REPLIES_PER_PAGE,
+      });
+
+      if (response?.success) {
+        const newReplies = response.replies || [];
+
+        setComments(prevComments =>
+          addReplyToComment(prevComments, parentId, newReplies, append)
+        );
+
+        setReplyPagination(prev => ({
+          ...prev,
+          [parentId]: {
+            page,
+            hasMore: response.pagination?.hasMore ?? newReplies.length >= REPLIES_PER_PAGE,
+            loading: false,
+          },
+        }));
+      } else {
+        throw new Error(response?.message || 'Failed to load replies');
+      }
+    } catch (err) {
+      console.error("Error fetching nested replies:", err);
+      setReplyPagination(prev => ({
+        ...prev,
+        [parentId]: { 
+          ...(prev[parentId] || { page: 0, hasMore: true }), 
+          loading: false 
+        },
+      }));
+      showNotification('error', 'Failed to load replies. Please try again.');
+    }
   };
 
   const fetchComments = async (pageNum: number = 1, append: boolean = false) => {
@@ -70,8 +121,10 @@ const CommentList: React.FC<CommentListProps> = ({
       const response = await sendJsonRequest("/Feed/GetFeedReplies", "POST", {
         feedId: feedId,
         count: COMMENTS_PER_PAGE,
-        page: pageNum // Assuming your API supports pagination
+        page: pageNum
       });
+
+      console.log(response.replies)
 
       if (response && response.replies) {
         const newComments = response.replies;
@@ -121,22 +174,20 @@ const CommentList: React.FC<CommentListProps> = ({
     setTotalLoaded(0);
     setHasMore(true);
     setComments([]);
+    setReplyPagination({});
     
     fetchComments(1, false);
 
     const handleCommentPosted = (event: CustomEvent) => {
       if (event.detail.feedId === feedId) {
-        // Instead of refetching all comments, just add the new comment
         if (event.detail.comment) {
           const newComment = event.detail.comment;
           setComments(prevComments => {
-            // Add new comment at the beginning (latest first for top-level)
             const updated = [newComment, ...prevComments];
             return sortComments(updated);
           });
           setTotalLoaded(prev => prev + 1);
         } else {
-          // Fallback: only refresh first page if no comment data provided
           fetchComments(1, false);
           setPage(1);
           setTotalLoaded(0);
@@ -164,14 +215,6 @@ const CommentList: React.FC<CommentListProps> = ({
     })).slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // latest first for top-level
   };
 
-  // Calculate total comment count including all replies
-  const getTotalCommentCount = (commentsList: Comment[]): number => {
-    return commentsList.reduce((total, comment) => {
-      const replyCount = comment.replies ? getTotalCommentCount(comment.replies) : 0;
-      return total + 1 + replyCount;
-    }, 0);
-  };
-
   // Helper function to update comments recursively
   const updateCommentInTree = (commentsList: Comment[], commentId: string, updater: (comment: Comment) => Comment): Comment[] => {
     return commentsList.map((comment) => {
@@ -191,22 +234,28 @@ const CommentList: React.FC<CommentListProps> = ({
   };
 
   // Helper function to add reply to specific comment
-  const addReplyToComment = (commentsList: Comment[], parentId: string, newReply: Comment): Comment[] => {
-    return commentsList.map((comment) => {
+  const addReplyToComment = (
+    commentsList: Comment[],
+    parentId: string,
+    newReplies: Comment[],
+    append = true
+  ): Comment[] => {
+    return commentsList.map(comment => {
       if (comment.id === parentId) {
+        const existingReplies = comment.replies || [];
         return {
           ...comment,
-          replies: [...(comment.replies || []), newReply],
+          replies: append
+            ? [...existingReplies, ...newReplies]
+            : newReplies,
         };
       }
-
       if (comment.replies && comment.replies.length > 0) {
         return {
           ...comment,
-          replies: addReplyToComment(comment.replies, parentId, newReply),
+          replies: addReplyToComment(comment.replies, parentId, newReplies, append),
         };
       }
-
       return comment;
     });
   };
@@ -278,14 +327,12 @@ const CommentList: React.FC<CommentListProps> = ({
 
       // If API returns the complete reply data, use it
       if (response && response.reply) {
-        // Add the actual reply from server response
         setComments((prevComments) => {
-          const updated = addReplyToComment(prevComments, parentId, response.reply);
+          const updated = addReplyToComment(prevComments, parentId, [response.reply]);
           return sortComments(updated);
         });
       } else {
-        // Fallback: Only refresh if server doesn't return reply data
-        // But try to maintain current page state
+        // Fallback: refresh comments
         await fetchComments(1, false);
         setPage(1);
       }
@@ -333,7 +380,8 @@ const CommentList: React.FC<CommentListProps> = ({
   const handleDelete = async (commentId: string) => {
     try {
       const response = await sendJsonRequest("/Feed/DeleteReply", "DELETE", {
-        replyId: commentId
+        replyId: commentId,
+        feedId: feedId
       });
 
       if (!response.success) {
@@ -363,6 +411,7 @@ const CommentList: React.FC<CommentListProps> = ({
     setTotalLoaded(0);
     setHasMore(true);
     setComments([]);
+    setReplyPagination({});
     fetchComments(1, false);
   };
 
@@ -433,6 +482,8 @@ const CommentList: React.FC<CommentListProps> = ({
             onReplySubmit={handleReplySubmit}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onFetchReplies={fetchReplies}
+            replyPagination={replyPagination}
           />
         </div>
       ))}

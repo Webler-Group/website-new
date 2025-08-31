@@ -48,6 +48,7 @@ export interface IFeed {
 }
 
 export interface Comment {
+  replyCount: number;
   id: string;
   message: string;
   userName: string;

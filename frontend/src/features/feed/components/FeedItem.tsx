@@ -42,7 +42,6 @@ const FeedItem: React.FC<FeedItemProps> = ({
   showFullContent = false,
   isPinned = false
 }) => {
-  console.log(feed)
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [isUpvoted, setIsUpvoted] = useState(feed.isUpvoted);

@@ -15,6 +15,10 @@ router.route("/GetFeed")
     .post(feedController.getFeed);
 router.route("/GetFeedReplies")
     .post(feedController.getReplies);
+
+router.route("/GetNestedReplies")
+.post(feedController.getNestedReplies);
+
 router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds);
 
 router.use(protectRoute);

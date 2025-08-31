@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Comment } from '../types';
-import { Heart, Reply, ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import UserAvatar from './UserAvatar';
 import CommentHeader from './CommentHeader';
 import CommentActions from './CommentAction';
@@ -11,7 +11,7 @@ interface CommentItemProps {
   comment: Comment;
   depth?: number;
   index?: number;
-  parentId?: string; // ID of the level 1 parent (for level 2 replies)
+  parentId?: string;
   expandedReplies: Record<string, boolean>;
   setExpandedReplies: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
   replyBoxes: Record<string, boolean>;
@@ -21,6 +21,9 @@ interface CommentItemProps {
   onReplySubmit: (parentId: string, replyText: string) => Promise<void>;
   onEdit: (commentId: string, newText: string) => Promise<void>;
   onDelete: (commentId: string) => Promise<void>;
+  // New props for lazy loading
+  onFetchReplies?: (parentId: string, page?: number, append?: boolean) => Promise<void>;
+  replyPagination?: Record<string, { page: number; hasMore: boolean; loading: boolean }>;
 }
 
 const CommentItem: React.FC<CommentItemProps> = ({
@@ -37,19 +40,37 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onReplySubmit,
   onEdit,
   onDelete,
+  onFetchReplies,
+  replyPagination = {},
 }) => {
   const showReplies = expandedReplies[comment.id] || false;
   const showReplyBox = replyBoxes[comment.id] || false;
-  
+
   // Editing state
   const [isEditing, setIsEditing] = useState(false);
   const [editText, setEditText] = useState(comment.message);
 
-  const toggleReplies = () => {
+  // Get pagination info for this comment
+  const paginationInfo = replyPagination[comment.id] || { page: 0, hasMore: true, loading: false };
+  const { hasMore, loading: loadingReplies } = paginationInfo;
+
+  const toggleReplies = async () => {
+    if (!showReplies && comment.replies?.length === 0 && onFetchReplies) {
+      // Fetch first page of replies when expanding for the first time
+      await onFetchReplies(comment.id, 1, false);
+    }
+
     setExpandedReplies((prev) => ({
       ...prev,
       [comment.id]: !showReplies,
     }));
+  };
+
+  const loadMoreReplies = async () => {
+    if (!onFetchReplies || !hasMore || loadingReplies) return;
+    
+    const nextPage = paginationInfo.page + 1;
+    await onFetchReplies(comment.id, nextPage, true);
   };
 
   const toggleReplyBox = () => {
@@ -60,15 +81,27 @@ const CommentItem: React.FC<CommentItemProps> = ({
   };
 
   const handleReplySubmit = async (replyText: string) => {
-    // For level 1 comments, reply to themselves
-    // For level 2 comments, reply to their level 1 parent
     const replyParentId = depth === 0 ? comment.id : (parentId || comment.id);
     await onReplySubmit(replyParentId, replyText);
+
+    // After submitting, refresh first page of replies to avoid duplication
+    if (onFetchReplies) {
+      await onFetchReplies(comment.id, 1, false);
+      setExpandedReplies((prev) => ({
+        ...prev,
+        [comment.id]: true, // ensure replies stay open
+      }));
+    }
+
+    // Close reply box after submit
+    setReplyBoxes((prev) => ({
+      ...prev,
+      [comment.id]: false,
+    }));
   };
 
   const handleEditSubmit = async () => {
     if (!editText.trim()) return;
-
     try {
       await onEdit(comment.id, editText.trim());
       setIsEditing(false);
@@ -143,12 +176,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
             />
           )}
 
-          {/* Replies toggle - only show if depth < 1 (no nesting beyond level 1) */}
-          {comment.replies && comment.replies.length > 0 && depth < 1 && (
+          {/* Replies toggle - only show for top-level comments or if there are replies */}
+          {depth < 1 && (comment.replyCount > 0 || (comment.replies && comment.replies.length > 0)) && (
             <div className="mt-2">
               <button
                 className="btn btn-link small p-0 text-muted d-inline-flex align-items-center gap-1"
                 onClick={toggleReplies}
+                disabled={loadingReplies}
               >
                 {showReplies ? (
                   <>
@@ -156,14 +190,22 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   </>
                 ) : (
                   <>
-                    <ChevronDown size={14} /> Show replies ({comment.replies.length})
+                    <ChevronDown size={14} /> 
+                    {loadingReplies ? (
+                      <>
+                        <Loader2 size={14} className="spinner-border-sm" />
+                        Loading...
+                      </>
+                    ) : (
+                      `Show replies (${comment.replyCount || comment.replies?.length || 0})`
+                    )}
                   </>
                 )}
               </button>
             </div>
           )}
 
-          {/* Recursive replies - only render if depth < 1 */}
+          {/* Recursive replies */}
           {showReplies && comment.replies && comment.replies.length > 0 && depth < 1 && (
             <div className="mt-3">
               {comment.replies.map((reply, i) => (
@@ -172,7 +214,7 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   comment={reply}
                   depth={depth + 1}
                   index={i}
-                  parentId={comment.id} // Pass the level 1 parent ID
+                  parentId={comment.id}
                   expandedReplies={expandedReplies}
                   setExpandedReplies={setExpandedReplies}
                   replyBoxes={replyBoxes}
@@ -182,8 +224,33 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   onReplySubmit={onReplySubmit}
                   onEdit={onEdit}
                   onDelete={onDelete}
+                  onFetchReplies={onFetchReplies}
+                  replyPagination={replyPagination}
                 />
               ))}
+              
+              {/* Load more replies button */}
+              {hasMore && (
+                <div className="mt-2">
+                  <button
+                    onClick={loadMoreReplies}
+                    disabled={loadingReplies}
+                    className="btn btn-link small p-0 text-primary d-inline-flex align-items-center gap-1"
+                  >
+                    {loadingReplies ? (
+                      <>
+                        <Loader2 size={14} className="spinner-border-sm" />
+                        Loading more replies...
+                      </>
+                    ) : (
+                      <>
+                        <ChevronDown size={14} />
+                        Load more replies
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>

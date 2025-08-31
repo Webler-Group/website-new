@@ -327,9 +327,8 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    // const currentUserId = "68a7400f3dd5eef60a166911";
 
-    const { replyId } = req.body;
+    const { replyId, feedId } = req.body;
 
     const reply = await Post.findById(replyId);
 
@@ -347,6 +346,12 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (feed === null) {
         res.status(404).json({ success: false, message: "Feed not found" })
         return
+    }
+
+    const originalPost = await Post.findById({ _id: feedId })
+    if(originalPost) {
+        originalPost.$inc("answers", -1);
+        await originalPost.save()
     }
 
     try {
@@ -933,147 +938,128 @@ pipeline.push(
     }
 });
 
+// Helper function to recursively count all comments (including nested replies)
+async function getTotalCommentsCount(parentId: mongoose.Types.ObjectId): Promise<number> {
+  const directReplies = await Post.find({ parentId, hidden: false }).select('_id');
+  
+  let totalCount = directReplies.length; // Count direct replies
+  
+  // Recursively count nested replies
+  for (const reply of directReplies) {
+    totalCount += await getTotalCommentsCount(reply._id);
+  }
+  
+  return totalCount;
+}
+
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId } = req.body;
-    const currentUserId = req.userId;
+  const { feedId } = req.body;
+  const currentUserId = req.userId;
 
-    if (!feedId) {
-        res.status(400).json({ success: false, message: "Feed ID is required" });
-        return;
-    }
+  if (!feedId) {
+    res.status(400).json({ success: false, message: "Feed ID is required" });
+    return;
+  }
 
-    let pipeline: PipelineStage[] = [
-        { $match: { _id: new mongoose.Types.ObjectId(feedId), hidden: false } },
-        {
-            $set: {
-                score: { $add: ["$votes", "$shares", "$answers"] }
-            }
-        },
-        {
-            $lookup: {
-                from: "users",
-                localField: "user",
-                foreignField: "_id",
-                as: "users"
-            }
-        },
-        {
-            $lookup: {
-                from: "tags",
-                localField: "tags",
-                foreignField: "_id",
-                as: "tags"
-            }
-        },
-        {
-            $lookup: {
-                from: "postattachments",
-                localField: "_id",
-                foreignField: "postId",
-                as: "attachments"
-            }
-        },
-        {
-            $lookup: {
-                from: "posts",
-                localField: "sharedFrom",
-                foreignField: "_id",
-                as: "originalPost",
-                pipeline: [
-                    {
-                        $lookup: {
-                            from: "users",
-                            localField: "user",
-                            foreignField: "_id",
-                            as: "users"
-                        }
-                    },
-                    {
-                        $lookup: {
-                            from: "tags",
-                            localField: "tags",
-                            foreignField: "_id",
-                            as: "tags"
-                        }
-                    },
-                    { $limit: 1 }
-                ]
-            }
-        },
-
-        // 🔹 NEW: recursively collect replies (nested)
-        {
-            $graphLookup: {
-                from: "posts",
-                startWith: "$_id",
-                connectFromField: "_id",
-                connectToField: "parentId",
-                as: "allReplies",
-                restrictSearchWithMatch: { hidden: false }
-            }
-        },
-        {
-            $addFields: {
-                answers: { $size: "$allReplies" }
-            }
+  let pipeline: PipelineStage[] = [
+    { $match: { _id: new mongoose.Types.ObjectId(feedId), hidden: false } },
+    { $set: { score: { $add: ["$votes", "$shares", "$answers"] } } },
+    { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" } },
+    { $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" } },
+    { $lookup: { from: "postattachments", localField: "_id", foreignField: "postId", as: "attachments" } },
+    { 
+      $lookup: {
+        from: "posts",
+        localField: "sharedFrom",
+        foreignField: "_id",
+        as: "originalPost",
+        pipeline: [
+          { $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" } },
+          { $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" } },
+          { $limit: 1 }
+        ]
+      }
+    },
+    // keep direct replies count if you still need it
+    {
+      $lookup: {
+        from: "posts",
+        let: { postId: "$_id" },
+        pipeline: [
+          { $match: { $expr: { $eq: ["$parentId", "$$postId"] }, hidden: false } },
+          { $count: "count" }
+        ],
+        as: "directRepliesCount"
+      }
+    },
+    {
+      $addFields: {
+        directAnswers: {
+          $cond: {
+            if: { $gt: [{ $size: "$directRepliesCount" }, 0] },
+            then: { $arrayElemAt: ["$directRepliesCount.count", 0] },
+            else: 0
+          }
         }
-    ];
-
-    const result = await Post.aggregate(pipeline);
-
-    if (!result.length) {
-        res.status(404).json({ success: false, message: "Feed not found" });
-        return;
+      }
     }
+  ];
 
-    let feed = result[0];
-    
-    const attachments = await PostAttachment.getByPostId({ post: feed._id })
+  const result = await Post.aggregate(pipeline);
 
-    let data = {
-        id: feed._id,
-        type: feed._type,
-        title: feed.title || null,
-        message: feed.message,
-        tags: feed.tags,
-        date: feed.createdAt,
-        userId: feed.user,
-        userName: feed.users.length ? feed.users[0].name : "Unknown User",
-        userAvatarImage: feed.users.length ? feed.users[0].avatarImage || null : null,
-        answers: feed.answers || 0,   // ✅ now recursive
-        votes: feed.votes || 0,
-        shares: feed.shares || 0,
-        level: feed.users[0]?.level,
-        roles: feed.users[0]?.roles,
-        isUpvoted: false,
-        isShared: false,
-        isFollowing: false,
-        score: feed.score || 0,
-        isPinned: feed.isPinned,
-        isOriginalPostDeleted: feed.isOriginalPostDeleted,
-        attachments: attachments,
-        originalPost: feed.originalPost.length ? {
-            id: feed.originalPost[0]._id,
-            title: feed.originalPost[0].title || null,
-            message: feed.originalPost[0].message,
-            tags: feed.originalPost[0].tags,
-            userId: feed.originalPost[0].user,
-            userName: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].name : "Unknown User",
-            userAvatarImage: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].avatarImage || null : null,
-            date: feed.originalPost[0].createdAt
-        } : null
-    };
+  if (!result.length) {
+    res.status(404).json({ success: false, message: "Feed not found" });
+    return;
+  }
 
-    if (currentUserId) {
-        const [upvote, following] = await Promise.all([
-            Upvote.findOne({ parentId: data.id, user: currentUserId }),
-            PostFollowing.findOne({ following: data.id, user: currentUserId })
-        ]);
-        data.isUpvoted = !!upvote;
-        data.isFollowing = !!following;
-    }
+  let feed = result[0];
+  const attachments = await PostAttachment.getByPostId({ post: feed._id });
 
-    res.status(200).json({ feed: data, success: true });
+  let data = {
+    id: feed._id,
+    type: feed._type,
+    title: feed.title || null,
+    message: feed.message,
+    tags: feed.tags,
+    date: feed.createdAt,
+    userId: feed.user,
+    userName: feed.users.length ? feed.users[0].name : "Unknown User",
+    userAvatarImage: feed.users.length ? feed.users[0].avatarImage || null : null,
+    answers: feed.answers, // ✅ from DB
+    directAnswers: feed.directAnswers || 0, // optional, direct replies only
+    votes: feed.votes || 0,
+    shares: feed.shares || 0,
+    level: feed.users[0]?.level,
+    roles: feed.users[0]?.roles,
+    isUpvoted: false,
+    isShared: false,
+    isFollowing: false,
+    score: feed.score || 0,
+    isPinned: feed.isPinned,
+    isOriginalPostDeleted: feed.isOriginalPostDeleted,
+    attachments: attachments,
+    originalPost: feed.originalPost.length ? {
+      id: feed.originalPost[0]._id,
+      title: feed.originalPost[0].title || null,
+      message: feed.originalPost[0].message,
+      tags: feed.originalPost[0].tags,
+      userId: feed.originalPost[0].user,
+      userName: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].name : "Unknown User",
+      userAvatarImage: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].avatarImage || null : null,
+      date: feed.originalPost[0].createdAt
+    } : null
+  };
+
+  if (currentUserId) {
+    const [upvote, following] = await Promise.all([
+      Upvote.findOne({ parentId: data.id, user: currentUserId }),
+      PostFollowing.findOne({ following: data.id, user: currentUserId })
+    ]);
+    data.isUpvoted = !!upvote;
+    data.isFollowing = !!following;
+  }
+
+  res.status(200).json({ feed: data, success: true });
 });
 
 
@@ -1123,46 +1109,12 @@ export interface ReplyNode {
   replies: ReplyNode[];
 }
 
-// Recursive builder
-async function getRepliesRecursive(
-  parentId: mongoose.Types.ObjectId,
-  currentUserId?: string
-): Promise<ReplyNode[]> {
-  const replies = await Post.find({ parentId, hidden: false }).sort({ createdAt: -1 });
-
-  return Promise.all(
-    replies.map(async (reply): Promise<ReplyNode> => {
-      const votes = await Upvote.countDocuments({ parentId: reply._id });
-      const isUpvoted = currentUserId
-        ? Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }))
-        : false;
-
-      const user = await User.findById(reply.user);
-
-      const children: ReplyNode[] = await getRepliesRecursive(reply._id, currentUserId);
-
-      return {
-        id: reply._id.toString(),
-        message: reply.message,
-        date: reply.createdAt,
-        userId: reply.user.toString(),
-        userName: user?.name ?? "Unknown User",
-        userAvatar: user?.avatarImage ?? null,
-        level: user?.level ?? 0,
-        roles: user?.roles ?? [],
-        votes,
-        isUpvoted,
-        replies: children, // nested replies (infinite depth)
-      };
-    })
-  );
-}
 
 // Controller with pagination at top-level
-export const getReplies = asyncHandler(
+const getReplies = asyncHandler(
   async (req: IAuthRequest, res: Response): Promise<void> => {
     const { feedId, page = 1, count = 10 } = req.body;
-    const currentUserId = (req as any).userId; // from auth middleware
+    const currentUserId = (req as any).userId;
 
     if (!feedId) {
       res.status(400).json({ success: false, message: "Feed ID is required" });
@@ -1190,8 +1142,11 @@ export const getReplies = asyncHandler(
 
         const user = await User.findById(reply.user);
 
-        // recursive children builder
-        const children = await getRepliesRecursive(reply._id, currentUserId);
+        // 🔹 CHANGED: Instead of loading all children, just count them
+        const childrenCount = await Post.countDocuments({ 
+          parentId: reply._id, 
+          hidden: false 
+        });
 
         return {
           id: reply._id.toString(),
@@ -1204,7 +1159,8 @@ export const getReplies = asyncHandler(
           roles: user?.roles ?? [],
           votes,
           isUpvoted,
-          replies: children,
+          replyCount: childrenCount, 
+          replies: [], 
         };
       })
     );
@@ -1219,6 +1175,73 @@ export const getReplies = asyncHandler(
   }
 );
 
+const getNestedReplies = asyncHandler(
+  async (req: IAuthRequest, res: Response): Promise<void> => {
+    const { parentId, page = 1, count = 5 } = req.body; // Smaller count for nested replies
+    const currentUserId = (req as any).userId;
+
+    console.log("fuck")
+
+    if (!parentId) {
+      res.status(400).json({ success: false, message: "Parent ID is required" });
+      return;
+    }
+
+    const filter = {
+      parentId: new mongoose.Types.ObjectId(parentId),
+      hidden: false,
+    };
+
+    const totalReplies = await Post.countDocuments(filter);
+
+    const replies = await Post.find(filter)
+      .sort({ createdAt: 1 }) 
+      .skip((page - 1) * count)
+      .limit(count);
+
+    const data: ReplyNode[] = await Promise.all(
+      replies.map(async (reply) => {
+        const votes = await Upvote.countDocuments({ parentId: reply._id });
+        const isUpvoted = currentUserId
+          ? Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }))
+          : false;
+
+        const user = await User.findById(reply.user);
+
+        const childrenCount = await Post.countDocuments({ 
+          parentId: reply._id, 
+          hidden: false 
+        });
+
+        return {
+          id: reply._id.toString(),
+          message: reply.message,
+          date: reply.createdAt,
+          userId: reply.user.toString(),
+          userName: user?.name ?? "Unknown User",
+          userAvatar: user?.avatarImage ?? null,
+          level: user?.level ?? 0,
+          roles: user?.roles ?? [],
+          votes,
+          isUpvoted,
+          replyCount: childrenCount, 
+          replies: [],
+        };
+      })
+    );
+
+    res.status(200).json({
+      success: true,
+      replies: data,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalReplies / count),
+        totalCount: totalReplies,
+        hasMore: (page * count) < totalReplies,
+      },
+    });
+  }
+);
 
 
 const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -1247,11 +1270,6 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             parentId: parentId,
             reply: newReply._id,
             feedId: feedId
-        });
-
-        // 3. Increment answers count of the parent comment
-        await Post.findByIdAndUpdate(parentId, {
-            $inc: { answers: 1 }
         });
 
         // 4. Fetch reply user details
@@ -1284,6 +1302,11 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             res.status(404).json({ success: false, message: "Feed is not available" });
             return;
         }
+
+        console.log(originalFeed.answers)
+        originalFeed.$inc("answers", 1)
+        await originalFeed.save();
+        console.log(originalFeed.answers)
 
         // 6. Send notification if reply is not from same user
         if (currentUserId != feed.user.toString()) {
@@ -1381,7 +1404,8 @@ const feedController = {
     getReplies,
     togglePinFeed,
     getPinnedFeeds,
-    replyComment
+    replyComment,
+    getNestedReplies
 }
 
 export default feedController;
