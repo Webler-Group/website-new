@@ -12,20 +12,18 @@ router.use(verifyJWT);
 router.route("/")
     .post(feedController.getFeedList);
 router.route("/GetFeed")
+
     .post(feedController.getFeed);
 router.route("/GetFeedReplies")
     .post(feedController.getReplies);
-
 router.route("/GetNestedReplies")
-.post(feedController.getNestedReplies);
-
+.post(feedController.getReplies);
 router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds);
 
 router.use(protectRoute);
 
 router.route("/PinFeed").post(feedController.togglePinFeed)
 router.route("/ReplyComment").post(feedController.replyComment)
-
 router.route("/CreateFeed")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), feedController.createFeed);
 router.route("/EditFeed")
@@ -38,15 +36,9 @@ router.route("/EditReply")
     .put(feedController.editReply);
 router.route("/DeleteReply")
     .delete(feedController.deleteReply);
-router.route("/ToggleAcceptedAnswer")
-    .post(feedController.toggleAcceptedAnswer);
+
 router.route("/VotePost")
     .post(verifyEmail, feedController.votePost);
-
-router.route("/FollowFeed")
-    .post(feedController.followFeed)
-router.route("/UnfollowFeed")
-    .post(feedController.unfollowFeed)
 
 router.route("/ShareFeed").post(feedController.shareFeed)
 

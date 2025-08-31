@@ -4,7 +4,6 @@ import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
-import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
@@ -69,11 +68,6 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     })
 
     if (feed) {
-
-        await PostFollowing.create({
-            user: currentUserId,
-            following: feed._id
-        });
 
         const followers = await UserFollowing.find({ following: currentUserId })
 
@@ -233,18 +227,6 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    // auto-follow the feed if not already
-    const feedFollowed = await PostFollowing.findOne({
-        user: currentUserId,
-        following: feed._id
-    });
-
-    if (!feedFollowed) {
-        await PostFollowing.create({
-            user: currentUserId,
-            following: feed._id
-        });
-    }
 
     // notify feed owner
     if (currentUserId.toString() !== feed.user.toString()) {
@@ -382,46 +364,6 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 })
 
-const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { accepted, postId } = req.body;
-
-    const post = await Post.findById(postId);
-
-    if (post === null) {
-        res.status(404).json({ success: false, message: "Post not found" })
-        return
-    }
-
-    const feed = await Post.findById(post.parentId);
-    if (feed === null) {
-        res.status(404).json({ success: false, message: "Feed not found" })
-        return
-    }
-
-    if (accepted || post.isAccepted) {
-        feed.isAccepted = accepted;
-        await feed.save();
-    }
-
-    post.isAccepted = accepted;
-
-    await post.save();
-
-    if (accepted) {
-        const currentAcceptedPost = await Post.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
-        if (currentAcceptedPost) {
-            currentAcceptedPost.isAccepted = false;
-
-            await currentAcceptedPost.save();
-        }
-    }
-
-    res.json({
-        success: true,
-        accepted
-    });
-
-});
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -490,81 +432,6 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 })
 
-const followFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { postId } = req.body;
-
-    if (typeof postId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
-
-    const postExists = await Post.findOne({ _id: postId })
-    if (!postExists) {
-        res.status(404).json({ success: false, message: "Post not found" });
-        return
-    }
-
-    if (postExists._type !== 1) {
-        res.status(405).json({ success: false, message: "Post is not a feed" });
-        return
-    }
-
-    const exists = await PostFollowing.findOne({ user: currentUserId, following: postId });
-    if (exists) {
-        res.status(204).json({ success: true })
-        return
-    }
-
-    const postFollowing = await PostFollowing.create({
-        user: currentUserId,
-        following: postId
-    });
-
-    if (postFollowing) {
-
-        res.json({ success: true })
-        return
-    }
-
-    res.status(500).json({ success: false, message: "Something went wrong" });
-});
-
-const unfollowFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { postId } = req.body;
-
-    if (typeof postId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
-
-    const postExists = await Post.findOne({ _id: postId })
-    if (!postExists) {
-        res.status(404).json({ success: false, message: "Post not found" });
-        return
-    }
-
-    if (postExists._type !== 1) {
-        res.status(405).json({ success: false, message: "Post is not a feed" });
-        return
-    }
-
-    const postFollowing = await PostFollowing.findOne({ user: currentUserId, following: postId });
-    if (postFollowing === null) {
-        res.status(204).json({ success: true })
-        return
-    }
-
-    const result = await PostFollowing.deleteOne({ user: currentUserId, following: postId })
-    if (result.deletedCount == 1) {
-
-        res.json({ success: true })
-        return
-    }
-
-    res.status(500).json({ success: false, message: "Something went wrong" });
-});
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { feedId, message } = req.body;
@@ -607,16 +474,11 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         tags: tagIds,
         user: currentUserId,
         isAccepted: true,
-        sharedFrom: feedId,
+        parentId: feedId,
         isOriginalPostDeleted: 0
     })
 
     if (feed) {
-
-        await PostFollowing.create({
-            user: currentUserId,
-            following: feed._id
-        });
 
         const post = await Post.findById(feedId);
 
@@ -825,7 +687,7 @@ pipeline.push(
     {
         $lookup: {
             from: "posts",
-            localField: "sharedFrom",
+            localField: "parentId",
             foreignField: "_id",
             as: "originalPost",
             pipeline: [
@@ -918,14 +780,6 @@ pipeline.push(
                         })
                 );
 
-                // Check if following this post
-                promises.push(
-                    PostFollowing.findOne({ following: data[i].id, user: currentUserId })
-                        .then(following => {
-                            data[i].isFollowing = !(following === null);
-                        })
-                );
-
                 promises.push(PostAttachment.getByPostId({ post: data[i].id })
                     .then(attachments => {
                         data[i].attachments = attachments;
@@ -977,7 +831,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     { 
       $lookup: {
         from: "posts",
-        localField: "sharedFrom",
+        localField: "parentId",
         foreignField: "_id",
         as: "originalPost",
         pipeline: [
@@ -1058,12 +912,10 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   };
 
   if (currentUserId) {
-    const [upvote, following] = await Promise.all([
+    const [upvote] = await Promise.all([
       Upvote.findOne({ parentId: data.id, user: currentUserId }),
-      PostFollowing.findOne({ following: data.id, user: currentUserId })
     ]);
     data.isUpvoted = !!upvote;
-    data.isFollowing = !!following;
   }
 
   res.status(200).json({ feed: data, success: true });
@@ -1117,92 +969,33 @@ export interface ReplyNode {
 }
 
 
-// Controller with pagination at top-level
 const getReplies = asyncHandler(
   async (req: IAuthRequest, res: Response): Promise<void> => {
-    const { feedId, page = 1, count = 10 } = req.body;
+    const { feedId, parentId, page = 1, count = 10 } = req.body;
     const currentUserId = (req as any).userId;
 
-    if (!feedId) {
-      res.status(400).json({ success: false, message: "Feed ID is required" });
+    const targetParentId = feedId || parentId;
+
+    if (!targetParentId) {
+      res.status(400).json({ 
+        success: false, 
+        message: "Parent ID (feedId or parentId) is required" 
+      });
       return;
     }
 
     const filter = {
-      parentId: new mongoose.Types.ObjectId(feedId),
+      parentId: new mongoose.Types.ObjectId(targetParentId),
       hidden: false,
     };
 
     const totalReplies = await Post.countDocuments(filter);
 
-    const topLevelReplies = await Post.find(filter)
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * count)
-      .limit(count);
-
-    const data: ReplyNode[] = await Promise.all(
-      topLevelReplies.map(async (reply) => {
-        const votes = await Upvote.countDocuments({ parentId: reply._id });
-        const isUpvoted = currentUserId
-          ? Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }))
-          : false;
-
-        const user = await User.findById(reply.user);
-
-        // 🔹 CHANGED: Instead of loading all children, just count them
-        const childrenCount = await Post.countDocuments({ 
-          parentId: reply._id, 
-          hidden: false 
-        });
-
-        return {
-          id: reply._id.toString(),
-          message: reply.message,
-          date: reply.createdAt,
-          userId: reply.user.toString(),
-          userName: user?.name ?? "Unknown User",
-          userAvatar: user?.avatarImage ?? null,
-          level: user?.level ?? 0,
-          roles: user?.roles ?? [],
-          votes,
-          isUpvoted,
-          replyCount: childrenCount, 
-          replies: [], 
-        };
-      })
-    );
-
-    res.status(200).json({
-      success: true,
-      count: totalReplies,
-      replies: data,
-      currentPage: page,
-      totalPages: Math.ceil(totalReplies / count),
-    });
-  }
-);
-
-const getNestedReplies = asyncHandler(
-  async (req: IAuthRequest, res: Response): Promise<void> => {
-    const { parentId, page = 1, count = 5 } = req.body; // Smaller count for nested replies
-    const currentUserId = (req as any).userId;
-
-    console.log("fuck")
-
-    if (!parentId) {
-      res.status(400).json({ success: false, message: "Parent ID is required" });
-      return;
-    }
-
-    const filter = {
-      parentId: new mongoose.Types.ObjectId(parentId),
-      hidden: false,
-    };
-
-    const totalReplies = await Post.countDocuments(filter);
+    // Sort by createdAt ascending for nested replies, descending for top-level
+    const sortOrder = feedId ? -1 : 1; // Descending for feed comments, ascending for nested replies
 
     const replies = await Post.find(filter)
-      .sort({ createdAt: 1 }) 
+      .sort({ createdAt: sortOrder })
       .skip((page - 1) * count)
       .limit(count);
 
@@ -1215,9 +1008,9 @@ const getNestedReplies = asyncHandler(
 
         const user = await User.findById(reply.user);
 
-        const childrenCount = await Post.countDocuments({ 
-          parentId: reply._id, 
-          hidden: false 
+        const childrenCount = await Post.countDocuments({
+          parentId: reply._id,
+          hidden: false
         });
 
         return {
@@ -1231,7 +1024,7 @@ const getNestedReplies = asyncHandler(
           roles: user?.roles ?? [],
           votes,
           isUpvoted,
-          replyCount: childrenCount, 
+          replyCount: childrenCount,
           replies: [],
         };
       })
@@ -1249,7 +1042,6 @@ const getNestedReplies = asyncHandler(
     });
   }
 );
-
 
 const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { parentId, message, feedId } = req.body;
@@ -1394,10 +1186,7 @@ const feedController = {
     createReply,
     editReply,
     deleteReply,
-    toggleAcceptedAnswer,
     votePost,
-    followFeed,
-    unfollowFeed,
     shareFeed,
     getFeedList,
     getFeed,
@@ -1405,7 +1194,6 @@ const feedController = {
     togglePinFeed,
     getPinnedFeeds,
     replyComment,
-    getNestedReplies
 }
 
 export default feedController;

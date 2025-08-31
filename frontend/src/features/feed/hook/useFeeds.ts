@@ -31,6 +31,7 @@ const useFeed = (count: number, store: { page: number; filter: number; query: st
         },
             signal)
 
+        console.log(result)
 
         if (signal.aborted) {
             setError("Something went wrong");
