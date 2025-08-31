@@ -5,6 +5,7 @@ import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bo
 import { FormEvent, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import WAlert from "../../../components/WAlert";
+import { WEmailField, WPasswordField } from "../../../components/FormField";
 
 interface LoginFormProps {
     onToggleClick: () => void;
@@ -48,14 +49,14 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
             <h2 className="text-3xl font-bold text-center mb-6">Sign In</h2>
             {error && <WAlert message={error} variant="danger" />}
             <form className="space-y-4" onSubmit={(e) => handleSubmit(e)}>
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500" />
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500" />
+                <WEmailField placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <WPasswordField value={password} onChange={(e) => setPassword(e.target.value)} showVisibility={true} placeholder="Password" />
                 <div className="flex items-center space-x-2">
-                    <Link to="/Users/Forgot-Password">Forgot Password?</Link>
+                    <Link to="/Users/Forgot-Password" className="text-red-500 hover:text-gray-500 underline">Forgot Password?</Link>
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-red-500 text-white py-3 rounded-lg hover:bg-red-600 transition">Sign In</button>
             </form>
-            <p className="text-center mt-5">New to Webler? <Link to="/Users/Register" className="text-blue-900 hover:text-blue-200">Create new account</Link></p>
+            <p className="text-center mt-5">New to Webler? <Link to="/Users/Register" className="text-red-500 hover:text-gray-500 underline">Create new account</Link></p>
             </div>
         </section>
     );

@@ -1,19 +1,10 @@
-import { Row, Col, Card, Button, Container } from "react-bootstrap";
 import PageTitle from "../layouts/PageTitle";
-import { LinkContainer } from "react-router-bootstrap";
 import RegisterForm from "../features/auth/components/RegisterForm";
-import { useAuth } from "../features/auth/context/authContext";
-import { useState } from "react";
-import LoginForm from "../features/auth/components/LoginForm";
-import { useNavigate } from "react-router-dom";
+import Register from "../features/auth/pages/Register";
 
 function Home() {
 
   PageTitle("Webler - Home", false);
-
-  const { userInfo } = useAuth();
-  const [isRegisterForm, toggleForm] = useState(true);
-  const navigate = useNavigate();
 
   return (
     <>
@@ -138,7 +129,7 @@ function Home() {
       </div>
     </section>
 
-    <RegisterForm onToggleClick={()=>{}} onRegister={()=>{}} />
+    <Register />
     </>
   );
 }

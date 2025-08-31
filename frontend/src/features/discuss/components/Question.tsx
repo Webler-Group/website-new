@@ -1,12 +1,10 @@
-import { FaComment } from "react-icons/fa6";
-import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
-import { Link } from "react-router-dom";
-import { FaThumbsUp } from "react-icons/fa";
+import { Link, useNavigate } from "react-router-dom";
 import { IPostAttachment } from "./PostAttachment";
-import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
 import React from "react";
+import { MessageCircle, ThumbsDown, ThumbsUp } from "lucide-react";
+import Author from "../../../components/Author";
 
 interface IQuestion {
     id: string;
@@ -32,6 +30,7 @@ interface QuestionProps {
 
 const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
 
+    const navigate = useNavigate();
     const regex = new RegExp(`(^|\\b)${searchQuery.trim()}`, "i");
     const match = question.title.match(regex);
 
@@ -51,57 +50,63 @@ const Question = React.forwardRef(({ question, searchQuery, showUserProfile }: Q
         title = <>{question.title}</>;
     }
 
+
+    const handleClick = () => {
+        navigate("/Discuss/" + question.id);
+    }
+
+    const date_format = showUserProfile ? DateUtils.format(new Date(question.date!)): 
+        DateUtils.format2(new Date(question.date!));
+
     let body = (
-        <div className="rounded border p-2 mb-2 bg-white d-md-flex">
-            <div className="flex-grow-1">
+
+        <div className="p-4 rounded-lg border bg-white dark:bg-gray-800 hover:shadow-md transition" onClick={handleClick}>
+            <h3 className="font-semibold text-gray-800 dark:text-gray-100" style={{ wordBreak: "break-word" }}>
                 <Link to={"/Discuss/" + question.id}>
-                    <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
+                    <h5 >{title}</h5>
                 </Link>
-                <div className="d-flex flex-wrap mt-2">
-                    {
-                        question.tags.map((tag, idx) => {
-                            return (
-                                <WeblerBadge key={idx} name={tag} state="neutral" className={"me-2 " + (tag === searchQuery.toLowerCase() ? " bg-warning" : " bg-light")} />
-                            )
-                        })
-                    }
-                </div>
-                <div className="d-flex small mt-2 gap-3">
-                    <div className="d-flex align-items-center">
-                        <FaThumbsUp />
-                        <span className="ms-1">{question.votes}</span>
-                    </div>
-                    <div className="d-flex align-items-center">
-                        <FaComment />
-                        <span className="ms-1">{question.answers}</span>
-                    </div>
-                    {
-                        showUserProfile === false &&
-                        <div>
-                            <span className="text-secondary">{DateUtils.format2(new Date(question.date!))}</span>
-                        </div>
-                    }
-                </div>
+            </h3>
+            <div className="flex flex-wrap gap-2 my-2">
+                {
+                    question.tags.map((tag, idx) => {
+                        return ( 
+                        <WeblerBadge key={idx} name={tag} state="neutral" />
+                        )
+                    })
+                }
             </div>
-            {
-                showUserProfile &&
-                <div className="d-flex justify-content-end align-items-end mt-3">
-                    <div className="d-flex align-items-center">
-                        <div>
-                            <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
-                            </div>
-                            <div className="d-flex justify-content-end">
-                                <ProfileName userId={question.userId} userName={question.userName} />
-                            </div>
-                        </div>
-                        <div className="ms-2 wb-p-follow-item__avatar">
-                            <ProfileAvatar size={32} avatarImage={question.userAvatar} />
-                        </div>
-                    </div>
-                </div>
-            }
+        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+
+            <Author image={question.userAvatar} 
+                name={question.userName} 
+                content={date_format} 
+                role="" 
+            />
+            
+            <div className="flex items-center gap-4">
+                {
+                    showUserProfile && (
+                        <>
+                        <span className="flex items-center gap-1 text-gray-500">
+                        <ThumbsUp className="w-4 h-4" /> {question.votes}</span>
+                        <span className="flex items-center gap-1 text-gray-500">
+                        <ThumbsDown className="w-4 h-4" /> 0 </span>
+                        <span className="flex items-center gap-1 text-gray-500">
+                        <MessageCircle className="w-4 h-4" /> {question.answers} </span>
+                        </>
+                    )
+                }
+
+                {
+                    !showUserProfile && (
+                        <span className="flex items-center gap-1 ml-auto text-red-500 font-semibold">
+                        ❤️ {question.votes}
+                        </span>
+                    )
+                }
+            </div>
         </div>
+    </div>
     );
 
     const content = ref ?

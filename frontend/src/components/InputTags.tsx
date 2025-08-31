@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Badge, FormControl } from 'react-bootstrap';
-import { FaTimes } from 'react-icons/fa';
+import { FormControl } from 'react-bootstrap';
 import { useApi } from '../context/apiCommunication';
 
 interface WeblerBadgeProps {
@@ -14,29 +13,28 @@ export const WeblerBadge = ({ name, state, className, onClick }: WeblerBadgeProp
     const callback = () => {
         if (typeof onClick == "function") onClick();
     };
-    const _cls = 'bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-1 ' + (className ?? "");
+    const _cls = 'px-2 py-1 text-xs rounded-full dark:bg-blue-900 dark:text-blue-300 ' + (className ?? "");
     return (
-        <Badge className={_cls} style={{ cursor: "default", padding: "0.4rem 0.6rem" }}>
-            <span>{name}</span>
+        <span style={{ cursor: "default" }}
+            className={_cls}
+        >
+            {name}
             {
                 state === "cancellable" &&
-                <button
-                    className="d-flex align-items-center justify-content-center text-danger fw-bold"
+                <span
+                    className="text-red-500 mx-1"
                     onClick={callback}
                     style={{
-                        outline: "none",
-                        background: "none",
-                        border: "none",
                         fontSize: "1.1rem",
                         lineHeight: 1,
                         cursor: "pointer"
                     }}
                 >
-                    <FaTimes />
-                </button>
+                    x
+                </span>
 
             }
-        </Badge>
+        </span>
     );
 };
 
