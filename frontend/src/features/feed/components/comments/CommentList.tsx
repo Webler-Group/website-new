@@ -37,6 +37,13 @@ const CommentList: React.FC<CommentListProps> = ({
   const [replyBoxes, setReplyBoxes] = useState<Record<string, boolean>>({});
 
   const commentRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const registerRef = (id: string, el: HTMLDivElement | null) => {
+    if (el) {
+      commentRefs.current[id] = el;
+    } else {
+      delete commentRefs.current[id]; // clean up if unmounted
+    }
+  };
 
   
   // Refs for infinite scroll
@@ -351,6 +358,10 @@ const CommentList: React.FC<CommentListProps> = ({
           const updated = addReplyToComment(prevComments, parentId, [response.reply]);
           return sortComments(updated);
         });
+
+          setTimeout(() => {
+            scrollToAndHighlight(response.reply.id);
+          }, 300);
         
         // setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
       } else {
@@ -503,23 +514,30 @@ const CommentList: React.FC<CommentListProps> = ({
             }
           }}
         >
-          <CommentItem
-            comment={comment}
-            depth={0}
-            index={i}
-            parentId={undefined}
-            expandedReplies={expandedReplies}
-            setExpandedReplies={setExpandedReplies}
-            replyBoxes={replyBoxes}
-            setReplyBoxes={setReplyBoxes}
-            currentUserId={currentUserId}
-            onVote={handleCommentVote}
-            onReplySubmit={handleReplySubmit}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onFetchReplies={fetchReplies}
-            replyPagination={replyPagination}
-          />
+        <CommentItem
+          key={`${comment.id}-0-${i}`}
+          comment={comment}
+          depth={0}
+          index={i}
+          parentId={undefined}
+          expandedReplies={expandedReplies}
+          setExpandedReplies={setExpandedReplies}
+          replyBoxes={replyBoxes}
+          setReplyBoxes={setReplyBoxes}
+          currentUserId={currentUserId}
+          onVote={handleCommentVote}
+          onReplySubmit={handleReplySubmit}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onFetchReplies={fetchReplies}
+          replyPagination={replyPagination}
+          registerRef={registerRef}  
+          innerRef={(el) => {
+            registerRef(comment.id, el);
+            if (el && i === comments.length - 1) lastCommentElementRef(el);
+          }}
+        />
+
         </div>
       ))}
 

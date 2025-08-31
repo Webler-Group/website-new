@@ -4,15 +4,12 @@ import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
-import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
-import PostSharing from "../models/PostShare";
-import PostReplies from "../models/PostReplies";
 import UserFollowing from "../models/UserFollowing";
 
 const notificationMessage = (message: (string | undefined)) => {
@@ -621,15 +618,9 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             following: feed._id
         });
 
-        const post_sharing = await PostSharing.create({
-            user: currentUserId,
-            originalPost: feedId,
-            sharedPost: feed._id
-        })
-
         const post = await Post.findById(feedId);
 
-        if(post_sharing && post) {
+        if(post) {
             post.$inc("shares", 1)
             await post.save();
         }
@@ -868,11 +859,6 @@ pipeline.push(
             connectToField: "parentId",
             as: "allReplies",
             restrictSearchWithMatch: { hidden: false }
-        }
-    },
-    {
-        $addFields: {
-            answers: { $size: "$allReplies" }
         }
     }
 );
@@ -1286,13 +1272,6 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isAccepted: true
         });
 
-        // 2. Add reply mapping
-        const postReply = await PostReplies.create({
-            parentId: parentId,
-            reply: newReply._id,
-            feedId: feedId
-        });
-
         // 4. Fetch reply user details
         const user = await User.findOne({ _id: currentUserId });
 
@@ -1337,7 +1316,7 @@ const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 actionUser: currentUserId,
                 message: `{action_user} replied to your comment "${notificationMessage(feed.message)}" on post "${notificationMessage(originalFeed?.message)}"`,
                 feedId: originalFeed._id,
-                postId: postReply._id
+                postId: newReply._id
             });
         }
 

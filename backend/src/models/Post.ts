@@ -4,8 +4,6 @@ import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
-import PostSharing from "./PostShare";
-import PostReplies from "./PostReplies";
 
 const postSchema = new mongoose.Schema({
     /*
@@ -100,27 +98,9 @@ postSchema.post("save", async function () {
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
     const postsToDelete = await Post.find(filter).select("_id _type codeId parentId sharedFrom");
-    async function deleteRepliesRecursive(parentPostId: mongoose.Types.ObjectId | string) {
-        const replies = await PostReplies.find({ parentId: parentPostId });
-
-        for (const reply of replies) {
-            // Make sure reply.reply is treated as an ObjectId
-            const replyPostId = reply.reply as mongoose.Types.ObjectId;
-
-            // Delete the actual Post document for the reply
-            await Post.deleteAndCleanup({ _id: replyPostId });
-
-            // Recursively delete its nested replies
-            await deleteRepliesRecursive(replyPostId);
-        }
-
-        // Remove mapping entries
-        await PostReplies.deleteMany({ parentId: parentPostId });
-    }
 
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
-        await deleteRepliesRecursive(post._id);
         switch (post._type) {
             case 1: {
                 await Post.deleteAndCleanup({ parentId: post._id });
@@ -133,7 +113,6 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 );
                 
                 // Delete PostSharing records for this original post
-                await PostSharing.deleteMany({ originalPost: post._id });
                 break;
             }
             case 2: {
@@ -184,7 +163,6 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 );
                 
                 // Delete PostSharing records for this original post
-                await PostSharing.deleteMany({ originalPost: post._id });
 
                 await PostAttachment.deleteMany({ postId: post._id })
                 break;
@@ -201,9 +179,6 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                     { isOriginalPostDeleted: 1 }
                 );
 
-                // Delete PostSharing records for this shared feed
-                await PostSharing.deleteMany({ originalPost: post._id });
-
                 await PostAttachment.deleteMany({ postId: post._id })
 
                 // Decrement share count on the parent/original post if it still exists
@@ -215,26 +190,11 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 }
                 break;
             }
-            case 6: { // Feed Comment Reply
-                await PostReplies.deleteMany({ reply: post._id });
-                
-                // Remove any replies TO this comment (where this comment is parent)
-                await PostReplies.deleteMany({ parentId: post._id });
-                
-                // Remove any follows on this comment
-                await PostFollowing.deleteMany({ following: post._id });
-                
-                // If this is a parent comment being deleted, 
-                // consider if you want to delete all child replies in the same feed
-                await PostReplies.deleteMany({ feedId: post.parentId });
-                
-                break;
-            }
+
 
         }
         await Upvote.deleteMany({ parentId: post._id });
         await PostAttachment.deleteMany({ postId: post._id });
-        await PostReplies.deleteMany({ reply: post._id });
     }
 
     await Post.deleteMany(filter);

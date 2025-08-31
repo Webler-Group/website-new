@@ -7,8 +7,6 @@ import User from "./User";
 import Notification from "./Notification";
 import { sendToUsers } from "../services/pushService";
 import Upvote from "./Upvote";
-import PostReplies from "./PostReplies";
-import PostSharing from "./PostShare";
 
 const postAttachmentSchema = new mongoose.Schema({
     postId: {

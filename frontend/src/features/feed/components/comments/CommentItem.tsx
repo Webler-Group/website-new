@@ -24,6 +24,7 @@ interface CommentItemProps {
   // New props for lazy loading
   onFetchReplies?: (parentId: string, page?: number, append?: boolean) => Promise<void>;
   replyPagination?: Record<string, { page: number; hasMore: boolean; loading: boolean }>;
+  registerRef?: (id: string, el: HTMLDivElement | null) => void;
    innerRef?: (el: HTMLDivElement | null) => void;
 }
 
@@ -43,7 +44,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
   onDelete,
   onFetchReplies,
   replyPagination = {},
-  innerRef
+  innerRef,
+  registerRef
 }) => {
   const showReplies = expandedReplies[comment.id] || false;
   const showReplyBox = replyBoxes[comment.id] || false;
@@ -120,9 +122,9 @@ const CommentItem: React.FC<CommentItemProps> = ({
     await onDelete(comment.id);
   };
 
-  return (
+return (
     <div
-      ref={innerRef}
+      ref={innerRef} 
       className={`mb-3 ${depth === 0 ? "p-3 bg-white rounded border shadow-sm" : ""}`}
       style={{ marginLeft: depth > 0 ? depth * 20 : 0 }}
     >
@@ -230,6 +232,8 @@ const CommentItem: React.FC<CommentItemProps> = ({
                   onDelete={onDelete}
                   onFetchReplies={onFetchReplies}
                   replyPagination={replyPagination}
+                  registerRef={registerRef} // pass it down
+                  innerRef={(el) => registerRef?.(reply.id, el)} // 👈 register reply
                 />
               ))}
               
