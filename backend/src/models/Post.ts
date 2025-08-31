@@ -7,9 +7,11 @@ import PostAttachment from "./PostAttachment";
 
 export enum PostType {
     QUESTION = 1,
-    ANSWER = 2, 
-    COMMENT = 3,
+    ANSWER = 2,
+    CODE_COMMENT = 3,
     FEED = 4,
+    SHARED_FEED = 5,
+    FEED_COMMENT = 6
 }
 
 const postSchema = new mongoose.Schema({
@@ -30,13 +32,15 @@ const postSchema = new mongoose.Schema({
         ref: "Code",
         default: null
     },
-    parentId: {
+    feedId: {
         type: mongoose.Types.ObjectId,
+        ref: "Post",
         default: null
     },
-    isOriginalPostDeleted: {
-        type: Number,
-        default: 2
+    parentId: {
+        type: mongoose.Types.ObjectId,
+        ref: "Post",
+        default: null
     },
     message: {
         type: String,
@@ -59,7 +63,7 @@ const postSchema = new mongoose.Schema({
         default: 0
     },
     shares: {
-        type: Number, 
+        type: Number,
         default: 0
     },
     title: {
@@ -91,7 +95,7 @@ postSchema.post("save", async function () {
 });
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
-    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId parentId");
+    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId parentId feedId");
 
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
@@ -99,7 +103,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
             case PostType.QUESTION: {
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing.deleteMany({ following: post._id });
-                
+
                 break;
             }
             case PostType.ANSWER: {
@@ -116,7 +120,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 })
                 break;
             }
-            case PostType.COMMENT: {
+            case PostType.CODE_COMMENT: {
                 const code = await Code.findById(post.codeId);
                 if (code === null) {
                     throw new Error("Code not found");
@@ -128,9 +132,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                     parentComment.$inc("answers", -1);
                     await parentComment.save();
                 }
-                else {
-                    await Post.deleteAndCleanup({ parentId: post._id });
-                }
+                await Post.deleteAndCleanup({ parentId: post._id });
                 await Notification.deleteMany({
                     _type: 202,
                     codeId: code._id,
@@ -139,29 +141,29 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 break;
             }
 
-            case PostType.FEED: {
-                
-                await Post.updateMany(
-                    { parentId: post._id },
-                    { isOriginalPostDeleted: 1 }
-                );
-                
-                await PostAttachment.deleteMany({ postId: post._id })
+            case PostType.FEED: case PostType.SHARED_FEED: {
+                await Post.deleteAndCleanup({ parentId: post._id, _type: PostType.FEED_COMMENT });
+                break;
+            }
 
-                if(post.isOriginalPostDeleted !== 2) {
-                    await Post.deleteAndCleanup({
-                        parentId: post._id,
-                        _type: { $ne: 4 }
-                    });
-
-                    if (post.parentId) {
-                        await Post.updateOne(
-                            { _id: post.parentId }, 
-                            { $inc: { shares: -1 } }
-                        );
-                    }
+            case PostType.FEED_COMMENT: {
+                const feed = await Post.findById(post.feedId);
+                if (feed === null) {
+                    throw new Error("Feed not found");
                 }
-
+                feed.$inc("comments", -1);
+                await feed.save();
+                const parentComment = await Post.findById(post.parentId);
+                if (parentComment) {
+                    parentComment.$inc("answers", -1);
+                    await parentComment.save();
+                }
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await Notification.deleteMany({
+                    _type: 302,
+                    feedId: feed._id,
+                    postId: post._id
+                })
                 break;
             }
 

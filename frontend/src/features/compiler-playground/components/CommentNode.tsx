@@ -5,14 +5,13 @@ import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import { Button } from 'react-bootstrap';
 import useComments from '../hooks/useComments';
-import { ICode } from '../../codes/components/Code';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import PostAttachment, { IPostAttachment } from '../../discuss/components/PostAttachment';
 import { parseMessage } from '../../../components/PostTextareaControl';
 
-interface ICodeComment {
+interface IComment {
     id: string;
     userId: string;
     userName: string;
@@ -27,16 +26,16 @@ interface ICodeComment {
 }
 
 interface CommentNodeProps {
-    data: ICodeComment | null;
-    code: ICode;
+    options: { section: string; params: any; };
+    data: IComment | null;
     parentId: string | null;
     filter: number;
-    onReply: (parentId: string, callback: (data: ICodeComment) => void) => void;
+    onReply: (parentId: string, callback: (data: IComment) => void) => void;
     onEdit: (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => void;
     onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
     onVote: (id: string, vote: number) => void;
-    setDefaultOnReplyCallback: (callback: (data: ICodeComment) => void) => void;
-    addReplyToParent: (data: ICodeComment) => void;
+    setDefaultOnReplyCallback: (callback: (data: IComment) => void) => void;
+    addReplyToParent: (data: IComment) => void;
     editParentReply: (id: string, message: string, attachments: IPostAttachment[]) => void;
     deleteParentReply: (id: string, answers: number) => void;
     activePostId: string | null;
@@ -44,11 +43,11 @@ interface CommentNodeProps {
     showAllComments: boolean;
     setShowAllComments: (callback: (data: boolean) => boolean) => void;
     isActivePostReply: boolean;
-    defaultReplies: ICodeComment[] | null;
+    defaultReplies: IComment[] | null;
 }
 
 const CommentNode = React.forwardRef(({
-    code,
+    options,
     data, parentId,
     filter,
     onReply,
@@ -87,7 +86,7 @@ const CommentNode = React.forwardRef(({
         add,
         set,
         remove
-    } = useComments(code.id!, data ? data.id : null, 20, indices, filter, repliesVisible, findPostId, defaultReplies);
+    } = useComments(options, data ? data.id : null, 10, indices, filter, repliesVisible, findPostId, defaultReplies);
     const activePostRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
@@ -98,18 +97,14 @@ const CommentNode = React.forwardRef(({
 
     useEffect(() => {
         if (repliesVisible) {
-            if (indices._state !== 0) {
-                setActivePostId(() => null)
-                setFindPostId(null)
-            }
-            else if (data) {
+            if (indices._state !== 0 || data) {
                 setFindPostId(null)
             }
             if (defaultReplies === null) {
                 setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
             }
         }
-    }, [code, filter, repliesVisible])
+    }, [filter, repliesVisible])
 
     useEffect(() => {
         if (showAllComments) {
@@ -191,13 +186,13 @@ const CommentNode = React.forwardRef(({
             return;
         }
         const vote = data.isUpvoted ? 0 : 1;
-        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: data.id, vote });
+        const result = await sendJsonRequest(`/Discussion/VotePost`, "POST", { postId: data.id, vote });
         if (result.vote === vote) {
             onVote(data.id, vote);
         }
     }
 
-    const addReply = (data: ICodeComment) => {
+    const addReply = (data: IComment) => {
         add(data)
         setReplyCount(count => count + 1)
     }
@@ -310,7 +305,7 @@ const CommentNode = React.forwardRef(({
                                     (results.length > 0 && activePostId !== null && isActivePostReply) ?
                                         <div key={results[0].id}>
                                             <CommentNode
-                                                code={code}
+                                                options={options}
                                                 data={results[0]}
                                                 parentId={data ? data.id : null}
                                                 filter={2}
@@ -334,8 +329,8 @@ const CommentNode = React.forwardRef(({
                                         results.map((reply, idx) => {
                                             let node = results.length === idx + 1 ?
                                                 <CommentNode
+                                                    options={options}
                                                     ref={lastCommentRef}
-                                                    code={code}
                                                     data={reply}
                                                     parentId={data ? data.id : null}
                                                     filter={2}
@@ -356,7 +351,7 @@ const CommentNode = React.forwardRef(({
                                                 />
                                                 :
                                                 <CommentNode
-                                                    code={code}
+                                                    options={options}
                                                     data={reply}
                                                     parentId={data ? data.id : null}
                                                     filter={2}
@@ -405,7 +400,7 @@ const CommentNode = React.forwardRef(({
 })
 
 export type {
-    ICodeComment
+    IComment
 }
 
 export default CommentNode

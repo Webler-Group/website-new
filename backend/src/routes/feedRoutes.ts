@@ -9,16 +9,10 @@ const router = express.Router();
 
 router.use(verifyJWT);
 
-router.route("/")
-    .post(feedController.getFeedList);
-router.route("/GetFeed")
-
-    .post(feedController.getFeed);
-router.route("/GetFeedReplies")
-    .post(feedController.getReplies);
-router.route("/GetNestedReplies")
-.post(feedController.getReplies);
-router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds);
+router.route("/").post(feedController.getFeedList);
+router.route("/GetFeed").post(feedController.getFeed);
+router.route("/GetComments")
+    .post(feedController.getReplies)
 
 router.use(protectRoute);
 
@@ -30,16 +24,12 @@ router.route("/EditFeed")
     .put(feedController.editFeed);
 router.route("/DeleteFeed")
     .delete(feedController.deleteFeed);
-router.route("/CreateReply")
-    .post(verifyEmail, requestLimiter(300, 10, "Too many requests, try again later"), feedController.createReply);
-router.route("/EditReply")
-    .put(feedController.editReply);
-router.route("/DeleteReply")
-    .delete(feedController.deleteReply);
-
-router.route("/VotePost")
-    .post(verifyEmail, feedController.votePost);
-
 router.route("/ShareFeed").post(feedController.shareFeed)
+router.route("/CreateComment")
+    .post(verifyEmail, requestLimiter(300, 10, "Too many requests, try again later"), feedController.createReply);
+router.route("/EditComment")
+    .put(feedController.editReply);
+router.route("/DeleteComment")
+    .delete(feedController.deleteReply);
 
 export default router;

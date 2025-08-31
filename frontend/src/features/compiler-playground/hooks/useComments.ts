@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react"
-import { ICodeComment } from "../components/CommentNode"
+import { IComment } from "../components/CommentNode"
 import {useApi} from "../../../context/apiCommunication"
 
-const useComments = (codeId: string, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number, _state: number }, filter: number, repliesVisible: boolean, findPostId: string | null, defaultData: ICodeComment[] | null) => {
+const useComments = (options: { section: string; params: any; }, parentId: string | null, count: number, indices: { firstIndex: number, lastIndex: number, _state: number }, filter: number, repliesVisible: boolean, findPostId: string | null, defaultData: IComment[] | null) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<ICodeComment[]>(defaultData || [])
+    const [results, setResults] = useState<IComment[]>(defaultData || [])
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState("")
     const [hasNextPage, setHasNextPage] = useState(true)
@@ -17,8 +17,8 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
 
         setIsLoading(true);
 
-        const result = await sendJsonRequest("/Discussion/GetCodeComments", "POST", {
-            codeId,
+        const result = await sendJsonRequest(`/${options.section}/GetComments`, "POST", {
+            ...options.params,
             parentId,
             index: fromEnd ? indices.lastIndex : Math.max(0, indices.firstIndex - count),
             count: fromEnd ? count : Math.min(indices.firstIndex, count),
@@ -52,11 +52,11 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
 
     }, [indices])
 
-    const add = (data: ICodeComment) => {
+    const add = (data: IComment) => {
         setResults(prev => [data, ...prev]);
     }
 
-    const set = (id: string, callback: (data: ICodeComment) => ICodeComment) => {
+    const set = (id: string, callback: (data: IComment) => IComment) => {
         setResults(prev => prev.map(item => {
             if (item.id === id) {
                 return { ...callback(item) }
@@ -67,7 +67,7 @@ const useComments = (codeId: string, parentId: string | null, count: number, ind
 
     const remove = (id: string) => {
         setResults(prev => {
-            const results: ICodeComment[] = [];
+            const results: IComment[] = [];
             let isAfterDeleted = false;
             for (let item of prev) {
                 if (item.id === id) {

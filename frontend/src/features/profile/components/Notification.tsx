@@ -4,7 +4,7 @@ import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
 import { FaCircle } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 
 interface INotification {
@@ -42,7 +42,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const viewNotification = async (e: MouseEvent) => {
         onClose()
 
-        if((e.target as HTMLElement).closest("a")) {
+        if ((e.target as HTMLElement).closest("a")) {
             return;
         }
         if (seen === false) {
@@ -66,10 +66,6 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
-            case 301:
-                link.to = "/Feed/" + notification.feedId + "/" + (notification.postId ? notification.postId : "");
-                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
-                break;
             case 203:
                 link.to = "/Discuss/" + notification.questionId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
@@ -82,8 +78,11 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
+            case 302:
+                link.to = "/Feed/" + notification.feedId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
+                break;
         }
-        // console.log(notification, link.to)
         navigate(link.to, { state: link.state })
     }
 

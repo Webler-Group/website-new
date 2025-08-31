@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { IFeed } from './types';
 import FeedItem from './FeedItem';
-import CommentForm from './CommentForm';
-import CommentList from './comments/CommentList';
 import { useApi } from '../../../context/apiCommunication';
 import { getCurrentUserId } from './utils';
 import NotificationToast from './comments/NotificationToast';
+import CommentList2 from '../../compiler-playground/pages/CommentList2';
 
 const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,11 +17,17 @@ const FeedDetails: React.FC = () => {
   const { sendJsonRequest } = useApi();
   const currentUserId = getCurrentUserId();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [postId, setPostId] = useState<string | null>(null);
+  const [isReply, setIsReply] = useState(false);
+  const [commentCount, setCommentCount] = useState(0);
+  const location = useLocation();
 
-  const showNotification = (type: 'success' | 'error', message: string) => {
-    setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
-  };
+  useEffect(() => {
+    if (location.state && location.state.postId) {
+      setPostId(location.state.postId);
+      setIsReply(location.state.isReply);
+    }
+  }, [location]);
 
   useEffect(() => {
     const fetchFeed = async () => {
@@ -36,6 +41,7 @@ const FeedDetails: React.FC = () => {
           throw new Error(response.message);
         }
         setFeed(response.feed);
+        setCommentCount(response.feed.answers);
 
       } catch (err) {
         setError("Failed to load feed");
@@ -48,6 +54,11 @@ const FeedDetails: React.FC = () => {
 
     fetchFeed();
   }, [id, sendJsonRequest]);
+
+  const showNotification = (type: 'success' | 'error', message: string) => {
+    setNotification({ type, message });
+    setTimeout(() => setNotification(null), 5000);
+  };
 
   const handleFeedUpdate = async (updatedFeed: IFeed) => {
     const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: updatedFeed.id, message: updatedFeed.message });
@@ -129,8 +140,9 @@ const FeedDetails: React.FC = () => {
         {/* Comments Section */}
         <div className="card shadow-sm border-0 rounded-4">
           <div className="card-body">
-            <h5 className="fw-semibold text-dark mb-3">Comments</h5>
+            <h5 className="fw-semibold text-dark mb-3">{commentCount} Comments</h5>
 
+            {/*
             <div className="mb-4">
               <CommentForm
                 feedId={feed.id}
@@ -141,11 +153,18 @@ const FeedDetails: React.FC = () => {
               />
             </div>
 
-            <CommentList
+             <CommentList
               feedId={feed.id}
               sendJsonRequest={sendJsonRequest}
               currentUserId={currentUserId}
               noOfComments = {feed.answers}
+            /> */}
+            <CommentList2
+              options={{ section: "feed", params: { feedId: feed.id } }}
+              setCommentCount={setCommentCount}
+              postId={postId}
+              setPostId={setPostId}
+              isReply={isReply}
             />
           </div>
         </div>

@@ -8,6 +8,11 @@ import EvaluationJob from "../models/EvaluationJob";
 import { devRoom, getIO } from "../config/socketServer";
 import { Socket } from "socket.io";
 import { escapeRegex } from "../utils/regexUtils";
+import Post, { PostType } from "../models/Post";
+import PostAttachment from "../models/PostAttachment";
+import { sendToUsers } from "../services/pushService";
+import User from "../models/User";
+import Notification from "../models/Notification";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -334,6 +339,296 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ vote: upvote ? 1 : 0 });
 });
 
+const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { codeId, parentId, index, count, filter, findPostId } = req.body;
+
+    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Some fileds are missing" });
+        return
+    }
+
+    let parentPost: any = null;
+    if (parentId) {
+        parentPost = await Post
+            .findById(parentId)
+            .populate("user", "name avatarImage countryCode level roles");
+    }
+
+    let dbQuery = Post.find({ codeId, _type: PostType.CODE_COMMENT, hidden: false });
+
+    let skipCount = index;
+
+    if (findPostId) {
+
+        const reply = await Post.findById(findPostId);
+
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" })
+            return
+        }
+
+        parentPost = reply.parentId ? await Post
+            .findById(reply.parentId)
+            .populate("user", "name avatarImage countryCode level roles")
+            :
+            null;
+
+        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null })
+
+        skipCount = Math.max(0, (await dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()));
+
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" })
+    }
+    else {
+        dbQuery = dbQuery.where({ parentId });
+
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc", createdAt: "desc" })
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" })
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" })
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
+        }
+    }
+
+    const result = await dbQuery
+        .skip(skipCount)
+        .limit(count)
+        .populate("user", "name avatarImage countryCode level roles") as any[];
+
+    if (result) {
+        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
+            id: x._id,
+            parentId: x.parentId,
+            message: x.message,
+            date: x.createdAt,
+            userId: x.user._id,
+            userName: x.user.name,
+            userAvatar: x.user.avatarImage,
+            level: x.user.level,
+            roles: x.user.roles,
+            votes: x.votes,
+            isUpvoted: false,
+            answers: x.answers,
+            index: (findPostId && parentPost) ?
+                offset === 0 ? -1 : skipCount + offset - 1 :
+                skipCount + offset,
+            attachments: new Array()
+        }))
+
+        let promises = [];
+
+        for (let i = 0; i < data.length; ++i) {
+            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+                data[i].votes = count;
+            }));*/
+            if (currentUserId) {
+                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                    data[i].isUpvoted = !(upvote === null);
+                }));
+            }
+            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+        }
+
+        await Promise.all(promises);
+
+        res.status(200).json({ posts: data })
+    }
+    else {
+        res.status(500).json({ message: "Error" });
+    }
+});
+
+const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { codeId, message, parentId } = req.body;
+
+    const code = await Code.findById(codeId);
+    if (code === null) {
+        res.status(404).json({ message: "Code not found" });
+        return
+    }
+
+    let parentPost = null;
+    if (parentId !== null) {
+        parentPost = await Post.findById(parentId);
+        if (parentPost === null) {
+            res.status(404).json({ message: "Parent post not found" });
+            return
+        }
+    }
+
+    const reply = await Post.create({
+        _type: PostType.CODE_COMMENT,
+        message,
+        codeId,
+        parentId,
+        user: currentUserId
+    })
+
+    if (reply) {
+
+        const usersToNotify = new Set<string>();
+        usersToNotify.add(code.user.toString())
+        if (parentPost !== null) {
+            usersToNotify.add(parentPost.user.toString())
+        }
+        usersToNotify.delete(currentUserId!);
+
+        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+        await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
+            title: "New reply",
+            body: `${currentUserName} replied to your comment on "${code.name}"`
+        }, "codes");
+        await sendToUsers([code.user.toString()], {
+            title: "New comment",
+            body: `${currentUserName} posted comment on your code "${code.name}"`
+        }, "codes");
+
+        for (let userToNotify of usersToNotify) {
+
+            await Notification.create({
+                _type: 202,
+                user: userToNotify,
+                actionUser: currentUserId,
+                message: userToNotify === code.user.toString() ?
+                    `{action_user} posted comment on your code "${code.name}"`
+                    :
+                    `{action_user} replied to your comment on "${code.name}"`,
+                codeId: code._id,
+                postId: reply._id
+            })
+        }
+
+        code.$inc("comments", 1)
+        await code.save();
+
+        if (parentPost) {
+            parentPost.$inc("answers", 1)
+            await parentPost.save();
+        }
+
+        const attachments = await PostAttachment.getByPostId({ post: reply._id })
+
+        res.json({
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                parentId: reply.parentId,
+                votes: reply.votes,
+                answers: reply.answers,
+                attachments
+            }
+        })
+    }
+    else {
+        res.status(500).json({ message: "error" });
+    }
+});
+
+const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { id, message } = req.body;
+
+    if (typeof message === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" })
+        return
+    }
+
+    const comment = await Post.findById(id);
+
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" })
+        return
+    }
+
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    comment.message = message;
+
+    try {
+        await comment.save();
+
+        const attachments = await PostAttachment.getByPostId({ post: comment._id })
+
+        res.json({
+            success: true,
+            data: {
+                id: comment._id,
+                message: comment.message,
+                attachments
+            }
+        })
+    }
+    catch (err: any) {
+        res.json({
+            success: false,
+            error: err,
+            data: null
+        })
+    }
+
+});
+
+const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { id } = req.body;
+
+    const comment = await Post.findById(id);
+
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" })
+        return
+    }
+
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return
+    }
+
+    const code = await Code.findById(comment.codeId);
+    if (code === null) {
+        res.status(404).json({ message: "Code not found" })
+        return
+    }
+
+    try {
+
+        await Post.deleteAndCleanup({ _id: id });
+
+        res.json({ success: true });
+    }
+    catch (err: any) {
+        res.json({ success: false, error: err })
+    }
+})
+
 const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { language, source, stdin } = req.body;
     const deviceId = req.deviceId;
@@ -412,7 +707,11 @@ const codesController = {
     deleteCode,
     voteCode,
     createJob,
-    getJob
+    getJob,
+    getCodeComments,
+    createCodeComment,
+    editCodeComment,
+    deleteCodeComment
 }
 
 export {

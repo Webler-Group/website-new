@@ -17,8 +17,6 @@ router.route("/GetQuestionReplies")
     .post(discussionController.getReplies);
 router.route("/GetTags")
     .post(discussionController.getTags);
-router.route("/GetCodeComments")
-    .post(discussionController.getCodeComments)
 
 router.use(protectRoute);
 
@@ -38,12 +36,6 @@ router.route("/ToggleAcceptedAnswer")
     .post(discussionController.toggleAcceptedAnswer);
 router.route("/VotePost")
     .post(verifyEmail, discussionController.votePost);
-router.route("/CreateCodeComment")
-    .post(verifyEmail, requestLimiter(300, 10, "Too many requests, try again later"), discussionController.createCodeComment);
-router.route("/EditCodeComment")
-    .put(discussionController.editCodeComment);
-router.route("/DeleteCodeComment")
-    .delete(discussionController.deleteCodeComment);
 router.route("/FollowQuestion")
     .post(discussionController.followQuestion)
 router.route("/UnfollowQuestion")

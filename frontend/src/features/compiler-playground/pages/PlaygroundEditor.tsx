@@ -4,7 +4,7 @@ import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaGlobe, FaLock, FaThumbsUp } from "react-icons/fa6";
-import { Button, Dropdown, FormControl, Modal, Toast } from "react-bootstrap";
+import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import { useAuth } from "../../auth/context/authContext";
@@ -417,7 +417,19 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             {
                 (code && code.id) &&
                 <>
-                    <CommentList2 visible={commentModalVisible} onHide={closeCommentModal} code={code} commentCount={commentCount} setCommentCount={setCommentCount} postId={postId} setPostId={setPostId} isReply={isReply} />
+                    <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
+                        <Offcanvas.Header closeButton>
+                            <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
+                        </Offcanvas.Header>
+                        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                            <CommentList2 
+                                options={{ section: "codes", params: { codeId: code.id } }} 
+                                setCommentCount={setCommentCount} 
+                                postId={postId} 
+                                setPostId={setPostId} 
+                                isReply={isReply} />
+                        </Offcanvas.Body>
+                    </Offcanvas>
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>Code details</Modal.Title>

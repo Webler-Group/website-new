@@ -6,7 +6,6 @@ import { escapeRegex } from "../utils/regexUtils";
 import User from "./User";
 import Notification from "./Notification";
 import { sendToUsers } from "../services/pushService";
-import Upvote from "./Upvote";
 
 const postAttachmentSchema = new mongoose.Schema({
     postId: {
