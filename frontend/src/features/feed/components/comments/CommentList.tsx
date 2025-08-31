@@ -353,14 +353,15 @@ const CommentList: React.FC<CommentListProps> = ({
         throw new Error(response.message);
       }
 
-      if (response && response.reply) {
+      if (response && response.post) {
         setComments((prevComments) => {
-          const updated = addReplyToComment(prevComments, parentId, [response.reply]);
+          const updated = addReplyToComment(prevComments, parentId, [response.post]);
           return sortComments(updated);
         });
 
+
           setTimeout(() => {
-            scrollToAndHighlight(response.reply.id);
+            scrollToAndHighlight(response.post.id);
           }, 300);
         
         // setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));

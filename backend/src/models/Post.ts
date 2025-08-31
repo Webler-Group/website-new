@@ -8,7 +8,7 @@ import PostAttachment from "./PostAttachment";
 export enum PostType {
     QUESTION = 1,
     ANSWER = 2, 
-    CODE_COMMENT = 3,
+    COMMENT = 3,
     FEED = 4,
     SHARED_FEED = 5,
 }
@@ -117,7 +117,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 })
                 break;
             }
-            case PostType.CODE_COMMENT: {
+            case PostType.COMMENT: {
                 const code = await Code.findById(post.codeId);
                 if (code === null) {
                     throw new Error("Code not found");

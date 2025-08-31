@@ -202,23 +202,25 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const { message, feedId } = req.body;
+    const { message, feedId, parentId } = req.body;
 
-    if(!currentUserId) {
+    if (!currentUserId) {
         res.status(403).json({ message: "Unauthorized" });
         return;
     }
 
+    // Validate feed existence
     const feed = await Post.findById(feedId);
     if (!feed) {
         res.status(404).json({ success: false, message: "Feed not found" });
         return;
     }
 
+    // Create reply (whether to feed or comment)
     const reply = await Post.create({
         _type: 2,
         message,
-        parentId: feedId,
+        parentId: parentId || feedId, // if replying directly to feed, parentId = feedId
         user: currentUserId
     });
 
@@ -227,26 +229,42 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-
-    // notify feed owner
-    if (currentUserId.toString() !== feed.user.toString()) {
-        await Notification.create({
-            _type: 301,
-            user: feed.user,
-            actionUser: currentUserId,
-            message: `{action_user} commented on your Post "${notificationMessage(feed.message)}"`,
-            feedId: feed._id,
-            postId: reply._id
-        });
-    }
-
+    // Increment answers count on the main feed
     feed.$inc("answers", 1);
     await feed.save();
 
-    // attachments
-    const attachments = await PostAttachment.getByPostId({ post: reply._id });
+    if (parentId) {
+        // replying to a comment
+        const parentComment = await Post.findById(parentId);
+        if (!parentComment) {
+            res.status(404).json({ success: false, message: "Parent comment not found" });
+            return;
+        }
 
-    // enrich reply with user & votes (to match getReplies)
+        if (currentUserId.toString() !== parentComment.user.toString()) {
+            await Notification.create({
+                _type: 301,
+                user: parentComment.user,
+                actionUser: currentUserId,
+                message: `{action_user} replied to your comment "${notificationMessage(parentComment.message)}" on post "${notificationMessage(feed.message)}"`,
+                feedId: feed._id,
+                postId: reply._id
+            });
+        }
+    } else {
+        // replying directly to feed
+        if (currentUserId.toString() !== feed.user.toString()) {
+            await Notification.create({
+                _type: 301,
+                user: feed.user,
+                actionUser: currentUserId,
+                message: `{action_user} commented on your post "${notificationMessage(feed.message)}"`,
+                feedId: feed._id,
+                postId: reply._id
+            });
+        }
+    }
+
     const user = await User.findById(reply.user);
     const votes = await Upvote.countDocuments({ parentId: reply._id });
     const isUpvoted = Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }));
@@ -268,9 +286,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             votes,
             isUpvoted,
             replyCount: childrenCount,
-            replies: [], // for consistency with getReplies
+            replies: [],
             answers: reply.answers ?? 0,
-            attachments
         }
     });
 });
@@ -1043,83 +1060,6 @@ const getReplies = asyncHandler(
   }
 );
 
-const replyComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { parentId, message, feedId } = req.body;
-    const currentUserId = req.userId;
-
-    if (!currentUserId) {
-        res.status(403).json({ message: "Unauthorized" });
-        return;
-    }
-
-    try {
-        // 1. Create new reply
-        const newReply = await Post.create({
-            _type: 6,
-            title: "Title not required",
-            parentId: parentId,
-            message,
-            tags: [],
-            user: currentUserId,
-            isAccepted: true
-        });
-
-        // 4. Fetch reply user details
-        const user = await User.findOne({ _id: currentUserId });
-
-        const formattedReply = {
-            id: newReply._id.toString(),
-            message: newReply.message,
-            date: newReply.createdAt,
-            userId: currentUserId.toString(),
-            userName: user?.name ?? "Unknown User",
-            userAvatar: user?.avatarImage ?? null,
-            level: user?.level ?? 0,
-            roles: user?.roles ?? [],
-            votes: 0,
-            isUpvoted: false,
-            replies: [],
-            answers: 0 
-        };
-
-        // 5. Validate parent + feed
-        const feed = await Post.findById(parentId);
-        if (!feed) {
-            res.status(404).json({ success: false, message: "Comment is not available" });
-            return;
-        }
-
-        const originalFeed = await Post.findById(feedId);
-        if (!originalFeed) {
-            res.status(404).json({ success: false, message: "Feed is not available" });
-            return;
-        }
-
-        console.log(originalFeed.answers)
-        originalFeed.$inc("answers", 1)
-        await originalFeed.save();
-        console.log(originalFeed.answers)
-
-        // 6. Send notification if reply is not from same user
-        if (currentUserId != feed.user.toString()) {
-            await Notification.create({
-                _type: 301,
-                user: feed.user,
-                actionUser: currentUserId,
-                message: `{action_user} replied to your comment "${notificationMessage(feed.message)}" on post "${notificationMessage(originalFeed?.message)}"`,
-                feedId: originalFeed._id,
-                postId: newReply._id
-            });
-        }
-
-        res.status(200).json({ reply: formattedReply, success: true });
-
-    } catch (err) {
-        console.log(err);
-        res.status(500).json({ message: err, success: false });
-    }
-});
-
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { feedId } = req.body;
@@ -1193,7 +1133,6 @@ const feedController = {
     getReplies,
     togglePinFeed,
     getPinnedFeeds,
-    replyComment,
 }
 
 export default feedController;

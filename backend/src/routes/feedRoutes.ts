@@ -23,7 +23,7 @@ router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds);
 router.use(protectRoute);
 
 router.route("/PinFeed").post(feedController.togglePinFeed)
-router.route("/ReplyComment").post(feedController.replyComment)
+router.route("/ReplyComment").post(feedController.createReply)
 router.route("/CreateFeed")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), feedController.createFeed);
 router.route("/EditFeed")
