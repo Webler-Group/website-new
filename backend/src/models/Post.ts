@@ -10,7 +10,6 @@ export enum PostType {
     ANSWER = 2, 
     COMMENT = 3,
     FEED = 4,
-    SHARED_FEED = 5,
 }
 
 const postSchema = new mongoose.Schema({
@@ -148,28 +147,23 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 );
                 
                 await PostAttachment.deleteMany({ postId: post._id })
-                break;
-            }
 
-            case PostType.SHARED_FEED: {
-                await Post.deleteAndCleanup({ parentId: post._id });
+                if(post.isOriginalPostDeleted !== 2) {
+                    await Post.deleteAndCleanup({
+                        parentId: post._id,
+                        _type: { $ne: 4 }
+                    });
 
-                await Post.updateMany(
-                    { parentId: post._id },
-                    { isOriginalPostDeleted: 1 }
-                );
-
-                await PostAttachment.deleteMany({ postId: post._id })
-
-                if (post.parentId) {
-                    await Post.updateOne(
-                        { _id: post.parentId }, 
-                        { $inc: { shares: -1 } }
-                    );
+                    if (post.parentId) {
+                        await Post.updateOne(
+                            { _id: post.parentId }, 
+                            { $inc: { shares: -1 } }
+                        );
+                    }
                 }
+
                 break;
             }
-
 
         }
         await Upvote.deleteMany({ parentId: post._id });

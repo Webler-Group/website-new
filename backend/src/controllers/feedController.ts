@@ -392,7 +392,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const post = await Post.findById(postId);
     if (post === null) {
-        res.status(404).json({ success: false, message: "Comment not found" })
+        res.status(404).json({ success: false, message: "Feed/Comment not found" })
         return
     }
 
@@ -485,7 +485,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const feed = await Post.create({
-        _type: 5,
+        _type: 4,
         title,
         message,
         tags: tagIds,
@@ -903,8 +903,8 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     userId: feed.user,
     userName: feed.users.length ? feed.users[0].name : "Unknown User",
     userAvatarImage: feed.users.length ? feed.users[0].avatarImage || null : null,
-    answers: feed.answers, // ✅ from DB
-    directAnswers: feed.directAnswers || 0, // optional, direct replies only
+    answers: feed.answers, 
+    directAnswers: feed.directAnswers || 0, 
     votes: feed.votes || 0,
     shares: feed.shares || 0,
     level: feed.users[0]?.level,
@@ -939,10 +939,6 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 
-
-/**
- * Response shapes used internally — adjust if you have a shared type file
- */
 interface NestedReply {
   id: string;
   message: string;
@@ -1004,6 +1000,7 @@ const getReplies = asyncHandler(
     const filter = {
       parentId: new mongoose.Types.ObjectId(targetParentId),
       hidden: false,
+      _type: 2
     };
 
     const totalReplies = await Post.countDocuments(filter);
