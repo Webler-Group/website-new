@@ -7,7 +7,7 @@ import PostTextareaControl from '../../../components/PostTextareaControl';
 interface CommentFormProps {
   feedId: string;
   sendJsonRequest: (method: string, url: string, reqBody?: any) => Promise<any>;
-  onCommentPosted: () => void;
+  onCommentPosted: (comment: Comment) => void;
 }
 
 const CommentForm: React.FC<CommentFormProps> = ({
@@ -44,7 +44,7 @@ const CommentForm: React.FC<CommentFormProps> = ({
       }
 
       setComment('');
-      onCommentPosted();
+      onCommentPosted(response.post);
     } catch (error) {
       console.error('Failed to post comment:', error);
       showNotification("error", String(error))

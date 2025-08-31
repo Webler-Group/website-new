@@ -135,8 +135,8 @@ const FeedDetails: React.FC = () => {
               <CommentForm
                 feedId={feed.id}
                 sendJsonRequest={sendJsonRequest}
-                onCommentPosted={() => {
-                  window.dispatchEvent(new CustomEvent('commentPosted', { detail: { feedId: feed.id } }));
+                onCommentPosted={(newComment: Comment) => {
+                  window.dispatchEvent(new CustomEvent('commentPosted', { detail: { feedId: feed.id, comment: newComment } }));
                 }}
               />
             </div>

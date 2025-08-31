@@ -213,10 +213,15 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { message, feedId } = req.body;
 
+    if(!currentUserId) {
+        res.status(403).json({ message: "Unauthorized" });
+        return;
+    }
+
     const feed = await Post.findById(feedId);
-    if (feed === null) {
+    if (!feed) {
         res.status(404).json({ success: false, message: "Feed not found" });
-        return
+        return;
     }
 
     const reply = await Post.create({
@@ -224,57 +229,73 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         message,
         parentId: feedId,
         user: currentUserId
-    })
+    });
 
-    if (reply) {
+    if (!reply) {
+        res.status(500).json({ success: false, message: "Error creating reply" });
+        return;
+    }
 
-        const feedFollowed = await PostFollowing.findOne({
+    // auto-follow the feed if not already
+    const feedFollowed = await PostFollowing.findOne({
+        user: currentUserId,
+        following: feed._id
+    });
+
+    if (!feedFollowed) {
+        await PostFollowing.create({
             user: currentUserId,
             following: feed._id
-        })
-
-        if (feedFollowed === null) {
-            await PostFollowing.create({
-                user: currentUserId,
-                following: feed._id
-            });
-        }
-
-        if(currentUserId != feed.user) {
-            await Notification.create({
-                _type: 301,
-                user: feed.user,
-                actionUser: currentUserId,
-                message: `{action_user} commented on your Post "${notificationMessage(feed.message)}"`,
-                feedId: feed._id,    
-                postId: reply._id   
-            });
-        }
-
-        feed.$inc("answers", 1)
-        await feed.save();
-
-        const attachments = await PostAttachment.getByPostId({ post: reply._id })
-
-        res.json({
-            success: true,
-            post: {
-                id: reply._id,
-                message: reply.message,
-                date: reply.createdAt,
-                userId: reply.user,
-                parentId: reply.parentId,
-                isAccepted: reply.isAccepted,
-                votes: reply.votes,
-                answers: reply.answers,
-                attachments
-            }
-        })
+        });
     }
-    else {
-        res.status(500).json({ success: false, message: "error" });
+
+    // notify feed owner
+    if (currentUserId.toString() !== feed.user.toString()) {
+        await Notification.create({
+            _type: 301,
+            user: feed.user,
+            actionUser: currentUserId,
+            message: `{action_user} commented on your Post "${notificationMessage(feed.message)}"`,
+            feedId: feed._id,
+            postId: reply._id
+        });
     }
+
+    feed.$inc("answers", 1);
+    await feed.save();
+
+    // attachments
+    const attachments = await PostAttachment.getByPostId({ post: reply._id });
+
+    // enrich reply with user & votes (to match getReplies)
+    const user = await User.findById(reply.user);
+    const votes = await Upvote.countDocuments({ parentId: reply._id });
+    const isUpvoted = Boolean(await Upvote.exists({ parentId: reply._id, user: currentUserId }));
+    const childrenCount = await Post.countDocuments({ parentId: reply._id, hidden: false });
+
+    res.json({
+        success: true,
+        post: {
+            id: reply._id.toString(),
+            message: reply.message,
+            date: reply.createdAt,
+            userId: reply.user.toString(),
+            userName: user?.name ?? "Unknown User",
+            userAvatar: user?.avatarImage ?? null,
+            level: user?.level ?? 0,
+            roles: user?.roles ?? [],
+            parentId: reply.parentId?.toString() ?? null,
+            isAccepted: reply.isAccepted ?? false,
+            votes,
+            isUpvoted,
+            replyCount: childrenCount,
+            replies: [], // for consistency with getReplies
+            answers: reply.answers ?? 0,
+            attachments
+        }
+    });
 });
+
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;

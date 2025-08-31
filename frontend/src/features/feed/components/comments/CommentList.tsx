@@ -135,20 +135,18 @@ const CommentList: React.FC<CommentListProps> = ({
             const combined = [...prevComments, ...sortedComments];
             return sortComments(combined);
           });
+          setTotalLoaded(prev => prev + sortedComments.length);
+          setPage(pageNum);
         } else {
           setComments(sortedComments);
-        }
-        
-        setTotalLoaded(prev => append ? prev + sortedComments.length : sortedComments.length);
-        
-        // Check if we have more comments to load
-        const hasMoreData = sortedComments.length === COMMENTS_PER_PAGE && 
-                           (append ? totalLoaded + sortedComments.length : sortedComments.length) < noOfComments;
-        setHasMore(hasMoreData);
-        
-        if (append) {
+          setTotalLoaded(sortedComments.length);
           setPage(pageNum);
         }
+        
+        const currentTotal = append ? totalLoaded + sortedComments.length : sortedComments.length;
+        const hasMoreData = sortedComments.length === COMMENTS_PER_PAGE && currentTotal < noOfComments;
+        setHasMore(hasMoreData);
+        
       }
     } catch (err) {
       const errorMsg = "Failed to load comments";
@@ -163,11 +161,6 @@ const CommentList: React.FC<CommentListProps> = ({
     }
   };
 
-  const loadMoreComments = useCallback(() => {
-    if (!hasMore || loadingMore || loading) return;
-    fetchComments(page + 1, true);
-  }, [hasMore, loadingMore, loading, page]);
-
   useEffect(() => {
     // Reset pagination state when feedId changes
     setPage(1);
@@ -175,6 +168,8 @@ const CommentList: React.FC<CommentListProps> = ({
     setHasMore(true);
     setComments([]);
     setReplyPagination({});
+    setExpandedReplies({});
+    setReplyBoxes({});
     
     fetchComments(1, false);
 
@@ -188,7 +183,7 @@ const CommentList: React.FC<CommentListProps> = ({
           });
           setTotalLoaded(prev => prev + 1);
         } else {
-          fetchComments(1, false);
+          // fetchComments(1, false);
           setPage(1);
           setTotalLoaded(0);
           setHasMore(true);
@@ -199,6 +194,9 @@ const CommentList: React.FC<CommentListProps> = ({
     window.addEventListener("commentPosted", handleCommentPosted as EventListener);
     return () => {
       window.removeEventListener("commentPosted", handleCommentPosted as EventListener);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
     };
   }, [feedId]);
 
@@ -209,10 +207,10 @@ const CommentList: React.FC<CommentListProps> = ({
       replies: comment.replies ? 
         comment.replies
           .slice()
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // oldest first
-          .map(reply => sortComments([reply])[0]) // recursively sort nested replies
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map(reply => sortComments([reply])[0])
         : []
-    })).slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()); // latest first for top-level
+    })).slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   };
 
   // Helper function to update comments recursively
@@ -243,11 +241,14 @@ const CommentList: React.FC<CommentListProps> = ({
     return commentsList.map(comment => {
       if (comment.id === parentId) {
         const existingReplies = comment.replies || [];
+        const updatedReplies = append
+          ? [...existingReplies, ...newReplies]
+          : newReplies;
+        
         return {
           ...comment,
-          replies: append
-            ? [...existingReplies, ...newReplies]
-            : newReplies,
+          replies: updatedReplies,
+          replyCount: append ? (comment.replyCount || 0) + newReplies.length : newReplies.length,
         };
       }
       if (comment.replies && comment.replies.length > 0) {
@@ -266,14 +267,21 @@ const CommentList: React.FC<CommentListProps> = ({
       .filter((comment) => comment.id !== commentId)
       .map((comment) => {
         if (comment.replies && comment.replies.length > 0) {
+          const updatedReplies = deleteCommentFromTree(comment.replies, commentId);
           return {
             ...comment,
-            replies: deleteCommentFromTree(comment.replies, commentId),
+            replies: updatedReplies,
+            replyCount: Math.max(0, (comment.replyCount || 0) - (comment.replies.length - updatedReplies.length)),
           };
         }
         return comment;
       });
   };
+
+  const loadMoreComments = useCallback(() => {
+    if (!hasMore || loadingMore || loading) return;
+    fetchComments(page + 1, true);
+  }, [hasMore, loadingMore, loading, page]);
 
   const handleCommentVote = async (commentId: string, currentlyUpvoted: boolean) => {
     // Optimistically update UI
@@ -325,21 +333,19 @@ const CommentList: React.FC<CommentListProps> = ({
         throw new Error(response.message);
       }
 
-      // If API returns the complete reply data, use it
       if (response && response.reply) {
         setComments((prevComments) => {
           const updated = addReplyToComment(prevComments, parentId, [response.reply]);
           return sortComments(updated);
         });
+        
+        setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
       } else {
-        // Fallback: refresh comments
-        await fetchComments(1, false);
-        setPage(1);
+        await fetchReplies(parentId, 1, false);
+        setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
       }
       
-      // Close reply box and expand replies to show new comment
       setReplyBoxes((prev) => ({ ...prev, [parentId]: false }));
-      setExpandedReplies((prev) => ({ ...prev, [parentId]: true }));
 
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to post reply. Please try again.";
@@ -359,7 +365,6 @@ const CommentList: React.FC<CommentListProps> = ({
         throw new Error(response.message);
       }
 
-      // Optimistically update UI
       setComments((prevComments) =>
         updateCommentInTree(prevComments, commentId, (comment) => ({
           ...comment,
@@ -388,14 +393,12 @@ const CommentList: React.FC<CommentListProps> = ({
         throw new Error(response.message);
       }
 
-      // Optimistically remove from UI
       setComments((prevComments) => {
         const updated = deleteCommentFromTree(prevComments, commentId);
         return sortComments(updated);
       });
 
-      // Update total loaded count
-      setTotalLoaded(prev => prev - 1);
+      setTotalLoaded(prev => Math.max(0, prev - 1));
 
       showNotification('success', 'Comment deleted successfully!');
 
@@ -412,6 +415,8 @@ const CommentList: React.FC<CommentListProps> = ({
     setHasMore(true);
     setComments([]);
     setReplyPagination({});
+    setExpandedReplies({});
+    setReplyBoxes({});
     fetchComments(1, false);
   };
 
@@ -444,7 +449,6 @@ const CommentList: React.FC<CommentListProps> = ({
 
   return (
     <div className="mb-4">
-      {/* Notification Toast */}
       <NotificationToast 
         notification={notification} 
         onClose={() => setNotification(null)} 
@@ -488,7 +492,6 @@ const CommentList: React.FC<CommentListProps> = ({
         </div>
       ))}
 
-      {/* Loading more indicator */}
       {loadingMore && (
         <div className="d-flex justify-content-center py-3">
           <Loader2 className="spinner-border text-secondary" />
@@ -496,7 +499,6 @@ const CommentList: React.FC<CommentListProps> = ({
         </div>
       )}
 
-      {/* End of comments indicator */}
       {!hasMore && comments.length > 0 && (
         <div className="text-center py-3">
           <p className="text-muted small mb-0">
@@ -505,7 +507,6 @@ const CommentList: React.FC<CommentListProps> = ({
         </div>
       )}
 
-      {/* Error loading more */}
       {error && comments.length > 0 && (
         <div className="text-center py-3">
           <p className="text-muted small mb-2">{error}</p>

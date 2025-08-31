@@ -84,14 +84,13 @@ const CommentItem: React.FC<CommentItemProps> = ({
     const replyParentId = depth === 0 ? comment.id : (parentId || comment.id);
     await onReplySubmit(replyParentId, replyText);
 
-    // After submitting, refresh first page of replies to avoid duplication
-    if (onFetchReplies) {
-      await onFetchReplies(comment.id, 1, false);
-      setExpandedReplies((prev) => ({
-        ...prev,
-        [comment.id]: true, // ensure replies stay open
-      }));
-    }
+    // FIX: Don't automatically refresh replies after submitting
+    // The parent component will handle adding the new reply optimistically
+    // Only ensure replies are expanded to show the new comment
+    setExpandedReplies((prev) => ({
+      ...prev,
+      [comment.id]: true,
+    }));
 
     // Close reply box after submit
     setReplyBoxes((prev) => ({
