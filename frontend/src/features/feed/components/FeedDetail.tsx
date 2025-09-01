@@ -126,14 +126,14 @@ const FeedDetails: React.FC = () => {
         {/* Feed Item Card */}
         <div className="card shadow-sm border-0 rounded-4 mb-4">
           <div className="card-body">
-            <FeedItem
-              feed={feed}
-              currentUserId={currentUserId}
-              sendJsonRequest={sendJsonRequest}
-              onUpdate={handleFeedUpdate}
-              onDelete={() => { handleFeedDelete(feed); }}
-              showFullContent={true}
-            />
+              <FeedItem
+                feed={feed}
+                currentUserId={currentUserId}
+                sendJsonRequest={sendJsonRequest}
+                onUpdate={handleFeedUpdate}
+                onDelete={() => { handleFeedDelete(feed); }}
+                showFullContent={true}
+              />
           </div>
         </div>
 
