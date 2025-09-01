@@ -44,6 +44,7 @@ export interface IFeed {
   originalPost: OriginalPost | null;
   isPinned: boolean;
   isShared: boolean;
+  reaction: string;
 }
 
 export interface Comment {
@@ -66,4 +67,9 @@ export enum PostType {
     FEED = 4,
     SHARED_FEED = 5,
     FEED_COMMENT = 6
+}
+
+export interface ReactionChange {
+  currentReaction: string | null;
+  hasVoted: boolean;
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon } from 'lucide-react';
-import { IFeed, PostType } from './types';
+import { IFeed, PostType, ReactionChange } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { FileCode, MessageSquare, Link2 } from "lucide-react";
 import NotificationToast from './comments/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
+import ReactionPicker from './ReactionPicker';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -113,16 +114,17 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     }
   };
 
-  const handleLike = async () => {
+  const handleLike = async (reaction: ReactionChange) => {
     if (!sendJsonRequest) return;
     try {
       // Optimistic update
-      const newIsLiked = !isLiked;
+      const newIsLiked = reaction.hasVoted;
       const newLikesCount = isLiked ? likesCount - 1 : likesCount + 1;
       setIsLiked(newIsLiked);
       setLikesCount(newLikesCount);
 
-      const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: newIsLiked });
+      const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: newIsLiked, reaction: reaction.currentReaction });
+      console.log(response)
       if (!response.success) {
         throw new Error(response.message);
       }
@@ -441,16 +443,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         {/* Actions */}
         <div className={`d-flex align-items-center ${isListView ? 'justify-content-between' : 'gap-4'} pt-2 border-top ${isListView ? '' : 'mt-3'}`}>
           <div className="d-flex align-items-center gap-4">
-            <button
-              className={`btn btn-sm ${isListView ? 'border-0' : ''} d-flex align-items-center gap-2 ${
-                isLiked ? (isListView ? "text-danger" : "btn-danger") : (isListView ? "text-muted" : "btn-outline-secondary")
-              }`}
-              onClick={handleLike}
-            >
-              <Heart size={16} fill={isLiked ? "currentColor" : "none"} />
-              <span>{likesCount}</span>
-            </button>
-
+            <ReactionPicker onReactionChange={(reaction) => { handleLike(reaction) }} currentState={{ reaction: feed.reaction }} />
             <button
               className={`btn btn-sm ${isListView ? 'border-0 text-muted' : 'btn-outline-secondary'} d-flex align-items-center gap-2`}
               onClick={() => onCommentsClick?.(feed.id)}

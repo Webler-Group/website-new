@@ -282,7 +282,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const { postId, vote } = req.body;
+    const { postId, vote, reaction } = req.body;
 
     if (typeof vote === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
@@ -301,6 +301,9 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
             upvote = await Upvote.create({ user: currentUserId, parentId: postId })
             post.$inc("votes", 1)
             await post.save();
+        }else{
+            upvote.reaction = reaction;
+            await upvote.save();
         }
     }
     else if (vote === false) {
@@ -709,6 +712,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             level: x.users[0].level,
             roles: x.users[0].roles,
             isUpvoted: false,
+            reaction: "",
             score: x.score || 0,
             isPinned: x.isPinned,
             attachments: x.attachments?.map((a: any) => ({
@@ -726,7 +730,8 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 userName: x.originalPost[0].users.length ? x.originalPost[0].users[0].name : "Unknown User",
                 userAvatarImage: x.originalPost[0].users.length ? x.originalPost[0].users[0].avatarImage || null : null,
                 date: x.originalPost[0].createdAt
-            } : null
+            } : null,
+            reactionCounts: {},
         }));
 
 
@@ -739,6 +744,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     Upvote.findOne({ parentId: data[i].id, user: currentUserId })
                         .then(upvote => {
                             data[i].isUpvoted = !(upvote === null);
+                            data[i].reaction = upvote?.reaction ?? "";
                         })
                 );
 
