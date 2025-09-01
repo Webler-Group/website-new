@@ -141,24 +141,6 @@ const FeedDetails: React.FC = () => {
         <div className="card shadow-sm border-0 rounded-4">
           <div className="card-body">
             <h5 className="fw-semibold text-dark mb-3">{commentCount} Comments</h5>
-
-            {/*
-            <div className="mb-4">
-              <CommentForm
-                feedId={feed.id}
-                sendJsonRequest={sendJsonRequest}
-                onCommentPosted={(newComment: Comment) => {
-                  window.dispatchEvent(new CustomEvent('commentPosted', { detail: { feedId: feed.id, comment: newComment } }));
-                }}
-              />
-            </div>
-
-             <CommentList
-              feedId={feed.id}
-              sendJsonRequest={sendJsonRequest}
-              currentUserId={currentUserId}
-              noOfComments = {feed.answers}
-            /> */}
             <CommentList2
               options={{ section: "feed", params: { feedId: feed.id } }}
               setCommentCount={setCommentCount}

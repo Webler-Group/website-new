@@ -1,5 +1,5 @@
 export interface Tag {
-  _id: Key | null | undefined;
+  _id: string | null | undefined;
   id: string;
   name: string;
 }
@@ -43,7 +43,6 @@ export interface IFeed {
   isFollowing: boolean;
   originalPost: OriginalPost | null;
   isPinned: boolean;
-  isOriginalPostDeleted: Number;
   isShared: boolean;
 }
 
@@ -58,4 +57,13 @@ export interface Comment {
   votes: number;
   isUpvoted: boolean;
   replies?: Comment[];
+}
+
+export enum PostType {
+    QUESTION = 1,
+    ANSWER = 2,
+    CODE_COMMENT = 3,
+    FEED = 4,
+    SHARED_FEED = 5,
+    FEED_COMMENT = 6
 }

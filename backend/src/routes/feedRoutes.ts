@@ -31,5 +31,6 @@ router.route("/EditComment")
     .put(feedController.editReply);
 router.route("/DeleteComment")
     .delete(feedController.deleteReply);
+router.route("/VotePost").post(feedController.votePost)
 
 export default router;

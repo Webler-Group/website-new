@@ -11,7 +11,7 @@ import { Link } from "react-router-dom";
 import { FileCode, MessageSquare, Link2 } from "lucide-react";
 import NotificationToast from './comments/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
-
+import {PostType} from "./types"
 
 interface FeedListItemProps {
   feed: IFeed;
@@ -45,7 +45,7 @@ const FeedListItem = React.forwardRef(({
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
+    setTimeout(() => setNotification(null), 5000); 
   };
 
   const handlePinToggle = async () => {
@@ -207,7 +207,7 @@ const FeedListItem = React.forwardRef(({
                     {feed.userName || "Anonymous"}
                   </Link>
                   <span style={{ fontWeight: 400 }}>
-                    {feed.isOriginalPostDeleted !== 2 ? " shared a post" : ""}
+                    {feed.type === PostType.SHARED_FEED ? " shared a post" : ""}
                   </span>
                 </h6>
                 {isPinned && <Pin className="text-warning" size={14} />}
@@ -289,12 +289,25 @@ const FeedListItem = React.forwardRef(({
         {/* Content */}
         <div className="mb-3">
           <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
-          {feed.isOriginalPostDeleted === 1 && (
-            <div className="alert alert-warning text-center my-3" role="alert">
-              <h5 className="mb-0">This post is unavailable.</h5>
-            </div>
+          {feed.type === PostType.SHARED_FEED && !feed.originalPost && (
+              <div
+                className="alert mt-4"
+                role="alert"
+                style={{
+                  minHeight: "150px", 
+                  border: "1px solid #ddd", 
+                  borderRadius: "8px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#fafafa" 
+                }}
+              >
+                <h5 className="mb-0">⚠️ The post is unavailable.</h5>
+              </div>
+
           )}
-          {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
+          {feed.type === PostType.SHARED_FEED && feed.originalPost && <OriginalPostCard originalPost={feed.originalPost} />}
         </div>
 
         {/* Attachments */}

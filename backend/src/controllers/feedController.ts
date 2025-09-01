@@ -280,6 +280,42 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 });
 
+const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId;
+    const { postId, vote } = req.body;
+
+    if (typeof vote === "undefined") {
+        res.status(400).json({ success: false, message: "Some fields are missing" });
+        return
+    }
+
+    const post = await Post.findById(postId);
+    if (post === null) {
+        res.status(404).json({ success: false, message: "Post not found" })
+        return
+    }
+
+    let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
+    if (vote === true) {
+        if (!upvote) {
+            upvote = await Upvote.create({ user: currentUserId, parentId: postId })
+            post.$inc("votes", 1)
+            await post.save();
+        }
+    }
+    else if (vote === false) {
+        if (upvote) {
+            await Upvote.deleteOne({ _id: upvote._id });
+            upvote = null;
+            post.$inc("votes", -1)
+            await post.save();
+        }
+    }
+
+    res.json({ vote: upvote ? 1 : 0, success: true });
+
+})
+
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -673,7 +709,6 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             level: x.users[0].level,
             roles: x.users[0].roles,
             isUpvoted: false,
-            isFollowing: false,
             score: x.score || 0,
             isPinned: x.isPinned,
             attachments: x.attachments?.map((a: any) => ({
@@ -727,61 +762,117 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId } = req.body;
-    const currentUserId = req.userId;
+  const { feedId } = req.body;
+  const currentUserId = req.userId;
 
-    const feed = await Post.findById(feedId)
-        .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
-        .populate<{ tags: any[] }>("tags", "name")
-        .lean();
+  if (!feedId) {
+    res.status(400).json({ success: false, message: "Feed ID is required" });
+    return;
+  }
 
-    if (!feed) {
-        res.status(404).json({ message: "Feed not found" });
-        return;
+  const feedAgg = await Post.aggregate([
+    { $match: { _id: new mongoose.Types.ObjectId(feedId) } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "user"
+      }
+    },
+    { $unwind: "$user" },
+    {
+      $lookup: {
+        from: "tags",
+        localField: "tags",
+        foreignField: "_id",
+        as: "tags"
+      }
+    },
+    {
+      $lookup: {
+        from: "posts",
+        localField: "parentId",
+        foreignField: "_id",
+        as: "originalPost",
+        pipeline: [
+          {
+            $lookup: {
+              from: "users",
+              localField: "user",
+              foreignField: "_id",
+              as: "users"
+            }
+          },
+          {
+            $lookup: {
+              from: "tags",
+              localField: "tags",
+              foreignField: "_id",
+              as: "tags"
+            }
+          },
+          { $limit: 1 }
+        ]
+      }
     }
+  ]);
 
-    const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: feedId, user: currentUserId })) !== null : false;
-    const attachments = await PostAttachment.getByPostId({ post: feedId })
+  if (!feedAgg.length) {
+    res.status(404).json({ message: "Feed not found" });
+    return;
+  }
 
-    let data = {
-        id: feed._id,
-        type: feed._type,
-        title: feed.title || null,
-        message: feed.message,
-        tags: feed.tags,
-        date: feed.createdAt,
-        userId: feed.user._id,
-        userName: feed.user.name,
-        userAvatarImage: feed.user.avatarImage,
-        answers: feed.answers,
-        votes: feed.votes,
-        shares: feed.shares,
-        level: feed.user.level,
-        roles: feed.user.roles,
-        isUpvoted,
-        isPinned: feed.isPinned,
-        attachments,
-        originalPost: null
-        // originalPost: feed.originalPost.length ? {
-        //     id: feed.originalPost[0]._id,
-        //     title: feed.originalPost[0].title || null,
-        //     message: feed.originalPost[0].message,
-        //     tags: feed.originalPost[0].tags,
-        //     userId: feed.originalPost[0].user,
-        //     userName: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].name : "Unknown User",
-        //     userAvatarImage: feed.originalPost[0].users.length ? feed.originalPost[0].users[0].avatarImage || null : null,
-        //     date: feed.originalPost[0].createdAt
-        // } : null
-    };
+  const feed = feedAgg[0];
 
-    if (currentUserId) {
-        const [upvote] = await Promise.all([
-            Upvote.findOne({ parentId: data.id, user: currentUserId }),
-        ]);
-        data.isUpvoted = !!upvote;
-    }
+  const isUpvoted = currentUserId
+    ? (await Upvote.findOne({ parentId: feedId, user: currentUserId })) !== null
+    : false;
 
-    res.status(200).json({ feed: data, success: true });
+  const attachments = await PostAttachment.getByPostId({ post: feedId });
+
+  const data: any = {
+    id: feed._id,
+    type: feed._type,
+    title: feed.title || null,
+    message: feed.message,
+    tags: feed.tags,
+    date: feed.createdAt,
+    userId: feed.user._id,
+    userName: feed.user.name,
+    userAvatarImage: feed.user.avatarImage,
+    answers: feed.answers,
+    votes: feed.votes,
+    shares: feed.shares,
+    level: feed.user.level,
+    roles: feed.user.roles,
+    isUpvoted,
+    isPinned: feed.isPinned,
+    attachments,
+    originalPost: feed.originalPost.length
+      ? {
+          id: feed.originalPost[0]._id,
+          title: feed.originalPost[0].title || null,
+          message: feed.originalPost[0].message,
+          tags: feed.originalPost[0].tags,
+          userId: feed.originalPost[0].user,
+          userName: feed.originalPost[0].users.length
+            ? feed.originalPost[0].users[0].name
+            : "Unknown User",
+          userAvatarImage: feed.originalPost[0].users.length
+            ? feed.originalPost[0].users[0].avatarImage || null
+            : null,
+          date: feed.originalPost[0].createdAt
+        }
+      : null
+  };
+
+  if (currentUserId) {
+    const upvote = await Upvote.findOne({ parentId: data.id, user: currentUserId });
+    data.isUpvoted = !!upvote;
+  }
+
+  res.status(200).json({ feed: data, success: true });
 });
 
 const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -976,6 +1067,7 @@ const feedController = {
     getReplies,
     togglePinFeed,
     getPinnedFeeds,
+    votePost
 }
 
 export default feedController;

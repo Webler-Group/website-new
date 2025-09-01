@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { IFeed } from './types';
+import { IFeed, PostType } from './types';
 import { Link } from 'react-router-dom';
 import { FileCode, MessageSquare, Link2 } from 'lucide-react';
 import NotificationToast from './comments/NotificationToast';
@@ -47,13 +47,13 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const [isUpvoted, setIsUpvoted] = useState(feed.isUpvoted);
   const [votes, setVotes] = useState(feed.votes);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+
   
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
   const isOwner = currentUserId === feed.userId;
-  const isSharedPost = feed.isOriginalPostDeleted !== 2;
   const navigate = useNavigate();
 
   const allowedUrls = [/^https?:\/\/.+/i];
@@ -139,35 +139,39 @@ const FeedItem: React.FC<FeedItemProps> = ({
   );
 
 
+
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
     const navigate = useNavigate();
 
     return (
-      <div 
+      <div
         onClick={() => navigate(`/feed/${originalPost.id}`)}
-        className="mt-3 border rounded bg-light p-3 d-block text-dark text-decoration-none"
+        className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
         style={{ cursor: "pointer" }}
       >
-        <div className="d-flex gap-3">
-          <UserAvatar src={originalPost.userAvatarImage} name={originalPost.userName} />
+        <div className="d-flex gap-2">
+          <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
           <div>
-            <div className="d-flex align-items-center gap-2">
-              <h6 className="fw-semibold mb-0">
-                <Link 
-                  to={`/Profile/${originalPost.userId}`} 
-                  className="text-primary text-decoration-none"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {originalPost.userName}
-                </Link>
-              </h6>
-              <small className="text-muted">{formatDate(originalPost.date)}</small>
-            </div>
+            {/* User profile link */}
+            <strong>
+              <Link
+                to={`/Profile/${originalPost.userId}`}
+                className="text-dark text-decoration-none"
+                onClick={(e) => e.stopPropagation()} // prevent outer click from firing
+              >
+                {originalPost.userName}
+              </Link>
+            </strong>
+
             <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+
             {originalPost.tags?.length > 0 && (
               <div className="d-flex flex-wrap gap-1">
                 {originalPost.tags.map((tag: any) => (
-                  <span key={tag._id} className="badge bg-info text-dark d-flex align-items-center gap-1">
+                  <span
+                    key={tag._id}
+                    className="badge bg-info text-dark d-flex align-items-center gap-1"
+                  >
                     <TagIcon size={12} /> {tag.name}
                   </span>
                 ))}
@@ -178,7 +182,6 @@ const FeedItem: React.FC<FeedItemProps> = ({
       </div>
     );
   };
-
 
   return (
     <div className={`card shadow-sm border-0 mb-4 rounded-4 ${isPinned ? 'border-warning border-2' : ''}`}>
@@ -255,12 +258,25 @@ const FeedItem: React.FC<FeedItemProps> = ({
         {/* Content */}
         <div className="mt-3">
             {<MarkdownRenderer content={feed.message} allowedUrls={allowedUrls}/>}
-            {feed.isOriginalPostDeleted === 1 && (
-              <div className="alert alert-warning text-center my-3" role="alert">
-                <h5 className="mb-0">This post is unavailable.</h5>
-              </div>
+            {feed.type === PostType.SHARED_FEED && !feed.originalPost && (
+                <div
+                  className="alert mt-4"
+                  role="alert"
+                  style={{
+                    minHeight: "150px", 
+                    border: "1px solid #ddd", 
+                    borderRadius: "8px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "#fafafa" 
+                  }}
+                >
+                  <h5 className="mb-0">⚠️ The post is unavailable.</h5>
+                </div>
+
             )}
-            {feed.isOriginalPostDeleted === 0 && <OriginalPostCard originalPost={feed.originalPost} />}
+            {feed.type === PostType.SHARED_FEED && feed.originalPost && <OriginalPostCard originalPost={feed.originalPost} />}
         </div>
 
         {/* Attachments */}
