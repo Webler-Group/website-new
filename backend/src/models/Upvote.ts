@@ -13,7 +13,6 @@ const upvoteSchema = new mongoose.Schema({
     reaction: {
         type: String,
         required: true,
-        default: "like"
     }
 });
 

@@ -23,6 +23,8 @@ export interface OriginalPost {
 }
 
 export interface IFeed {
+  totalReactions: any;
+  topReactions: any;
   id: string;
   type: number;
   title: string | null;
@@ -73,3 +75,22 @@ export interface ReactionChange {
   currentReaction: string | null;
   hasVoted: boolean;
 }
+
+
+export interface Reaction {
+  id: string;
+  emoji: string;
+  label: string;
+  color: string;
+}
+
+export interface ReactionPickerProps {
+  onReactionChange: (reaction: ReactionChange) => void;
+  currentState: { reaction: string | null };
+}
+
+export type ReactionType = "like" | "love" | "haha" | "wow" | "sad" | "angry";
+
+export type ReactionName = {
+  reaction: ReactionType;
+};

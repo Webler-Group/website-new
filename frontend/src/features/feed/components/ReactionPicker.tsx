@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ReactionChange } from "./types";
+
+interface ReactionChange {
+  currentReaction: string | null;
+  hasVoted: boolean;
+}
 
 interface Reaction {
   id: string;
@@ -13,6 +17,15 @@ interface ReactionPickerProps {
   currentState: { reaction: string | null };
 }
 
+const reactions: Reaction[] = [
+  { id: "like", emoji: "👍", label: "Like", color: "#1877f2" },
+  { id: "love", emoji: "❤️", label: "Love", color: "#e91e63" },
+  { id: "haha", emoji: "😂", label: "Haha", color: "#f39c12" },
+  { id: "wow", emoji: "😮", label: "Wow", color: "#f39c12" },
+  { id: "sad", emoji: "😢", label: "Sad", color: "#f39c12" },
+  { id: "angry", emoji: "😡", label: "Angry", color: "#e74c3c" },
+];
+
 const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onReactionChange,
   currentState,
@@ -20,327 +33,240 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   const [selectedReaction, setSelectedReaction] = useState<string | null>(
     currentState?.reaction || null
   );
-  const [showPicker, setShowPicker] = useState<boolean>(false);
-  const [hoveredReaction, setHoveredReaction] = useState<string | null>(null);
-
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
-  const longPressed = useRef(false);
-  const touchHandled = useRef(false);
-
-  const reactions: Reaction[] = [
-    { id: "like", emoji: "👍", label: "Like", color: "#1877f2" },
-    { id: "love", emoji: "❤️", label: "Love", color: "#e91e63" },
-    { id: "haha", emoji: "😂", label: "Haha", color: "#f39c12" },
-    { id: "wow", emoji: "😮", label: "Wow", color: "#f39c12" },
-    { id: "sad", emoji: "😢", label: "Sad", color: "#f39c12" },
-    { id: "angry", emoji: "😡", label: "Angry", color: "#e74c3c" },
-  ];
-
-  const handleReactionClick = (reaction: Reaction | null) => {
-    const newReaction = reaction ? reaction.id : null;
-    setSelectedReaction(newReaction);
-    setShowPicker(false);
-
-    onReactionChange({
-      currentReaction: newReaction,
-      hasVoted: newReaction !== null,
-    });
-  };
-
-  const handleMainClick = () => {
-    if (touchHandled.current) {
-      touchHandled.current = false;
-      return;
-    }
-
-    if (selectedReaction) {
-      handleReactionClick(null);
-    } else {
-      handleReactionClick(reactions.find((r) => r.id === "like") || null);
-    }
-  };
+  const [showPicker, setShowPicker] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [longPressTimer, setLongPressTimer] = useState<number | null>(null);
+  
+  const containerRef = useRef<HTMLDivElement>(null);
+  const timeoutRef = useRef<number | null>(null);
 
   const currentReaction = reactions.find((r) => r.id === selectedReaction);
 
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+const handleReactionClick = (reaction: Reaction | null) => {
+  let newReaction: string | null;
+
+  if (reaction && reaction.id === selectedReaction) {
+    newReaction = null;
+  } else {
+    newReaction = reaction ? reaction.id : null;
+  }
+
+  setSelectedReaction(newReaction);
+  setShowPicker(false);
+
+
+  onReactionChange({
+    currentReaction: newReaction,
+    hasVoted: newReaction !== null,
+  });
+};
+
+const handleMainClick = () => {
+    setShowPicker(!showPicker);
+};
+
   const handleTouchStart = (e: React.TouchEvent) => {
-    e.preventDefault(); 
-    longPressed.current = false;
-    touchHandled.current = false;
-    
-    pressTimer.current = setTimeout(() => {
-      setShowPicker(true);
-      longPressed.current = true;
-      touchHandled.current = true;
-      
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500); 
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.preventDefault();
-    
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-
-    if (longPressed.current) {
-      touchHandled.current = true;
-    } else {
-      touchHandled.current = false;
-      setTimeout(() => {
-        handleMainClick();
-      }, 0);
+    if (isMobile) {
+      const timer = window.setTimeout(() => {
+        setShowPicker(true);
+      }, 500);
+      setLongPressTimer(timer);
     }
   };
 
-  const handleTouchCancel = () => {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-      pressTimer.current = null;
-    }
-    longPressed.current = false;
-    touchHandled.current = false;
-  };
-
-  const handleMouseEnter = () => {
-    if (!('ontouchstart' in window)) {
-      setShowPicker(true);
+  const handleTouchEnd = () => {
+    if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      setLongPressTimer(null);
     }
   };
 
-  const handleMouseLeave = () => {
-    if (!('ontouchstart' in window)) {
-      setShowPicker(false);
+  const handlePickerMouseEnter = () => {
+    if (!isMobile && timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
     }
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: Event) => {
-      if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setShowPicker(false);
       }
     };
 
     if (showPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
       document.addEventListener('touchstart', handleClickOutside);
-      document.addEventListener('click', handleClickOutside);
     }
 
     return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
       document.removeEventListener('touchstart', handleClickOutside);
-      document.removeEventListener('click', handleClickOutside);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (longPressTimer) clearTimeout(longPressTimer);
     };
-  }, [showPicker]);
-
-  // Prevent popup going off screen
-  useEffect(() => {
-    if (showPicker && pickerRef.current) {
-      const rect = pickerRef.current.getBoundingClientRect();
-      if (rect.left < 0) {
-        pickerRef.current.style.left = "0";
-        pickerRef.current.style.transform = "none";
-      } else if (rect.right > window.innerWidth) {
-        pickerRef.current.style.right = "0";
-        pickerRef.current.style.left = "auto";
-        pickerRef.current.style.transform = "none";
-      }
-    }
-  }, [showPicker]);
+  }, [showPicker, longPressTimer]);
 
   return (
-    <div style={styles.container}>
-      <div
-        style={styles.reactionContainer}
-        onMouseLeave={handleMouseLeave}
-      >
-        {/* Main reaction button */}
-        <button
-          style={{
-            ...styles.mainButton,
-            ...(currentReaction
-              ? { color: currentReaction.color }
-              : {
-                  ...styles.noReactionButton,
-                  border: "1px solid #dadde1",
-                }),
-          }}
-          onClick={handleMainClick}
-          onMouseEnter={handleMouseEnter}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-          onTouchCancel={handleTouchCancel}
+    <>
+      <link 
+        href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" 
+        rel="stylesheet"
+      />
+      
+      <div>
+        <div 
+          ref={containerRef}
+          className="position-relative d-inline-block"
         >
-          {currentReaction ? (
-            <>
-              <span style={styles.emoji}>{currentReaction.emoji}</span>
-              {currentReaction.label}
-            </>
-          ) : (
-            <>
-              <span style={{ ...styles.emoji, ...styles.outlinedThumb }}>👍</span>
-              Like
-            </>
+          <button
+            type="button"
+            className="btn btn-link text-decoration-none d-flex align-items-center gap-2"
+            onClick={handleMainClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              color: currentReaction ? currentReaction.color : '#65676b',
+              fontSize: '15px',
+              fontWeight: currentReaction ? '600' : '500',
+              border: 'none',
+              borderRadius: '8px',
+              transition: 'all 0.2s ease',
+              backgroundColor: 'transparent',
+            }}
+            onMouseEnter={(e) => {
+              if (!isMobile && !currentReaction) {
+                e.currentTarget.style.backgroundColor = '#f2f3f4';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isMobile && !currentReaction) {
+                e.currentTarget.style.backgroundColor = 'transparent';
+              }
+            }}
+          >
+            <span style={{ fontSize: '16px' }}>
+              {currentReaction ? currentReaction.emoji : ''}
+            </span>
+            <span>
+              {currentReaction ? currentReaction.label : 'Like'}
+            </span>
+          </button>
+
+          {showPicker && (
+            <div
+              className="position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
+              style={{ 
+                bottom: '100%',
+                left: '0',
+                marginBottom: '8px',
+                zIndex: 1000,
+                animation: 'slideUp 0.2s ease-out',
+                whiteSpace: 'nowrap',
+                borderColor: '#dadde1',
+              }}
+              onMouseEnter={handlePickerMouseEnter}
+              onTouchStart={(e) => e.stopPropagation()}
+            >
+              {reactions.map((reaction) => (
+                <button
+                  key={reaction.id}
+                  type="button"
+                  className="btn p-1 border-0 d-flex align-items-center justify-content-center"
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '50%',
+                    backgroundColor: selectedReaction === reaction.id 
+                      ? `${reaction.color}20` 
+                      : 'transparent',
+                    fontSize: '24px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleReactionClick(reaction);
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'scale(1.3)';
+                      e.currentTarget.style.backgroundColor = selectedReaction === reaction.id 
+                        ? `${reaction.color}20` 
+                        : '#f0f2f5';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isMobile) {
+                      e.currentTarget.style.transform = 'scale(1)';
+                      e.currentTarget.style.backgroundColor = selectedReaction === reaction.id 
+                        ? `${reaction.color}20` 
+                        : 'transparent';
+                    }
+                  }}
+                  title={reaction.label}
+                >
+                  {reaction.emoji}
+                </button>
+              ))}
+            </div>
           )}
-        </button>
-
-        {/* Reaction picker popup */}
-        {showPicker && (
-          <div ref={pickerRef} style={styles.picker}>
-            {reactions.map((reaction) => (
-              <button
-                key={reaction.id}
-                style={{
-                  ...styles.reactionButton,
-                  transform:
-                    selectedReaction === reaction.id
-                      ? "scale(1.3)"
-                      : hoveredReaction === reaction.id
-                      ? "scale(1.5)"
-                      : "scale(1)",
-                  backgroundColor:
-                    selectedReaction === reaction.id ? "#f0f2f5" : "transparent",
-                }}
-                onClick={() => handleReactionClick(reaction)}
-                onMouseEnter={() => setHoveredReaction(reaction.id)}
-                onMouseLeave={() => setHoveredReaction(null)}
-                title={reaction.label}
-              >
-                <span style={styles.reactionEmoji}>{reaction.emoji}</span>
-              </button>
-            ))}
-
-            {/* Clear selection button */}
-            {selectedReaction && (
-              <button
-                style={{
-                  ...styles.reactionButton,
-                  ...styles.clearButton,
-                  transform:
-                    hoveredReaction === "clear" ? "scale(1.2)" : "scale(1)",
-                }}
-                onClick={() => handleReactionClick(null)}
-                onMouseEnter={() => setHoveredReaction("clear")}
-                onMouseLeave={() => setHoveredReaction(null)}
-                title="Remove reaction"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-        )}
+        </div>
       </div>
-    </div>
+
+      <style>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(8px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        .btn:focus {
+          box-shadow: none !important;
+        }
+        
+        .btn:active {
+          transform: scale(0.95) !important;
+        }
+        
+        /* Disable text selection */
+        * {
+          user-select: none;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+        }
+
+        /* Hide webkit tap highlight */
+        .btn {
+          -webkit-tap-highlight-color: transparent !important;
+          touch-action: manipulation;
+        }
+        
+        /* Better mobile touch targets */
+        @media (max-width: 768px) {
+          .btn {
+            min-width: 44px !important;
+            min-height: 44px !important;
+          }
+        }
+      `}</style>
+    </>
   );
 };
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    fontFamily:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
-    display: "inline-block",
-  },
-  reactionContainer: {
-    position: "relative",
-    display: "inline-block",
-  },
-  mainButton: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    padding: "8px 16px",
-    border: "none",
-    backgroundColor: "transparent",
-    borderRadius: "20px",
-    cursor: "pointer",
-    fontSize: "15px",
-    fontWeight: 600,
-    transition: "all 0.2s ease",
-    userSelect: "none",
-    // Prevent text selection on mobile
-    WebkitUserSelect: "none",
-    WebkitTouchCallout: "none",
-    // Improve touch target size for mobile
-    minHeight: "44px",
-    minWidth: "44px",
-  },
-  noReactionButton: {
-    color: "#65676b",
-    backgroundColor: "#f8f9fa",
-  },
-  outlinedThumb: {
-    filter: "grayscale(1) brightness(0.7)",
-    opacity: 0.8,
-  },
-  emoji: {
-    fontSize: "16px",
-  },
-  picker: {
-    position: "absolute",
-    bottom: "100%",
-    left: "50%",
-    transform: "translateX(-50%)",
-    backgroundColor: "white",
-    borderRadius: "25px",
-    padding: "8px",
-    display: "flex",
-    gap: "4px",
-    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.15)",
-    border: "1px solid #dadde1",
-    marginBottom: "-4px",
-    zIndex: 1000,
-    animation: "popUp 0.2s ease-out",
-    // Prevent picker from being too close to screen edges on mobile
-    maxWidth: "90vw",
-  },
-  reactionButton: {
-    width: "40px",
-    height: "40px",
-    border: "none",
-    borderRadius: "50%",
-    backgroundColor: "transparent",
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    transition: "transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)",
-    transformOrigin: "center",
-    // Better touch targets for mobile
-    minWidth: "40px",
-    minHeight: "40px",
-  },
-  reactionEmoji: {
-    fontSize: "24px",
-    lineHeight: "1",
-  },
-  clearButton: {
-    fontSize: "16px",
-    fontWeight: "bold",
-    color: "#65676b",
-    backgroundColor: "#f0f2f5",
-  },
-};
-
-// Inject animation styles
-if (!document.getElementById("reaction-picker-styles")) {
-  const styleSheet = document.createElement("style");
-  styleSheet.id = "reaction-picker-styles";
-  styleSheet.textContent = `
-    @keyframes popUp {
-      from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(10px) scale(0.8);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0) scale(1);
-      }
-    }
-  `;
-  document.head.appendChild(styleSheet);
-}
 
 export default ReactionPicker;

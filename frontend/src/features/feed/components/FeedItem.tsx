@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon } from 'lucide-react';
-import { IFeed, PostType, ReactionChange } from './types';
+import { IFeed, PostType, ReactionChange, ReactionType, ReactionName } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
@@ -43,7 +43,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   // Determine if we're in list view based on whether external props are provided
   const isListView = !propCurrentUserId && !propSendJsonRequest;
   
-  // Use hooks only if not provided via props (for list view)
   const { sendJsonRequest: hookSendJsonRequest } = isListView ? useApi() : { sendJsonRequest: null };
   const { userInfo } = isListView ? useAuth() : { userInfo: null };
   
@@ -56,6 +55,15 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+  const reactions: Record<ReactionType, string> = {
+    "like": "👍",
+    "love": "❤️",
+    "haha": "😂",
+    "wow": "😮", 
+    "sad": "😢", 
+    "angry": "😡"
+  };
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -116,6 +124,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const handleLike = async (reaction: ReactionChange) => {
     if (!sendJsonRequest) return;
+    console.log(reaction)
     try {
       // Optimistic update
       const newIsLiked = reaction.hasVoted;
@@ -224,7 +233,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   };
 
   const body = (
-    <div className={`card shadow-sm border-0 rounded-4 ${isPinned ? 'border-warning border-2' : ''} ${isListView ? '' : 'mb-4'}`}>
+    <div 
+      className={`card shadow-sm border-0 rounded-4 ${isPinned ? 'border-warning border-2' : ''} ${isListView ? '' : 'mb-4'}`}
+    >
       <NotificationToast
         notification={notification}
         onClose={() => setNotification(null)}
@@ -431,7 +442,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         )}
 
         {feed.tags?.length > 0 && (
-          <div className={`d-flex flex-wrap gap-2 ${isListView ? 'mt-3 mb-2' : 'mt-3'}`}>
+          <div className={`d-flex flex-wrap gap-2 ${isListView ? 'mt-3 mb-2' : 'mt-3 '}`}>
             {feed.tags.map((tag: any) => (
               <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
                 <TagIcon size={12} /> {tag.name}
@@ -439,27 +450,38 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             ))}
           </div>
         )}
-
+        <div className='mt-3'>
+          {feed.topReactions?.map((r: ReactionName) => (
+          <span key={r.reaction}>{reactions[r.reaction]}</span>
+            ))}
+          <span> {feed.totalReactions > 0 ? feed.totalReactions : ""}</span>
+        </div>
         {/* Actions */}
-        <div className={`d-flex align-items-center ${isListView ? 'justify-content-between' : 'gap-4'} pt-2 border-top ${isListView ? '' : 'mt-3'}`}>
+        <div 
+          className="d-flex align-items-center justify-content-between pt-2 border-top mt-1"
+        >
           <div className="d-flex align-items-center gap-4">
-            <ReactionPicker onReactionChange={(reaction) => { handleLike(reaction) }} currentState={{ reaction: feed.reaction }} />
+            <ReactionPicker 
+              onReactionChange={(reaction) => { handleLike(reaction) }} 
+              currentState={{ reaction: feed.reaction }} />
             <button
-              className={`btn btn-sm ${isListView ? 'border-0 text-muted' : 'btn-outline-secondary'} d-flex align-items-center gap-2`}
+              className={`btn btn-sm border-0 text-muted d-flex align-items-center gap-2`}
               onClick={() => onCommentsClick?.(feed.id)}
             >
               <MessageCircle size={16} />
               <span>{feed.answers || 0}</span>
             </button>
           </div>
+          
 
           <button
-            className={`btn btn-sm ${isListView ? 'border-0 text-muted' : 'btn-outline-secondary'} d-flex align-items-center gap-2`}
+            className={`btn btn-sm border-0 text-muted d-flex align-items-center gap-2`}
             onClick={() => setShowShareModal(true)}
           >
             <Share2 size={16} />
             <span>{feed.shares || 0}</span>
           </button>
+       
         </div>
       </div>
 
@@ -478,6 +500,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           onClose={() => setShowShareModal(false)}
         />
       )}
+
     </div>
   );
 
