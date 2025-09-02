@@ -19,9 +19,7 @@ interface FeedItemProps {
   onDelete?: (feed: IFeed) => void;
   onCommentsClick?: (feedId: string) => void;
   isPinned?: boolean;
-  // New props to handle different contexts
   showFullContent?: boolean;
-  // For direct usage without hooks (like in individual feed view)
   currentUserId?: string;
   sendJsonRequest?: (url: string, method: string, reqBody?: any) => Promise<any>;
 }
@@ -40,7 +38,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const [isLiked, setIsLiked] = useState(feed.isUpvoted || false);
   const [likesCount, setLikesCount] = useState(feed.votes || 0);
   
-  // Determine if we're in list view based on whether external props are provided
   const isListView = !propCurrentUserId && !propSendJsonRequest;
   
   const { sendJsonRequest: hookSendJsonRequest } = isListView ? useApi() : { sendJsonRequest: null };
@@ -112,7 +109,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         if (isListView) {
           onDelete?.(feed);
         } else {
-          // For individual feed view, call onDelete without parameters
           (onDelete as (() => void))?.();
         }
       } catch (err) {
@@ -124,7 +120,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const handleLike = async (reaction: ReactionChange) => {
     if (!sendJsonRequest) return;
-    console.log(reaction)
     try {
       // Optimistic update
       const newIsLiked = reaction.hasVoted;
@@ -138,7 +133,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         throw new Error(response.message);
       }
     } catch (err) {
-      // Rollback on error
       setIsLiked(!isLiked);
       setLikesCount(likesCount);
       console.error("Error voting post:", err);
@@ -176,32 +170,42 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const OriginalPostCard = ({ originalPost }: { originalPost: any }) => (
     <div
       onClick={() => navigate(`/feed/${originalPost.id}`)}
-      className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
-      style={{ cursor: "pointer" }}
+      className="mt-3 border rounded-3 bg-light p-3 text-dark text-decoration-none position-relative overflow-hidden"
+      style={{ 
+        cursor: "pointer",
+        transition: "all 0.2s ease",
+        borderLeft: "4px solid #0d6efd"
+      }}
     >
-      <div className="d-flex gap-2">
-        <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
-        <div>
-          <strong>
-            <Link
-              to={`/Profile/${originalPost.userId}`}
-              className="text-dark text-decoration-none"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {originalPost.userName}
-            </Link>
-          </strong>
-
-          <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+      <div className="d-flex gap-3">
+        <ProfileAvatar size={32} avatarImage={originalPost.userAvatarImage} />
+        <div className="flex-grow-1 min-w-0">
+          <div className="d-flex align-items-center gap-2 mb-2">
+            <strong className="text-truncate">
+              <Link
+                to={`/Profile/${originalPost.userId}`}
+                className="text-dark text-decoration-none"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {originalPost.userName}
+              </Link>
+            </strong>
+            <small className="text-muted">shared</small>
+          </div>
+          
+          <div className="mb-2">
+            <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+          </div>
 
           {originalPost.tags?.length > 0 && (
             <div className="d-flex flex-wrap gap-1">
               {originalPost.tags.map((tag: any) => (
                 <span
                   key={tag._id}
-                  className="badge bg-info text-dark d-flex align-items-center gap-1"
+                  className="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25 d-flex align-items-center gap-1"
+                  style={{ fontSize: "0.7rem" }}
                 >
-                  <TagIcon size={12} /> {tag.name}
+                  <TagIcon size={10} /> {tag.name}
                 </span>
               ))}
             </div>
@@ -223,10 +227,17 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const renderUserAvatar = () => {
     if (feed.userAvatarImage) {
-      return <ProfileAvatar size={42} avatarImage={feed.userAvatarImage} />;
+      return <ProfileAvatar size={48} avatarImage={feed.userAvatarImage} />;
     }
     return (
-      <div className="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style={{ width: 40, height: 40 }}>
+      <div 
+        className="rounded-circle bg-gradient d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" 
+        style={{ 
+          width: 48, 
+          height: 48,
+          background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)"
+        }}
+      >
         {feed.userName?.charAt(0).toUpperCase() || 'A'}
       </div>
     );
@@ -234,58 +245,78 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const body = (
     <div 
-      className={`card shadow-sm border-0 rounded-4 ${isPinned ? 'border-warning border-2' : ''} ${isListView ? '' : 'mb-4'}`}
+      className={`card shadow-sm border-0 rounded-4 overflow-hidden ${isPinned ? 'border-warning border-2' : ''} ${isListView ? 'mb-3' : 'mb-4'}`}
+      style={{
+        transition: "all 0.2s ease",
+        ...(isPinned && {
+          background: "linear-gradient(135deg, #fff9e6 0%, #ffffff 100%)",
+          boxShadow: "0 4px 12px rgba(255, 193, 7, 0.15)"
+        })
+      }}
     >
       <NotificationToast
         notification={notification}
         onClose={() => setNotification(null)}
       />
-      <div className="card-body">
-        {/* Header */}
+      
+      <div className="card-body p-4">
+        {/* Header Section */}
         <div className="d-flex justify-content-between align-items-start mb-3">
-          <div className="d-flex align-items-center gap-3">
+          <div className="d-flex gap-3 flex-grow-1 min-w-0">
             {renderUserAvatar()}
-            <div>
-              <div className="d-flex align-items-center gap-2 flex-wrap">
-                <h6 className="fw-bold mb-0">
+            <div className="flex-grow-1 min-w-0">
+              {/* User Info Row */}
+              <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                <h6 className="fw-bold mb-0 text-truncate">
                   <Link
                     to={`/Profile/${feed.userId}`}
                     className="text-primary text-decoration-none"
                   >
                     {feed.userName || "Anonymous"}
                   </Link>
-                  <span style={{ fontWeight: 400 }}>
-                    {feed.type === PostType.SHARED_FEED ? " shared a post" : ""}
-                  </span>
                 </h6>
-                {isPinned && <Pin className="text-warning" size={14} />}
-                <div className="d-flex align-items-center gap-2">
-                  {feed.isPinned && <Pin size={20} className="text-warning" />}
-                </div>
+                
+                {feed.type === PostType.SHARED_FEED && (
+                  <span className="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25">
+                    <Share2 size={10} className="me-1" />
+                    shared
+                  </span>
+                )}
+                
+                {(isPinned || feed.isPinned) && (
+                  <span className="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25">
+                    <Pin size={10} className="me-1" />
+                    pinned
+                  </span>
+                )}
               </div>
               
-              <div className="d-flex gap-1 mt-1 flex-wrap align-items-center">
-                <small className="text-muted d-flex align-items-center gap-1">
-                  <Clock size={14} /> {feed.date ? formatDate(feed.date) : "Recently"}
+              <div className="d-flex align-items-center gap-3 text-muted">
+                <small className="d-flex align-items-center gap-1">
+                  <Clock size={12} /> 
+                  {feed.date ? formatDate(feed.date) : "Recently"}
                 </small>
-                {/* {feed.roles?.length > 0 && (
-                  <>
-                    {feed.level > 0 && (
-                      <span className="badge bg-warning text-dark">Level {feed.level}</span>
-                    )}
-                    {feed.roles.slice(1).map((role, i) => (
-                      <span key={i} className="badge bg-success">{role}</span>
-                    ))}
-                  </>
-                )} */}
+                
+                {/* {feed.roles?.length > 0 && feed.level && feed.level > 0 && (
+                  <small className="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25">
+                    Level {feed.level}
+                  </small>
+                )}
+                {feed.roles?.slice(1).map((role, i) => (
+                  <small key={i} className="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-25">
+                    {role}
+                  </small>
+                ))}  */}
               </div>
             </div>
           </div>
 
+          {/* Actions Dropdown */}
           {(canEdit || canModerate) && (
-            <div className="dropdown">
+            <div className="dropdown flex-shrink-0">
               <button
-                className={`btn btn-sm ${isListView ? 'btn-outline-secondary border-0' : 'btn-light dropdown-toggle'}`}
+                className="btn btn-light btn-sm rounded-circle border-0 d-flex align-items-center justify-content-center"
+                style={{ width: 32, height: 32 }}
                 onClick={() => setShowDropdown(!showDropdown)}
                 {...(!isListView && { 'data-bs-toggle': 'dropdown', 'aria-expanded': 'false' })}
               >
@@ -294,48 +325,51 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
               
               {isListView ? (
                 showDropdown && (
-                  <div className="dropdown-menu show position-absolute end-0">
+                  <div className="dropdown-menu show position-absolute end-0 shadow border-0 rounded-3">
                     {canEdit && (
                       <>
                         <button
-                          className="dropdown-item d-flex align-items-center gap-2"
+                          className="dropdown-item d-flex align-items-center gap-2 rounded-2"
                           onClick={() => {
                             setShowEditModal(true);
                             setShowDropdown(false);
                           }}
                         >
                           <Edit size={14} />
-                          Edit
+                          Edit Post
                         </button>
                         <button
-                          className="dropdown-item d-flex align-items-center gap-2 text-danger"
+                          className="dropdown-item d-flex align-items-center gap-2 text-danger rounded-2"
                           onClick={() => {
                             handleDelete();
                             setShowDropdown(false);
                           }}
                         >
                           <Trash2 size={14} />
-                          Delete
+                          Delete Post
                         </button>
                       </>
                     )}
 
                     {canModerate && (
-                      <button
-                        className="dropdown-item d-flex align-items-center gap-2"
-                        onClick={handlePinToggle}
-                      >
-                        <Pin size={14} />
-                        {feed.isPinned ? "Unpin Post" : "Pin Post"}
-                      </button>
+                      <>
+                        {canEdit && <hr className="my-1" />}
+                        <button
+                          className="dropdown-item d-flex align-items-center gap-2 rounded-2"
+                          onClick={handlePinToggle}
+                        >
+                          <Pin size={14} />
+                          {feed.isPinned ? "Unpin Post" : "Pin Post"}
+                        </button>
+                      </>
                     )}
                   </div>
                 )
               ) : (
-                <ul className="dropdown-menu dropdown-menu-end">
+                <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3">
                   <li>
                     <button 
-                      className="dropdown-item d-flex align-items-center gap-2" 
+                      className="dropdown-item d-flex align-items-center gap-2 rounded-2" 
                       onClick={() => setShowEditModal(true)}
                     >
                       <Edit size={14} /> Edit Post
@@ -343,7 +377,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                   </li>
                   <li>
                     <button 
-                      className="dropdown-item text-danger d-flex align-items-center gap-2" 
+                      className="dropdown-item text-danger d-flex align-items-center gap-2 rounded-2" 
                       onClick={handleDelete}
                     >
                       <Trash2 size={14} /> Delete Post
@@ -355,133 +389,210 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           )}
         </div>
 
-        {/* Content */}
+        {/* Main Content Section */}
         <div className="mb-3">
-          <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
+          <div className="content-wrapper">
+            <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
+          </div>
+          
           {feed.type === PostType.SHARED_FEED && !feed.originalPost && (
             <div
-              className="alert mt-4"
+              className="alert alert-light border border-danger border-opacity-25 mt-3 text-center py-4"
               role="alert"
               style={{
-                minHeight: "150px", 
-                border: "1px solid #ddd", 
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#fafafa" 
+                borderRadius: "12px",
+                backgroundColor: "#fef7f7"
               }}
             >
-              <h5 className="mb-0">⚠️ The post is unavailable.</h5>
+              <div className="text-muted">
+                <MessageSquare size={24} className="mb-2 opacity-50" />
+                <p className="mb-0 fw-medium">This shared post is no longer available</p>
+              </div>
             </div>
           )}
+          
           {feed.type === PostType.SHARED_FEED && feed.originalPost && (
             <OriginalPostCard originalPost={feed.originalPost} />
           )}
         </div>
 
-        {/* Attachments */}
-        {feed.attachments?.length > 0 && (
-          <div className={`${isListView ? 'mb-3' : 'mt-4'} d-flex flex-column gap-3`}>
-            {feed.attachments.map(att => {
-              let icon = null;
-              let title = "";
-              let subtitle = "";
-              let to = "#";
-
-              switch (att.type) {
-                case 1: // Code
-                  icon = <FileCode size={20} className="text-primary" />;
-                  title = att.codeName || "Untitled Code";
-                  subtitle = `${att.codeLanguage} • by ${att.userName}`;
-                  to = `/Compiler-Playground/${att.codeId}`;
-                  break;
-
-                case 2: // Question / Discussion
-                  icon = <MessageSquare size={20} className="text-success" />;
-                  title = att.questionTitle || "Question";
-                  subtitle = `by ${att.userName}`;
-                  to = `/Discuss/${att.questionId}`;
-                  break;
-
-                case 4: // Feed
-                  icon = <Link2 size={20} className="text-info" />;
-                  title = "Feed";
-                  subtitle = `${att.userName}: ${att.feedMessage}`;
-                  to = `/feed/${att.feedId}`;
-                  break;
-
-                default:
-                  return null;
-              }
-
-              return (
-                <Link
-                  key={att.id}
-                  to={to}
-                  className="d-flex align-items-start gap-3 p-3 border rounded bg-white text-dark text-decoration-none shadow-sm transition-all hover-shadow"
-                  style={{
-                    transition: "transform 0.15s ease, box-shadow 0.15s ease",
-                  }}
-                  onMouseEnter={(e) =>
-                    (e.currentTarget.style.transform = "translateY(-2px)")
-                  }
-                  onMouseLeave={(e) => (e.currentTarget.style.transform = "none")}
-                >
-                  <div className="flex-shrink-0">{icon}</div>
-                  <div className="flex-grow-1 overflow-hidden">
-                    <h6 className="fw-semibold mb-1 text-truncate">{title}</h6>
-                    <small className="text-muted d-block text-truncate">
-                      {subtitle}
-                    </small>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-
+        {/* Tags Section */}
         {feed.tags?.length > 0 && (
-          <div className={`d-flex flex-wrap gap-2 ${isListView ? 'mt-3 mb-2' : 'mt-3 '}`}>
-            {feed.tags.map((tag: any) => (
-              <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
-                <TagIcon size={12} /> {tag.name}
-              </span>
-            ))}
+          <div className="mb-3">
+            <div className="d-flex flex-wrap gap-2">
+              {feed.tags.map((tag: any) => (
+                <span 
+                  key={tag._id} 
+                  className="badge bg-primary bg-opacity-15 border border-primary border-opacity-25 d-flex align-items-center gap-1"
+                  style={{ 
+                    fontSize: "0.75rem",
+                    padding: "0.375rem 0.75rem",
+                    borderRadius: "20px"
+                  }}
+                >
+                  <TagIcon size={11} /> 
+                  {tag.name}
+                </span>
+              ))}
+            </div>
           </div>
         )}
-        <div className='mt-3'>
-          {feed.topReactions?.map((r: ReactionName) => (
-          <span key={r.reaction}>{reactions[r.reaction]}</span>
-            ))}
-          <span> {feed.totalReactions > 0 ? feed.totalReactions : ""}</span>
-        </div>
-        {/* Actions */}
-        <div 
-          className="d-flex align-items-center justify-content-between pt-2 border-top mt-1"
-        >
-          <div className="d-flex align-items-center gap-4">
-            <ReactionPicker 
-              onReactionChange={(reaction) => { handleLike(reaction) }} 
-              currentState={{ reaction: feed.reaction }} />
+
+        {/* Attachments Section */}
+        {feed.attachments?.length > 0 && (
+          <div className="mb-3">
+            <div className="d-flex flex-column gap-2">
+              {feed.attachments.map(att => {
+                let icon = null;
+                let title = "";
+                let subtitle = "";
+                let to = "#";
+                let bgColor = "";
+                let textColor = "";
+
+                switch (att.type) {
+                  case 1: // Code
+                    icon = <FileCode size={18} />;
+                    title = att.codeName || "Untitled Code";
+                    subtitle = `${att.codeLanguage} • by ${att.userName}`;
+                    to = `/Compiler-Playground/${att.codeId}`;
+                    bgColor = "bg-primary";
+                    textColor = "text-primary";
+                    break;
+
+                  case 2: // Question / Discussion
+                    icon = <MessageSquare size={18} />;
+                    title = att.questionTitle || "Question";
+                    subtitle = `by ${att.userName}`;
+                    to = `/Discuss/${att.questionId}`;
+                    bgColor = "bg-success";
+                    textColor = "text-success";
+                    break;
+
+                  case 4: // Feed
+                    icon = <Link2 size={18} />;
+                    title = "Shared Post";
+                    subtitle = `${att.userName}: ${att.feedMessage?.substring(0, 50)}${att.feedMessage?.length > 50 ? '...' : ''}`;
+                    to = `/feed/${att.feedId}`;
+                    bgColor = "bg-info";
+                    textColor = "text-info";
+                    break;
+
+                  default:
+                    return null;
+                }
+
+                return (
+                  <Link
+                    key={att.id}
+                    to={to}
+                    className="d-flex align-items-center gap-3 p-3 border rounded-3 bg-white text-decoration-none shadow-sm position-relative overflow-hidden"
+                    style={{
+                      transition: "all 0.2s ease",
+                      borderLeft: `4px solid var(--bs-${bgColor.split('-')[1]})`
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                    }}
+                  >
+                    <div className={`rounded-circle ${bgColor} bg-opacity-15 d-flex align-items-center justify-content-center ${textColor}`} 
+                         style={{ width: 40, height: 40, flexShrink: 0 }}>
+                      {icon}
+                    </div>
+                    <div className="flex-grow-1 min-w-0">
+                      <h6 className="fw-semibold mb-1 text-truncate text-dark">{title}</h6>
+                      <small className="text-muted d-block text-truncate">
+                        {subtitle}
+                      </small>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Reactions Summary */}
+        {feed.topReactions?.length > 0 && (
+          <div className="mb-3">
+            <div className="d-flex align-items-center gap-2 p-2 bg-light rounded-3">
+              <div className="d-flex align-items-center gap-1">
+                {feed.topReactions.map((r: ReactionName) => (
+                  <span 
+                    key={r.reaction} 
+                    className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
+                    style={{ width: 28, height: 28, fontSize: "0.9rem" }}
+                  >
+                    {reactions[r.reaction]}
+                  </span>
+                ))}
+              </div>
+              {feed.totalReactions > 0 && (
+                <small className="text-muted fw-medium ms-1">
+                  {feed.totalReactions} {feed.totalReactions === 1 ? 'reaction' : 'reactions'}
+                </small>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="border-top pt-3">
+          <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center gap-1">
+              <ReactionPicker 
+                onReactionChange={(reaction) => { handleLike(reaction) }} 
+                currentState={{ reaction: feed.reaction }} 
+              />
+              
+              <button
+                className="btn btn-light btn-sm border-0 d-flex align-items-center gap-2 rounded-pill px-3"
+                onClick={() => onCommentsClick?.(feed.id)}
+                style={{ 
+                  transition: "all 0.2s ease",
+                  backgroundColor: "transparent"
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#f8f9fa";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent";
+                }}
+              >
+                <MessageCircle size={16} />
+                <span className="fw-medium">{feed.answers || 0}</span>
+                <small className="text-muted d-none d-sm-inline">
+                  {feed.answers === 1 ? 'comment' : 'comments'}
+                </small>
+              </button>
+            </div>
+
             <button
-              className={`btn btn-sm border-0 text-muted d-flex align-items-center gap-2`}
-              onClick={() => onCommentsClick?.(feed.id)}
+              className="btn btn-light btn-sm border-0 d-flex align-items-center gap-2 rounded-pill px-3"
+              onClick={() => setShowShareModal(true)}
+              style={{ 
+                transition: "all 0.2s ease",
+                backgroundColor: "transparent"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#f8f9fa";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "transparent";
+              }}
             >
-              <MessageCircle size={16} />
-              <span>{feed.answers || 0}</span>
+              <Share2 size={16} />
+              <span className="fw-medium">{feed.shares || 0}</span>
+              <small className="text-muted d-none d-sm-inline">
+                {feed.shares === 1 ? 'share' : 'shares'}
+              </small>
             </button>
           </div>
-          
-
-          <button
-            className={`btn btn-sm border-0 text-muted d-flex align-items-center gap-2`}
-            onClick={() => setShowShareModal(true)}
-          >
-            <Share2 size={16} />
-            <span>{feed.shares || 0}</span>
-          </button>
-       
         </div>
       </div>
 
@@ -500,7 +611,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           onClose={() => setShowShareModal(false)}
         />
       )}
-
     </div>
   );
 
