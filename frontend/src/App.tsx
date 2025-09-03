@@ -46,6 +46,7 @@ import AdminHome from './tools/admin/pages/AdminHome';
 import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
 import FeedCreate from './features/feed/components/FeedCreate';
+import { FeedProvider } from "./features/feed/components/FeedContext";
 
 
 function App() {
@@ -53,6 +54,7 @@ function App() {
   const allRoles = [...roles];
 
   return (
+    <FeedProvider>
     <Routes>
 
       <Route element={<NoAuth />}>
@@ -201,6 +203,7 @@ function App() {
         <Route path="/*" element={<NotFound />} />
       </Route>
     </Routes>
+    </FeedProvider>
   );
 };
 
