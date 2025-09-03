@@ -388,8 +388,9 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
             await post.save();
         }
     }
+    let reactionSummary = await getReactionsSummary(postId);  
 
-    res.json({ vote: upvote ? 1 : 0, success: true });
+    res.json({ vote: upvote ? 1 : 0, success: true, reactionSummary });
 
 })
 
@@ -814,6 +815,29 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 });
 
+export const getReactionsSummary = async (parentId: string | mongoose.Types.ObjectId) => {
+  const objectId = typeof parentId === "string" ? new mongoose.Types.ObjectId(parentId) : parentId;
+
+  const reactionsAgg = await Upvote.aggregate([
+    { $match: { parentId: objectId } },
+    {
+      $group: {
+        _id: "$reaction",
+        count: { $sum: 1 }
+      }
+    },
+    { $sort: { count: -1 } }
+  ]);
+
+  const totalReactions = reactionsAgg.reduce((sum, r) => sum + r.count, 0);
+
+  const topReactions = reactionsAgg.slice(0, 3).map(r => ({
+    reaction: r._id,
+    count: r.count
+  }));
+
+  return { totalReactions, topReactions };
+};
 
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId } = req.body;

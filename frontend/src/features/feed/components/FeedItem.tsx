@@ -48,6 +48,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [totalReactions, setTotalReactions] = useState<number>(feed.totalReactions || {});
+  const [topReactions, setTopReactions] = useState<any>(feed.topReactions || []);
+
   const navigate = useNavigate();
   
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
@@ -128,10 +131,12 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       setLikesCount(newLikesCount);
 
       const response = await sendJsonRequest("/Feed/VotePost", "POST", { postId: feed.id, vote: newIsLiked, reaction: reaction.currentReaction });
-      console.log(response)
       if (!response.success) {
         throw new Error(response.message);
       }
+      setTotalReactions(response.reactionSummary.totalReactions || 0);
+      setTopReactions(response.reactionSummary.topReactions || []);
+      onUpdate?.({ ...feed, isUpvoted: newIsLiked, votes: newLikesCount, reaction: reaction.currentReaction ?? "", totalReactions: response.reactionSummary.totalReactions, topReactions: response.reactionSummary.topReactions });
     } catch (err) {
       setIsLiked(!isLiked);
       setLikesCount(likesCount);
@@ -190,7 +195,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                 {originalPost.userName}
               </Link>
             </strong>
-            <small className="text-muted">shared</small>
+            <small className="text-muted">posted</small>
           </div>
           
           <div className="mb-2">
@@ -449,15 +454,16 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                 let to = "#";
                 let bgColor = "";
                 let textColor = "";
+                let info = "";
 
                 switch (att.type) {
                   case 1: // Code
-                    icon = <FileCode size={18} />;
+                    icon = <FileCode size={18} color="#0d6efd" strokeWidth={2} />;
                     title = att.codeName || "Untitled Code";
                     subtitle = `${att.codeLanguage} • by ${att.userName}`;
                     to = `/Compiler-Playground/${att.codeId}`;
                     bgColor = "bg-primary";
-                    textColor = "text-primary";
+                    info = "code";
                     break;
 
                   case 2: // Question / Discussion
@@ -467,6 +473,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     to = `/Discuss/${att.questionId}`;
                     bgColor = "bg-success";
                     textColor = "text-success";
+                    info = "question";
                     break;
 
                   case 4: // Feed
@@ -476,6 +483,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     to = `/feed/${att.feedId}`;
                     bgColor = "bg-info";
                     textColor = "text-info";
+                    info = "post";
                     break;
 
                   default:
@@ -500,16 +508,23 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                       e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
                     }}
                   >
-                    <div className={`rounded-circle ${bgColor} bg-opacity-15 d-flex align-items-center justify-content-center ${textColor}`} 
-                         style={{ width: 40, height: 40, flexShrink: 0 }}>
-                      {icon}
-                    </div>
-                    <div className="flex-grow-1 min-w-0">
-                      <h6 className="fw-semibold mb-1 text-truncate text-dark">{title}</h6>
+                  <div className="d-flex justify-content-between align-items-start flex-grow-1 min-w-0">
+                    <div className="min-w-0">
+                      <h6 className="fw-semibold mb-1 text-truncate text-dark bold">
+                        {title}
+                      </h6>
                       <small className="text-muted d-block text-truncate">
                         {subtitle}
                       </small>
                     </div>
+                    <span 
+                      className="ms-2"
+                      style={{ fontWeight: "light", color: "midnightblue", fontSize: "0.75rem" }}
+                    >
+                      {info}
+                    </span>
+                  </div>
+
                   </Link>
                 );
               })}
@@ -518,11 +533,11 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         )}
 
         {/* Reactions Summary */}
-        {feed.topReactions?.length > 0 && (
+        {topReactions?.length > 0 && (
           <div className="mb-3">
             <div className="d-flex align-items-center gap-2 p-2 bg-light rounded-3">
               <div className="d-flex align-items-center gap-1">
-                {feed.topReactions.map((r: ReactionName) => (
+                {topReactions.map((r: ReactionName) => (
                   <span 
                     key={r.reaction} 
                     className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
@@ -532,9 +547,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                   </span>
                 ))}
               </div>
-              {feed.totalReactions > 0 && (
+              {totalReactions > 0 && (
                 <small className="text-muted fw-medium ms-1">
-                  {feed.totalReactions} {feed.totalReactions === 1 ? 'reaction' : 'reactions'}
+                  {totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}
                 </small>
               )}
             </div>
