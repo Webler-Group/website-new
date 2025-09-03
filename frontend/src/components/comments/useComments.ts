@@ -13,7 +13,7 @@ interface UseCommentsState {
     direction: 'from start' | 'from end' | 'dont load';
 }
 
-const useComments = (options: UseCommentsOptions, findPostId: string | null, filter: number, countPerPage: number) => {
+const useComments = (options: UseCommentsOptions, findPostId: string | null, filter: number, countPerPage: number, showAllComments: boolean) => {
     const [state, setState] = useState<UseCommentsState>({
         firstIndex: 0,
         lastIndex: 0,
@@ -58,10 +58,18 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
         } finally {
             setLoading(false);
         }
-    }, [state.direction, state.firstIndex, state.lastIndex, options, findPostId, filter]);
+    }, [state.direction, state.firstIndex, state.lastIndex, options, findPostId, filter, showAllComments]);
 
     const createComment = (post: IComment) => {
-        setResults((prev) => [{ ...post, index: -1 }, ...prev]);
+        setResults((prev) => [post, ...prev]);
+    }
+
+    const editComment = (id: string, setter: (prev: IComment) => IComment) => {
+        setResults(prev => prev.map(x => x.id == id ? setter(x) : x));
+    }
+
+    const deleteComment = (postId: string) => {
+        setResults(prev => prev.filter(x => x.id != postId))
     }
 
     const getFirstValidCommentIndex = useCallback(() => {
@@ -76,10 +84,9 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
     useEffect(() => {
         setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
         setResults([]);
-        setHasNextPage(false);
-    }, [options.section, options.params, findPostId, filter]);
+    }, [options.section, options.params, findPostId, filter, showAllComments]);
 
-    return { results, setState, loading, createComment, hasNextPage, getFirstValidCommentIndex };
+    return { results, setState, loading, createComment, editComment, deleteComment, hasNextPage, getFirstValidCommentIndex };
 };
 
 export type {

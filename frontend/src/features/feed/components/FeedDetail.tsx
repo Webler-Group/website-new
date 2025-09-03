@@ -5,7 +5,8 @@ import { IFeed } from './types';
 import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from './comments/NotificationToast';
-import CommentList2 from '../../compiler-playground/pages/CommentList2';
+import { Offcanvas } from 'react-bootstrap';
+import CommentList from '../../../components/comments/CommentList';
 
 const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -15,22 +16,25 @@ const FeedDetails: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { sendJsonRequest } = useApi();
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-  const [postId, setPostId] = useState<string | null>(null);
-  const [isReply, setIsReply] = useState(false);
+  const [findPost, setFindPost] = useState<any | null>(null);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [commentListOptions, setCommentListOptions] = useState({ section: "Feed", params: { feedId: id } });
   const [commentCount, setCommentCount] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
     if (location.state && location.state.postId) {
-      setPostId(location.state.postId);
-      setIsReply(location.state.isReply);
+      openCommentModal();
+      setFindPost({ id: location.state.postId, isReply: location.state.isReply });
+    } else {
+      closeCommentModal();
     }
   }, [location]);
 
   useEffect(() => {
-    const fetchFeed = async () => {
-      if (!id) return;
+    if (!id) return;
 
+    const fetchFeed = async () => {
       try {
         setLoading(true);
 
@@ -51,7 +55,17 @@ const FeedDetails: React.FC = () => {
     };
 
     fetchFeed();
-  }, [id, sendJsonRequest]);
+    setCommentListOptions({ section: "Feed", params: { feedId: id } });
+  }, [id]);
+
+  const openCommentModal = () => {
+    if (!id) return;
+    setCommentModalVisible(true)
+  }
+
+  const closeCommentModal = () => {
+    setCommentModalVisible(false);
+  }
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -108,40 +122,49 @@ const FeedDetails: React.FC = () => {
   }
 
   return (
-    <div className="min-vh-100 bg-light">
-      <div className="container py-5">
-        {/* Header */}
-        <div className="mb-4">
-          <button
-            onClick={() => navigate('/feed')}
-            className="btn btn-link text-decoration-none text-primary d-inline-flex align-items-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            Back to Feed
-          </button>
-        </div>
+    <>
+      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
+        <Offcanvas.Header closeButton>
+          <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
+        </Offcanvas.Header>
+        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+          <CommentList
+            findPost={findPost}
+            options={commentListOptions}
+            setCommentCount={setCommentCount}
+          />
+        </Offcanvas.Body>
+      </Offcanvas>
+      <div className="min-vh-100 bg-light">
+        <div className="container py-5">
+          {/* Header */}
+          <div className="mb-4">
+            <button
+              onClick={() => navigate('/feed')}
+              className="btn btn-link text-decoration-none text-primary d-inline-flex align-items-center gap-2"
+            >
+              <ArrowLeft size={16} />
+              Back to Feed
+            </button>
+          </div>
 
-        {/* Feed Item Card */}
-        <div className="card shadow-sm border-0 rounded-4 mb-4">
-          <div className="card-body">
+          {/* Feed Item Card */}
+          <div className="card shadow-sm border-0 rounded-4 mb-4">
+            <div className="card-body">
               <FeedItem
                 feed={feed}
                 sendJsonRequest={sendJsonRequest}
                 onUpdate={handleFeedUpdate}
                 onDelete={() => { handleFeedDelete(feed); }}
                 showFullContent={true}
+                onCommentsClick={openCommentModal}
               />
+            </div>
           </div>
-        </div>
 
-        {/* Comments Section */}
-        <div className="card shadow-sm border-0 rounded-4">
-          <div className="card-body">
-            {/* Comment Section goes */}
-          </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

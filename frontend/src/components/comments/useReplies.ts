@@ -7,11 +7,12 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
     const [state, setState] = useState<UseCommentsState>({
         firstIndex: defaultData && defaultData.length > 0 ? defaultData[0].index : 0,
         lastIndex: defaultData && defaultData.length > 0 ? defaultData[defaultData.length - 1].index : 0,
-        direction: defaultData && defaultData.length > 0 ? 'dont load' : 'dont load',
+        direction: 'dont load'
     });
     const [results, setResults] = useState<IComment[]>(defaultData || []);
     const [loading, setLoading] = useState(false);
-    const [hasNextPage, setHasNextPage] = useState(false);
+    const [hasNextPage, setHasNextPage] = useState(defaultData !== null && defaultData.length == countPerPage);
+    
     const { sendJsonRequest } = useApi();
 
     const getFirstValidCommentIndex = useCallback(() => {
@@ -53,7 +54,15 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
     }, [state.direction, state.firstIndex, state.lastIndex, options, parentId, repliesVisible]);
 
     const createReply = (post: IComment) => {
-        setResults((prev) => [{ ...post, index: -1 }, ...prev]);
+        setResults((prev) => [post, ...prev]);
+    }
+
+    const editReply = (id: string, setter: (prev: IComment) => IComment) => {
+        setResults(prev => prev.map(x => x.id == id ? setter(x) : x));
+    }
+
+    const deleteReply = (postId: string) => {
+        setResults(prev => prev.filter(x => x.id != postId))
     }
 
     useEffect(() => {
@@ -61,18 +70,15 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
     }, [fetchReplies]);
 
     useEffect(() => {
-        if (!repliesVisible) {
-            setState({
-                firstIndex: defaultData && defaultData.length > 0 ? defaultData[0].index : 0,
-                lastIndex: defaultData && defaultData.length > 0 ? defaultData[defaultData.length - 1].index : 0,
-                direction: defaultData && defaultData.length > 0 ? 'dont load' : 'from end',
-            });
-            setResults(defaultData || []);
-            setHasNextPage(false);
+        if (repliesVisible) {
+            setState(prev => ({
+                ...prev,
+                direction: defaultData !== null ? 'dont load' : 'from end',
+            }));
         }
     }, [options.section, options.params, parentId, defaultData, repliesVisible]);
 
-    return { results, setState, loading, hasNextPage, createReply, getFirstValidCommentIndex };
+    return { results, setState, loading, hasNextPage, createReply, editReply, deleteReply, getFirstValidCommentIndex };
 };
 
 export default useReplies;

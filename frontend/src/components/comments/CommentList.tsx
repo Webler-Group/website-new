@@ -11,19 +11,22 @@ import { useApi } from "../../context/apiCommunication";
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
     options: UseCommentsOptions;
+    setCommentCount?: (setter: (prev: number) => number) => void;
 }
 
-const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
+const CommentList: React.FC<CommentListProps> = ({ findPost, options, setCommentCount }) => {
     const [showAllComments, setShowAllComments] = useState(findPost?.isReply ? false : true);
     const [filter, setFilter] = useState(findPost ? 2 : 1);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null);
     const [answerFormVisible, setAnswerFormVisible] = useState(false);
     const [answerFormMessage, setAnswerFormMessage] = useState('');
     const [answerFormLoading, setAnswerFormLoading] = useState(false);
     const [editedComment, setEditedComment] = useState<IComment | null>(null);
     const [parentCommentId, setParentCommentId] = useState<string | null>(null);
+    const activeParentCommentRef = useRef<HTMLDivElement>(null);
     const [onReplyCallback, setOnReplyCallback] = useState<(post: IComment) => void>();
+    const [onEditCallback, setOnEditCallback] = useState<(id: string, setter: (prev: IComment) => IComment) => void>();
+    const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
     const [message, setMessage] = useState<[boolean, string]>([true, '']);
     const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(findPost?.id || null);
     const commentContainerRef = useRef<HTMLDivElement>(null);
@@ -35,9 +38,11 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
         setState,
         loading: commentsLoading,
         createComment,
+        editComment,
+        deleteComment,
         hasNextPage,
         getFirstValidCommentIndex
-    } = useComments(options, findPost ? findPost.id : null, filter, 10);
+    } = useComments(options, findPost ? findPost.id : null, filter, 10, showAllComments);
 
     // Remove highlight after 3 seconds
     useEffect(() => {
@@ -80,9 +85,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
         setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
     };
 
-    const showAnswerForm = (message: string, comment: IComment | null, parentId: string | null = null) => {
-        setAnswerFormMessage(message);
-        setEditedComment(comment);
+    const showAnswerForm = (post: IComment | null, parentId: string | null) => {
+        setAnswerFormMessage(post ? post.message : "");
+        setEditedComment(post);
         setParentCommentId(parentId);
         setAnswerFormVisible(true);
     };
@@ -99,23 +104,34 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
         const result = await sendJsonRequest(`/${options.section}/CreateComment`, 'POST', {
             ...options.params,
             parentId: parentCommentId,
-            message,
+            message: answerFormMessage,
         });
         if (result && result.post) {
+            result.post.index = -1;
             if (parentCommentId) {
-                createComment(result.post);
-            } else {
                 onReplyCallback?.(result.post);
+                // Scroll into view of parent
+                setTimeout(() => {
+                    if (activeParentCommentRef.current) {
+                        activeParentCommentRef.current.scrollIntoView({
+                            behavior: "smooth",
+                            block: "start"
+                        });
+                    }
+                });
+            } else {
+                createComment(result.post);
+                // Scroll to top of comment container
+                setTimeout(() => {
+                    if (commentContainerRef.current) {
+                        commentContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                    }
+                });
             }
+            setCommentCount?.(prev => prev + 1);
 
             setMessage([true, parentCommentId ? 'Reply posted successfully' : 'Comment posted successfully']);
             hideAnswerForm();
-            // Scroll to top of comment container
-            setTimeout(() => {
-                if (commentContainerRef.current) {
-                    commentContainerRef.current.scrollTop = 0;
-                }
-            });
         } else {
             setMessage([false, 'Failed to post comment']);
         }
@@ -125,24 +141,50 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
 
     const handleEditAnswer = async () => {
         if (editedComment) {
-            // Implement edit comment logic
-            setMessage([true, 'Comment updated successfully']);
-            hideAnswerForm();
+            setAnswerFormLoading(true);
+            const result = await sendJsonRequest(`/${options.section}/EditComment`, "PUT", {
+                message: answerFormMessage,
+                id: editedComment.id
+            });
+            if (result && result.success) {
+                if (editedComment.parentId) {
+                    onEditCallback?.(result.data.id, prev => ({ ...prev, message: result.data.message, attachments: result.data.attachments }));
+                } else {
+                    editComment(result.data.id, prev => ({ ...prev, message: result.data.message, attachments: result.data.attachments }));
+                }
+
+                setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment edited successfully']);
+                hideAnswerForm();
+            } else {
+                setMessage([false, result.message ? result.message : "Comment could not be updated"])
+            }
+            setAnswerFormLoading(false);
         }
     };
 
     const handleDeleteComment = async () => {
-        if (deleteCommentId) {
-            // Implement delete comment logic
-            setMessage([true, 'Comment deleted successfully']);
-            setDeleteModalVisible(false);
-            setDeleteCommentId(null);
+        if (editedComment) {
+            setAnswerFormLoading(true);
+            const result = await sendJsonRequest(`/${options.section}/DeleteComment`, "DELETE", { id: editedComment.id });
+            if (result && result.success) {
+                if(editedComment.parentId) {
+                    onDeleteCallback?.(editedComment.id);
+                } else {
+                    deleteComment(editedComment.id);
+                }
+                setCommentCount?.(prev => prev - 1);
+                setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment deleted successfully']);
+            } else {
+                setMessage([true, result.message ? result.message : 'Comment could not be deleted']);
+            }
+            setAnswerFormLoading(false);
+            closeDeleteModal();
         }
     };
 
     const closeDeleteModal = () => {
         setDeleteModalVisible(false);
-        setDeleteCommentId(null);
+        setEditedComment(null);
     };
 
     const handleLoadPrevious = () => {
@@ -152,6 +194,22 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
             direction: 'from start',
         }));
     };
+
+    const onReply = (id: string, replyCallback: (post: IComment) => void) => {
+        setOnReplyCallback(() => replyCallback);
+        showAnswerForm(null, id);
+    }
+
+    const onEdit = (post: IComment, editCallback?: (id: string, setter: (prev: IComment) => IComment) => void) => {
+        setOnEditCallback(() => editCallback);
+        showAnswerForm(post, post.parentId);
+    }
+
+    const onDelete = (post: IComment, deleteCallback?: (id: string) => void) => {
+        setOnDeleteCallback(() => deleteCallback);
+        setEditedComment(post);
+        setDeleteModalVisible(true);
+    }
 
     let loading = answerFormLoading || commentsLoading;
 
@@ -184,7 +242,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
                 )}
             </div>
             <div className="mt-1 pe-1 flex-grow-1 overflow-auto" ref={commentContainerRef}>
-                {results.length > 0 && getFirstValidCommentIndex() > 0 && (
+                {results.length > 0 && getFirstValidCommentIndex() > 0 && showAllComments && (
                     <Button
                         variant="link"
                         size="sm"
@@ -194,22 +252,23 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
                         Load Previous
                     </Button>
                 )}
-                {(showAllComments ? results : results.slice(0, 1)).map((comment, index) => (
-                    <CommentNode
-                        ref={index === results.length - 1 ? lastCommentNodeRef : undefined}
-                        key={comment.id}
-                        options={options}
-                        comment={comment}
-                        defaultReplies={findPost?.isReply && !showAllComments ? results.slice(1) : null}
-                        onDelete={(id) => {
-                            setDeleteCommentId(id);
-                            setDeleteModalVisible(true);
-                        }}
-                        onEdit={(id, message) => showAnswerForm(message, results.find((c) => c.id === id) || null)}
-                        onReply={(id) => showAnswerForm('', null, id)}
-                        highlightedCommentId={highlightedCommentId}
-                    />
-                ))}
+                {
+                    (showAllComments ? results : results.slice(0, 1)).map((comment, index) => {
+                        let node = (<CommentNode
+                            ref={index === results.length - 1 ? lastCommentNodeRef : undefined}
+                            options={options}
+                            comment={comment}
+                            defaultReplies={findPost?.isReply && !showAllComments ? results.slice(1) : null}
+                            onDelete={onDelete}
+                            onEdit={onEdit}
+                            onReply={onReply}
+                            highlightedCommentId={highlightedCommentId}
+                        />)
+                        return comment.id == parentCommentId ?
+                            <div key={comment.id} ref={activeParentCommentRef}>{node}</div> :
+                            <div key={comment.id}>{node}</div>
+                    })
+                }
             </div>
             <Toast
                 className="position-absolute"
@@ -230,7 +289,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options }) => {
                     size="sm"
                     variant="primary"
                     className="ms-2"
-                    onClick={() => showAnswerForm('', null)}
+                    onClick={() => showAnswerForm(null, null)}
                 >
                     Write comment
                 </Button>
