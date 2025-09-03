@@ -119,7 +119,7 @@ const deleteCourse = (0, express_async_handler_1.default)(async (req, res) => {
     }
 });
 const editCourse = (0, express_async_handler_1.default)(async (req, res) => {
-    const { courseId, title, description, visible } = req.body;
+    const { courseId, code, title, description, visible } = req.body;
     const course = await Course_1.default.findById(courseId);
     if (!course) {
         res.status(404).json({ message: "Course not found" });
@@ -128,6 +128,7 @@ const editCourse = (0, express_async_handler_1.default)(async (req, res) => {
     course.title = title;
     course.description = description;
     course.visible = visible;
+    course.code = code;
     try {
         await course.save();
         res.json({

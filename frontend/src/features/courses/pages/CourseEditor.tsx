@@ -12,7 +12,7 @@ interface CourseEditorProps {
 
 const CourseEditor = ({ }: CourseEditorProps) => {
     const { sendJsonRequest } = useApi();
-    const { courseCode, lessonId } = useParams();
+    const { courseId, lessonId } = useParams();
 
     const [course, setCourse] = useState<ICourse | null>(null);
     const [lessons, setLessons] = useState<ILesson[]>([]);
@@ -24,11 +24,11 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
     useEffect(() => {
         getCourse(true);
-    }, [courseCode]);
+    }, [courseId]);
 
     const getCourse = async (includeLessons: boolean) => {
         setLoading(true);
-        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseCode, includeLessons });
+        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseId, includeLessons });
         if (result && result.course) {
             setCourse(result.course);
             setLessons(result.course.lessons);
@@ -187,7 +187,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                 {
                     lessonId !== null ?
                         <>
-                            <Link to={"/Courses/Editor/" + course.code}>{truncate(course.title, 20)}</Link>
+                            <Link to={"/Courses/Editor/" + course.id}>{truncate(course.title, 20)}</Link>
                             {getLessonTitlePath()}
                         </>
                         :
@@ -230,7 +230,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                                         <div key={lesson.index} className="mt-2">
                                             <Lesson
                                                 lesson={lesson}
-                                                courseCode={course.code}
+                                                courseId={course.id}
                                                 onDelete={onDelete}
                                                 onEdit={onEdit}
                                                 onChangeIndex={handleChangeLessonIndex}

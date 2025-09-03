@@ -6,14 +6,13 @@ import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 
 interface CreateCourseProps {
-    courseCode: string | null;
+    courseId: string | null;
 }
 
-const CreateCourse = ({ courseCode }: CreateCourseProps) => {
+const CreateCourse = ({ courseId }: CreateCourseProps) => {
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
-    const [courseId, setCourseId] = useState<string | null>(null);
     const [code, setCode] = useState("");
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
@@ -23,18 +22,17 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
 
     useEffect(() => {
-        if (courseCode) {
+        if (courseId) {
             getCourse();
         }
-    }, [courseCode]);
+    }, [courseId]);
 
     const getCourse = async () => {
         setLoading(true);
         const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", {
-            courseCode
+            courseId
         });
         if (result && result.course) {
-            setCourseId(result.course.id);
             setCode(result.course.code);
             setTitle(result.course.title);
             setDescription(result.course.description);
@@ -68,7 +66,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
         setError("");
         const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
-            navigate("/Courses/Editor");
+            navigate("/Courses/Editor/Edit/" + courseId);
         }
         else {
             setError(result.error ? result.error.message : result.message);
@@ -98,7 +96,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
-            
+
         }
         else {
             setError(result.error ? result.error.message : result.message);
@@ -146,7 +144,7 @@ const CreateCourse = ({ courseCode }: CreateCourseProps) => {
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Course code</FormLabel>
-                        <FormControl type="text" required value={code} readOnly={courseCode !== null} onChange={(e) => setCode(e.target.value)} />
+                        <FormControl type="text" required value={code} onChange={(e) => setCode(e.target.value)} />
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Course description</FormLabel>

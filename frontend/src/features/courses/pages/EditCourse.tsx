@@ -2,10 +2,10 @@ import { useParams } from "react-router-dom";
 import CreateCourse from "./CreateCourse";
 
 const EditCourse = () => {
-    const { courseCode } = useParams();
+    const { courseId } = useParams();
 
     return (
-        <CreateCourse courseCode={courseCode!} />
+        <CreateCourse courseId={courseId!} />
     );
 }
 

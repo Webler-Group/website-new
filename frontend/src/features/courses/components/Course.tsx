@@ -1,6 +1,7 @@
 import { Dropdown } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
+import { FaEye, FaEyeSlash } from "react-icons/fa6";
 
 interface ICourse {
     id: string;
@@ -20,7 +21,7 @@ interface CourseProps {
 
 const Course = ({ course, isEditor }: CourseProps) => {
     return (
-        <LinkContainer to={isEditor ? "/Courses/Editor/" + course.code : "/Courses/" + course.code}>
+        <LinkContainer to={isEditor ? "/Courses/Editor/" + course.id : "/Courses/" + course.code}>
             <div className="wb-courses-course-card rounded border p-2 bg-white d-sm-flex gap-3 position-relative">
                 {
                     isEditor &&
@@ -28,7 +29,7 @@ const Course = ({ course, isEditor }: CourseProps) => {
                         <Dropdown drop="start">
                             <Dropdown.Toggle as={EllipsisDropdownToggle} />
                             <Dropdown.Menu>
-                                <LinkContainer to={"/Courses/Editor/Edit/" + course.code}>
+                                <LinkContainer to={"/Courses/Editor/Edit/" + course.id}>
                                     <Dropdown.Item>Edit</Dropdown.Item>
                                 </LinkContainer>
                             </Dropdown.Menu>
@@ -41,7 +42,7 @@ const Course = ({ course, isEditor }: CourseProps) => {
                     </div>
                 </div>
                 <div className="d-flex flex-column align-items-sm-start align-items-center">
-                    <h5 style={{ wordBreak: "break-word" }}>{course.title}</h5>
+                    <h5 style={{ wordBreak: "break-word" }}>{course.title} {course.visible ? <FaEye /> : <FaEyeSlash />}</h5>
                     <p className="wb-courses-course__description">{course.description}</p>
                 </div>
             </div>
