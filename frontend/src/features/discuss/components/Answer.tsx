@@ -22,6 +22,7 @@ interface IAnswer {
     isAccepted: boolean;
     parentId: string;
     votes: number;
+    roles: string[],
     isUpvoted: boolean;
     attachments: IPostAttachment[];
 }
@@ -117,11 +118,11 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                             <small className="text-secondary">{DateUtils.format(new Date(answer.date))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
-                            <ProfileName userId={answer.userId} userName={answer.userName} />
+                            <ProfileName userId={answer.userId} userName={answer.userName} roles={answer.roles} />
                         </div>
                     </div>
                     <div className="ms-2 wb-p-follow-item__avatar">
-                        <ProfileAvatar size={32} avatarImage={answer.userAvatar} />
+                        <ProfileAvatar size={32} avatarImage={answer.userAvatar} name={answer.userName} />
                     </div>
                 </div>
             </div>

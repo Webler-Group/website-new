@@ -432,10 +432,10 @@ const DiscussPost = () => {
                             <small>{DateUtils.format(new Date(question.date))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
-                            <ProfileName userId={question.userId} userName={question.userName} />
+                            <ProfileName userId={question.userId} userName={question.userName} roles={question.roles} />
                         </div>
                     </div>
-                    <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                    <ProfileAvatar size={32} avatarImage={question.userAvatar} name={question.userName} />
                 </div>
             </div>
             {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
