@@ -9,6 +9,10 @@ const upvoteSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: "User",
         required: true
+    },
+    reaction: {
+        type: String,
+        required: true,
     }
 });
 

@@ -1,5 +1,5 @@
 export interface Tag {
-  _id: Key | null | undefined;
+  _id: string | null | undefined;
   id: string;
   name: string;
 }
@@ -23,6 +23,8 @@ export interface OriginalPost {
 }
 
 export interface IFeed {
+  totalReactions: any;
+  topReactions: any;
   id: string;
   type: number;
   title: string | null;
@@ -43,8 +45,8 @@ export interface IFeed {
   isFollowing: boolean;
   originalPost: OriginalPost | null;
   isPinned: boolean;
-  isOriginalPostDeleted: Number;
   isShared: boolean;
+  reaction: string;
 }
 
 export interface Comment {
@@ -59,3 +61,36 @@ export interface Comment {
   isUpvoted: boolean;
   replies?: Comment[];
 }
+
+export enum PostType {
+    QUESTION = 1,
+    ANSWER = 2,
+    CODE_COMMENT = 3,
+    FEED = 4,
+    SHARED_FEED = 5,
+    FEED_COMMENT = 6
+}
+
+export interface ReactionChange {
+  currentReaction: string | null;
+  hasVoted: boolean;
+}
+
+
+export interface Reaction {
+  id: string;
+  emoji: string;
+  label: string;
+  color: string;
+}
+
+export interface ReactionPickerProps {
+  onReactionChange: (reaction: ReactionChange) => void;
+  currentState: { reaction: string | null };
+}
+
+export type ReactionType = "like" | "love" | "haha" | "wow" | "sad" | "angry";
+
+export type ReactionName = {
+  reaction: ReactionType;
+};

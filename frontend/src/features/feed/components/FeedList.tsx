@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, MessageCircle, Loader2, Filter, ChevronDown, ChevronUp, Pin } from 'lucide-react';
 import { IFeed } from './types';
-import FeedListItem from './FeedListItem';
+import FeedItem from './FeedItem';
 import NotificationToast from './comments/NotificationToast';
 import useFeed from '../hook/useFeeds';
 import { TagSearch } from '../../../components/InputTags';
@@ -244,7 +244,7 @@ const FeedList: React.FC<FeedListProps> = () => {
                       {pinnedPosts.map((feed, index) => (
                         <div key={feed.id} className={`col-12 ${index > 0 ? 'border-top' : ''}`}>
                           <div className="p-3">
-                            <FeedListItem
+                            <FeedItem
                               feed={feed}
                               onUpdate={handlePinnedFeedUpdate}
                               onDelete={handlePinnedFeedDelete}
@@ -274,22 +274,22 @@ const FeedList: React.FC<FeedListProps> = () => {
             results.map((feed, i) => (
               i == results.length - 1 ?
                 <div key={feed.id} className="col-12">
-                  <FeedListItem
-                    ref={lastFeedElemRef}
-                    feed={feed}
-                    onUpdate={handleFeedUpdate}
-                    onDelete={handleFeedDelete}
-                    onCommentsClick={handleCommentsClick}
-                  />
+                    <FeedItem
+                      feed={feed}
+                      ref={lastFeedElemRef}
+                      onUpdate={handlePinnedFeedUpdate}
+                      onDelete={handlePinnedFeedDelete}
+                      onCommentsClick={handleCommentsClick}
+                    />
                 </div>
                 :
                 <div key={feed.id} className="col-12">
-                  <FeedListItem
-                    feed={feed}
-                    onUpdate={handleFeedUpdate}
-                    onDelete={handleFeedDelete}
-                    onCommentsClick={handleCommentsClick}
-                  />
+                    <FeedItem
+                      feed={feed}
+                      onUpdate={handlePinnedFeedUpdate}
+                      onDelete={handlePinnedFeedDelete}
+                      onCommentsClick={handleCommentsClick}
+                    />
                 </div>
             ))
           )}

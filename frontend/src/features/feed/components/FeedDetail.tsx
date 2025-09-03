@@ -119,13 +119,7 @@ const FeedDetails: React.FC = () => {
           <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
         </Offcanvas.Header>
         <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
-          <CommentList2
-            options={{ section: "feed", params: { feedId: feed.id } }}
-            setCommentCount={setCommentCount}
-            postId={postId}
-            setPostId={setPostId}
-            isReply={isReply}
-          />
+          
         </Offcanvas.Body>
       </Offcanvas>
       <div className="min-vh-100 bg-light">
@@ -140,17 +134,18 @@ const FeedDetails: React.FC = () => {
               Back to Feed
             </button>
           </div>
+        </div>
 
-          {/* Feed Item Card */}
-          <div className="card shadow-sm border-0 rounded-4 mb-4">
-            <div className="card-body">
+        {/* Feed Item Card */}
+        <div className="card shadow-sm border-0 rounded-4 mb-4">
+          <div className="card-body">
               <FeedItem
                 feed={feed}
+                sendJsonRequest={sendJsonRequest}
                 onUpdate={handleFeedUpdate}
                 onDelete={() => { handleFeedDelete(feed); }}
-                onCommentsClick={() => setCommentModalVisible(true)}
+                showFullContent={true}
               />
-            </div>
           </div>
         </div>
       </div>
