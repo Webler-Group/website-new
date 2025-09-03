@@ -12,6 +12,7 @@ interface IQuestion {
     id: string;
     title: string;
     tags: string[];
+    roles: string[],
     userName: string;
     userAvatar: string;
     userId: string;
@@ -75,11 +76,11 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
                                 <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
-                                <ProfileName userId={question.userId} userName={question.userName} />
+                                <ProfileName userId={question.userId} userName={question.userName} roles={question.roles} />
                             </div>
                         </div>
                         <div className="ms-2 wb-p-follow-item__avatar">
-                            <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                            <ProfileAvatar size={32} avatarImage={question.userAvatar} name={question.userName} />
                         </div>
                     </div>
                 </div>

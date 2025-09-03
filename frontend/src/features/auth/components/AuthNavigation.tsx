@@ -27,7 +27,7 @@ const AuthNavigation = () => {
                     (userInfo) ?
                         <>
                             <Nav.Item>
-                                <NavDropdown align="end" title={<> <ProfileAvatar size={32} avatarImage={userInfo.avatarImage} /> </>} menuVariant="light">
+                                <NavDropdown align="end" title={<> <ProfileAvatar size={32} avatarImage={userInfo.avatarImage} name={userInfo.name} /> </>} menuVariant="light">
                                     <LinkContainer to="/Profile">
                                         <NavDropdown.Item>
                                             <b style={{ fontFamily: "monospace" }}>{userInfo.name}</b>
