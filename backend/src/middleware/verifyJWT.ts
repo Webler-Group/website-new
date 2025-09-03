@@ -25,9 +25,6 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
             token,
             config.accessTokenSecret,
             async (err: VerifyErrors | null, decoded: any) => {
-                if(err) {
-                    res.status(403).json({ success: false, message: "Please Login first." })
-                }
                 const accessTokenPayload = decoded as AccessTokenPayload;
                 if (!err) {
                     const rawFingerprint = deviceId;

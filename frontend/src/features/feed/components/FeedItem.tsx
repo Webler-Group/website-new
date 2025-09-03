@@ -20,11 +20,11 @@ import EditModal from './EditModal';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import { useNavigate } from "react-router-dom";
+import { useApi } from '../../../context/apiCommunication';
+import { useAuth } from '../../auth/context/authContext';
 
 interface FeedItemProps {
   feed: IFeed;
-  currentUserId?: string;
-  sendJsonRequest: (url: string, method: string, reqBody?: any) => Promise<any>;
   onUpdate?: (updatedFeed: IFeed) => void;
   onDelete?: () => void;
   onCommentsClick?: (feedId: string) => void;
@@ -34,12 +34,8 @@ interface FeedItemProps {
 
 const FeedItem: React.FC<FeedItemProps> = ({
   feed,
-  currentUserId,
-  sendJsonRequest,
   onUpdate,
-  onDelete,
   onCommentsClick,
-  showFullContent = false,
   isPinned = false
 }) => {
   const [showShareModal, setShowShareModal] = useState(false);
@@ -47,13 +43,14 @@ const FeedItem: React.FC<FeedItemProps> = ({
   const [isUpvoted, setIsUpvoted] = useState(feed.isUpvoted);
   const [votes, setVotes] = useState(feed.votes);
   const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null);
+  const { sendJsonRequest } = useApi();
+  const { userInfo } = useAuth();
   
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000); // Auto-hide after 5 seconds
   };
-  const isOwner = currentUserId === feed.userId;
-  const isSharedPost = feed.isOriginalPostDeleted !== 2;
+  const isOwner = userInfo?.id === feed.userId;
   const navigate = useNavigate();
 
   const allowedUrls = [/^https?:\/\/.+/i];

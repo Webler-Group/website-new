@@ -11,13 +11,13 @@ import { useAuth } from "../../auth/context/authContext";
 import LoginForm from "../../auth/components/LoginForm";
 import RegisterForm from "../../auth/components/RegisterForm";
 import ToggleSwitch from "../../../components/ToggleSwitch";
-import CommentList2 from "./CommentList2";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
+import CommentList from "../../../components/comments/CommentList";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -47,8 +47,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [isUserRegistering, setUserAuthPage] = useState(true);
     const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
     const [commentCount, setCommentCount] = useState(0);
-    const [postId, setPostId] = useState<string | null>(null);
-    const [isReply, setIsReply] = useState(false);
+    const [findPost, setFindPost] = useState<any | null>(null);
     const location = useLocation();
     const [message, setMessage] = useState([true, ""]);
     const [pageTitle, setPageTitle] = useState("");
@@ -65,11 +64,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
 
     useEffect(() => {
         if (location.state && location.state.postId) {
-            setCommentModalVisible(true);
-            setPostId(location.state.postId);
-            setIsReply(location.state.isReply);
+            openCommentModal();
+            setFindPost({ id: location.state.postId, isReply: location.state.isReply });
         } else {
-            setCommentModalVisible(false);
+            closeCommentModal();
         }
     }, [location]);
 
@@ -125,6 +123,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const openCommentModal = () => {
+        if (!codeId) return;
         setCommentModalVisible(true)
     }
 
@@ -422,12 +421,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
                         </Offcanvas.Header>
                         <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
-                            <CommentList2 
-                                options={{ section: "codes", params: { codeId: code.id } }} 
-                                setCommentCount={setCommentCount} 
-                                postId={postId} 
-                                setPostId={setPostId} 
-                                isReply={isReply} />
+                            <CommentList
+                                findPost={findPost}
+                                options={{ section: "Codes", params: { codeId } }}
+                            />
                         </Offcanvas.Body>
                     </Offcanvas>
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>

@@ -6,6 +6,7 @@ import { escapeRegex } from "../utils/regexUtils";
 import User from "./User";
 import Notification from "./Notification";
 import { sendToUsers } from "../services/pushService";
+import { truncate } from "../utils/StringUtils";
 
 const postAttachmentSchema = new mongoose.Schema({
     postId: {
@@ -172,7 +173,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                 if (!x.code) return null;
                 return {
                     id: x._id,
-                    type: 1,
+                    type: x._type,
                     ...userDetails,
                     codeId: x.code._id,
                     codeName: x.code.name,
@@ -182,7 +183,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                 if (!x.question) return null;
                 return {
                     id: x._id,
-                    type: 2,
+                    type: x._type,
                     ...userDetails,
                     questionId: x.question._id,
                     questionTitle: x.question.title
@@ -191,14 +192,11 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                 if (!x.feed) return null;
                 return {
                     id: x._id,
-                    type: 4,
+                    type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: x.feed.message,
-                    feedType: x.feed._type,
-                    likes: 0,
-                    comments: 0,
-                    shares: 0
+                    feedMessage: truncate(x.feed.message, 20),
+                    feedType: x.feed._type
                 }
 
         }

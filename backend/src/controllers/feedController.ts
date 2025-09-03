@@ -10,13 +10,7 @@ import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
 import UserFollowing from "../models/UserFollowing";
-import PostFollowing from "../models/PostFollowing";
-
-const notificationMessage = (message: (string | undefined)) => {
-    if (!message) return "";
-    if (message.length < 15) return message;
-    return message.substring(0, 15) + "...";
-}
+import { truncate } from "../utils/StringUtils";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -77,7 +71,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 _type: 301,
                 user: follower.user,
                 actionUser: currentUserId,
-                message: `{action_user} made a new post "${notificationMessage(feed.message)}"`,
+                message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
                 feedId: feed._id,
             });
         })
@@ -244,9 +238,9 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 user: userToNotify,
                 actionUser: currentUserId,
                 message: userToNotify === feed.user.toString() ?
-                    `{action_user} commented on your post "${notificationMessage(feed.message)}"`
+                    `{action_user} commented on your post "${truncate(feed.message,20)}"`
                     :
-                    `{action_user} replied to your comment on post "${notificationMessage(feed.message)}"`,
+                    `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
                 feedId: feed._id,
                 postId: reply._id
             })
@@ -428,7 +422,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 _type: 303,
                 user: originalFeed.user,
                 actionUser: currentUserId,
-                message: `{action_user} shared your Post "${notificationMessage(originalFeed.message)}"`,
+                message: `{action_user} shared your Post "${truncate(originalFeed.message, 20)}"`,
                 feedId: feed._id,
             });
         }
@@ -937,7 +931,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             _type: 304,
             user: feed.user,
             actionUser: currentUserId,
-            message: `{action_user} pinned your Post "${notificationMessage(feed.message)}"`,
+            message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
             feedId: feed._id,
         });
     }

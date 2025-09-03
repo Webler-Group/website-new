@@ -343,7 +343,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const currentUserId = req.userId;
     const { codeId, parentId, index, count, filter, findPostId } = req.body;
 
-    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
+    if (typeof filter !== "number" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
         res.status(400).json({ message: "Some fileds are missing" });
         return
     }
@@ -416,47 +416,42 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .limit(count)
         .populate("user", "name avatarImage countryCode level roles") as any[];
 
-    if (result) {
-        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
-            id: x._id,
-            parentId: x.parentId,
-            message: x.message,
-            date: x.createdAt,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            level: x.user.level,
-            roles: x.user.roles,
-            votes: x.votes,
-            isUpvoted: false,
-            answers: x.answers,
-            index: (findPostId && parentPost) ?
-                offset === 0 ? -1 : skipCount + offset - 1 :
-                skipCount + offset,
-            attachments: new Array()
-        }))
+    const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
+        id: x._id,
+        parentId: x.parentId,
+        message: x.message,
+        date: x.createdAt,
+        userId: x.user._id,
+        userName: x.user.name,
+        userAvatar: x.user.avatarImage,
+        level: x.user.level,
+        roles: x.user.roles,
+        votes: x.votes,
+        isUpvoted: false,
+        answers: x.answers,
+        index: (findPostId && parentPost) ?
+            offset === 0 ? -1 : skipCount + offset - 1 :
+            skipCount + offset,
+        attachments: new Array()
+    }))
 
-        let promises = [];
+    let promises = [];
 
-        for (let i = 0; i < data.length; ++i) {
-            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].votes = count;
-            }));*/
-            if (currentUserId) {
-                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                    data[i].isUpvoted = !(upvote === null);
-                }));
-            }
-            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+    for (let i = 0; i < data.length; ++i) {
+        /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+            data[i].votes = count;
+        }));*/
+        if (currentUserId) {
+            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                data[i].isUpvoted = !(upvote === null);
+            }));
         }
-
-        await Promise.all(promises);
-
-        res.status(200).json({ posts: data })
+        promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
-    else {
-        res.status(500).json({ message: "Error" });
-    }
+
+    await Promise.all(promises);
+
+    res.status(200).json({ posts: data })
 });
 
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -486,67 +481,61 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         user: currentUserId
     })
 
-    if (reply) {
+    const usersToNotify = new Set<string>();
+    usersToNotify.add(code.user.toString())
+    if (parentPost !== null) {
+        usersToNotify.add(parentPost.user.toString())
+    }
+    usersToNotify.delete(currentUserId!);
 
-        const usersToNotify = new Set<string>();
-        usersToNotify.add(code.user.toString())
-        if (parentPost !== null) {
-            usersToNotify.add(parentPost.user.toString())
-        }
-        usersToNotify.delete(currentUserId!);
+    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
-        const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+    await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
+        title: "New reply",
+        body: `${currentUserName} replied to your comment on "${code.name}"`
+    }, "codes");
+    await sendToUsers([code.user.toString()], {
+        title: "New comment",
+        body: `${currentUserName} posted comment on your code "${code.name}"`
+    }, "codes");
 
-        await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-            title: "New reply",
-            body: `${currentUserName} replied to your comment on "${code.name}"`
-        }, "codes");
-        await sendToUsers([code.user.toString()], {
-            title: "New comment",
-            body: `${currentUserName} posted comment on your code "${code.name}"`
-        }, "codes");
+    for (let userToNotify of usersToNotify) {
 
-        for (let userToNotify of usersToNotify) {
-
-            await Notification.create({
-                _type: 202,
-                user: userToNotify,
-                actionUser: currentUserId,
-                message: userToNotify === code.user.toString() ?
-                    `{action_user} posted comment on your code "${code.name}"`
-                    :
-                    `{action_user} replied to your comment on "${code.name}"`,
-                codeId: code._id,
-                postId: reply._id
-            })
-        }
-
-        code.$inc("comments", 1)
-        await code.save();
-
-        if (parentPost) {
-            parentPost.$inc("answers", 1)
-            await parentPost.save();
-        }
-
-        const attachments = await PostAttachment.getByPostId({ post: reply._id })
-
-        res.json({
-            post: {
-                id: reply._id,
-                message: reply.message,
-                date: reply.createdAt,
-                userId: reply.user,
-                parentId: reply.parentId,
-                votes: reply.votes,
-                answers: reply.answers,
-                attachments
-            }
+        await Notification.create({
+            _type: 202,
+            user: userToNotify,
+            actionUser: currentUserId,
+            message: userToNotify === code.user.toString() ?
+                `{action_user} posted comment on your code "${code.name}"`
+                :
+                `{action_user} replied to your comment on "${code.name}"`,
+            codeId: code._id,
+            postId: reply._id
         })
     }
-    else {
-        res.status(500).json({ message: "error" });
+
+    code.$inc("comments", 1)
+    await code.save();
+
+    if (parentPost) {
+        parentPost.$inc("answers", 1)
+        await parentPost.save();
     }
+
+    const attachments = await PostAttachment.getByPostId({ post: reply._id })
+
+    res.json({
+        post: {
+            id: reply._id,
+            message: reply.message,
+            date: reply.createdAt,
+            userId: reply.user,
+            parentId: reply.parentId,
+            votes: reply.votes,
+            answers: reply.answers,
+            attachments
+        }
+    })
 });
 
 const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -670,7 +659,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const getJobWS = async (socket: Socket, payload: any) => {
     const { jobId } = payload;
 
-    const job = await EvaluationJob.findById(jobId).select("-source");    
+    const job = await EvaluationJob.findById(jobId).select("-source");
     if (!job) {
         console.log("404 Job " + jobId + " not found");
         return;
@@ -693,7 +682,7 @@ const getJobWS = async (socket: Socket, payload: any) => {
 
 const registerHandlersWS = (socket: Socket) => {
 
-    if(socket.data.roles && socket.data.roles.includes("Admin")) {
+    if (socket.data.roles && socket.data.roles.includes("Admin")) {
         socket.on("job:finished", (payload) => getJobWS(socket, payload));
     }
 }

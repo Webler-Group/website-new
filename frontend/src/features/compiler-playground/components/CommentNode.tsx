@@ -30,6 +30,12 @@ interface CommentNodeProps {
     data: IComment | null;
     parentId: string | null;
     filter: number;
+    showAllComments: boolean;
+    defaultReplies: IComment[] | null;
+    activeParentPostId: string | null;
+    activeParentPostRef: React.MutableRefObject<HTMLDivElement | null>;
+    findPostId: string | null;
+    findPostIsReply: boolean;
     onReply: (parentId: string, callback: (data: IComment) => void) => void;
     onEdit: (id: string, message: string, callback: (id: string, message: string, attachments: IPostAttachment[]) => void) => void;
     onDelete: (id: string, callback: (id: string, answers: number) => void, answers: number) => void;
@@ -38,18 +44,20 @@ interface CommentNodeProps {
     addReplyToParent: (data: IComment) => void;
     editParentReply: (id: string, message: string, attachments: IPostAttachment[]) => void;
     deleteParentReply: (id: string, answers: number) => void;
-    activePostId: string | null;
-    setActivePostId: (callback: (data: string | null) => string | null) => void;
-    showAllComments: boolean;
-    setShowAllComments: (callback: (data: boolean) => boolean) => void;
-    isActivePostReply: boolean;
-    defaultReplies: IComment[] | null;
+    setShowAllComments: (value: boolean) => void;
 }
 
 const CommentNode = React.forwardRef(({
     options,
-    data, parentId,
+    data,
+    parentId,
     filter,
+    showAllComments,
+    defaultReplies,
+    activeParentPostId,
+    activeParentPostRef,
+    findPostId,
+    findPostIsReply,
     onReply,
     onEdit,
     onDelete,
@@ -58,12 +66,7 @@ const CommentNode = React.forwardRef(({
     addReplyToParent,
     editParentReply,
     deleteParentReply,
-    activePostId,
-    setActivePostId,
-    showAllComments,
-    setShowAllComments,
-    isActivePostReply,
-    defaultReplies
+    setShowAllComments
 }: CommentNodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
@@ -71,13 +74,11 @@ const CommentNode = React.forwardRef(({
 
     const [replyCount, setReplyCount] = useState(data ? data.answers : 0);
     const [repliesVisible, setRepliesVisible] = useState(data === null || defaultReplies !== null);
-
     let initialIndicesState = (defaultReplies && defaultReplies.length > 0) ?
         { firstIndex: defaultReplies[0].index, lastIndex: defaultReplies[defaultReplies.length - 1].index, _state: 0 }
         :
         { firstIndex: 0, lastIndex: 0, _state: 0 }
     const [indices, setIndices] = useState(initialIndicesState);
-    const [findPostId, setFindPostId] = useState(activePostId);
     const {
         isLoading,
         error,
@@ -87,7 +88,6 @@ const CommentNode = React.forwardRef(({
         set,
         remove
     } = useComments(options, data ? data.id : null, 10, indices, filter, repliesVisible, findPostId, defaultReplies);
-    const activePostRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         if (data === null) {
@@ -96,24 +96,20 @@ const CommentNode = React.forwardRef(({
     }, [])
 
     useEffect(() => {
-        if (repliesVisible) {
-            if (indices._state !== 0 || data) {
-                setFindPostId(null)
-            }
-            if (defaultReplies === null) {
-                setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
-            }
-        }
-    }, [filter, repliesVisible])
-
-    useEffect(() => {
-        if (showAllComments) {
-            if (activePostId === null) {
-                setFindPostId(null)
-            }
+        if (repliesVisible && defaultReplies == null) {
+            console.log(1);
+            
             setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
         }
-    }, [showAllComments])
+    }, [repliesVisible, filter])
+
+    useEffect(() => {
+        if(showAllComments) {
+            console.log(2);
+            
+            setIndices(() => ({ firstIndex: 0, lastIndex: 0, _state: 1 }))
+        }
+    }, [showAllComments]);
 
     const intObserver = useRef<IntersectionObserver>()
     const lastCommentRef = useCallback((comment: any) => {
@@ -124,7 +120,6 @@ const CommentNode = React.forwardRef(({
         intObserver.current = new IntersectionObserver(comments => {
 
             if (comments[0].isIntersecting && hasNextPage) {
-                setFindPostId(null)
                 setIndices(indices => ({ ...indices, lastIndex: results[results.length - 1].index + 1, _state: 1 }));
             }
         })
@@ -139,7 +134,6 @@ const CommentNode = React.forwardRef(({
 
     const handleLoadPrev = () => {
         if (isLoading) return
-        setFindPostId(null)
         setIndices(indices => ({ ...indices, firstIndex: results[0].index, _state: 2 }))
     }
 
@@ -204,16 +198,12 @@ const CommentNode = React.forwardRef(({
     const deleteReply = (id: string, answers: number) => {
         remove(id)
         setReplyCount(count => count - 1 - answers)
-        setShowAllComments(() => true);
-        setActivePostId(() => null);
+        setShowAllComments(true);
     }
 
     const voteReply = (id: string, vote: number) => {
         set(id, (data) => ({ ...data, votes: data.votes + (vote === 1 ? 1 : -1), isUpvoted: vote === 1 }));
     }
-
-    let isNewlyCreated = data && activePostId === data.id;
-    let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
         <div className="mb-4">
@@ -241,7 +231,7 @@ const CommentNode = React.forwardRef(({
                         </div>
                     </div>
                     <div className="flex-grow-1">
-                        <div className={"rounded border p-2 mb-1"} style={{ background: bg }}>
+                        <div className={"rounded border p-2 mb-1 " + (findPostId == data?.id ? "bg-warning" : "bg-white")}>
                             <div>
                                 <ProfileName userId={data.userId} userName={data.userName} />
                             </div>
@@ -302,13 +292,16 @@ const CommentNode = React.forwardRef(({
                                     <Button disabled={isLoading} onClick={handleLoadPrev} variant="primary" size="sm" className="mb-2 w-100">Load previous</Button>
                                 }
                                 {
-                                    (results.length > 0 && activePostId !== null && isActivePostReply) ?
-                                        <div key={results[0].id}>
-                                            <CommentNode
+                                    (results.length > 0 && findPostId && findPostIsReply && !defaultReplies) ?
+                                    <div key={results[0].id}>
+                                        <CommentNode
                                                 options={options}
+                                                ref={lastCommentRef}
                                                 data={results[0]}
                                                 parentId={data ? data.id : null}
                                                 filter={2}
+                                                findPostId={findPostId}
+                                                findPostIsReply={findPostIsReply}
                                                 onReply={onReply}
                                                 onEdit={onEdit}
                                                 onDelete={onDelete}
@@ -317,74 +310,75 @@ const CommentNode = React.forwardRef(({
                                                 addReplyToParent={addReply}
                                                 editParentReply={editReply}
                                                 deleteParentReply={deleteReply}
-                                                activePostId={activePostId}
-                                                setActivePostId={setActivePostId}
-                                                setShowAllComments={setShowAllComments}
                                                 showAllComments={false}
-                                                isActivePostReply={false}
+                                                setShowAllComments={setShowAllComments}
                                                 defaultReplies={results.slice(1)}
+                                                activeParentPostId={activeParentPostId}
+                                                activeParentPostRef={activeParentPostRef}
                                             />
-                                        </div>
-                                        :
-                                        results.map((reply, idx) => {
-                                            let node = results.length === idx + 1 ?
-                                                <CommentNode
-                                                    options={options}
-                                                    ref={lastCommentRef}
-                                                    data={reply}
-                                                    parentId={data ? data.id : null}
-                                                    filter={2}
-                                                    onReply={onReply}
-                                                    onEdit={onEdit}
-                                                    onDelete={onDelete}
-                                                    onVote={voteReply}
-                                                    setDefaultOnReplyCallback={setDefaultOnReplyCallback}
-                                                    addReplyToParent={addReply}
-                                                    editParentReply={editReply}
-                                                    deleteParentReply={deleteReply}
-                                                    activePostId={activePostId}
-                                                    setActivePostId={setActivePostId}
-                                                    showAllComments={false}
-                                                    setShowAllComments={setShowAllComments}
-                                                    isActivePostReply={false}
-                                                    defaultReplies={null}
-                                                />
+                                    </div>
+                                    :
+                                    results.map((reply, idx) => {
+                                        let node = results.length === idx + 1 ?
+                                            <CommentNode
+                                                options={options}
+                                                ref={lastCommentRef}
+                                                data={reply}
+                                                parentId={data ? data.id : null}
+                                                filter={2}
+                                                findPostId={findPostId}
+                                                findPostIsReply={findPostIsReply}
+                                                onReply={onReply}
+                                                onEdit={onEdit}
+                                                onDelete={onDelete}
+                                                onVote={voteReply}
+                                                setDefaultOnReplyCallback={setDefaultOnReplyCallback}
+                                                addReplyToParent={addReply}
+                                                editParentReply={editReply}
+                                                deleteParentReply={deleteReply}
+                                                showAllComments={false}
+                                                setShowAllComments={setShowAllComments}
+                                                defaultReplies={null}
+                                                activeParentPostId={activeParentPostId}
+                                                activeParentPostRef={activeParentPostRef}
+                                            />
+                                            :
+                                            <CommentNode
+                                                options={options}
+                                                data={reply}
+                                                parentId={data ? data.id : null}
+                                                filter={2}
+                                                findPostId={findPostId}
+                                                findPostIsReply={findPostIsReply}
+                                                onReply={onReply}
+                                                onEdit={onEdit}
+                                                onDelete={onDelete}
+                                                onVote={voteReply}
+                                                setDefaultOnReplyCallback={setDefaultOnReplyCallback}
+                                                addReplyToParent={addReply}
+                                                editParentReply={editReply}
+                                                deleteParentReply={deleteReply}
+                                                showAllComments={false}
+                                                setShowAllComments={setShowAllComments}
+                                                defaultReplies={null}
+                                                activeParentPostId={activeParentPostId}
+                                                activeParentPostRef={activeParentPostRef}
+                                            />
+                                        return (
+                                            reply.id == activeParentPostId ?
+                                                <div key={reply.id} ref={activeParentPostRef}>
+                                                    {
+                                                        node
+                                                    }
+                                                </div>
                                                 :
-                                                <CommentNode
-                                                    options={options}
-                                                    data={reply}
-                                                    parentId={data ? data.id : null}
-                                                    filter={2}
-                                                    onReply={onReply}
-                                                    onEdit={onEdit}
-                                                    onDelete={onDelete}
-                                                    onVote={voteReply}
-                                                    setDefaultOnReplyCallback={setDefaultOnReplyCallback}
-                                                    addReplyToParent={addReply}
-                                                    editParentReply={editReply}
-                                                    deleteParentReply={deleteReply}
-                                                    activePostId={activePostId}
-                                                    setActivePostId={setActivePostId}
-                                                    showAllComments={false}
-                                                    setShowAllComments={setShowAllComments}
-                                                    isActivePostReply={false}
-                                                    defaultReplies={null}
-                                                />
-                                            return (
-                                                reply.id === activePostId ?
-                                                    <div key={reply.id} ref={activePostRef}>
-                                                        {
-                                                            node
-                                                        }
-                                                    </div>
-                                                    :
-                                                    <div key={reply.id}>
-                                                        {
-                                                            node
-                                                        }
-                                                    </div>
-                                            )
-                                        })
+                                                <div key={reply.id}>
+                                                    {
+                                                        node
+                                                    }
+                                                </div>
+                                        )
+                                    })
                                 }
                             </>
                     }
