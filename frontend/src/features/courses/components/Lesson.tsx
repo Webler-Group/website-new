@@ -19,7 +19,7 @@ interface ILesson {
 
 interface LessonProps {
     lesson: ILesson;
-    courseCode: string;
+    courseId: string;
     onEdit: (id: string, title: string) => void;
     onDelete: (id: string) => void;
     onChangeIndex: (id: string, newIndex: number) => void;
@@ -27,7 +27,7 @@ interface LessonProps {
     isLast: boolean;
 }
 
-const Lesson = ({ lesson, courseCode, onEdit, onDelete, onChangeIndex, isFirst, isLast }: LessonProps) => {
+const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, isLast }: LessonProps) => {
 
     const handleEdit = () => {
         onEdit(lesson.id, lesson.title);
@@ -68,7 +68,7 @@ const Lesson = ({ lesson, courseCode, onEdit, onDelete, onChangeIndex, isFirst, 
                 </span>
                 <div>
                     <b className="me-1">{lesson.index}.</b>
-                    <Link to={"/Courses/Editor/" + courseCode + "/Lesson/" + lesson.id}>
+                    <Link to={"/Courses/Editor/" + courseId + "/Lesson/" + lesson.id}>
                         {lesson.title}
                     </Link>
                 </div>

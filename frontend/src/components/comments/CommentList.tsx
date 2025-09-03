@@ -85,8 +85,8 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
     };
 
-    const showAnswerForm = (post: IComment | null, parentId: string | null) => {
-        setAnswerFormMessage(post ? post.message : "");
+    const showAnswerForm = (post: IComment | null, parentId: string | null, message: string = "") => {
+        setAnswerFormMessage(message);
         setEditedComment(post);
         setParentCommentId(parentId);
         setAnswerFormVisible(true);
@@ -99,6 +99,8 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     };
 
     const handlePostAnswer = async () => {
+        if(!userInfo) return;
+
         setAnswerFormLoading(true);
 
         const result = await sendJsonRequest(`/${options.section}/CreateComment`, 'POST', {
@@ -107,9 +109,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             message: answerFormMessage,
         });
         if (result && result.post) {
-            result.post.index = -1;
+            const newPost = { ...result.post, index: -1, userName: userInfo.name, userAvatar: userInfo.avatarImage };
             if (parentCommentId) {
-                onReplyCallback?.(result.post);
+                onReplyCallback?.(newPost);
                 // Scroll into view of parent
                 setTimeout(() => {
                     if (activeParentCommentRef.current) {
@@ -120,7 +122,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     }
                 });
             } else {
-                createComment(result.post);
+                createComment(newPost);
                 // Scroll to top of comment container
                 setTimeout(() => {
                     if (commentContainerRef.current) {
@@ -195,14 +197,14 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         }));
     };
 
-    const onReply = (id: string, replyCallback: (post: IComment) => void) => {
+    const onReply = (id: string, replyCallback: (post: IComment) => void, message?: string) => {
         setOnReplyCallback(() => replyCallback);
-        showAnswerForm(null, id);
+        showAnswerForm(null, id, message);
     }
 
     const onEdit = (post: IComment, editCallback?: (id: string, setter: (prev: IComment) => IComment) => void) => {
         setOnEditCallback(() => editCallback);
-        showAnswerForm(post, post.parentId);
+        showAnswerForm(post, post.parentId, post.message);
     }
 
     const onDelete = (post: IComment, deleteCallback?: (id: string) => void) => {

@@ -142,9 +142,9 @@ function App() {
           <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
             <Route path="Editor">
               <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
-              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseCode={null} />} />} />
-              <Route path="Edit/:courseCode" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
-              <Route path=":courseCode">
+              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseId={null} />} />} />
+              <Route path="Edit/:courseId" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
+              <Route path=":courseId">
                 <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
                 <Route path="Lesson/:lessonId" element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
               </Route>

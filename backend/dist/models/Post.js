@@ -30,6 +30,7 @@ const postSchema = new mongoose_1.default.Schema({
     },
     parentId: {
         type: mongoose_1.default.Types.ObjectId,
+        ref: "Post",
         default: null
     },
     message: {

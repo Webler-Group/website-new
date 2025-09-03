@@ -17,6 +17,8 @@ router.route("/GetQuestionReplies")
     .post(discussionController.getReplies);
 router.route("/GetTags")
     .post(discussionController.getTags);
+router.route("/GetVoters")
+    .post(discussionController.getVotersList);
 
 router.use(protectRoute);
 

@@ -17,6 +17,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
+import FollowList from "../../profile/pages/FollowList";
 import CommentList from "../../../components/comments/CommentList";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
@@ -52,6 +53,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const location = useLocation();
     const [message, setMessage] = useState([true, ""]);
     const [pageTitle, setPageTitle] = useState("");
+    const [votersModalVisible, setVotersModalVisible] = useState(false);
+    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
 
     PageTitle(pageTitle);
 
@@ -400,6 +403,12 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
+    const showCodeVoters = () => {
+        if(!codeId) return;
+        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: codeId } });
+        setVotersModalVisible(true);
+    }
+
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -446,6 +455,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             </ul>
                         </Modal.Body>
                     </Modal>
+                    <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
                 </>
             }
             <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -509,7 +519,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
                                             <FaThumbsUp />
                                         </span>
-                                        <span>{code.votes}</span>
+                                        <span className="wb-playground-comments__button" onClick={showCodeVoters}>{code.votes}</span>
                                     </div>
                                     <div className="wb-playground-comments small">
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>

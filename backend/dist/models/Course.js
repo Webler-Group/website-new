@@ -13,7 +13,7 @@ const courseSchema = new mongoose_1.default.Schema({
         trim: true,
         unique: true,
         lowercase: true,
-        maxLength: 20,
+        maxLength: 64,
         minLength: 1,
         validate: [(val) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, 'Course code can only contain words separated by "-"']
     },

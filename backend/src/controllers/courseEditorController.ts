@@ -132,7 +132,7 @@ const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId, title, description, visible } = req.body;
+    const { courseId, code, title, description, visible } = req.body;
 
     const course = await Course.findById(courseId);
     if (!course) {
@@ -143,6 +143,7 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     course.title = title;
     course.description = description;
     course.visible = visible;
+    course.code = code;
 
     try {
         await course.save();

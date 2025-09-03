@@ -62,7 +62,19 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
     }
 
     const deleteReply = (postId: string) => {
-        setResults(prev => prev.filter(x => x.id != postId))
+        setResults(prev => {
+            const results: IComment[] = [];
+            let isAfterDeleted = false;
+            for (let x of prev) {
+                if (x.id === postId) {
+                    isAfterDeleted = true;
+                }
+                else {
+                    results.push({ ...x, index: isAfterDeleted ? x.index - 1 : x.index });
+                }
+            }
+            return results;
+        });
     }
 
     useEffect(() => {

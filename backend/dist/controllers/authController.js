@@ -183,7 +183,6 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, r
         action: "reset-password"
     });
     try {
-        console.log(user.name);
         await (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
         res.json({ success: true });
     }

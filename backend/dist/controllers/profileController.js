@@ -266,49 +266,6 @@ const sendActivationCode = (0, express_async_handler_1.default)(async (req, res)
         res.status(500).json({ message: "Activation email could not be sent" });
     }
 });
-// const changePassword = asyncHandler(async (req: IAuthRequest, res: Response) => {
-//     const currentUserId = req.userId;
-//     const { currentPassword, newPassword } = req.body;
-//     if (typeof currentPassword === "undefined" ||
-//         typeof newPassword === "undefined"
-//     ) {
-//         res.status(400).json({ message: "Some fields are missing" });
-//         return
-//     }
-//     if (currentPassword === newPassword) {
-//         res.status(400).json({ message: "Passwords cannot be same" });
-//         return
-//     }
-//     const user = await User.findById(currentUserId);
-//     if (!user) {
-//         res.status(404).json({ message: "Profile not found" });
-//         return
-//     }
-//     const matchPassword = await user.matchPassword(currentPassword);
-//     if (!matchPassword) {
-//         res.json({
-//             success: false,
-//             error: { _message: "Incorrect information" },
-//             data: false
-//         })
-//         return
-//     }
-//     try {
-//         user.password = newPassword;
-//         await user.save();
-//         res.json({
-//             success: true,
-//             data: true
-//         })
-//     }
-//     catch (err: any) {
-//         res.json({
-//             success: false,
-//             error: err,
-//             data: false
-//         })
-//     }
-// })
 const follow = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { userId } = req.body;
@@ -685,7 +642,6 @@ const controller = {
     getProfile,
     updateProfile,
     changeEmail,
-    //changePassword,
     follow,
     unfollow,
     getFollowers,
