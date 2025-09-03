@@ -31,7 +31,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   isPinned = false,
   showFullContent = false,
   currentUserId: propCurrentUserId,
-  sendJsonRequest: propSendJsonRequest
+  sendJsonRequest: propSendJsonRequest,
+  onDelete
 }, ref) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [isLiked, setIsLiked] = useState(feed.isUpvoted || false);

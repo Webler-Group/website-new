@@ -6,7 +6,6 @@ import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from './comments/NotificationToast';
 import CommentList2 from '../../compiler-playground/pages/CommentList2';
-import { Offcanvas } from 'react-bootstrap';
 
 const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -19,16 +18,12 @@ const FeedDetails: React.FC = () => {
   const [postId, setPostId] = useState<string | null>(null);
   const [isReply, setIsReply] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
-  const [commentModalVisible, setCommentModalVisible] = useState(false);
   const location = useLocation();
 
   useEffect(() => {
     if (location.state && location.state.postId) {
-      setCommentModalVisible(true);
       setPostId(location.state.postId);
       setIsReply(location.state.isReply);
-    } else {
-      setCommentModalVisible(false);
     }
   }, [location]);
 
@@ -113,27 +108,17 @@ const FeedDetails: React.FC = () => {
   }
 
   return (
-    <>
-      <Offcanvas show={commentModalVisible} onHide={()=>setCommentModalVisible(false)} placement="end">
-        <Offcanvas.Header closeButton>
-          <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
-        </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
-          
-        </Offcanvas.Body>
-      </Offcanvas>
-      <div className="min-vh-100 bg-light">
-        <div className="container py-5">
-          {/* Header */}
-          <div className="mb-4">
-            <button
-              onClick={() => navigate('/feed')}
-              className="btn btn-link text-decoration-none text-primary d-inline-flex align-items-center gap-2"
-            >
-              <ArrowLeft size={16} />
-              Back to Feed
-            </button>
-          </div>
+    <div className="min-vh-100 bg-light">
+      <div className="container py-5">
+        {/* Header */}
+        <div className="mb-4">
+          <button
+            onClick={() => navigate('/feed')}
+            className="btn btn-link text-decoration-none text-primary d-inline-flex align-items-center gap-2"
+          >
+            <ArrowLeft size={16} />
+            Back to Feed
+          </button>
         </div>
 
         {/* Feed Item Card */}
@@ -148,8 +133,15 @@ const FeedDetails: React.FC = () => {
               />
           </div>
         </div>
+
+        {/* Comments Section */}
+        <div className="card shadow-sm border-0 rounded-4">
+          <div className="card-body">
+            {/* Comment Section goes */}
+          </div>
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
