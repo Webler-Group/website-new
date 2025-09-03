@@ -48,6 +48,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
     const [commentCount, setCommentCount] = useState(0);
     const [findPost, setFindPost] = useState<any | null>(null);
+    const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
     const location = useLocation();
     const [message, setMessage] = useState([true, ""]);
     const [pageTitle, setPageTitle] = useState("");
@@ -66,6 +67,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (location.state && location.state.postId) {
             openCommentModal();
             setFindPost({ id: location.state.postId, isReply: location.state.isReply });
+            
         } else {
             closeCommentModal();
         }
@@ -74,6 +76,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     useEffect(() => {
         if (codeId) {
             getCode();
+            setCommentListOptions({ section: "Codes", params: { codeId } });
         }
         else {
             getCodeByTemplate();
@@ -423,7 +426,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
                             <CommentList
                                 findPost={findPost}
-                                options={{ section: "Codes", params: { codeId } }}
+                                options={commentListOptions}
+                                setCommentCount={setCommentCount}
                             />
                         </Offcanvas.Body>
                     </Offcanvas>

@@ -1,4 +1,5 @@
 import PostAttachment, { IPostAttachment } from "../../features/discuss/components/PostAttachment";
+import DateUtils from "../../utils/DateUtils";
 import { parseMessage } from "../PostTextareaControl";
 import ProfileAvatar from "../ProfileAvatar";
 import ProfileName from "../ProfileName";
@@ -9,6 +10,7 @@ interface CommentProps {
 
 interface IComment {
     id: string;
+    parentId: string | null;
     userId: string;
     userName: string;
     userAvatar?: string;
@@ -28,7 +30,7 @@ const Comment: React.FC<CommentProps> = ({ comment }) => {
         <ProfileAvatar size={32} avatarImage={comment.userAvatar ?? null} />
         <div>
           <ProfileName userId={comment.userId} userName={comment.userName} />
-          <small className="text-muted ms-2">{comment.date}</small>
+          <small className="text-muted ms-2">{DateUtils.format2(new Date(comment.date))}</small>
         </div>
       </div>
       <div className={`wb-playground-comments__message mt-2`}>
