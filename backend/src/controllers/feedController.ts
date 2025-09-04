@@ -1117,7 +1117,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   feed.isPinned = !feed.isPinned;
   await feed.save();
 
-  res.status(200).json({ success: true });
+  res.status(200).json({ success: true, feed: feed });
 });
 
 const getPinnedFeeds = asyncHandler(async (req: IAuthRequest, res: Response) => {

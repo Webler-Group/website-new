@@ -62,6 +62,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     try {
       setIsPinned(!prevPinned);
       const response = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id });
+      console.log(response)
+      
       if (!response.success) throw new Error(response.message);
 
       const updatedFeed = { ...feed, isPinned: response.feed.isPinned };
