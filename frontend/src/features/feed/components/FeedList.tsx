@@ -12,8 +12,7 @@ const FeedList: React.FC = () => {
   const [pinnedPostsExpanded, setPinnedPostsExpanded] = useState(false);
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [showNavbar, setShowNavbar] = useState(true);
-  const [lastScroll, setLastScroll] = useState(0);
-
+  const lastScrollRef = useRef(0);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { userInfo } = useAuth();
@@ -35,20 +34,23 @@ const FeedList: React.FC = () => {
     filter,
   } = useFeedContext();
 
-  // scroll detection
   useEffect(() => {
     const handleScroll = () => {
       const currentScroll = window.scrollY;
-      if (currentScroll > lastScroll && currentScroll > 80) {
+
+      if (currentScroll > lastScrollRef.current && currentScroll > 80) {
         setShowNavbar(false);
-      } else if (lastScroll - currentScroll > 40) {
+      } else {
         setShowNavbar(true);
       }
-      setLastScroll(currentScroll);
+
+      lastScrollRef.current = currentScroll;
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [lastScroll]);
+  }, []); 
+
 
   useEffect(() => {
     const f = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
