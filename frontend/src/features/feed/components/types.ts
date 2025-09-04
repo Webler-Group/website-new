@@ -22,6 +22,17 @@ export interface OriginalPost {
   tags: Tag[];
 }
 
+
+export enum validReactions {
+    LIKE = 0,
+    HAHA = 1,
+    ANGRY = 2,
+    LOVE = 3,
+    SAD = 4,
+    WOW = 5
+}
+
+
 export interface IFeed {
   totalReactions: any;
   topReactions: any;
@@ -46,7 +57,7 @@ export interface IFeed {
   originalPost: OriginalPost | null;
   isPinned: boolean;
   isShared: boolean;
-  reaction: string;
+  reaction: validReactions | null;
 }
 
 export interface Comment {
@@ -71,14 +82,15 @@ export enum PostType {
     FEED_COMMENT = 6
 }
 
+
 export interface ReactionChange {
-  currentReaction: string | null;
+  currentReaction: validReactions | null;
   hasVoted: boolean;
 }
 
 
 export interface Reaction {
-  id: string;
+  id: validReactions;
   emoji: string;
   label: string;
   color: string;
@@ -89,8 +101,7 @@ export interface ReactionPickerProps {
   currentState: { reaction: string | null };
 }
 
-export type ReactionType = "like" | "love" | "haha" | "wow" | "sad" | "angry";
-
 export type ReactionName = {
-  reaction: ReactionType;
+  reaction: validReactions;
 };
+
