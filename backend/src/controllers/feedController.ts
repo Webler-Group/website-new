@@ -352,7 +352,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { postId, vote, reaction } = req.body;
 
-    if (typeof vote === "undefined" || typeof postId === "undefined") {
+    if (typeof vote === "undefined" || typeof reaction === "undefined" || typeof postId === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return
     }
