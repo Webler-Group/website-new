@@ -35,20 +35,25 @@ const FeedList: React.FC = () => {
     filter,
   } = useFeedContext();
 
-  // scroll detection
   useEffect(() => {
     const handleScroll = () => {
       const currentScroll = window.scrollY;
-      if (currentScroll > lastScroll && currentScroll > 80) {
+
+      if (currentScroll <= 20) {
+        setShowNavbar(true);
+      } else if (currentScroll > lastScroll && currentScroll > 80) {
         setShowNavbar(false);
-      } else if (lastScroll - currentScroll > 40) {
+      } else if (lastScroll - currentScroll > 30) {
         setShowNavbar(true);
       }
+
       setLastScroll(currentScroll);
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScroll]);
+
 
   useEffect(() => {
     const f = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
