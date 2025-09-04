@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon } from 'lucide-react';
 import { IFeed, PostType, ReactionChange, ReactionName } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
@@ -56,6 +56,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [reaction, setReaction] = useState(feed.reaction ?? validReactions.NONE);
 
   const reactions = {
     [validReactions.LIKE]: "👍",
@@ -66,6 +67,12 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     [validReactions.ANGRY]: "😡",
     [validReactions.NONE]: null,
   };
+
+  useEffect(() => {
+    setTotalReactions(feed.totalReactions || 0);
+    setTopReactions(feed.topReactions || []);
+    setReaction(feed.reaction ?? validReactions.NONE);
+  }, [feed.totalReactions, feed.topReactions, feed.reaction]);
 
   const showNotification = (type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -450,17 +457,14 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           <div className="mb-3">
             <div className="d-flex flex-column gap-2">
               {feed.attachments.map(att => {
-                let icon = null;
                 let title = "";
                 let subtitle = "";
                 let to = "#";
                 let bgColor = "";
-                let textColor = "";
                 let info = "";
 
                 switch (att.type) {
                   case 1: // Code
-                    icon = <FileCode size={18} color="#0d6efd" strokeWidth={2} />;
                     title = att.codeName || "Untitled Code";
                     subtitle = `${att.codeLanguage} • by ${att.userName}`;
                     to = `/Compiler-Playground/${att.codeId}`;
@@ -469,22 +473,18 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     break;
 
                   case 2: // Question / Discussion
-                    icon = <MessageSquare size={18} />;
                     title = att.questionTitle || "Question";
                     subtitle = `by ${att.userName}`;
                     to = `/Discuss/${att.questionId}`;
                     bgColor = "bg-success";
-                    textColor = "text-success";
                     info = "question";
                     break;
 
                   case 4: // Feed
-                    icon = <Link2 size={18} />;
                     title = "Shared Post";
                     subtitle = `${att.userName}: ${att.feedMessage?.substring(0, 50)}${att.feedMessage?.length > 50 ? '...' : ''}`;
                     to = `/feed/${att.feedId}`;
                     bgColor = "bg-info";
-                    textColor = "text-info";
                     info = "post";
                     break;
 
@@ -535,28 +535,29 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         )}
 
         {/* Reactions Summary */}
-        {topReactions?.length > 0 && (
-          <div className="mb-3">
-            <div className="d-flex align-items-center gap-2 p-2 bg-light rounded-3">
-              <div className="d-flex align-items-center gap-1">
-                {topReactions.map((r: ReactionName) => (
-                  <span 
-                    key={r.reaction} 
-                    className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
-                    style={{ width: 28, height: 28, fontSize: "0.9rem" }}
-                  >
-                    {reactions[r.reaction]}
-                  </span>
-                ))}
-              </div>
-              {totalReactions > 0 && (
-                <small className="text-muted fw-medium ms-1">
-                  {totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}
-                </small>
-              )}
-            </div>
+    {topReactions?.length > 0 && (
+      <div className="mb-3">
+        <div className="d-flex align-items-center gap-2 p-2 bg-light rounded-3">
+          <div className="d-flex align-items-center gap-1">
+            {topReactions.map((r: ReactionName) => (
+              <span 
+                key={r.reaction} 
+                className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
+                style={{ width: 28, height: 28, fontSize: "0.9rem" }}
+              >
+                {reactions[r.reaction]}
+              </span>
+            ))}
           </div>
-        )}
+          {totalReactions > 0 && (
+            <small className="text-muted fw-medium ms-1">
+              {totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}
+            </small>
+          )}
+        </div>
+      </div>
+    )}
+
 
         {/* Action Buttons */}
         <div className="border-top pt-3">
@@ -564,7 +565,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             <div className="d-flex align-items-center gap-1">
               <ReactionPicker 
                 onReactionChange={(reaction) => { handleLike(reaction) }} 
-                currentState={{ reaction: feed.reaction }} 
+                currentState={{ reaction: reaction }} 
               />
               
               <button

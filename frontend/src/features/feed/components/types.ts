@@ -24,12 +24,12 @@ export interface OriginalPost {
 
 
 export enum validReactions {
-    LIKE = 0,
-    HAHA = 1,
-    ANGRY = 2,
-    LOVE = 3,
-    SAD = 4,
-    WOW = 5,
+    LIKE = 1,
+    HAHA = 2,
+    ANGRY = 3,
+    LOVE = 4,
+    SAD = 5,
+    WOW = 6,
     NONE = -1
 }
 

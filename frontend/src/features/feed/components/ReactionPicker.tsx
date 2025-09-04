@@ -54,6 +54,11 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  useEffect(() => {
+    setSelectedReaction(currentState?.reaction || null);
+  }, [currentState?.reaction]);
+
+
 const handleReactionClick = (reaction: Reaction) => {
   let newReaction: validReactions | null;
 

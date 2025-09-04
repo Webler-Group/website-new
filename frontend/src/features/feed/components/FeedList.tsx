@@ -32,6 +32,8 @@ const FeedList: React.FC = () => {
     filter,
   } = useFeedContext();
 
+  console.log(results)
+
   useEffect(() => {
     const f = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
     const q = searchParams.get("query") ?? "";
@@ -137,7 +139,7 @@ const FeedList: React.FC = () => {
               Refresh
             </button>
             <button
-              onClick={() => navigate("/Feed/New")}
+              onClick={() => { navigate("/Feed/New"); setScrollY(0); }}
               className="btn btn-primary d-inline-flex align-items-center gap-2 rounded-pill px-4"
             >
               <Plus size={18} />
