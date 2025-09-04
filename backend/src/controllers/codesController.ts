@@ -8,11 +8,14 @@ import EvaluationJob from "../models/EvaluationJob";
 import { devRoom, getIO } from "../config/socketServer";
 import { Socket } from "socket.io";
 import { escapeRegex } from "../utils/regexUtils";
-import Post, { PostType } from "../models/Post";
+import Post from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import { sendToUsers } from "../services/pushService";
 import User from "../models/User";
 import Notification from "../models/Notification";
+import RolesEnum from "../data/RolesEnum";
+import PostTypeEnum from "../data/PostTypeEnum";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -355,7 +358,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             .populate("user", "name avatarImage countryCode level roles");
     }
 
-    let dbQuery = Post.find({ codeId, _type: PostType.CODE_COMMENT, hidden: false });
+    let dbQuery = Post.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
 
     let skipCount = index;
 
@@ -474,7 +477,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     const reply = await Post.create({
-        _type: PostType.CODE_COMMENT,
+        _type: PostTypeEnum.CODE_COMMENT,
         message,
         codeId,
         parentId,
@@ -502,7 +505,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     for (let userToNotify of usersToNotify) {
 
         await Notification.create({
-            _type: 202,
+            _type: NotificationTypeEnum.CODE_COMMENT,
             user: userToNotify,
             actionUser: currentUserId,
             message: userToNotify === code.user.toString() ?
@@ -682,7 +685,7 @@ const getJobWS = async (socket: Socket, payload: any) => {
 
 const registerHandlersWS = (socket: Socket) => {
 
-    if (socket.data.roles && socket.data.roles.includes("Admin")) {
+    if (socket.data.roles && socket.data.roles.includes(RolesEnum.ADMIN)) {
         socket.on("job:finished", (payload) => getJobWS(socket, payload));
     }
 }

@@ -1,0 +1,14 @@
+enum NotificationTypeEnum {
+    PROFILE_FOLLOW = 101,
+    QA_ANSWER = 201,
+    CODE_COMMENT = 202,
+    QA_QUESTION_MENTION = 203,
+    QA_ANSWER_MENTION = 204,
+    CODE_COMMENT_MENTION = 205,
+    FEED_FOLLOWER_POST = 301,
+    FEED_COMMENT = 302,
+    FEED_SHARE = 303,
+    FEED_PIN = 304
+}
+
+export default NotificationTypeEnum;

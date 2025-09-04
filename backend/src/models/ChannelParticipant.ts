@@ -1,11 +1,11 @@
 import mongoose, { InferSchemaType, Schema, SchemaTypes } from "mongoose";
-import channelRoles from "../data/channelRoles";
+import ChannelRolesEnum from "../data/ChannelRolesEnum";
 
 const channelParticipantSchema = new Schema({
     role: {
         type: String,
-        default: "Member",
-        enum: channelRoles
+        default: ChannelRolesEnum.MEMBER,
+        enum: Object.values(ChannelRolesEnum)
     },
     user: {
         type: SchemaTypes.ObjectId,

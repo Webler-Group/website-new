@@ -8,11 +8,12 @@ const adminController_1 = __importDefault(require("../controllers/adminControlle
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const router = (0, express_1.Router)();
 router.use(verifyJWT_1.default);
 router.use(protectRoute_1.default);
-router.route("/BanUser").post((0, requireRoles_1.default)(["Admin", "Moderator"]), adminController_1.default.banUser);
-router.route("/Users").post((0, requireRoles_1.default)(["Admin", "Moderator"]), adminController_1.default.getUsersList);
-router.route("/GetUser").post((0, requireRoles_1.default)(["Admin", "Moderator"]), adminController_1.default.getUser);
-router.route("/UpdateRoles").post((0, requireRoles_1.default)(["Admin"]), adminController_1.default.updateRoles);
+router.route("/BanUser").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), adminController_1.default.banUser);
+router.route("/Users").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), adminController_1.default.getUsersList);
+router.route("/GetUser").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), adminController_1.default.getUser);
+router.route("/UpdateRoles").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN]), adminController_1.default.updateRoles);
 exports.default = router;

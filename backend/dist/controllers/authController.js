@@ -15,17 +15,17 @@ const login = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, password } = req.body;
     const deviceId = req.headers["x-device-id"];
     if (!deviceId) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
         return;
     }
     if (typeof email === "undefined" || typeof password === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     const user = await User_1.default.findOne({ email });
     if (user && (await user.matchPassword(password))) {
         if (!user.active) {
-            res.status(401).json({ message: "Account is deactivated" });
+            res.status(401).json({ success: false, message: "Account is deactivated" });
             return;
         }
         const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
@@ -53,18 +53,18 @@ const login = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
     else {
-        res.status(401).json({ message: "Invalid email or password" });
+        res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 });
 const register = (0, express_async_handler_1.default)(async (req, res) => {
     const { email, name, password, solution, captchaId } = req.body;
     const deviceId = req.headers["x-device-id"];
     if (!deviceId) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
         return;
     }
     if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     const record = await CaptchaRecord_1.default.findById(captchaId);
@@ -75,7 +75,7 @@ const register = (0, express_async_handler_1.default)(async (req, res) => {
     await CaptchaRecord_1.default.deleteOne({ _id: captchaId });
     const userExists = await User_1.default.findOne({ email });
     if (userExists) {
-        res.status(400).json({ message: "Email is already registered" });
+        res.status(400).json({ success: false, message: "Email is already registered" });
         return;
     }
     const user = await User_1.default.create({
@@ -125,7 +125,7 @@ const register = (0, express_async_handler_1.default)(async (req, res) => {
         });
     }
     else {
-        res.status(401).json({ message: "Invalid email or password" });
+        res.status(401).json({ success: false, message: "Invalid email or password" });
     }
 });
 const logout = (0, express_async_handler_1.default)(async (req, res) => {
@@ -139,19 +139,19 @@ const refresh = (0, express_async_handler_1.default)(async (req, res) => {
     const deviceId = req.headers["x-device-id"];
     const cookies = req.cookies;
     if (!cookies?.refreshToken || !deviceId) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ success: false, message: "Unauthorized" });
         return;
     }
     const refreshToken = cookies.refreshToken;
     jsonwebtoken_1.default.verify(refreshToken, confg_1.config.refreshTokenSecret, async (err, decoded) => {
         if (err) {
-            res.status(403).json({ message: "Forbidden" });
+            res.status(403).json({ success: false, message: "Please Login First" });
             return;
         }
         const payload = decoded;
         const user = await User_1.default.findById(payload.userId).select('roles active tokenVersion');
         if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) { // NEW: Check version
-            res.status(401).json({ message: "Unauthorized" });
+            res.status(401).json({ success: false, message: "Unauthorized" });
             return;
         }
         const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
@@ -169,12 +169,12 @@ const refresh = (0, express_async_handler_1.default)(async (req, res) => {
 const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, res) => {
     const { email } = req.body;
     if (typeof email === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     const user = await User_1.default.findOne({ email }).lean();
     if (user === null) {
-        res.status(404).json({ message: "Email is not registered" });
+        res.status(404).json({ success: false, message: "Email is not registered" });
         return;
     }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
@@ -187,13 +187,13 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, r
         res.json({ success: true });
     }
     catch {
-        res.status(500).json({ message: "Email could not be sent" });
+        res.status(500).json({ success: false, message: "Email could not be sent" });
     }
 });
 const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
     const { token, password, resetId } = req.body;
     if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
@@ -205,7 +205,7 @@ const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
             }
             const user = await User_1.default.findById(resetId);
             if (user === null) {
-                res.status(404).json({ message: "User not found" });
+                res.status(404).json({ success: false, message: "User not found" });
                 return;
             }
             user.password = password;
@@ -240,7 +240,7 @@ const generateCaptcha = (0, express_async_handler_1.default)(async (req, res) =>
 const verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
     const { token, userId } = req.body;
     if (typeof token === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
@@ -253,7 +253,7 @@ const verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
             }
             const user = await User_1.default.findById(userId);
             if (user === null) {
-                res.status(404).json({ message: "User not found" });
+                res.status(404).json({ success: false, message: "User not found" });
                 return;
             }
             if (user.email !== email) {

@@ -33,16 +33,13 @@ const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
 const PostAttachment_1 = __importDefault(require("./PostAttachment"));
 const pushService_1 = require("../services/pushService");
+const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
+const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const channelMessageSchema = new mongoose_1.Schema({
-    /*
-    1 - Basic
-    2 - System: user joined
-    3 - System: user left
-    4 - System: user changed title
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(ChannelMessageTypeEnum_1.default).map(Number)
     },
     content: {
         type: String,
@@ -119,7 +116,7 @@ channelMessageSchema.post("save", async function () {
             .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
             .map(p => p.user.toString()), {
             title: "New message",
-            body: channel._type == 1 ? user.name + " sent you message" : " New messages in group " + channel.title,
+            body: channel._type == ChannelTypeEnum_1.default.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
             url: "/Channels/" + channel._id
         }, "channels");
         const io = (0, socketServer_1.getIO)();
@@ -128,10 +125,10 @@ channelMessageSchema.post("save", async function () {
             let channelTitle = "";
             const userIds = participants.map(x => x.user);
             const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
-            if (this._type == 3) {
+            if (this._type == ChannelMessageTypeEnum_1.default.USER_LEFT) {
                 userIds.push(user._id);
             }
-            else if (this._type == 4) {
+            else if (this._type == ChannelMessageTypeEnum_1.default.TITLE_CHANGED) {
                 channelTitle = channel.title;
             }
             io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message", {

@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const confg_1 = require("../confg");
 const dbConn_1 = __importDefault(require("../config/dbConn"));
 const tags_1 = __importDefault(require("../config/tags"));
-const roles_1 = __importDefault(require("../data/roles"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const Tag_1 = __importDefault(require("../models/Tag"));
 const User_1 = __importDefault(require("../models/User"));
 async function main() {
@@ -23,7 +23,7 @@ async function main() {
             email: confg_1.config.adminEmail,
             password: confg_1.config.adminPassword,
             name: "Webler Codes",
-            roles: [...roles_1.default],
+            roles: [RolesEnum_1.default.ADMIN],
             emailVerified: true
         });
         console.log("Admin user created successfully.");

@@ -19,8 +19,6 @@ router.route("/GetQuestionReplies")
     .post(discussionController_1.default.getReplies);
 router.route("/GetTags")
     .post(discussionController_1.default.getTags);
-router.route("/GetCodeComments")
-    .post(discussionController_1.default.getCodeComments);
 router.route("/GetVoters")
     .post(discussionController_1.default.getVotersList);
 router.use(protectRoute_1.default);
@@ -40,12 +38,6 @@ router.route("/ToggleAcceptedAnswer")
     .post(discussionController_1.default.toggleAcceptedAnswer);
 router.route("/VotePost")
     .post(verifyEmail_1.default, discussionController_1.default.votePost);
-router.route("/CreateCodeComment")
-    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(300, 10, "Too many requests, try again later"), discussionController_1.default.createCodeComment);
-router.route("/EditCodeComment")
-    .put(discussionController_1.default.editCodeComment);
-router.route("/DeleteCodeComment")
-    .delete(discussionController_1.default.deleteCodeComment);
 router.route("/FollowQuestion")
     .post(discussionController_1.default.followQuestion);
 router.route("/UnfollowQuestion")

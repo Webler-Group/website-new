@@ -6,17 +6,6 @@ import { parseMessage } from "../PostTextareaControl";
 import ProfileAvatar from "../ProfileAvatar";
 import ProfileName from "../ProfileName";
 
-interface CommentProps {
-  comment: IComment;
-  repliesCount?: number;
-  repliesVisible?: boolean;
-  isHighlighted: boolean;
-  handleToggleReplies?: () => void;
-  handleReply?: () => void;
-  handleEdit: () => void;
-  handleDelete: () => void;
-}
-
 interface IComment {
   id: string;
   parentId: string | null;
@@ -30,6 +19,17 @@ interface IComment {
   isUpvoted: boolean;
   index: number;
   attachments: IPostAttachment[];
+}
+
+interface CommentProps {
+  comment: IComment;
+  repliesCount?: number;
+  repliesVisible?: boolean;
+  isHighlighted: boolean;
+  handleToggleReplies?: () => void;
+  handleReply?: () => void;
+  handleEdit: () => void;
+  handleDelete: () => void;
 }
 
 const Comment: React.FC<CommentProps> = ({ comment, repliesCount, repliesVisible, handleToggleReplies, handleReply, handleEdit, handleDelete, isHighlighted }) => {

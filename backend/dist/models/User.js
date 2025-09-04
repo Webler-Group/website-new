@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const countryCodes_1 = __importDefault(require("../config/countryCodes"));
-const roles_1 = __importDefault(require("../data/roles"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const Post_1 = __importDefault(require("./Post"));
 const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
@@ -60,8 +60,8 @@ const userSchema = new mongoose_1.default.Schema({
     },
     roles: {
         type: [String],
-        default: ["User"],
-        enum: roles_1.default
+        default: [RolesEnum_1.default.USER],
+        enum: Object.values(RolesEnum_1.default)
     },
     emailVerified: {
         type: Boolean,

@@ -5,17 +5,14 @@ import User from "./User";
 import Channel from "./Channel";
 import PostAttachment from "./PostAttachment";
 import { sendToUsers } from "../services/pushService";
+import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import ChannelTypeEnum from "../data/ChannelTypeEnum";
 
 const channelMessageSchema = new Schema({
-    /*
-    1 - Basic
-    2 - System: user joined
-    3 - System: user left
-    4 - System: user changed title
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(ChannelMessageTypeEnum).map(Number)
     },
     content: {
         type: String,
@@ -107,7 +104,7 @@ channelMessageSchema.post("save", async function () {
             .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
             .map(p => p.user.toString()), {
             title: "New message",
-            body: channel._type == 1 ? user.name + " sent you message" : " New messages in group " + channel.title,
+            body: channel._type == ChannelTypeEnum.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
             url: "/Channels/" + channel._id
         }, "channels");
 
@@ -120,9 +117,9 @@ channelMessageSchema.post("save", async function () {
             const userIds = participants.map(x => x.user);
             const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
 
-            if (this._type == 3) {
+            if (this._type == ChannelMessageTypeEnum.USER_LEFT) {
                 userIds.push(user._id);
-            } else if (this._type == 4) {
+            } else if (this._type == ChannelMessageTypeEnum.TITLE_CHANGED) {
                 channelTitle = channel.title!;
             }
 

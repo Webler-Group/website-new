@@ -4,7 +4,7 @@ import asyncHandler from "express-async-handler";
 import Tag from "../models/Tag";
 
 /**
- * REQUIRES AUTH AND ROLES ["Admin", "Moderator"]
+ * REQUIRES AUTH AND ROLES [RolesEnum.ADMIN, RolesEnum.MODERATOR]
  * Create a tag if not exists. This controller does not try to recreate an existing tag
  * 
  * body: {

@@ -5,7 +5,7 @@ const requireRoles = (requiredRoles = []) => {
         if (requiredRoles.length > 0) {
             const hasRole = req.roles && req.roles.some((role) => requiredRoles.includes(role));
             if (!hasRole) {
-                return res.status(403).json({ message: "Insufficient role" });
+                return res.status(403).json({ success: false, message: "Insufficient role" });
             }
         }
         next();

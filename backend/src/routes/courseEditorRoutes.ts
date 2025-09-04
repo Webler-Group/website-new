@@ -3,13 +3,14 @@ import courseEditorController from "../controllers/courseEditorController";
 import protectRoute from "../middleware/protectRoute";
 import requireRoles from "../middleware/requireRoles";
 import { Router } from "express";
+import RolesEnum from "../data/RolesEnum";
 
 const router = Router();
 
 router.use(verifyJWT);
 
 router.use(protectRoute);
-router.use(requireRoles(["Admin", "Creator"]))
+router.use(requireRoles([RolesEnum.ADMIN, RolesEnum.CREATOR]))
 
 router.route("/").post(courseEditorController.getCoursesList);
 router.route("/GetCourse").post(courseEditorController.getCourse);

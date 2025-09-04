@@ -4,10 +4,11 @@ import { config } from "../confg";
 import bcrypt from "bcrypt";
 import { AccessTokenPayload } from "../utils/tokenUtils";
 import User from "../models/User";
+import RolesEnum from "../data/RolesEnum";
 
 interface IAuthRequest extends Request {
     userId?: string;
-    roles?: string[];
+    roles?: RolesEnum[];
     deviceId?: string;
 }
 

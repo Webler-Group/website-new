@@ -1,17 +1,14 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import QuizAnswer from "./QuizAnswer";
 import CourseLesson from "./CourseLesson";
+import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
 const lessonNodeSchema = new mongoose.Schema({
-    /*
-    * 1 - text
-    * 2 - singlechoice question
-    * 3 - multichoice question
-    * 4 - text question
-    */
+    
     _type: {
         type: Number,
-        default: 1
+        default: LessonNodeTypeEnum.TEXT,
+        enum: Object.values(LessonNodeTypeEnum).map(Number)
     },
     index: {
         type: Number,

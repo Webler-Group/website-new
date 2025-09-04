@@ -11,6 +11,10 @@ const regexUtils_1 = require("../utils/regexUtils");
 const User_1 = __importDefault(require("./User"));
 const Notification_1 = __importDefault(require("./Notification"));
 const pushService_1 = require("../services/pushService");
+const StringUtils_1 = require("../utils/StringUtils");
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
+const PostAttachmentTypeEnum_1 = __importDefault(require("../data/PostAttachmentTypeEnum"));
 const postAttachmentSchema = new mongoose_1.default.Schema({
     postId: {
         type: mongoose_1.default.Types.ObjectId,
@@ -22,14 +26,10 @@ const postAttachmentSchema = new mongoose_1.default.Schema({
         ref: "ChannelMessage",
         default: null
     },
-    /*
-    * 1 - code
-    * 2 - question
-    * 3 - mention
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(PostAttachmentTypeEnum_1.default).map(Number)
     },
     code: {
         type: mongoose_1.default.Types.ObjectId,
@@ -41,6 +41,11 @@ const postAttachmentSchema = new mongoose_1.default.Schema({
         ref: "Post",
         default: null
     },
+    feed: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "Post",
+        default: null
+    },
     user: {
         type: mongoose_1.default.Types.ObjectId,
         ref: "User",
@@ -48,7 +53,7 @@ const postAttachmentSchema = new mongoose_1.default.Schema({
     }
 });
 postAttachmentSchema.post("save", async function () {
-    if (this._type == 3 && this.postId) {
+    if (this._type == PostAttachmentTypeEnum_1.default.MENTION && this.postId) {
         try {
             const post = await Post_1.default.findById(this.postId, "-message")
                 .populate("user", "name")
@@ -56,26 +61,26 @@ postAttachmentSchema.post("save", async function () {
                 .populate("parentId", "title");
             if (!post || this.user == post.user._id)
                 return;
-            if (post._type == 1) {
+            if (post._type == PostTypeEnum_1.default.QUESTION) {
                 await (0, pushService_1.sendToUsers)([this.user.toString()], {
                     title: "New mention",
                     body: `${post.user.name} mentioned you in question "${post.title}"`
                 }, "mentions");
                 await Notification_1.default.create({
-                    _type: 203,
+                    _type: NotificationTypeEnum_1.default.QA_QUESTION_MENTION,
                     user: this.user,
                     actionUser: post.user._id,
                     message: `{action_user} mentioned you in question "${post.title}"`,
                     questionId: post._id
                 });
             }
-            else if (post._type == 2) {
+            else if (post._type == PostTypeEnum_1.default.ANSWER) {
                 await (0, pushService_1.sendToUsers)([this.user.toString()], {
                     title: "New mention",
                     body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
                 }, "mentions");
                 await Notification_1.default.create({
-                    _type: 204,
+                    _type: NotificationTypeEnum_1.default.QA_ANSWER_MENTION,
                     user: this.user,
                     actionUser: post.user._id,
                     message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
@@ -83,13 +88,13 @@ postAttachmentSchema.post("save", async function () {
                     postId: post._id
                 });
             }
-            else if (post._type == 3) {
+            else if (post._type == PostTypeEnum_1.default.CODE_COMMENT) {
                 await (0, pushService_1.sendToUsers)([this.user.toString()], {
                     title: "New mention",
                     body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
                 }, "mentions");
                 await Notification_1.default.create({
-                    _type: 205,
+                    _type: NotificationTypeEnum_1.default.CODE_COMMENT_MENTION,
                     user: this.user,
                     actionUser: post.user._id,
                     message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
@@ -106,7 +111,7 @@ postAttachmentSchema.post("save", async function () {
 // --- DELETE MANY ---
 postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function (next) {
     const filter = this.getFilter();
-    const docs = await this.model.find(filter).where({ _type: 3 });
+    const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum_1.default.MENTION });
     this._docsToDelete = docs;
     next();
 });
@@ -125,17 +130,17 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
                 user: doc.user,
                 actionUser: post.user,
             };
-            if (post._type === 1) {
-                filter._type = 203;
+            if (post._type === PostTypeEnum_1.default.QUESTION) {
+                filter._type = NotificationTypeEnum_1.default.QA_QUESTION_MENTION;
                 filter.questionId = post._id;
             }
-            else if (post._type === 2) {
-                filter._type = 204;
+            else if (post._type === PostTypeEnum_1.default.ANSWER) {
+                filter._type = NotificationTypeEnum_1.default.QA_ANSWER_MENTION;
                 filter.questionId = post.parentId;
                 filter.postId = post._id;
             }
-            else if (post._type === 3) {
-                filter._type = 205;
+            else if (post._type === PostTypeEnum_1.default.CODE_COMMENT) {
+                filter._type = NotificationTypeEnum_1.default.CODE_COMMENT_MENTION;
                 filter.codeId = post.codeId;
                 filter.postId = post._id;
             }
@@ -151,11 +156,12 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
 });
 postAttachmentSchema.statics.getByPostId = async function (id) {
     const result = await PostAttachment
-        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null, _type: { $ne: 3 } })
+        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null, _type: { $ne: PostAttachmentTypeEnum_1.default.MENTION } })
         .populate("code", "name language")
         .populate("question", "title")
+        .populate("feed")
         .populate("user", "name avatarImage countryCode level roles");
-    return result.map(x => {
+    return result.map((x) => {
         const userDetails = {
             userId: x.user._id,
             userName: x.user.name,
@@ -165,26 +171,37 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
             roles: x.user.roles
         };
         switch (x._type) {
-            case 1:
+            case PostAttachmentTypeEnum_1.default.CODE:
                 if (!x.code)
                     return null;
                 return {
                     id: x._id,
-                    type: 1,
+                    type: x._type,
                     ...userDetails,
                     codeId: x.code._id,
                     codeName: x.code.name,
                     codeLanguage: x.code.language
                 };
-            case 2:
+            case PostAttachmentTypeEnum_1.default.QUESTION:
                 if (!x.question)
                     return null;
                 return {
                     id: x._id,
-                    type: 2,
+                    type: x._type,
                     ...userDetails,
                     questionId: x.question._id,
                     questionTitle: x.question.title
+                };
+            case PostAttachmentTypeEnum_1.default.FEED:
+                if (!x.feed)
+                    return null;
+                return {
+                    id: x._id,
+                    type: x._type,
+                    ...userDetails,
+                    feedId: x.feed._id,
+                    feedMessage: (0, StringUtils_1.truncate)(x.feed.message, 20),
+                    feedType: x.feed._type
                 };
         }
         return null;
@@ -214,7 +231,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
                         attachment = await PostAttachment.create({
                             postId: id.post ?? null,
                             channelMessageId: id.channelMessage ?? null,
-                            _type: 1,
+                            _type: PostAttachmentTypeEnum_1.default.CODE,
                             code: codeId,
                             user: code.user
                         });
@@ -237,9 +254,33 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
                         attachment = await PostAttachment.create({
                             postId: id.post ?? null,
                             channelMessageId: id.channelMessage ?? null,
-                            _type: 2,
+                            _type: PostAttachmentTypeEnum_1.default.QUESTION,
                             question: questionId,
                             user: question.user
+                        });
+                    }
+                }
+                catch (err) {
+                    console.log(err?.message);
+                }
+                break;
+            }
+            case "Feed": {
+                const postId = match[3];
+                try {
+                    const post = await Post_1.default.findById(postId);
+                    if (!post)
+                        continue;
+                    if (post._type !== PostTypeEnum_1.default.FEED && post._type !== PostTypeEnum_1.default.SHARED_FEED)
+                        continue;
+                    attachment = currentAttachments.find(x => x.feed && x.feed == postId);
+                    if (!attachment) {
+                        attachment = await PostAttachment.create({
+                            postId: id.post ?? null,
+                            channelMessageId: id.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum_1.default.FEED,
+                            feed: postId,
+                            user: post.user
                         });
                     }
                 }
@@ -263,12 +304,12 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
             if (!mentionedUser) {
                 continue;
             }
-            attachment = currentAttachments.find(x => x._type === 3 && x.user.toString() === userid);
+            attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum_1.default.MENTION && x.user.toString() === userid);
             if (!attachment) {
                 attachment = await PostAttachment.create({
                     postId: id.post ?? null,
                     channelMessageId: id.channelMessage ?? null,
-                    _type: 3,
+                    _type: PostAttachmentTypeEnum_1.default.MENTION,
                     user: mentionedUser._id
                 });
             }
