@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Tag_1 = __importDefault(require("../models/Tag"));
 /**
- * REQUIRES AUTH AND ROLES ["Admin", "Moderator"]
+ * REQUIRES AUTH AND ROLES [RolesEnum.ADMIN, RolesEnum.MODERATOR]
  * Create a tag if not exists. This controller does not try to recreate an existing tag
  *
  * body: {

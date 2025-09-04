@@ -27,12 +27,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const channelRoles_1 = __importDefault(require("../data/channelRoles"));
+const ChannelRolesEnum_1 = __importDefault(require("../data/ChannelRolesEnum"));
 const channelParticipantSchema = new mongoose_1.Schema({
     role: {
         type: String,
-        default: "Member",
-        enum: channelRoles_1.default
+        default: ChannelRolesEnum_1.default.MEMBER,
+        enum: Object.values(ChannelRolesEnum_1.default)
     },
     user: {
         type: mongoose_1.SchemaTypes.ObjectId,

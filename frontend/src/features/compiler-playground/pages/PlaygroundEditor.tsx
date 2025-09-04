@@ -159,31 +159,12 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             codeId
         });
         if (result && result.code) {
-            let isSourceSet = false;
-            if (result.code.id) {
-                const localKey = `code_${result.code.id}`;
-                const localItem = localStorage.getItem(localKey);
-                if (localItem) {
-                    const parsed = JSON.parse(localItem);
-                    const localDate = new Date(parsed.updatedAt);
-                    const serverDate = new Date(result.code.updatedAt);
-                    if (localDate >= serverDate) {
-                        isSourceSet = true;
-                        setSource(parsed.source);
-                        setCss(parsed.css);
-                        setJs(parsed.js);
-                    }
-                }
-            }
-
             setCode(result.code);
             setCodeName(result.code.name);
             setCodePublic(result.code.isPublic);
-            if (!isSourceSet) {
-                setSource(result.code.source);
-                setCss(result.code.cssSource);
-                setJs(result.code.jsSource);
-            }
+            setSource(result.code.source);
+            setCss(result.code.cssSource);
+            setJs(result.code.jsSource);
             setCommentCount(result.code.comments);
         } else {
             navigate("/PageNotFound")
@@ -220,17 +201,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             jsSource: js
         });
         return result;
-    }
-
-    const localSave = () => {
-        if (!code || !code.id) return;
-        const data = {
-            source,
-            css,
-            js,
-            updatedAt: code.updatedAt
-        };
-        localStorage.setItem(`code_${code.id}`, JSON.stringify(data));
     }
 
     const getCreditsHeaders = (language: string, username: string) => {
@@ -287,12 +257,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
 
                 setMessage([true, "Code updated successfully"]);
-                if (code.id) {
-                    localStorage.removeItem(`code_${code.id}`);
-                }
             }
             else {
-                localSave();
                 setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
             }
             setLoading(false)
@@ -314,12 +280,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
 
                 setMessage([true, "Code updated successfully"]);
-                if (code.id) {
-                    localStorage.removeItem(`code_${code.id}`);
-                }
             }
             else {
-                localSave();
                 setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
             }
             setLoading(false)
@@ -358,7 +320,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
         if (result && result.success) {
-            localStorage.removeItem(`code_${code.id}`);
             navigate("/Codes", { replace: true })
         }
         else {

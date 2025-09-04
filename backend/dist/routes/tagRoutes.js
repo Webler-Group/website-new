@@ -8,10 +8,11 @@ const tagController_1 = __importDefault(require("../controllers/tagController"))
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/").post(tagController_1.default.getTagList);
 router.route("/GetTag").post(tagController_1.default.getTag);
 router.use(protectRoute_1.default);
-router.route("/ExecuteJobs").post((0, requireRoles_1.default)(["Admin", "Moderator"]), tagController_1.default.executeTagJobs);
+router.route("/ExecuteJobs").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), tagController_1.default.executeTagJobs);
 exports.default = router;

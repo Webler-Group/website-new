@@ -30,14 +30,12 @@ const mongoose_1 = __importStar(require("mongoose"));
 const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const ChannelInvite_1 = __importDefault(require("./ChannelInvite"));
 const ChannelMessage_1 = __importDefault(require("./ChannelMessage"));
+const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const channelSchema = new mongoose_1.Schema({
-    /*
-    1 - Direct Messages
-    2 - Group
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(ChannelTypeEnum_1.default).map(Number)
     },
     title: {
         type: String,

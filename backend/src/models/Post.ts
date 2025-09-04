@@ -4,20 +4,14 @@ import Code from "./Code";
 import PostFollowing from "./PostFollowing";
 import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
-
-export enum PostType {
-    QUESTION = 1,
-    ANSWER = 2,
-    CODE_COMMENT = 3,
-    FEED = 4,
-    SHARED_FEED = 5,
-    FEED_COMMENT = 6
-}
+import PostTypeEnum from "../data/PostTypeEnum";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const postSchema = new mongoose.Schema({
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(PostTypeEnum).map(Number)
     },
     isAccepted: {
         type: Boolean,
@@ -100,13 +94,13 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
         switch (post._type) {
-            case PostType.QUESTION: {
+            case PostTypeEnum.QUESTION: {
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing.deleteMany({ following: post._id });
 
                 break;
             }
-            case PostType.ANSWER: {
+            case PostTypeEnum.ANSWER: {
                 const question = await Post.findById(post.parentId);
                 if (question === null) {
                     throw new Error("Question not found");
@@ -114,13 +108,13 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 question.$inc("answers", -1);
                 await question.save();
                 await Notification.deleteMany({
-                    _type: 201,
+                    _type: NotificationTypeEnum.QA_ANSWER,
                     questionId: question._id,
                     postId: post._id
                 })
                 break;
             }
-            case PostType.CODE_COMMENT: {
+            case PostTypeEnum.CODE_COMMENT: {
                 const code = await Code.findById(post.codeId);
                 if (code === null) {
                     throw new Error("Code not found");
@@ -134,19 +128,19 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 }
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await Notification.deleteMany({
-                    _type: 202,
+                    _type: NotificationTypeEnum.CODE_COMMENT,
                     codeId: code._id,
                     postId: post._id
                 })
                 break;
             }
 
-            case PostType.FEED: case PostType.SHARED_FEED: {
-                await Post.deleteAndCleanup({ parentId: post._id, _type: PostType.FEED_COMMENT });
+            case PostTypeEnum.FEED: case PostTypeEnum.SHARED_FEED: {
+                await Post.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum.FEED_COMMENT });
                 break;
             }
 
-            case PostType.FEED_COMMENT: {
+            case PostTypeEnum.FEED_COMMENT: {
                 const feed = await Post.findById(post.feedId);
                 if (feed === null) {
                     throw new Error("Feed not found");
@@ -160,7 +154,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 }
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await Notification.deleteMany({
-                    _type: 302,
+                    _type: NotificationTypeEnum.FEED_COMMENT,
                     feedId: feed._id,
                     postId: post._id
                 })

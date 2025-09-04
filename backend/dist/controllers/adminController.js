@@ -7,6 +7,7 @@ const User_1 = __importDefault(require("../models/User"));
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const regexUtils_1 = require("../utils/regexUtils");
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const getUsersList = (0, express_async_handler_1.default)(async (req, res) => {
     const { search, count, page, date, role, active } = req.body;
     // validate body (ignore search if undefined)
@@ -77,13 +78,13 @@ const getUsersList = (0, express_async_handler_1.default)(async (req, res) => {
 const getUser = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId } = req.body;
     if (!userId || typeof userId !== "string") {
-        res.status(400).json({ message: "Invalid body" });
+        res.status(400).json({ success: false, message: "Invalid body" });
         return;
     }
     const user = await User_1.default.findById(userId)
         .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ success: false, message: "User not found" });
         return;
     }
     res.json({
@@ -114,11 +115,11 @@ const banUser = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const user = await User_1.default.findById(userId);
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ success: false, message: "User not found" });
         return;
     }
-    if (user.roles.includes("Admin")) {
-        res.status(404).json({ message: "Unauthorized" });
+    if (user.roles.includes(RolesEnum_1.default.ADMIN)) {
+        res.status(404).json({ success: false, message: "Unauthorized" });
         return;
     }
     user.active = active;
@@ -147,7 +148,7 @@ const banUser = (0, express_async_handler_1.default)(async (req, res) => {
 });
 const updateRoles = (0, express_async_handler_1.default)(async (req, res) => {
     const { userId, roles } = req.body;
-    if (!Array.isArray(roles) || roles.some(r => typeof r !== "string")) {
+    if (!Array.isArray(roles) || roles.some(role => !Object.values(RolesEnum_1.default).includes(role))) {
         res.status(400).json({ message: "Invalid body" });
         return;
     }

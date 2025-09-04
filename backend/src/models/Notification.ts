@@ -1,8 +1,9 @@
 import mongoose, { InferSchemaType } from "mongoose";
 import { getIO, uidRoom } from "../config/socketServer";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const notificationSchema = new mongoose.Schema({
-    _type: { type: Number, required: true },
+    _type: { type: Number, required: true, enum: Object.values(NotificationTypeEnum).map(Number) },
     message: { type: String, required: true },
     user: { type: mongoose.Types.ObjectId, ref: "User", required: true },
     actionUser: { type: mongoose.Types.ObjectId, ref: "User", required: true },

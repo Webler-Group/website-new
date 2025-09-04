@@ -21,6 +21,8 @@ router.route("/CreateJob")
     .post((0, requestLimiter_1.default)(60, 10, "Too many requests, try again later"), codesController_1.default.createJob);
 router.route("/GetJob")
     .post(codesController_1.default.getJob);
+router.route("/GetComments")
+    .post(codesController_1.default.getCodeComments);
 router.use(protectRoute_1.default);
 router.route("/CreateCode")
     .post(codesController_1.default.createCode);
@@ -30,4 +32,10 @@ router.route("/DeleteCode")
     .delete(codesController_1.default.deleteCode);
 router.route("/VoteCode")
     .post(verifyEmail_1.default, codesController_1.default.voteCode);
+router.route("/CreateComment")
+    .post(verifyEmail_1.default, (0, requestLimiter_1.default)(300, 10, "Too many requests, try again later"), codesController_1.default.createCodeComment);
+router.route("/EditComment")
+    .put(codesController_1.default.editCodeComment);
+router.route("/DeleteComment")
+    .delete(codesController_1.default.deleteCodeComment);
 exports.default = router;

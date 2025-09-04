@@ -1,7 +1,7 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
-import rolesEnum from "../data/roles";
+import RolesEnum from "../data/RolesEnum";
 import Post from "./Post";
 import Code from "./Code";
 import Notification from "./Notification";
@@ -57,8 +57,8 @@ const userSchema = new mongoose.Schema({
     },
     roles: {
         type: [String],
-        default: ["User"],  //Admin, Moderator, User
-        enum: rolesEnum
+        default: [RolesEnum.USER],
+        enum: Object.values(RolesEnum)
     },
     emailVerified: {
         type: Boolean,
@@ -130,6 +130,7 @@ userSchema.pre('save', async function (next) {
 })
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {
+    roles: RolesEnum[];
     matchPassword(inputPassword: string): Promise<boolean>;
 }
 

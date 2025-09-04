@@ -6,16 +6,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const QuizAnswer_1 = __importDefault(require("./QuizAnswer"));
 const CourseLesson_1 = __importDefault(require("./CourseLesson"));
+const LessonNodeTypeEnum_1 = __importDefault(require("../data/LessonNodeTypeEnum"));
 const lessonNodeSchema = new mongoose_1.default.Schema({
-    /*
-    * 1 - text
-    * 2 - singlechoice question
-    * 3 - multichoice question
-    * 4 - text question
-    */
     _type: {
         type: Number,
-        default: 1
+        default: LessonNodeTypeEnum_1.default.TEXT,
+        enum: Object.values(LessonNodeTypeEnum_1.default).map(Number)
     },
     index: {
         type: Number,

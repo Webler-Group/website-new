@@ -21,6 +21,9 @@ const pushService_1 = require("../services/pushService");
 const regexUtils_1 = require("../utils/regexUtils");
 const EmailChangeRecord_1 = __importDefault(require("../models/EmailChangeRecord"));
 const mongoose_1 = __importDefault(require("mongoose"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const avatarImageUpload = (0, multer_1.default)({
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(req, file, cb) {
@@ -49,7 +52,7 @@ const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const roles = req.roles;
     const { userId } = req.body;
-    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
+    const isModerator = roles && roles.some(role => [RolesEnum_1.default.MODERATOR, RolesEnum_1.default.ADMIN].includes(role));
     const user = await User_1.default.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ message: "Profile not found" });
@@ -70,12 +73,12 @@ const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const codes = await codesQuery
         .limit(5)
         .select("-source -cssSource -jsSource");
-    const questions = await Post_1.default.find({ user: userId, _type: 1 })
+    const questions = await Post_1.default.find({ user: userId, _type: PostTypeEnum_1.default.QUESTION })
         .sort({ createdAt: "desc" })
         .limit(5)
         .populate("tags", "name")
         .select("-message");
-    const answers = await Post_1.default.find({ user: userId, _type: 2 })
+    const answers = await Post_1.default.find({ user: userId, _type: PostTypeEnum_1.default.ANSWER })
         .sort({ createdAt: "desc" })
         .limit(5)
         .select("-message");
@@ -300,7 +303,7 @@ const follow = (0, express_async_handler_1.default)(async (req, res) => {
         await Notification_1.default.create({
             user: userId,
             actionUser: currentUserId,
-            _type: 101,
+            _type: NotificationTypeEnum_1.default.PROFILE_FOLLOW,
             message: "{action_user} followed you"
         });
         res.json({ success: true });
@@ -329,7 +332,7 @@ const unfollow = (0, express_async_handler_1.default)(async (req, res) => {
         await Notification_1.default.deleteOne({
             user: userId,
             actionUser: currentUserId,
-            _type: 101
+            _type: NotificationTypeEnum_1.default.PROFILE_FOLLOW
         });
         res.json({ success: true });
         return;
@@ -463,7 +466,8 @@ const getNotifications = (0, express_async_handler_1.default)(async (req, res) =
             post: {
                 parentId: x.postId ? x.postId.parentId : null
             },
-            questionId: x.questionId
+            questionId: x.questionId,
+            feedId: x.feedId
         }));
         res.json({
             notifications: data

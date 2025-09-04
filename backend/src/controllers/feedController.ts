@@ -1,7 +1,7 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Post, { PostType } from "../models/Post";
+import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
 import Notification from "../models/Notification";
@@ -11,90 +11,92 @@ import { escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
 import UserFollowing from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
+import PostTypeEnum from "../data/PostTypeEnum";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { message } = req.body;
-    let { title } = req.body;
-    let { tags } = req.body;
-    const currentUserId = req.userId;
+  const { message } = req.body;
+  let { title } = req.body;
+  let { tags } = req.body;
+  const currentUserId = req.userId;
 
-    if (typeof message === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
+  if (typeof message === "undefined") {
+    res.status(400).json({ success: false, message: "Some fields are missing" });
+    return
+  }
+
+  const tagIds: any[] = [];
+
+  if (!title) title = "Title not provided.";
+
+  if (!tags) tags = [];
+
+  for (let tagName of tags) {
+    const tag = await Tag.findOne({ name: tagName });
+    if (!tag) {
+      res.status(400).json({ success: false, message: `${tagName} does not exists` });
+      return;
     }
+    tagIds.push(tag._id);
+  }
 
-    const tagIds: any[] = [];
+  // if (tagIds.length < 1) {
+  //     res.status(400).json({ success: false, message: `Empty Tag` });
+  //     return;
+  // }
 
-    if (!title) title = "Title not provided.";
-
-    if (!tags) tags = [];
-
-    for (let tagName of tags) {
-        const tag = await Tag.findOne({ name: tagName });
-        if (!tag) {
-            res.status(400).json({ success: false, message: `${tagName} does not exists` });
-            return;
-        }
-        tagIds.push(tag._id);
+  // tag names
+  const tagNames: string[] = [];
+  for (let tagId of tagIds) {
+    const tag = await Tag.findById(tagId);
+    if (tag) {
+      tagNames.push(tag.name);
     }
+  }
 
-    // if (tagIds.length < 1) {
-    //     res.status(400).json({ success: false, message: `Empty Tag` });
-    //     return;
-    // }
+  const feed = await Post.create({
+    _type: PostTypeEnum.FEED,
+    title,
+    message,
+    tags: tagIds,
+    user: currentUserId,
+    isAccepted: true
+  })
 
-    // tag names
-    const tagNames: string[] = [];
-    for (let tagId of tagIds) {
-        const tag = await Tag.findById(tagId);
-        if (tag) {
-            tagNames.push(tag.name);
-        }
-    }
+  if (feed) {
 
-    const feed = await Post.create({
-        _type: PostType.FEED,
-        title,
-        message,
-        tags: tagIds,
-        user: currentUserId,
-        isAccepted: true
+    const followers = await UserFollowing.find({ following: currentUserId })
+
+    followers.forEach(async (follower) => {
+      await Notification.create({
+        _type: NotificationTypeEnum.FEED_FOLLOWER_POST,
+        user: follower.user,
+        actionUser: currentUserId,
+        message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
+        feedId: feed._id,
+      });
     })
 
-    if (feed) {
-
-        const followers = await UserFollowing.find({ following: currentUserId })
-
-        followers.forEach(async (follower) => {
-            await Notification.create({
-                _type: 301,
-                user: follower.user,
-                actionUser: currentUserId,
-                message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
-                feedId: feed._id,
-            });
-        })
-
-        res.json({
-            success: true,
-            feed: {
-                type: feed._type,
-                id: feed._id,
-                title: feed.title,
-                message: feed.message,
-                tags: tagNames,
-                date: feed.createdAt,
-                userId: feed.user,
-                isAccepted: feed.isAccepted,
-                votes: feed.votes,
-                answers: feed.answers
-            }
-        });
-    }
-    else {
-        res.status(500).json({ success: false, message: "Error" });
-    }
+    res.json({
+      success: true,
+      feed: {
+        type: feed._type,
+        id: feed._id,
+        title: feed.title,
+        message: feed.message,
+        tags: tagNames,
+        date: feed.createdAt,
+        userId: feed.user,
+        isAccepted: feed.isAccepted,
+        votes: feed.votes,
+        answers: feed.answers
+      }
+    });
+  }
+  else {
+    res.status(500).json({ success: false, message: "Error" });
+  }
 
 });
 
@@ -103,49 +105,49 @@ const getReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { parentId } = req.body;
 
     let { page, limit } = req.body;
-    
-    if(!page) page = 1;
-    if(!limit) limit = 10;
+
+    if (!page) page = 1;
+    if (!limit) limit = 10;
 
     const skip = (page - 1) * limit;
 
     if (!mongoose.Types.ObjectId.isValid(parentId)) {
-        res.status(400).json({ error: "Invalid parentId" });
-        return;
+      res.status(400).json({ error: "Invalid parentId" });
+      return;
     }
 
     const pipeline: PipelineStage[] = [
-    { $match: { parentId: new mongoose.Types.ObjectId(parentId) } },
-    {
+      { $match: { parentId: new mongoose.Types.ObjectId(parentId) } },
+      {
         $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "user",
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "user",
         },
-    },
-    { $unwind: "$user" },
-    {
+      },
+      { $unwind: "$user" },
+      {
         $group: {
-        _id: "$reaction",
-        users: {
+          _id: "$reaction",
+          users: {
             $push: {
-            _id: "$user._id",
-            name: "$user.name",
+              _id: "$user._id",
+              name: "$user.name",
             },
+          },
+          count: { $sum: 1 },
         },
-        count: { $sum: 1 },
-        },
-    },
-    {
+      },
+      {
         $project: {
-        _id: 0,
-        reaction: "$_id",
-        count: 1,
-        users: { $slice: ["$users", skip, limit] },
+          _id: 0,
+          reaction: "$_id",
+          count: 1,
+          users: { $slice: ["$users", skip, limit] },
         },
-    },
-    { $sort: { count: -1 } } // order by most used reaction
+      },
+      { $sort: { count: -1 } } // order by most used reaction
     ];
 
     const reactions = await Upvote.aggregate(pipeline);
@@ -153,16 +155,16 @@ const getReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
     // compute totals + top 3
     const totalReactions = reactions.reduce((sum, r) => sum + r.count, 0);
     const topReactions = reactions.slice(0, 3).map(r => ({
-    reaction: r.reaction,
-    count: r.count
+      reaction: r.reaction,
+      count: r.count
     }));
 
     res.json({
-    page,
-    limit,
-    totalReactions,
-    topReactions,
-    reactions,
+      page,
+      limit,
+      totalReactions,
+      topReactions,
+      reactions,
     });
 
   } catch (err) {
@@ -173,409 +175,393 @@ const getReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
+  const currentUserId = req.userId;
 
 
-    const { feedId, message } = req.body;
-    let { title, tags } = req.body;
+  const { feedId, message } = req.body;
+  let { title, tags } = req.body;
 
-    if (typeof message === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
+  if (typeof message === "undefined") {
+    res.status(400).json({ success: false, message: "Some fields are missing" });
+    return
+  }
 
-    const feed = await Post.findById(feedId);
+  const feed = await Post.findById(feedId);
 
-    if (!title) title = "Title not provided."
-    if (!tags) tags = [];
+  if (!title) title = "Title not provided."
+  if (!tags) tags = [];
 
-    if (feed === null) {
-        res.status(404).json({ success: false, message: "Feed not found" })
-        return
-    }
+  if (feed === null) {
+    res.status(404).json({ success: false, message: "Feed not found" })
+    return
+  }
 
-    if (feed.user != currentUserId) {
-        res.status(401).json({ success: false, message: "Unauthorized" })
-        return
-    }
+  if (feed.user != currentUserId) {
+    res.status(401).json({ success: false, message: "Unauthorized" })
+    return
+  }
 
-    const tagIds: any[] = [];
-    let promises: Promise<void>[] = [];
+  const tagIds: any[] = [];
+  let promises: Promise<void>[] = [];
 
-    for (let tagName of tags) {
-        promises.push(
-            Tag.findOne({ name: tagName })
-                .then(tag => {
-                    if (tag) tagIds.push(tag._id);
-                })
-        );
-    }
-
-    await Promise.all(promises);
-
-    feed.title = title;
-    feed.message = message;
-    feed.tags = tagIds;
-
-    try {
-        await feed.save();
-
-        res.json({
-            success: true,
-            data: {
-                id: feed._id,
-                title: feed.title,
-                message: feed.message,
-                tags: feed.tags
-            }
+  for (let tagName of tags) {
+    promises.push(
+      Tag.findOne({ name: tagName })
+        .then(tag => {
+          if (tag) tagIds.push(tag._id);
         })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            message: err,
-            data: null
-        });
-    }
+    );
+  }
+
+  await Promise.all(promises);
+
+  feed.title = title;
+  feed.message = message;
+  feed.tags = tagIds;
+
+  try {
+    await feed.save();
+
+    res.json({
+      success: true,
+      data: {
+        id: feed._id,
+        title: feed.title,
+        message: feed.message,
+        tags: feed.tags
+      }
+    })
+  }
+  catch (err: any) {
+    res.json({
+      success: false,
+      message: err,
+      data: null
+    });
+  }
 
 });
 
 const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
+  const currentUserId = req.userId;
 
-    const { feedId } = req.body;
+  const { feedId } = req.body;
 
-    const feed = await Post.findById(feedId);
+  const feed = await Post.findById(feedId);
 
-    if (feed === null) {
-        res.status(404).json({ success: false, message: "Feed not found" })
-        return
-    }
+  if (feed === null) {
+    res.status(404).json({ success: false, message: "Feed not found" })
+    return
+  }
 
-    if (feed.user != currentUserId) {
-        res.status(401).json({ success: false, message: "Unauthorized" })
-        return
-    }
+  if (feed.user != currentUserId) {
+    res.status(401).json({ success: false, message: "Unauthorized" })
+    return
+  }
 
-    try {
-        await Post.deleteAndCleanup({ _id: feedId });
+  try {
+    await Post.deleteAndCleanup({ _id: feedId });
 
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, message: err })
-    }
+    res.json({ success: true });
+  }
+  catch (err: any) {
+    res.json({ success: false, message: err })
+  }
 })
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { message, feedId, parentId } = req.body;
+  const currentUserId = req.userId;
+  const { message, feedId, parentId } = req.body;
 
-    // Validate feed existence
-    const feed = await Post.findById(feedId);
-    if (!feed) {
-        res.status(404).json({ success: false, message: "Feed not found" });
-        return;
+  // Validate feed existence
+  const feed = await Post.findById(feedId);
+  if (!feed) {
+    res.status(404).json({ success: false, message: "Feed not found" });
+    return;
+  }
+
+  let parentComment = null;
+  if (parentId) {
+    // replying to a comment
+    parentComment = await Post.findById(parentId);
+    if (!parentComment) {
+      res.status(404).json({ success: false, message: "Parent comment not found" });
+      return;
+    }
+  }
+
+  // Create reply (whether to feed or comment)
+  const reply = await Post.create({
+    _type: PostTypeEnum.FEED_COMMENT,
+    message,
+    feedId,
+    parentId, // if replying directly to feed, parentId = feedId
+    user: currentUserId
+  });
+
+  if (reply) {
+    const usersToNotify = new Set<string>();
+    usersToNotify.add(feed.user.toString())
+    if (parentComment !== null) {
+      usersToNotify.add(parentComment.user.toString())
+    }
+    usersToNotify.delete(currentUserId!);
+
+    for (let userToNotify of usersToNotify) {
+
+      await Notification.create({
+        _type: NotificationTypeEnum.FEED_COMMENT,
+        user: userToNotify,
+        actionUser: currentUserId,
+        message: userToNotify === feed.user.toString() ?
+          `{action_user} commented on your post "${truncate(feed.message, 20)}"`
+          :
+          `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
+        feedId: feed._id,
+        postId: reply._id
+      })
     }
 
-    let parentComment = null;
-    if (parentId) {
-        // replying to a comment
-        parentComment = await Post.findById(parentId);
-        if (!parentComment) {
-            res.status(404).json({ success: false, message: "Parent comment not found" });
-            return;
-        }
+    // Increment answers count on the main feed
+    feed.$inc("answers", 1);
+    await feed.save();
+
+    if (parentComment) {
+      parentComment.$inc("answers", 1)
+      await parentComment.save();
     }
 
-    // Create reply (whether to feed or comment)
-    const reply = await Post.create({
-        _type: PostType.FEED_COMMENT,
-        message,
-        feedId,
-        parentId, // if replying directly to feed, parentId = feedId
-        user: currentUserId
+    const attachments = await PostAttachment.getByPostId({ post: reply._id });
+
+    res.json({
+      post: {
+        id: reply._id,
+        message: reply.message,
+        date: reply.createdAt,
+        userId: reply.user,
+        parentId: reply.parentId,
+        votes: reply.votes,
+        answers: reply.answers ?? 0,
+        attachments
+      }
     });
-
-    if (reply) {
-        const usersToNotify = new Set<string>();
-        usersToNotify.add(feed.user.toString())
-        if (parentComment !== null) {
-            usersToNotify.add(parentComment.user.toString())
-        }
-        usersToNotify.delete(currentUserId!);
-
-        for (let userToNotify of usersToNotify) {
-
-            await Notification.create({
-                _type: 302,
-                user: userToNotify,
-                actionUser: currentUserId,
-                message: userToNotify === feed.user.toString() ?
-                    `{action_user} commented on your post "${truncate(feed.message,20)}"`
-                    :
-                    `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
-                feedId: feed._id,
-                postId: reply._id
-            })
-        }
-
-        // Increment answers count on the main feed
-        feed.$inc("answers", 1);
-        await feed.save();
-
-        if (parentComment) {
-            parentComment.$inc("answers", 1)
-            await parentComment.save();
-        }
-
-        const attachments = await PostAttachment.getByPostId({ post: reply._id });
-
-        res.json({
-            post: {
-                id: reply._id,
-                message: reply.message,
-                date: reply.createdAt,
-                userId: reply.user,
-                parentId: reply.parentId,
-                votes: reply.votes,
-                answers: reply.answers ?? 0,
-                attachments
-            }
-        });
-    } else {
-        res.status(500).json({ message: "Error creating reply" });
-    }
+  } else {
+    res.status(500).json({ message: "Error creating reply" });
+  }
 });
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { postId, vote, reaction } = req.body;
+  const currentUserId = req.userId;
+  const { postId, vote, reaction } = req.body;
 
-    if (typeof vote === "undefined" || typeof reaction === "undefined" || typeof postId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
+  if (typeof vote === "undefined" || typeof reaction === "undefined" || typeof postId === "undefined") {
+    res.status(400).json({ success: false, message: "Some fields are missing" });
+    return
+  }
+
+  const post = await Post.findById(postId);
+  if (post === null) {
+    res.status(404).json({ success: false, message: "Post not found" })
+    return
+  }
+
+  let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
+  if (vote === true) {
+    if (!upvote) {
+      upvote = await Upvote.create({ user: currentUserId, parentId: postId, reaction: reaction })
+      post.$inc("votes", 1)
+      await post.save();
+    } else {
+      upvote.reaction = reaction;
+      await upvote.save();
     }
-
-    const post = await Post.findById(postId);
-    if (post === null) {
-        res.status(404).json({ success: false, message: "Post not found" })
-        return
+  }
+  else if (vote === false) {
+    if (upvote) {
+      await Upvote.deleteOne({ _id: upvote._id });
+      upvote = null;
+      post.$inc("votes", -1)
+      await post.save();
     }
+  }
+  let reactionSummary = await getReactionsSummary(postId);
 
-
-    enum validReactions {
-        LIKE = 1,
-        HAHA = 2,
-        ANGRY = 3,
-        LOVE = 4,
-        SAD = 5,
-        WOW = 6,
-        NONE = -1,
-    }
-
-    if (!Object.values(validReactions).includes(reaction)) {
-        res.status(400).json({ success: false, message: "Invalid reaction" });
-        return
-    }
-
-    let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
-    if (vote === true) {
-        if (!upvote) {
-            upvote = await Upvote.create({ user: currentUserId, parentId: postId, reaction: reaction })
-            post.$inc("votes", 1)
-            await post.save();
-        }else{
-            upvote.reaction = reaction;
-            await upvote.save();
-        }
-    }
-    else if (vote === false) {
-        if (upvote) {
-            await Upvote.deleteOne({ _id: upvote._id });
-            upvote = null;
-            post.$inc("votes", -1)
-            await post.save();
-        }
-    }
-    let reactionSummary = await getReactionsSummary(postId);  
-
-    res.json({ vote: upvote ? 1 : 0, success: true, reactionSummary });
+  res.json({ vote: upvote ? 1 : 0, success: true, reactionSummary });
 
 })
 
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    // const currentUserId = "68a7400f3dd5eef60a166911";
-    const { id, message } = req.body;
+  const currentUserId = req.userId;
+  // const currentUserId = "68a7400f3dd5eef60a166911";
+  const { id, message } = req.body;
 
-    if (typeof message === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" })
-        return
-    }
+  if (typeof message === "undefined") {
+    res.status(400).json({ success: false, message: "Some fields are missing" })
+    return
+  }
 
-    const reply = await Post.findById(id);
+  const reply = await Post.findById(id);
 
-    if (reply === null) {
-        res.status(404).json({ success: false, message: "Post not found" })
-        return
-    }
+  if (reply === null) {
+    res.status(404).json({ success: false, message: "Post not found" })
+    return
+  }
 
-    if (currentUserId != reply.user) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return
-    }
+  if (currentUserId != reply.user) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return
+  }
 
-    reply.message = message;
+  reply.message = message;
 
-    try {
-        await reply.save();
+  try {
+    await reply.save();
 
-        const attachments = await PostAttachment.getByPostId({ post: reply._id })
+    const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
-        res.json({
-            success: true,
-            data: {
-                id: reply._id,
-                message: reply.message,
-                attachments
-            }
-        })
-    }
-    catch (err: any) {
+    res.json({
+      success: true,
+      data: {
+        id: reply._id,
+        message: reply.message,
+        attachments
+      }
+    })
+  }
+  catch (err: any) {
 
-        res.json({
-            success: false,
-            message: err,
-            data: null
-        })
-    }
+    res.json({
+      success: false,
+      message: err,
+      data: null
+    })
+  }
 
 });
 
 const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { id } = req.body;
+  const currentUserId = req.userId;
+  const { id } = req.body;
 
-    const reply = await Post.findById(id);
+  const reply = await Post.findById(id);
 
-    if (reply === null) {
-        res.status(404).json({ success: false, message: "Post not found" })
-        return
-    }
+  if (reply === null) {
+    res.status(404).json({ success: false, message: "Post not found" })
+    return
+  }
 
-    if (currentUserId != reply.user) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return
-    }
+  if (currentUserId != reply.user) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return
+  }
 
-    const feed = await Post.findById(reply.feedId);
-    if (feed === null) {
-        res.status(404).json({ success: false, message: "Feed not found" })
-        return
-    }
+  const feed = await Post.findById(reply.feedId);
+  if (feed === null) {
+    res.status(404).json({ success: false, message: "Feed not found" })
+    return
+  }
 
-    try {
-        await Post.deleteAndCleanup({ _id: id });
+  try {
+    await Post.deleteAndCleanup({ _id: id });
 
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        console.log(err);
-        
-        res.json({ success: false, message: err })
-    }
+    res.json({ success: true });
+  }
+  catch (err: any) {
+    console.log(err);
+
+    res.json({ success: false, message: err })
+  }
 })
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId, message } = req.body;
-    let { title } = req.body;
-    let { tags } = req.body;
-    const currentUserId = req.userId;
+  const { feedId, message } = req.body;
+  let { title } = req.body;
+  let { tags } = req.body;
+  const currentUserId = req.userId;
 
-    if (typeof message === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
+  if (typeof message === "undefined") {
+    res.status(400).json({ success: false, message: "Some fields are missing" });
+    return
+  }
+
+  if (!title) title = "Title not provided."
+
+  const tagIds: any[] = [];
+
+  if (!tags) tags = []
+
+  for (let tagName of tags) {
+    const tag = await Tag.findOne({ name: tagName });
+    if (!tag) {
+      res.status(400).json({ success: false, message: `${tagName} does not exists` });
+      return;
+    }
+    tagIds.push(tag._id);
+  }
+
+  const tagNames: any[] = [];
+  for (let tagId of tagIds) {
+    const tag = await Tag.findById(tagId);
+    if (tag) {
+      tagNames.push(tag);
+    }
+  }
+
+  const feed = await Post.create({
+    _type: PostTypeEnum.SHARED_FEED,
+    title,
+    message,
+    tags: tagIds,
+    user: currentUserId,
+    isAccepted: true,
+    parentId: feedId,
+  })
+
+  if (feed) {
+
+    const post = await Post.findById(feedId);
+
+    if (post) {
+      post.$inc("shares", 1)
+      await post.save();
     }
 
-    if (!title) title = "Title not provided."
-
-    const tagIds: any[] = [];
-
-    if (!tags) tags = []
-
-    for (let tagName of tags) {
-        const tag = await Tag.findOne({ name: tagName });
-        if (!tag) {
-            res.status(400).json({ success: false, message: `${tagName} does not exists` });
-            return;
-        }
-        tagIds.push(tag._id);
+    const originalFeed = await Post.findById(feedId);
+    if (!originalFeed) {
+      res.status(404).json({ "message": "Feed is not available" });
+      return;
     }
 
-    const tagNames: any[] = [];
-    for (let tagId of tagIds) {
-        const tag = await Tag.findById(tagId);
-        if (tag) {
-            tagNames.push(tag);
-        }
+    if (originalFeed.user != currentUserId) {
+      await Notification.create({
+        _type: NotificationTypeEnum.FEED_SHARE,
+        user: originalFeed.user,
+        actionUser: currentUserId,
+        message: `{action_user} shared your Post "${truncate(originalFeed.message, 20)}"`,
+        feedId: feed._id,
+      });
     }
 
-    const feed = await Post.create({
-        _type: PostType.SHARED_FEED,
-        title,
-        message,
-        tags: tagIds,
-        user: currentUserId,
-        isAccepted: true,
-        parentId: feedId,
-    })
 
-    if (feed) {
-
-        const post = await Post.findById(feedId);
-
-        if (post) {
-            post.$inc("shares", 1)
-            await post.save();
-        }
-
-        const originalFeed = await Post.findById(feedId);
-        if (!originalFeed) {
-            res.status(404).json({ "message": "Feed is not available" });
-            return;
-        }
-
-        if (originalFeed.user != currentUserId) {
-            await Notification.create({
-                _type: 303,
-                user: originalFeed.user,
-                actionUser: currentUserId,
-                message: `{action_user} shared your Post "${truncate(originalFeed.message, 20)}"`,
-                feedId: feed._id,
-            });
-        }
-
-
-        res.json({
-            success: true,
-            feed: {
-                id: feed._id,
-                title: feed.title,
-                message: feed.message,
-                tags: tagNames,
-                date: feed.createdAt,
-                userId: feed.user,
-                votes: feed.votes,
-                answers: feed.answers,
-                parentId: feedId
-            }
-        });
-    }
-    else {
-        res.status(500).json({ success: false, message: "Error" });
-    }
+    res.json({
+      success: true,
+      feed: {
+        id: feed._id,
+        title: feed.title,
+        message: feed.message,
+        tags: tagNames,
+        date: feed.createdAt,
+        userId: feed.user,
+        votes: feed.votes,
+        answers: feed.answers,
+        parentId: feedId
+      }
+    });
+  }
+  else {
+    res.status(500).json({ success: false, message: "Error" });
+  }
 
 });
 
@@ -598,7 +584,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
 
   let pipeline: PipelineStage[] = [
-    { $match: { _type: { $in: [4, 5] }, hidden: false } },
+    { $match: { _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] }, hidden: false } },
     {
       $set: {
         score: { $add: ["$votes", "$shares", "$answers"] }
@@ -784,19 +770,19 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             })) || [],
           originalPost: x.originalPost.length
             ? {
-                id: x.originalPost[0]._id,
-                title: x.originalPost[0].title || null,
-                message: x.originalPost[0].message,
-                tags: x.originalPost[0].tags,
-                userId: x.originalPost[0].user,
-                userName: x.originalPost[0].users.length
-                  ? x.originalPost[0].users[0].name
-                  : "Unknown User",
-                userAvatarImage: x.originalPost[0].users.length
-                  ? x.originalPost[0].users[0].avatarImage || null
-                  : null,
-                date: x.originalPost[0].createdAt
-              }
+              id: x.originalPost[0]._id,
+              title: x.originalPost[0].title || null,
+              message: x.originalPost[0].message,
+              tags: x.originalPost[0].tags,
+              userId: x.originalPost[0].user,
+              userName: x.originalPost[0].users.length
+                ? x.originalPost[0].users[0].name
+                : "Unknown User",
+              userAvatarImage: x.originalPost[0].users.length
+                ? x.originalPost[0].users[0].avatarImage || null
+                : null,
+              date: x.originalPost[0].createdAt
+            }
             : null,
           totalReactions,
           topReactions
@@ -953,19 +939,19 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     isUpvoted: false,
     originalPost: feed.originalPost.length
       ? {
-          id: feed.originalPost[0]._id,
-          title: feed.originalPost[0].title || null,
-          message: feed.originalPost[0].message,
-          tags: feed.originalPost[0].tags,
-          userId: feed.originalPost[0].user,
-          userName: feed.originalPost[0].users.length
-            ? feed.originalPost[0].users[0].name
-            : "Unknown User",
-          userAvatarImage: feed.originalPost[0].users.length
-            ? feed.originalPost[0].users[0].avatarImage || null
-            : null,
-          date: feed.originalPost[0].createdAt
-        }
+        id: feed.originalPost[0]._id,
+        title: feed.originalPost[0].title || null,
+        message: feed.originalPost[0].message,
+        tags: feed.originalPost[0].tags,
+        userId: feed.originalPost[0].user,
+        userName: feed.originalPost[0].users.length
+          ? feed.originalPost[0].users[0].name
+          : "Unknown User",
+        userAvatarImage: feed.originalPost[0].users.length
+          ? feed.originalPost[0].users[0].avatarImage || null
+          : null,
+        date: feed.originalPost[0].createdAt
+      }
       : null,
     totalReactions,
     topReactions
@@ -981,199 +967,191 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
-    const { feedId, parentId, index, count, filter, findPostId } = req.body;
+  const currentUserId = req.userId;
+  const { feedId, parentId, index, count, filter, findPostId } = req.body;
 
-    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
-        res.status(400).json({ message: "Some fileds are missing" });
-        return
+  if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
+    res.status(400).json({ message: "Some fileds are missing" });
+    return
+  }
+
+  let parentPost: any = null;
+  if (parentId) {
+    parentPost = await Post
+      .findById(parentId)
+      .populate("user", "name avatarImage countryCode level roles");
+  }
+
+  let dbQuery = Post.find({ feedId, _type: PostTypeEnum.FEED_COMMENT, hidden: false });
+
+  let skipCount = index;
+
+  if (findPostId) {
+
+    const reply = await Post.findById(findPostId);
+
+    if (reply === null) {
+      res.status(404).json({ message: "Post not found" })
+      return
     }
 
-    let parentPost: any = null;
-    if (parentId) {
-        parentPost = await Post
-            .findById(parentId)
-            .populate("user", "name avatarImage countryCode level roles");
-    }
+    parentPost = reply.parentId ? await Post
+      .findById(reply.parentId)
+      .populate("user", "name avatarImage countryCode level roles")
+      :
+      null;
 
-    let dbQuery = Post.find({ feedId, _type: PostType.FEED_COMMENT, hidden: false });
+    dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null })
 
-    let skipCount = index;
+    skipCount = Math.max(0, (await dbQuery
+      .clone()
+      .where({ createdAt: { $lt: reply.createdAt } })
+      .countDocuments()));
 
-    if (findPostId) {
+    dbQuery = dbQuery
+      .sort({ createdAt: "asc" })
+  }
+  else {
+    dbQuery = dbQuery.where({ parentId });
 
-        const reply = await Post.findById(findPostId);
-
-        if (reply === null) {
-            res.status(404).json({ message: "Post not found" })
-            return
-        }
-
-        parentPost = reply.parentId ? await Post
-            .findById(reply.parentId)
-            .populate("user", "name avatarImage countryCode level roles")
-            :
-            null;
-
-        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null })
-
-        skipCount = Math.max(0, (await dbQuery
-            .clone()
-            .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()));
-
+    switch (filter) {
+      // Most popular
+      case 1: {
         dbQuery = dbQuery
-            .sort({ createdAt: "asc" })
+          .sort({ votes: "desc", createdAt: "desc" })
+        break;
+      }
+      // Oldest first
+      case 2: {
+        dbQuery = dbQuery
+          .sort({ createdAt: "asc" })
+        break;
+      }
+      // Newest first
+      case 3: {
+        dbQuery = dbQuery
+          .sort({ createdAt: "desc" })
+        break;
+      }
+      default:
+        throw new Error("Unknown filter");
     }
-    else {
-        dbQuery = dbQuery.where({ parentId });
+  }
 
-        switch (filter) {
-            // Most popular
-            case 1: {
-                dbQuery = dbQuery
-                    .sort({ votes: "desc", createdAt: "desc" })
-                break;
-            }
-            // Oldest first
-            case 2: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "asc" })
-                break;
-            }
-            // Newest first
-            case 3: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "desc" })
-                break;
-            }
-            default:
-                throw new Error("Unknown filter");
-        }
+  const result = await dbQuery
+    .skip(skipCount)
+    .limit(count)
+    .populate("user", "name avatarImage countryCode level roles") as any[];
+
+  if (result) {
+    const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
+      id: x._id,
+      parentId: x.parentId,
+      message: x.message,
+      date: x.createdAt,
+      userId: x.user._id,
+      userName: x.user.name,
+      userAvatar: x.user.avatarImage,
+      level: x.user.level,
+      roles: x.user.roles,
+      votes: x.votes,
+      isUpvoted: false,
+      answers: x.answers,
+      index: (findPostId && parentPost) ?
+        offset === 0 ? -1 : skipCount + offset - 1 :
+        skipCount + offset,
+      attachments: new Array()
+    }))
+
+    let promises = [];
+
+    for (let i = 0; i < data.length; ++i) {
+      /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+          data[i].votes = count;
+      }));*/
+      if (currentUserId) {
+        promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+          data[i].isUpvoted = !(upvote === null);
+        }));
+      }
+      promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
-    const result = await dbQuery
-        .skip(skipCount)
-        .limit(count)
-        .populate("user", "name avatarImage countryCode level roles") as any[];
+    await Promise.all(promises);
 
-    if (result) {
-        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
-            id: x._id,
-            parentId: x.parentId,
-            message: x.message,
-            date: x.createdAt,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            level: x.user.level,
-            roles: x.user.roles,
-            votes: x.votes,
-            isUpvoted: false,
-            answers: x.answers,
-            index: (findPostId && parentPost) ?
-                offset === 0 ? -1 : skipCount + offset - 1 :
-                skipCount + offset,
-            attachments: new Array()
-        }))
-
-        let promises = [];
-
-        for (let i = 0; i < data.length; ++i) {
-            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].votes = count;
-            }));*/
-            if (currentUserId) {
-                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                    data[i].isUpvoted = !(upvote === null);
-                }));
-            }
-            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
-        }
-
-        await Promise.all(promises);
-
-        res.status(200).json({ posts: data })
-    }
-    else {
-        res.status(500).json({ message: "Error" });
-    }
+    res.status(200).json({ posts: data })
+  }
+  else {
+    res.status(500).json({ message: "Error" });
+  }
 });
 
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { feedId } = req.body;
-    const currentUserId = req.userId;
-    // const currentUserId = '68a7400f3dd5eef60a166911';
+  const { feedId } = req.body;
+  const currentUserId = req.userId;
+  // const currentUserId = '68a7400f3dd5eef60a166911';
 
-    // only moderators or admins can pin a message
-    const user = await User.findById(currentUserId);
+  if (!feedId) {
+    res.status(400).json({ success: false, message: "Feed ID is required" });
+    return;
+  }
 
-    if (!user || !user.roles.includes('Moderator') && !user.roles.includes('Admin')) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
+  const feed = await Post.findById(feedId);
 
-    if (!feedId) {
-        res.status(400).json({ success: false, message: "Feed ID is required" });
-        return;
-    }
-
-    const feed = await Post.findById(feedId);
-
-    if (feed === null) {
-        res.status(404).json({ success: false, message: "Feed not found" });
-        return;
-    }
+  if (feed === null) {
+    res.status(404).json({ success: false, message: "Feed not found" });
+    return;
+  }
 
 
 
-    if (currentUserId != feed.user) {
-        await Notification.create({
-            _type: 304,
-            user: feed.user,
-            actionUser: currentUserId,
-            message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
-            feedId: feed._id,
-        });
-    }
+  if (currentUserId != feed.user) {
+    await Notification.create({
+      _type: NotificationTypeEnum.FEED_PIN,
+      user: feed.user,
+      actionUser: currentUserId,
+      message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
+      feedId: feed._id,
+    });
+  }
 
-    feed.isPinned = !feed.isPinned;
-    await feed.save();
+  feed.isPinned = !feed.isPinned;
+  await feed.save();
 
-    res.status(200).json({ success: true });
+  res.status(200).json({ success: true });
 });
 
 const getPinnedFeeds = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
+  // const currentUserId = req.userId;
+  const currentUserId = '68a7400f3dd5eef60a166911';
 
-    if (!currentUserId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
+  if (!currentUserId) {
+    res.status(401).json({ success: false, message: "Unauthorized" });
+    return;
+  }
 
-    const pinnedFeeds = await Post.find({ user: currentUserId, isPinned: true });
+  const pinnedFeeds = await Post.find({ user: currentUserId, isPinned: true });
 
-    res.status(200).json({ pinnedFeeds, success: true });
+  res.status(200).json({ pinnedFeeds, success: true });
 });
 
 
 const feedController = {
-    createFeed,
-    editFeed,
-    deleteFeed,
-    createReply,
-    editReply,
-    deleteReply,
-    shareFeed,
-    getFeedList,
-    getFeed,
-    getReplies,
-    togglePinFeed,
-    getPinnedFeeds,
-    votePost,
-    getReactions
+  createFeed,
+  editFeed,
+  deleteFeed,
+  createReply,
+  editReply,
+  deleteReply,
+  shareFeed,
+  getFeedList,
+  getFeed,
+  getReplies,
+  togglePinFeed,
+  getPinnedFeeds,
+  votePost,
+  getReactions
 }
 
 export default feedController;

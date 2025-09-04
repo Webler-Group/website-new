@@ -7,7 +7,6 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const Post_1 = __importDefault(require("../models/Post"));
 const Tag_1 = __importDefault(require("../models/Tag"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
-const Code_1 = __importDefault(require("../models/Code"));
 const PostFollowing_1 = __importDefault(require("../models/PostFollowing"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -16,6 +15,8 @@ const regexUtils_1 = require("../utils/regexUtils");
 const pushService_1 = require("../services/pushService");
 const User_1 = __importDefault(require("../models/User"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const createQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const { title, message, tags } = req.body;
     const currentUserId = req.userId;
@@ -37,7 +38,7 @@ const createQuestion = (0, express_async_handler_1.default)(async (req, res) => 
         return;
     }
     const question = await Post_1.default.create({
-        _type: 1,
+        _type: PostTypeEnum_1.default.QUESTION,
         title,
         message,
         tags: tagIds,
@@ -76,7 +77,7 @@ const getQuestionList = (0, express_async_handler_1.default)(async (req, res) =>
     const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
     const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
     let pipeline = [
-        { $match: { _type: 1, hidden: false } },
+        { $match: { _type: PostTypeEnum_1.default.QUESTION, hidden: false } },
         {
             $set: {
                 score: { $add: ["$votes", "$answers"] }
@@ -85,7 +86,7 @@ const getQuestionList = (0, express_async_handler_1.default)(async (req, res) =>
     ];
     let dbQuery = Post_1.default
         .find({
-        _type: 1,
+        _type: PostTypeEnum_1.default.QUESTION,
         hidden: false
     });
     if (searchQuery.trim().length > 0) {
@@ -150,7 +151,7 @@ const getQuestionList = (0, express_async_handler_1.default)(async (req, res) =>
                 res.status(400).json({ message: "Invalid request" });
                 return;
             }
-            const replies = await Post_1.default.find({ user: userId, _type: 2 }).select("parentId");
+            const replies = await Post_1.default.find({ user: userId, _type: PostTypeEnum_1.default.ANSWER }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
             pipeline.push({
                 $match: { _id: { $in: questionIds } }
@@ -249,10 +250,9 @@ const getQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const { questionId } = req.body;
     const question = await Post_1.default.findById(questionId)
         .populate("user", "name avatarImage countryCode level roles")
-        .populate("tags", "name");
+        .populate("tags", "name")
+        .lean();
     if (question) {
-        //const answers = await Post.countDocuments({ parentId: questionId });
-        //const votes = await Upvote.countDocuments({ parentId: questionId });
         const isUpvoted = currentUserId ? (await Upvote_1.default.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing_1.default.findOne({ user: currentUserId, following: questionId })) !== null : false;
         const attachments = await PostAttachment_1.default.getByPostId({ post: questionId });
@@ -290,7 +290,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     const reply = await Post_1.default.create({
-        _type: 2,
+        _type: PostTypeEnum_1.default.ANSWER,
         message,
         parentId: questionId,
         user: currentUserId
@@ -320,7 +320,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
         }, "discuss");
         for (let userToNotify of followers) {
             await Notification_1.default.create({
-                _type: 201,
+                _type: NotificationTypeEnum_1.default.QA_ANSWER,
                 user: userToNotify,
                 actionUser: currentUserId,
                 message: userToNotify === question.user.toString() ?
@@ -359,7 +359,7 @@ const getReplies = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(400).json({ message: "Invalid body" });
         return;
     }
-    let dbQuery = Post_1.default.find({ parentId: questionId, _type: 2, hidden: false });
+    let dbQuery = Post_1.default.find({ parentId: questionId, _type: PostTypeEnum_1.default.ANSWER, hidden: false });
     let skipCount = index;
     if (findPostId) {
         const reply = await Post_1.default.findById(findPostId);
@@ -637,249 +637,6 @@ const votePost = (0, express_async_handler_1.default)(async (req, res) => {
     }
     res.json({ vote: upvote ? 1 : 0 });
 });
-const getCodeComments = (0, express_async_handler_1.default)(async (req, res) => {
-    const currentUserId = req.userId;
-    const { codeId, parentId, index, count, filter, findPostId } = req.body;
-    if (typeof filter === "undefined" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
-        res.status(400).json({ message: "Some fileds are missing" });
-        return;
-    }
-    let parentPost = null;
-    if (parentId) {
-        parentPost = await Post_1.default
-            .findById(parentId)
-            .populate("user", "name avatarImage countryCode level roles");
-    }
-    let dbQuery = Post_1.default.find({ codeId, _type: 3, hidden: false });
-    let skipCount = index;
-    if (findPostId) {
-        const reply = await Post_1.default.findById(findPostId);
-        if (reply === null) {
-            res.status(404).json({ message: "Post not found" });
-            return;
-        }
-        parentPost = reply.parentId ? await Post_1.default
-            .findById(reply.parentId)
-            .populate("user", "name avatarImage countryCode level roles")
-            :
-                null;
-        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
-        skipCount = Math.max(0, (await dbQuery
-            .clone()
-            .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()));
-        dbQuery = dbQuery
-            .sort({ createdAt: "asc" });
-    }
-    else {
-        dbQuery = dbQuery.where({ parentId });
-        switch (filter) {
-            // Most popular
-            case 1: {
-                dbQuery = dbQuery
-                    .sort({ votes: "desc", createdAt: "desc" });
-                break;
-            }
-            // Oldest first
-            case 2: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "asc" });
-                break;
-            }
-            // Newest first
-            case 3: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "desc" });
-                break;
-            }
-            default:
-                throw new Error("Unknown filter");
-        }
-    }
-    const result = await dbQuery
-        .skip(skipCount)
-        .limit(count)
-        .populate("user", "name avatarImage countryCode level roles");
-    if (result) {
-        const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
-            id: x._id,
-            parentId: x.parentId,
-            codeId: x.codeId,
-            message: x.message,
-            date: x.createdAt,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            level: x.user.level,
-            roles: x.user.roles,
-            votes: x.votes,
-            isUpvoted: false,
-            isAccepted: x.isAccepted,
-            answers: x.answers,
-            index: (findPostId && parentPost) ?
-                offset === 0 ? -1 : skipCount + offset - 1 :
-                skipCount + offset,
-            attachments: new Array()
-        }));
-        let promises = [];
-        for (let i = 0; i < data.length; ++i) {
-            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].votes = count;
-            }));*/
-            if (currentUserId) {
-                promises.push(Upvote_1.default.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                    data[i].isUpvoted = !(upvote === null);
-                }));
-            }
-            promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
-        }
-        await Promise.all(promises);
-        res.status(200).json({ posts: data });
-    }
-    else {
-        res.status(500).json({ message: "Error" });
-    }
-});
-const createCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
-    const currentUserId = req.userId;
-    const { codeId, message, parentId } = req.body;
-    const code = await Code_1.default.findById(codeId);
-    if (code === null) {
-        res.status(404).json({ message: "Code not found" });
-        return;
-    }
-    let parentPost = null;
-    if (parentId !== null) {
-        parentPost = await Post_1.default.findById(parentId);
-        if (parentPost === null) {
-            res.status(404).json({ message: "Parent post not found" });
-            return;
-        }
-    }
-    const reply = await Post_1.default.create({
-        _type: 3,
-        message,
-        codeId,
-        parentId,
-        user: currentUserId
-    });
-    if (reply) {
-        const usersToNotify = new Set();
-        usersToNotify.add(code.user.toString());
-        if (parentPost !== null) {
-            usersToNotify.add(parentPost.user.toString());
-        }
-        usersToNotify.delete(currentUserId);
-        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-        await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-            title: "New reply",
-            body: `${currentUserName} replied to your comment on "${code.name}"`
-        }, "codes");
-        await (0, pushService_1.sendToUsers)([code.user.toString()], {
-            title: "New comment",
-            body: `${currentUserName} posted comment on your code "${code.name}"`
-        }, "codes");
-        for (let userToNotify of usersToNotify) {
-            await Notification_1.default.create({
-                _type: 202,
-                user: userToNotify,
-                actionUser: currentUserId,
-                message: userToNotify === code.user.toString() ?
-                    `{action_user} posted comment on your code "${code.name}"`
-                    :
-                        `{action_user} replied to your comment on "${code.name}"`,
-                codeId: code._id,
-                postId: reply._id
-            });
-        }
-        code.$inc("comments", 1);
-        await code.save();
-        if (parentPost) {
-            parentPost.$inc("answers", 1);
-            await parentPost.save();
-        }
-        const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
-        res.json({
-            post: {
-                id: reply._id,
-                message: reply.message,
-                date: reply.createdAt,
-                userId: reply.user,
-                codeId: reply.codeId,
-                parentId: reply.parentId,
-                isAccepted: reply.isAccepted,
-                votes: reply.votes,
-                answers: reply.answers,
-                attachments
-            }
-        });
-    }
-    else {
-        res.status(500).json({ message: "error" });
-    }
-});
-const editCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
-    const currentUserId = req.userId;
-    const { commentId, message } = req.body;
-    if (typeof message === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return;
-    }
-    const comment = await Post_1.default.findById(commentId);
-    if (comment === null) {
-        res.status(404).json({ message: "Post not found" });
-        return;
-    }
-    if (currentUserId != comment.user) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
-    comment.message = message;
-    try {
-        await comment.save();
-        const attachments = await PostAttachment_1.default.getByPostId({ post: comment._id });
-        res.json({
-            success: true,
-            data: {
-                id: comment._id,
-                message: comment.message,
-                attachments
-            }
-        });
-    }
-    catch (err) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
-});
-const deleteCodeComment = (0, express_async_handler_1.default)(async (req, res) => {
-    const currentUserId = req.userId;
-    const { commentId } = req.body;
-    const comment = await Post_1.default.findById(commentId);
-    if (comment === null) {
-        res.status(404).json({ message: "Post not found" });
-        return;
-    }
-    if (currentUserId != comment.user) {
-        res.status(401).json({ message: "Unauthorized" });
-        return;
-    }
-    const code = await Code_1.default.findById(comment.codeId);
-    if (code === null) {
-        res.status(404).json({ message: "Code not found" });
-        return;
-    }
-    try {
-        await Post_1.default.deleteAndCleanup({ _id: commentId });
-        res.json({ success: true });
-    }
-    catch (err) {
-        res.json({ success: false, error: err });
-    }
-});
 const followQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { postId } = req.body;
@@ -887,13 +644,9 @@ const followQuestion = (0, express_async_handler_1.default)(async (req, res) => 
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const postExists = await Post_1.default.findOne({ _id: postId });
+    const postExists = await Post_1.default.findOne({ _id: postId, _type: PostTypeEnum_1.default.QUESTION });
     if (!postExists) {
-        res.status(404).json({ message: "Post not found" });
-        return;
-    }
-    if (postExists._type !== 1) {
-        res.status(405).json({ message: "Post is not a question" });
+        res.status(404).json({ message: "Question not found" });
         return;
     }
     const exists = await PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
@@ -918,13 +671,9 @@ const unfollowQuestion = (0, express_async_handler_1.default)(async (req, res) =
         res.status(400).json({ message: "Some fields are missing" });
         return;
     }
-    const postExists = await Post_1.default.findOne({ _id: postId });
+    const postExists = await Post_1.default.findOne({ _id: postId, _type: PostTypeEnum_1.default.QUESTION });
     if (!postExists) {
-        res.status(404).json({ message: "Post not found" });
-        return;
-    }
-    if (postExists._type !== 1) {
-        res.status(405).json({ message: "Post is not a question" });
+        res.status(404).json({ message: "Question not found" });
         return;
     }
     const postFollowing = await PostFollowing_1.default.findOne({ user: currentUserId, following: postId });
@@ -984,10 +733,6 @@ const discussController = {
     editReply,
     deleteReply,
     votePost,
-    createCodeComment,
-    getCodeComments,
-    editCodeComment,
-    deleteCodeComment,
     followQuestion,
     unfollowQuestion,
     getVotersList

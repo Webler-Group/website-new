@@ -18,6 +18,9 @@ import { sendToUsers } from "../services/pushService";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";
 import mongoose from "mongoose";
+import RolesEnum from "../data/RolesEnum";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import PostTypeEnum from "../data/PostTypeEnum";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -48,7 +51,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const roles = req.roles;
     const { userId } = req.body;
 
-    const isModerator = roles && roles.some(role => ["Moderator", "Admin"].includes(role));
+    const isModerator = roles && roles.some(role => [RolesEnum.MODERATOR, RolesEnum.ADMIN].includes(role));
 
     const user = await User.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
@@ -77,13 +80,13 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .limit(5)
         .select("-source -cssSource -jsSource");
 
-    const questions = await Post.find({ user: userId, _type: 1 })
+    const questions = await Post.find({ user: userId, _type: PostTypeEnum.QUESTION })
         .sort({ createdAt: "desc" })
         .limit(5)
         .populate<{ tags: any[] }>("tags", "name")
         .select("-message");
 
-    const answers = await Post.find({ user: userId, _type: 2 })
+    const answers = await Post.find({ user: userId, _type: PostTypeEnum.ANSWER })
         .sort({ createdAt: "desc" })
         .limit(5)
         .select("-message");
@@ -351,7 +354,7 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         await Notification.create({
             user: userId,
             actionUser: currentUserId,
-            _type: 101,
+            _type: NotificationTypeEnum.PROFILE_FOLLOW,
             message: "{action_user} followed you"
         })
 
@@ -388,7 +391,7 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         await Notification.deleteOne({
             user: userId,
             actionUser: currentUserId,
-            _type: 101
+            _type: NotificationTypeEnum.PROFILE_FOLLOW
         })
 
         res.json({ success: true })

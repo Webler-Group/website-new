@@ -4,6 +4,7 @@ import User from "../models/User";
 import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
+import RolesEnum from "../data/RolesEnum";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { search, count, page, date, role, active } = req.body as {
@@ -142,7 +143,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (user.roles.includes("Admin")) {
+    if (user.roles.includes(RolesEnum.ADMIN)) {
         res.status(404).json({ success: false, message: "Unauthorized" });
         return
     }
@@ -176,9 +177,9 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId, roles } = req.body as { userId?: string; roles?: string[] };
+    const { userId, roles } = req.body as { userId?: string; roles?: RolesEnum[] };
 
-    if (!Array.isArray(roles) || roles.some(r => typeof r !== "string")) {
+    if (!Array.isArray(roles) || roles.some(role => !Object.values(RolesEnum).includes(role))) {
         res.status(400).json({ message: "Invalid body" });
         return;
     }

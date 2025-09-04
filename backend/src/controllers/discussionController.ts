@@ -13,6 +13,8 @@ import { escapeRegex } from "../utils/regexUtils";
 import { sendToUsers } from "../services/pushService";
 import User from "../models/User";
 import UserFollowing from "../models/UserFollowing";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import PostTypeEnum from "../data/PostTypeEnum";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title, message, tags } = req.body;
@@ -40,7 +42,7 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     const question = await Post.create({
-        _type: 1,
+        _type: PostTypeEnum.QUESTION,
         title,
         message,
         tags: tagIds,
@@ -87,7 +89,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
 
     let pipeline: PipelineStage[] = [
-        { $match: { _type: 1, hidden: false } },
+        { $match: { _type: PostTypeEnum.QUESTION, hidden: false } },
         {
             $set: {
                 score: { $add: ["$votes", "$answers"] }
@@ -97,7 +99,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     let dbQuery = Post
         .find({
-            _type: 1,
+            _type: PostTypeEnum.QUESTION,
             hidden: false
         })
 
@@ -164,7 +166,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 res.status(400).json({ message: "Invalid request" });
                 return
             }
-            const replies = await Post.find({ user: userId, _type: 2 }).select("parentId");
+            const replies = await Post.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
             pipeline.push({
                 $match: { _id: { $in: questionIds } }
@@ -320,7 +322,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const reply = await Post.create({
-        _type: 2,
+        _type: PostTypeEnum.ANSWER,
         message,
         parentId: questionId,
         user: currentUserId
@@ -359,7 +361,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         for (let userToNotify of followers) {
 
             await Notification.create({
-                _type: 201,
+                _type: NotificationTypeEnum.QA_ANSWER,
                 user: userToNotify,
                 actionUser: currentUserId,
                 message: userToNotify === question.user.toString() ?
@@ -404,7 +406,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    let dbQuery = Post.find({ parentId: questionId, _type: 2, hidden: false });
+    let dbQuery = Post.find({ parentId: questionId, _type: PostTypeEnum.ANSWER, hidden: false });
 
     let skipCount = index;
 
@@ -761,14 +763,9 @@ const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return
     }
 
-    const postExists = await Post.findOne({ _id: postId })
+    const postExists = await Post.findOne({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
-        res.status(404).json({ message: "Post not found" });
-        return
-    }
-
-    if (postExists._type !== 1) {
-        res.status(405).json({ message: "Post is not a question" });
+        res.status(404).json({ message: "Question not found" });
         return
     }
 
@@ -801,14 +798,9 @@ const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) =
         return
     }
 
-    const postExists = await Post.findOne({ _id: postId })
+    const postExists = await Post.findOne({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
-        res.status(404).json({ message: "Post not found" });
-        return
-    }
-
-    if (postExists._type !== 1) {
-        res.status(405).json({ message: "Post is not a question" });
+        res.status(404).json({ message: "Question not found" });
         return
     }
 

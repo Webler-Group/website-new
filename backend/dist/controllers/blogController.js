@@ -12,7 +12,7 @@ const blogsDir = path_1.default.join(confg_1.config.rootDir, "uploads", "blogs")
 const getBlogEntries = (0, express_async_handler_1.default)(async (req, res) => {
     const { page, count, searchQuery } = req.body;
     if (typeof page === "undefined" || typeof count === "undefined" || typeof searchQuery === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
+        res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     let postCount = 0;
@@ -56,6 +56,7 @@ const getBlogEntry = (0, express_async_handler_1.default)(async (req, res) => {
     catch (e) {
         res.status(404)
             .json({
+            success: false,
             message: "Blog not found"
         });
     }

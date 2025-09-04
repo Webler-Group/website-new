@@ -1,4 +1,5 @@
 import mongoose, { InferSchemaType } from "mongoose";
+import ReactionsEnum from "../data/ReactionsEnum";
 
 const upvoteSchema = new mongoose.Schema({
     parentId: {
@@ -11,7 +12,7 @@ const upvoteSchema = new mongoose.Schema({
         required: true
     },
     reaction: {
-        type: Number,
+        type: Object.values(ReactionsEnum).map(Number)
     }
 });
 

@@ -1,7 +1,7 @@
 import {config} from "../confg";
 import connectDB from "../config/dbConn";
 import tags from "../config/tags";
-import roles from "../data/roles";
+import RolesEnum from "../data/RolesEnum";
 import Tag from "../models/Tag";
 import User from "../models/User";
 
@@ -20,7 +20,7 @@ async function main() {
             email: config.adminEmail,
             password: config.adminPassword,
             name: "Webler Codes",
-            roles: [...roles],
+            roles: [RolesEnum.ADMIN],
             emailVerified: true
         });
 

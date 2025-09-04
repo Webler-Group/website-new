@@ -8,10 +8,11 @@ const courseEditorController_1 = __importDefault(require("../controllers/courseE
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
 const express_1 = require("express");
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const router = (0, express_1.Router)();
 router.use(verifyJWT_1.default);
 router.use(protectRoute_1.default);
-router.use((0, requireRoles_1.default)(["Admin", "Creator"]));
+router.use((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR]));
 router.route("/").post(courseEditorController_1.default.getCoursesList);
 router.route("/GetCourse").post(courseEditorController_1.default.getCourse);
 router.route("/CreateCourse").post(courseEditorController_1.default.createCourse);

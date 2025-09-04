@@ -9,23 +9,30 @@ const Code_1 = __importDefault(require("./Code"));
 const PostFollowing_1 = __importDefault(require("./PostFollowing"));
 const Notification_1 = __importDefault(require("./Notification"));
 const PostAttachment_1 = __importDefault(require("./PostAttachment"));
+const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const postSchema = new mongoose_1.default.Schema({
-    /*
-    * 1 - question
-    * 2 - answer
-    * 3 - comment
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(PostTypeEnum_1.default).map(Number)
     },
     isAccepted: {
+        type: Boolean,
+        default: false
+    },
+    isPinned: {
         type: Boolean,
         default: false
     },
     codeId: {
         type: mongoose_1.default.Types.ObjectId,
         ref: "Code",
+        default: null
+    },
+    feedId: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "Post",
         default: null
     },
     parentId: {
@@ -50,6 +57,10 @@ const postSchema = new mongoose_1.default.Schema({
         default: 0
     },
     answers: {
+        type: Number,
+        default: 0
+    },
+    shares: {
         type: Number,
         default: 0
     },
@@ -80,16 +91,16 @@ postSchema.post("save", async function () {
     }
 });
 postSchema.statics.deleteAndCleanup = async function (filter) {
-    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId");
+    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId parentId feedId");
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i];
         switch (post._type) {
-            case 1: {
+            case PostTypeEnum_1.default.QUESTION: {
                 await Post.deleteAndCleanup({ parentId: post._id });
                 await PostFollowing_1.default.deleteMany({ following: post._id });
                 break;
             }
-            case 2: {
+            case PostTypeEnum_1.default.ANSWER: {
                 const question = await Post.findById(post.parentId);
                 if (question === null) {
                     throw new Error("Question not found");
@@ -97,13 +108,13 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
                 question.$inc("answers", -1);
                 await question.save();
                 await Notification_1.default.deleteMany({
-                    _type: 201,
+                    _type: NotificationTypeEnum_1.default.QA_ANSWER,
                     questionId: question._id,
                     postId: post._id
                 });
                 break;
             }
-            case 3: {
+            case PostTypeEnum_1.default.CODE_COMMENT: {
                 const code = await Code_1.default.findById(post.codeId);
                 if (code === null) {
                     throw new Error("Code not found");
@@ -115,12 +126,35 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
                     parentComment.$inc("answers", -1);
                     await parentComment.save();
                 }
-                else {
-                    await Post.deleteAndCleanup({ parentId: post._id });
-                }
+                await Post.deleteAndCleanup({ parentId: post._id });
                 await Notification_1.default.deleteMany({
-                    _type: 202,
+                    _type: NotificationTypeEnum_1.default.CODE_COMMENT,
                     codeId: code._id,
+                    postId: post._id
+                });
+                break;
+            }
+            case PostTypeEnum_1.default.FEED:
+            case PostTypeEnum_1.default.SHARED_FEED: {
+                await Post.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum_1.default.FEED_COMMENT });
+                break;
+            }
+            case PostTypeEnum_1.default.FEED_COMMENT: {
+                const feed = await Post.findById(post.feedId);
+                if (feed === null) {
+                    throw new Error("Feed not found");
+                }
+                feed.$inc("comments", -1);
+                await feed.save();
+                const parentComment = await Post.findById(post.parentId);
+                if (parentComment) {
+                    parentComment.$inc("answers", -1);
+                    await parentComment.save();
+                }
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await Notification_1.default.deleteMany({
+                    _type: NotificationTypeEnum_1.default.FEED_COMMENT,
+                    feedId: feed._id,
                     postId: post._id
                 });
                 break;

@@ -2,15 +2,13 @@ import mongoose, { InferSchemaType, Model, Schema, SchemaTypes } from "mongoose"
 import ChannelParticipant from "./ChannelParticipant";
 import ChannelInvite from "./ChannelInvite";
 import ChannelMessage from "./ChannelMessage";
+import ChannelTypeEnum from "../data/ChannelTypeEnum";
 
 const channelSchema = new Schema({
-    /*
-    1 - Direct Messages
-    2 - Group
-    */
     _type: {
         type: Number,
-        required: true
+        required: true,
+        enum: Object.values(ChannelTypeEnum).map(Number)
     },
     title: {
         type: String,

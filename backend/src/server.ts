@@ -25,8 +25,6 @@ import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 import { initKeystore } from "./services/pushService";
-import Post from "./models/Post";
-import User from "./models/User";
 
 async function main() {
     console.log("Environment:", config.nodeEnv);

@@ -7,6 +7,8 @@ import CourseLesson from "../models/CourseLesson";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import User from "../models/User";
+import RolesEnum from "../data/RolesEnum";
+import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { excludeUserId } = req.body;
@@ -193,13 +195,13 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             return;
         }
 
-        if (lessonNode._type == 1 && isLast) {
+        if (lessonNode._type == LessonNodeTypeEnum.TEXT && isLast) {
             userProgress.lastLessonNodeId = lessonNode._id;
             await userProgress.save();
         }
     } else {
         const user = await User.findById(currentUserId).select("roles");
-        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+        if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
@@ -251,7 +253,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
         isLast = nodeInfo.isLast;
     } else {
         const user = await User.findById(currentUserId).select("roles");
-        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+        if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
@@ -261,18 +263,18 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let correct = false;
     switch (lessonNode._type) {
-        case 1: {
+        case LessonNodeTypeEnum.TEXT: {
             correct = true;
             break;
         }
-        case 2: case 3: {
+        case LessonNodeTypeEnum.SINGLECHOICE_QUESTION: case LessonNodeTypeEnum.MULTICHOICE_QUESTION: {
             correct = nodeAnswers.every(x => {
                 const myAnswer = answers.find((y: any) => y.id == x._id);
                 return myAnswer && myAnswer.correct == x.correct;
             });
             break;
         }
-        case 4: {
+        case LessonNodeTypeEnum.TEXT_QUESTION: {
             correct = correctAnswer == lessonNode.correctAnswer;
             break;
         }

@@ -10,6 +10,8 @@ const CourseLesson_1 = __importDefault(require("../models/CourseLesson"));
 const LessonNode_1 = __importDefault(require("../models/LessonNode"));
 const QuizAnswer_1 = __importDefault(require("../models/QuizAnswer"));
 const User_1 = __importDefault(require("../models/User"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const LessonNodeTypeEnum_1 = __importDefault(require("../data/LessonNodeTypeEnum"));
 const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
     const { excludeUserId } = req.body;
     let result;
@@ -168,14 +170,14 @@ const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
             res.status(400).json({ message: "Node is not unlocked" });
             return;
         }
-        if (lessonNode._type == 1 && isLast) {
+        if (lessonNode._type == LessonNodeTypeEnum_1.default.TEXT && isLast) {
             userProgress.lastLessonNodeId = lessonNode._id;
             await userProgress.save();
         }
     }
     else {
         const user = await User_1.default.findById(currentUserId).select("roles");
-        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+        if (!user || ![RolesEnum_1.default.CREATOR, RolesEnum_1.default.ADMIN].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
@@ -222,7 +224,7 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     }
     else {
         const user = await User_1.default.findById(currentUserId).select("roles");
-        if (!user || !["Creator", "Admin"].some(role => user.roles.includes(role))) {
+        if (!user || ![RolesEnum_1.default.CREATOR, RolesEnum_1.default.ADMIN].some(role => user.roles.includes(role))) {
             res.status(403).json({ message: "Unauthorized" });
             return;
         }
@@ -230,19 +232,19 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     const nodeAnswers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
     let correct = false;
     switch (lessonNode._type) {
-        case 1: {
+        case LessonNodeTypeEnum_1.default.TEXT: {
             correct = true;
             break;
         }
-        case 2:
-        case 3: {
+        case LessonNodeTypeEnum_1.default.SINGLECHOICE_QUESTION:
+        case LessonNodeTypeEnum_1.default.MULTICHOICE_QUESTION: {
             correct = nodeAnswers.every(x => {
                 const myAnswer = answers.find((y) => y.id == x._id);
                 return myAnswer && myAnswer.correct == x.correct;
             });
             break;
         }
-        case 4: {
+        case LessonNodeTypeEnum_1.default.TEXT_QUESTION: {
             correct = correctAnswer == lessonNode.correctAnswer;
             break;
         }
