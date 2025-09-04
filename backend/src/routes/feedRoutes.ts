@@ -13,6 +13,8 @@ router.route("/").post(feedController.getFeedList);
 router.route("/GetFeed").post(feedController.getFeed);
 router.route("/GetComments")
     .post(feedController.getReplies)
+router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds)
+
 
 router.use(protectRoute);
 
@@ -32,6 +34,7 @@ router.route("/EditComment")
 router.route("/DeleteComment")
     .delete(feedController.deleteReply);
 router.route("/VotePost").post(feedController.votePost)
+
 
 router.route("/GetFeedReactions").post(feedController.getReactions)
 

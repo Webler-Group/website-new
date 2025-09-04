@@ -1126,8 +1126,6 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-
-
     if (currentUserId != feed.user) {
         await Notification.create({
             _type: 304,
@@ -1138,15 +1136,17 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         });
     }
 
-    feed.isPinned = !feed.isPinned;
-    await feed.save();
+  feed.isPinned = !feed.isPinned;
+  await feed.save();
 
-    res.status(200).json({ success: true });
+  res.status(200).json({ success: true, feed });
+
 });
 
 const getPinnedFeeds = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
+    const currentUserId = req.userId;
+
+    console.log("getPinnedFeeds called by user:", currentUserId);
 
     if (!currentUserId) {
         res.status(401).json({ success: false, message: "Unauthorized" });

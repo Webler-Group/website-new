@@ -28,6 +28,8 @@ const FeedCreate = () => {
             tags 
         });
 
+        console.log(response)
+
         if (response.success) {
             await fetchFeeds({ reset: true });
             navigate("/Feed/" + response.feed.id);

@@ -11,7 +11,6 @@ import { useApi } from "../../../context/apiCommunication";
 
 interface FeedStore {
   results: IFeed[];
-  pinnedPosts: IFeed[];
   totalCount: number;
   page: number;
   filter: number;
@@ -27,7 +26,8 @@ interface FeedStore {
   setQuery: (query: string) => void;
   scrollY: number;
   setScrollY: (y: number) => void;
-  togglePin: (feedId: string, isPinned: boolean) => Promise<void>;
+  pinnedPosts: IFeed[];
+  setPinnedPosts: (posts: IFeed[]) => void;
 }
 
 const FeedContext = createContext<FeedStore | null>(null);
@@ -36,7 +36,6 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { sendJsonRequest } = useApi();
 
   const [results, setResults] = useState<IFeed[]>([]);
-  const [pinnedPosts, setPinnedPosts] = useState<IFeed[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [page, setPage] = useState(1);
   const [filterState, setFilterState] = useState(1);
@@ -44,6 +43,7 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(false);
   const [hasNextPage, setHasNextPage] = useState(true);
   const [scrollY, setScrollY] = useState(0);
+  const [pinnedPosts, setPinnedPosts] = useState<IFeed[]>([]);
 
   const currentRequestRef = useRef<{
     filter: number;
@@ -51,28 +51,9 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
     page: number;
   } | null>(null);
 
-  // ---------- fetch pinned feeds ----------
-  const fetchPinnedFeeds = useCallback(async () => {
-    try {
-      const result = await sendJsonRequest("/Feed", "POST", {
-        count: 20,
-        page: 1,
-        filter: 7, // pinned posts
-        searchQuery: "",
-      });
+  const isInitializedRef = useRef(false);
 
-      if (result?.success && Array.isArray(result.feeds)) {
-        setPinnedPosts(result.feeds);
-      } else {
-        setPinnedPosts([]);
-      }
-    } catch (err) {
-      console.error("Error fetching pinned feeds:", err);
-      setPinnedPosts([]);
-    }
-  }, [sendJsonRequest]);
-
-  // ---------- fetch normal feeds ----------
+  // ---------- fetch feeds ----------
   const fetchFeeds = useCallback(
     async ({ reset }: { reset?: boolean } = {}) => {
       if (isLoading) return;
@@ -84,6 +65,7 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
         page: currentPage,
       };
 
+      // Prevent duplicate requests
       if (
         currentRequestRef.current &&
         currentRequestRef.current.filter === requestParams.filter &&
@@ -104,17 +86,18 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
           searchQuery: queryState,
         });
 
+        // Check if request is still relevant
         if (
           currentRequestRef.current?.filter !== filterState ||
           currentRequestRef.current?.query !== queryState
         ) {
-          return; 
+          return;
         }
 
         if (result?.success && Array.isArray(result.feeds)) {
           if (reset) {
             setResults(result.feeds);
-            setPage(2); 
+            setPage(2);
             setHasNextPage(result.feeds.length === 10);
           } else {
             setResults(prev => {
@@ -127,15 +110,13 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
 
           setTotalCount(result.count || 0);
-        } else {
-          if (reset) {
-            setResults([]);
-            setTotalCount(0);
-            setHasNextPage(false);
-          }
+        } else if (reset) {
+          setResults([]);
+          setTotalCount(0);
+          setHasNextPage(false);
         }
       } catch (error) {
-        console.error('Error fetching feeds:', error);
+        console.error("Error fetching feeds:", error);
         if (reset) {
           setResults([]);
           setTotalCount(0);
@@ -143,18 +124,38 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       } finally {
         setIsLoading(false);
-        currentRequestRef.current = null;
       }
     },
     [page, filterState, queryState, isLoading, sendJsonRequest]
   );
+
+  // ---------- fetch pinned feeds ----------
+  const fetchPinnedFeeds = useCallback(async () => {
+    try {
+      const result = await sendJsonRequest("/Feed", "POST", {
+        count: 30, // fetch 30 pinned feeds
+        page: 1,
+        filter: 7,
+        searchQuery: "",
+      });
+      console.log(result)
+      if (result?.success && Array.isArray(result.feeds)) {
+        setPinnedPosts(result.feeds);
+      } else {
+        setPinnedPosts([]);
+      }
+    } catch (error) {
+      console.error("Error fetching pinned feeds:", error);
+      setPinnedPosts([]);
+    }
+  }, []);
 
   // ---------- helpers ----------
   const addFeed = useCallback((feed: IFeed) => {
     setResults(prev => {
       const exists = prev.some(f => f.id === feed.id);
       if (exists) {
-        return prev.map(f => f.id === feed.id ? feed : f);
+        return prev.map(f => (f.id === feed.id ? feed : f));
       }
       return [feed, ...prev];
     });
@@ -169,7 +170,6 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       return filtered;
     });
-    setPinnedPosts(prev => prev.filter(f => f.id !== feedId));
   }, []);
 
   const editFeed = useCallback((feed: IFeed) => {
@@ -178,92 +178,55 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   // ---------- filter & query changes ----------
-  const setFilter = useCallback((newFilter: number) => {
-    if (newFilter === filterState) return; 
-    
-    setFilterState(newFilter);
-    setPage(1);
-    setResults([]);
-    setTotalCount(0);
-    setHasNextPage(true);
-  }, [filterState]);
+  const setFilter = useCallback(
+    (newFilter: number) => {
+      if (newFilter === filterState) return;
+      setFilterState(newFilter);
+      setPage(1);
+      setResults([]);
+      setTotalCount(0);
+      setHasNextPage(true);
+    },
+    [filterState]
+  );
 
-  const setQuery = useCallback((newQuery: string) => {
-    if (newQuery === queryState) return;
-    
-    setQueryState(newQuery);
-    setPage(1);
-    setResults([]);
-    setTotalCount(0);
-    setHasNextPage(true);
-  }, [queryState]);
+  const setQuery = useCallback(
+    (newQuery: string) => {
+      if (newQuery === queryState) return;
+      setQueryState(newQuery);
+      setPage(1);
+      setResults([]);
+      setTotalCount(0);
+      setHasNextPage(true);
+    },
+    [queryState]
+  );
 
-  // fetch pinned once on mount
+  // Single initialization effect
   useEffect(() => {
-    fetchPinnedFeeds();
-  }, [fetchPinnedFeeds]);
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      fetchFeeds({ reset: true }).catch(console.error);
+      fetchPinnedFeeds().catch(console.error);
+    }
+  }, []);
 
-  // refetch feeds on filter/query change
+  // Refetch feeds when filter/query changes
   useEffect(() => {
+    if (!isInitializedRef.current) return;
     currentRequestRef.current = null;
-    
+
     const timeoutId = setTimeout(() => {
       fetchFeeds({ reset: true });
-    }, 100);
+    }, 300);
 
     return () => clearTimeout(timeoutId);
   }, [filterState, queryState]);
-
-  useEffect(() => {
-    fetchFeeds({ reset: true });
-  }, []);
-
-  const togglePin = useCallback(
-    async (feedId: string, isPinned: boolean) => {
-      try {
-        // Optimistic UI update
-        if (isPinned) {
-          setResults(prev =>
-            prev.map(f => f.id === feedId ? { ...f, isPinned: true } : f)
-          );
-          setPinnedPosts(prev => {
-            const exists = prev.some(f => f.id === feedId);
-            if (!exists) {
-              const feed = results.find(f => f.id === feedId);
-              if (feed) return [{ ...feed, isPinned: true }, ...prev];
-            }
-            return prev.map(f => f.id === feedId ? { ...f, isPinned: true } : f);
-          });
-        } else {
-          setResults(prev =>
-            prev.map(f => f.id === feedId ? { ...f, isPinned: false } : f)
-          );
-          setPinnedPosts(prev => prev.filter(f => f.id !== feedId));
-        }
-
-        // Call backend to persist
-        await sendJsonRequest("/Feed/PinToggle", "POST", {
-          feedId,
-          isPinned,
-        });
-
-        // Optional: re-sync from backend
-        fetchPinnedFeeds();
-      } catch (err) {
-        console.error("Error toggling pin:", err);
-        // Optionally revert optimistic update if request failed
-        fetchPinnedFeeds();
-      }
-    },
-    [results, sendJsonRequest, fetchPinnedFeeds]
-  );
-
 
   return (
     <FeedContext.Provider
       value={{
         results,
-        pinnedPosts,
         totalCount,
         page,
         filter: filterState,
@@ -279,7 +242,8 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setQuery,
         scrollY,
         setScrollY,
-        togglePin,
+        pinnedPosts,
+        setPinnedPosts
       }}
     >
       {children}
@@ -292,3 +256,5 @@ export const useFeedContext = () => {
   if (!ctx) throw new Error("useFeedContext must be used inside FeedProvider");
   return ctx;
 };
+
+export default FeedContext;
