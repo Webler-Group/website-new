@@ -13,6 +13,7 @@ import NotificationToast from './comments/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
 import { validReactions } from './types';
+import { useFeedContext } from './FeedContext';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -57,6 +58,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [reaction, setReaction] = useState(feed.reaction ?? validReactions.NONE);
+  const { togglePin } = useFeedContext();
 
   const reactions = {
     [validReactions.LIKE]: "👍",
@@ -89,6 +91,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         throw new Error(response.message);
       }
       onUpdate?.({ ...feed, isPinned: !feed.isPinned });
+      togglePin(feed.id, !feed.isPinned)
     } catch (err) {
       console.error("Error pinning/unpinning feed:", err);
       showNotification("error", String(err));
@@ -535,29 +538,29 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         )}
 
         {/* Reactions Summary */}
-    {topReactions?.length > 0 && (
-      <div className="mb-3">
-        <div className="d-flex align-items-center gap-2 p-2 bg-light rounded-3">
-          <div className="d-flex align-items-center gap-1">
-            {topReactions.map((r: ReactionName) => (
-              <span 
-                key={r.reaction} 
-                className="d-inline-flex align-items-center justify-content-center rounded-circle bg-white shadow-sm"
-                style={{ width: 28, height: 28, fontSize: "0.9rem" }}
-              >
-                {reactions[r.reaction]}
-              </span>
-            ))}
+        {topReactions?.length > 0 && (
+          <div className="mb-2 d-flex align-items-center">
+            <div className="d-flex" style={{ marginRight: 6 }}>
+              {topReactions.map((r: ReactionName, index: number) => (
+                <span
+                  key={r.reaction}
+                  style={{
+                    fontSize: "1rem",
+                    marginLeft: index === 0 ? 0 : -6,
+                    zIndex: topReactions.length - index,
+                  }}
+                >
+                  {reactions[r.reaction]}
+                </span>
+              ))}
+            </div>
+            {totalReactions > 0 && (
+              <small className="text-muted fw-medium">
+                {totalReactions}
+              </small>
+            )}
           </div>
-          {totalReactions > 0 && (
-            <small className="text-muted fw-medium ms-1">
-              {totalReactions} {totalReactions === 1 ? 'reaction' : 'reactions'}
-            </small>
-          )}
-        </div>
-      </div>
-    )}
-
+        )}
 
         {/* Action Buttons */}
         <div className="border-top pt-3">
