@@ -352,7 +352,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
     const { postId, vote, reaction } = req.body;
 
-    if (typeof vote === "undefined") {
+    if (typeof vote === "undefined" || typeof postId === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return
     }
@@ -360,6 +360,22 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const post = await Post.findById(postId);
     if (post === null) {
         res.status(404).json({ success: false, message: "Post not found" })
+        return
+    }
+
+
+    enum validReactions {
+        LIKE = 0,
+        HAHA = 1,
+        ANGRY = 2,
+        LOVE = 3,
+        SAD = 4,
+        WOW = 5,
+        NONE = -1,
+    }
+
+    if (!Object.values(validReactions).includes(reaction)) {
+        res.status(400).json({ success: false, message: "Invalid reaction" });
         return
     }
 

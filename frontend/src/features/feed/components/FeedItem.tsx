@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageCircle, Heart, Share2, Pin, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon } from 'lucide-react';
-import { IFeed, PostType, ReactionChange, ReactionType, ReactionName } from './types';
+import { IFeed, PostType, ReactionChange, ReactionName } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
@@ -12,6 +12,7 @@ import { FileCode, MessageSquare, Link2 } from "lucide-react";
 import NotificationToast from './comments/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
+import { validReactions } from './types';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -56,13 +57,14 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-  const reactions: Record<ReactionType, string> = {
-    "like": "👍",
-    "love": "❤️",
-    "haha": "😂",
-    "wow": "😮", 
-    "sad": "😢", 
-    "angry": "😡"
+  const reactions = {
+    [validReactions.LIKE]: "👍",
+    [validReactions.LOVE]: "❤️",
+    [validReactions.HAHA]: "😂",
+    [validReactions.WOW]: "😮",
+    [validReactions.SAD]: "😢",
+    [validReactions.ANGRY]: "😡",
+    [validReactions.NONE]: null,
   };
 
   const showNotification = (type: 'success' | 'error', message: string) => {
@@ -136,7 +138,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       }
       setTotalReactions(response.reactionSummary.totalReactions || 0);
       setTopReactions(response.reactionSummary.topReactions || []);
-      onUpdate?.({ ...feed, isUpvoted: newIsLiked, votes: newLikesCount, reaction: reaction.currentReaction ?? "", totalReactions: response.reactionSummary.totalReactions, topReactions: response.reactionSummary.topReactions });
+      onUpdate?.({ ...feed, isUpvoted: newIsLiked, votes: newLikesCount, reaction: reaction.currentReaction ?? null, totalReactions: response.reactionSummary.totalReactions, topReactions: response.reactionSummary.topReactions });
     } catch (err) {
       setIsLiked(!isLiked);
       setLikesCount(likesCount);

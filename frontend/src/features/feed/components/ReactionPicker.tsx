@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
+import { validReactions } from "./types";
 
 interface ReactionChange {
-  currentReaction: string | null;
+  currentReaction: validReactions | null;
   hasVoted: boolean;
 }
 
+
 interface Reaction {
-  id: string;
+  id: validReactions;
   emoji: string;
   label: string;
   color: string;
@@ -14,23 +16,23 @@ interface Reaction {
 
 interface ReactionPickerProps {
   onReactionChange: (reaction: ReactionChange) => void;
-  currentState: { reaction: string | null };
+  currentState: { reaction: validReactions | null };
 }
 
 const reactions: Reaction[] = [
-  { id: "like", emoji: "👍", label: "Like", color: "#1877f2" },
-  { id: "love", emoji: "❤️", label: "Love", color: "#e91e63" },
-  { id: "haha", emoji: "😂", label: "Haha", color: "#f39c12" },
-  { id: "wow", emoji: "😮", label: "Wow", color: "#f39c12" },
-  { id: "sad", emoji: "😢", label: "Sad", color: "#f39c12" },
-  { id: "angry", emoji: "😡", label: "Angry", color: "#e74c3c" },
+  { id: validReactions.LIKE, emoji: "👍", label: "Like", color: "#1877f2" },
+  { id: validReactions.LOVE, emoji: "❤️", label: "Love", color: "#e91e63" },
+  { id: validReactions.HAHA, emoji: "😂", label: "Haha", color: "#f39c12" },
+  { id: validReactions.WOW, emoji: "😮", label: "Wow", color: "#f39c12" },
+  { id: validReactions.SAD, emoji: "😢", label: "Sad", color: "#f39c12" },
+  { id: validReactions.ANGRY, emoji: "😡", label: "Angry", color: "#e74c3c" },
 ];
 
 const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onReactionChange,
   currentState,
 }) => {
-  const [selectedReaction, setSelectedReaction] = useState<string | null>(
+  const [selectedReaction, setSelectedReaction] = useState<validReactions | null>(
     currentState?.reaction || null
   );
   const [showPicker, setShowPicker] = useState(false);
@@ -52,13 +54,13 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-const handleReactionClick = (reaction: Reaction | null) => {
-  let newReaction: string | null;
+const handleReactionClick = (reaction: Reaction) => {
+  let newReaction: validReactions | null;
 
   if (reaction && reaction.id === selectedReaction) {
-    newReaction = null;
+    newReaction = validReactions.NONE;
   } else {
-    newReaction = reaction ? reaction.id : null;
+    newReaction = reaction ? reaction.id : validReactions.NONE;
   }
 
   setSelectedReaction(newReaction);
@@ -67,7 +69,7 @@ const handleReactionClick = (reaction: Reaction | null) => {
 
   onReactionChange({
     currentReaction: newReaction,
-    hasVoted: newReaction !== null,
+    hasVoted: newReaction !== validReactions.NONE,
   });
 };
 

@@ -11,8 +11,7 @@ const upvoteSchema = new mongoose.Schema({
         required: true
     },
     reaction: {
-        type: String,
-        required: true,
+        type: Number,
     }
 });
 
