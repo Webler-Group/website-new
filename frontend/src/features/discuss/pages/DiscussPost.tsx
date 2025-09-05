@@ -20,7 +20,7 @@ import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import PostTextareaControl from "../../../components/PostTextareaControl";
-import FollowList from "../../profile/pages/FollowList";
+import ReactionsList from "../../../components/reactions/ReactionsList";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -48,13 +48,13 @@ const DiscussPost = () => {
     const findPostRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
     const [pageTitle, setPageTitle] = useState("");
-    const [votersModalVisible, setVotersModalVisible] = useState(false);
-    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
-    
+    const [votesModalVisible, setVotesModalVisible] = useState(false);
+    const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
+
     PageTitle(pageTitle);
 
     useEffect(() => {
-        if(question) {
+        if (question) {
             setPageTitle(question.title + " | Webler Codes");
         }
     }, [question]);
@@ -255,6 +255,10 @@ const DiscussPost = () => {
         setDeleteModalVisible(false);
     }
 
+    const closeVotesModal = () => {
+        setVotesModalVisible(false);
+    }
+
     const handleDeletePost = async () => {
         setLoading(true);
         const result = await sendJsonRequest("/Discussion/DeleteReply", "DELETE", { replyId: editedAnswer });
@@ -318,14 +322,14 @@ const DiscussPost = () => {
     }
 
     const handleShowVoters = () => {
-        if(!questionId) return;
-        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: questionId } });
-        setVotersModalVisible(true);
+        if(!question?.id) return;
+        setVotesModalOptions({ parentId: question.id });
+        setVotesModalVisible(true);
     }
 
     const onShowAnswerVoters = (id: string) => {
-        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: id } });
-        setVotersModalVisible(true);
+        setVotesModalOptions({ parentId: id });
+        setVotesModalVisible(true);
     }
 
     let charactersRemaining = maxCharacters - formInput.length;
@@ -343,7 +347,7 @@ const DiscussPost = () => {
                     <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-            <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
+            <ReactionsList title="Likes" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
             <div className="d-flex gap-2 py-2">
                 <Link to="/Discuss">Q&A</Link>
                 <span>&rsaquo;</span>
@@ -443,7 +447,7 @@ const DiscussPost = () => {
                 <Form ref={form}>
                     <FormGroup>
                         <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <PostTextareaControl ref={formInputRef}rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
+                        <PostTextareaControl ref={formInputRef} rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
                         <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                     </FormGroup>
                     <div className="d-flex justify-content-end">

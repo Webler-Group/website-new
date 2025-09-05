@@ -7,6 +7,7 @@ import NotificationToast from './comments/NotificationToast';
 import { TagSearch } from '../../../components/InputTags';
 import { useAuth } from '../../auth/context/authContext';
 import { useFeedContext } from "../components/FeedContext";
+import ReactionsList from '../../../components/reactions/ReactionsList';
 
 const FeedList: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
@@ -35,6 +36,9 @@ const FeedList: React.FC = () => {
     pinnedPosts,
     setPinnedPosts
   } = useFeedContext();
+
+  const [feedVotesModalVisible, setFeedVotesModalVisible] = useState(false);
+  const [feedVotesModalOptions, setFeedVotesModalOptions] = useState({ parentId: "" });
 
   // Derive pinned/unpinned results instead of storing them in local state
   const pinnedResults = pinnedPosts;
@@ -71,7 +75,7 @@ const FeedList: React.FC = () => {
     if (scrollY > 0) {
       window.scrollTo({ top: scrollY, behavior: "instant" });
     }
-  }, []); 
+  }, []);
 
   // Refetch feeds when userInfo changes
   useEffect(() => {
@@ -113,13 +117,13 @@ const FeedList: React.FC = () => {
     { value: 6, label: 'Most Shared' }
   ];
 
-  const handleFilterChange = useCallback((newFilter: number) => {
+  const handleFilterChange = (newFilter: number) => {
     const newSearchParams = new URLSearchParams(searchParams);
     newSearchParams.set("filter", newFilter.toString());
     setSearchParams(newSearchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }
 
-  const handleSearch = useCallback((value: string) => {
+  const handleSearch = (value: string) => {
     const newSearchParams = new URLSearchParams(searchParams);
     if (value) {
       newSearchParams.set("query", value);
@@ -127,14 +131,14 @@ const FeedList: React.FC = () => {
       newSearchParams.delete("query");
     }
     setSearchParams(newSearchParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  }
 
-  const handleCommentsClick = useCallback((feedId: string) => {
+  const handleCommentsClick = (feedId: string) => {
     setScrollY(window.scrollY);
     navigate(`/Feed/${feedId}`);
-  }, [navigate, setScrollY]);
+  }
 
-  const handleFeedUpdate = useCallback((updated: IFeed) => {
+  const handleFeedUpdate = (updated: IFeed) => {
     // Update pinned posts list
     if (updated.isPinned) {
       if (!pinnedPosts.some(p => p.id === updated.id)) {
@@ -148,11 +152,20 @@ const FeedList: React.FC = () => {
 
     // Update main feed results
     editFeed(updated);
-  }, [pinnedPosts, setPinnedPosts, editFeed]);
+  }
 
-  const handleFeedDelete = useCallback((deleted: IFeed) => {
+  const handleFeedDelete = (deleted: IFeed) => {
     deleteFeed(deleted.id);
-  }, [deleteFeed]);
+  }
+
+  const closeVotesModal = () => {
+    setFeedVotesModalVisible(false);
+  }
+
+  const onShowUserReactions = (feedId: string) => {
+    setFeedVotesModalOptions({ parentId: feedId });
+    setFeedVotesModalVisible(true);
+  }
 
   if (isLoading && results.length === 0) {
     return (
@@ -163,139 +176,144 @@ const FeedList: React.FC = () => {
   }
 
   return (
-    <div className="min-vh-100 bg-light">
-      <NotificationToast
-        notification={notification}
-        onClose={() => setNotification(null)}
-      />
+    <>
+      <ReactionsList title="Reactions" visible={feedVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} options={feedVotesModalOptions} />
+      <div className="min-vh-100 bg-light">
+        <NotificationToast
+          notification={notification}
+          onClose={() => setNotification(null)}
+        />
 
-      {/* Navbar */}
-      <div 
-        className={`position-sticky top-0 z-3 bg-white border-bottom shadow-sm transition-all ${showNavbar ? "opacity-100" : "opacity-0 -translate-y-100"}`} 
-        style={{ transition: "all 0.3s ease" }}
-      >
-        <div className="container py-2 d-flex justify-content-between align-items-center">
-          <h5 className="fw-bold text-dark mb-0">
-            Feed <small className="text-muted">({totalCount})</small>
-          </h5>
+        {/* Navbar */}
+        <div
+          className={`position-sticky top-0 z-3 bg-white border-bottom shadow-sm transition-all ${showNavbar ? "opacity-100" : "opacity-0 -translate-y-100"}`}
+          style={{ transition: "all 0.3s ease" }}
+        >
+          <div className="container py-2 d-flex justify-content-between align-items-center">
+            <h5 className="fw-bold text-dark mb-0">
+              Feed <small className="text-muted">({totalCount})</small>
+            </h5>
 
-          <div className="d-flex gap-2 align-items-center">
-            <button
-              onClick={() => fetchFeeds({ reset: true })}
-              className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 rounded-pill"
-              disabled={isLoading}
-            >
-              <RefreshCw size={16} className={isLoading ? "spin" : ""} />
-              Refresh
-            </button>
-
-            {/* Filters */}
-            <div className="dropdown">
+            <div className="d-flex gap-2 align-items-center">
               <button
-                className="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill px-3"
-                data-bs-toggle="dropdown"
+                onClick={() => fetchFeeds({ reset: true })}
+                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 rounded-pill"
+                disabled={isLoading}
               >
-                <Filter size={14} className="me-1" />
-                {filterOptions.find(fopt => fopt.value === filter)?.label ?? 'Filter'}
+                <RefreshCw size={16} className={isLoading ? "spin" : ""} />
+                Refresh
               </button>
-              <ul className="dropdown-menu dropdown-menu-end">
-                {filterOptions.map(option => (
-                  <li key={option.value}>
-                    <button
-                      className={`dropdown-item ${filter === option.value ? 'active' : ''}`}
-                      onClick={() => handleFilterChange(option.value)}
-                    >
-                      {option.label}
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+              {/* Filters */}
+              <div className="dropdown">
+                <button
+                  className="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill px-3"
+                  data-bs-toggle="dropdown"
+                >
+                  <Filter size={14} className="me-1" />
+                  {filterOptions.find(fopt => fopt.value === filter)?.label ?? 'Filter'}
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end">
+                  {filterOptions.map(option => (
+                    <li key={option.value}>
+                      <button
+                        className={`dropdown-item ${filter === option.value ? 'active' : ''}`}
+                        onClick={() => handleFilterChange(option.value)}
+                      >
+                        {option.label}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             </div>
+          </div>
+
+          {/* Search */}
+          <div className="container pb-2">
+            <TagSearch query={query} handleSearch={handleSearch} placeholder="Search by tags or content" />
           </div>
         </div>
 
-        {/* Search */}
-        <div className="container pb-2">
-          <TagSearch query={query} handleSearch={handleSearch} placeholder="Search by tags or content" />
-        </div>
-      </div>
+        {/* Feed */}
+        <div className="container py-4">
+          {/* Pinned Section */}
+          {pinnedResults.length > 0 && (
+            <div className="mb-4">
+              <div
+                className="d-flex justify-content-between align-items-center cursor-pointer bg-light border rounded px-3 py-2"
+                onClick={() => setShowPinned(prev => !prev)}
+              >
+                <h6 className="mb-0 fw-bold">
+                  📌 Pinned Posts ({pinnedResults.length})
+                </h6>
+                <span className="text-primary">
+                  {showPinned ? "Hide ▲" : "Show ▼"}
+                </span>
+              </div>
 
-      {/* Feed */}
-      <div className="container py-4">
-        {/* Pinned Section */}
-        {pinnedResults.length > 0 && (
-          <div className="mb-4">
-            <div
-              className="d-flex justify-content-between align-items-center cursor-pointer bg-light border rounded px-3 py-2"
-              onClick={() => setShowPinned(prev => !prev)}
-            >
-              <h6 className="mb-0 fw-bold">
-                📌 Pinned Posts ({pinnedResults.length})
-              </h6>
-              <span className="text-primary">
-                {showPinned ? "Hide ▲" : "Show ▼"}
-              </span>
+              {showPinned && (
+                <div className="row g-3 mt-2">
+                  {pinnedResults.map(feed => (
+                    <div key={feed.id} className="col-12">
+                      <FeedItem
+                        feed={feed}
+                        onUpdate={handleFeedUpdate}
+                        onDelete={handleFeedDelete}
+                        onCommentsClick={handleCommentsClick}
+                        onShowUserReactions={onShowUserReactions}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          )}
 
-            {showPinned && (
-              <div className="row g-3 mt-2">
-                {pinnedResults.map(feed => (
-                  <div key={feed.id} className="col-12">
-                    <FeedItem
-                      feed={feed}
-                      onUpdate={handleFeedUpdate}
-                      onDelete={handleFeedDelete}
-                      onCommentsClick={handleCommentsClick}
-                    />
-                  </div>
-                ))}
+          {/* Unpinned / Normal Feed */}
+          <div className="row g-3">
+            {unpinnedResults.length === 0 && !isLoading ? (
+              <div className="col-12 text-center py-5">
+                <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
+              </div>
+            ) : (
+              unpinnedResults.map((feed, i) => (
+                <div key={feed.id} className="col-12">
+                  <FeedItem
+                    feed={feed}
+                    ref={i === unpinnedResults.length - 1 ? lastFeedElemRef : null}
+                    onUpdate={handleFeedUpdate}
+                    onDelete={handleFeedDelete}
+                    onCommentsClick={handleCommentsClick}
+                    onShowUserReactions={onShowUserReactions}
+                  />
+                </div>
+              ))
+            )}
+            {isLoading && unpinnedResults.length > 0 && (
+              <div className="col-12 text-center py-3">
+                <Loader2 className="text-primary" size={20} />
               </div>
             )}
           </div>
-        )}
-
-        {/* Unpinned / Normal Feed */}
-        <div className="row g-3">
-          {unpinnedResults.length === 0 && !isLoading ? (
-            <div className="col-12 text-center py-5">
-              <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
-            </div>
-          ) : (
-            unpinnedResults.map((feed, i) => (
-              <div key={feed.id} className="col-12">
-                <FeedItem
-                  feed={feed}
-                  ref={i === unpinnedResults.length - 1 ? lastFeedElemRef : null}
-                  onUpdate={handleFeedUpdate}
-                  onDelete={handleFeedDelete}
-                  onCommentsClick={handleCommentsClick}
-                />
-              </div>
-            ))
-          )}
-          {isLoading && unpinnedResults.length > 0 && (
-            <div className="col-12 text-center py-3">
-              <Loader2 className="text-primary" size={20} />
-            </div>
-          )}
         </div>
-      </div>
 
-      {/* Floating Action Button */}
-      <button
-        onClick={() => { navigate("/Feed/New"); setScrollY(0); }}
-        className="btn btn-primary rounded-circle position-fixed d-flex align-items-center justify-content-center shadow-lg"
-        style={{
-          width: "56px",
-          height: "56px",
-          bottom: "1.5rem",
-          right: "1.5rem",
-          zIndex: 1050
-        }}
-      >
-        <Plus size={28} />
-      </button>
-    </div>
+        {/* Floating Action Button */}
+        <button
+          onClick={() => { navigate("/Feed/New"); setScrollY(0); }}
+          className="btn btn-primary rounded-circle position-fixed d-flex align-items-center justify-content-center shadow-lg"
+          style={{
+            width: "56px",
+            height: "56px",
+            bottom: "1.5rem",
+            right: "1.5rem",
+            zIndex: 1050
+          }}
+        >
+          <Plus size={28} />
+        </button>
+      </div>
+    </>
   );
 };
 

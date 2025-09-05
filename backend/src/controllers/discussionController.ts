@@ -736,8 +736,8 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
-            upvote = await Upvote.create({ user: currentUserId, parentId: postId })
-            post.$inc("votes", 1)
+            upvote = await Upvote.create({ user: currentUserId, parentId: postId });
+            post.$inc("votes", 1);
             await post.save();
         }
     }
@@ -745,12 +745,12 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (upvote) {
             await Upvote.deleteOne({ _id: upvote._id });
             upvote = null;
-            post.$inc("votes", -1)
+            post.$inc("votes", -1);
             await post.save();
         }
     }
 
-    res.json({ vote: upvote ? 1 : 0 });
+    res.json({ success: true, vote: upvote ? 1 : 0 });
 
 })
 

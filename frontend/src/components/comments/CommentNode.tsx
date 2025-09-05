@@ -1,7 +1,6 @@
 import { Button } from "react-bootstrap";
 import Comment, { IComment } from "./Comment";
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import ReplyNode from "./ReplyNode";
 import useReplies from "./useReplies";
 import { UseCommentsOptions } from "./useComments";
 
@@ -12,12 +11,23 @@ interface CommentNodeProps {
     onDelete: (post: IComment, onDeleteCallback?: (id: string) => void) => void;
     onEdit: (post: IComment, onEditCallback?: (id: string, setter: (prev: IComment) => IComment) => void) => void;
     onReply: (id: string, onReplyCallback: (post: IComment) => void, message?: string) => void;
+    onShowVotes: (id: string) => void;
     highlightedCommentId: string | null;
+    onVote: (id: string, vote: number) => void;
 }
 
-const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ options, comment, defaultReplies, onDelete, onEdit, onReply, highlightedCommentId }, ref) => {
+const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
+    options,
+    comment,
+    defaultReplies,
+    onDelete,
+    onEdit,
+    onReply,
+    onShowVotes,
+    highlightedCommentId,
+    onVote
+}, ref) => {
     const [repliesVisible, setRepliesVisible] = useState(defaultReplies !== null);
-    const [repliesCount, setRepliesCount] = useState(comment.answers);
     const {
         results: replies,
         setState: setReplyState,
@@ -36,9 +46,6 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ option
 
             if (intObserver.current) intObserver.current.disconnect();
             intObserver.current = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting) {
-                    console.log("intersecting", hasNextReplyPage, replies);
-                }
 
                 if (entries[0].isIntersecting && hasNextReplyPage && replies.length > 0) {
                     setReplyState((prev) => ({
@@ -51,14 +58,14 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ option
 
             if (node) intObserver.current.observe(node);
         },
-        [repliesLoading, hasNextReplyPage, replies, setReplyState]
+        [repliesLoading, hasNextReplyPage, replies]
     );
 
     useEffect(() => {
-        if (repliesCount == 0) {
+        if (comment.answers == 0) {
             setRepliesVisible(false);
         }
-    }, [repliesCount]);
+    }, [comment.answers]);
 
     const handleLoadPreviousReplies = () => {
         setReplyState((prev) => ({
@@ -68,12 +75,11 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ option
         }));
     };
 
-    const handleReply = (message?: string) => {
+    const handleReply = () => {
         setRepliesVisible(true);
         onReply(comment.id, (post: IComment) => {
             createReply(post);
-            setRepliesCount(prev => prev + 1);
-        }, message);
+        });
     }
 
     const handleEdit = () => {
@@ -93,27 +99,34 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ option
     }
 
     const onReplyReply = () => {
-        handleReply(`[user id="${comment.userId}"]${comment.userName}[/user]\n`)
+        setRepliesVisible(true);
+        onReply(comment.id, (post: IComment) => {
+            createReply(post);
+        }, `[user id="${comment.userId}"]${comment.userName}[/user]\n`);
     }
 
     const onReplyDelete = (reply: IComment) => {
         onDelete(reply, (postId: string) => {
             deleteReply(postId);
-            setRepliesCount(prev => prev - 1);
         });
+    }
+
+    const onReplyVote = (id: string, vote: number) => {
+        editReply(id, prev => ({ ...prev, votes: prev.votes + 2 * vote - 1, isUpvoted: vote == 1 }))
     }
 
     return (
         <div className="mb-3" ref={ref}>
             <Comment
                 comment={comment}
-                repliesCount={repliesCount}
                 repliesVisible={repliesVisible}
                 handleDelete={handleDelete}
                 handleEdit={handleEdit}
                 handleReply={handleReply}
                 handleToggleReplies={handleToggleReplies}
+                handleShowVotes={() => onShowVotes(comment.id)}
                 isHighlighted={highlightedCommentId === comment.id}
+                onVote={onVote}
             />
             {repliesVisible && (
                 <div className="ms-5 mt-2">
@@ -129,15 +142,17 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({ option
                         </Button>
                     )}
                     {replies.map((reply, index) => (
-                        <ReplyNode
-                            ref={index == replies.length - 1 ? lastReplyNodeRef : undefined}
-                            key={reply.id}
-                            comment={reply}
-                            onDelete={() => onReplyDelete(reply)}
-                            onEdit={() => onReplyEdit(reply)}
-                            onReply={() => onReplyReply()}
-                            highlightedCommentId={highlightedCommentId}
-                        />
+                        <div key={reply.id} className="mb-2" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
+                            <Comment
+                                comment={reply}
+                                handleDelete={() => onReplyDelete(reply)}
+                                handleEdit={() => onReplyEdit(reply)}
+                                handleReply={() => onReplyReply()}
+                                handleShowVotes={() => onShowVotes(reply.id)}
+                                isHighlighted={highlightedCommentId === reply.id}
+                                onVote={onReplyVote}
+                            />
+                        </div>
                     ))}
                 </div>
             )}

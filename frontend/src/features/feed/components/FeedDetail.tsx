@@ -153,7 +153,6 @@ const FeedDetails: React.FC = () => {
             <div className="card-body">
               <FeedItem
                 feed={feed}
-                sendJsonRequest={sendJsonRequest}
                 onUpdate={handleFeedUpdate}
                 onDelete={() => { handleFeedDelete(feed); }}
                 showFullContent={true}

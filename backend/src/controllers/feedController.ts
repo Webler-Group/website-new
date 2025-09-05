@@ -13,6 +13,7 @@ import UserFollowing from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import ReactionsEnum from "../data/ReactionsEnum";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -101,82 +102,120 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  try {
-    const { parentId } = req.body;
+  const { parentId } = req.body;
 
-    let { page, limit } = req.body;
-
-    if (!page) page = 1;
-    if (!limit) limit = 10;
-
-    const skip = (page - 1) * limit;
-
-    if (!mongoose.Types.ObjectId.isValid(parentId)) {
-      res.status(400).json({ error: "Invalid parentId" });
-      return;
-    }
-
-    const pipeline: PipelineStage[] = [
-      { $match: { parentId: new mongoose.Types.ObjectId(parentId) } },
-      {
-        $lookup: {
-          from: "users",
-          localField: "user",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      { $unwind: "$user" },
-      {
-        $group: {
-          _id: "$reaction",
-          users: {
-            $push: {
-              _id: "$user._id",
-              name: "$user.name",
-            },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      {
-        $project: {
-          _id: 0,
-          reaction: "$_id",
-          count: 1,
-          users: { $slice: ["$users", skip, limit] },
-        },
-      },
-      { $sort: { count: -1 } } // order by most used reaction
-    ];
-
-    const reactions = await Upvote.aggregate(pipeline);
-
-    // compute totals + top 3
-    const totalReactions = reactions.reduce((sum, r) => sum + r.count, 0);
-    const topReactions = reactions.slice(0, 3).map(r => ({
-      reaction: r.reaction,
-      count: r.count
-    }));
-
-    res.json({
-      page,
-      limit,
-      totalReactions,
-      topReactions,
-      reactions,
-    });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+  if (!parentId || !mongoose.Types.ObjectId.isValid(parentId)) {
+    res.status(400).json({ message: "Invalid parentId" });
+    return;
   }
+
+  const reactions = await Upvote.aggregate([
+    {
+      $match: {
+        parentId: new mongoose.Types.ObjectId(parentId),
+      },
+    },
+    {
+      $group: {
+        _id: "$reaction",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $match: {
+        count: { $gt: 0 },
+      },
+    },
+    {
+      $sort: {
+        count: -1,
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        reaction: "$_id",
+        count: 1,
+      },
+    },
+  ]);
+
+  res.json(reactions);
 });
 
+const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
+  const { parentId, page, count } = req.body;
+  const currentUserId = req.userId;
+
+  if (
+    typeof page !== "number" || page < 1 ||
+    typeof count !== "number" || count < 1 || count > 100
+  ) {
+    res.status(400).json({ message: "Some fields are missing or invalid" });
+    return;
+  }
+
+  const skip = (page - 1) * count;
+
+  const parentObjectId = new mongoose.Types.ObjectId(parentId);
+  const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
+
+  const reactions = await Upvote.aggregate([
+    { $match: { parentId: parentObjectId } },
+    { $sort: { _id: -1 } },
+    { $skip: skip },
+    { $limit: count },
+    {
+      $lookup: {
+        from: "users",
+        localField: "user",
+        foreignField: "_id",
+        as: "userDetails"
+      }
+    },
+    { $unwind: "$userDetails" },
+    {
+      $lookup: {
+        from: "userfollowings",
+        let: { targetUserId: "$user" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$user", currentUserObjectId] },
+                  { $eq: ["$following", "$$targetUserId"] }
+                ]
+              }
+            }
+          }
+        ],
+        as: "isFollowing"
+      }
+    },
+    {
+      $project: {
+        userId: "$userDetails._id",
+        userName: "$userDetails.name",
+        userAvatar: "$userDetails.avatarImage",
+        level: "$userDetails.level",
+        roles: "$userDetails.roles",
+        reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
+        isFollowing: { $gt: [{ $size: "$isFollowing" }, 0] }
+      }
+    }
+  ]);
+
+  const totalCount = await Upvote.countDocuments({ parentId });
+
+  res.json({
+    count: totalCount,
+    userReactions: reactions
+  });
+});
 
 const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const currentUserId = req.userId;
-
 
   const { feedId, message } = req.body;
   let { title, tags } = req.body;
@@ -354,7 +393,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const currentUserId = req.userId;
   const { postId, vote, reaction } = req.body;
 
-  if (typeof vote === "undefined" || typeof reaction === "undefined" || typeof postId === "undefined") {
+  if (typeof vote === "undefined") {
     res.status(400).json({ success: false, message: "Some fields are missing" });
     return
   }
@@ -384,9 +423,8 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
       await post.save();
     }
   }
-  let reactionSummary = await getReactionsSummary(postId);
 
-  res.json({ vote: upvote ? 1 : 0, success: true, reactionSummary });
+  res.json({ vote: upvote ? 1 : 0, success: true });
 
 })
 
@@ -811,30 +849,6 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 });
 
-export const getReactionsSummary = async (parentId: string | mongoose.Types.ObjectId) => {
-  const objectId = typeof parentId === "string" ? new mongoose.Types.ObjectId(parentId) : parentId;
-
-  const reactionsAgg = await Upvote.aggregate([
-    { $match: { parentId: objectId } },
-    {
-      $group: {
-        _id: "$reaction",
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { count: -1 } }
-  ]);
-
-  const totalReactions = reactionsAgg.reduce((sum, r) => sum + r.count, 0);
-
-  const topReactions = reactionsAgg.slice(0, 3).map(r => ({
-    reaction: r._id,
-    count: r.count
-  }));
-
-  return { totalReactions, topReactions };
-};
-
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId } = req.body;
   const currentUserId = req.userId;
@@ -1120,20 +1134,6 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   res.status(200).json({ success: true, feed: feed });
 });
 
-const getPinnedFeeds = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  // const currentUserId = req.userId;
-  const currentUserId = '68a7400f3dd5eef60a166911';
-
-  if (!currentUserId) {
-    res.status(401).json({ success: false, message: "Unauthorized" });
-    return;
-  }
-
-  const pinnedFeeds = await Post.find({ user: currentUserId, isPinned: true });
-
-  res.status(200).json({ pinnedFeeds, success: true });
-});
-
 
 const feedController = {
   createFeed,
@@ -1147,9 +1147,9 @@ const feedController = {
   getFeed,
   getReplies,
   togglePinFeed,
-  getPinnedFeeds,
   votePost,
-  getReactions
+  getReactions,
+  getUserReactions
 }
 
 export default feedController;

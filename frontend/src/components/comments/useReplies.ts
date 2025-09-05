@@ -51,7 +51,7 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
         } finally {
             setLoading(false);
         }
-    }, [state.direction, state.firstIndex, state.lastIndex, options, parentId, repliesVisible]);
+    }, [state]);
 
     const createReply = (post: IComment) => {
         setResults((prev) => [post, ...prev]);
@@ -83,12 +83,9 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
 
     useEffect(() => {
         if (repliesVisible) {
-            setState(prev => ({
-                ...prev,
-                direction: defaultData !== null ? 'dont load' : 'from end',
-            }));
+            setState(prev => ({ ...prev, direction: defaultData !== null ? 'dont load' : 'from end' }));
         }
-    }, [options.section, options.params, parentId, defaultData, repliesVisible]);
+    }, [options, parentId, defaultData, repliesVisible]);
 
     return { results, setState, loading, hasNextPage, createReply, editReply, deleteReply, getFirstValidCommentIndex };
 };

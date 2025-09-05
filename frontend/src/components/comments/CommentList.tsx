@@ -7,6 +7,7 @@ import PostTextareaControl from "../PostTextareaControl";
 import { useAuth } from "../../features/auth/context/authContext";
 import { IComment } from "./Comment";
 import { useApi } from "../../context/apiCommunication";
+import ReactionsList from "../reactions/ReactionsList";
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
@@ -41,18 +42,27 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         editComment,
         deleteComment,
         hasNextPage,
-        getFirstValidCommentIndex
+        getFirstValidCommentIndex,
+        error
     } = useComments(options, findPost ? findPost.id : null, filter, 10, showAllComments);
+    const [commentVotesModalVisible, setCommentVotesModalVisible] = useState(false);
+    const [commentVotesModalOptions, setCommentVotesModalOptions] = useState({ parentId: "" });
 
     // Remove highlight after 3 seconds
     useEffect(() => {
         if (highlightedCommentId) {
             const timer = setTimeout(() => {
                 setHighlightedCommentId(null);
-            }, 3000);
+            }, 2500);
             return () => clearTimeout(timer);
         }
     }, [highlightedCommentId]);
+
+    useEffect(() => {
+        if(error) {
+            setMessage([false, error]);
+        }
+    }, [error]);
 
     const intObserver = useRef<IntersectionObserver>();
     const lastCommentNodeRef = useCallback(
@@ -90,6 +100,12 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setEditedComment(post);
         setParentCommentId(parentId);
         setAnswerFormVisible(true);
+
+        setTimeout(() => {
+            if(formInputRef.current) {
+                formInputRef.current.focus();
+            }
+        });
     };
 
     const hideAnswerForm = () => {
@@ -112,6 +128,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             const newPost = { ...result.post, index: -1, userName: userInfo.name, userAvatar: userInfo.avatarImage };
             if (parentCommentId) {
                 onReplyCallback?.(newPost);
+                editComment(parentCommentId, prev => ({ ...prev, answers: prev.answers + 1 }));
                 // Scroll into view of parent
                 setTimeout(() => {
                     if (activeParentCommentRef.current) {
@@ -171,10 +188,11 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             if (result && result.success) {
                 if(editedComment.parentId) {
                     onDeleteCallback?.(editedComment.id);
+                    editComment(editedComment.parentId, prev => ({ ...prev, answers: prev.answers - 1 }));
                 } else {
                     deleteComment(editedComment.id);
                 }
-                setCommentCount?.(prev => prev - 1);
+                setCommentCount?.(prev => prev - editedComment.answers - 1);
                 setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment deleted successfully']);
             } else {
                 setMessage([true, result.message ? result.message : 'Comment could not be deleted']);
@@ -188,6 +206,10 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setDeleteModalVisible(false);
         setEditedComment(null);
     };
+
+    const closeVotesModal = () => {
+        setCommentVotesModalVisible(false);
+    }
 
     const handleLoadPrevious = () => {
         setState((prev) => ({
@@ -213,6 +235,15 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setDeleteModalVisible(true);
     }
 
+    const onVote = (id: string, vote: number) => {
+        editComment(id, prev => ({ ...prev, votes: prev.votes + 2 * vote - 1, isUpvoted: vote == 1 }));
+    }
+
+    const onShowVotes = (id: string) => {
+        setCommentVotesModalOptions({ parentId: id });
+        setCommentVotesModalVisible(true);
+    }
+
     let loading = answerFormLoading || commentsLoading;
 
     return (
@@ -227,6 +258,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     <Button variant="danger" onClick={handleDeleteComment}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <ReactionsList title="Likes" options={commentVotesModalOptions} visible={commentVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
             <div className="d-flex justify-content-between">
                 {showAllComments ? (
                     <div className="col-6 col-sm-4">
@@ -264,7 +296,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                             onDelete={onDelete}
                             onEdit={onEdit}
                             onReply={onReply}
+                            onShowVotes={onShowVotes}
                             highlightedCommentId={highlightedCommentId}
+                            onVote={onVote}
                         />)
                         return comment.id == parentCommentId ?
                             <div key={comment.id} ref={activeParentCommentRef}>{node}</div> :
@@ -278,7 +312,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 bg={message[0] ? 'success' : 'danger'}
                 onClose={() => setMessage([true, ''])}
                 show={message[1] !== ''}
-                delay={3000}
+                delay={2500}
                 autohide
             >
                 <Toast.Body className="text-white">

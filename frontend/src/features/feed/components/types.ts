@@ -1,3 +1,5 @@
+import { ReactionsEnum } from "../../../data/reactions";
+
 export interface Tag {
   _id: string | null | undefined;
   id: string;
@@ -22,21 +24,9 @@ export interface OriginalPost {
   tags: Tag[];
 }
 
-
-export enum validReactions {
-    LIKE = 1,
-    HAHA = 2,
-    ANGRY = 3,
-    LOVE = 4,
-    SAD = 5,
-    WOW = 6,
-    NONE = -1
-}
-
-
 export interface IFeed {
   totalReactions: any;
-  topReactions: any;
+  topReactions: any[];
   id: string;
   type: number;
   title: string | null;
@@ -58,7 +48,7 @@ export interface IFeed {
   originalPost: OriginalPost | null;
   isPinned: boolean;
   isShared: boolean;
-  reaction: validReactions | null;
+  reaction: ReactionsEnum | null;
 }
 
 export interface Comment {
@@ -82,27 +72,3 @@ export enum PostType {
     SHARED_FEED = 5,
     FEED_COMMENT = 6
 }
-
-
-export interface ReactionChange {
-  currentReaction: validReactions | null;
-  hasVoted: boolean;
-}
-
-
-export interface Reaction {
-  id: validReactions;
-  emoji: string;
-  label: string;
-  color: string;
-}
-
-export interface ReactionPickerProps {
-  onReactionChange: (reaction: ReactionChange) => void;
-  currentState: { reaction: string | null };
-}
-
-export type ReactionName = {
-  reaction: validReactions;
-};
-

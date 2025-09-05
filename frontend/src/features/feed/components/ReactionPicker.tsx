@@ -1,95 +1,39 @@
 import React, { useState, useRef, useEffect } from "react";
-import { validReactions } from "./types";
-import "./ReactionPicker.css";
-
-interface ReactionChange {
-  currentReaction: validReactions | null;
-  hasVoted: boolean;
-}
-
-
-interface Reaction {
-  id: validReactions;
-  emoji: string;
-  label: string;
-  color: string;
-}
+import { ReactionsEnum, reactionsInfo } from "../../../data/reactions";
 
 interface ReactionPickerProps {
-  onReactionChange: (reaction: ReactionChange) => void;
-  currentState: { reaction: validReactions | null };
+  onReactionChange: (reaction: ReactionsEnum | null) => void;
+  currentState: ReactionsEnum | null;
 }
-
-const reactions: Reaction[] = [
-  { id: validReactions.LIKE, emoji: "👍", label: "Like", color: "#1877f2" },
-  { id: validReactions.LOVE, emoji: "❤️", label: "Love", color: "#e91e63" },
-  { id: validReactions.HAHA, emoji: "😂", label: "Haha", color: "#f39c12" },
-  { id: validReactions.WOW, emoji: "😮", label: "Wow", color: "#f39c12" },
-  { id: validReactions.SAD, emoji: "😢", label: "Sad", color: "#f39c12" },
-  { id: validReactions.ANGRY, emoji: "😡", label: "Angry", color: "#e74c3c" },
-];
 
 const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onReactionChange,
-  currentState,
+  currentState
 }) => {
-  const [selectedReaction, setSelectedReaction] = useState<validReactions | null>(
-    currentState?.reaction || null
-  );
+  const [selectedReaction, setSelectedReaction] = useState<ReactionsEnum | null>(currentState);
   const [showPicker, setShowPicker] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
   const [longPressTimer, setLongPressTimer] = useState<number | null>(null);
-  
+
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number | null>(null);
 
-  const currentReaction = reactions.find((r) => r.id === selectedReaction);
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768 || 'ontouchstart' in window);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  const handleReactionClick = (id: ReactionsEnum.LIKE) => {
+    const value = id == selectedReaction ? null : id;
+    setSelectedReaction(value);
+    onReactionChange(value);
+    setShowPicker(false);
+  };
 
-  useEffect(() => {
-    setSelectedReaction(currentState?.reaction || null);
-  }, [currentState?.reaction]);
-
-
-const handleReactionClick = (reaction: Reaction) => {
-  let newReaction: validReactions | null;
-
-  if (reaction && reaction.id === selectedReaction) {
-    newReaction = validReactions.NONE;
-  } else {
-    newReaction = reaction ? reaction.id : validReactions.NONE;
-  }
-
-  setSelectedReaction(newReaction);
-  setShowPicker(false);
-
-
-  onReactionChange({
-    currentReaction: newReaction,
-    hasVoted: newReaction !== validReactions.NONE,
-  });
-};
-
-const handleMainClick = () => {
+  const handleMainClick = () => {
     setShowPicker(!showPicker);
-};
+  };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (isMobile) {
-      const timer = window.setTimeout(() => {
-        setShowPicker(true);
-      }, 500);
-      setLongPressTimer(timer);
-    }
+  const handleTouchStart = () => {
+    const timer = window.setTimeout(() => {
+      setShowPicker(true);
+    }, 500);
+    setLongPressTimer(timer);
   };
 
   const handleTouchEnd = () => {
@@ -100,7 +44,7 @@ const handleMainClick = () => {
   };
 
   const handlePickerMouseEnter = () => {
-    if (!isMobile && timeoutRef.current) {
+    if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
   };
@@ -112,10 +56,8 @@ const handleMainClick = () => {
       }
     };
 
-    if (showPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('touchstart', handleClickOutside);
-    }
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -123,12 +65,12 @@ const handleMainClick = () => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       if (longPressTimer) clearTimeout(longPressTimer);
     };
-  }, [showPicker, longPressTimer]);
+  }, [longPressTimer]);
 
   return (
     <>
       <div>
-        <div 
+        <div
           ref={containerRef}
           className="position-relative d-inline-block"
         >
@@ -139,37 +81,35 @@ const handleMainClick = () => {
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
             style={{
-              color: currentReaction ? currentReaction.color : '#65676b',
+              color: selectedReaction ? reactionsInfo[selectedReaction].color : '#65676b',
               fontSize: '15px',
-              fontWeight: currentReaction ? '600' : '500',
+              fontWeight: selectedReaction ? '600' : '500',
               border: 'none',
               borderRadius: '8px',
               transition: 'all 0.2s ease',
               backgroundColor: 'transparent',
             }}
             onMouseEnter={(e) => {
-              if (!isMobile && !currentReaction) {
-                e.currentTarget.style.backgroundColor = '#f2f3f4';
-              }
+              e.currentTarget.style.backgroundColor = '#f2f3f4';
             }}
             onMouseLeave={(e) => {
-              if (!isMobile && !currentReaction) {
+              if (!selectedReaction) {
                 e.currentTarget.style.backgroundColor = 'transparent';
               }
             }}
           >
             <span style={{ fontSize: '16px' }}>
-              {currentReaction ? currentReaction.emoji : ''}
+              {selectedReaction ? reactionsInfo[selectedReaction].emoji : ""}
             </span>
             <span>
-              {currentReaction ? currentReaction.label : 'Like'}
+              {selectedReaction ? reactionsInfo[selectedReaction].label : reactionsInfo[ReactionsEnum.LIKE].label}
             </span>
           </button>
 
           {showPicker && (
             <div
               className="position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
-              style={{ 
+              style={{
                 bottom: '100%',
                 left: '0',
                 marginBottom: '8px',
@@ -181,46 +121,45 @@ const handleMainClick = () => {
               onMouseEnter={handlePickerMouseEnter}
               onTouchStart={(e) => e.stopPropagation()}
             >
-              {reactions.map((reaction) => (
-                <button
-                  key={reaction.id}
-                  type="button"
-                  className="btn p-1 border-0 d-flex align-items-center justify-content-center"
-                  style={{
-                    width: '44px',
-                    height: '44px',
-                    borderRadius: '50%',
-                    backgroundColor: selectedReaction === reaction.id 
-                      ? `${reaction.color}20` 
-                      : 'transparent',
-                    fontSize: '24px',
-                    transition: 'all 0.15s ease',
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleReactionClick(reaction);
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isMobile) {
+              {Object.entries(reactionsInfo).map(([key, reaction]) => {
+                const id = Number(key);
+                return (
+                  <button
+                    key={id}
+                    type="button"
+                    className="btn p-1 border-0 d-flex align-items-center justify-content-center"
+                    style={{
+                      width: '44px',
+                      height: '44px',
+                      borderRadius: '50%',
+                      backgroundColor: selectedReaction == id
+                        ? `${reaction.color}20`
+                        : 'transparent',
+                      fontSize: '24px',
+                      transition: 'all 0.15s ease',
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleReactionClick(id);
+                    }}
+                    onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'scale(1.3)';
-                      e.currentTarget.style.backgroundColor = selectedReaction === reaction.id 
-                        ? `${reaction.color}20` 
+                      e.currentTarget.style.backgroundColor = selectedReaction === id
+                        ? `${reaction.color}20`
                         : '#f0f2f5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isMobile) {
+                    }}
+                    onMouseLeave={(e) => {
                       e.currentTarget.style.transform = 'scale(1)';
-                      e.currentTarget.style.backgroundColor = selectedReaction === reaction.id 
-                        ? `${reaction.color}20` 
+                      e.currentTarget.style.backgroundColor = selectedReaction === id
+                        ? `${reaction.color}20`
                         : 'transparent';
-                    }
-                  }}
-                  title={reaction.label}
-                >
-                  {reaction.emoji}
-                </button>
-              ))}
+                    }}
+                    title={reaction.label}
+                  >
+                    {reaction.emoji}
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>

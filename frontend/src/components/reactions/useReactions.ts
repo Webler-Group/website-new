@@ -1,31 +1,34 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../../context/apiCommunication';
-import { IUserReaction } from './UserReaction';
+import { IUserReaction } from './ReactionListItem';
 
-const useReactions = (parentId: string, countPerPage: number) => {
+const useReactions = (options: { parentId: string | null }, countPerPage: number) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<IUserReaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(true);
+    const [error, setError] = useState("");
     const [state, setState] = useState({ page: 1 });
 
     const fetchData = useCallback(async () => {
-        if (state.page == 0) return;
+        if (state.page == 0 || !options.parentId) return;
 
+        setError("");
         setLoading(true);
-        const response = await sendJsonRequest(
+        const result = await sendJsonRequest(
             "/Feed/GetUserReactions",
             'POST',
-            { parentId, page: state.page, count: countPerPage }
+            { parentId: options.parentId, page: state.page, count: countPerPage }
         );
 
-        setResults((prev) => [...prev, ...response.data]);
-        setHasNextPage(response.data.length === countPerPage);
-        setState((prev) => ({
-            page: prev.page + 1
-        }));
+        if (result && result.userReactions) {
+            setResults((prev) => state.page == 1 ? result.userReactions : [...prev, ...result.userReactions]);
+            setHasNextPage(result.userReactions.length === countPerPage);
+        } else {
+            setError("Something went wrong")
+        }
         setLoading(false);
-    }, [parentId]);
+    }, [state]);
 
     useEffect(() => {
         fetchData();
@@ -34,9 +37,9 @@ const useReactions = (parentId: string, countPerPage: number) => {
     useEffect(() => {
         setResults([]);
         setState({ page: 1 });
-    }, [parentId]);
+    }, [options]);
 
-    return { results, loading, hasNextPage, setState };
+    return { results, loading, hasNextPage, error, setState };
 };
 
 export default useReactions;

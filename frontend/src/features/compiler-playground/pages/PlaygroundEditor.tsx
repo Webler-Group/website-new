@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaGlobe, FaLock, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaLock, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -17,8 +17,8 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
-import FollowList from "../../profile/pages/FollowList";
 import CommentList from "../../../components/comments/CommentList";
+import ReactionsList from "../../../components/reactions/ReactionsList";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -53,8 +53,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const location = useLocation();
     const [message, setMessage] = useState([true, ""]);
     const [pageTitle, setPageTitle] = useState("");
-    const [votersModalVisible, setVotersModalVisible] = useState(false);
-    const [votersListOptions, setVotersListOptions] = useState({ urlPath: "", params: {} });
+    const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
+    const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
 
     PageTitle(pageTitle);
 
@@ -70,7 +70,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (location.state && location.state.postId) {
             openCommentModal();
             setFindPost({ id: location.state.postId, isReply: location.state.isReply });
-            
+
         } else {
             closeCommentModal();
         }
@@ -313,6 +313,16 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setDeleteModalVisible(false);
     }
 
+    const closeVotesModal = () => {
+        setCodeVotesModalVisible(false);
+    }
+
+    const showCodeVotesModal = (id: string | null) => {
+        if(!id) return;
+        setCodeVotesModalOptions({ parentId: id });
+        setCodeVotesModalVisible(true);
+    }
+
     const handleDeleteCode = async () => {
         if (!code) {
             return
@@ -364,12 +374,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
-    const showCodeVoters = () => {
-        if(!codeId) return;
-        setVotersListOptions({ urlPath: "/Discussion/GetVoters", params: { parentId: codeId } });
-        setVotersModalVisible(true);
-    }
-
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -416,7 +420,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                             </ul>
                         </Modal.Body>
                     </Modal>
-                    <FollowList visible={votersModalVisible} title={"Upvotes"} onClose={() => setVotersModalVisible(false)} userId={userInfo?.id} options={votersListOptions} />
+                    <ReactionsList title="Likes" visible={codeVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} options={codeVotesModalOptions} />
                 </>
             }
             <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -480,7 +484,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
                                             <FaThumbsUp />
                                         </span>
-                                        <span className="wb-playground-comments__button" onClick={showCodeVoters}>{code.votes}</span>
+                                        <span className="wb-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
                                     </div>
                                     <div className="wb-playground-comments small">
                                         <span className="wb-playground-comments__button" onClick={openCommentModal}>
@@ -491,10 +495,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     <div className="wb-playground-public small">
                                         <span>
                                             {
-                                                code.isPublic ?
-                                                    <FaGlobe />
-                                                    :
-                                                    <FaLock />
+                                                !code.isPublic &&
+                                                <FaLock />
                                             }
                                         </span>
                                     </div>

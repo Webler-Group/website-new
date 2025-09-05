@@ -1,13 +1,19 @@
-import React, { useCallback, useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import useReactions from './useReactions';
+import ReactionListItem, { IUserReaction } from './ReactionListItem';
+import { Modal } from 'react-bootstrap';
 
 interface ReactionsListProps {
-    parentId: string;
+    options: { parentId: string | null; };
+    visible: boolean;
+    onClose: () => void;
+    title: string;
+    showReactions: boolean;
     countPerPage: number;
 }
 
-const ReactionsList = ({ parentId, countPerPage }: ReactionsListProps) => {
-    const { results, loading, hasNextPage, setState } = useReactions(parentId, countPerPage);
+const ReactionsList = ({ options, visible, onClose, title, showReactions, countPerPage }: ReactionsListProps) => {
+    const { results, loading, hasNextPage, error, setState } = useReactions(options, countPerPage);
 
     const intObserver = useRef<IntersectionObserver>();
     const lastElemRef = useCallback(
@@ -24,28 +30,43 @@ const ReactionsList = ({ parentId, countPerPage }: ReactionsListProps) => {
 
             if (elem) intObserver.current.observe(elem);
         },
-        [loading, hasNextPage, setState, results]
+        [loading, hasNextPage, results]
     );
 
     return (
-        <div>
-            {results.map((item, index) => (
-                <div
-                    key={item.id}
-                    ref={index === results.length - 1 ? lastElemRef : undefined}
-                >
-                    
-                </div>
-            ))}
-            {loading && <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                <div className="wb-loader">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </div>
-            </div>}
-        </div>
-    );
+        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
+            <Modal.Header closeButton>
+                <Modal.Title>{title}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body className="overflow-auto">
+
+                {
+                    error ?
+                        <p className="text-danger">{error}</p>
+                        :
+                        results.map((item: IUserReaction, index) => (
+                            <div key={index} className="mb-2">
+                                <ReactionListItem
+                                    ref={index === results.length - 1 ? lastElemRef : undefined}
+                                    item={item}
+                                    showReactions={showReactions}
+                                />
+                            </div>
+                        ))
+                }
+
+                {loading && (
+                    <div className="d-flex flex-column justify-content-center align-items-center text-center py-2">
+                        <div className="wb-loader">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                )}
+            </Modal.Body>
+        </Modal>
+    )
 };
 
 export default ReactionsList;

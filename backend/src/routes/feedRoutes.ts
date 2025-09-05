@@ -11,10 +11,9 @@ router.use(verifyJWT);
 
 router.route("/").post(feedController.getFeedList);
 router.route("/GetFeed").post(feedController.getFeed);
-router.route("/GetComments")
-    .post(feedController.getReplies)
-router.route("/GetPinnedFeeds").get(feedController.getPinnedFeeds)
-
+router.route("/GetComments").post(feedController.getReplies);
+router.route("/GetReactions").post(feedController.getReactions);
+router.route("/GetUserReactions").post(feedController.getUserReactions);
 
 router.use(protectRoute);
 
@@ -34,8 +33,5 @@ router.route("/EditComment")
 router.route("/DeleteComment")
     .delete(feedController.deleteReply);
 router.route("/VotePost").post(feedController.votePost)
-
-
-router.route("/GetFeedReactions").post(feedController.getReactions)
 
 export default router;

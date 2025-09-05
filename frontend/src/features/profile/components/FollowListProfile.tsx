@@ -11,12 +11,11 @@ import ProfileAvatar from '../../../components/ProfileAvatar';
 
 interface FollowListProfileProps {
     user: UserMinimal;
-    viewedUserId?: string;
-    hideFollowButton?: boolean;
+    viewedUserId: string | null;
     setCount?: (callback: (data: number) => number) => void;
 }
 
-const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount, hideFollowButton = false }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: FollowListProfileProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [followLoading, setFollowLoading] = useState(false);
@@ -64,7 +63,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount, hide
     }
 
     const body = (
-        <div className="d-flex justify-content-between">
+        <div className="d-flex justify-content-between py-2 border-bottom">
             <div className='d-flex align-items-start gap-2'>
                 <div className="wb-p-follow-item__avatar">
                     <ProfileAvatar size={42} avatarImage={user.avatar} />
@@ -83,7 +82,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount, hide
                 </div>
             </div>
             {
-                userInfo && !hideFollowButton &&
+                userInfo &&
                 <div>
                     {
                         userInfo.id != user.id && (

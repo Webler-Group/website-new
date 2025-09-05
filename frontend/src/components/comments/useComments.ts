@@ -23,42 +23,41 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [initialFetchDone, setInitialFetchDone] = useState(false);
+    const [error, setError] = useState("");
     const { sendJsonRequest } = useApi();
 
     const fetchComments = useCallback(async () => {
         if (state.direction === 'dont load') return;
 
+        setError("");
         setLoading(true);
-        try {
-            const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
-                ...options.params,
-                parentId: null,
-                findPostId: initialFetchDone ? null : findPostId,
-                count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
-                index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
-                filter,
+        const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
+            ...options.params,
+            parentId: null,
+            findPostId: (initialFetchDone || showAllComments) ? null : findPostId,
+            count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
+            index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
+            filter,
+        });
+        if (result && result.posts) {
+            setResults((prev) => {
+                // Filter out any posts that already exist in the results array to prevent duplicates
+                const newPosts = result.posts.filter(
+                    (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                );
+                return state.direction === 'from start'
+                    ? [...newPosts, ...prev]
+                    : [...prev, ...newPosts]
             });
-            if (result && result.posts) {
-                setResults((prev) => {
-                    // Filter out any posts that already exist in the results array to prevent duplicates
-                    const newPosts = result.posts.filter(
-                        (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
-                    );
-                    return state.direction === 'from start'
-                        ? [...newPosts, ...prev]
-                        : [...prev, ...newPosts]
-                });
-                if (state.direction === 'from end') {
-                    setHasNextPage(result.posts.length === countPerPage);
-                }
-                setInitialFetchDone(true);
+            if (state.direction === 'from end') {
+                setHasNextPage(result.posts.length === countPerPage);
             }
-        } catch (error) {
-            console.error('Error fetching comments:', error);
-        } finally {
-            setLoading(false);
+            setInitialFetchDone(true);
+        } else {
+            setError(result?.message ?? "Something went wrong");
         }
-    }, [state.direction, state.firstIndex, state.lastIndex, options, findPostId, filter, showAllComments]);
+        setLoading(false);
+    }, [state]);
 
     const createComment = (post: IComment) => {
         setResults((prev) => [post, ...prev]);
@@ -96,9 +95,9 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
     useEffect(() => {
         setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
         setResults([]);
-    }, [options.section, options.params, findPostId, filter, showAllComments]);
+    }, [options, findPostId, filter, showAllComments]);
 
-    return { results, setState, loading, createComment, editComment, deleteComment, hasNextPage, getFirstValidCommentIndex };
+    return { results, setState, loading, createComment, editComment, deleteComment, hasNextPage, getFirstValidCommentIndex, error };
 };
 
 export type {

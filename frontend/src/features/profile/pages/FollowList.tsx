@@ -1,33 +1,25 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef } from "react";
 import { Modal } from "react-bootstrap";
-import useData from "../hooks/useData";
+import useFollows from "../hooks/useFollows";
 import FollowListProfile from "../components/FollowListProfile";
 
 interface FollowListProps {
+    options: { path?: string; userId: string | null; };
     visible: boolean;
     onClose: () => void;
     title: string;
-    userId?: string;
     setCount?: (callback: (data: number) => number) => void;
-    options: {
-        urlPath: string | null;
-        params: any;
-    }
 }
 
-const FollowList = ({ visible, title, onClose, userId, setCount, options }: FollowListProps) => {
+const FollowList = ({ options, visible, title, onClose, setCount }: FollowListProps) => {
 
-    const [store, setStore] = useState({ page: 0 })
     const {
         isLoading,
         error,
         results,
-        hasNextPage
-    } = useData(options.urlPath, options.params, 10, store)
-
-    useEffect(() => {
-        setStore({ page: 1 });
-    }, [options]);
+        hasNextPage,
+        setState
+    } = useFollows(options, 10);
 
     const intObserver = useRef<IntersectionObserver>()
     const lastProfileRef = useCallback((profile: any) => {
@@ -37,29 +29,15 @@ const FollowList = ({ visible, title, onClose, userId, setCount, options }: Foll
 
         intObserver.current = new IntersectionObserver(profiles => {
 
-            if (profiles[0].isIntersecting && hasNextPage) {
+            if (profiles[0].isIntersecting && hasNextPage && results.length > 0) {
 
-                setStore(prev => ({ page: prev.page + 1 }))
+                setState(prev => ({ page: prev.page + 1 }))
             }
         })
 
 
         if (profile) intObserver.current.observe(profile)
-    }, [isLoading, hasNextPage])
-
-    const content = results.map((user, i) => {
-
-        return (
-            <div key={user.id} className="mb-3">
-                {
-                    results.length === i + 1 ?
-                        <FollowListProfile ref={lastProfileRef} user={user} viewedUserId={userId} setCount={setCount} />
-                        :
-                        <FollowListProfile user={user} viewedUserId={userId} setCount={setCount} />
-                }
-            </div>
-        )
-    })
+    }, [isLoading, hasNextPage, results])
 
     return (
         <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
@@ -69,21 +47,31 @@ const FollowList = ({ visible, title, onClose, userId, setCount, options }: Foll
             <Modal.Body className="overflow-auto">
                 {
                     error ?
-                        <p>{error}</p>
+                        <p className="text-danger">{error}</p>
                         :
+                        results.map((user, i) => {
 
-                        (isLoading && store.page == 1)
-                            ?
-                            <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                                <div className="wb-loader">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
+                            return (
+                                <div key={user.id} className="mb-3">
+                                    {
+                                        results.length === i + 1 ?
+                                            <FollowListProfile ref={lastProfileRef} user={user} viewedUserId={options.userId} setCount={setCount} />
+                                            :
+                                            <FollowListProfile user={user} viewedUserId={options.userId} setCount={setCount} />
+                                    }
                                 </div>
-                            </div>
-                            :
-                            content
-
+                            )
+                        })
+                }
+                {
+                    isLoading &&
+                    <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
+                        <div className="wb-loader">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
                 }
             </Modal.Body>
         </Modal>

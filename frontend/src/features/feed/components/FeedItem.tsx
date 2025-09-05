@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, Share2, MoreHorizontal, Edit, Trash2, Clock, Tag as TagIcon, Pin, MessageSquare } from 'lucide-react';
-import { IFeed, PostType, ReactionChange, ReactionName } from './types';
+import { MessageCircle, Share2, MoreHorizontal, Edit, Trash2, Clock, Pin, MessageSquare } from 'lucide-react';
+import { IFeed, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import EditModal from './EditModal';
@@ -10,7 +10,8 @@ import { useAuth } from '../../auth/context/authContext';
 import NotificationToast from './comments/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
-import { validReactions } from './types';
+import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
+import DateUtils from '../../../utils/DateUtils';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -18,6 +19,7 @@ interface FeedItemProps {
   onDelete?: (feed: IFeed) => void;
   onCommentsClick?: (feedId: string) => void;
   showFullContent?: boolean;
+  onShowUserReactions?: (feedId: string) => void;
 }
 
 const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
@@ -25,11 +27,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   onUpdate,
   onDelete,
   onCommentsClick,
-  showFullContent = false
+  onShowUserReactions
 }, ref) => {
   const [showDropdown, setShowDropdown] = useState(false);
-  const [isLiked, setIsLiked] = useState(feed.isUpvoted || false);
-  const [likesCount, setLikesCount] = useState(feed.votes || 0);
 
   const { sendJsonRequest } = useApi();
   const { userInfo } = useAuth();
@@ -37,65 +37,46 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-  const [totalReactions, setTotalReactions] = useState<number>(feed.totalReactions || 0);
-  const [topReactions, setTopReactions] = useState<ReactionName[]>(feed.topReactions || []);
 
   const navigate = useNavigate();
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [reaction, setReaction] = useState(feed.reaction ?? validReactions.NONE);
+  const [reaction, setReaction] = useState(feed.reaction ?? null);
   const [isPinned, setIsPinned] = useState(feed.isPinned || false);
 
   useEffect(() => {
-    setIsPinned(feed.isPinned || false);
+    setIsPinned(feed.isPinned ?? false);
   }, [feed.isPinned]);
+
+  useEffect(() => {
+    setReaction(feed.reaction ?? null);
+  }, [feed.reaction]);
 
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
   }, []);
 
-  const handleTogglePin = useCallback(async () => {
-    if (!sendJsonRequest) return;
+  const handleTogglePin = async () => {
     const prevPinned = isPinned;
     try {
       setIsPinned(!prevPinned);
-      const response = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id });
-      console.log(response)
-      
-      if (!response.success) throw new Error(response.message);
+      const result = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id });
 
-      const updatedFeed = { ...feed, isPinned: response.feed.isPinned };
-      setIsPinned(response.feed.isPinned);
+      if (!result.success) throw new Error(result.message);
+
+      const updatedFeed = { ...feed, isPinned: result.feed.isPinned };
+      setIsPinned(result.feed.isPinned);
       onUpdate?.(updatedFeed);
-      showNotification("success", response.feed.isPinned ? "Post pinned" : "Post unpinned");
+      showNotification("success", result.feed.isPinned ? "Post pinned" : "Post unpinned");
     } catch (err) {
       setIsPinned(prevPinned);
       showNotification("error", err instanceof Error ? err.message : String(err));
     }
-  }, [sendJsonRequest, feed, isPinned, onUpdate, showNotification]);
+  }
 
-  const reactions = {
-    [validReactions.LIKE]: "👍",
-    [validReactions.LOVE]: "❤️",
-    [validReactions.HAHA]: "😂",
-    [validReactions.WOW]: "😮",
-    [validReactions.SAD]: "😢",
-    [validReactions.ANGRY]: "😡",
-    [validReactions.NONE]: null,
-  };
-
-  useEffect(() => {
-    setTotalReactions(feed.totalReactions || 0);
-    setTopReactions(feed.topReactions || []);
-    setReaction(feed.reaction ?? validReactions.NONE);
-    setIsLiked(feed.isUpvoted || false);
-    setLikesCount(feed.votes || 0);
-  }, [feed]);
-
-  const handleEdit = useCallback(async (updatedContent: string) => {
-    if (!sendJsonRequest) return;
+  const handleEdit = async (updatedContent: string) => {
     try {
       const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
       setShowEditModal(false);
@@ -105,10 +86,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     } catch (err) {
       showNotification("error", err instanceof Error ? err.message : String(err));
     }
-  }, [sendJsonRequest, feed, onUpdate, showNotification]);
+  }
 
-  const handleDelete = useCallback(async () => {
-    if (!sendJsonRequest) return;
+  const handleDelete = async () => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       try {
         const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
@@ -119,47 +99,51 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         showNotification("error", err instanceof Error ? err.message : String(err));
       }
     }
-  }, [sendJsonRequest, feed, onDelete, showNotification]);
+  }
 
-  const handleLike = useCallback(async (reactionChange: ReactionChange) => {
-    if (!sendJsonRequest) return;
+  const handleLike = async (reactionChange: ReactionsEnum | null) => {
+    const result = await sendJsonRequest("/Feed/VotePost", "POST", {
+      postId: feed.id,
+      vote: reactionChange != null,
+      reaction: reactionChange
+    });
+    if (result && result.success) {
+      const votes = feed.votes + (feed.isUpvoted != result.vote ? result.vote ? 1 : -1 : 0);
+      let topReactions = [...(feed.topReactions || [])];
 
-    const prevIsLiked = isLiked;
-    const prevLikesCount = likesCount;
-    const prevReaction = reaction;
-    const prevTotalReactions = totalReactions;
-    const prevTopReactions = topReactions;
+      const previousReaction = feed.reaction;
 
-    try {
-      const newIsLiked = reactionChange.hasVoted;
-      const newLikesCount = prevIsLiked ? likesCount - 1 : likesCount + 1;
-      setIsLiked(newIsLiked);
-      setLikesCount(newLikesCount);
-      setReaction(reactionChange.currentReaction ?? validReactions.NONE);
+      // Decrease count of previous reaction if it's different from the new one (or being removed)
+      if (previousReaction && previousReaction !== reactionChange) {
+        const prevIndex = topReactions.findIndex(r => r.reaction === previousReaction);
+        if (prevIndex !== -1) {
+          const updatedCount = topReactions[prevIndex].count - 1;
+          if (updatedCount > 0) {
+            topReactions[prevIndex].count = updatedCount;
+          } else {
+            topReactions.splice(prevIndex, 1); // Remove if count hits 0
+          }
+        }
+      }
 
-      const response = await sendJsonRequest("/Feed/VotePost", "POST", {
-        postId: feed.id,
-        vote: newIsLiked,
-        reaction: reactionChange.currentReaction
-      });
-      if (!response.success) throw new Error(response.message);
-
-      setTotalReactions(response.reactionSummary?.totalReactions || 0);
-      setTopReactions(response.reactionSummary?.topReactions || []);
-
-      onUpdate?.({ ...feed, isUpvoted: newIsLiked, votes: newLikesCount, reaction: reactionChange.currentReaction ?? null });
-    } catch (err) {
-      setIsLiked(prevIsLiked);
-      setLikesCount(prevLikesCount);
-      setReaction(prevReaction);
-      setTotalReactions(prevTotalReactions);
-      setTopReactions(prevTopReactions);
-      showNotification("error", err instanceof Error ? err.message : String(err));
+      // Increase count of new reaction (if any)
+      if (reactionChange != null) {
+        const index = topReactions.findIndex(r => r.reaction === reactionChange);
+        if (index !== -1) {
+          topReactions[index] = {
+            ...topReactions[index],
+            count: topReactions[index].count + 1
+          };
+        } else {
+          topReactions.push({ reaction: reactionChange, count: 1 });
+        }
+      }
+      setReaction(reactionChange);
+      onUpdate?.({ ...feed, isUpvoted: result.vote, votes, reaction: reactionChange, totalReactions: votes, topReactions });
     }
-  }, [sendJsonRequest, feed, isLiked, likesCount, reaction, totalReactions, topReactions, onUpdate, showNotification]);
+  }
 
-  const handleShare = useCallback(async (shareMessage: string, tags?: string[]) => {
-    if (!sendJsonRequest) return;
+  const handleShare = async (shareMessage: string, tags?: string[]) => {
     try {
       const response = await sendJsonRequest("/Feed/ShareFeed", "POST", { feedId: feed.id, message: shareMessage, ...(tags && { tags }) });
       if (!response.success) throw new Error(response.message);
@@ -169,20 +153,18 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     } catch (err) {
       showNotification("error", err instanceof Error ? err.message : String(err));
     }
-  }, [sendJsonRequest, feed.id, navigate, showNotification]);
+  }
 
-  const handleCommentsClick = useCallback(() => {
+  const handleCommentsClick = () => {
     onCommentsClick?.(feed.id);
-  }, [onCommentsClick, feed.id]);
+  }
+
+  const handleShowUserReactions = () => {
+    onShowUserReactions?.(feed.id);
+  }
 
   const canEdit = feed.userId === currentUserId;
   const allowedUrls = [/^https?:\/\/.+/i, /^\/.*/];
-
-  const formatDate = useCallback((dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  }, []);
 
   // close dropdown when clicking outside
   useEffect(() => {
@@ -221,7 +203,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                 {feed.type === PostType.SHARED_FEED && (<span className="badge bg-info bg-opacity-25 text-info border border-info border-opacity-25"><Share2 size={10} className="me-1" />shared</span>)}
               </div>
               <div className="d-flex align-items-center gap-3 text-muted">
-                <small className="d-flex align-items-center gap-1"><Clock size={12} />{feed.date ? formatDate(feed.date) : "Recently"}</small>
+                <small className="d-flex align-items-center gap-1"><Clock size={12} />{DateUtils.format2(new Date(feed.date))}</small>
               </div>
             </div>
           </div>
@@ -265,14 +247,16 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         </div>
 
         {/* Reactions */}
-        {topReactions?.length > 0 && (
+        {feed.topReactions?.length > 0 && (
           <div className="mb-2 d-flex align-items-center">
-            <div className="d-flex" style={{ marginRight: 6 }}>
-              {topReactions.map((r: ReactionName, index: number) => (
-                <span key={`${r.reaction}-${index}`} style={{ fontSize: "1rem", marginLeft: index === 0 ? 0 : -6, zIndex: topReactions.length - index }}>{reactions[r.reaction]}</span>
-              ))}
+            <div className='d-flex gap-1' onClick={handleShowUserReactions} style={{ cursor: "pointer" }}>
+              <div className="d-flex">
+                {feed.topReactions.map((r: any, index: number) => (
+                  <span key={`${r.reaction}-${index}`} style={{ fontSize: "1rem", marginLeft: index === 0 ? 0 : -6, zIndex: feed.topReactions.length - index }}>{reactionsInfo[(r.reaction ?? ReactionsEnum.LIKE) as ReactionsEnum].emoji}</span>
+                ))}
+              </div>
+              {feed.totalReactions > 0 && (<small className="text-muted fw-medium">{feed.totalReactions}</small>)}
             </div>
-            {totalReactions > 0 && (<small className="text-muted fw-medium">{totalReactions}</small>)}
           </div>
         )}
 
@@ -280,7 +264,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         <div className="border-top pt-3">
           <div className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center gap-1">
-              <ReactionPicker onReactionChange={handleLike} currentState={{ reaction: reaction }} />
+              <ReactionPicker onReactionChange={handleLike} currentState={reaction} />
               <button className="btn btn-light btn-sm border-0 d-flex align-items-center gap-2 rounded-pill px-3" onClick={handleCommentsClick}>
                 <MessageCircle size={16} /><span className="fw-medium">{feed.answers || 0}</span>
                 <small className="text-muted d-none d-sm-inline">{feed.answers === 1 ? 'comment' : 'comments'}</small>

@@ -5,6 +5,8 @@ import DateUtils from "../../utils/DateUtils";
 import { parseMessage } from "../PostTextareaControl";
 import ProfileAvatar from "../ProfileAvatar";
 import ProfileName from "../ProfileName";
+import { useNavigate } from "react-router-dom";
+import { useApi } from "../../context/apiCommunication";
 
 interface IComment {
   id: string;
@@ -23,17 +25,42 @@ interface IComment {
 
 interface CommentProps {
   comment: IComment;
-  repliesCount?: number;
   repliesVisible?: boolean;
   isHighlighted: boolean;
   handleToggleReplies?: () => void;
   handleReply?: () => void;
   handleEdit: () => void;
   handleDelete: () => void;
+  handleShowVotes: () => void;
+  onVote: (id: string, vote: number) => void;
 }
 
-const Comment: React.FC<CommentProps> = ({ comment, repliesCount, repliesVisible, handleToggleReplies, handleReply, handleEdit, handleDelete, isHighlighted }) => {
+const Comment: React.FC<CommentProps> = ({
+  comment,
+  repliesVisible,
+  handleToggleReplies,
+  handleReply,
+  handleEdit,
+  handleDelete,
+  handleShowVotes,
+  isHighlighted,
+  onVote
+}) => {
   const { userInfo } = useAuth();
+  const navigate = useNavigate();
+  const { sendJsonRequest } = useApi();
+
+  const handleVote = async () => {
+    if (!userInfo) {
+      navigate("/Users/Login");
+      return;
+    }
+    const vote = comment.isUpvoted ? 0 : 1;
+    const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: comment.id, vote });
+    if (result.success && result.vote === vote) {
+      onVote(comment.id, result.vote);
+    }
+  }
 
   return (
     <div className="d-flex position-relative gap-2">
@@ -80,19 +107,24 @@ const Comment: React.FC<CommentProps> = ({ comment, repliesCount, repliesVisible
         <div className="d-flex justify-content-between">
           <div className="d-flex gap-2 align-items-center">
             <div className="small">
-              <span className={"wb-discuss-voting__button" + (comment.isUpvoted ? " text-black" : "")}>
+              <span className={"wb-discuss-voting__button" + (comment.isUpvoted ? " text-black" : "")} onClick={handleVote}>
                 <FaThumbsUp />
               </span>
-              <span className="ms-1 wb-playground-comments__button">{comment.votes}</span>
+              {
+                comment.votes > 0 ?
+                <span className="ms-1 wb-playground-comments__button" onClick={handleShowVotes}>{comment.votes}</span>
+                :
+                <span className="ms-1">{comment.votes}</span>
+              }
             </div>
             <button className="small wb-user-comment-footer__reply" onClick={handleReply}>
               Reply
             </button>
             {
-              (comment.parentId === null && repliesCount && repliesCount > 0) &&
+              (comment.parentId === null && comment.answers > 0) &&
               <>
                 <button className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={handleToggleReplies}>
-                  {repliesCount} replies
+                  {comment.answers} replies
                 </button>
               </>
             }

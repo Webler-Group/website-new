@@ -62,7 +62,8 @@ const Profile = () => {
     const [followingCount, setFollowingCount] = useState(0);
     const [followersCount, setFollowersCount] = useState(0);
 
-    const [followListVisible, setFollowListVisible] = useState(0);
+    const [followListOptions, setFollowListOptions] = useState({ path: "", userId: "" });
+    const [followListTitle, setFollowListTitle] = useState("");
 
     const [codes, setCodes] = useState<ICode[]>([]);
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
@@ -73,13 +74,10 @@ const Profile = () => {
 
     const navigate = useNavigate();
 
-    const [followerListOptions, setFollowerListOptions] = useState({ urlPath: "", params: {} });
-    const [followingListOptions, setFollowingListOptions] = useState({ urlPath: "", params: {} });
-
     PageTitle(pageTitle);
 
     useEffect(() => {
-        setFollowListVisible(0);
+        setFollowListTitle("");
         sendJsonRequest(`/Profile/GetProfile`, "POST", {
             userId
         })
@@ -140,17 +138,19 @@ const Profile = () => {
     }
 
     const closeFollowList = () => {
-        setFollowListVisible(0);
+        setFollowListTitle("");
     }
 
     const showFollowers = () => {
-        setFollowerListOptions({ urlPath: `/Profile/GetFollowers`, params: { userId } });
-        setFollowListVisible(1);
+        if(!userDetails?.id) return;
+        setFollowListTitle("Followers");
+        setFollowListOptions({ path: "/Profile/GetFollowers", userId: userDetails.id })
     }
 
     const showFollowing = () => {
-        setFollowingListOptions({ urlPath: `/Profile/GetFollowing`, params: { userId } });
-        setFollowListVisible(2);
+        if(!userDetails?.id) return;
+        setFollowListTitle("Following");
+        setFollowListOptions({ path: "/Profile/GetFollowing", userId: userDetails.id })
     }
 
     const showCodesSection = () => {
@@ -281,8 +281,7 @@ const Profile = () => {
                             questionsSectionVisible &&
                             <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />
                         }
-                        <FollowList visible={followListVisible == 1} title="Followers" onClose={closeFollowList} setCount={setFollowingCount} userId={userDetails.id} options={followerListOptions} />
-                        <FollowList visible={followListVisible == 2} title="Following" onClose={closeFollowList} setCount={setFollowingCount} userId={userDetails.id} options={followingListOptions} />
+                        <FollowList options={followListOptions} visible={followListTitle != ""} title="Followers" onClose={closeFollowList} setCount={setFollowingCount} />
                         {
                             isCurrentUser &&
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
