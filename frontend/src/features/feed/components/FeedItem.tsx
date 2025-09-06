@@ -15,19 +15,18 @@ import DateUtils from '../../../utils/DateUtils';
 
 interface FeedItemProps {
   feed: IFeed;
-  onUpdate?: (feed: IFeed) => void;
-  onDelete?: (feed: IFeed) => void;
   onCommentsClick?: (feedId: string) => void;
-  showFullContent?: boolean;
   onShowUserReactions?: (feedId: string) => void;
+  onGeneralUpdate?: (feed: IFeed) => void;
+  commentCount?: number;
 }
 
 const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   feed,
-  onUpdate,
-  onDelete,
   onCommentsClick,
-  onShowUserReactions
+  onShowUserReactions,
+  onGeneralUpdate,
+  commentCount
 }, ref) => {
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -44,6 +43,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [reaction, setReaction] = useState(feed.reaction ?? null);
   const [isPinned, setIsPinned] = useState(feed.isPinned || false);
+  
 
   useEffect(() => {
     setIsPinned(feed.isPinned ?? false);
@@ -68,7 +68,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
       const updatedFeed = { ...feed, isPinned: result.feed.isPinned };
       setIsPinned(result.feed.isPinned);
-      onUpdate?.(updatedFeed);
+      onGeneralUpdate?.(updatedFeed);
       showNotification("success", result.feed.isPinned ? "Post pinned" : "Post unpinned");
     } catch (err) {
       setIsPinned(prevPinned);
@@ -81,7 +81,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
       setShowEditModal(false);
       if (!response.success) throw new Error(response.message);
-      onUpdate?.({ ...feed, message: updatedContent });
+      onGeneralUpdate?.({ ...feed, message: updatedContent });
       showNotification("success", "Post updated successfully");
     } catch (err) {
       showNotification("error", err instanceof Error ? err.message : String(err));
@@ -93,7 +93,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       try {
         const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
         if (!response.success) throw new Error(response.message);
-        onDelete?.(feed);
+        navigate("/feed")
         showNotification("success", "Post deleted successfully");
       } catch (err) {
         showNotification("error", err instanceof Error ? err.message : String(err));
@@ -112,9 +112,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
       let topReactions = [...feed.topReactions];
       const previousReaction = feed.reaction;
-
-      console.log(topReactions);
-      
 
       if(previousReaction) {
         for (let i = 0; i < topReactions.length; ++i) {
@@ -152,7 +149,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       }
 
       setReaction(reactionChange);
-      onUpdate?.({ ...feed, isUpvoted: result.vote, votes, reaction: reactionChange, totalReactions: votes, topReactions });
+      onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: result.totalReactions });
     }
   }
 
@@ -279,8 +276,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             <div className="d-flex align-items-center gap-1">
               <ReactionPicker onReactionChange={handleLike} currentState={reaction} />
               <button className="btn btn-light btn-sm border-0 d-flex align-items-center gap-2 rounded-pill px-3" onClick={handleCommentsClick}>
-                <MessageCircle size={16} /><span className="fw-medium">{feed.answers || 0}</span>
-                <small className="text-muted d-none d-sm-inline">{feed.answers === 1 ? 'comment' : 'comments'}</small>
+                <MessageCircle size={16} /><span className="fw-medium">{commentCount}</span>
+                <small className="text-muted d-none d-sm-inline">{commentCount === 1 ? 'comment' : 'comments'}</small>
               </button>
             </div>
             <button className="btn btn-light btn-sm border-0 d-flex align-items-center gap-2 rounded-pill px-3" onClick={() => setShowShareModal(true)}>

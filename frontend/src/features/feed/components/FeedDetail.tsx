@@ -72,22 +72,8 @@ const FeedDetails: React.FC = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const handleFeedUpdate = async (updatedFeed: IFeed) => {
-    const response = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: updatedFeed.id, message: updatedFeed.message });
-    if (!response.success) {
-      showNotification("error", response.message);
-      throw new Error(response.message);
-    }
-    setFeed(updatedFeed);
-  };
-
-  const handleFeedDelete = async (feed: IFeed) => {
-    const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
-    if (!response.success) {
-      showNotification("error", response.message);
-      throw new Error(response.message);
-    }
-    navigate('/feed');
+  const onGeneralUpdate = async (feed: IFeed) => {
+    setFeed(feed);
   };
 
   if (loading) {
@@ -153,10 +139,9 @@ const FeedDetails: React.FC = () => {
             <div className="card-body">
               <FeedItem
                 feed={feed}
-                onUpdate={handleFeedUpdate}
-                onDelete={() => { handleFeedDelete(feed); }}
-                showFullContent={true}
                 onCommentsClick={openCommentModal}
+                onGeneralUpdate = {onGeneralUpdate}
+                commentCount={commentCount}
               />
             </div>
           </div>

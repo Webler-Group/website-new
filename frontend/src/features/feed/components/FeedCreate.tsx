@@ -5,10 +5,8 @@ import PostTextareaControl from "../../../components/PostTextareaControl";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import InputTags from "../../../components/InputTags";
-import { useFeedContext } from "./FeedContext";
 
 const FeedCreate = () => {
-    const { fetchFeeds } = useFeedContext();
     const [message, setMessage] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
@@ -31,7 +29,6 @@ const FeedCreate = () => {
         console.log(response)
 
         if (response.success) {
-            await fetchFeeds({ reset: true });
             navigate("/Feed/" + response.feed.id);
         } else {
             setError(response.message ?? "Failed to create feed");

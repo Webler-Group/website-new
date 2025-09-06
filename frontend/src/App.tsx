@@ -46,7 +46,6 @@ import AdminHome from './tools/admin/pages/AdminHome';
 import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
 import FeedCreate from './features/feed/components/FeedCreate';
-import { FeedProvider } from "./features/feed/components/FeedContext";
 
 
 function App() {
@@ -54,7 +53,6 @@ function App() {
   const allRoles = [...roles];
 
   return (
-    <FeedProvider>
       <Routes>
 
         <Route element={<NoAuth />}>
@@ -110,14 +108,10 @@ function App() {
         </Route>
 
         <Route path="Feed">
-          <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
-            {/* Feed List */}
+          <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
             <Route index element={<FeedList />} />
-            <Route path='New' element={<FeedCreate />} />
-
-            {/* Single Feed Detail */}
+            <Route path="New" element={<FeedCreate />} />
             <Route path=":id" element={<FeedDetails />} />
-
           </Route>
         </Route>
 
@@ -203,7 +197,6 @@ function App() {
           <Route path="/*" element={<NotFound />} />
         </Route>
       </Routes>
-    </FeedProvider>
   );
 };
 

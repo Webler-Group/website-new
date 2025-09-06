@@ -1,319 +1,451 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Plus, Loader2, Filter, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { Search, Filter, Loader2, RefreshCw, AlertCircle } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useApi } from '../../../context/apiCommunication';
 import { IFeed } from './types';
 import FeedItem from './FeedItem';
-import NotificationToast from './comments/NotificationToast';
-import { TagSearch } from '../../../components/InputTags';
-import { useAuth } from '../../auth/context/authContext';
-import { useFeedContext } from "../components/FeedContext";
-import ReactionsList from '../../../components/reactions/ReactionsList';
+
+interface FeedListResponse {
+  success: boolean;
+  count: number;
+  feeds: IFeed[];
+  message?: string;
+}
+
+interface CacheEntry {
+  feeds: IFeed[];
+  totalCount: number;
+  timestamp: number;
+}
+
+interface FeedCache {
+  [key: string]: CacheEntry;
+}
+
+const FEEDS_PER_PAGE = 10;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const SEARCH_DEBOUNCE_MS = 500;
+
+const FILTER_OPTIONS = [
+  { value: 1, label: 'Latest' },
+  { value: 2, label: 'My Posts' },
+  { value: 3, label: 'Following' },
+  { value: 4, label: 'Trending (24h)' },
+  { value: 5, label: 'Most Popular' },
+  { value: 6, label: 'Most Shared' },
+  { value: 7, label: 'Pinned' }
+];
 
 const FeedList: React.FC = () => {
-  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [showNavbar, setShowNavbar] = useState(true);
-  const [showPinned, setShowPinned] = useState(true);
-  const lastScrollRef = useRef(0);
-  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const { userInfo } = useAuth();
-  const hasInitializedFromUrl = useRef(false);
+  const navigate = useNavigate();
+  const { sendJsonRequest } = useApi();
 
-  const {
-    results,
-    totalCount,
-    isLoading,
-    hasNextPage,
-    fetchFeeds,
-    deleteFeed,
-    editFeed,
-    scrollY,
-    setScrollY,
-    setFilter,
-    setQuery,
-    query,
-    filter,
-    pinnedPosts,
-    setPinnedPosts
-  } = useFeedContext();
+  // URL state synchronization
+  const searchQuery = searchParams.get('search') || '';
+  const filterValue = parseInt(searchParams.get('filter') || '1');
 
-  const [feedVotesModalVisible, setFeedVotesModalVisible] = useState(false);
-  const [feedVotesModalOptions, setFeedVotesModalOptions] = useState({ parentId: "" });
+  // Component state
+  const [feeds, setFeeds] = useState<IFeed[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // Search input state (initialize with URL value to prevent mismatch)
+  const [searchInput, setSearchInput] = useState(searchQuery);
+  
+  // Refs and cache
+  const cache = useRef<FeedCache>({});
+  const abortController = useRef<AbortController | null>(null);
+  const searchTimeoutRef = useRef<NodeJS.Timeout>();
+  const observerRef = useRef<IntersectionObserver | null>(null);
+  const lastFeedRef = useRef<HTMLDivElement | null>(null);
 
-  // Derive pinned/unpinned results instead of storing them in local state
-  const pinnedResults = pinnedPosts;
-  const unpinnedResults = results.filter(r => !pinnedPosts.some(p => p.id === r.id));
+  // Generate cache key
+  const getCacheKey = useCallback((search: string, filter: number, page: number) => {
+    return `${search}-${filter}-${page}`;
+  }, []);
 
-  // Hide/show navbar on scroll
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScroll = window.scrollY;
-      if (currentScroll > lastScrollRef.current && currentScroll > 80) {
-        setShowNavbar(false);
+  // Check if cache entry is valid
+  const isCacheValid = useCallback((entry: CacheEntry): boolean => {
+    return Date.now() - entry.timestamp < CACHE_DURATION;
+  }, []);
+
+  // Update URL parameters
+  const updateUrlParams = useCallback((search: string, filter: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set('search', search);
+    if (filter !== 1) params.set('filter', filter.toString());
+    setSearchParams(params);
+  }, [setSearchParams]);
+
+  // Reset feeds and pagination
+  const resetFeedList = useCallback(() => {
+    setFeeds([]);
+    setCurrentPage(1);
+    setHasMore(true);
+    setError(null);
+    setTotalCount(0);
+  }, []);
+
+  // Fetch feeds from API
+  const fetchFeeds = useCallback(async (
+    search: string,
+    filter: number,
+    page: number,
+    isLoadMore: boolean = false
+  ): Promise<void> => {
+    const cacheKey = getCacheKey(search, filter, page);
+    
+    // Check cache first
+    if (cache.current[cacheKey] && isCacheValid(cache.current[cacheKey])) {
+      const cachedEntry = cache.current[cacheKey];
+      if (isLoadMore) {
+        setFeeds(prev => [...prev, ...cachedEntry.feeds]);
       } else {
-        setShowNavbar(true);
+        setFeeds(cachedEntry.feeds);
+        setTotalCount(cachedEntry.totalCount);
       }
-      lastScrollRef.current = currentScroll;
+      setCurrentPage(page);
+      return;
+    }
+
+    // Cancel previous request
+    if (abortController.current) {
+      abortController.current.abort();
+    }
+    abortController.current = new AbortController();
+
+    try {
+      if (isLoadMore) {
+        setLoadingMore(true);
+      } else {
+        setLoading(true);
+        setError(null);
+      }
+
+      const response = await sendJsonRequest(
+        '/Feed',
+        'POST',
+        {
+          page,
+          count: FEEDS_PER_PAGE,
+          filter,
+          searchQuery: search
+        },
+        { signal: abortController.current.signal }
+      );
+
+      if (!response.success) {
+        throw new Error(response.message || 'Failed to fetch feeds');
+      }
+
+      const feedData: FeedListResponse = response;
+      
+      // Cache the result
+      cache.current[cacheKey] = {
+        feeds: feedData.feeds,
+        totalCount: feedData.count,
+        timestamp: Date.now()
+      };
+
+      if (isLoadMore) {
+        setFeeds(prev => [...prev, ...feedData.feeds]);
+      } else {
+        setFeeds(feedData.feeds);
+        setTotalCount(feedData.count);
+      }
+
+      setCurrentPage(page);
+      setHasMore(feedData.feeds.length === FEEDS_PER_PAGE && 
+                 (isLoadMore ? feeds.length + feedData.feeds.length : feedData.feeds.length) < feedData.count);
+
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        console.error('Error fetching feeds:', err);
+        setError(err.message || 'Failed to load feeds');
+        setHasMore(false);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [sendJsonRequest, getCacheKey, isCacheValid, feeds.length]);
+
+  // Load more feeds (infinite scroll)
+  const loadMore = useCallback(() => {
+    if (!loadingMore && !loading && hasMore) {
+      fetchFeeds(searchQuery, filterValue, currentPage + 1, true);
+    }
+  }, [fetchFeeds, searchQuery, filterValue, currentPage, loadingMore, loading, hasMore]);
+
+  // Debounced search handler
+  useEffect(() => {
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    searchTimeoutRef.current = setTimeout(() => {
+      if (searchInput !== searchQuery) {
+        updateUrlParams(searchInput, filterValue);
+        resetFeedList();
+      }
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [searchInput, searchQuery, filterValue, updateUrlParams, resetFeedList]);
 
-  // Initialize filter and query from URL params once
-  useEffect(() => {
-    if (!hasInitializedFromUrl.current) {
-      hasInitializedFromUrl.current = true;
-      const f = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
-      const q = searchParams.get("query") ?? "";
-      if (f !== filter) setFilter(f);
-      if (q !== query) setQuery(q);
+  // Filter change handler
+  const handleFilterChange = useCallback((newFilter: number) => {
+    if (newFilter !== filterValue) {
+      updateUrlParams(searchQuery, newFilter);
+      resetFeedList();
     }
-  }, [searchParams, filter, query, setFilter, setQuery]);
+  }, [filterValue, searchQuery, updateUrlParams, resetFeedList]);
 
-  // Restore scroll position once on mount
-  useEffect(() => {
-    if (scrollY > 0) {
-      window.scrollTo({ top: scrollY, behavior: "instant" });
-    }
-  }, []);
+  // Refresh handler
+  const handleRefresh = useCallback(() => {
+    // Clear cache for current query
+    const cacheKey = getCacheKey(searchQuery, filterValue, 1);
+    delete cache.current[cacheKey];
+    
+    resetFeedList();
+    fetchFeeds(searchQuery, filterValue, 1);
+  }, [searchQuery, filterValue, getCacheKey, resetFeedList, fetchFeeds]);
 
-  // Refetch feeds when userInfo changes
-  useEffect(() => {
-    if (hasInitializedFromUrl.current) {
-      fetchFeeds({ reset: true });
-    }
-  }, [userInfo?.id]);
-
-  // Infinite scroll observer
-  const intObserver = useRef<IntersectionObserver | null>(null);
-  const lastFeedElemRef = useCallback(
-    (elem: HTMLElement | null) => {
-      if (isLoading) return;
-      if (intObserver.current) intObserver.current.disconnect();
-
-      intObserver.current = new IntersectionObserver(entries => {
-        if (entries[0].isIntersecting && hasNextPage && !isLoading) {
-          fetchFeeds();
-        }
-      });
-
-      if (elem) intObserver.current.observe(elem);
-    },
-    [hasNextPage, isLoading, fetchFeeds]
-  );
-
-  // Filter options
-  const filterOptions = userInfo ? [
-    { value: 1, label: 'Most Recent' },
-    { value: 2, label: 'My Posts' },
-    { value: 3, label: 'Following' },
-    { value: 4, label: 'Hot Today' },
-    { value: 5, label: 'Most Popular' },
-    { value: 6, label: 'Most Shared' }
-  ] : [
-    { value: 1, label: 'Most Recent' },
-    { value: 4, label: 'Hot Today' },
-    { value: 5, label: 'Most Popular' },
-    { value: 6, label: 'Most Shared' }
-  ];
-
-  const handleFilterChange = (newFilter: number) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set("filter", newFilter.toString());
-    setSearchParams(newSearchParams, { replace: true });
-  }
-
-  const handleSearch = (value: string) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    if (value) {
-      newSearchParams.set("query", value);
-    } else {
-      newSearchParams.delete("query");
-    }
-    setSearchParams(newSearchParams, { replace: true });
-  }
-
-  const handleCommentsClick = (feedId: string) => {
-    setScrollY(window.scrollY);
-    navigate(`/Feed/${feedId}`);
-  }
-
-  const handleFeedUpdate = (updated: IFeed) => {
-    // Update pinned posts list
-    if (updated.isPinned) {
-      if (!pinnedPosts.some(p => p.id === updated.id)) {
-        setPinnedPosts([...pinnedPosts, updated]);
-      } else {
-        setPinnedPosts(pinnedPosts.map(p => p.id === updated.id ? updated : p));
-      }
-    } else {
-      setPinnedPosts(pinnedPosts.filter(p => p.id !== updated.id));
-    }
-
-    // Update main feed results
-    editFeed(updated);
-  }
-
-  const handleFeedDelete = (deleted: IFeed) => {
-    deleteFeed(deleted.id);
-  }
-
-  const closeVotesModal = () => {
-    setFeedVotesModalVisible(false);
-  }
-
-  const onShowUserReactions = (feedId: string) => {
-    setFeedVotesModalOptions({ parentId: feedId });
-    setFeedVotesModalVisible(true);
-  }
-
-  if (isLoading && results.length === 0) {
-    return (
-      <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-        <Loader2 className="text-primary" style={{ width: "2.5rem", height: "2.5rem" }} />
-      </div>
+  // Feed update handler
+  const handleFeedUpdate = useCallback((updatedFeed: IFeed) => {
+    setFeeds(prevFeeds => 
+      prevFeeds.map(feed => 
+        feed.id === updatedFeed.id ? updatedFeed : feed
+      )
     );
-  }
+  }, []);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+    }
+
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && hasMore && !loading && !loadingMore) {
+          loadMore();
+        }
+      },
+      {
+        rootMargin: '200px'
+      }
+    );
+
+    if (lastFeedRef.current) {
+      observerRef.current.observe(lastFeedRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, [hasMore, loading, loadingMore, loadMore]);
+
+  // Initial fetch and URL parameter changes
+  useEffect(() => {
+    resetFeedList();
+    fetchFeeds(searchQuery, filterValue, 1);
+  }, [searchQuery, filterValue]); // Only depend on URL params
+
+  // Sync search input with URL
+  useEffect(() => {
+    setSearchInput(searchQuery);
+  }, [searchQuery]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (abortController.current) {
+        abortController.current.abort();
+      }
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Memoized filter options
+  const filterButtons = useMemo(() => (
+    FILTER_OPTIONS.map(option => (
+      <button
+        key={option.value}
+        onClick={() => handleFilterChange(option.value)}
+        className={`btn btn-sm rounded-pill border-0 ${
+          filterValue === option.value 
+            ? 'btn-primary text-white shadow-sm' 
+            : 'btn-light text-muted'
+        }`}
+        disabled={loading}
+      >
+        {option.label}
+      </button>
+    ))
+  ), [filterValue, handleFilterChange, loading]);
 
   return (
-    <>
-      <ReactionsList title="Reactions" visible={feedVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} options={feedVotesModalOptions} />
-      <div className="min-vh-100 bg-light">
-        <NotificationToast
-          notification={notification}
-          onClose={() => setNotification(null)}
-        />
-
-        {/* Navbar */}
-        <div
-          className={`position-sticky top-0 z-3 bg-white border-bottom shadow-sm transition-all ${showNavbar ? "opacity-100" : "opacity-0 -translate-y-100"}`}
-          style={{ transition: "all 0.3s ease" }}
-        >
-          <div className="container py-2 d-flex justify-content-between align-items-center">
-            <h5 className="fw-bold text-dark mb-0">
-              Feed <small className="text-muted">({totalCount})</small>
-            </h5>
-
-            <div className="d-flex gap-2 align-items-center">
-              <button
-                onClick={() => fetchFeeds({ reset: true })}
-                className="btn btn-sm btn-outline-secondary d-flex align-items-center gap-1 rounded-pill"
-                disabled={isLoading}
-              >
-                <RefreshCw size={16} className={isLoading ? "spin" : ""} />
-                Refresh
-              </button>
-
-              {/* Filters */}
-              <div className="dropdown">
-                <button
-                  className="btn btn-sm btn-outline-secondary dropdown-toggle rounded-pill px-3"
-                  data-bs-toggle="dropdown"
-                >
-                  <Filter size={14} className="me-1" />
-                  {filterOptions.find(fopt => fopt.value === filter)?.label ?? 'Filter'}
-                </button>
-                <ul className="dropdown-menu dropdown-menu-end">
-                  {filterOptions.map(option => (
-                    <li key={option.value}>
-                      <button
-                        className={`dropdown-item ${filter === option.value ? 'active' : ''}`}
-                        onClick={() => handleFilterChange(option.value)}
-                      >
-                        {option.label}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+    <div className="container-fluid px-3 py-4">
+      {/* Header Section */}
+      <div className="row mb-4">
+        <div className="col-12">
+          <div className="d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
+            <h2 className="h4 mb-0 fw-bold text-dark">Feed</h2>
+            
+            {/* Controls */}
+            <div className="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+              {/* Search Input */}
+              <div className="position-relative">
+                <Search className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted" size={16} />
+                <input
+                  type="text"
+                  className="form-control ps-5 rounded-pill border-0 bg-light"
+                  placeholder="Search feeds..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  disabled={loading}
+                  style={{ minWidth: '250px' }}
+                />
               </div>
+              
+              {/* Refresh Button */}
+              <button
+                onClick={handleRefresh}
+                disabled={loading || loadingMore}
+                className="btn btn-outline-secondary rounded-pill border-0 bg-light d-flex align-items-center gap-2"
+                title="Refresh feeds"
+              >
+                <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                <span className="d-none d-sm-inline">Refresh</span>
+              </button>
             </div>
           </div>
 
-          {/* Search */}
-          <div className="container pb-2">
-            <TagSearch query={query} handleSearch={handleSearch} placeholder="Search by tags or content" />
+          {/* Filter Buttons */}
+          <div className="d-flex flex-wrap gap-2 mt-3">
+            <Filter size={16} className="text-muted mt-1 me-1" />
+            {filterButtons}
           </div>
+
+          {/* Results Info */}
+          {!loading && !error && (
+            <div className="mt-2">
+              <small className="text-muted">
+                {searchQuery ? (
+                  <>Showing {feeds.length} of {totalCount} results for "{searchQuery}"</>
+                ) : (
+                  <>Showing {feeds.length} of {totalCount} feeds</>
+                )}
+              </small>
+            </div>
+          )}
         </div>
+      </div>
 
-        {/* Feed */}
-        <div className="container py-4">
-          {/* Pinned Section */}
-          {pinnedResults.length > 0 && (
-            <div className="mb-4">
-              <div
-                className="d-flex justify-content-between align-items-center cursor-pointer bg-light border rounded px-3 py-2"
-                onClick={() => setShowPinned(prev => !prev)}
-              >
-                <h6 className="mb-0 fw-bold">
-                  📌 Pinned Posts ({pinnedResults.length})
-                </h6>
-                <span className="text-primary">
-                  {showPinned ? "Hide ▲" : "Show ▼"}
-                </span>
+      {/* Content Section */}
+      <div className="row">
+        <div className="col-12">
+          {/* Error State */}
+          {error && (
+            <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
+              <AlertCircle size={20} />
+              <div>
+                <strong>Error loading feeds</strong>
+                <p className="mb-0">{error}</p>
+                <button
+                  onClick={handleRefresh}
+                  className="btn btn-sm btn-outline-danger mt-2"
+                >
+                  Try Again
+                </button>
               </div>
+            </div>
+          )}
 
-              {showPinned && (
-                <div className="row g-3 mt-2">
-                  {pinnedResults.map(feed => (
-                    <div key={feed.id} className="col-12">
-                      <FeedItem
-                        feed={feed}
-                        onUpdate={handleFeedUpdate}
-                        onDelete={handleFeedDelete}
-                        onCommentsClick={handleCommentsClick}
-                        onShowUserReactions={onShowUserReactions}
-                      />
-                    </div>
-                  ))}
-                </div>
+          {/* Loading State (Initial) */}
+          {loading && feeds.length === 0 && (
+            <div className="text-center py-5">
+              <Loader2 className="animate-spin mb-3 text-primary" size={32} />
+              <p className="text-muted">Loading feeds...</p>
+            </div>
+          )}
+
+          {/* Empty State */}
+          {!loading && !error && feeds.length === 0 && (
+            <div className="text-center py-5">
+              <div className="text-muted mb-3">
+                <Search size={48} className="opacity-50" />
+              </div>
+              <h5 className="text-muted">No feeds found</h5>
+              <p className="text-muted">
+                {searchQuery 
+                  ? `No results found for "${searchQuery}". Try adjusting your search or filters.`
+                  : 'No feeds available at the moment.'
+                }
+              </p>
+              {searchQuery && (
+                <button
+                  onClick={() => {
+                    setSearchInput('');
+                    updateUrlParams('', filterValue);
+                  }}
+                  className="btn btn-outline-primary rounded-pill"
+                >
+                  Clear Search
+                </button>
               )}
             </div>
           )}
 
-          {/* Unpinned / Normal Feed */}
-          <div className="row g-3">
-            {unpinnedResults.length === 0 && !isLoading ? (
-              <div className="col-12 text-center py-5">
-                <h4 className="fw-semibold text-muted mb-2">No posts found</h4>
-              </div>
-            ) : (
-              unpinnedResults.map((feed, i) => (
-                <div key={feed.id} className="col-12">
-                  <FeedItem
-                    feed={feed}
-                    ref={i === unpinnedResults.length - 1 ? lastFeedElemRef : null}
-                    onUpdate={handleFeedUpdate}
-                    onDelete={handleFeedDelete}
-                    onCommentsClick={handleCommentsClick}
-                    onShowUserReactions={onShowUserReactions}
-                  />
-                </div>
-              ))
-            )}
-            {isLoading && unpinnedResults.length > 0 && (
-              <div className="col-12 text-center py-3">
-                <Loader2 className="text-primary" size={20} />
-              </div>
-            )}
-          </div>
-        </div>
+          {/* Feed Items */}
+          {feeds.map((feed, index) => {
+            const isLast = index === feeds.length - 1;
+            return (
+              <FeedItem
+                key={feed.id}
+                ref={isLast ? lastFeedRef : undefined}
+                feed={feed}
+                onGeneralUpdate={handleFeedUpdate}
+                onCommentsClick={(feedId) => navigate(`/feed/${feedId}`)}
+                commentCount={feed.answers || 0}
+              />
+            );
+          })}
 
-        {/* Floating Action Button */}
-        <button
-          onClick={() => { navigate("/Feed/New"); setScrollY(0); }}
-          className="btn btn-primary rounded-circle position-fixed d-flex align-items-center justify-content-center shadow-lg"
-          style={{
-            width: "56px",
-            height: "56px",
-            bottom: "1.5rem",
-            right: "1.5rem",
-            zIndex: 1050
-          }}
-        >
-          <Plus size={28} />
-        </button>
+          {/* Load More Indicator */}
+          {loadingMore && (
+            <div className="text-center py-4">
+              <Loader2 className="animate-spin mb-2 text-primary" size={24} />
+              <p className="text-muted mb-0">Loading more feeds...</p>
+            </div>
+          )}
+
+          {/* End of Results */}
+          {!hasMore && feeds.length > 0 && (
+            <div className="text-center py-4">
+              <div className="text-muted">
+                <hr className="my-3" />
+                <small>You've reached the end of the feed</small>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 };
 
