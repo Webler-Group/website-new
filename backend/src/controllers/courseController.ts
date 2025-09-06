@@ -468,8 +468,13 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     }
     usersToNotify.delete(currentUserId!);
 
-    for (let userToNotify of usersToNotify) {
+    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
+    await sendToUsers(Array.from(usersToNotify), {
+            title: "New reply",
+            body: `${currentUserName} replied to your comment on "${lesson.title}"`
+        }, "codes");
+    for (let userToNotify of usersToNotify) {
         await Notification.create({
             _type: NotificationTypeEnum.LESSON_COMMENT,
             user: userToNotify,
