@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useApi } from "../../../context/apiCommunication";
 
-export function usePushNotifications(userId: string) {
+export function usePushNotifications() {
     const [subscribed, setSubscribed] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const { sendJsonRequest } = useApi();
@@ -29,7 +29,7 @@ export function usePushNotifications(userId: string) {
         checkSubscription();
     }, [isSupported]);
 
-    const subscribe = useCallback(async () => {
+    const subscribe = async () => {
         if (!isSupported) return;
 
         try {
@@ -54,9 +54,9 @@ export function usePushNotifications(userId: string) {
             console.error("Push subscription error:", err);
             setError(err.message || "Failed to subscribe to push notifications.");
         }
-    }, [userId, isSupported]);
+    }
 
-    const unsubscribe = useCallback(async () => {
+    const unsubscribe = async () => {
         if (!isSupported) return;
 
         try {
@@ -73,7 +73,7 @@ export function usePushNotifications(userId: string) {
             console.error("Push unsubscription error:", err);
             setError(err.message || "Failed to unsubscribe from push notifications.");
         }
-    }, [userId, isSupported]);
+    }
 
     return { subscribed, error, subscribe, unsubscribe };
 }

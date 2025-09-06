@@ -4,6 +4,8 @@ import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import requestLimiter from "../middleware/requestLimiter";
 import verifyEmail from "../middleware/verifyEmail";
+import RolesEnum from "../data/RolesEnum";
+import requireRoles from "../middleware/requireRoles";
 
 const router = express.Router();
 
@@ -17,7 +19,7 @@ router.route("/GetUserReactions").post(feedController.getUserReactions);
 
 router.use(protectRoute);
 
-router.route("/PinFeed").post(feedController.togglePinFeed)
+router.route("/PinFeed").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), feedController.togglePinFeed)
 router.route("/ReplyComment").post(feedController.createReply)
 router.route("/CreateFeed")
     .post(verifyEmail, requestLimiter(3600, 5, "Too many requests, try again later"), feedController.createFeed);

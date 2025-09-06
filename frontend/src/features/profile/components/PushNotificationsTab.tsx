@@ -12,7 +12,7 @@ interface PushNotificationsTabProps {
 }
 
 const PushNotificationsTab = ({ userId, userNotifications, onUpdate }: PushNotificationsTabProps) => {
-    const { subscribed, error, subscribe, unsubscribe } = usePushNotifications(userId);
+    const { subscribed, error, subscribe, unsubscribe } = usePushNotifications();
     const [notifications, setNotifications] = useState<IUserNotifications>(userNotifications);
     const [loading, setLoading] = useState(false);
     const { sendJsonRequest } = useApi();

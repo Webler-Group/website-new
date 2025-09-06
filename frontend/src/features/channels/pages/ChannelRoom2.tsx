@@ -43,12 +43,12 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             }
         });
     }
-    const onMessagesSeen = useCallback((date: string) => {
+    const onMessagesSeen = (date: string) => {
         setChannel(prev => {
             if (!prev) return null;
             return { ...prev, lastActiveAt: date };
         })
-    }, []);
+    }
     const messages = useMessages(50, channelId, messagesFromDate, onChannelJoin, onChannelLeave, onMessagesSeen);
     const [newMessage, setNewMessage] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);

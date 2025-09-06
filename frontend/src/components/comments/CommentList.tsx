@@ -59,7 +59,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     }, [highlightedCommentId]);
 
     useEffect(() => {
-        if(error) {
+        if (error) {
             setMessage([false, error]);
         }
     }, [error]);
@@ -72,6 +72,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             if (intObserver.current) intObserver.current.disconnect();
             intObserver.current = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && hasNextPage && results.length > 0) {
+                    
                     setState((prev) => ({
                         ...prev,
                         lastIndex: results[results.length - 1].index + 1,
@@ -82,17 +83,15 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
             if (node) intObserver.current.observe(node);
         },
-        [commentsLoading, hasNextPage, results, setState]
+        [commentsLoading, hasNextPage, results]
     );
 
     const handleFilterSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setFilter(Number(e.target.value));
-        setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
     };
 
     const handleBackToAllComments = () => {
         setShowAllComments(true);
-        setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
     };
 
     const showAnswerForm = (post: IComment | null, parentId: string | null, message: string = "") => {
@@ -102,7 +101,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setAnswerFormVisible(true);
 
         setTimeout(() => {
-            if(formInputRef.current) {
+            if (formInputRef.current) {
                 formInputRef.current.focus();
             }
         });
@@ -115,7 +114,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     };
 
     const handlePostAnswer = async () => {
-        if(!userInfo) return;
+        if (!userInfo) return;
 
         setAnswerFormLoading(true);
 
@@ -186,7 +185,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             setAnswerFormLoading(true);
             const result = await sendJsonRequest(`/${options.section}/DeleteComment`, "DELETE", { id: editedComment.id });
             if (result && result.success) {
-                if(editedComment.parentId) {
+                if (editedComment.parentId) {
                     onDeleteCallback?.(editedComment.id);
                     editComment(editedComment.parentId, prev => ({ ...prev, answers: prev.answers - 1 }));
                 } else {
@@ -278,10 +277,11 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             <div className="mt-1 pe-1 flex-grow-1 overflow-auto" ref={commentContainerRef}>
                 {results.length > 0 && getFirstValidCommentIndex() > 0 && showAllComments && (
                     <Button
-                        variant="link"
+                        variant="primary"
                         size="sm"
-                        className="mb-2"
+                        className="mb-2 w-100"
                         onClick={handleLoadPrevious}
+                        disabled={loading}
                     >
                         Load Previous
                     </Button>

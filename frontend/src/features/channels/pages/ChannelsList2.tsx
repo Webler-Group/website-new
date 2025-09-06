@@ -41,7 +41,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
         });
 
         if (channel) channelsIntObserver.current.observe(channel);
-    }, [channels.isLoading, channels.hasNextPage]);
+    }, [channels.isLoading, channels.hasNextPage, channels.results]);
 
     const invitesIntObserver = useRef<IntersectionObserver>();
     const lastInviteRef = useCallback((invite: any) => {
@@ -57,7 +57,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
         });
 
         if (invite) invitesIntObserver.current.observe(invite);
-    }, [invites.isLoading, invites.hasNextPage]);
+    }, [invites.isLoading, invites.hasNextPage, invites.results]);
 
     const handleCreateGroup = async () => {
         const result = await sendJsonRequest("/Channels/CreateGroup", "POST", {

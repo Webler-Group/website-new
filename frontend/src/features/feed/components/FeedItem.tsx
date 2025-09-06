@@ -109,35 +109,48 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     });
     if (result && result.success) {
       const votes = feed.votes + (feed.isUpvoted != result.vote ? result.vote ? 1 : -1 : 0);
-      let topReactions = [...(feed.topReactions || [])];
 
+      let topReactions = [...feed.topReactions];
       const previousReaction = feed.reaction;
 
-      // Decrease count of previous reaction if it's different from the new one (or being removed)
-      if (previousReaction && previousReaction !== reactionChange) {
-        const prevIndex = topReactions.findIndex(r => r.reaction === previousReaction);
-        if (prevIndex !== -1) {
-          const updatedCount = topReactions[prevIndex].count - 1;
-          if (updatedCount > 0) {
-            topReactions[prevIndex].count = updatedCount;
-          } else {
-            topReactions.splice(prevIndex, 1); // Remove if count hits 0
+      console.log(topReactions);
+      
+
+      if(previousReaction) {
+        for (let i = 0; i < topReactions.length; ++i) {
+          if (topReactions[i].reaction == previousReaction) {
+            if(topReactions[i].count == 1) {
+              topReactions.splice(i, 1);
+            } else {
+              --topReactions[i].count;
+            }
+            break;
           }
         }
       }
 
-      // Increase count of new reaction (if any)
-      if (reactionChange != null) {
-        const index = topReactions.findIndex(r => r.reaction === reactionChange);
-        if (index !== -1) {
-          topReactions[index] = {
-            ...topReactions[index],
-            count: topReactions[index].count + 1
-          };
-        } else {
+      if (reactionChange) {
+        let idx = -1;
+        for (let i = 0; i < topReactions.length; ++i) {
+          if (topReactions[i].reaction == reactionChange) {
+            ++topReactions[i].count;
+            idx = i;
+            break;
+          }
+        }
+        if(idx == -1) {
           topReactions.push({ reaction: reactionChange, count: 1 });
+        } else {
+          while(idx > 0) {
+            if(topReactions[idx - 1].count > topReactions[idx].count) {
+              break;
+            }
+            [topReactions[idx], topReactions[idx - 1]] = [topReactions[idx - 1], topReactions[idx]];
+            --idx;
+          }
         }
       }
+
       setReaction(reactionChange);
       onUpdate?.({ ...feed, isUpvoted: result.vote, votes, reaction: reactionChange, totalReactions: votes, topReactions });
     }

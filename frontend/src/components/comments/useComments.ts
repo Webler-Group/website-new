@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "../../context/apiCommunication";
 import { IComment } from "./Comment";
 
@@ -26,38 +26,47 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
     const [error, setError] = useState("");
     const { sendJsonRequest } = useApi();
 
-    const fetchComments = useCallback(async () => {
-        if (state.direction === 'dont load') return;
+    useEffect(() => {
+        const fetchComments = async () => {
+            if (state.direction === 'dont load') return;
 
-        setError("");
-        setLoading(true);
-        const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
-            ...options.params,
-            parentId: null,
-            findPostId: (initialFetchDone || showAllComments) ? null : findPostId,
-            count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
-            index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
-            filter,
-        });
-        if (result && result.posts) {
-            setResults((prev) => {
-                // Filter out any posts that already exist in the results array to prevent duplicates
-                const newPosts = result.posts.filter(
-                    (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
-                );
-                return state.direction === 'from start'
-                    ? [...newPosts, ...prev]
-                    : [...prev, ...newPosts]
+            setError("");
+            setLoading(true);
+            const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
+                ...options.params,
+                parentId: null,
+                findPostId: initialFetchDone ? null : findPostId,
+                count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
+                index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
+                filter,
             });
-            if (state.direction === 'from end') {
-                setHasNextPage(result.posts.length === countPerPage);
+            if (result && result.posts) {
+                setResults((prev) => {
+                    // Filter out any posts that already exist in the results array to prevent duplicates
+                    const newPosts = result.posts.filter(
+                        (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    );
+                    return state.direction === 'from start'
+                        ? [...newPosts, ...prev]
+                        : [...prev, ...newPosts]
+                });
+                if (state.direction === 'from end') {
+                    setHasNextPage(result.posts.length === countPerPage);
+                }
+                setInitialFetchDone(true);
+            } else {
+                setError(result?.message ?? "Something went wrong");
             }
-            setInitialFetchDone(true);
-        } else {
-            setError(result?.message ?? "Something went wrong");
+            setLoading(false);
         }
-        setLoading(false);
+
+        fetchComments();
     }, [state]);
+
+    useEffect(() => {
+        setResults([]);
+        setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
+    }, [options, filter, showAllComments]);
 
     const createComment = (post: IComment) => {
         setResults((prev) => [post, ...prev]);
@@ -83,19 +92,10 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
         });
     }
 
-    const getFirstValidCommentIndex = useCallback(() => {
+    const getFirstValidCommentIndex = () => {
         const validComment = results.find(comment => comment.index >= 0);
         return validComment ? validComment.index : 0;
-    }, [results]);
-
-    useEffect(() => {
-        fetchComments();
-    }, [fetchComments]);
-
-    useEffect(() => {
-        setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
-        setResults([]);
-    }, [options, findPostId, filter, showAllComments]);
+    }
 
     return { results, setState, loading, createComment, editComment, deleteComment, hasNextPage, getFirstValidCommentIndex, error };
 };
