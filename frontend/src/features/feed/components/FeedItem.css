@@ -1,0 +1,209 @@
+  .feed-item {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+  }
+  
+  .feed-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    border-color: #dee2e6;
+  }
+  
+  .feed-header {
+    padding: 20px 24px 0;
+  }
+  
+  .feed-content {
+    padding: 16px 24px;
+    line-height: 1.6;
+    font-size: 15px;
+    color: #1a1a1a;
+  }
+  
+  .feed-actions {
+    padding: 12px 24px 20px;
+    border-top: 1px solid #f1f3f4;
+    background: #fafbfc;
+  }
+  
+  .author-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    text-decoration: none;
+    transition: color 0.2s ease;
+  }
+  
+  .author-name:hover {
+    color: #1976d2;
+  }
+  
+  .post-meta {
+    font-size: 13px;
+    color: #65676b;
+    font-weight: 500;
+  }
+  
+  .post-meta .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  
+  .dropdown-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border: none;
+    background: #f0f2f5;
+    color: #65676b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .dropdown-toggle-btn:hover {
+    background: #e4e6ea;
+    color: #1a1a1a;
+  }
+  
+  .custom-dropdown {
+    background: #ffffff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    min-width: 180px;
+    z-index: 1000;
+  }
+  
+  .custom-dropdown .dropdown-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: background-color 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+  }
+  
+  .custom-dropdown .dropdown-item:hover {
+    background: #f0f2f5;
+  }
+  
+  .custom-dropdown .dropdown-item.text-danger:hover {
+    background: #fef2f2;
+    color: #dc3545;
+  }
+  
+  .custom-dropdown .dropdown-item.text-warning:hover {
+    background: #fffbf0;
+    color: #f59e0b;
+  }
+  
+  .reactions-display {
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  
+  .reactions-display:hover {
+    background: #e9ecef;
+  }
+  
+  .reaction-emoji {
+    font-size: 16px;
+    margin-left: -2px;
+    position: relative;
+  }
+  
+  .reaction-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #65676b;
+    margin-left: 4px;
+  }
+  
+  .action-button {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #65676b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .action-button:hover {
+    background: #f0f2f5;
+    color: #1a1a1a;
+  }
+  
+  .shared-post-unavailable {
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin-top: 16px;
+    text-align: center;
+  }
+  
+  @media (max-width: 576px) {
+    .feed-header,
+    .feed-content {
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+    
+    .feed-actions {
+      padding: 12px 16px 16px;
+    }
+    
+    .action-button {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+    
+    .action-button .action-text {
+      display: none;
+    }
+    
+    .author-name {
+      font-size: 14px;
+    }
+    
+    .post-meta {
+      font-size: 12px;
+    }
+    
+    .feed-content {
+      font-size: 14px;
+    }
+  }
+  
+  @media (min-width: 768px) {
+    .feed-item {
+      max-width: 680px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }

@@ -1,0 +1,83 @@
+.feed-list-container {
+  position: relative;
+}
+
+.feed-list-header {
+  position: sticky;
+  top: 0;
+  background: white;
+  z-index: 1000;
+  transition: transform 0.3s ease;
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}
+
+.feed-list-header.visible {
+  transform: translateY(0);
+}
+
+.feed-list-header.hidden {
+  transform: translateY(-100%);
+}
+
+.dropdown-menu {
+  min-width: 150px;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.new-post-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 50px;
+  padding: 10px 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: background-color 0.2s;
+  z-index: 1000;
+}
+
+.new-post-button:hover {
+  background-color: #0056b3;
+}
+
+.control-button {
+  min-width: 44px;
+  padding: 8px 12px;
+  height: 38px;
+}
+
+.control-input {
+  height: 38px;
+}
+
+@media (max-width: 767px) {
+  .new-post-button {
+    padding: 12px;
+    width: 48px;
+    height: 48px;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .control-button {
+    padding: 8px;
+    width: 44px;
+    height: 38px;
+    justify-content: center;
+  }
+
+  .control-button span {
+    display: none !important;
+  }
+
+  .control-input {
+    height: 38px;
+  }
+}

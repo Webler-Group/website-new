@@ -7,6 +7,7 @@ import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from './comments/NotificationToast';
 import { Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
+import "./FeedDetails.css"
 
 const FeedDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -72,44 +73,46 @@ const FeedDetails: React.FC = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const onGeneralUpdate = async (feed: IFeed) => {
-    setFeed(feed);
-  };
+  const onGeneralUpdate = (feed: IFeed) => setFeed(feed);
 
   if (loading) {
     return (
-      <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-        <Loader2 className="text-primary" style={{ width: "2.5rem", height: "2.5rem" }} />
-      </div>
+      <>
+        <div className="loading-container">
+          <Loader2 className="text-primary" style={{ width: "2.5rem", height: "2.5rem", animation: "spin 1s linear infinite" }} />
+        </div>
+      </>
     );
   }
 
   if (error || !feed) {
     return (
-      <div className="d-flex align-items-center justify-content-center min-vh-100 bg-light">
-        <NotificationToast
-          notification={notification}
-          onClose={() => setNotification(null)}
-        />
-        <div className="text-center">
-          <h2 className="fw-semibold text-dark mb-3">
-            {error || 'Feed not found'}
-          </h2>
-          <button
-            onClick={() => navigate('/feed')}
-            className="btn btn-outline-primary d-inline-flex align-items-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            Back to Feed
-          </button>
+      <>
+        <div className="error-container">
+          <NotificationToast
+            notification={notification}
+            onClose={() => setNotification(null)}
+          />
+          <div className="error-content">
+            <h2 className="error-title">
+              {error || 'Feed not found'}
+            </h2>
+            <button
+              onClick={() => navigate('/feed')}
+              className="error-back-button"
+            >
+              <ArrowLeft size={16} />
+              Back to Feed
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <>
-      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
+      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} style={{ zIndex: 1060 }} placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
         </Offcanvas.Header>
@@ -121,31 +124,25 @@ const FeedDetails: React.FC = () => {
           />
         </Offcanvas.Body>
       </Offcanvas>
-      <div className="min-vh-100 bg-light">
-        <div className="container py-5">
-          {/* Header */}
-          <div className="mb-4">
-            <button
-              onClick={() => navigate('/feed')}
-              className="btn btn-link text-decoration-none text-primary d-inline-flex align-items-center gap-2"
-            >
-              <ArrowLeft size={16} />
-              Back to Feed
-            </button>
-          </div>
+      
+      <div className="feed-details-container">
+        <div className="main-content">
+          {/* Back Button */}
+          <button
+            onClick={() => navigate('/feed')}
+            className="back-button"
+          >
+            <ArrowLeft size={16} />
+            Back to Feed
+          </button>
 
-          {/* Feed Item Card */}
-          <div className="card shadow-sm border-0 rounded-4 mb-4">
-            <div className="card-body">
-              <FeedItem
-                feed={feed}
-                onCommentsClick={openCommentModal}
-                onGeneralUpdate = {onGeneralUpdate}
-                commentCount={commentCount}
-              />
-            </div>
-          </div>
-
+          {/* Feed Item - No wrapper needed since FeedItem has its own styling */}
+          <FeedItem
+            feed={feed}
+            onCommentsClick={openCommentModal}
+            onGeneralUpdate={onGeneralUpdate}
+            commentCount={commentCount}
+          />
         </div>
       </div>
     </>

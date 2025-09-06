@@ -14,7 +14,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
     <BrowserRouter>
       <ApiProvider baseUrl='/api'>
         <WSProvider>
-          <ScrollToTop />
+          {/* <ScrollToTop /> */}
           <Routes>
             <Route path="/*" element={<App />} />
           </Routes>

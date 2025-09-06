@@ -11,8 +11,6 @@ import NoAuth from './features/auth/components/NoAuth';
 import TermsOfUse from './pages/TermsOfUse';
 import Discuss from './features/discuss/pages/Discuss';
 import Contact from './pages/Contact';
-import FeedDetails from './features/feed/components/FeedDetail';
-import FeedList from './features/feed/components/FeedList';
 import QuestionList from './features/discuss/pages/DiscussList';
 import AskQuestion from './features/discuss/pages/DiscussAsk';
 import DiscussPost from './features/discuss/pages/DiscussPost';
@@ -45,8 +43,9 @@ import roles from './data/roles';
 import AdminHome from './tools/admin/pages/AdminHome';
 import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
+import FeedLayout from './features/feed/FeedLayout';
 import FeedCreate from './features/feed/components/FeedCreate';
-
+import FeedDetails from './features/feed/components/FeedDetail';
 
 function App() {
 
@@ -109,12 +108,11 @@ function App() {
 
         <Route path="Feed">
           <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-            <Route index element={<FeedList />} />
+            <Route index element={<FeedLayout />} />
             <Route path="New" element={<FeedCreate />} />
-            <Route path=":id" element={<FeedDetails />} />
+            <Route path=":id" element={<FeedLayout />} />
           </Route>
         </Route>
-
 
         <Route path="Blog">
           <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
