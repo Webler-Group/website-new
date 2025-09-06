@@ -13,6 +13,8 @@ const notificationSchema = new mongoose.Schema({
     questionId: { type: mongoose.Types.ObjectId, ref: "Post" },
     postId: { type: mongoose.Types.ObjectId, ref: "Post" },
     feedId: { type: mongoose.Types.ObjectId, ref: "Post" }, 
+    lessonId: { type: mongoose.Types.ObjectId, ref: "CourseLesson" },
+    courseCode: { type: String },
     hidden: { type: Boolean, default: false }
 }, {
     timestamps: true

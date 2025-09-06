@@ -6,6 +6,7 @@ import Notification from "./Notification";
 import PostAttachment from "./PostAttachment";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import CourseLesson from "./CourseLesson";
 
 const postSchema = new mongoose.Schema({
     _type: {
@@ -29,6 +30,11 @@ const postSchema = new mongoose.Schema({
     feedId: {
         type: mongoose.Types.ObjectId,
         ref: "Post",
+        default: null
+    },
+    lessonId: {
+        type: mongoose.Types.ObjectId,
+        ref: "CourseLesson",
         default: null
     },
     parentId: {
@@ -156,6 +162,27 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 await Notification.deleteMany({
                     _type: NotificationTypeEnum.FEED_COMMENT,
                     feedId: feed._id,
+                    postId: post._id
+                })
+                break;
+            }
+
+            case PostTypeEnum.LESSON_COMMENT: {
+                const lesson = await CourseLesson.findById(post.lessonId);
+                if (lesson === null) {
+                    throw new Error("Lesson not found");
+                }
+                lesson.$inc("comments", -1);
+                await lesson.save();
+                const parentComment = await Post.findById(post.parentId);
+                if (parentComment) {
+                    parentComment.$inc("answers", -1);
+                    await parentComment.save();
+                }
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await Notification.deleteMany({
+                    _type: NotificationTypeEnum.LESSON_COMMENT,
+                    lessonId: lesson._id,
                     postId: post._id
                 })
                 break;

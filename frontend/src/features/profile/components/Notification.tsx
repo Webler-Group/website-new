@@ -21,6 +21,8 @@ interface INotification {
         parentId: string | null;
     }
     codeId: string;
+    courseCode: string;
+    lessonId: string;
     isClicked: boolean;
 }
 
@@ -63,23 +65,22 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
                 link.state = { postId: notification.postId };
                 break;
             case 202:
-                link.to = "/Compiler-Playground/" + notification.codeId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
-                break;
-            case 203:
-                link.to = "/Discuss/" + notification.questionId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
-                break;
-            case 204:
-                link.to = "/Discuss/" + notification.questionId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
-                break;
             case 205:
                 link.to = "/Compiler-Playground/" + notification.codeId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
                 break;
+            case 203:
+            case 204:
+                link.to = "/Discuss/" + notification.questionId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                break;
             case 302:
                 link.to = "/Feed/" + notification.feedId;
+                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
+                break;
+            case 401:
+            case 402:
+                link.to = "/Courses/" + notification.courseCode + "/Lesson/" + notification.lessonId;
                 link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
                 break;
         }

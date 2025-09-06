@@ -55,7 +55,15 @@ postAttachmentSchema.post("save", async function () {
             const post = await Post.findById(this.postId, "-message")
                 .populate<{ user: any }>("user", "name")
                 .populate<{ codeId: any }>("codeId", "name")
-                .populate<{ parentId: any }>("parentId", "title");
+                .populate<{ parentId: any }>("parentId", "title")
+                .populate<{ lessonId: any }>({
+                    path: "lessonId",
+                    select: "course title",
+                    populate: {
+                        path: "course",
+                        select: "code"
+                    }
+                }).lean();
             if (!post || this.user == post.user._id) return;
 
             if (post._type == PostTypeEnum.QUESTION) {
@@ -96,9 +104,23 @@ postAttachmentSchema.post("save", async function () {
                     codeId: post.codeId?._id,
                     postId: post._id
                 })
+            } else if (post._type == PostTypeEnum.LESSON_COMMENT) {
+                await sendToUsers([this.user.toString()], {
+                    title: "New mention",
+                    body: `${post.user.name} mentioned you in comment to lesson "${post.lessonId?.title}"`
+                }, "mentions");
+                await Notification.create({
+                    _type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
+                    user: this.user,
+                    actionUser: post.user._id,
+                    message: `{action_user} mentioned you in comment to lesson "${post.lessonId?.title}"`,
+                    lessonId: post.lessonId?._id,
+                    postId: post._id,
+                    courseCode: post.lessonId.course.code
+                })
             }
         } catch (err: any) {
-            console.log("Error creating notifcations for post attachments: ", err);
+            console.log("Error creating notifcations for post attachments:", err);
 
         }
     }
@@ -106,10 +128,15 @@ postAttachmentSchema.post("save", async function () {
 
 // --- DELETE MANY ---
 postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function (next) {
-    const filter = this.getFilter();
-    const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
-    (this as any)._docsToDelete = docs;
-    next();
+    try {
+        const filter = this.getFilter();
+        const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
+        (this as any)._docsToDelete = docs;
+    } catch(err) {
+        console.log("Error in postAttachmentSchema.pre(deleteMany):", err);
+    } finally {
+        next();
+    }
 });
 
 postAttachmentSchema.post("deleteMany", { document: false, query: true }, async function () {

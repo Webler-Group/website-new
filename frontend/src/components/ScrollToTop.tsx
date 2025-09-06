@@ -1,12 +1,24 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-const ScrollToTop = () => {
+interface ScrollToTopProps {
+    excludePaths: string[];
+}
+
+const ScrollToTop = ({ excludePaths }: ScrollToTopProps) => {
     const { pathname, search } = useLocation();
 
     useEffect(() => {
-        scrollTo({ top: 0, behavior: "instant" });
-    }, [pathname, search]);
+        const lowerPathname = pathname.toLowerCase();
+
+        const isExcluded = excludePaths.some((path) =>
+            lowerPathname.startsWith(path.toLowerCase())
+        );
+
+        if (!isExcluded) {
+            scrollTo({ top: 0, behavior: "instant" });
+        }
+    }, [pathname, search, excludePaths]);
 
     return null;
 }
