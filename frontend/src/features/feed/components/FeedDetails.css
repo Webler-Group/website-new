@@ -2,7 +2,7 @@
     min-height: 100vh;
     background: #f8f9fa;
   }
-  
+
   .back-button {
     background: none;
     border: none;
@@ -17,12 +17,12 @@
     margin-bottom: 20px;
     transition: color 0.2s ease;
   }
-  
+
   .back-button:hover {
     color: #1565c0;
     text-decoration: none;
   }
-  
+
   .loading-container {
     display: flex;
     align-items: center;
@@ -30,7 +30,7 @@
     min-height: 100vh;
     background: #f8f9fa;
   }
-  
+
   .error-container {
     display: flex;
     align-items: center;
@@ -38,19 +38,19 @@
     min-height: 100vh;
     background: #f8f9fa;
   }
-  
+
   .error-content {
     text-align: center;
     padding: 32px;
   }
-  
+
   .error-title {
     font-weight: 600;
     color: #1a1a1a;
     margin-bottom: 16px;
     font-size: 24px;
   }
-  
+
   .error-back-button {
     background: #1976d2;
     color: white;
@@ -63,17 +63,17 @@
     gap: 8px;
     transition: background-color 0.2s ease;
   }
-  
+
   .error-back-button:hover {
     background: #1565c0;
   }
-  
+
   .main-content {
     max-width: 680px;
     margin: 0 auto;
     padding: 20px 16px;
   }
-  
+
   @media (min-width: 576px) {
     .main-content {
       padding: 32px 24px;

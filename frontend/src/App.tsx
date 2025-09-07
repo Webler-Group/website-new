@@ -45,7 +45,6 @@ import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
 import FeedLayout from './features/feed/FeedLayout';
 import FeedCreate from './features/feed/components/FeedCreate';
-import FeedDetails from './features/feed/components/FeedDetail';
 
 function App() {
 
@@ -110,7 +109,7 @@ function App() {
           <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
             <Route index element={<FeedLayout />} />
             <Route path="New" element={<FeedCreate />} />
-            <Route path=":id" element={<FeedLayout />} />
+            <Route path=":feedId" element={<FeedLayout />} />
           </Route>
         </Route>
 

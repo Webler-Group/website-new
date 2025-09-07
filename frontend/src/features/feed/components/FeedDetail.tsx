@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { IFeed } from './types';
 import FeedItem from './FeedItem';
@@ -9,8 +9,13 @@ import { Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
 import "./FeedDetails.css"
 
-const FeedDetails: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
+interface FeedDetailsProps {
+  feedId?: string;
+  onGeneralUpdate: (feed: IFeed) => void;
+  onShowUserReactions: (feedId: string) => void;
+}
+
+const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetailsProps) => {
   const navigate = useNavigate();
   const [feed, setFeed] = useState<IFeed | null>(null);
   const [loading, setLoading] = useState(true);
@@ -19,27 +24,31 @@ const FeedDetails: React.FC = () => {
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [findPost, setFindPost] = useState<any | null>(null);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
-  const [commentListOptions, setCommentListOptions] = useState({ section: "Feed", params: { feedId: id } });
+  const [commentListOptions, setCommentListOptions] = useState({ section: "Feed", params: { feedId } });
   const [commentCount, setCommentCount] = useState(0);
   const location = useLocation();
 
   useEffect(() => {
-    if (location.state && location.state.postId) {
-      openCommentModal();
-      setFindPost({ id: location.state.postId, isReply: location.state.isReply });
+    if (location.state) {
+      if(location.state.postId || location.state.comments) {
+        openCommentModal();
+      }
+      if(location.state.postId) {
+        setFindPost({ id: location.state.postId, isReply: location.state.isReply });
+      }
     } else {
       closeCommentModal();
     }
   }, [location]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!feedId) return;
 
     const fetchFeed = async () => {
       try {
         setLoading(true);
 
-        const response = await sendJsonRequest("/Feed/GetFeed", "POST", { feedId: id });
+        const response = await sendJsonRequest("/Feed/GetFeed", "POST", { feedId });
         if (!response.success) {
           throw new Error(response.message);
         }
@@ -56,11 +65,17 @@ const FeedDetails: React.FC = () => {
     };
 
     fetchFeed();
-    setCommentListOptions({ section: "Feed", params: { feedId: id } });
-  }, [id]);
+    setCommentListOptions({ section: "Feed", params: { feedId } });
+  }, [feedId]);
+
+  useEffect(() => {
+    if(feed) {
+      onGeneralUpdate({ ...feed, answers: commentCount })
+    }
+  }, [commentCount]);
 
   const openCommentModal = () => {
-    if (!id) return;
+    if (!feedId) return;
     setCommentModalVisible(true)
   }
 
@@ -73,7 +88,10 @@ const FeedDetails: React.FC = () => {
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const onGeneralUpdate = (feed: IFeed) => setFeed(feed);
+  const onUpdate = (feed: IFeed) => {
+    setFeed(feed);
+    onGeneralUpdate(feed);
+  }
 
   if (loading) {
     return (
@@ -112,7 +130,7 @@ const FeedDetails: React.FC = () => {
 
   return (
     <>
-      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} style={{ zIndex: 1060 }} placement="end">
+      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} backdropClassName="wb-feed-comment-modal__backdrop" style={{ zIndex: 1060 }} placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
         </Offcanvas.Header>
@@ -140,8 +158,9 @@ const FeedDetails: React.FC = () => {
           <FeedItem
             feed={feed}
             onCommentsClick={openCommentModal}
-            onGeneralUpdate={onGeneralUpdate}
+            onGeneralUpdate={onUpdate}
             commentCount={commentCount}
+            onShowUserReactions={onShowUserReactions}
           />
         </div>
       </div>

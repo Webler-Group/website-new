@@ -802,3 +802,11 @@ ul {
     transition: opacity 0.4s ease-out, height 0.8s ease-out;
     height: 100%;
 }
+
+.wb-feed-comment-modal__backdrop {
+    z-index: 1059 !important;
+}
+
+.wb-reactions-modal__backdrop {
+    z-index: 1069 !important;
+}
