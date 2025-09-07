@@ -12,7 +12,8 @@ import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
 import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
 import DateUtils from '../../../utils/DateUtils';
-import "./FeedItem.css"
+
+const allowedUrls = [/^https?:\/\/.+/i, /^\/.*/];
 
 interface FeedItemProps {
   feed: IFeed;
@@ -21,6 +22,49 @@ interface FeedItemProps {
   onGeneralUpdate?: (feed: IFeed) => void;
   commentCount?: number;
 }
+
+const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate(`/feed/${originalPost.id}`)}
+      className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
+      style={{ cursor: "pointer" }}
+    >
+      <div className="d-flex gap-2">
+        <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
+        <div>
+          {/* User profile link */}
+          <strong>
+            <Link
+              to={`/Profile/${originalPost.userId}`}
+              className="text-dark text-decoration-none"
+              onClick={(e) => e.stopPropagation()} // prevent outer click from firing
+            >
+              {originalPost.userName}
+            </Link>
+          </strong> posted
+
+          <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+
+          {originalPost.tags?.length > 0 && (
+            <div className="d-flex flex-wrap gap-1 mt-1">
+              {originalPost.tags.map((tag: any) => (
+                <span
+                  key={tag._id}
+                  className="badge bg-info text-dark d-flex align-items-center gap-1"
+                >
+                  <TagIcon size={12} /> {tag.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   feed,
@@ -41,17 +85,11 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-  const [reaction, setReaction] = useState(feed.reaction ?? null);
   const [isPinned, setIsPinned] = useState(feed.isPinned || false);
-  
 
   useEffect(() => {
     setIsPinned(feed.isPinned ?? false);
   }, [feed.isPinned]);
-
-  useEffect(() => {
-    setReaction(feed.reaction ?? null);
-  }, [feed.reaction]);
 
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
@@ -113,10 +151,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       let topReactions = [...feed.topReactions];
       const previousReaction = feed.reaction;
 
-      if(previousReaction) {
+      if (previousReaction) {
         for (let i = 0; i < topReactions.length; ++i) {
           if (topReactions[i].reaction == previousReaction) {
-            if(topReactions[i].count == 1) {
+            if (topReactions[i].count == 1) {
               topReactions.splice(i, 1);
             } else {
               --topReactions[i].count;
@@ -135,11 +173,11 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             break;
           }
         }
-        if(idx == -1) {
+        if (idx == -1) {
           topReactions.push({ reaction: reactionChange, count: 1 });
         } else {
-          while(idx > 0) {
-            if(topReactions[idx - 1].count > topReactions[idx].count) {
+          while (idx > 0) {
+            if (topReactions[idx - 1].count > topReactions[idx].count) {
               break;
             }
             [topReactions[idx], topReactions[idx - 1]] = [topReactions[idx - 1], topReactions[idx]];
@@ -148,8 +186,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         }
       }
 
-      setReaction(reactionChange);
-      console.log(onGeneralUpdate)
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: result.totalReactions });
     }
   }
@@ -175,7 +211,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   }
 
   const canEdit = feed.userId === currentUserId;
-  const allowedUrls = [/^https?:\/\/.+/i, /^\/.*/];
 
   // close dropdown when clicking outside
   useEffect(() => {
@@ -189,87 +224,30 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showDropdown]);
 
-  const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
-    const navigate = useNavigate();
-
-    return (
-      <div
-        onClick={() => navigate(`/feed/${originalPost.id}`)}
-        className="mt-2 border rounded bg-light p-2 d-block text-dark text-decoration-none"
-        style={{ cursor: "pointer" }}
-      >
-        <div className="d-flex gap-2">
-          <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
-          <div>
-            {/* User profile link */}
-            <strong>
-              <Link
-                to={`/Profile/${originalPost.userId}`}
-                className="text-dark text-decoration-none"
-                onClick={(e) => e.stopPropagation()} // prevent outer click from firing
-              >
-                {originalPost.userName} 
-              </Link>
-            </strong> posted
-
-            <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
-
-            {originalPost.tags?.length > 0 && (
-              <div className="d-flex flex-wrap gap-1 mt-1">
-                {originalPost.tags.map((tag: any) => (
-                  <span
-                    key={tag._id}
-                    className="badge bg-info text-dark d-flex align-items-center gap-1"
-                  >
-                    <TagIcon size={12} /> {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const body = (
     <>
-      <article className="feed-item">
+      <article className="wb-feed-item">
         <NotificationToast notification={notification} onClose={() => setNotification(null)} />
-        
+
         {/* Header */}
-        <header className="feed-header">
+        <header className="wb-feed-header">
           <div className="d-flex justify-content-between align-items-start">
             <div className="d-flex align-items-start gap-3 flex-grow-1 min-w-0">
-              {feed.userAvatarImage ? (
-                <ProfileAvatar size={44} avatarImage={feed.userAvatarImage} />
-              ) : (
-                <div 
-                  className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" 
-                  style={{ 
-                    width: 44, 
-                    height: 44, 
-                    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    fontSize: '16px'
-                  }}
-                >
-                  {feed.userName?.charAt(0).toUpperCase() || 'A'}
-                </div>
-              )}
-              
+              <ProfileAvatar size={44} avatarImage={feed.userAvatarImage} />
+
               <div className="flex-grow-1 min-w-0">
                 <div className="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                  <Link to={`/Profile/${feed.userId}`} className="author-name">
+                  <Link to={`/Profile/${feed.userId}`} className="wb-feed-author-name">
                     {feed.userName || "Anonymous"}
                   </Link>
-                  
+
                   {isPinned && (
                     <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
                       <Pin size={10} className="me-1" />
                       Pinned
                     </span>
                   )}
-                  
+
                   {feed.type === PostType.SHARED_FEED && (
                     <span className="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">
                       <Share2 size={10} className="me-1" />
@@ -277,8 +255,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     </span>
                   )}
                 </div>
-                
-                <div className="post-meta d-flex align-items-center gap-1">
+
+                <div className="wb-feed-post-meta d-flex align-items-center gap-1">
                   <Clock size={12} />
                   <time dateTime={feed.date}>
                     {DateUtils.format2(new Date(feed.date))}
@@ -289,25 +267,25 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
             {(canEdit || canModerate) && (
               <div className="dropdown position-relative">
-                <button 
-                  className="dropdown-toggle-btn"
+                <button
+                  className="wb-feed-dropdown-toggle-btn"
                   onClick={() => setShowDropdown(!showDropdown)}
                   aria-label="Post options"
                 >
                   <MoreHorizontal size={18} />
                 </button>
-                
+
                 {showDropdown && (
-                  <div className="custom-dropdown position-absolute end-0 mt-1">
+                  <div className="wb-feed-custom-dropdown position-absolute end-0 mt-1">
                     {canEdit && (
                       <>
-                        <button 
+                        <button
                           className="dropdown-item d-flex align-items-center gap-2"
                           onClick={() => { setShowEditModal(true); setShowDropdown(false); }}
                         >
                           <Edit size={14} /> Edit Post
                         </button>
-                        <button 
+                        <button
                           className="dropdown-item d-flex align-items-center gap-2 text-danger"
                           onClick={() => { handleDelete(); setShowDropdown(false); }}
                         >
@@ -316,7 +294,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                       </>
                     )}
                     {canModerate && (
-                      <button 
+                      <button
                         className="dropdown-item d-flex align-items-center gap-2 text-warning"
                         onClick={() => { handleTogglePin(); setShowDropdown(false); }}
                       >
@@ -331,11 +309,11 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         </header>
 
         {/* Content */}
-        <div className="feed-content">
+        <div className="wb-feed-content">
           <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
-          
+
           {feed.type === PostType.SHARED_FEED && !feed.originalPost && (
-            <div className="shared-post-unavailable">
+            <div className="wb-feed-shared-post-unavailable">
               <MessageSquare size={24} className="mb-3 opacity-50" />
               <p className="mb-0 fw-medium text-muted">
                 This shared post is no longer available
@@ -352,15 +330,15 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         {/* Reactions */}
         {feed.topReactions?.length > 0 && (
           <div className="px-3 px-sm-4">
-            <div className="reactions-display" onClick={handleShowUserReactions}>
+            <div className="wb-feed-reactions-display" onClick={handleShowUserReactions}>
               <div className="d-flex">
                 {feed.topReactions.map((r: any, index: number) => (
-                  <span 
-                    key={`${r.reaction}-${index}`} 
-                    className="reaction-emoji"
-                    style={{ 
-                      marginLeft: index === 0 ? 0 : -2, 
-                      zIndex: feed.topReactions.length - index 
+                  <span
+                    key={`${r.reaction}-${index}`}
+                    className="wb-feed-reaction-emoji"
+                    style={{
+                      marginLeft: index === 0 ? 0 : -2,
+                      zIndex: feed.topReactions.length - index
                     }}
                   >
                     {reactionsInfo[(r.reaction ?? ReactionsEnum.LIKE) as ReactionsEnum].emoji}
@@ -368,46 +346,46 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                 ))}
               </div>
               {feed.totalReactions > 0 && (
-                <span className="reaction-count">
+                <span className="wb-feed-reaction-count">
                   {feed.totalReactions}
                 </span>
               )}
             </div>
 
-        {feed.tags?.length > 0 && (
-          <div className="d-flex flex-wrap gap-2 mt-3">
-            {feed.tags.map(tag => (
-              <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
-                <TagIcon size={12} /> {tag.name}
-              </span>
-            ))}
-          </div>
-        )}
+            {feed.tags?.length > 0 && (
+              <div className="d-flex flex-wrap gap-2 mt-3">
+                {feed.tags.map(tag => (
+                  <span key={tag._id} className="badge bg-primary d-flex align-items-center gap-1">
+                    <TagIcon size={12} /> {tag.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Actions */}
-        <footer className="feed-actions">
+        <footer className="wb-feed-actions">
           <div className="d-flex align-items-center justify-content-between">
             <div className="d-flex align-items-center gap-1">
-              <ReactionPicker onReactionChange={handleLike} currentState={reaction} />
-              
-              <button className="action-button" onClick={handleCommentsClick}>
+              <ReactionPicker onReactionChange={handleLike} currentState={feed.reaction} />
+
+              <button className="wb-feed-action-button" onClick={handleCommentsClick}>
                 <MessageCircle size={16} />
                 <span>{commentCount}</span>
-                <span className="action-text">
+                <span className="wb-feed-action-text">
                   {commentCount === 1 ? 'comment' : 'comments'}
                 </span>
               </button>
             </div>
-            
-            <button 
-              className="action-button" 
+
+            <button
+              className="wb-feed-action-button"
               onClick={() => setShowShareModal(true)}
             >
               <Share2 size={16} />
               <span>{feed.shares || 0}</span>
-              <span className="action-text">
+              <span className="wb-feed-action-text">
                 {feed.shares === 1 ? 'share' : 'shares'}
               </span>
             </button>
@@ -415,18 +393,18 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         </footer>
 
         {showEditModal && (
-          <EditModal 
-            initialContent={feed.message} 
-            onSave={handleEdit} 
-            onClose={() => setShowEditModal(false)} 
+          <EditModal
+            initialContent={feed.message}
+            onSave={handleEdit}
+            onClose={() => setShowEditModal(false)}
           />
         )}
-        
+
         {showShareModal && (
-          <ShareModal 
-            feedId={feed.id} 
-            onShare={handleShare} 
-            onClose={() => setShowShareModal(false)} 
+          <ShareModal
+            feedId={feed.id}
+            onShare={handleShare}
+            onClose={() => setShowShareModal(false)}
           />
         )}
       </article>

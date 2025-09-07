@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Search, Filter, Loader2, RefreshCw, AlertCircle, Plus } from 'lucide-react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import FeedItem from './FeedItem';
-import "./FeedList.css"
 import useFeeds from '../hooks/useFeeds';
 import { Modal } from 'react-bootstrap';
 import FeedDetails from './FeedDetail';
@@ -193,9 +192,9 @@ const FeedList = () => {
         </Modal.Body>
       </Modal>
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
-      <div className="container py-4 feed-list-container">
+      <div className="container py-4 wb-feed-list-container">
         {/* Header */}
-        <div className={`feed-list-header ${headerVisible ? 'visible' : 'hidden'}`}>
+        <div className={`wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
           <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
 
@@ -209,7 +208,7 @@ const FeedList = () => {
                 />
                 <input
                   type="text"
-                  className="form-control ps-5 rounded-pill bg-light border-0 shadow-sm control-input"
+                  className="form-control ps-5 rounded-pill bg-light border-0 shadow-sm wb-feed-control-input"
                   placeholder="Search feeds..."
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
@@ -221,7 +220,7 @@ const FeedList = () => {
               <button
                 onClick={handleRefresh}
                 disabled={loading || loadingMore}
-                className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 control-button"
+                className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 wb-feed-control-button"
               >
                 <RefreshCw
                   size={16}
@@ -250,7 +249,7 @@ const FeedList = () => {
         )}
 
         {/* Content */}
-        <div className="feed-items">
+        <div className="wb-feed-items">
           {error && (
             <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
               <AlertCircle size={20} />
@@ -328,7 +327,7 @@ const FeedList = () => {
         {/* Floating New Post Button */}
         <button
           onClick={() => navigate('/feed/new')}
-          className="new-post-button"
+          className="wb-feed-new-post-button"
           title="Create new post"
         >
           <span className="d-none d-md-inline">New Post</span>

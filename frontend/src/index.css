@@ -573,7 +573,7 @@ ul {
     justify-content: center;
 }
 
-.wb-playground-public > span {
+.wb-playground-public>span {
     padding: 0 4px;
 }
 
@@ -789,7 +789,8 @@ ul {
 }
 
 .wb-channels-message__body.indented {
-    max-width: calc(100% - 3rem); /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */
+    max-width: calc(100% - 3rem);
+    /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */
 }
 
 .wb-channels-message-enter {
@@ -809,4 +810,381 @@ ul {
 
 .wb-reactions-modal__backdrop {
     z-index: 1069 !important;
+}
+
+.wb-feed-list-container {
+    position: relative;
+}
+
+.wb-feed-list-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.wb-feed-list-header.wb-feed-visible {
+    transform: translateY(0);
+}
+
+.wb-feed-list-header.wb-feed-hidden {
+    transform: translateY(-100%);
+}
+
+.dropdown-menu {
+    min-width: 150px;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wb-feed-new-post-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+    z-index: 1000;
+}
+
+.wb-feed-new-post-button:hover {
+    background-color: #0056b3;
+}
+
+.wb-feed-control-button {
+    min-width: 44px;
+    padding: 8px 12px;
+    height: 38px;
+}
+
+.wb-feed-control-input {
+    height: 38px;
+}
+
+@media (max-width: 767px) {
+    .wb-feed-new-post-button {
+        padding: 12px;
+        width: 48px;
+        height: 48px;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .wb-feed-control-button {
+        padding: 8px;
+        width: 44px;
+        height: 38px;
+        justify-content: center;
+    }
+
+    .wb-feed-control-button span {
+        display: none !important;
+    }
+
+    .wb-feed-control-input {
+        height: 38px;
+    }
+}
+
+.wb-feed-item {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
+    margin-bottom: 24px;
+    transition: all 0.2s ease-in-out;
+    overflow: hidden;
+}
+
+.wb-feed-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    border-color: #dee2e6;
+}
+
+.wb-feed-header {
+    padding: 20px 24px 0;
+}
+
+.wb-feed-content {
+    padding: 16px 24px;
+    line-height: 1.6;
+    font-size: 15px;
+    color: #1a1a1a;
+}
+
+.wb-feed-actions {
+    padding: 12px 24px 20px;
+    border-top: 1px solid #f1f3f4;
+    background: #fafbfc;
+}
+
+.wb-feed-author-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.wb-feed-author-name:hover {
+    color: #1976d2;
+}
+
+.wb-feed-post-meta {
+    font-size: 13px;
+    color: #65676b;
+    font-weight: 500;
+}
+
+.wb-feed-post-meta .badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.wb-feed-dropdown-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border: none;
+    background: #f0f2f5;
+    color: #65676b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wb-feed-dropdown-toggle-btn:hover {
+    background: #e4e6ea;
+    color: #1a1a1a;
+}
+
+.wb-feed-custom-dropdown {
+    background: #ffffff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    min-width: 180px;
+    z-index: 1000;
+}
+
+.wb-feed-custom-dropdown .dropdown-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: background-color 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.wb-feed-custom-dropdown .dropdown-item:hover {
+    background: #f0f2f5;
+}
+
+.wb-feed-custom-dropdown .dropdown-item.text-danger:hover {
+    background: #fef2f2;
+    color: #dc3545;
+}
+
+.wb-feed-custom-dropdown .dropdown-item.text-warning:hover {
+    background: #fffbf0;
+    color: #f59e0b;
+}
+
+.wb-feed-reactions-display {
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.wb-feed-reactions-display:hover {
+    background: #e9ecef;
+}
+
+.wb-feed-reaction-emoji {
+    font-size: 16px;
+    margin-left: -2px;
+    position: relative;
+}
+
+.wb-feed-reaction-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #65676b;
+    margin-left: 4px;
+}
+
+.wb-feed-action-button {
+    background: none;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #65676b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wb-feed-action-button:hover {
+    background: #f0f2f5;
+    color: #1a1a1a;
+}
+
+.wb-feed-shared-post-unavailable {
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin-top: 16px;
+    text-align: center;
+}
+
+@media (max-width: 576px) {
+
+    .wb-feed-header,
+    .wb-feed-content {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+
+    .wb-feed-actions {
+        padding: 12px 16px 16px;
+    }
+
+    .wb-feed-action-button {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .wb-feed-action-button .wb-feed-action-text {
+        display: none;
+    }
+
+    .wb-feed-author-name {
+        font-size: 14px;
+    }
+
+    .wb-feed-post-meta {
+        font-size: 12px;
+    }
+
+    .wb-feed-content {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 768px) {
+    .wb-feed-item {
+        max-width: 680px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+.wb-feed-details-container {
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.wb-feed-back-button {
+    background: none;
+    border: none;
+    color: #1976d2;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    transition: color 0.2s ease;
+}
+
+.wb-feed-back-button:hover {
+    color: #1565c0;
+    text-decoration: none;
+}
+
+.wb-feed-loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.wb-feed-error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.wb-feed-error-content {
+    text-align: center;
+    padding: 32px;
+}
+
+.wb-feed-error-title {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+    font-size: 24px;
+}
+
+.wb-feed-error-back-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.wb-feed-error-back-button:hover {
+    background: #1565c0;
+}
+
+.wb-feed-main-content {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px 16px;
+}
+
+@media (min-width: 576px) {
+    .wb-feed-main-content {
+        padding: 32px 24px;
+    }
 }

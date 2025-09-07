@@ -17,6 +17,9 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    setSelectedReaction(currentState);
+  }, [currentState]);
 
   const handleReactionClick = (id: ReactionsEnum.LIKE) => {
     const value = id == selectedReaction ? null : id;

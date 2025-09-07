@@ -7,7 +7,6 @@ import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from './comments/NotificationToast';
 import { Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
-import "./FeedDetails.css"
 
 interface FeedDetailsProps {
   feedId?: string;
@@ -30,10 +29,10 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetai
 
   useEffect(() => {
     if (location.state) {
-      if(location.state.postId || location.state.comments) {
+      if (location.state.postId || location.state.comments) {
         openCommentModal();
       }
-      if(location.state.postId) {
+      if (location.state.postId) {
         setFindPost({ id: location.state.postId, isReply: location.state.isReply });
       }
     } else {
@@ -69,7 +68,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetai
   }, [feedId]);
 
   useEffect(() => {
-    if(feed) {
+    if (feed) {
       onGeneralUpdate({ ...feed, answers: commentCount })
     }
   }, [commentCount]);
@@ -142,13 +141,13 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetai
           />
         </Offcanvas.Body>
       </Offcanvas>
-      
-      <div className="feed-details-container">
-        <div className="main-content">
+
+      <div className="wb-feed-details-container">
+        <div className="wb-feed-main-content">
           {/* Back Button */}
           <button
             onClick={() => navigate('/feed')}
-            className="back-button"
+            className="wb-feed-back-button"
           >
             <ArrowLeft size={16} />
             Back to Feed
