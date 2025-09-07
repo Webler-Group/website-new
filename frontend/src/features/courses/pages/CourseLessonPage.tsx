@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Button, Nav } from "react-bootstrap";
+import { Button, Nav, Offcanvas } from "react-bootstrap";
 import { FaQuestionCircle, FaTimes } from "react-icons/fa";
-import { FaBookOpen } from "react-icons/fa6";
+import { FaBookOpen, FaComments } from "react-icons/fa6";
 import { ILesson } from "../components/Lesson";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNode from "../components/LessonNode";
+import CommentList from "../../../components/comments/CommentList";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
@@ -13,10 +14,18 @@ const CourseLessonPage = () => {
     const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
+    const location = useLocation();
     const [searchParams, setSearchParams] = useSearchParams();
+    const [commentModalVisible, setCommentModalVisible] = useState(false);
+    const [commentListOptions, setCommentListOptions] = useState({ section: "Courses", params: { lessonId } });
+    const [commentCount, setCommentCount] = useState(0);
+    const [findPost, setFindPost] = useState<any | null>(null);
 
     useEffect(() => {
-        getLesson();
+        if (lessonId) {
+            getLesson();
+            setCommentListOptions({ section: "Courses", params: { lessonId } });
+        }
     }, [lessonId]);
 
     useEffect(() => {
@@ -24,6 +33,14 @@ const CourseLessonPage = () => {
             setCurrentNodeIndex(Number(searchParams.get("slide")));
         }
     }, [searchParams]);
+
+    useEffect(() => {
+        if (location.state && location.state.postId) {
+            openCommentModal();
+            setFindPost({ id: location.state.postId, isReply: location.state.isReply });
+
+        }
+    }, [location]);
 
     useEffect(() => {
         if (lesson) {
@@ -43,6 +60,7 @@ const CourseLessonPage = () => {
         });
         if (result && result.lesson) {
             setLesson(result.lesson);
+            setCommentCount(result.lesson.comments);
         }
     }
 
@@ -115,6 +133,15 @@ const CourseLessonPage = () => {
         }
     }
 
+    const openCommentModal = () => {
+        if (!lessonId) return;
+        setCommentModalVisible(true)
+    }
+
+    const closeCommentModal = () => {
+        setCommentModalVisible(false);
+    }
+
     const handleExit = () => {
         navigate("/Courses/" + courseCode);
     }
@@ -124,12 +151,30 @@ const CourseLessonPage = () => {
         <div className="wb-course-lesson-container d-flex flex-column">
             {lesson && (
                 <>
-                    <div className="d-flex p-2">
+                    <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
+                        <Offcanvas.Header closeButton>
+                            <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
+                        </Offcanvas.Header>
+                        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                            <CommentList
+                                findPost={findPost}
+                                options={commentListOptions}
+                                setCommentCount={setCommentCount}
+                            />
+                        </Offcanvas.Body>
+                    </Offcanvas>
+                    <div className="d-flex justify-content-between p-2">
                         <div className="d-flex align-items-center">
                             <Button variant="link" className="text-secondary" onClick={handleExit}>
                                 <FaTimes />
                             </Button>
                             <span className="text-secondary" style={{ fontSize: "24px", fontWeight: "bold" }} >{lesson.title}</span>
+                        </div>
+                        <div className="d-flex align-items-center gap-1">
+                            <span className="small text-secondary">{commentCount}</span>
+                            <Button variant="link" className="text-secondary" onClick={openCommentModal}>
+                                <FaComments />
+                            </Button>
                         </div>
                     </div>
 

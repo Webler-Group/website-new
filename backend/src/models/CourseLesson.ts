@@ -21,6 +21,10 @@ const courseLessonSchema = new mongoose.Schema({
     nodes: {
         type: Number,
         default: 0
+    },
+    comments: {
+        type: Number,
+        default: 0
     }
 });
 
