@@ -86,8 +86,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const navigate = useNavigate();
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
 
-  console.log(feed.attachments)
-
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isPinned, setIsPinned] = useState(feed.isPinned || false);
 
@@ -333,7 +331,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         </div>
 
         {feed.attachments?.length > 0 && (
-          <div className="mb-3 px-4">
+          <div className="mt-2 rounded p-2 text-dark text-decoration-none">
             <div className="d-flex flex-column gap-2">
               {feed.attachments.map(att => {
                 let title = "";
