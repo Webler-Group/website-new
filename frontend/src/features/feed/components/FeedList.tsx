@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, Filter, Loader2, RefreshCw, AlertCircle, Plus } from 'lucide-react';
+import { Search, Filter, Loader2, RefreshCw, AlertCircle, Plus, Pin } from 'lucide-react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import FeedItem from './FeedItem';
 import useFeeds from '../hooks/useFeeds';
@@ -16,12 +16,12 @@ const FILTER_OPTIONS = [
   { value: 4, label: 'Trending (24h)' },
   { value: 5, label: 'Most Popular' },
   { value: 6, label: 'Most Shared' },
-  { value: 7, label: 'Pinned' }
 ];
 
 const FeedList = () => {
   const { feedId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [pinnedExpanded, setPinnedExpanded] = useState(true);
   const navigate = useNavigate();
 
   // URL state synchronization
@@ -39,12 +39,12 @@ const FeedList = () => {
     loadMore,
     handleRefresh,
     onGeneralUpdate,
-    onDelete
+    onDelete,
+    pinnedFeeds
   } = useFeeds(searchQuery, filterValue);
 
   const [headerVisible, setHeaderVisible] = useState(true);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-
   // Search input state
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [votesModalVisible, setVotesModalVisible] = useState(false);
@@ -290,6 +290,43 @@ const FeedList = () => {
               </p>
             </div>
           )}
+
+        {/* Pinned Feeds Section */}
+        <div className="card border-warning shadow-sm mb-5">
+          {/* Header */}
+          <div
+            className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
+            style={{ cursor: "pointer" }}
+            onClick={() => setPinnedExpanded(!pinnedExpanded)}
+          >
+            <small className="fw-bold text-dark mb-0"><Pin size={16} />  Pinned Posts</small>
+            <small className="text-muted">
+              {pinnedExpanded ? "Hide" : "Show"}
+            </small>
+          </div>
+          {pinnedExpanded && <div className="d-flex flex-column gap-3">
+            {pinnedFeeds.map((feed, index) => {
+              const isLast = index === feeds.length - 1;
+              return (
+                <div
+                  key={feed.id}
+                  ref={isLast ? lastFeedRef : undefined}
+                >
+                  <div>
+                    <FeedItem
+                      feed={feed}
+                      onGeneralUpdate={onGeneralUpdate}
+                      onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                      commentCount={feed.answers || 0}
+                      onShowUserReactions={onShowUserReactions}
+                      onDelete={onDelete}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>}
+        </div>
 
           {/* Feed Items */}
           <div className="d-flex flex-column gap-3">

@@ -622,13 +622,20 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
 
   let pipeline: PipelineStage[] = [
-    { $match: { _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] }, hidden: false } },
+    {
+      $match: {
+        _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] },
+        hidden: false,
+        ...(filter !== 7 && { isPinned: false }) 
+      }
+    },
     {
       $set: {
         score: { $add: ["$votes", "$shares", "$answers"] }
       }
     }
   ];
+
 
   if (searchQuery.trim().length > 0) {
     const tagIds = (await Tag.find({ name: searchQuery.trim() })).map(x => x._id);

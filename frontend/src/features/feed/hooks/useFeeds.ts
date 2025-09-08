@@ -3,6 +3,7 @@ import { IFeed } from "../components/types";
 import { useApi } from "../../../context/apiCommunication";
 
 const FEEDS_PER_PAGE = 10;
+const NO_PINNED_FEEDS = 20;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 interface FeedListResponse {
@@ -29,6 +30,7 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
     const abortController = useRef<AbortController | null>(null);
 
     const [feeds, setFeeds] = useState<IFeed[]>([]);
+    const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
     const [loading, setLoading] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -42,6 +44,11 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         fetchFeeds(searchQuery, filterValue, 1);
       }, [searchQuery, filterValue]);
 
+      useEffect(() => {
+        resetPinnedFeedList();
+        fetchPinnedFeeds();
+      }, []);
+
     // Reset feeds and pagination
     const resetFeedList = () => {
         setFeeds([]);
@@ -50,6 +57,36 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         setError(null);
         setTotalCount(0);
     }
+
+    const resetPinnedFeedList = () => {
+        setPinnedFeeds([]);
+    }
+
+    const fetchPinnedFeeds = useCallback(async () => {
+        try {
+            const response = await sendJsonRequest(
+                '/Feed',
+                'POST',
+                {
+                    page: 1,
+                    count: NO_PINNED_FEEDS,
+                    filter: 7,
+                    searchQuery: ""
+                });
+
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to fetch pinned feeds');
+            }
+
+            const feedData: FeedListResponse = response;
+
+            setPinnedFeeds(feedData.feeds)
+
+        } catch (err: any) {
+            console.error("Error fetching pinned posts: ", err)
+        }
+
+    }, [pinnedFeeds.length, sendJsonRequest])
 
     // Generate cache key
     const getCacheKey = useCallback((search: string, filter: number, page: number) => {
@@ -159,15 +196,24 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
     }, [searchQuery, filterValue, getCacheKey, resetFeedList, fetchFeeds]);
 
     const onGeneralUpdate = (feed: IFeed) => {
-        setFeeds(prev => prev.map(f => f.id === feed.id ? feed : f))
+        if(!feed.isPinned){
+            setFeeds(prev => prev.map(f => f.id === feed.id ? feed : f))
+        }else{
+            setPinnedFeeds(prev => prev.map(f => f.id === feed.id ? feed: f));
+        }
     };
 
     const onDelete = (feed: IFeed) => {
-        setFeeds(prev => prev.filter(f => f.id !== feed.id))
+        if(!feed.isPinned){
+            setFeeds(prev => prev.filter(f => f.id !== feed.id))
+        }else{
+            setPinnedFeeds(prev => prev.filter(f => f.id !== feed.id));
+        }
     }
 
     return {
         feeds,
+        pinnedFeeds,
         error,
         loading,
         loadingMore,
