@@ -12,6 +12,13 @@ const QuizAnswer_1 = __importDefault(require("../models/QuizAnswer"));
 const User_1 = __importDefault(require("../models/User"));
 const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const LessonNodeTypeEnum_1 = __importDefault(require("../data/LessonNodeTypeEnum"));
+const Post_1 = __importDefault(require("../models/Post"));
+const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
+const Notification_1 = __importDefault(require("../models/Notification"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const pushService_1 = require("../services/pushService");
+const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
+const Upvote_1 = __importDefault(require("../models/Upvote"));
 const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
     const { excludeUserId } = req.body;
     let result;
@@ -133,7 +140,8 @@ const getLesson = (0, express_async_handler_1.default)(async (req, res) => {
         id: lesson._id,
         title: lesson.title,
         index: lesson.index,
-        nodeCount: lesson.nodes
+        nodeCount: lesson.nodes,
+        comments: lesson.comments
     };
     let lastUnlockedNodeIndex = 1;
     if (lesson._id.equals(userProgress.lastLessonNodeId?.lessonId)) {
@@ -274,6 +282,230 @@ const resetCourseProgress = (0, express_async_handler_1.default)(async (req, res
         success: true
     });
 });
+const getLessonComments = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { lessonId, parentId, index, count, filter, findPostId } = req.body;
+    if (typeof filter !== "number" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Some fileds are missing" });
+        return;
+    }
+    let parentPost = null;
+    if (parentId) {
+        parentPost = await Post_1.default
+            .findById(parentId)
+            .populate("user", "name avatarImage countryCode level roles");
+    }
+    let dbQuery = Post_1.default.find({ lessonId, _type: PostTypeEnum_1.default.LESSON_COMMENT, hidden: false });
+    let skipCount = index;
+    if (findPostId) {
+        const reply = await Post_1.default.findById(findPostId);
+        if (reply === null) {
+            res.status(404).json({ message: "Post not found" });
+            return;
+        }
+        parentPost = reply.parentId ? await Post_1.default
+            .findById(reply.parentId)
+            .populate("user", "name avatarImage countryCode level roles")
+            :
+                null;
+        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
+        skipCount = Math.max(0, (await dbQuery
+            .clone()
+            .where({ createdAt: { $lt: reply.createdAt } })
+            .countDocuments()));
+        dbQuery = dbQuery
+            .sort({ createdAt: "asc" });
+    }
+    else {
+        dbQuery = dbQuery.where({ parentId });
+        switch (filter) {
+            // Most popular
+            case 1: {
+                dbQuery = dbQuery
+                    .sort({ votes: "desc", createdAt: "desc" });
+                break;
+            }
+            // Oldest first
+            case 2: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "asc" });
+                break;
+            }
+            // Newest first
+            case 3: {
+                dbQuery = dbQuery
+                    .sort({ createdAt: "desc" });
+                break;
+            }
+            default:
+                throw new Error("Unknown filter");
+        }
+    }
+    const result = await dbQuery
+        .skip(skipCount)
+        .limit(count)
+        .populate("user", "name avatarImage countryCode level roles");
+    const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
+        id: x._id,
+        parentId: x.parentId,
+        message: x.message,
+        date: x.createdAt,
+        userId: x.user._id,
+        userName: x.user.name,
+        userAvatar: x.user.avatarImage,
+        level: x.user.level,
+        roles: x.user.roles,
+        votes: x.votes,
+        isUpvoted: false,
+        answers: x.answers,
+        index: (findPostId && parentPost) ?
+            offset === 0 ? -1 : skipCount + offset - 1 :
+            skipCount + offset,
+        attachments: new Array()
+    }));
+    let promises = [];
+    for (let i = 0; i < data.length; ++i) {
+        /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
+            data[i].votes = count;
+        }));*/
+        if (currentUserId) {
+            promises.push(Upvote_1.default.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                data[i].isUpvoted = !(upvote === null);
+            }));
+        }
+        promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+    }
+    await Promise.all(promises);
+    res.status(200).json({ posts: data });
+});
+const createLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { lessonId, message, parentId } = req.body;
+    const lesson = await CourseLesson_1.default.findById(lessonId)
+        .populate("course", "code title");
+    if (lesson === null) {
+        res.status(404).json({ message: "Code not found" });
+        return;
+    }
+    let parentPost = null;
+    if (parentId !== null) {
+        parentPost = await Post_1.default.findById(parentId);
+        if (parentPost === null) {
+            res.status(404).json({ message: "Parent post not found" });
+            return;
+        }
+    }
+    const reply = await Post_1.default.create({
+        _type: PostTypeEnum_1.default.LESSON_COMMENT,
+        message,
+        lessonId,
+        parentId,
+        user: currentUserId
+    });
+    const usersToNotify = new Set();
+    if (parentPost !== null) {
+        usersToNotify.add(parentPost.user.toString());
+    }
+    usersToNotify.delete(currentUserId);
+    const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+    await (0, pushService_1.sendToUsers)(Array.from(usersToNotify), {
+        title: "New reply",
+        body: `${currentUserName} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`
+    }, "codes");
+    for (let userToNotify of usersToNotify) {
+        await Notification_1.default.create({
+            _type: NotificationTypeEnum_1.default.LESSON_COMMENT,
+            user: userToNotify,
+            actionUser: currentUserId,
+            message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
+            lessonId: lesson._id,
+            postId: reply._id,
+            courseCode: lesson.course.code
+        });
+    }
+    lesson.$inc("comments", 1);
+    await lesson.save();
+    if (parentPost) {
+        parentPost.$inc("answers", 1);
+        await parentPost.save();
+    }
+    const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
+    res.json({
+        post: {
+            id: reply._id,
+            message: reply.message,
+            date: reply.createdAt,
+            userId: reply.user,
+            parentId: reply.parentId,
+            votes: reply.votes,
+            answers: reply.answers,
+            attachments
+        }
+    });
+});
+const editLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { id, message } = req.body;
+    if (typeof message === "undefined") {
+        res.status(400).json({ message: "Some fields are missing" });
+        return;
+    }
+    const comment = await Post_1.default.findById(id);
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+    }
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    comment.message = message;
+    try {
+        await comment.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: comment._id });
+        res.json({
+            success: true,
+            data: {
+                id: comment._id,
+                message: comment.message,
+                attachments
+            }
+        });
+    }
+    catch (err) {
+        res.json({
+            success: false,
+            error: err?.message,
+            data: null
+        });
+    }
+});
+const deleteLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { id } = req.body;
+    const comment = await Post_1.default.findById(id);
+    if (comment === null) {
+        res.status(404).json({ message: "Post not found" });
+        return;
+    }
+    if (currentUserId != comment.user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    const lesson = await CourseLesson_1.default.findById(comment.lessonId);
+    if (lesson === null) {
+        res.status(404).json({ message: "Lesson not found" });
+        return;
+    }
+    try {
+        await Post_1.default.deleteAndCleanup({ _id: id });
+        res.json({ success: true });
+    }
+    catch (err) {
+        console.log(err);
+        res.json({ success: false, error: err?.message });
+    }
+});
 const courseController = {
     getCourseList,
     getUserCourseList,
@@ -281,6 +513,10 @@ const courseController = {
     getLesson,
     getLessonNode,
     solve,
-    resetCourseProgress
+    resetCourseProgress,
+    getLessonComments,
+    createLessonComment,
+    editLessonComment,
+    deleteLessonComment
 };
 exports.default = courseController;

@@ -16,7 +16,9 @@ const upvoteSchema = new mongoose_1.default.Schema({
         required: true
     },
     reaction: {
-        type: Object.values(ReactionsEnum_1.default).map(Number)
+        type: Number,
+        enum: Object.values(ReactionsEnum_1.default).map(Number),
+        required: false
     }
 });
 const Upvote = mongoose_1.default.model("Upvote", upvoteSchema);

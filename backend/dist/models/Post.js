@@ -11,6 +11,7 @@ const Notification_1 = __importDefault(require("./Notification"));
 const PostAttachment_1 = __importDefault(require("./PostAttachment"));
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const CourseLesson_1 = __importDefault(require("./CourseLesson"));
 const postSchema = new mongoose_1.default.Schema({
     _type: {
         type: Number,
@@ -33,6 +34,11 @@ const postSchema = new mongoose_1.default.Schema({
     feedId: {
         type: mongoose_1.default.Types.ObjectId,
         ref: "Post",
+        default: null
+    },
+    lessonId: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "CourseLesson",
         default: null
     },
     parentId: {
@@ -91,7 +97,7 @@ postSchema.post("save", async function () {
     }
 });
 postSchema.statics.deleteAndCleanup = async function (filter) {
-    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId parentId feedId");
+    const postsToDelete = await Post.find(filter).select("-message");
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i];
         switch (post._type) {
@@ -144,7 +150,7 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
                 if (feed === null) {
                     throw new Error("Feed not found");
                 }
-                feed.$inc("comments", -1);
+                feed.$inc("answers", -1);
                 await feed.save();
                 const parentComment = await Post.findById(post.parentId);
                 if (parentComment) {
@@ -155,6 +161,26 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
                 await Notification_1.default.deleteMany({
                     _type: NotificationTypeEnum_1.default.FEED_COMMENT,
                     feedId: feed._id,
+                    postId: post._id
+                });
+                break;
+            }
+            case PostTypeEnum_1.default.LESSON_COMMENT: {
+                const lesson = await CourseLesson_1.default.findById(post.lessonId);
+                if (lesson === null) {
+                    throw new Error("Lesson not found");
+                }
+                lesson.$inc("comments", -1);
+                await lesson.save();
+                const parentComment = await Post.findById(post.parentId);
+                if (parentComment) {
+                    parentComment.$inc("answers", -1);
+                    await parentComment.save();
+                }
+                await Post.deleteAndCleanup({ parentId: post._id });
+                await Notification_1.default.deleteMany({
+                    _type: NotificationTypeEnum_1.default.LESSON_COMMENT,
+                    lessonId: lesson._id,
                     postId: post._id
                 });
                 break;

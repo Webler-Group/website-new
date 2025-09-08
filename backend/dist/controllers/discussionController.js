@@ -33,10 +33,6 @@ const createQuestion = (0, express_async_handler_1.default)(async (req, res) => 
         }
         tagIds.push(tag._id);
     }
-    if (tagIds.length < 1) {
-        res.status(400).json({ message: `Empty Tag` });
-        return;
-    }
     const question = await Post_1.default.create({
         _type: PostTypeEnum_1.default.QUESTION,
         title,
@@ -507,13 +503,15 @@ const editQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     question.tags = tagIds;
     try {
         await question.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: question._id });
         res.json({
             success: true,
             data: {
                 id: question._id,
                 title: question.title,
                 message: question.message,
-                tags: question.tags
+                tags: question.tags,
+                attachments
             }
         });
     }
@@ -635,7 +633,7 @@ const votePost = (0, express_async_handler_1.default)(async (req, res) => {
             await post.save();
         }
     }
-    res.json({ vote: upvote ? 1 : 0 });
+    res.json({ success: true, vote: upvote ? 1 : 0 });
 });
 const followQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;

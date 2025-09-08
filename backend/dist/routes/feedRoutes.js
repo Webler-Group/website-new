@@ -9,14 +9,17 @@ const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const requestLimiter_1 = __importDefault(require("../middleware/requestLimiter"));
 const verifyEmail_1 = __importDefault(require("../middleware/verifyEmail"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
 const router = express_1.default.Router();
 router.use(verifyJWT_1.default);
 router.route("/").post(feedController_1.default.getFeedList);
 router.route("/GetFeed").post(feedController_1.default.getFeed);
-router.route("/GetComments")
-    .post(feedController_1.default.getReplies);
+router.route("/GetComments").post(feedController_1.default.getReplies);
+router.route("/GetReactions").post(feedController_1.default.getReactions);
+router.route("/GetUserReactions").post(feedController_1.default.getUserReactions);
 router.use(protectRoute_1.default);
-router.route("/PinFeed").post(feedController_1.default.togglePinFeed);
+router.route("/PinFeed").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), feedController_1.default.togglePinFeed);
 router.route("/ReplyComment").post(feedController_1.default.createReply);
 router.route("/CreateFeed")
     .post(verifyEmail_1.default, (0, requestLimiter_1.default)(3600, 5, "Too many requests, try again later"), feedController_1.default.createFeed);
@@ -32,5 +35,4 @@ router.route("/EditComment")
 router.route("/DeleteComment")
     .delete(feedController_1.default.deleteReply);
 router.route("/VotePost").post(feedController_1.default.votePost);
-router.route("/GetFeedReactions").post(feedController_1.default.getReactions);
 exports.default = router;

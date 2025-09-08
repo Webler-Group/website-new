@@ -12,5 +12,8 @@ var NotificationTypeEnum;
     NotificationTypeEnum[NotificationTypeEnum["FEED_COMMENT"] = 302] = "FEED_COMMENT";
     NotificationTypeEnum[NotificationTypeEnum["FEED_SHARE"] = 303] = "FEED_SHARE";
     NotificationTypeEnum[NotificationTypeEnum["FEED_PIN"] = 304] = "FEED_PIN";
+    NotificationTypeEnum[NotificationTypeEnum["FEED_COMMENT_MENTION"] = 305] = "FEED_COMMENT_MENTION";
+    NotificationTypeEnum[NotificationTypeEnum["LESSON_COMMENT"] = 401] = "LESSON_COMMENT";
+    NotificationTypeEnum[NotificationTypeEnum["LESSON_COMMENT_MENTION"] = 402] = "LESSON_COMMENT_MENTION";
 })(NotificationTypeEnum || (NotificationTypeEnum = {}));
 exports.default = NotificationTypeEnum;

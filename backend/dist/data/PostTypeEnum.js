@@ -8,5 +8,6 @@ var PostTypeEnum;
     PostTypeEnum[PostTypeEnum["FEED"] = 4] = "FEED";
     PostTypeEnum[PostTypeEnum["SHARED_FEED"] = 5] = "SHARED_FEED";
     PostTypeEnum[PostTypeEnum["FEED_COMMENT"] = 6] = "FEED_COMMENT";
+    PostTypeEnum[PostTypeEnum["LESSON_COMMENT"] = 7] = "LESSON_COMMENT";
 })(PostTypeEnum || (PostTypeEnum = {}));
 exports.default = PostTypeEnum;

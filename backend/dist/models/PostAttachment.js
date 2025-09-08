@@ -58,62 +58,110 @@ postAttachmentSchema.post("save", async function () {
             const post = await Post_1.default.findById(this.postId, "-message")
                 .populate("user", "name")
                 .populate("codeId", "name")
-                .populate("parentId", "title");
+                .populate("parentId", "title")
+                .populate({
+                path: "lessonId",
+                select: "course title",
+                populate: {
+                    path: "course",
+                    select: "code title"
+                }
+            })
+                .populate("feedId", "message")
+                .lean();
             if (!post || this.user == post.user._id)
                 return;
-            if (post._type == PostTypeEnum_1.default.QUESTION) {
-                await (0, pushService_1.sendToUsers)([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in question "${post.title}"`
-                }, "mentions");
-                await Notification_1.default.create({
-                    _type: NotificationTypeEnum_1.default.QA_QUESTION_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in question "${post.title}"`,
-                    questionId: post._id
-                });
-            }
-            else if (post._type == PostTypeEnum_1.default.ANSWER) {
-                await (0, pushService_1.sendToUsers)([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
-                }, "mentions");
-                await Notification_1.default.create({
-                    _type: NotificationTypeEnum_1.default.QA_ANSWER_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
-                    questionId: post.parentId?._id,
-                    postId: post._id
-                });
-            }
-            else if (post._type == PostTypeEnum_1.default.CODE_COMMENT) {
-                await (0, pushService_1.sendToUsers)([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
-                }, "mentions");
-                await Notification_1.default.create({
-                    _type: NotificationTypeEnum_1.default.CODE_COMMENT_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
-                    codeId: post.codeId?._id,
-                    postId: post._id
-                });
+            switch (post._type) {
+                case PostTypeEnum_1.default.QUESTION:
+                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in question "${post.title}"`
+                    }, "mentions");
+                    await Notification_1.default.create({
+                        _type: NotificationTypeEnum_1.default.QA_QUESTION_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in question "${post.title}"`,
+                        questionId: post._id
+                    });
+                    break;
+                case PostTypeEnum_1.default.ANSWER:
+                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
+                    }, "mentions");
+                    await Notification_1.default.create({
+                        _type: NotificationTypeEnum_1.default.QA_ANSWER_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
+                        questionId: post.parentId?._id,
+                        postId: post._id
+                    });
+                    break;
+                case PostTypeEnum_1.default.CODE_COMMENT:
+                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
+                    }, "mentions");
+                    await Notification_1.default.create({
+                        _type: NotificationTypeEnum_1.default.CODE_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
+                        codeId: post.codeId?._id,
+                        postId: post._id
+                    });
+                    break;
+                case PostTypeEnum_1.default.LESSON_COMMENT:
+                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`
+                    }, "mentions");
+                    await Notification_1.default.create({
+                        _type: NotificationTypeEnum_1.default.LESSON_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`,
+                        lessonId: post.lessonId?._id,
+                        postId: post._id,
+                        courseCode: post.lessonId.course.code
+                    });
+                    break;
+                case PostTypeEnum_1.default.FEED_COMMENT:
+                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment to post "${(0, StringUtils_1.truncate)(post.feedId?.message, 20)}"`
+                    }, "mentions");
+                    await Notification_1.default.create({
+                        _type: NotificationTypeEnum_1.default.FEED_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment to post "${(0, StringUtils_1.truncate)(post.feedId?.message, 20)}"`,
+                        feedId: post.feedId?._id,
+                        postId: post._id
+                    });
+                    break;
             }
         }
         catch (err) {
-            console.log("Error creating notifcations for post attachments: ", err);
+            console.log("Error creating notifcations for post attachments:", err);
         }
     }
 });
 // --- DELETE MANY ---
 postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function (next) {
-    const filter = this.getFilter();
-    const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum_1.default.MENTION });
-    this._docsToDelete = docs;
-    next();
+    try {
+        const filter = this.getFilter();
+        const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum_1.default.MENTION });
+        this._docsToDelete = docs;
+    }
+    catch (err) {
+        console.log("Error in postAttachmentSchema.pre(deleteMany):", err);
+    }
+    finally {
+        next();
+    }
 });
 postAttachmentSchema.post("deleteMany", { document: false, query: true }, async function () {
     const docs = this._docsToDelete;
@@ -123,29 +171,40 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
         try {
             if (!doc.postId)
                 continue;
-            const post = await Post_1.default.findById(doc.postId, "user _type parentId codeId");
+            const post = await Post_1.default.findById(doc.postId, "-message");
             if (!post)
                 continue;
             let filter = {
                 user: doc.user,
                 actionUser: post.user,
             };
-            if (post._type === PostTypeEnum_1.default.QUESTION) {
-                filter._type = NotificationTypeEnum_1.default.QA_QUESTION_MENTION;
-                filter.questionId = post._id;
-            }
-            else if (post._type === PostTypeEnum_1.default.ANSWER) {
-                filter._type = NotificationTypeEnum_1.default.QA_ANSWER_MENTION;
-                filter.questionId = post.parentId;
-                filter.postId = post._id;
-            }
-            else if (post._type === PostTypeEnum_1.default.CODE_COMMENT) {
-                filter._type = NotificationTypeEnum_1.default.CODE_COMMENT_MENTION;
-                filter.codeId = post.codeId;
-                filter.postId = post._id;
-            }
-            else {
-                continue;
+            switch (post._type) {
+                case PostTypeEnum_1.default.QUESTION:
+                    filter._type = NotificationTypeEnum_1.default.QA_QUESTION_MENTION;
+                    filter.questionId = post._id;
+                    break;
+                case PostTypeEnum_1.default.ANSWER:
+                    filter._type = NotificationTypeEnum_1.default.QA_ANSWER_MENTION;
+                    filter.questionId = post.parentId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum_1.default.CODE_COMMENT:
+                    filter._type = NotificationTypeEnum_1.default.CODE_COMMENT_MENTION;
+                    filter.codeId = post.codeId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum_1.default.LESSON_COMMENT:
+                    filter._type = NotificationTypeEnum_1.default.LESSON_COMMENT_MENTION;
+                    filter.lessonId = post.lessonId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum_1.default.FEED_COMMENT:
+                    filter._type = NotificationTypeEnum_1.default.FEED_COMMENT_MENTION;
+                    filter.feedId = post.feedId;
+                    filter.postId = post._id;
+                    break;
+                default:
+                    continue;
             }
             await Notification_1.default.deleteMany(filter);
         }
@@ -200,7 +259,7 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: (0, StringUtils_1.truncate)(x.feed.message, 20),
+                    feedMessage: (0, StringUtils_1.truncate)(x.feed.message, 120),
                     feedType: x.feed._type
                 };
         }
@@ -218,8 +277,8 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
         if (match.length < 4)
             continue;
         let attachment = null;
-        switch (match[2]) {
-            case "Compiler-Playground": {
+        switch (match[2].toLowerCase()) {
+            case "compiler-playground": {
                 const codeId = match[3];
                 try {
                     const code = await Code_1.default.findById(codeId);
@@ -242,7 +301,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
                 }
                 break;
             }
-            case "Discuss": {
+            case "discuss": {
                 const questionId = match[3];
                 try {
                     const question = await Post_1.default.findById(questionId);
@@ -265,7 +324,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message, id) {
                 }
                 break;
             }
-            case "Feed": {
+            case "feed": {
                 const postId = match[3];
                 try {
                     const post = await Post_1.default.findById(postId);

@@ -3,7 +3,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getReactionsSummary = void 0;
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Post_1 = __importDefault(require("../models/Post"));
 const Tag_1 = __importDefault(require("../models/Tag"));
@@ -12,24 +11,21 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const regexUtils_1 = require("../utils/regexUtils");
+const User_1 = __importDefault(require("../models/User"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const StringUtils_1 = require("../utils/StringUtils");
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const ReactionsEnum_1 = __importDefault(require("../data/ReactionsEnum"));
+const pushService_1 = require("../services/pushService");
 const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
-    const { message } = req.body;
-    let { title } = req.body;
-    let { tags } = req.body;
+    const { message, tags } = req.body;
     const currentUserId = req.userId;
     if (typeof message === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     const tagIds = [];
-    if (!title)
-        title = "Title not provided.";
-    if (!tags)
-        tags = [];
     for (let tagName of tags) {
         const tag = await Tag_1.default.findOne({ name: tagName });
         if (!tag) {
@@ -52,15 +48,19 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
     }
     const feed = await Post_1.default.create({
         _type: PostTypeEnum_1.default.FEED,
-        title,
+        title: "Untitled",
         message,
         tags: tagIds,
-        user: currentUserId,
-        isAccepted: true
+        user: currentUserId
     });
     if (feed) {
         const followers = await UserFollowing_1.default.find({ following: currentUserId });
-        followers.forEach(async (follower) => {
+        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+        await (0, pushService_1.sendToUsers)(followers.map(x => x.user.toString()), {
+            title: "New post",
+            body: `${currentUserName} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
+        }, "feed");
+        for (let follower of followers) {
             await Notification_1.default.create({
                 _type: NotificationTypeEnum_1.default.FEED_FOLLOWER_POST,
                 user: follower.user,
@@ -68,7 +68,7 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 message: `{action_user} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
                 feedId: feed._id,
             });
-        });
+        }
         res.json({
             success: true,
             feed: {
@@ -90,84 +90,113 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
     }
 });
 const getReactions = (0, express_async_handler_1.default)(async (req, res) => {
-    try {
-        const { parentId } = req.body;
-        let { page, limit } = req.body;
-        if (!page)
-            page = 1;
-        if (!limit)
-            limit = 10;
-        const skip = (page - 1) * limit;
-        if (!mongoose_1.default.Types.ObjectId.isValid(parentId)) {
-            res.status(400).json({ error: "Invalid parentId" });
-            return;
+    const { parentId } = req.body;
+    if (!parentId || !mongoose_1.default.Types.ObjectId.isValid(parentId)) {
+        res.status(400).json({ message: "Invalid parentId" });
+        return;
+    }
+    const reactions = await Upvote_1.default.aggregate([
+        {
+            $match: {
+                parentId: new mongoose_1.default.Types.ObjectId(parentId),
+            },
+        },
+        {
+            $group: {
+                _id: "$reaction",
+                count: { $sum: 1 },
+            },
+        },
+        {
+            $match: {
+                count: { $gt: 0 },
+            },
+        },
+        {
+            $sort: {
+                count: -1,
+            },
+        },
+        {
+            $project: {
+                _id: 0,
+                reaction: "$_id",
+                count: 1,
+            },
+        },
+    ]);
+    res.json(reactions);
+});
+const getUserReactions = (0, express_async_handler_1.default)(async (req, res) => {
+    const { parentId, page, count } = req.body;
+    const currentUserId = req.userId;
+    if (typeof page !== "number" || page < 1 ||
+        typeof count !== "number" || count < 1 || count > 100) {
+        res.status(400).json({ message: "Some fields are missing or invalid" });
+        return;
+    }
+    const skip = (page - 1) * count;
+    const parentObjectId = new mongoose_1.default.Types.ObjectId(parentId);
+    const currentUserObjectId = new mongoose_1.default.Types.ObjectId(currentUserId);
+    const reactions = await Upvote_1.default.aggregate([
+        { $match: { parentId: parentObjectId } },
+        { $sort: { _id: -1 } },
+        { $skip: skip },
+        { $limit: count },
+        {
+            $lookup: {
+                from: "users",
+                localField: "user",
+                foreignField: "_id",
+                as: "userDetails"
+            }
+        },
+        { $unwind: "$userDetails" },
+        {
+            $lookup: {
+                from: "userfollowings",
+                let: { targetUserId: "$user" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$user", currentUserObjectId] },
+                                    { $eq: ["$following", "$$targetUserId"] }
+                                ]
+                            }
+                        }
+                    }
+                ],
+                as: "isFollowing"
+            }
+        },
+        {
+            $project: {
+                userId: "$userDetails._id",
+                userName: "$userDetails.name",
+                userAvatar: "$userDetails.avatarImage",
+                level: "$userDetails.level",
+                roles: "$userDetails.roles",
+                reaction: { $ifNull: ["$reaction", ReactionsEnum_1.default.LIKE] },
+                isFollowing: { $gt: [{ $size: "$isFollowing" }, 0] }
+            }
         }
-        const pipeline = [
-            { $match: { parentId: new mongoose_1.default.Types.ObjectId(parentId) } },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "user",
-                    foreignField: "_id",
-                    as: "user",
-                },
-            },
-            { $unwind: "$user" },
-            {
-                $group: {
-                    _id: "$reaction",
-                    users: {
-                        $push: {
-                            _id: "$user._id",
-                            name: "$user.name",
-                        },
-                    },
-                    count: { $sum: 1 },
-                },
-            },
-            {
-                $project: {
-                    _id: 0,
-                    reaction: "$_id",
-                    count: 1,
-                    users: { $slice: ["$users", skip, limit] },
-                },
-            },
-            { $sort: { count: -1 } } // order by most used reaction
-        ];
-        const reactions = await Upvote_1.default.aggregate(pipeline);
-        // compute totals + top 3
-        const totalReactions = reactions.reduce((sum, r) => sum + r.count, 0);
-        const topReactions = reactions.slice(0, 3).map(r => ({
-            reaction: r.reaction,
-            count: r.count
-        }));
-        res.json({
-            page,
-            limit,
-            totalReactions,
-            topReactions,
-            reactions,
-        });
-    }
-    catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Server error" });
-    }
+    ]);
+    const totalCount = await Upvote_1.default.countDocuments({ parentId });
+    res.json({
+        count: totalCount,
+        userReactions: reactions
+    });
 });
 const editFeed = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
-    const { feedId, message } = req.body;
-    let { title, tags } = req.body;
+    const { feedId, message, tags } = req.body;
     if (typeof message === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
     const feed = await Post_1.default.findById(feedId);
-    if (!title)
-        title = "Title not provided.";
-    if (!tags)
-        tags = [];
     if (feed === null) {
         res.status(404).json({ success: false, message: "Feed not found" });
         return;
@@ -186,18 +215,19 @@ const editFeed = (0, express_async_handler_1.default)(async (req, res) => {
         }));
     }
     await Promise.all(promises);
-    feed.title = title;
     feed.message = message;
     feed.tags = tagIds;
     try {
         await feed.save();
+        const attachments = await PostAttachment_1.default.getByPostId({ post: feed._id });
         res.json({
             success: true,
             data: {
                 id: feed._id,
                 title: feed.title,
                 message: feed.message,
-                tags: feed.tags
+                tags: feed.tags.map((x) => x.name),
+                attachments
             }
         });
     }
@@ -262,6 +292,15 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
             usersToNotify.add(parentComment.user.toString());
         }
         usersToNotify.delete(currentUserId);
+        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+        await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== feed.user.toString()), {
+            title: "New reply",
+            body: `${currentUserName} replied to your comment on "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
+        }, "feed");
+        await (0, pushService_1.sendToUsers)([feed.user.toString()], {
+            title: "New comment",
+            body: `${currentUserName} posted comment on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
+        }, "feed");
         for (let userToNotify of usersToNotify) {
             await Notification_1.default.create({
                 _type: NotificationTypeEnum_1.default.FEED_COMMENT,
@@ -303,7 +342,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
 const votePost = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { postId, vote, reaction } = req.body;
-    if (typeof vote === "undefined" || typeof reaction === "undefined" || typeof postId === "undefined") {
+    if (typeof vote === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
@@ -332,8 +371,7 @@ const votePost = (0, express_async_handler_1.default)(async (req, res) => {
             await post.save();
         }
     }
-    let reactionSummary = await (0, exports.getReactionsSummary)(postId);
-    res.json({ vote: upvote ? 1 : 0, success: true, reactionSummary });
+    res.json({ vote: upvote ? 1 : 0, success: true });
 });
 const editReply = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
@@ -400,19 +438,13 @@ const deleteReply = (0, express_async_handler_1.default)(async (req, res) => {
     }
 });
 const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
-    const { feedId, message } = req.body;
-    let { title } = req.body;
-    let { tags } = req.body;
+    const { feedId, message, tags } = req.body;
     const currentUserId = req.userId;
     if (typeof message === "undefined") {
         res.status(400).json({ success: false, message: "Some fields are missing" });
         return;
     }
-    if (!title)
-        title = "Title not provided.";
     const tagIds = [];
-    if (!tags)
-        tags = [];
     for (let tagName of tags) {
         const tag = await Tag_1.default.findOne({ name: tagName });
         if (!tag) {
@@ -430,11 +462,10 @@ const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
     }
     const feed = await Post_1.default.create({
         _type: PostTypeEnum_1.default.SHARED_FEED,
-        title,
+        title: "Untitled",
         message,
         tags: tagIds,
         user: currentUserId,
-        isAccepted: true,
         parentId: feedId,
     });
     if (feed) {
@@ -449,6 +480,11 @@ const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
             return;
         }
         if (originalFeed.user != currentUserId) {
+            const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+            await (0, pushService_1.sendToUsers)([originalFeed.user.toString()], {
+                title: "Feed share",
+                body: `${currentUserName} shared your Post "${(0, StringUtils_1.truncate)(originalFeed.message, 20)}"`
+            }, "feed");
             await Notification_1.default.create({
                 _type: NotificationTypeEnum_1.default.FEED_SHARE,
                 user: originalFeed.user,
@@ -463,7 +499,7 @@ const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 id: feed._id,
                 title: feed.title,
                 message: feed.message,
-                tags: tagNames,
+                tags: feed.tags.map((x) => x.name),
                 date: feed.createdAt,
                 userId: feed.user,
                 votes: feed.votes,
@@ -489,7 +525,13 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
     const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
     const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
     let pipeline = [
-        { $match: { _type: { $in: [PostTypeEnum_1.default.FEED, PostTypeEnum_1.default.SHARED_FEED] }, hidden: false } },
+        {
+            $match: {
+                _type: { $in: [PostTypeEnum_1.default.FEED, PostTypeEnum_1.default.SHARED_FEED] },
+                hidden: false,
+                ...(filter !== 7 && { isPinned: false })
+            }
+        },
         {
             $set: {
                 score: { $add: ["$votes", "$shares", "$answers"] }
@@ -632,7 +674,7 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
                 type: x._type,
                 title: x.title || null,
                 message: x.message,
-                tags: x.tags,
+                tags: x.tags.map((x) => x.name),
                 date: x.createdAt,
                 userId: x.user,
                 userName: x.users.length ? x.users[0].name : "Unknown User",
@@ -657,7 +699,7 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
                         id: x.originalPost[0]._id,
                         title: x.originalPost[0].title || null,
                         message: x.originalPost[0].message,
-                        tags: x.originalPost[0].tags,
+                        tags: x.originalPost[0].tags.map((x) => x.name),
                         userId: x.originalPost[0].user,
                         userName: x.originalPost[0].users.length
                             ? x.originalPost[0].users[0].name
@@ -690,26 +732,6 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(500).json({ success: false, message: "Error fetching feed" });
     }
 });
-const getReactionsSummary = async (parentId) => {
-    const objectId = typeof parentId === "string" ? new mongoose_1.default.Types.ObjectId(parentId) : parentId;
-    const reactionsAgg = await Upvote_1.default.aggregate([
-        { $match: { parentId: objectId } },
-        {
-            $group: {
-                _id: "$reaction",
-                count: { $sum: 1 }
-            }
-        },
-        { $sort: { count: -1 } }
-    ]);
-    const totalReactions = reactionsAgg.reduce((sum, r) => sum + r.count, 0);
-    const topReactions = reactionsAgg.slice(0, 3).map(r => ({
-        reaction: r._id,
-        count: r.count
-    }));
-    return { totalReactions, topReactions };
-};
-exports.getReactionsSummary = getReactionsSummary;
 const getFeed = (0, express_async_handler_1.default)(async (req, res) => {
     const { feedId } = req.body;
     const currentUserId = req.userId;
@@ -790,7 +812,7 @@ const getFeed = (0, express_async_handler_1.default)(async (req, res) => {
         type: feed._type,
         title: feed.title || null,
         message: feed.message,
-        tags: feed.tags,
+        tags: feed.tags.map((x) => x.name),
         date: feed.createdAt,
         userId: feed.user._id,
         userName: feed.user.name,
@@ -809,7 +831,7 @@ const getFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 id: feed.originalPost[0]._id,
                 title: feed.originalPost[0].title || null,
                 message: feed.originalPost[0].message,
-                tags: feed.originalPost[0].tags,
+                tags: feed.originalPost[0].tags.map((x) => x.name),
                 userId: feed.originalPost[0].user,
                 userName: feed.originalPost[0].users.length
                     ? feed.originalPost[0].users[0].name
@@ -932,9 +954,8 @@ const getReplies = (0, express_async_handler_1.default)(async (req, res) => {
     }
 });
 const togglePinFeed = (0, express_async_handler_1.default)(async (req, res) => {
-    const { feedId } = req.body;
+    const { feedId, pinned } = req.body;
     const currentUserId = req.userId;
-    // const currentUserId = '68a7400f3dd5eef60a166911';
     if (!feedId) {
         res.status(400).json({ success: false, message: "Feed ID is required" });
         return;
@@ -945,27 +966,32 @@ const togglePinFeed = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     if (currentUserId != feed.user) {
-        await Notification_1.default.create({
-            _type: NotificationTypeEnum_1.default.FEED_PIN,
-            user: feed.user,
-            actionUser: currentUserId,
-            message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
-            feedId: feed._id,
-        });
+        if (pinned) {
+            const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
+            await (0, pushService_1.sendToUsers)([feed.user.toString()], {
+                title: "Feed pin",
+                body: `${currentUserName} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
+            }, "feed");
+            await Notification_1.default.create({
+                _type: NotificationTypeEnum_1.default.FEED_PIN,
+                user: feed.user,
+                actionUser: currentUserId,
+                message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                feedId: feed._id,
+            });
+        }
+        else {
+            await Notification_1.default.deleteOne({
+                _type: NotificationTypeEnum_1.default.FEED_PIN,
+                user: feed.user,
+                actionUser: currentUserId,
+                feedId: feed._id
+            });
+        }
     }
-    feed.isPinned = !feed.isPinned;
+    feed.isPinned = pinned;
     await feed.save();
-    res.status(200).json({ success: true });
-});
-const getPinnedFeeds = (0, express_async_handler_1.default)(async (req, res) => {
-    // const currentUserId = req.userId;
-    const currentUserId = '68a7400f3dd5eef60a166911';
-    if (!currentUserId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
-    const pinnedFeeds = await Post_1.default.find({ user: currentUserId, isPinned: true });
-    res.status(200).json({ pinnedFeeds, success: true });
+    res.status(200).json({ success: true, data: { isPinned: feed.isPinned } });
 });
 const feedController = {
     createFeed,
@@ -979,8 +1005,8 @@ const feedController = {
     getFeed,
     getReplies,
     togglePinFeed,
-    getPinnedFeeds,
     votePost,
-    getReactions
+    getReactions,
+    getUserReactions
 };
 exports.default = feedController;

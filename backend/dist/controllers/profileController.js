@@ -462,6 +462,8 @@ const getNotifications = (0, express_async_handler_1.default)(async (req, res) =
             isSeen: x.isSeen,
             isClicked: x.isClicked,
             codeId: x.codeId,
+            courseCode: x.courseCode,
+            lessonId: x.lessonId,
             postId: x.postId ? x.postId._id : null,
             post: {
                 parentId: x.postId ? x.postId.parentId : null
@@ -563,7 +565,8 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
             codes: true,
             discuss: true,
             channels: true,
-            mentions: true
+            mentions: true,
+            feed: true
         };
     }
     if (typeof notifications.followers !== "undefined") {
@@ -577,6 +580,9 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
     }
     if (typeof notifications.channels !== "undefined") {
         user.notifications.channels = notifications.channels;
+    }
+    if (typeof notifications.feed !== "undefined") {
+        user.notifications.feed = notifications.feed;
     }
     try {
         await user.save();

@@ -17,6 +17,8 @@ const notificationSchema = new mongoose_1.default.Schema({
     questionId: { type: mongoose_1.default.Types.ObjectId, ref: "Post" },
     postId: { type: mongoose_1.default.Types.ObjectId, ref: "Post" },
     feedId: { type: mongoose_1.default.Types.ObjectId, ref: "Post" },
+    lessonId: { type: mongoose_1.default.Types.ObjectId, ref: "CourseLesson" },
+    courseCode: { type: String },
     hidden: { type: Boolean, default: false }
 }, {
     timestamps: true

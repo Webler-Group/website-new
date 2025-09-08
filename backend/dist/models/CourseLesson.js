@@ -25,6 +25,10 @@ const courseLessonSchema = new mongoose_1.default.Schema({
     nodes: {
         type: Number,
         default: 0
+    },
+    comments: {
+        type: Number,
+        default: 0
     }
 });
 courseLessonSchema.statics.deleteAndCleanup = async function (filter) {
