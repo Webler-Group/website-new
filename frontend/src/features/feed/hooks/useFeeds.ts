@@ -162,6 +162,10 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         setFeeds(prev => prev.map(f => f.id === feed.id ? feed : f))
     };
 
+    const onDelete = (feed: IFeed) => {
+        setFeeds(prev => prev.filter(f => f.id !== feed.id))
+    }
+
     return {
         feeds,
         error,
@@ -172,7 +176,8 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         resetFeedList,
         loadMore,
         handleRefresh,
-        onGeneralUpdate
+        onGeneralUpdate,
+        onDelete
     }
 }
 

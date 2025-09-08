@@ -287,7 +287,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
                 }
                 break;
             }
-            case "Feed": {
+            case "feed": {
                 const postId = match[3];
                 try {
                     const post = await Post.findById(postId);

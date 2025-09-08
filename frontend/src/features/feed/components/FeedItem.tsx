@@ -21,6 +21,7 @@ interface FeedItemProps {
   onShowUserReactions?: (feedId: string) => void;
   onGeneralUpdate?: (feed: IFeed) => void;
   commentCount?: number;
+  onDelete: (feed: IFeed) => void;
 }
 
 const OriginalPostCard = ({ originalPost }: { originalPost: any }) => {
@@ -71,7 +72,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   onCommentsClick,
   onShowUserReactions,
   onGeneralUpdate,
-  commentCount
+  commentCount,
+  onDelete
 }, ref) => {
   const [showDropdown, setShowDropdown] = useState(false);
   const { sendJsonRequest } = useApi();
@@ -83,6 +85,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const navigate = useNavigate();
   const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
+
+  console.log(feed.attachments)
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isPinned, setIsPinned] = useState(feed.isPinned || false);
@@ -131,6 +135,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       try {
         const response = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
         if (!response.success) throw new Error(response.message);
+        onDelete(feed);
         navigate("/feed")
         showNotification("success", "Post deleted successfully");
       } catch (err) {
@@ -326,6 +331,87 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           )}
 
         </div>
+
+        {feed.attachments?.length > 0 && (
+          <div className="mb-3 px-4">
+            <div className="d-flex flex-column gap-2">
+              {feed.attachments.map(att => {
+                let title = "";
+                let subtitle = "";
+                let to = "#";
+                let bgColor = "";
+                let info = "";
+
+                switch (att.type) {
+                  case 1: // Code
+                    title = att.codeName || "Untitled Code";
+                    subtitle = `${att.codeLanguage} • by ${att.userName}`;
+                    to = `/Compiler-Playground/${att.codeId}`;
+                    bgColor = "bg-primary";
+                    info = "code";
+                    break;
+
+                  case 2: // Question / Discussion
+                    title = att.questionTitle || "Question";
+                    subtitle = `by ${att.userName}`;
+                    to = `/Discuss/${att.questionId}`;
+                    bgColor = "bg-success";
+                    info = "question";
+                    break;
+
+                  case 4: // Feed
+                    title = `${att.feedMessage?.substring(0, 50)}${att.feedMessage?.length > 50 ? '...' : ''}`;
+                    subtitle = `by ${att.userName}`;
+                    to = `/feed/${att.feedId}`;
+                    bgColor = "bg-info";
+                    info = "post";
+                    break;
+
+                  default:
+                    return null;
+                }
+
+                return (
+                  <Link
+                    key={att.id}
+                    to={to}
+                    className="d-flex align-items-center gap-3 p-3 border rounded-3 bg-white text-decoration-none shadow-sm position-relative overflow-hidden"
+                    style={{
+                      transition: "all 0.2s ease",
+                      borderLeft: `4px solid var(--bs-${bgColor.split('-')[1]})`
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-1px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(0,0,0,0.1)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
+                    }}
+                  >
+                  <div className="d-flex justify-content-between align-items-start flex-grow-1 min-w-0">
+                    <div className="min-w-0">
+                      <h6 className="fw-semibold mb-1 text-truncate text-dark bold">
+                        {title}
+                      </h6>
+                      <small className="text-muted d-block text-truncate">
+                        {subtitle}
+                      </small>
+                    </div>
+                    <span 
+                      className="ms-2"
+                      style={{ fontWeight: "light", color: "midnightblue", fontSize: "0.75rem" }}
+                    >
+                      {info}
+                    </span>
+                  </div>
+
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Reactions */}
         {feed.topReactions?.length > 0 && (

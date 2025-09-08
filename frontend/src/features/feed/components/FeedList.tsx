@@ -38,7 +38,8 @@ const FeedList = () => {
     resetFeedList,
     loadMore,
     handleRefresh,
-    onGeneralUpdate
+    onGeneralUpdate,
+    onDelete
   } = useFeeds(searchQuery, filterValue);
 
   const [headerVisible, setHeaderVisible] = useState(true);
@@ -188,7 +189,12 @@ const FeedList = () => {
         backdrop="static"
       >
         <Modal.Body className="p-0">
-          <FeedDetails feedId={feedId} onGeneralUpdate={onGeneralUpdate} onShowUserReactions={onShowUserReactions} />
+          <FeedDetails 
+            feedId={feedId} 
+            onGeneralUpdate={onGeneralUpdate} 
+            onShowUserReactions={onShowUserReactions} 
+            onDelete={onDelete}
+          />
         </Modal.Body>
       </Modal>
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
@@ -301,6 +307,7 @@ const FeedList = () => {
                       onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
                       commentCount={feed.answers || 0}
                       onShowUserReactions={onShowUserReactions}
+                      onDelete={onDelete}
                     />
                   </div>
                 </div>

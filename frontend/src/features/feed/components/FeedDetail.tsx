@@ -12,9 +12,10 @@ interface FeedDetailsProps {
   feedId?: string;
   onGeneralUpdate: (feed: IFeed) => void;
   onShowUserReactions: (feedId: string) => void;
+  onDelete: (feed: IFeed) => void;
 }
 
-const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetailsProps) => {
+const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }: FeedDetailsProps) => {
   const navigate = useNavigate();
   const [feed, setFeed] = useState<IFeed | null>(null);
   const [loading, setLoading] = useState(true);
@@ -160,6 +161,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions }: FeedDetai
             onGeneralUpdate={onUpdate}
             commentCount={commentCount}
             onShowUserReactions={onShowUserReactions}
+            onDelete={onDelete}
           />
         </div>
       </div>

@@ -42,7 +42,7 @@ const FeedCreate = () => {
     }
 
     return (
-        <Container>
+        <Container className="min-vh-100">
             <h2 className="fw-semibold my-3">Create New Post</h2>
             <Form onSubmit={handleSubmit}>
                 {error && (
