@@ -61,63 +61,84 @@ postAttachmentSchema.post("save", async function () {
                     select: "course title",
                     populate: {
                         path: "course",
-                        select: "code"
+                        select: "code title"
                     }
-                }).lean();
+                })
+                .populate<{ feedId: any }>("feedId", "message")
+                .lean();
             if (!post || this.user == post.user._id) return;
 
-            if (post._type == PostTypeEnum.QUESTION) {
-                await sendToUsers([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in question "${post.title}"`
-                }, "mentions");
-                await Notification.create({
-                    _type: NotificationTypeEnum.QA_QUESTION_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in question "${post.title}"`,
-                    questionId: post._id
-                });
-            } else if (post._type == PostTypeEnum.ANSWER) {
-                await sendToUsers([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
-                }, "mentions");
-                await Notification.create({
-                    _type: NotificationTypeEnum.QA_ANSWER_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
-                    questionId: post.parentId?._id,
-                    postId: post._id
-                })
-            } else if (post._type == PostTypeEnum.CODE_COMMENT) {
-                await sendToUsers([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
-                }, "mentions");
-                await Notification.create({
-                    _type: NotificationTypeEnum.CODE_COMMENT_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
-                    codeId: post.codeId?._id,
-                    postId: post._id
-                })
-            } else if (post._type == PostTypeEnum.LESSON_COMMENT) {
-                await sendToUsers([this.user.toString()], {
-                    title: "New mention",
-                    body: `${post.user.name} mentioned you in comment to lesson "${post.lessonId?.title}"`
-                }, "mentions");
-                await Notification.create({
-                    _type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
-                    user: this.user,
-                    actionUser: post.user._id,
-                    message: `{action_user} mentioned you in comment to lesson "${post.lessonId?.title}"`,
-                    lessonId: post.lessonId?._id,
-                    postId: post._id,
-                    courseCode: post.lessonId.course.code
-                })
+            switch (post._type) {
+                case PostTypeEnum.QUESTION:
+                    await sendToUsers([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in question "${post.title}"`
+                    }, "mentions");
+                    await Notification.create({
+                        _type: NotificationTypeEnum.QA_QUESTION_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in question "${post.title}"`,
+                        questionId: post._id
+                    });
+                    break;
+                case PostTypeEnum.ANSWER:
+                    await sendToUsers([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
+                    }, "mentions");
+                    await Notification.create({
+                        _type: NotificationTypeEnum.QA_ANSWER_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
+                        questionId: post.parentId?._id,
+                        postId: post._id
+                    })
+                    break;
+                case PostTypeEnum.CODE_COMMENT:
+                    await sendToUsers([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
+                    }, "mentions");
+                    await Notification.create({
+                        _type: NotificationTypeEnum.CODE_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
+                        codeId: post.codeId?._id,
+                        postId: post._id
+                    })
+                    break;
+                case PostTypeEnum.LESSON_COMMENT:
+                    await sendToUsers([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`
+                    }, "mentions");
+                    await Notification.create({
+                        _type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`,
+                        lessonId: post.lessonId?._id,
+                        postId: post._id,
+                        courseCode: post.lessonId.course.code
+                    })
+                    break;
+                case PostTypeEnum.FEED_COMMENT:
+                    await sendToUsers([this.user.toString()], {
+                        title: "New mention",
+                        body: `${post.user.name} mentioned you in comment to post "${truncate(post.feedId?.message, 20)}"`
+                    }, "mentions");
+                    await Notification.create({
+                        _type: NotificationTypeEnum.FEED_COMMENT_MENTION,
+                        user: this.user,
+                        actionUser: post.user._id,
+                        message: `{action_user} mentioned you in comment to post "${truncate(post.feedId?.message, 20)}"`,
+                        feedId: post.feedId?._id,
+                        postId: post._id
+                    })
+                    break;
             }
         } catch (err: any) {
             console.log("Error creating notifcations for post attachments:", err);
@@ -132,7 +153,7 @@ postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async f
         const filter = this.getFilter();
         const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
         (this as any)._docsToDelete = docs;
-    } catch(err) {
+    } catch (err) {
         console.log("Error in postAttachmentSchema.pre(deleteMany):", err);
     } finally {
         next();
@@ -147,7 +168,7 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
         try {
             if (!doc.postId) continue;
 
-            const post = await Post.findById(doc.postId, "user _type parentId codeId");
+            const post = await Post.findById(doc.postId, "-message");
             if (!post) continue;
 
             let filter: any = {
@@ -155,19 +176,33 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
                 actionUser: post.user,
             };
 
-            if (post._type === PostTypeEnum.QUESTION) {
-                filter._type = NotificationTypeEnum.QA_QUESTION_MENTION;
-                filter.questionId = post._id;
-            } else if (post._type === PostTypeEnum.ANSWER) {
-                filter._type = NotificationTypeEnum.QA_ANSWER_MENTION;
-                filter.questionId = post.parentId;
-                filter.postId = post._id;
-            } else if (post._type === PostTypeEnum.CODE_COMMENT) {
-                filter._type = NotificationTypeEnum.CODE_COMMENT_MENTION;
-                filter.codeId = post.codeId;
-                filter.postId = post._id;
-            } else {
-                continue;
+            switch (post._type) {
+                case PostTypeEnum.QUESTION:
+                    filter._type = NotificationTypeEnum.QA_QUESTION_MENTION;
+                    filter.questionId = post._id;
+                    break;
+                case PostTypeEnum.ANSWER:
+                    filter._type = NotificationTypeEnum.QA_ANSWER_MENTION;
+                    filter.questionId = post.parentId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum.CODE_COMMENT:
+                    filter._type = NotificationTypeEnum.CODE_COMMENT_MENTION;
+                    filter.codeId = post.codeId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum.LESSON_COMMENT:
+                    filter._type = NotificationTypeEnum.LESSON_COMMENT_MENTION;
+                    filter.lessonId = post.lessonId;
+                    filter.postId = post._id;
+                    break;
+                case PostTypeEnum.FEED_COMMENT:
+                    filter._type = NotificationTypeEnum.FEED_COMMENT_MENTION;
+                    filter.feedId = post.feedId;
+                    filter.postId = post._id;
+                    break;
+                default:
+                    continue;
             }
 
             await Notification.deleteMany(filter);
@@ -221,7 +256,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: truncate(x.feed.message, 20),
+                    feedMessage: truncate(x.feed.message, 120),
                     feedType: x.feed._type
                 }
 
@@ -240,8 +275,8 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
     for (let match of matches) {
         if (match.length < 4) continue;
         let attachment = null;
-        switch (match[2]) {
-            case "Compiler-Playground": {
+        switch (match[2].toLowerCase()) {
+            case "compiler-playground": {
                 const codeId = match[3];
                 try {
                     const code = await Code.findById(codeId);
@@ -264,7 +299,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
                 }
                 break;
             }
-            case "Discuss": {
+            case "discuss": {
                 const questionId = match[3];
                 try {
                     const question = await Post.findById(questionId);

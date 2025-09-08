@@ -8,6 +8,7 @@ import { useAuth } from "../../features/auth/context/authContext";
 import { IComment } from "./Comment";
 import { useApi } from "../../context/apiCommunication";
 import ReactionsList from "../reactions/ReactionsList";
+import { useNavigate } from "react-router-dom";
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
@@ -47,6 +48,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     } = useComments(options, findPost ? findPost.id : null, filter, 10, showAllComments);
     const [commentVotesModalVisible, setCommentVotesModalVisible] = useState(false);
     const [commentVotesModalOptions, setCommentVotesModalOptions] = useState({ parentId: "" });
+    const navigate = useNavigate();
 
     // Remove highlight after 3 seconds
     useEffect(() => {
@@ -72,7 +74,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             if (intObserver.current) intObserver.current.disconnect();
             intObserver.current = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && hasNextPage && results.length > 0) {
-                    
+
                     setState((prev) => ({
                         ...prev,
                         lastIndex: results[results.length - 1].index + 1,
@@ -95,6 +97,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     };
 
     const showAnswerForm = (post: IComment | null, parentId: string | null, message: string = "") => {
+        if (!userInfo) {
+            navigate("/Users/Login");
+        }
         setAnswerFormMessage(message);
         setEditedComment(post);
         setParentCommentId(parentId);
@@ -194,7 +199,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 setCommentCount?.(prev => prev - editedComment.answers - 1);
                 setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment deleted successfully']);
             } else {
-                setMessage([true, result.message ? result.message : 'Comment could not be deleted']);
+                setMessage([false, result.message ? result.message : 'Comment could not be deleted']);
             }
             setAnswerFormLoading(false);
             closeDeleteModal();
@@ -247,7 +252,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
     return (
         <>
-            <Modal size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
+            <Modal style={{ zIndex: 1070 }} backdropClassName="wb-reactions-modal__backdrop" size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>

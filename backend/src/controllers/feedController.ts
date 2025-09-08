@@ -14,12 +14,11 @@ import { truncate } from "../utils/StringUtils";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import ReactionsEnum from "../data/ReactionsEnum";
+import { sendToUsers } from "../services/pushService";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { message } = req.body;
-  let { title } = req.body;
-  let { tags } = req.body;
+  const { message, tags } = req.body;
   const currentUserId = req.userId;
 
   if (typeof message === "undefined") {
@@ -28,10 +27,6 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 
   const tagIds: any[] = [];
-
-  if (!title) title = "Title not provided.";
-
-  if (!tags) tags = [];
 
   for (let tagName of tags) {
     const tag = await Tag.findOne({ name: tagName });
@@ -58,18 +53,23 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   const feed = await Post.create({
     _type: PostTypeEnum.FEED,
-    title,
+    title: "Untitled",
     message,
     tags: tagIds,
-    user: currentUserId,
-    isAccepted: true
+    user: currentUserId
   })
 
   if (feed) {
 
     const followers = await UserFollowing.find({ following: currentUserId })
+    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
 
-    followers.forEach(async (follower) => {
+    await sendToUsers(followers.map(x => x.user.toString()), {
+      title: "New post",
+      body: `${currentUserName} made a new post "${truncate(feed.message, 20)}"`
+    }, "feed");
+
+    for (let follower of followers) {
       await Notification.create({
         _type: NotificationTypeEnum.FEED_FOLLOWER_POST,
         user: follower.user,
@@ -77,7 +77,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
         feedId: feed._id,
       });
-    })
+    }
 
     res.json({
       success: true,
@@ -217,8 +217,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
 const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const currentUserId = req.userId;
 
-  const { feedId, message } = req.body;
-  let { title, tags } = req.body;
+  const { feedId, message, tags } = req.body;
 
   if (typeof message === "undefined") {
     res.status(400).json({ success: false, message: "Some fields are missing" });
@@ -226,9 +225,6 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 
   const feed = await Post.findById(feedId);
-
-  if (!title) title = "Title not provided."
-  if (!tags) tags = [];
 
   if (feed === null) {
     res.status(404).json({ success: false, message: "Feed not found" })
@@ -254,12 +250,13 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   await Promise.all(promises);
 
-  feed.title = title;
   feed.message = message;
   feed.tags = tagIds;
 
   try {
     await feed.save();
+
+    const attachments = await PostAttachment.getByPostId({ post: feed._id })
 
     res.json({
       success: true,
@@ -267,7 +264,8 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         id: feed._id,
         title: feed.title,
         message: feed.message,
-        tags: feed.tags
+        tags: feed.tags.map((x: any) => x.name),
+        attachments
       }
     })
   }
@@ -345,6 +343,17 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
       usersToNotify.add(parentComment.user.toString())
     }
     usersToNotify.delete(currentUserId!);
+
+    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+
+    await sendToUsers(Array.from(usersToNotify).filter(x => x !== feed.user.toString()), {
+      title: "New reply",
+      body: `${currentUserName} replied to your comment on "${truncate(feed.message, 20)}"`
+    }, "feed");
+    await sendToUsers([feed.user.toString()], {
+      title: "New comment",
+      body: `${currentUserName} posted comment on your post "${truncate(feed.message, 20)}"`
+    }, "feed");
 
     for (let userToNotify of usersToNotify) {
 
@@ -513,9 +522,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 })
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { feedId, message } = req.body;
-  let { title } = req.body;
-  let { tags } = req.body;
+  const { feedId, message, tags } = req.body;
   const currentUserId = req.userId;
 
   if (typeof message === "undefined") {
@@ -523,11 +530,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return
   }
 
-  if (!title) title = "Title not provided."
-
   const tagIds: any[] = [];
-
-  if (!tags) tags = []
 
   for (let tagName of tags) {
     const tag = await Tag.findOne({ name: tagName });
@@ -548,11 +551,10 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   const feed = await Post.create({
     _type: PostTypeEnum.SHARED_FEED,
-    title,
+    title: "Untitled",
     message,
     tags: tagIds,
     user: currentUserId,
-    isAccepted: true,
     parentId: feedId,
   })
 
@@ -572,6 +574,12 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (originalFeed.user != currentUserId) {
+      const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+      await sendToUsers([originalFeed.user.toString()], {
+        title: "Feed share",
+        body: `${currentUserName} shared your Post "${truncate(originalFeed.message, 20)}"`
+      }, "feed");
+
       await Notification.create({
         _type: NotificationTypeEnum.FEED_SHARE,
         user: originalFeed.user,
@@ -588,7 +596,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         id: feed._id,
         title: feed.title,
         message: feed.message,
-        tags: tagNames,
+        tags: feed.tags.map((x: any) => x.name),
         date: feed.createdAt,
         userId: feed.user,
         votes: feed.votes,
@@ -626,7 +634,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
       $match: {
         _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] },
         hidden: false,
-        ...(filter !== 7 && { isPinned: false }) 
+        ...(filter !== 7 && { isPinned: false })
       }
     },
     {
@@ -792,7 +800,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
           type: x._type,
           title: x.title || null,
           message: x.message,
-          tags: x.tags,
+          tags: x.tags.map((x: any) => x.name),
           date: x.createdAt,
           userId: x.user,
           userName: x.users.length ? x.users[0].name : "Unknown User",
@@ -818,7 +826,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
               id: x.originalPost[0]._id,
               title: x.originalPost[0].title || null,
               message: x.originalPost[0].message,
-              tags: x.originalPost[0].tags,
+              tags: x.originalPost[0].tags.map((x: any) => x.name),
               userId: x.originalPost[0].user,
               userName: x.originalPost[0].users.length
                 ? x.originalPost[0].users[0].name
@@ -944,7 +952,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     type: feed._type,
     title: feed.title || null,
     message: feed.message,
-    tags: feed.tags,
+    tags: feed.tags.map((x: any) => x.name),
     date: feed.createdAt,
     userId: feed.user._id,
     userName: feed.user.name,
@@ -963,7 +971,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         id: feed.originalPost[0]._id,
         title: feed.originalPost[0].title || null,
         message: feed.originalPost[0].message,
-        tags: feed.originalPost[0].tags,
+        tags: feed.originalPost[0].tags.map((x: any) => x.name),
         userId: feed.originalPost[0].user,
         userName: feed.originalPost[0].users.length
           ? feed.originalPost[0].users[0].name
@@ -1109,9 +1117,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { feedId } = req.body;
+  const { feedId, pinned } = req.body;
   const currentUserId = req.userId;
-  // const currentUserId = '68a7400f3dd5eef60a166911';
 
   if (!feedId) {
     res.status(400).json({ success: false, message: "Feed ID is required" });
@@ -1126,19 +1133,34 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 
   if (currentUserId != feed.user) {
-    await Notification.create({
-      _type: NotificationTypeEnum.FEED_PIN,
-      user: feed.user,
-      actionUser: currentUserId,
-      message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
-      feedId: feed._id,
-    });
+    if (pinned) {
+      const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+      await sendToUsers([feed.user.toString()], {
+        title: "Feed pin",
+        body: `${currentUserName} pinned your Post "${truncate(feed.message, 20)}"`
+      }, "feed");
+
+      await Notification.create({
+        _type: NotificationTypeEnum.FEED_PIN,
+        user: feed.user,
+        actionUser: currentUserId,
+        message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
+        feedId: feed._id,
+      });
+    } else {
+      await Notification.deleteOne({
+        _type: NotificationTypeEnum.FEED_PIN,
+        user: feed.user,
+        actionUser: currentUserId,
+        feedId: feed._id
+      });
+    }
   }
 
-  feed.isPinned = !feed.isPinned;
+  feed.isPinned = pinned;
   await feed.save();
 
-  res.status(200).json({ success: true, feed: feed });
+  res.status(200).json({ success: true, data: { isPinned: feed.isPinned } });
 });
 
 

@@ -90,6 +90,7 @@ const userSchema = new mongoose.Schema({
         discuss: { type: Boolean, default: true },
         channels: { type: Boolean, default: true },
         mentions: { type: Boolean, default: true },
+        feed: { type: Boolean, default: true }
     },
     ban: {
         type: banSchema,

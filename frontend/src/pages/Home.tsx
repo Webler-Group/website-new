@@ -54,6 +54,22 @@ function Home() {
             <Col>
               <Card bg="light" text="dark" className="wb-home-card">
                 <Card.Body className="d-flex flex-column justify-content-between">
+                  <Card.Title className="text-center py-4 border-bottom border-2">Feed</Card.Title>
+                  <Card.Text className="mt-4">
+                    Stay connected with the Webler community! The Feed lets you see the latest project updates, shared snippets, discussions, and highlights from developers around the world.
+                  </Card.Text>
+                  <div className="text-center mt-4">
+                    <LinkContainer to="/Feed">
+                      <Button variant="primary">Check Feed</Button>
+                    </LinkContainer>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+
+            <Col>
+              <Card bg="light" text="dark" className="wb-home-card">
+                <Card.Body className="d-flex flex-column justify-content-between">
                   <Card.Title className="text-center py-4 border-bottom border-2">Courses</Card.Title>
                   <Card.Text className="mt-4">
                     Learn by doing with our interactive courses! Each one includes hands-on content, quizzes, and coding tasks to help you master web technologies, programming languages, and software tools at your own pace.

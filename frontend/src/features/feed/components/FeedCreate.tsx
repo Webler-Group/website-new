@@ -1,4 +1,3 @@
-import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { Button, Container, Form, FormGroup } from "react-bootstrap";
 import PostTextareaControl from "../../../components/PostTextareaControl";
@@ -25,8 +24,6 @@ const FeedCreate = () => {
             message,
             tags 
         });
-
-        console.log(response)
 
         if (response.success) {
             navigate("/Feed/" + response.feed.id);
@@ -94,8 +91,7 @@ const FeedCreate = () => {
                         variant="primary"
                         disabled={!message.trim() || loading}
                     >
-                        {loading && <Loader2 size={16} className="spinner-border spinner-border-sm" />}
-                        {loading ? 'Posting...' : 'Post'}
+                        Post
                     </Button>
                 </div>
             </Form>

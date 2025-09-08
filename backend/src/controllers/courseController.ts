@@ -439,7 +439,7 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     const { lessonId, message, parentId } = req.body;
 
     const lesson = await CourseLesson.findById(lessonId)
-        .populate<{ course: any }>("course", "code");
+        .populate<{ course: any }>("course", "code title");
     if (lesson === null) {
         res.status(404).json({ message: "Code not found" });
         return
@@ -472,14 +472,14 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
 
     await sendToUsers(Array.from(usersToNotify), {
             title: "New reply",
-            body: `${currentUserName} replied to your comment on "${lesson.title}"`
+            body: `${currentUserName} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`
         }, "codes");
     for (let userToNotify of usersToNotify) {
         await Notification.create({
             _type: NotificationTypeEnum.LESSON_COMMENT,
             user: userToNotify,
             actionUser: currentUserId,
-            message: `{action_user} replied to your comment on "${lesson.title}"`,
+            message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
             lessonId: lesson._id,
             postId: reply._id,
             courseCode: lesson.course.code
@@ -550,7 +550,7 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     catch (err: any) {
         res.json({
             success: false,
-            error: err,
+            error: err?.message,
             data: null
         })
     }
@@ -573,7 +573,7 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         return
     }
 
-    const lesson = await CourseLesson.findById(comment.codeId);
+    const lesson = await CourseLesson.findById(comment.lessonId);
     if (lesson === null) {
         res.status(404).json({ message: "Lesson not found" })
         return
@@ -586,7 +586,9 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         res.json({ success: true });
     }
     catch (err: any) {
-        res.json({ success: false, error: err })
+        console.log(err);
+        
+        res.json({ success: false, error: err?.message })
     }
 })
 

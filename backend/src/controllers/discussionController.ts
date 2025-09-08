@@ -4,7 +4,6 @@ import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
-import Code from "../models/Code";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage } from "mongoose";
@@ -34,11 +33,6 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
             return;
         }
         tagIds.push(tag._id);
-    }
-
-    if (tagIds.length < 1) {
-        res.status(400).json({ message: `Empty Tag` });
-        return;
     }
 
     const question = await Post.create({
@@ -592,13 +586,16 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     try {
         await question.save();
 
+        const attachments = await PostAttachment.getByPostId({ post: question._id });
+
         res.json({
             success: true,
             data: {
                 id: question._id,
                 title: question.title,
                 message: question.message,
-                tags: question.tags
+                tags: question.tags,
+                attachments
             }
         })
     }

@@ -1,7 +1,7 @@
 import { Dropdown } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
-import { FaEye, FaEyeSlash } from "react-icons/fa6";
+import { FaEyeSlash } from "react-icons/fa6";
 
 interface ICourse {
     id: string;
@@ -42,7 +42,7 @@ const Course = ({ course, isEditor }: CourseProps) => {
                     </div>
                 </div>
                 <div className="d-flex flex-column align-items-sm-start align-items-center">
-                    <h5 style={{ wordBreak: "break-word" }}>{course.title} {course.visible ? <FaEye /> : <FaEyeSlash />}</h5>
+                    <h5 style={{ wordBreak: "break-word" }}>{course.title} {!course.visible && <FaEyeSlash />}</h5>
                     <p className="wb-courses-course__description">{course.description}</p>
                 </div>
             </div>

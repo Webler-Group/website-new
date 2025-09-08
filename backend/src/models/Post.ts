@@ -95,7 +95,7 @@ postSchema.post("save", async function () {
 });
 
 postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>) {
-    const postsToDelete = await Post.find(filter).select("_id _type codeId parentId parentId feedId");
+    const postsToDelete = await Post.find(filter).select("-message");
 
     for (let i = 0; i < postsToDelete.length; ++i) {
         const post = postsToDelete[i]
@@ -151,7 +151,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
                 if (feed === null) {
                     throw new Error("Feed not found");
                 }
-                feed.$inc("comments", -1);
+                feed.$inc("answers", -1);
                 await feed.save();
                 const parentComment = await Post.findById(post.parentId);
                 if (parentComment) {

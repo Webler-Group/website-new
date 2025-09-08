@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, Loader2 } from 'lucide-react';
 import { IFeed } from './types';
 import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from './comments/NotificationToast';
 import { Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
+import { FaArrowLeft } from 'react-icons/fa6';
 
 interface FeedDetailsProps {
   feedId?: string;
   onGeneralUpdate: (feed: IFeed) => void;
   onShowUserReactions: (feedId: string) => void;
   onDelete: (feed: IFeed) => void;
+  onTogglePin: (feed: IFeed) => void;
 }
 
-const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }: FeedDetailsProps) => {
+const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onTogglePin }: FeedDetailsProps) => {
   const navigate = useNavigate();
   const [feed, setFeed] = useState<IFeed | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,7 +98,11 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }:
     return (
       <>
         <div className="loading-container">
-          <Loader2 className="text-primary" style={{ width: "2.5rem", height: "2.5rem", animation: "spin 1s linear infinite" }} />
+          <div className="wb-loader">
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
         </div>
       </>
     );
@@ -119,7 +124,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }:
               onClick={() => navigate('/feed')}
               className="error-back-button"
             >
-              <ArrowLeft size={16} />
+              <FaArrowLeft size={16} />
               Back to Feed
             </button>
           </div>
@@ -150,7 +155,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }:
             onClick={() => navigate('/feed')}
             className="wb-feed-back-button"
           >
-            <ArrowLeft size={16} />
+            <FaArrowLeft size={16} />
             Back to Feed
           </button>
 
@@ -162,6 +167,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete }:
             commentCount={commentCount}
             onShowUserReactions={onShowUserReactions}
             onDelete={onDelete}
+            onTogglePin={onTogglePin}
           />
         </div>
       </div>

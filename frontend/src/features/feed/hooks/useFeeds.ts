@@ -203,6 +203,16 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         }
     };
 
+    const onTogglePin = (feed: IFeed) => {
+        if(!feed.isPinned) {
+            setPinnedFeeds(prev => prev.filter(f => f.id !== feed.id));
+            setFeeds(prev => [feed, ...prev]);
+        } else {
+            setFeeds(prev => prev.filter(f => f.id !== feed.id));
+            setPinnedFeeds(prev => [feed, ...prev]);
+        }
+    }
+
     const onDelete = (feed: IFeed) => {
         if(!feed.isPinned){
             setFeeds(prev => prev.filter(f => f.id !== feed.id))
@@ -223,7 +233,8 @@ const useFeeds = (searchQuery: string, filterValue: number) => {
         loadMore,
         handleRefresh,
         onGeneralUpdate,
-        onDelete
+        onDelete,
+        onTogglePin
     }
 }
 

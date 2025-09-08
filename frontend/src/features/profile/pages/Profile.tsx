@@ -22,6 +22,7 @@ export interface IUserNotifications {
     followers: boolean;
     channels: boolean;
     mentions: boolean;
+    feed: boolean;
 }
 
 export interface UserDetails {

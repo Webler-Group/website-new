@@ -679,7 +679,8 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
             codes: true,
             discuss: true,
             channels: true,
-            mentions: true
+            mentions: true,
+            feed: true
         };
     }
 
@@ -694,6 +695,9 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
     }
     if (typeof notifications.channels !== "undefined") {
         user.notifications.channels = notifications.channels;
+    }
+    if (typeof notifications.feed !== "undefined") {
+        user.notifications.feed = notifications.feed;
     }
 
     try {

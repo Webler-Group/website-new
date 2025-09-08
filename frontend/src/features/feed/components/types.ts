@@ -1,11 +1,5 @@
 import { ReactionsEnum } from "../../../data/reactions";
 
-export interface Tag {
-  _id: string | null | undefined;
-  id: string;
-  name: string;
-}
-
 export interface User {
   id: string;
   name: string;
@@ -21,7 +15,7 @@ export interface OriginalPost {
   date: string;
   userName: string;
   userAvatarImage: string | null;
-  tags: Tag[];
+  tags: string[];
 }
 
 export interface IFeed {
@@ -31,7 +25,7 @@ export interface IFeed {
   type: number;
   title: string | null;
   message: string;
-  tags: Tag[];
+  tags: string[];
   date: string;
   updatedAt: string;
   userId: string;

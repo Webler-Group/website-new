@@ -1,13 +1,13 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { Search, Filter, Loader2, RefreshCw, AlertCircle, Plus, Pin } from 'lucide-react';
 import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import FeedItem from './FeedItem';
 import useFeeds from '../hooks/useFeeds';
 import { Modal } from 'react-bootstrap';
 import FeedDetails from './FeedDetail';
 import ReactionsList from '../../../components/reactions/ReactionsList';
-
-const SEARCH_DEBOUNCE_MS = 500;
+import { FaEye, FaEyeSlash, FaFilter, FaMapPin, FaPlus, FaRotateRight } from 'react-icons/fa6';
+import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
+import { TagSearch } from '../../../components/InputTags';
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest' },
@@ -40,6 +40,7 @@ const FeedList = () => {
     handleRefresh,
     onGeneralUpdate,
     onDelete,
+    onTogglePin,
     pinnedFeeds
   } = useFeeds(searchQuery, filterValue);
 
@@ -53,26 +54,6 @@ const FeedList = () => {
   // Refs and cache
   const observerRef = useRef<IntersectionObserver | null>(null);
   const lastFeedRef = useRef<HTMLDivElement | null>(null);
-
-  // Update URL parameters
-  const updateUrlParams = useCallback((search: string, filter: number) => {
-    const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (filter !== 1) params.set('filter', filter.toString());
-    setSearchParams(params);
-  }, [setSearchParams]);
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (searchInput !== searchQuery) {
-        updateUrlParams(searchInput, filterValue);
-        resetFeedList();
-      }
-    }, SEARCH_DEBOUNCE_MS);
-
-    return () => clearTimeout(t);
-  }, [searchInput, searchQuery, filterValue, updateUrlParams, resetFeedList]);
-
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -99,11 +80,12 @@ const FeedList = () => {
   // Filter change handler
   const handleFilterChange = useCallback((newFilter: number) => {
     if (newFilter !== filterValue) {
-      updateUrlParams(searchQuery, newFilter);
+      searchParams.set("filter", newFilter.toString());
+      setSearchParams(searchParams);
       resetFeedList();
       setIsDropdownOpen(false);
     }
-  }, [filterValue, searchQuery, updateUrlParams, resetFeedList]);
+  }, [filterValue, searchQuery, resetFeedList]);
 
 
   // Intersection Observer for infinite scroll
@@ -139,6 +121,12 @@ const FeedList = () => {
     setSearchInput(searchQuery);
   }, [searchQuery]);
 
+  const handleSearch = (value: string) => {
+    searchParams.set("search", value);
+    setSearchParams(searchParams);
+    setSearchInput(value);
+  }
+
   // Memoized filter dropdown
   const filterDropdown = useMemo(() => (
     <div className="dropdown dropstart">
@@ -148,7 +136,7 @@ const FeedList = () => {
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
         disabled={loading}
       >
-        <Filter size={16} className="text-muted" />
+        <FaFilter size={16} className="text-muted" />
         <span>{FILTER_OPTIONS.find(opt => opt.value === filterValue)?.label || 'Filter'}</span>
       </button>
       {isDropdownOpen && (
@@ -189,11 +177,12 @@ const FeedList = () => {
         backdrop="static"
       >
         <Modal.Body className="p-0">
-          <FeedDetails 
-            feedId={feedId} 
-            onGeneralUpdate={onGeneralUpdate} 
-            onShowUserReactions={onShowUserReactions} 
+          <FeedDetails
+            feedId={feedId}
+            onGeneralUpdate={onGeneralUpdate}
+            onShowUserReactions={onShowUserReactions}
             onDelete={onDelete}
+            onTogglePin={onTogglePin}
           />
         </Modal.Body>
       </Modal>
@@ -201,42 +190,26 @@ const FeedList = () => {
       <div className="container py-4 wb-feed-list-container">
         {/* Header */}
         <div className={`wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
-          <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-2">
+          <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
-
+            {/* Search */}
+            <TagSearch query={searchInput} handleSearch={handleSearch} />
             {/* Controls */}
-            <div className="d-flex align-items-center gap-2 w-100 w-md-auto">
-              {/* Search */}
-              <div className="position-relative flex-grow-1">
-                <Search
-                  className="position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"
-                  size={16}
-                />
-                <input
-                  type="text"
-                  className="form-control ps-5 rounded-pill bg-light border-0 shadow-sm wb-feed-control-input"
-                  placeholder="Search feeds..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                  disabled={loading}
-                />
-              </div>
-
+            <div className="d-flex align-items-center justify-content-between gap-2">
+              {/* Filter Dropdown */}
+              {filterDropdown}
               {/* Refresh */}
               <button
                 onClick={handleRefresh}
                 disabled={loading || loadingMore}
                 className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 wb-feed-control-button"
               >
-                <RefreshCw
+                <FaRotateRight
                   size={16}
                   className={loading ? "animate-spin text-muted" : "text-muted"}
                 />
                 <span className="d-none d-sm-inline">Refresh</span>
               </button>
-
-              {/* Filter Dropdown */}
-              {filterDropdown}
             </div>
           </div>
         </div>
@@ -258,7 +231,7 @@ const FeedList = () => {
         <div className="wb-feed-items">
           {error && (
             <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
-              <AlertCircle size={20} />
+              <FaExclamationCircle size={20} />
               <div>
                 <strong>Error loading feeds</strong>
                 <p className="mb-0">{error}</p>
@@ -274,14 +247,18 @@ const FeedList = () => {
 
           {loading && feeds.length === 0 && (
             <div className="text-center py-5">
-              <Loader2 className="animate-spin mb-3 text-primary" size={32} />
+              <div className="wb-loader">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
               <p className="text-muted">Loading feeds...</p>
             </div>
           )}
 
           {!loading && !error && feeds.length === 0 && (
             <div className="text-center py-5">
-              <Search size={40} className="opacity-50 mb-3" />
+              <FaSearch size={40} className="opacity-50 mb-3" />
               <h5 className="text-muted">No feeds found</h5>
               <p className="text-muted small">
                 {searchQuery
@@ -291,42 +268,46 @@ const FeedList = () => {
             </div>
           )}
 
-        {/* Pinned Feeds Section */}
-        <div className="card border-warning shadow-sm mb-5">
-          {/* Header */}
-          <div
-            className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
-            style={{ cursor: "pointer" }}
-            onClick={() => setPinnedExpanded(!pinnedExpanded)}
-          >
-            <small className="fw-bold text-dark mb-0"><Pin size={16} />  Pinned Posts</small>
-            <small className="text-muted">
-              {pinnedExpanded ? "Hide" : "Show"}
-            </small>
-          </div>
-          {pinnedExpanded && <div className="d-flex flex-column gap-3">
-            {pinnedFeeds.map((feed, index) => {
-              const isLast = index === feeds.length - 1;
-              return (
-                <div
-                  key={feed.id}
-                  ref={isLast ? lastFeedRef : undefined}
-                >
-                  <div>
-                    <FeedItem
-                      feed={feed}
-                      onGeneralUpdate={onGeneralUpdate}
-                      onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
-                      commentCount={feed.answers || 0}
-                      onShowUserReactions={onShowUserReactions}
-                      onDelete={onDelete}
-                    />
-                  </div>
+          {/* Pinned Feeds Section */}
+          <div className="card border-warning shadow-sm mb-5">
+            {/* Header */}
+            <div
+              className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
+              style={{ cursor: "pointer" }}
+              onClick={() => setPinnedExpanded(!pinnedExpanded)}
+            >
+              <small className="fw-bold text-dark mb-0"><FaMapPin size={16} />  Pinned Posts</small>
+              <small className="text-muted">
+                {pinnedExpanded ? <FaEye /> : <FaEyeSlash />}
+              </small>
+            </div>
+            {pinnedExpanded && <div className="d-flex flex-column gap-3">
+              {pinnedExpanded && (
+                <div className="d-flex flex-column gap-3 p-3">
+                  {pinnedFeeds.length > 0 ? (
+                    pinnedFeeds.map((feed) => (
+                      <div key={feed.id}>
+                        <FeedItem
+                          feed={feed}
+                          onGeneralUpdate={onGeneralUpdate}
+                          onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                          commentCount={feed.answers || 0}
+                          onShowUserReactions={onShowUserReactions}
+                          onDelete={onDelete}
+                          onTogglePin={onTogglePin}
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-muted py-4">
+                      <FaMapPin size={24} className="mb-2 opacity-50" />
+                      <p className="mb-0">No pinned posts available</p>
+                    </div>
+                  )}
                 </div>
-              );
-            })}
-          </div>}
-        </div>
+              )}
+            </div>}
+          </div>
 
           {/* Feed Items */}
           <div className="d-flex flex-column gap-3">
@@ -345,6 +326,7 @@ const FeedList = () => {
                       commentCount={feed.answers || 0}
                       onShowUserReactions={onShowUserReactions}
                       onDelete={onDelete}
+                      onTogglePin={onTogglePin}
                     />
                   </div>
                 </div>
@@ -355,7 +337,11 @@ const FeedList = () => {
           {/* Load More */}
           {loadingMore && (
             <div className="text-center py-4">
-              <Loader2 className="animate-spin mb-2 text-primary" size={24} />
+              <div className="wb-loader">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
               <p className="text-muted mb-0">Loading more feeds...</p>
             </div>
           )}
@@ -375,7 +361,7 @@ const FeedList = () => {
           title="Create new post"
         >
           <span className="d-none d-md-inline">New Post</span>
-          <Plus className="d-md-none" size={24} />
+          <FaPlus className="d-md-none" size={24} />
         </button>
       </div>
     </>

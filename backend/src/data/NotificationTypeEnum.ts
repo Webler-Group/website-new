@@ -9,6 +9,7 @@ enum NotificationTypeEnum {
     FEED_COMMENT = 302,
     FEED_SHARE = 303,
     FEED_PIN = 304,
+    FEED_COMMENT_MENTION = 305,
     LESSON_COMMENT = 401,
     LESSON_COMMENT_MENTION = 402
 }
