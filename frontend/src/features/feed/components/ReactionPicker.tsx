@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { ReactionsEnum, reactionsInfo } from "../../../data/reactions";
+import { useAuth } from "../../auth/context/authContext";
+import { useNavigate } from "react-router-dom";
 
 interface ReactionPickerProps {
   onReactionChange: (reaction: ReactionsEnum | null) => void;
@@ -16,6 +18,8 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const timeoutRef = useRef<number | null>(null);
+  const { userInfo } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     setSelectedReaction(currentState);
@@ -29,6 +33,9 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   };
 
   const handleMainClick = () => {
+    if(!userInfo?.id) {
+      navigate("/Users/Login");
+    }
     setShowPicker(!showPicker);
   };
 
