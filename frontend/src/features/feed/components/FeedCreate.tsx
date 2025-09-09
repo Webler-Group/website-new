@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { Button, Container, Form, FormGroup } from "react-bootstrap";
+import { Button, Container, Form, FormGroup, ToggleButtonGroup, ToggleButton } from "react-bootstrap";
 import PostTextareaControl from "../../../components/PostTextareaControl";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import InputTags from "../../../components/InputTags";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 const FeedCreate = () => {
     const [message, setMessage] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [mode, setMode] = useState<"write" | "preview">("write"); // <-- toggle state
     const navigate = useNavigate();
     const { sendJsonRequest } = useApi();
 
@@ -48,23 +50,53 @@ const FeedCreate = () => {
                     </div>
                 )}
 
-                {/* Message Box */}
-                <FormGroup className="mb-3">
-                    <PostTextareaControl
-                        rows={10}
-                        placeholder="What's on your mind?"
-                        value={message}
-                        setValue={setMessage}
-                        required
-                        maxLength={2000}
-                    />
-                    <div className="mt-2 text-muted small">
-                        {message.length}/2000 characters
+                {/* Toggle Write/Preview */}
+                <div className="mb-3">
+                    <ToggleButtonGroup
+                        type="radio"
+                        name="editorMode"
+                        value={mode}
+                        onChange={(val: any) => setMode(val)}
+                    >
+                        <ToggleButton id="write-btn" value="write" variant="outline-primary">
+                            Write
+                        </ToggleButton>
+                        <ToggleButton id="preview-btn" value="preview" variant="outline-primary">
+                            Preview
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </div>
+
+                {/* Write Mode */}
+                {mode === "write" && (
+                    <FormGroup className="mb-3">
+                        <PostTextareaControl
+                            rows={10}
+                            placeholder="What's on your mind?"
+                            value={message}
+                            setValue={setMessage}
+                            required
+                            maxLength={2000}
+                        />
+                        <div className="mt-2 text-muted small">
+                            {message.length}/2000 characters
+                        </div>
+                    </FormGroup>
+                )}
+
+                {/* Preview Mode */}
+                {mode === "preview" && (
+                    <div className="p-3 border rounded bg-light">
+                        {message.trim() ? (
+                            <MarkdownRenderer content={message} allowedUrls={["http", /^\/Profile\//]} />
+                        ) : (
+                            <span className="text-muted">Nothing to preview</span>
+                        )}
                     </div>
-                </FormGroup>
+                )}
 
                 {/* Tags */}
-                <FormGroup className="mb-3">
+                <FormGroup className="mb-3 mt-3">
                     <label className="form-label fw-semibold">Tags</label>
                     <InputTags 
                         values={tags} 
