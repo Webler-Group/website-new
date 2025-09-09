@@ -227,6 +227,47 @@ const FeedList = () => {
           </div>
         )}
 
+        {/* Pinned Feeds Section */}
+        <div className="card border-warning shadow-sm mb-5">
+          {/* Header */}
+          <div
+            className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
+            style={{ cursor: "pointer" }}
+            onClick={() => setPinnedExpanded(!pinnedExpanded)}
+          >
+            <small className="fw-bold text-dark mb-0"><FaMapPin size={16} />  Pinned Posts</small>
+            <small className="text-muted">
+              {pinnedExpanded ? <FaEye /> : <FaEyeSlash />}
+            </small>
+          </div>
+          {pinnedExpanded && <div className="d-flex flex-column gap-3">
+            {pinnedExpanded && (
+              <div className="d-flex flex-column gap-3 p-3">
+                {pinnedFeeds.length > 0 ? (
+                  pinnedFeeds.map((feed) => (
+                    <div key={feed.id}>
+                      <FeedItem
+                        feed={feed}
+                        onGeneralUpdate={onGeneralUpdate}
+                        onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                        commentCount={feed.answers || 0}
+                        onShowUserReactions={onShowUserReactions}
+                        onDelete={onDelete}
+                        onTogglePin={onTogglePin}
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-muted py-4">
+                    <FaMapPin size={24} className="mb-2 opacity-50" />
+                    <p className="mb-0">No pinned posts available</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>}
+        </div>
+
         {/* Content */}
         <div className="wb-feed-items">
           {error && (
@@ -267,47 +308,6 @@ const FeedList = () => {
               </p>
             </div>
           )}
-
-          {/* Pinned Feeds Section */}
-          <div className="card border-warning shadow-sm mb-5">
-            {/* Header */}
-            <div
-              className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
-              style={{ cursor: "pointer" }}
-              onClick={() => setPinnedExpanded(!pinnedExpanded)}
-            >
-              <small className="fw-bold text-dark mb-0"><FaMapPin size={16} />  Pinned Posts</small>
-              <small className="text-muted">
-                {pinnedExpanded ? <FaEye /> : <FaEyeSlash />}
-              </small>
-            </div>
-            {pinnedExpanded && <div className="d-flex flex-column gap-3">
-              {pinnedExpanded && (
-                <div className="d-flex flex-column gap-3 p-3">
-                  {pinnedFeeds.length > 0 ? (
-                    pinnedFeeds.map((feed) => (
-                      <div key={feed.id}>
-                        <FeedItem
-                          feed={feed}
-                          onGeneralUpdate={onGeneralUpdate}
-                          onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
-                          commentCount={feed.answers || 0}
-                          onShowUserReactions={onShowUserReactions}
-                          onDelete={onDelete}
-                          onTogglePin={onTogglePin}
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="text-center text-muted py-4">
-                      <FaMapPin size={24} className="mb-2 opacity-50" />
-                      <p className="mb-0">No pinned posts available</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>}
-          </div>
 
           {/* Feed Items */}
           <div className="d-flex flex-column gap-3">

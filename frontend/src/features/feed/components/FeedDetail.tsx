@@ -55,6 +55,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
         }
         setFeed(response.feed);
         setCommentCount(response.feed.answers);
+        onGeneralUpdate(response.feed);
 
       } catch (err) {
         setError("Failed to load feed");

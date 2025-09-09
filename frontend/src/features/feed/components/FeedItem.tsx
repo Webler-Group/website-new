@@ -179,7 +179,22 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         }
       }
 
-      onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: result.totalReactions });
+      if(result.vote === 1){
+        if(feed.isUpvoted && feed.reaction === reactionChange) {
+          feed.totalReactions -= 1;
+          feed.isUpvoted = false;
+        }else if(!feed.isUpvoted) {
+          feed.totalReactions += 1;
+          feed.isUpvoted = true;
+        }
+      }else{
+        if(feed.isUpvoted) {
+          feed.totalReactions -= 1;
+          feed.isUpvoted = false;
+        }
+      }
+
+      onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
     }
   }
 
@@ -337,7 +352,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
               </div>
               {feed.totalReactions > 0 && (
                 <span className="wb-feed-reaction-count">
-                  {feed.totalReactions}
+                  {feed.totalReactions} 
                 </span>
               )}
             </div>
