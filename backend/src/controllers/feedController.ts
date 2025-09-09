@@ -237,6 +237,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   }
 
   const tagIds: any[] = [];
+  const tagNames: string[] = [];
   let promises: Promise<void>[] = [];
 
   for (let tagName of tags) {
@@ -244,6 +245,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
       Tag.findOne({ name: tagName })
         .then(tag => {
           if (tag) tagIds.push(tag._id);
+          if (tag) tagNames.push(tag.name);
         })
     );
   }
@@ -264,7 +266,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         id: feed._id,
         title: feed.title,
         message: feed.message,
-        tags: feed.tags.map((x: any) => x.name),
+        tags: tagNames,
         attachments
       }
     })

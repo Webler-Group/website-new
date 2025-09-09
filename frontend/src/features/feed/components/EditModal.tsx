@@ -14,11 +14,10 @@ const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
   const [content, setContent] = useState(feed.message);
   const [tags, setTags] = useState<string[]>(feed.tags);
   const [isSaving, setIsSaving] = useState(false);
-
+  
   const handleSave = async () => {
     if (!content.trim()) return;
     setIsSaving(true);
-    
     await onSave(content.trim(), tags);
     setIsSaving(false);
   };
