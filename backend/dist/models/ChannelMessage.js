@@ -32,9 +32,10 @@ const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
 const PostAttachment_1 = __importDefault(require("./PostAttachment"));
-const pushService_1 = require("../services/pushService");
 const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
+const Notification_1 = __importDefault(require("./Notification"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const channelMessageSchema = new mongoose_1.Schema({
     _type: {
         type: Number,
@@ -112,13 +113,15 @@ channelMessageSchema.post("save", async function () {
         if (!user)
             return;
         const participants = await ChannelParticipant_1.default.find({ channel: this.channel }, "user muted unreadCount").lean();
-        await (0, pushService_1.sendToUsers)(participants
+        await Notification_1.default.sendToUsers(participants
             .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
-            .map(p => p.user.toString()), {
+            .map(p => p._id), {
             title: "New message",
-            body: channel._type == ChannelTypeEnum_1.default.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
+            type: NotificationTypeEnum_1.default.CHANNELS,
+            actionUser: user._id,
+            message: channel._type == ChannelTypeEnum_1.default.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
             url: "/Channels/" + channel._id
-        }, "channels");
+        }, true);
         const io = (0, socketServer_1.getIO)();
         if (io) {
             const attachments = await PostAttachment_1.default.getByPostId({ channelMessage: this._id });

@@ -187,7 +187,7 @@ const FeedList = () => {
         </Modal.Body>
       </Modal>
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
-      <div className="container py-4 wb-feed-list-container">
+      <div className="wb-feed-list-container">
         {/* Header */}
         <div className={`wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
           <div className="d-flex flex-column gap-2">
@@ -259,7 +259,6 @@ const FeedList = () => {
                   ))
                 ) : (
                   <div className="text-center text-muted py-4">
-                    <FaMapPin size={24} className="mb-2 opacity-50" />
                     <p className="mb-0">No pinned posts available</p>
                   </div>
                 )}

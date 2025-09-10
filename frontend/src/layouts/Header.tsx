@@ -27,7 +27,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
           {
             userInfo &&
             <div className='d-flex gap-3'>
-              { !hideChannelsButton && <ChannelsButton /> }
+              {!hideChannelsButton && <ChannelsButton />}
               <NotificationList />
             </div>
           }
@@ -43,10 +43,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
             <LinkContainer to="/Discuss">
               <Nav.Link>Discuss</Nav.Link>
             </LinkContainer>
-            <LinkContainer to="/Blog">
-              <Nav.Link>Blog</Nav.Link>
-            </LinkContainer>
-                        <LinkContainer to="/Feed">
+            <LinkContainer to="/Feed">
               <Nav.Link>Feed</Nav.Link>
             </LinkContainer>
             {

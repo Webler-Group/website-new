@@ -13,9 +13,9 @@ import Post from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import { sendToUsers } from "../services/pushService";
 import PostTypeEnum from "../data/PostTypeEnum";
 import Upvote from "../models/Upvote";
+import { Types } from "mongoose";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { excludeUserId } = req.body;
@@ -96,9 +96,9 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
 
         let lastUnlockedNodeIndex = 1;
-        if(userProgress.lastLessonNodeId) {
+        if (userProgress.lastLessonNodeId) {
             const lastLessonNode = await LessonNode.findById(userProgress.lastLessonNodeId).select("index");
-            if(lastLessonNode) {
+            if (lastLessonNode) {
                 lastUnlockedNodeIndex = lastLessonNode.index + 1;
             }
         }
@@ -462,28 +462,16 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         user: currentUserId
     })
 
-    const usersToNotify = new Set<string>();
-    if (parentPost !== null) {
-        usersToNotify.add(parentPost.user.toString())
-    }
-    usersToNotify.delete(currentUserId!);
-
-    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
-
-    await sendToUsers(Array.from(usersToNotify), {
+    if (parentPost != null && parentPost.user != currentUserId) {
+        await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
             title: "New reply",
-            body: `${currentUserName} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`
-        }, "codes");
-    for (let userToNotify of usersToNotify) {
-        await Notification.create({
-            _type: NotificationTypeEnum.LESSON_COMMENT,
-            user: userToNotify,
-            actionUser: currentUserId,
+            type: NotificationTypeEnum.LESSON_COMMENT,
+            actionUser: currentUserId!,
             message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
             lessonId: lesson._id,
             postId: reply._id,
             courseCode: lesson.course.code
-        })
+        });
     }
 
     lesson.$inc("comments", 1)
@@ -587,7 +575,7 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     }
     catch (err: any) {
         console.log(err);
-        
+
         res.json({ success: false, error: err?.message })
     }
 })

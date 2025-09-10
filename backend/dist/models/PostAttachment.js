@@ -10,7 +10,6 @@ const confg_1 = require("../confg");
 const regexUtils_1 = require("../utils/regexUtils");
 const User_1 = __importDefault(require("./User"));
 const Notification_1 = __importDefault(require("./Notification"));
-const pushService_1 = require("../services/pushService");
 const StringUtils_1 = require("../utils/StringUtils");
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
@@ -73,26 +72,18 @@ postAttachmentSchema.post("save", async function () {
                 return;
             switch (post._type) {
                 case PostTypeEnum_1.default.QUESTION:
-                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                    await Notification_1.default.sendToUsers([this.user], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in question "${post.title}"`
-                    }, "mentions");
-                    await Notification_1.default.create({
-                        _type: NotificationTypeEnum_1.default.QA_QUESTION_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum_1.default.QA_QUESTION_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in question "${post.title}"`,
                         questionId: post._id
                     });
                     break;
                 case PostTypeEnum_1.default.ANSWER:
-                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                    await Notification_1.default.sendToUsers([this.user], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
-                    }, "mentions");
-                    await Notification_1.default.create({
-                        _type: NotificationTypeEnum_1.default.QA_ANSWER_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum_1.default.QA_ANSWER_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
                         questionId: post.parentId?._id,
@@ -100,13 +91,9 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum_1.default.CODE_COMMENT:
-                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                    await Notification_1.default.sendToUsers([this.user], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
-                    }, "mentions");
-                    await Notification_1.default.create({
-                        _type: NotificationTypeEnum_1.default.CODE_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum_1.default.CODE_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
                         codeId: post.codeId?._id,
@@ -114,13 +101,9 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum_1.default.LESSON_COMMENT:
-                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                    await Notification_1.default.sendToUsers([this.user], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`
-                    }, "mentions");
-                    await Notification_1.default.create({
-                        _type: NotificationTypeEnum_1.default.LESSON_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum_1.default.LESSON_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`,
                         lessonId: post.lessonId?._id,
@@ -129,13 +112,9 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum_1.default.FEED_COMMENT:
-                    await (0, pushService_1.sendToUsers)([this.user.toString()], {
+                    await Notification_1.default.sendToUsers([this.user], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment to post "${(0, StringUtils_1.truncate)(post.feedId?.message, 20)}"`
-                    }, "mentions");
-                    await Notification_1.default.create({
-                        _type: NotificationTypeEnum_1.default.FEED_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum_1.default.FEED_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment to post "${(0, StringUtils_1.truncate)(post.feedId?.message, 20)}"`,
                         feedId: post.feedId?._id,

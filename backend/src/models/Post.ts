@@ -143,6 +143,9 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
 
             case PostTypeEnum.FEED: case PostTypeEnum.SHARED_FEED: {
                 await Post.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum.FEED_COMMENT });
+                await Notification.deleteMany({
+                    feedId: post._id
+                });
                 break;
             }
 

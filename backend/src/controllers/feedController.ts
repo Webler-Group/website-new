@@ -5,7 +5,7 @@ import Post from "../models/Post";
 import Tag from "../models/Tag";
 import Upvote from "../models/Upvote";
 import Notification from "../models/Notification";
-import mongoose, { PipelineStage } from "mongoose";
+import mongoose, { PipelineStage, Types } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
@@ -14,7 +14,6 @@ import { truncate } from "../utils/StringUtils";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import ReactionsEnum from "../data/ReactionsEnum";
-import { sendToUsers } from "../services/pushService";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -61,23 +60,15 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   if (feed) {
 
-    const followers = await UserFollowing.find({ following: currentUserId })
-    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
+    const followers = await UserFollowing.find({ following: currentUserId });
 
-    await sendToUsers(followers.map(x => x.user.toString()), {
+    await Notification.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user) as Types.ObjectId[], {
       title: "New post",
-      body: `${currentUserName} made a new post "${truncate(feed.message, 20)}"`
-    }, "feed");
-
-    for (let follower of followers) {
-      await Notification.create({
-        _type: NotificationTypeEnum.FEED_FOLLOWER_POST,
-        user: follower.user,
-        actionUser: currentUserId,
-        message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
-        feedId: feed._id,
-      });
-    }
+      type: NotificationTypeEnum.FEED_FOLLOWER_POST,
+      actionUser: currentUserId!,
+      message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
+      feedId: feed._id,
+    });
 
     res.json({
       success: true,
@@ -339,38 +330,35 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   });
 
   if (reply) {
-    const usersToNotify = new Set<string>();
-    usersToNotify.add(feed.user.toString())
-    if (parentComment !== null) {
-      usersToNotify.add(parentComment.user.toString())
-    }
-    usersToNotify.delete(currentUserId!);
-
-    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
-
-    await sendToUsers(Array.from(usersToNotify).filter(x => x !== feed.user.toString()), {
-      title: "New reply",
-      body: `${currentUserName} replied to your comment on "${truncate(feed.message, 20)}"`
-    }, "feed");
-    await sendToUsers([feed.user.toString()], {
-      title: "New comment",
-      body: `${currentUserName} posted comment on your post "${truncate(feed.message, 20)}"`
-    }, "feed");
-
-    for (let userToNotify of usersToNotify) {
-
-      await Notification.create({
-        _type: NotificationTypeEnum.FEED_COMMENT,
-        user: userToNotify,
-        actionUser: currentUserId,
-        message: userToNotify === feed.user.toString() ?
-          `{action_user} commented on your post "${truncate(feed.message, 20)}"`
-          :
-          `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
+    if (currentUserId != feed.user) {
+      await Notification.sendToUsers([feed.user as Types.ObjectId], {
+        title: "New comment",
+        type: NotificationTypeEnum.FEED_COMMENT,
+        actionUser: currentUserId!,
+        message: `{action_user} commented on your post "${truncate(feed.message, 20)}"`,
         feedId: feed._id,
         postId: reply._id
-      })
+      });
     }
+
+    if (parentComment != null && parentComment.user != currentUserId) {
+      await Notification.sendToUsers([parentComment.user as Types.ObjectId], {
+        title: "New reply",
+        type: NotificationTypeEnum.FEED_COMMENT,
+        actionUser: currentUserId!,
+        message: `{action_user} commented on your post "${truncate(feed.message, 20)}"`,
+        feedId: feed._id,
+        postId: reply._id
+      });
+    }
+    await Notification.sendToUsers([feed.user as Types.ObjectId], {
+      title: "New comment",
+      type: NotificationTypeEnum.FEED_COMMENT,
+      actionUser: currentUserId!,
+      message: `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
+      feedId: feed._id,
+      postId: reply._id
+    });
 
     // Increment answers count on the main feed
     feed.$inc("answers", 1);
@@ -576,21 +564,14 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (originalFeed.user != currentUserId) {
-      const currentUserName = (await User.findById(currentUserId, "name"))!.name;
-      await sendToUsers([originalFeed.user.toString()], {
+      await Notification.sendToUsers([originalFeed.user as Types.ObjectId], {
         title: "Feed share",
-        body: `${currentUserName} shared your Post "${truncate(originalFeed.message, 20)}"`
-      }, "feed");
-
-      await Notification.create({
-        _type: NotificationTypeEnum.FEED_SHARE,
-        user: originalFeed.user,
-        actionUser: currentUserId,
+        type: NotificationTypeEnum.FEED_SHARE,
+        actionUser: currentUserId!,
         message: `{action_user} shared your Post "${truncate(originalFeed.message, 20)}"`,
         feedId: feed._id,
       });
     }
-
 
     res.json({
       success: true,
@@ -1136,26 +1117,24 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   if (currentUserId != feed.user) {
     if (pinned) {
-      const currentUserName = (await User.findById(currentUserId, "name"))!.name;
-      await sendToUsers([feed.user.toString()], {
-        title: "Feed pin",
-        body: `${currentUserName} pinned your Post "${truncate(feed.message, 20)}"`
-      }, "feed");
 
-      await Notification.create({
-        _type: NotificationTypeEnum.FEED_PIN,
-        user: feed.user,
-        actionUser: currentUserId,
+      await Notification.sendToUsers([feed.user as Types.ObjectId], {
+        title: "Feed pin",
+        type: NotificationTypeEnum.FEED_PIN,
+        actionUser: currentUserId!,
         message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
         feedId: feed._id,
       });
+
     } else {
+
       await Notification.deleteOne({
         _type: NotificationTypeEnum.FEED_PIN,
         user: feed.user,
         actionUser: currentUserId,
         feedId: feed._id
       });
+
     }
   }
 

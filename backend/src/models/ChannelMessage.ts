@@ -1,12 +1,13 @@
-import mongoose, { Schema, SchemaTypes } from "mongoose";
+import mongoose, { Schema, SchemaTypes, Types } from "mongoose";
 import { getIO, uidRoom } from "../config/socketServer";
 import ChannelParticipant from "./ChannelParticipant";
 import User from "./User";
 import Channel from "./Channel";
 import PostAttachment from "./PostAttachment";
-import { sendToUsers } from "../services/pushService";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
+import Notification from "./Notification";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const channelMessageSchema = new Schema({
     _type: {
@@ -100,13 +101,15 @@ channelMessageSchema.post("save", async function () {
 
         const participants = await ChannelParticipant.find({ channel: this.channel }, "user muted unreadCount").lean();
 
-        await sendToUsers(participants
+        await Notification.sendToUsers(participants
             .filter(p => p.user.toString() !== user._id.toString() && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
-            .map(p => p.user.toString()), {
+            .map(p => p._id) as Types.ObjectId[], {
             title: "New message",
-            body: channel._type == ChannelTypeEnum.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
+            type: NotificationTypeEnum.CHANNELS,
+            actionUser: user._id,
+            message: channel._type == ChannelTypeEnum.DM ? user.name + " sent you message" : " New messages in group " + channel.title,
             url: "/Channels/" + channel._id
-        }, "channels");
+        }, true);
 
         const io = getIO();
         if (io) {

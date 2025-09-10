@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Components } from 'react-markdown';
 import remarkGfm from "remark-gfm";
 import remarkBreaks from 'remark-breaks';
+import { FaTimes } from 'react-icons/fa';
 
 interface MarkdownRendererProps {
     content: string;
@@ -12,9 +13,11 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrls = [] }) => {
+    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+
     const isAllowedUrl = (url?: string) => {
         if (!url) return false;
-        
+
         return allowedUrls.some(pattern =>
             typeof pattern === "string" ? url.startsWith(pattern) : pattern.test(url)
         );
@@ -56,19 +59,81 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
 
         img({ src, alt }) {
             if (isAllowedUrl(src)) {
-                return <img src={src} alt={alt || ""} style={{ width: "100%", maxWidth: "480px" }} />;
+                return (
+                    <img
+                        src={src}
+                        alt={alt || ""}
+                        style={{
+                            maxWidth: "100%",
+                            maxHeight: "240px",
+                            cursor: "pointer",
+                            objectFit: "cover",
+                        }}
+                        onClick={() => setPreviewSrc(src || null)}
+                    />
+                );
             }
             return <span>{alt || "Image not allowed"}</span>;
         }
     };
 
     return (
-        <ReactMarkdown
-            components={components}
-            remarkPlugins={[remarkGfm, remarkBreaks]}
-        >
-            {transformedContent}
-        </ReactMarkdown>
+        <>
+            {previewSrc && (
+                <div
+                    style={{
+                        position: "fixed",
+                        top: 0,
+                        left: 0,
+                        width: "100vw",
+                        height: "100vh",
+                        background: "rgba(0, 0, 0, 0.9)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        zIndex: 9999
+                    }}
+                >
+                    {/* Close button */}
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation(); // prevent overlay click
+                            setPreviewSrc(null);
+                        }}
+                        style={{
+                            position: "absolute",
+                            top: "20px",
+                            right: "20px",
+                            background: "transparent",
+                            border: "none",
+                            color: "#fff",
+                            fontSize: "1.8rem",
+                            cursor: "pointer",
+                        }}
+                        aria-label="Close image preview"
+                    >
+                        <FaTimes />
+                    </button>
+
+                    <img
+                        src={previewSrc}
+                        alt=""
+                        style={{
+                            maxWidth: "90%",
+                            maxHeight: "90%",
+                            objectFit: "contain",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                </div>
+            )}
+            <ReactMarkdown
+                components={components}
+                remarkPlugins={[remarkGfm, remarkBreaks]}
+            >
+                {transformedContent}
+            </ReactMarkdown>
+        </>
     );
 };
 

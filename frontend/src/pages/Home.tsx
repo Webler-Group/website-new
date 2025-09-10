@@ -98,22 +98,6 @@ function Home() {
                 </Card.Body>
               </Card>
             </Col>
-
-            <Col>
-              <Card bg="light" text="dark" className="wb-home-card">
-                <Card.Body className="d-flex flex-column justify-content-between">
-                  <Card.Title className="text-center py-4 border-bottom border-2">Blog</Card.Title>
-                  <Card.Text className="mt-4">
-                    Stay up to date with Webler's blog! We share development insights, tutorials, project updates, and thoughts on the future of software engineering and technology.
-                  </Card.Text>
-                  <div className="text-center mt-4">
-                    <LinkContainer to="/Blog">
-                      <Button variant="primary">Read Blog</Button>
-                    </LinkContainer>
-                  </div>
-                </Card.Body>
-              </Card>
-            </Col>
           </Row>
         </Container>
       </div>

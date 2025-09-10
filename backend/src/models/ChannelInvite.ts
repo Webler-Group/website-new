@@ -1,9 +1,11 @@
-import mongoose, { Document, InferSchemaType, Model, Schema, SchemaTypes } from "mongoose";
+import mongoose, { Document, InferSchemaType, Model, Schema, SchemaTypes, Types } from "mongoose";
 import ChannelParticipant from "./ChannelParticipant";
 import { getIO, uidRoom } from "../config/socketServer";
 import User from "./User";
 import Channel from "./Channel";
-import { sendToUsers } from "../services/pushService";
+import Notification from "./Notification";
+import ChannelTypeEnum from "../data/ChannelTypeEnum";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const channelInviteSchema = new Schema({
     invitedUser: {
@@ -32,11 +34,13 @@ channelInviteSchema.post("save", async function () {
         const channel = await Channel.findById(this.channel, "title _type title");
         if (!author || !channel) return;
 
-        await sendToUsers([this.invitedUser.toString()], {
+        await Notification.sendToUsers([this.invitedUser as Types.ObjectId], {
             title: "New invite",
-            body: `${author.name} invited you to channel`,
+            message: `${author.name} invited you to ${channel._type == ChannelTypeEnum.DM ? "DM" : "group"}`,
+            type: NotificationTypeEnum.CHANNELS,
+            actionUser: author._id,
             url: "/Channels"
-        }, "channels");
+        }, true);
 
         io.to(uidRoom(this.invitedUser.toString())).emit("channels:new_invite", {
             id: this._id,

@@ -17,7 +17,6 @@ const fs_1 = __importDefault(require("fs"));
 const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
 const fileUtils_1 = require("../utils/fileUtils");
-const pushService_1 = require("../services/pushService");
 const regexUtils_1 = require("../utils/regexUtils");
 const EmailChangeRecord_1 = __importDefault(require("../models/EmailChangeRecord"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -295,15 +294,10 @@ const follow = (0, express_async_handler_1.default)(async (req, res) => {
         following: userId
     });
     if (userFollowing) {
-        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-        await (0, pushService_1.sendToUsers)([userId], {
+        await Notification_1.default.sendToUsers([userId], {
             title: "New follower",
-            body: currentUserName + " followed you"
-        }, "followers");
-        await Notification_1.default.create({
-            user: userId,
             actionUser: currentUserId,
-            _type: NotificationTypeEnum_1.default.PROFILE_FOLLOW,
+            type: NotificationTypeEnum_1.default.PROFILE_FOLLOW,
             message: "{action_user} followed you"
         });
         res.json({ success: true });
@@ -559,30 +553,12 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
         res.status(404).json({ message: "Profile not found" });
         return;
     }
-    if (!user.notifications) {
-        user.notifications = {
-            followers: true,
-            codes: true,
-            discuss: true,
-            channels: true,
-            mentions: true,
-            feed: true
-        };
-    }
-    if (typeof notifications.followers !== "undefined") {
-        user.notifications.followers = notifications.followers;
-    }
-    if (typeof notifications.codes !== "undefined") {
-        user.notifications.codes = notifications.codes;
-    }
-    if (typeof notifications.discuss !== "undefined") {
-        user.notifications.discuss = notifications.discuss;
-    }
-    if (typeof notifications.channels !== "undefined") {
-        user.notifications.channels = notifications.channels;
-    }
-    if (typeof notifications.feed !== "undefined") {
-        user.notifications.feed = notifications.feed;
+    if (user.notifications) {
+        for (let value of Object.values(NotificationTypeEnum_1.default)) {
+            if (typeof notifications[value] !== "undefined") {
+                user.notifications[value] = notifications[value];
+            }
+        }
     }
     try {
         await user.save();

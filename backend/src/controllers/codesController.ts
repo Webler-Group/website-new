@@ -10,12 +10,12 @@ import { Socket } from "socket.io";
 import { escapeRegex } from "../utils/regexUtils";
 import Post from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
-import { sendToUsers } from "../services/pushService";
 import User from "../models/User";
 import Notification from "../models/Notification";
 import RolesEnum from "../data/RolesEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { Types } from "mongoose";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = req.body;
@@ -484,37 +484,25 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         user: currentUserId
     })
 
-    const usersToNotify = new Set<string>();
-    usersToNotify.add(code.user.toString())
-    if (parentPost !== null) {
-        usersToNotify.add(parentPost.user.toString())
-    }
-    usersToNotify.delete(currentUserId!);
-
-    const currentUserName = (await User.findById(currentUserId, "name"))!.name;
-
-    await sendToUsers(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-        title: "New reply",
-        body: `${currentUserName} replied to your comment on "${code.name}"`
-    }, "codes");
-    await sendToUsers([code.user.toString()], {
-        title: "New comment",
-        body: `${currentUserName} posted comment on your code "${code.name}"`
-    }, "codes");
-
-    for (let userToNotify of usersToNotify) {
-
-        await Notification.create({
-            _type: NotificationTypeEnum.CODE_COMMENT,
-            user: userToNotify,
-            actionUser: currentUserId,
-            message: userToNotify === code.user.toString() ?
-                `{action_user} posted comment on your code "${code.name}"`
-                :
-                `{action_user} replied to your comment on "${code.name}"`,
+    if (parentPost != null && parentPost.user != currentUserId) {
+        await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
+            title: "New reply",
+            message: `{action_user} replied to your comment on "${code.name}"`,
+            type: NotificationTypeEnum.CODE_COMMENT,
+            actionUser: currentUserId!,
             codeId: code._id,
             postId: reply._id
-        })
+        });
+    }
+    if (code.user != currentUserId) {
+        await Notification.sendToUsers([code.user as Types.ObjectId], {
+            title: "New comment",
+            message: `{action_user} posted comment on your code "${code.name}"`,
+            type: NotificationTypeEnum.CODE_COMMENT,
+            actionUser: currentUserId!,
+            codeId: code._id,
+            postId: reply._id
+        });
     }
 
     code.$inc("comments", 1)

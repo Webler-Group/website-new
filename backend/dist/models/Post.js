@@ -143,6 +143,9 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
             case PostTypeEnum_1.default.FEED:
             case PostTypeEnum_1.default.SHARED_FEED: {
                 await Post.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum_1.default.FEED_COMMENT });
+                await Notification_1.default.deleteMany({
+                    feedId: post._id
+                });
                 break;
             }
             case PostTypeEnum_1.default.FEED_COMMENT: {

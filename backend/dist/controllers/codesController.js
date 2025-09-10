@@ -13,8 +13,6 @@ const socketServer_1 = require("../config/socketServer");
 const regexUtils_1 = require("../utils/regexUtils");
 const Post_1 = __importDefault(require("../models/Post"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
-const pushService_1 = require("../services/pushService");
-const User_1 = __importDefault(require("../models/User"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
@@ -416,30 +414,22 @@ const createCodeComment = (0, express_async_handler_1.default)(async (req, res) 
         parentId,
         user: currentUserId
     });
-    const usersToNotify = new Set();
-    usersToNotify.add(code.user.toString());
-    if (parentPost !== null) {
-        usersToNotify.add(parentPost.user.toString());
-    }
-    usersToNotify.delete(currentUserId);
-    const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-    await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== code.user.toString()), {
-        title: "New reply",
-        body: `${currentUserName} replied to your comment on "${code.name}"`
-    }, "codes");
-    await (0, pushService_1.sendToUsers)([code.user.toString()], {
-        title: "New comment",
-        body: `${currentUserName} posted comment on your code "${code.name}"`
-    }, "codes");
-    for (let userToNotify of usersToNotify) {
-        await Notification_1.default.create({
-            _type: NotificationTypeEnum_1.default.CODE_COMMENT,
-            user: userToNotify,
+    if (parentPost != null && parentPost.user != currentUserId) {
+        await Notification_1.default.sendToUsers([parentPost.user], {
+            title: "New reply",
+            message: `{action_user} replied to your comment on "${code.name}"`,
+            type: NotificationTypeEnum_1.default.CODE_COMMENT,
             actionUser: currentUserId,
-            message: userToNotify === code.user.toString() ?
-                `{action_user} posted comment on your code "${code.name}"`
-                :
-                    `{action_user} replied to your comment on "${code.name}"`,
+            codeId: code._id,
+            postId: reply._id
+        });
+    }
+    if (code.user != currentUserId) {
+        await Notification_1.default.sendToUsers([code.user], {
+            title: "New comment",
+            message: `{action_user} posted comment on your code "${code.name}"`,
+            type: NotificationTypeEnum_1.default.CODE_COMMENT,
+            actionUser: currentUserId,
             codeId: code._id,
             postId: reply._id
         });

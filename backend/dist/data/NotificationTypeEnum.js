@@ -15,5 +15,6 @@ var NotificationTypeEnum;
     NotificationTypeEnum[NotificationTypeEnum["FEED_COMMENT_MENTION"] = 305] = "FEED_COMMENT_MENTION";
     NotificationTypeEnum[NotificationTypeEnum["LESSON_COMMENT"] = 401] = "LESSON_COMMENT";
     NotificationTypeEnum[NotificationTypeEnum["LESSON_COMMENT_MENTION"] = 402] = "LESSON_COMMENT_MENTION";
+    NotificationTypeEnum[NotificationTypeEnum["CHANNELS"] = 701] = "CHANNELS";
 })(NotificationTypeEnum || (NotificationTypeEnum = {}));
 exports.default = NotificationTypeEnum;

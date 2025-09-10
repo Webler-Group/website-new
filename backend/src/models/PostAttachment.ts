@@ -1,11 +1,10 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import mongoose, { InferSchemaType, Model, Types } from "mongoose";
 import Post from "./Post";
 import Code from "./Code";
 import { config } from "../confg";
 import { escapeRegex } from "../utils/regexUtils";
 import User from "./User";
 import Notification from "./Notification";
-import { sendToUsers } from "../services/pushService";
 import { truncate } from "../utils/StringUtils";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
@@ -70,74 +69,54 @@ postAttachmentSchema.post("save", async function () {
 
             switch (post._type) {
                 case PostTypeEnum.QUESTION:
-                    await sendToUsers([this.user.toString()], {
+                    await Notification.sendToUsers([this.user as Types.ObjectId], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in question "${post.title}"`
-                    }, "mentions");
-                    await Notification.create({
-                        _type: NotificationTypeEnum.QA_QUESTION_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum.QA_QUESTION_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in question "${post.title}"`,
                         questionId: post._id
                     });
                     break;
                 case PostTypeEnum.ANSWER:
-                    await sendToUsers([this.user.toString()], {
+                    await Notification.sendToUsers([this.user as Types.ObjectId], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in answer to question "${post.parentId?.title}"`
-                    }, "mentions");
-                    await Notification.create({
-                        _type: NotificationTypeEnum.QA_ANSWER_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum.QA_ANSWER_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
                         questionId: post.parentId?._id,
                         postId: post._id
-                    })
+                    });
                     break;
                 case PostTypeEnum.CODE_COMMENT:
-                    await sendToUsers([this.user.toString()], {
+                    await Notification.sendToUsers([this.user as Types.ObjectId], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment to code "${post.codeId?.name}"`
-                    }, "mentions");
-                    await Notification.create({
-                        _type: NotificationTypeEnum.CODE_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum.CODE_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
                         codeId: post.codeId?._id,
                         postId: post._id
-                    })
+                    });
                     break;
                 case PostTypeEnum.LESSON_COMMENT:
-                    await sendToUsers([this.user.toString()], {
+                    await Notification.sendToUsers([this.user as Types.ObjectId], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`
-                    }, "mentions");
-                    await Notification.create({
-                        _type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`,
                         lessonId: post.lessonId?._id,
                         postId: post._id,
                         courseCode: post.lessonId.course.code
-                    })
+                    });
                     break;
                 case PostTypeEnum.FEED_COMMENT:
-                    await sendToUsers([this.user.toString()], {
+                    await Notification.sendToUsers([this.user as Types.ObjectId], {
                         title: "New mention",
-                        body: `${post.user.name} mentioned you in comment to post "${truncate(post.feedId?.message, 20)}"`
-                    }, "mentions");
-                    await Notification.create({
-                        _type: NotificationTypeEnum.FEED_COMMENT_MENTION,
-                        user: this.user,
+                        type: NotificationTypeEnum.FEED_COMMENT_MENTION,
                         actionUser: post.user._id,
                         message: `{action_user} mentioned you in comment to post "${truncate(post.feedId?.message, 20)}"`,
                         feedId: post.feedId?._id,
                         postId: post._id
-                    })
+                    });
                     break;
             }
         } catch (err: any) {

@@ -16,7 +16,6 @@ const Post_1 = __importDefault(require("../models/Post"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const Notification_1 = __importDefault(require("../models/Notification"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
-const pushService_1 = require("../services/pushService");
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
 const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
@@ -402,20 +401,10 @@ const createLessonComment = (0, express_async_handler_1.default)(async (req, res
         parentId,
         user: currentUserId
     });
-    const usersToNotify = new Set();
-    if (parentPost !== null) {
-        usersToNotify.add(parentPost.user.toString());
-    }
-    usersToNotify.delete(currentUserId);
-    const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-    await (0, pushService_1.sendToUsers)(Array.from(usersToNotify), {
-        title: "New reply",
-        body: `${currentUserName} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`
-    }, "codes");
-    for (let userToNotify of usersToNotify) {
-        await Notification_1.default.create({
-            _type: NotificationTypeEnum_1.default.LESSON_COMMENT,
-            user: userToNotify,
+    if (parentPost != null && parentPost.user != currentUserId) {
+        await Notification_1.default.sendToUsers([parentPost.user], {
+            title: "New reply",
+            type: NotificationTypeEnum_1.default.LESSON_COMMENT,
             actionUser: currentUserId,
             message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
             lessonId: lesson._id,

@@ -11,13 +11,11 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const regexUtils_1 = require("../utils/regexUtils");
-const User_1 = __importDefault(require("../models/User"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const StringUtils_1 = require("../utils/StringUtils");
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const ReactionsEnum_1 = __importDefault(require("../data/ReactionsEnum"));
-const pushService_1 = require("../services/pushService");
 const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
     const { message, tags } = req.body;
     const currentUserId = req.userId;
@@ -55,20 +53,13 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
     });
     if (feed) {
         const followers = await UserFollowing_1.default.find({ following: currentUserId });
-        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-        await (0, pushService_1.sendToUsers)(followers.map(x => x.user.toString()), {
+        await Notification_1.default.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user), {
             title: "New post",
-            body: `${currentUserName} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
-        }, "feed");
-        for (let follower of followers) {
-            await Notification_1.default.create({
-                _type: NotificationTypeEnum_1.default.FEED_FOLLOWER_POST,
-                user: follower.user,
-                actionUser: currentUserId,
-                message: `{action_user} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
-                feedId: feed._id,
-            });
-        }
+            type: NotificationTypeEnum_1.default.FEED_FOLLOWER_POST,
+            actionUser: currentUserId,
+            message: `{action_user} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+            feedId: feed._id,
+        });
         res.json({
             success: true,
             feed: {
@@ -206,12 +197,15 @@ const editFeed = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     const tagIds = [];
+    const tagNames = [];
     let promises = [];
     for (let tagName of tags) {
         promises.push(Tag_1.default.findOne({ name: tagName })
             .then(tag => {
             if (tag)
                 tagIds.push(tag._id);
+            if (tag)
+                tagNames.push(tag.name);
         }));
     }
     await Promise.all(promises);
@@ -226,7 +220,7 @@ const editFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 id: feed._id,
                 title: feed.title,
                 message: feed.message,
-                tags: feed.tags.map((x) => x.name),
+                tags: tagNames,
                 attachments
             }
         });
@@ -286,34 +280,34 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
         user: currentUserId
     });
     if (reply) {
-        const usersToNotify = new Set();
-        usersToNotify.add(feed.user.toString());
-        if (parentComment !== null) {
-            usersToNotify.add(parentComment.user.toString());
-        }
-        usersToNotify.delete(currentUserId);
-        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-        await (0, pushService_1.sendToUsers)(Array.from(usersToNotify).filter(x => x !== feed.user.toString()), {
-            title: "New reply",
-            body: `${currentUserName} replied to your comment on "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
-        }, "feed");
-        await (0, pushService_1.sendToUsers)([feed.user.toString()], {
-            title: "New comment",
-            body: `${currentUserName} posted comment on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
-        }, "feed");
-        for (let userToNotify of usersToNotify) {
-            await Notification_1.default.create({
-                _type: NotificationTypeEnum_1.default.FEED_COMMENT,
-                user: userToNotify,
+        if (currentUserId != feed.user) {
+            await Notification_1.default.sendToUsers([feed.user], {
+                title: "New comment",
+                type: NotificationTypeEnum_1.default.FEED_COMMENT,
                 actionUser: currentUserId,
-                message: userToNotify === feed.user.toString() ?
-                    `{action_user} commented on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
-                    :
-                        `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
                 feedId: feed._id,
                 postId: reply._id
             });
         }
+        if (parentComment != null && parentComment.user != currentUserId) {
+            await Notification_1.default.sendToUsers([parentComment.user], {
+                title: "New reply",
+                type: NotificationTypeEnum_1.default.FEED_COMMENT,
+                actionUser: currentUserId,
+                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                feedId: feed._id,
+                postId: reply._id
+            });
+        }
+        await Notification_1.default.sendToUsers([feed.user], {
+            title: "New comment",
+            type: NotificationTypeEnum_1.default.FEED_COMMENT,
+            actionUser: currentUserId,
+            message: `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+            feedId: feed._id,
+            postId: reply._id
+        });
         // Increment answers count on the main feed
         feed.$inc("answers", 1);
         await feed.save();
@@ -480,14 +474,9 @@ const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
             return;
         }
         if (originalFeed.user != currentUserId) {
-            const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-            await (0, pushService_1.sendToUsers)([originalFeed.user.toString()], {
+            await Notification_1.default.sendToUsers([originalFeed.user], {
                 title: "Feed share",
-                body: `${currentUserName} shared your Post "${(0, StringUtils_1.truncate)(originalFeed.message, 20)}"`
-            }, "feed");
-            await Notification_1.default.create({
-                _type: NotificationTypeEnum_1.default.FEED_SHARE,
-                user: originalFeed.user,
+                type: NotificationTypeEnum_1.default.FEED_SHARE,
                 actionUser: currentUserId,
                 message: `{action_user} shared your Post "${(0, StringUtils_1.truncate)(originalFeed.message, 20)}"`,
                 feedId: feed._id,
@@ -967,14 +956,9 @@ const togglePinFeed = (0, express_async_handler_1.default)(async (req, res) => {
     }
     if (currentUserId != feed.user) {
         if (pinned) {
-            const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-            await (0, pushService_1.sendToUsers)([feed.user.toString()], {
+            await Notification_1.default.sendToUsers([feed.user], {
                 title: "Feed pin",
-                body: `${currentUserName} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`
-            }, "feed");
-            await Notification_1.default.create({
-                _type: NotificationTypeEnum_1.default.FEED_PIN,
-                user: feed.user,
+                type: NotificationTypeEnum_1.default.FEED_PIN,
                 actionUser: currentUserId,
                 message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
                 feedId: feed._id,

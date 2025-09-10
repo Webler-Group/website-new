@@ -7,6 +7,7 @@ import Code from "./Code";
 import Notification from "./Notification";
 import { v4 as uuid } from "uuid";
 import { isEmail } from "../utils/regexUtils";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const banSchema = new mongoose.Schema({
     author: {
@@ -85,12 +86,20 @@ const userSchema = new mongoose.Schema({
         required: false
     },
     notifications: {
-        followers: { type: Boolean, default: true },
-        codes: { type: Boolean, default: true },
-        discuss: { type: Boolean, default: true },
-        channels: { type: Boolean, default: true },
-        mentions: { type: Boolean, default: true },
-        feed: { type: Boolean, default: true }
+        [NotificationTypeEnum.CODE_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum.CODE_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum.FEED_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum.FEED_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum.FEED_FOLLOWER_POST]: { type: Boolean, default: true },
+        [NotificationTypeEnum.FEED_PIN]: { type: Boolean, default: true },
+        [NotificationTypeEnum.FEED_SHARE]: { type: Boolean, default: true },
+        [NotificationTypeEnum.LESSON_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum.LESSON_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum.PROFILE_FOLLOW]: { type: Boolean, default: true },
+        [NotificationTypeEnum.QA_ANSWER]: { type: Boolean, default: true },
+        [NotificationTypeEnum.QA_ANSWER_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum.QA_QUESTION_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum.CHANNELS]: { type: Boolean, default: true }
     },
     ban: {
         type: banSchema,

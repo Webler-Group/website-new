@@ -12,6 +12,7 @@ const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
 const uuid_1 = require("uuid");
 const regexUtils_1 = require("../utils/regexUtils");
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const banSchema = new mongoose_1.default.Schema({
     author: {
         type: mongoose_1.default.Schema.Types.ObjectId,
@@ -88,12 +89,20 @@ const userSchema = new mongoose_1.default.Schema({
         required: false
     },
     notifications: {
-        followers: { type: Boolean, default: true },
-        codes: { type: Boolean, default: true },
-        discuss: { type: Boolean, default: true },
-        channels: { type: Boolean, default: true },
-        mentions: { type: Boolean, default: true },
-        feed: { type: Boolean, default: true }
+        [NotificationTypeEnum_1.default.CODE_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.CODE_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.FEED_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.FEED_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.FEED_FOLLOWER_POST]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.FEED_PIN]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.FEED_SHARE]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.LESSON_COMMENT]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.LESSON_COMMENT_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.PROFILE_FOLLOW]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.QA_ANSWER]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.QA_ANSWER_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.QA_QUESTION_MENTION]: { type: Boolean, default: true },
+        [NotificationTypeEnum_1.default.CHANNELS]: { type: Boolean, default: true }
     },
     ban: {
         type: banSchema,

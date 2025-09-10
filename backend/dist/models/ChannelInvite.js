@@ -31,7 +31,9 @@ const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const socketServer_1 = require("../config/socketServer");
 const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
-const pushService_1 = require("../services/pushService");
+const Notification_1 = __importDefault(require("./Notification"));
+const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
+const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const channelInviteSchema = new mongoose_1.Schema({
     invitedUser: {
         type: mongoose_1.SchemaTypes.ObjectId,
@@ -58,11 +60,13 @@ channelInviteSchema.post("save", async function () {
         const channel = await Channel_1.default.findById(this.channel, "title _type title");
         if (!author || !channel)
             return;
-        await (0, pushService_1.sendToUsers)([this.invitedUser.toString()], {
+        await Notification_1.default.sendToUsers([this.invitedUser], {
             title: "New invite",
-            body: `${author.name} invited you to channel`,
+            message: `${author.name} invited you to ${channel._type == ChannelTypeEnum_1.default.DM ? "DM" : "group"}`,
+            type: NotificationTypeEnum_1.default.CHANNELS,
+            actionUser: author._id,
             url: "/Channels"
-        }, "channels");
+        }, true);
         io.to((0, socketServer_1.uidRoom)(this.invitedUser.toString())).emit("channels:new_invite", {
             id: this._id,
             authorId: author._id,

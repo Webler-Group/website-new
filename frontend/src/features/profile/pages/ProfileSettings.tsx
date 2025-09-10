@@ -8,7 +8,7 @@ import PasswordFormControl from "../../../components/PasswordFormControl";
 import { FaCheckCircle } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
-import PushNotificationsTab from "../components/PushNotificationsTab";
+import NotificationsTab from "../components/NotificationsTab";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -379,8 +379,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                             </div>
                         </Form>
                     </Tab>
-                    <Tab eventKey="notifications" title="Push Notifications">
-                        <PushNotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
+                    <Tab eventKey="notifications" title="Notifications">
+                        <NotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
                     </Tab>
                 </Tabs>
             </Modal.Body>

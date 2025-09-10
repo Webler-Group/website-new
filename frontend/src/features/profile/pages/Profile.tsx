@@ -15,15 +15,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import Question, { IQuestion } from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
 import PageTitle from "../../../layouts/PageTitle";
-
-export interface IUserNotifications {
-    codes: boolean;
-    discuss: boolean;
-    followers: boolean;
-    channels: boolean;
-    mentions: boolean;
-    feed: boolean;
-}
+import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 
 export interface UserDetails {
     id: string;
@@ -41,7 +33,7 @@ export interface UserDetails {
     emailVerified: boolean;
     active: boolean;
     roles: string[];
-    notifications: IUserNotifications;
+    notifications: Record<NotificationTypeEnum, boolean>;
 }
 
 export interface UserMinimal {

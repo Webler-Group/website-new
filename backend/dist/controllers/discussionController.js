@@ -12,8 +12,6 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const PostAttachment_1 = __importDefault(require("../models/PostAttachment"));
 const regexUtils_1 = require("../utils/regexUtils");
-const pushService_1 = require("../services/pushService");
-const User_1 = __importDefault(require("../models/User"));
 const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
@@ -302,27 +300,21 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 following: question._id
             });
         }
-        const followers = new Set((await PostFollowing_1.default.find({ following: question._id })).map(x => x.user.toString()));
-        followers.add(question.user.toString());
-        followers.delete(currentUserId);
-        const currentUserName = (await User_1.default.findById(currentUserId, "name")).name;
-        await (0, pushService_1.sendToUsers)(Array.from(followers).filter(x => x !== question.user.toString()), {
+        const followers = await PostFollowing_1.default.find({ following: question._id });
+        await Notification_1.default.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user), {
             title: "New answer",
-            body: `${currentUserName} posted in "${question.title}"`
-        }, "discuss");
-        await (0, pushService_1.sendToUsers)([question.user.toString()], {
-            title: "New answer",
-            body: `${currentUserName} answered your question "${question.title}"`
-        }, "discuss");
-        for (let userToNotify of followers) {
-            await Notification_1.default.create({
-                _type: NotificationTypeEnum_1.default.QA_ANSWER,
-                user: userToNotify,
+            type: NotificationTypeEnum_1.default.QA_ANSWER,
+            actionUser: currentUserId,
+            message: `{action_user} posted in "${question.title}"`,
+            questionId: question._id,
+            postId: reply._id
+        });
+        if (question.user != currentUserId) {
+            await Notification_1.default.sendToUsers([question.user], {
+                title: "New answer",
+                type: NotificationTypeEnum_1.default.QA_ANSWER,
                 actionUser: currentUserId,
-                message: userToNotify === question.user.toString() ?
-                    `{action_user} answered your question "${question.title}"`
-                    :
-                        `{action_user} posted in "${question.title}"`,
+                message: `{action_user} answered your question "${question.title}"`,
                 questionId: question._id,
                 postId: reply._id
             });

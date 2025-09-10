@@ -4,6 +4,8 @@ import NotificationKeystore from "../models/NotificationKeystore";
 import NotificationSubscription from "../models/NotificationSubscription";
 import User from "../models/User";
 import { onlineUsers } from "../config/socketServer";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import mongoose from "mongoose";
 
 export async function initKeystore() {
     const active = await NotificationKeystore.findOne({ version: "active" });
@@ -22,27 +24,18 @@ export async function initKeystore() {
     return newKeys;
 }
 
-export async function sendToUsers(
-    userIds: string[],
-    payload: { title: string; body: string; url?: string },
-    category: string
+export async function sendPushToUsers(
+    userIds: mongoose.Types.ObjectId[],
+    payload: { title: string; body: string; url?: string }
 ) {
-    // filter out online users
-    const offlineUserIds = userIds.filter(userId => !onlineUsers.has(userId));
-    if (offlineUserIds.length === 0) return;
-
-    const allowedUserDocs = await User.find({
-        _id: { $in: offlineUserIds },
-        [`notifications.${category}`]: true
-    }).select('_id');
-
-    const allowedUserIds = allowedUserDocs.map(doc => doc._id);
-
-    const subs = await NotificationSubscription.find({ user: { $in: allowedUserIds } });
+    const subs = await NotificationSubscription.find({ user: { $in: userIds } });
     if (subs.length === 0) return;
 
     const keys = await NotificationKeystore.findOne({ version: "active" });
-    if (!keys) throw new Error("No VAPID keys available");
+    if (!keys) {
+        console.log("Error: No VAPID keys available");
+        return;
+    }
 
     webpush.setVapidDetails(
         "mailto:" + config.adminEmail,
@@ -69,7 +62,7 @@ export async function sendToUsers(
                 console.log("Deleting expired subscription:", sub.endpoint);
                 await NotificationSubscription.deleteOne({ _id: sub._id });
             } else {
-                console.error("Push error:", err);
+                console.log("Push error:", err);
             }
         }
     }
