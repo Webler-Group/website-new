@@ -630,15 +630,6 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
                 { $limit: 1 }
             ]
         }
-    }, {
-        $graphLookup: {
-            from: "posts",
-            startWith: "$_id",
-            connectFromField: "_id",
-            connectToField: "parentId",
-            as: "allReplies",
-            restrictSearchWithMatch: { hidden: false }
-        }
     });
     const result = await Post_1.default.aggregate(pipeline);
     if (result) {
