@@ -169,7 +169,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                         </Nav.Item>
                     </Nav>
 
-                    <Tab.Content className="flex-grow-1 overflow-auto">
+                    <Tab.Content className="flex-grow-1 overflow-auto pb-4">
                         <Tab.Pane eventKey="channels">
                             {channelsListContent}
                         </Tab.Pane>

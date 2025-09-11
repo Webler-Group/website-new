@@ -53,12 +53,15 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
         channel = await Channel.create({ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId });
 
         await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
-        await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+        // await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
 
     } else {
         const myInvite = await ChannelInvite.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
             await myInvite.accept();
+
+        } else {
+            await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
         }
     }
 
@@ -292,15 +295,6 @@ const acceptInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     await invite.accept(accepted);
 
-    if (accepted) {
-        await ChannelMessage.create({
-            _type: ChannelMessageTypeEnum.USER_JOINED,
-            content: "{action_user} joined",
-            channel: invite.channel,
-            user: currentUserId
-        });
-    }
-
     res.json({ success: true, data: { accepted } });
 });
 
@@ -416,6 +410,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userName: x.user.name,
         userAvatar: x.user.avatarImage,
         createdAt: x.createdAt,
+        updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
         channelId: x.channel,
@@ -668,12 +663,24 @@ const createMessageWS = async (socket: Socket, payload: any) => {
             return;
         }
 
-        await ChannelMessage.create({
+        const newMessage = await ChannelMessage.create({
             _type: ChannelMessageTypeEnum.MESSAGE,
             content,
             channel: channelId,
             user: currentUserId
         });
+
+        const channel = await Channel.findById(newMessage.channel).select("_type createdBy DMUser").lean();
+        
+        if(channel && channel._type == ChannelTypeEnum.DM) {
+            const messages = await ChannelMessage.find({ channel: channel._id }).limit(2).lean();
+            if(messages.length == 1) {
+                const exists = await ChannelParticipant.exists({ channel: channel._id, user: channel.DMUser });
+                if(!exists) {
+                    await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+                }
+            }
+        }
     } catch (err: any) {
         console.log("Message could not be created:", err.message);
     }

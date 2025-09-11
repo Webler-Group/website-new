@@ -774,7 +774,7 @@ ul {
 }
 
 .wb-channels-message__body {
-    font-size: 14px;
+    font-size: 0.95rem;
     line-height: 1.3;
     width: fit-content;
     max-width: 100%;
@@ -795,13 +795,13 @@ ul {
 
 .wb-channels-message-enter {
     opacity: 0;
-    height: 0;
+    max-height: 0;
 }
 
 .wb-channels-message-enter-active {
     opacity: 1;
-    transition: opacity 0.4s ease-out, height 0.8s ease-out;
-    height: 100%;
+    transition: opacity 0.4s ease-out, max-height 0.8s ease-out;
+    max-height: 500px;
 }
 
 .wb-feed-comment-modal__backdrop {

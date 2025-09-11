@@ -84,7 +84,7 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         }
 
         const handleMessageEdited = (data: any) => {
-            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, content: data.content } : x))
+            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, content: data.content, attachments: data.attachments, updatedAt: data.updatedAt } : x))
         }
 
         socket.on("channels:new_message", handleNewMessage);

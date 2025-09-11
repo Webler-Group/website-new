@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model, Types } from "mongoose";
+import mongoose, { InferSchemaType, isObjectIdOrHexString, Model, Types } from "mongoose";
 import Post from "./Post";
 import Code from "./Code";
 import { config } from "../confg";
@@ -249,78 +249,58 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
     const currentAttachments = await PostAttachment
         .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null });
     const newAttachmentIds: string[] = [];
-    const pattern = new RegExp("(" + config.allowedOrigins.map(x => escapeRegex(x)).join("|") + ")\/([\\w\-]+)\/([\\w\-]+)", "gi")
+    const pattern = new RegExp("(" + config.allowedOrigins.map(x => escapeRegex(x)).join("|") + ")\/([\\w\-]+)\/([0-9a-fA-F]{24})", "gi")
     const matches = message.matchAll(pattern);
     for (let match of matches) {
-        if (match.length < 4) continue;
+        if (match.length < 4 || !isObjectIdOrHexString(match[3])) continue;
         let attachment = null;
         switch (match[2].toLowerCase()) {
             case "compiler-playground": {
                 const codeId = match[3];
-                try {
-                    const code = await Code.findById(codeId);
-                    if (!code) {
-                        continue
-                    }
-                    attachment = currentAttachments.find(x => x.code && x.code == codeId);
-                    if (!attachment) {
-                        attachment = await PostAttachment.create({
-                            postId: id.post ?? null,
-                            channelMessageId: id.channelMessage ?? null,
-                            _type: PostAttachmentTypeEnum.CODE,
-                            code: codeId,
-                            user: code.user
-                        })
-                    }
-                }
-                catch (err: any) {
-                    console.log(err?.message);
+                const code = await Code.findById(codeId);
+                if (!code) continue;
+                attachment = currentAttachments.find(x => x.code && x.code == codeId);
+                if (!attachment) {
+                    attachment = await PostAttachment.create({
+                        postId: id.post ?? null,
+                        channelMessageId: id.channelMessage ?? null,
+                        _type: PostAttachmentTypeEnum.CODE,
+                        code: codeId,
+                        user: code.user
+                    })
                 }
                 break;
             }
             case "discuss": {
                 const questionId = match[3];
-                try {
-                    const question = await Post.findById(questionId);
-                    if (!question) {
-                        continue
-                    }
-                    attachment = currentAttachments.find(x => x.question && x.question == questionId);
-                    if (!attachment) {
-                        attachment = await PostAttachment.create({
-                            postId: id.post ?? null,
-                            channelMessageId: id.channelMessage ?? null,
-                            _type: PostAttachmentTypeEnum.QUESTION,
-                            question: questionId,
-                            user: question.user
-                        })
-                    }
-                }
-                catch (err: any) {
-                    console.log(err?.message);
+                const question = await Post.findById(questionId);
+                if (!question) continue;
+                attachment = currentAttachments.find(x => x.question && x.question == questionId);
+                if (!attachment) {
+                    attachment = await PostAttachment.create({
+                        postId: id.post ?? null,
+                        channelMessageId: id.channelMessage ?? null,
+                        _type: PostAttachmentTypeEnum.QUESTION,
+                        question: questionId,
+                        user: question.user
+                    })
                 }
                 break;
             }
             case "feed": {
                 const postId = match[3];
-                try {
-                    const post = await Post.findById(postId);
-                    if (!post) continue;
+                const post = await Post.findById(postId);
+                if (!post || (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED)) continue;
 
-                    if (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED) continue;
-
-                    attachment = currentAttachments.find(x => x.feed && x.feed == postId);
-                    if (!attachment) {
-                        attachment = await PostAttachment.create({
-                            postId: id.post ?? null,
-                            channelMessageId: id.channelMessage ?? null,
-                            _type: PostAttachmentTypeEnum.FEED,
-                            feed: postId,
-                            user: post.user
-                        });
-                    }
-                } catch (err: any) {
-                    console.log(err?.message);
+                attachment = currentAttachments.find(x => x.feed && x.feed == postId);
+                if (!attachment) {
+                    attachment = await PostAttachment.create({
+                        postId: id.post ?? null,
+                        channelMessageId: id.channelMessage ?? null,
+                        _type: PostAttachmentTypeEnum.FEED,
+                        feed: postId,
+                        user: post.user
+                    });
                 }
                 break;
             }
@@ -335,22 +315,17 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
     for (let match of userMatches) {
         let attachment = null;
         const userid = match[1];
-        try {
-            const mentionedUser = await User.findById(userid);
-            if (!mentionedUser) {
-                continue;
-            }
-            attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.toString() === userid);
-            if (!attachment) {
-                attachment = await PostAttachment.create({
-                    postId: id.post ?? null,
-                    channelMessageId: id.channelMessage ?? null,
-                    _type: PostAttachmentTypeEnum.MENTION,
-                    user: mentionedUser._id
-                });
-            }
-        } catch (err: any) {
-            console.log(err?.message);
+        if(!isObjectIdOrHexString(userid)) continue;
+        const mentionedUser = await User.findById(userid);
+        if (!mentionedUser) continue;
+        attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.toString() === userid);
+        if (!attachment) {
+            attachment = await PostAttachment.create({
+                postId: id.post ?? null,
+                channelMessageId: id.channelMessage ?? null,
+                _type: PostAttachmentTypeEnum.MENTION,
+                user: mentionedUser._id
+            });
         }
         if (attachment) {
             newAttachmentIds.push(attachment._id.toString());

@@ -46,12 +46,15 @@ const createDirectMessages = (0, express_async_handler_1.default)(async (req, re
     if (!channel) {
         channel = await Channel_1.default.create({ _type: ChannelTypeEnum_1.default.DM, createdBy: currentUserId, DMUser: userId });
         await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum_1.default.MEMBER });
-        await ChannelInvite_1.default.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+        // await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
     }
     else {
         const myInvite = await ChannelInvite_1.default.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
             await myInvite.accept();
+        }
+        else {
+            await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum_1.default.MEMBER });
         }
     }
     res.json({
@@ -250,14 +253,6 @@ const acceptInvite = (0, express_async_handler_1.default)(async (req, res) => {
         return;
     }
     await invite.accept(accepted);
-    if (accepted) {
-        await ChannelMessage_1.default.create({
-            _type: ChannelMessageTypeEnum_1.default.USER_JOINED,
-            content: "{action_user} joined",
-            channel: invite.channel,
-            user: currentUserId
-        });
-    }
     res.json({ success: true, data: { accepted } });
 });
 const groupRemoveUser = (0, express_async_handler_1.default)(async (req, res) => {
@@ -354,6 +349,7 @@ const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
         userName: x.user.name,
         userAvatar: x.user.avatarImage,
         createdAt: x.createdAt,
+        updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
         channelId: x.channel,
@@ -554,12 +550,22 @@ const createMessageWS = async (socket, payload) => {
         if (!participant) {
             return;
         }
-        await ChannelMessage_1.default.create({
+        const newMessage = await ChannelMessage_1.default.create({
             _type: ChannelMessageTypeEnum_1.default.MESSAGE,
             content,
             channel: channelId,
             user: currentUserId
         });
+        const channel = await Channel_1.default.findById(newMessage.channel).select("_type createdBy DMUser").lean();
+        if (channel && channel._type == ChannelTypeEnum_1.default.DM) {
+            const messages = await ChannelMessage_1.default.find({ channel: channel._id }).limit(2).lean();
+            if (messages.length == 1) {
+                const exists = await ChannelParticipant_1.default.exists({ channel: channel._id, user: channel.DMUser });
+                if (!exists) {
+                    await ChannelInvite_1.default.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+                }
+            }
+        }
     }
     catch (err) {
         console.log("Message could not be created:", err.message);

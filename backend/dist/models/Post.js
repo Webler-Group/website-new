@@ -92,8 +92,13 @@ postSchema.pre("save", async function (next) {
     next();
 });
 postSchema.post("save", async function () {
-    if (this._messageWasModified) {
-        await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
+    try {
+        if (this._messageWasModified) {
+            await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
+        }
+    }
+    catch (err) {
+        console.log("postSchema.pre(save) failed:", err.message);
     }
 });
 postSchema.statics.deleteAndCleanup = async function (filter) {

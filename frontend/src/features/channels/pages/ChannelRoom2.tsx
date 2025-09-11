@@ -450,7 +450,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     <div className="small">
                                         <div className="d-flex justify-content-between align-items-center">
                                             <div className="fw-bold text-info"><FaPen /> Edit message</div>
-                                            <Button variant="link" className="text-muted" onClick={handleEditCancel}>
+                                            <Button size="sm" variant="link" className="text-muted" onClick={handleEditCancel}>
                                                 <FaTimes />
                                             </Button>
                                         </div>
@@ -473,7 +473,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </Button>
                                     )}
                                     <Form.Control
-                                        size="sm"
                                         ref={textareaRef}
                                         as="textarea"
                                         rows={1}
@@ -487,7 +486,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     />
                                     {
                                         newMessage.trim().length > 0 &&
-                                        <Button size="sm" variant="primary" onClick={handleSendMessage}>
+                                        <Button variant="primary" onClick={handleSendMessage}>
                                             {editedMessage ? <FaCheck /> : <FaPaperPlane />}
                                         </Button>
                                     }

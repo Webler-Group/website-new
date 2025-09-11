@@ -12,6 +12,7 @@ interface IChannelMessage {
     userName: string;
     userAvatar: string;
     createdAt: string;
+    updatedAt: string;
     channelId: string;
     deleted: boolean;
     viewed: boolean;
@@ -92,6 +93,9 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
                         onTouchEnd={handleTouchEnd}
                     >
                         {message.deleted ? <i className="text-muted">Message was deleted</i> : message.content}
+                        {(!message.deleted && new Date(message.createdAt) < new Date(message.updatedAt)) && (
+                            <small className="text-muted"> (edited)</small>
+                        )}
                         {!message.deleted && (
                             <div>
                                 {message.attachments.map((attachment) => (

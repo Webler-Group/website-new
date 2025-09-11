@@ -6,6 +6,8 @@ import Channel from "./Channel";
 import Notification from "./Notification";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import ChannelMessage from "./ChannelMessage";
+import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
 
 const channelInviteSchema = new Schema({
     invitedUser: {
@@ -58,6 +60,12 @@ channelInviteSchema.post("save", async function () {
 channelInviteSchema.methods.accept = async function (accepted: boolean = true) {
     if (accepted) {
         await ChannelParticipant.create({ channel: this.channel, user: this.invitedUser });
+        await ChannelMessage.create({
+            _type: ChannelMessageTypeEnum.USER_JOINED,
+            content: "{action_user} joined",
+            channel: this.channel,
+            user: this.invitedUser
+        });
     }
     await ChannelInvite.deleteMany({ channel: this.channel, invitedUser: this.invitedUser });
 }

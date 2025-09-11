@@ -89,8 +89,12 @@ postSchema.pre("save", async function (next) {
     next();
 });
 postSchema.post("save", async function () {
-    if ((this as any)._messageWasModified) {
-        await PostAttachment.updateAttachments(this.message, { post: this._id });
+    try {
+        if ((this as any)._messageWasModified) {
+            await PostAttachment.updateAttachments(this.message, { post: this._id });
+        }
+    } catch (err: any) {
+        console.log("postSchema.pre(save) failed:", err.message);
     }
 });
 
