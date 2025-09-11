@@ -32,7 +32,7 @@ const Discuss = ({ MainPage }: DiscussProps) => {
     }
 
     return (
-        <div className="bg-light">
+        <div className="bg-white">
             <Container>
                 <div className="wb-discuss-questions-list-page d-block d-lg-flex gap-3 pt-2">
                     <div className="flex-grow-1">{MainPage}</div>

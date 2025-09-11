@@ -3,12 +3,11 @@ import { Button, Container, Form, FormGroup, ToggleButtonGroup, ToggleButton } f
 import PostTextareaControl from "../../../components/PostTextareaControl";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import InputTags from "../../../components/InputTags";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 const FeedCreate = () => {
     const [message, setMessage] = useState('');
-    const [tags, setTags] = useState<string[]>([]);
+    const [tags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [mode, setMode] = useState<"write" | "preview">("write"); // <-- toggle state
@@ -96,7 +95,7 @@ const FeedCreate = () => {
                 )}
 
                 {/* Tags */}
-                <FormGroup className="mb-3 mt-3">
+                {/* <FormGroup className="mb-3 mt-3">
                     <label className="form-label fw-semibold">Tags</label>
                     <InputTags 
                         values={tags} 
@@ -106,7 +105,7 @@ const FeedCreate = () => {
                     <div className="mt-1 text-muted small">
                         {tags.length}/10 tags selected
                     </div>
-                </FormGroup>
+                </FormGroup> */}
 
                 {/* Actions */}
                 <div className="d-flex justify-content-end gap-2">

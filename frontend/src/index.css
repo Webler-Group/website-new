@@ -464,8 +464,8 @@ ul {
 .wb-discuss-reply__edit-button {
     cursor: pointer;
     position: absolute;
-    right: 16px;
-    top: 16px;
+    right: 0;
+    top: 0;
 }
 
 .wb-discuss-voting {
@@ -861,73 +861,6 @@ ul {
     background-color: #0056b3;
 }
 
-.wb-feed-control-button {
-    min-width: 44px;
-    padding: 8px 12px;
-    height: 38px;
-}
-
-.wb-feed-control-input {
-    height: 38px;
-}
-
-@media (max-width: 767px) {
-    .wb-feed-new-post-button {
-        padding: 12px;
-        width: 48px;
-        height: 48px;
-        justify-content: center;
-        align-items: center;
-    }
-
-    .wb-feed-control-button {
-        padding: 8px;
-        width: 44px;
-        height: 38px;
-        justify-content: center;
-    }
-
-    .wb-feed-control-button span {
-        display: none !important;
-    }
-
-    .wb-feed-control-input {
-        height: 38px;
-    }
-}
-
-.wb-feed-item {
-    background: #ffffff;
-    border: 1px solid #e9ecef;
-    border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.04);
-    margin-bottom: 24px;
-    transition: all 0.2s ease-in-out;
-    overflow: hidden;
-}
-
-.wb-feed-item:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
-    border-color: #dee2e6;
-}
-
-.wb-feed-header {
-    padding: 20px 24px 0;
-}
-
-.wb-feed-content {
-    padding: 16px 24px;
-    line-height: 1.6;
-    font-size: 15px;
-    color: #1a1a1a;
-}
-
-.wb-feed-actions {
-    padding: 12px 24px 20px;
-    border-top: 1px solid #f1f3f4;
-    background: #fafbfc;
-}
-
 .wb-feed-author-name {
     font-weight: 600;
     font-size: 15px;
@@ -938,19 +871,6 @@ ul {
 
 .wb-feed-author-name:hover {
     color: #1976d2;
-}
-
-.wb-feed-post-meta {
-    font-size: 13px;
-    color: #65676b;
-    font-weight: 500;
-}
-
-.wb-feed-post-meta .badge {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 4px 8px;
-    border-radius: 6px;
 }
 
 .wb-feed-dropdown-toggle-btn {
@@ -1006,54 +926,22 @@ ul {
 .wb-feed-custom-dropdown .dropdown-item.text-warning:hover {
     background: #fffbf0;
     color: #f59e0b;
+    border-radius: 16px;
 }
 
-.wb-feed-reactions-display {
-    background: #f8f9fa;
-    border-radius: 20px;
-    padding: 4px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 16px;
-}
-
-.wb-feed-reactions-display:hover {
-    background: #e9ecef;
-}
-
-.wb-feed-reaction-emoji {
-    font-size: 16px;
-    margin-left: -2px;
-    position: relative;
-}
-
-.wb-feed-reaction-count {
-    font-size: 13px;
-    font-weight: 600;
+.wb-feed-action-btn, .wb-reaction-picker-btn {
     color: #65676b;
-    margin-left: 4px;
-}
-
-.wb-feed-action-button {
-    background: none;
-    border: none;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
-    color: #65676b;
-    transition: all 0.2s ease;
     display: flex;
+    gap: 0.5rem;
     align-items: center;
-    gap: 8px;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
 }
 
-.wb-feed-action-button:hover {
-    background: #f0f2f5;
-    color: #1a1a1a;
+.wb-feed-action-btn:hover, .wb-reaction-picker-btn:hover {
+    background: #e4e6ea;
 }
 
 .wb-feed-shared-post-unavailable {
@@ -1063,53 +951,6 @@ ul {
     padding: 32px 24px;
     margin-top: 16px;
     text-align: center;
-}
-
-@media (max-width: 576px) {
-
-    .wb-feed-header,
-    .wb-feed-content {
-        padding-left: 16px;
-        padding-right: 16px;
-    }
-
-    .wb-feed-actions {
-        padding: 12px 16px 16px;
-    }
-
-    .wb-feed-action-button {
-        padding: 6px 12px;
-        font-size: 13px;
-    }
-
-    .wb-feed-action-button .wb-feed-action-text {
-        display: none;
-    }
-
-    .wb-feed-author-name {
-        font-size: 14px;
-    }
-
-    .wb-feed-post-meta {
-        font-size: 12px;
-    }
-
-    .wb-feed-content {
-        font-size: 14px;
-    }
-}
-
-@media (min-width: 768px) {
-    .wb-feed-item {
-        max-width: 680px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-}
-
-.wb-feed-details-container {
-    min-height: 100vh;
-    background: #f8f9fa;
 }
 
 .wb-feed-back-button {
@@ -1177,22 +1018,22 @@ ul {
     background: #1565c0;
 }
 
-.wb-feed-main-content {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 20px 16px;
-}
-
-@media (min-width: 576px) {
-    .wb-feed-main-content {
-        padding: 32px 24px;
-    }
-}
-
 .wb-feed-content__message {
-    font-size: 13px;
+    font-size: 0.9rem;
     line-height: 1.3;
     width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
+}
+
+.wb-feed-layout-container, .wb-feed-details-container {
+    max-width: 720px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.wb-feed-reactions {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
 }

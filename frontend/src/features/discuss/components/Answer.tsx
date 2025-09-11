@@ -63,11 +63,10 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
 
     let isAccepted = acceptedAnswer === answer.id;
     let isNewlyCreated = newlyCreatedAnswer === answer.id;
-    let borderClassName = isAccepted ? " border-2 border-success" : "";
     let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
-        <div className={"rounded border p-2 gap-2 d-flex flex-column mt-3 " + borderClassName} style={{ background: bg }}>
+        <div className="gap-2 d-flex flex-column border-bottom py-2" style={{ background: bg }}>
             <div className="d-flex gap-2">
                 <div className="d-flex flex-column align-items-center">
                     {

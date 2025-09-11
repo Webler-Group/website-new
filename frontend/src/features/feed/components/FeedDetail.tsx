@@ -149,7 +149,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
         </Offcanvas.Body>
       </Offcanvas>
 
-      <div className="wb-feed-details-container">
+      <div className="wb-feed-details-container p-2">
         <div className="wb-feed-main-content">
           {/* Back Button */}
           <button

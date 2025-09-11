@@ -35,10 +35,10 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
     let title = question.title;
 
     let body = (
-        <div className="rounded border p-2 mb-2 bg-white d-md-flex">
+        <div className="py-2 border-bottom mb-2 bg-white d-md-flex">
             <div className="flex-grow-1">
                 <Link to={"/Discuss/" + question.id}>
-                    <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
+                    <b style={{ wordBreak: "break-word" }}>{title}</b>
                 </Link>
                 <div className="d-flex flex-wrap mt-2">
                     {
@@ -68,7 +68,7 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
             </div>
             {
                 showUserProfile &&
-                <div className="d-flex justify-content-end align-items-end mt-3">
+                <div className="d-flex justify-content-end align-items-end mt-2">
                     <div className="d-flex align-items-center">
                         <div>
                             <div>

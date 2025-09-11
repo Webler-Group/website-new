@@ -1,59 +1,59 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
+import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import FeedItem from './FeedItem';
-import useFeeds from '../hooks/useFeeds';
-import { Modal } from 'react-bootstrap';
+import { Button, FormControl, FormSelect, Modal } from 'react-bootstrap';
 import FeedDetails from './FeedDetail';
 import ReactionsList from '../../../components/reactions/ReactionsList';
-import { FaEye, FaEyeSlash, FaFilter, FaMapPin, FaPlus, FaRotateRight } from 'react-icons/fa6';
+import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
-import { TagSearch } from '../../../components/InputTags';
+import useFeed from '../hooks/useFeed';
+import { useAuth } from '../../auth/context/authContext';
+import { useApi } from '../../../context/apiCommunication';
+import { IFeed } from './types';
 
 const FILTER_OPTIONS = [
-  { value: 1, label: 'Latest' },
-  { value: 2, label: 'My Posts' },
-  { value: 3, label: 'Following' },
-  { value: 4, label: 'Trending (24h)' },
-  { value: 5, label: 'Most Popular' },
-  { value: 6, label: 'Most Shared' },
+  { value: 1, label: 'Latest', requireLogin: false },
+  { value: 2, label: 'My Posts', requireLogin: true },
+  { value: 3, label: 'Following', requireLogin: true },
+  { value: 4, label: 'Trending (24h)', requireLogin: false },
+  { value: 5, label: 'Most Popular', requireLogin: false },
+  { value: 6, label: 'Most Shared', requireLogin: false },
 ];
 
 const FeedList = () => {
   const { feedId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [pinnedExpanded, setPinnedExpanded] = useState(true);
   const navigate = useNavigate();
-
-  // URL state synchronization
-  const searchQuery = searchParams.get('search') || '';
-  const filterValue = parseInt(searchParams.get('filter') || '1');
-
-  const {
-    feeds,
-    error,
-    loading,
-    loadingMore,
-    hasMore,
-    totalCount,
-    resetFeedList,
-    loadMore,
-    handleRefresh,
-    onGeneralUpdate,
-    onDelete,
-    onTogglePin,
-    pinnedFeeds
-  } = useFeeds(searchQuery, filterValue);
-
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState(1);
   const [headerVisible, setHeaderVisible] = useState(true);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  // Search input state
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [votesModalVisible, setVotesModalVisible] = useState(false);
   const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
+  const [pinnedVisible, setPinnedVisible] = useState(true);
+  const { userInfo } = useAuth();
+  const { sendJsonRequest } = useApi();
+  const feeds = useFeed(filter, searchQuery, 10);
+  const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Refs and cache
-  const observerRef = useRef<IntersectionObserver | null>(null);
-  const lastFeedRef = useRef<HTMLDivElement | null>(null);
+  const intObserver = useRef<IntersectionObserver>();
+  const lastFeedRef = useCallback(
+    (node: any) => {
+      if (feeds.loading) return;
+
+      if (intObserver.current) intObserver.current.disconnect();
+      intObserver.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && feeds.hasNextPage && feeds.results.length > 0) {
+          feeds.setState((prev) => ({
+            page: prev.page + 1
+          }));
+        }
+      });
+
+      if (node) intObserver.current.observe(node);
+    },
+    [feeds.loading, feeds.hasNextPage, feeds.results]
+  );
 
   useEffect(() => {
     let lastY = window.scrollY;
@@ -72,88 +72,54 @@ const FeedList = () => {
       lastY = currentY;
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    addEventListener("scroll", handleScroll, { passive: true });
+    return () => removeEventListener("scroll", handleScroll);
   }, []);
 
-
-  // Filter change handler
-  const handleFilterChange = useCallback((newFilter: number) => {
-    if (newFilter !== filterValue) {
-      searchParams.set("filter", newFilter.toString());
-      setSearchParams(searchParams);
-      resetFeedList();
-      setIsDropdownOpen(false);
-    }
-  }, [filterValue, searchQuery, resetFeedList]);
-
-
-  // Intersection Observer for infinite scroll
   useEffect(() => {
-    if (observerRef.current) {
-      observerRef.current.disconnect();
-    }
+    fetchPinnedFeeds();
+  }, []);
 
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && hasMore && !loading && !loadingMore) {
-          loadMore();
-        }
-      },
-      {
-        rootMargin: '200px'
-      }
-    );
-
-    if (lastFeedRef.current) {
-      observerRef.current.observe(lastFeedRef.current);
-    }
-
-    return () => {
-      if (observerRef.current) {
-        observerRef.current.disconnect();
-      }
-    };
-  }, [hasMore, loading, loadingMore, loadMore]);
-
-  // Sync search input with URL
   useEffect(() => {
-    setSearchInput(searchQuery);
-  }, [searchQuery]);
+    if (feeds.state.page === 1) {
+      setTimeout(() => {
+        scrollTo({ top: 0, behavior: "instant" });
+      });
+    }
+  }, [feeds.state]);
 
-  const handleSearch = (value: string) => {
-    searchParams.set("search", value);
-    setSearchParams(searchParams);
-    setSearchInput(value);
+  const fetchPinnedFeeds = async () => {
+    setLoading(true);
+
+    const result = await sendJsonRequest("/Feed", "POST", {
+      page: 1,
+      count: 10,
+      filter: 7,
+      searchQuery: ""
+    });
+
+    if (result && result.feeds) {
+      setPinnedFeeds(() => result.feeds);
+    }
+
+    setLoading(false);
   }
 
-  // Memoized filter dropdown
-  const filterDropdown = useMemo(() => (
-    <div className="dropdown dropstart">
-      <button
-        className="btn btn-light rounded-pill shadow-sm d-flex align-items-center gap-2 control-button"
-        type="button"
-        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        disabled={loading}
-      >
-        <FaFilter size={16} className="text-muted" />
-        <span>{FILTER_OPTIONS.find(opt => opt.value === filterValue)?.label || 'Filter'}</span>
-      </button>
-      {isDropdownOpen && (
-        <div className="dropdown-menu show">
-          {FILTER_OPTIONS.map(option => (
-            <button
-              key={option.value}
-              className={`dropdown-item ${filterValue === option.value ? 'active' : ''}`}
-              onClick={() => handleFilterChange(option.value)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  ), [filterValue, handleFilterChange, loading, isDropdownOpen]);
+  const handleFilterSelect = (e: ChangeEvent) => {
+    const value = Number((e.target as HTMLSelectElement).selectedOptions[0].value)
+    setFilter(value);
+  }
+
+  const handleSearch = () => {
+    setSearchQuery(() => searchInput);
+  }
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    feeds.setState({ page: 1 });
+    await fetchPinnedFeeds();
+    setLoading(false);
+  }
 
   const handleClose = () => {
     navigate("/Feed");
@@ -163,9 +129,42 @@ const FeedList = () => {
     setVotesModalVisible(false);
   }
 
+  const onGeneralUpdate = (post: IFeed) => {
+    if (post.isPinned) {
+      setPinnedFeeds(prev => prev.map(x => x.id == post.id ? post : x));
+    } else {
+      feeds.editPost(post);
+    }
+  }
+
+  const onDelete = (post: IFeed) => {
+    if (post.isPinned) {
+      setPinnedFeeds(prev => prev.filter(x => x.id != post.id));
+    } else {
+      feeds.deletePost(post.id);
+    }
+  }
+
   const onShowUserReactions = (feedId: string) => {
     setVotesModalOptions({ parentId: feedId });
     setVotesModalVisible(true);
+  }
+
+  const onTogglePin = (post: IFeed) => {
+    if (post.isPinned) {
+      feeds.deletePost(post.id);
+      setPinnedFeeds(prev => [post, ...prev]);
+      setTimeout(() => {
+        scrollTo({ top: 0, behavior: "smooth" });
+      });
+    } else {
+      setPinnedFeeds(prev => prev.filter(f => f.id !== post.id));
+      feeds.addPost(post);
+    }
+  }
+
+  const togglePinnedVisibility = () => {
+    setPinnedVisible(prev => !prev);
   }
 
   return (
@@ -193,20 +192,42 @@ const FeedList = () => {
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             {/* Search */}
-            <TagSearch query={searchInput} handleSearch={handleSearch} />
+            <div className="d-flex gap-2">
+              <FormControl
+                type="search"
+                size='sm'
+                placeholder="Search..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+              />
+              <Button size='sm' onClick={handleSearch}>Search</Button>
+            </div>
             {/* Controls */}
             <div className="d-flex align-items-center justify-content-between gap-2">
               {/* Filter Dropdown */}
-              {filterDropdown}
+              <FormSelect size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                {
+                  FILTER_OPTIONS
+                    .filter(x => x.requireLogin == false || userInfo != null)
+                    .map(x => (
+                      <option key={x.value} value={x.value}>{x.label}</option>
+                    ))
+                }
+              </FormSelect>
               {/* Refresh */}
               <button
                 onClick={handleRefresh}
-                disabled={loading || loadingMore}
+                disabled={feeds.loading || loading}
                 className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 wb-feed-control-button"
               >
                 <FaRotateRight
-                  size={16}
-                  className={loading ? "animate-spin text-muted" : "text-muted"}
+                  className="text-muted"
                 />
                 <span className="d-none d-sm-inline">Refresh</span>
               </button>
@@ -214,144 +235,106 @@ const FeedList = () => {
           </div>
         </div>
 
-        {/* Info / Status */}
-        {!loading && !error && (
-          <div className="mt-3 mb-3">
-            <small className="text-muted">
-              {searchQuery ? (
-                <>Showing {feeds.length} of {totalCount} results for "{searchQuery}"</>
-              ) : (
-                <>Showing {feeds.length} of {totalCount} feeds</>
-              )}
-            </small>
-          </div>
-        )}
-
-        {/* Pinned Feeds Section */}
-        <div className="card border-warning shadow-sm mb-5">
-          {/* Header */}
-          <div
-            className="card-header bg-warning bg-opacity-10 border-warning d-flex align-items-center justify-content-between py-2 px-3"
-            style={{ cursor: "pointer" }}
-            onClick={() => setPinnedExpanded(!pinnedExpanded)}
-          >
-            <small className="fw-bold text-dark mb-0"><FaMapPin size={16} />  Pinned Posts</small>
-            <small className="text-muted">
-              {pinnedExpanded ? <FaEye /> : <FaEyeSlash />}
-            </small>
-          </div>
-          {pinnedExpanded && <div className="d-flex flex-column gap-3">
-            {pinnedExpanded && (
-              <div className="d-flex flex-column gap-3 p-3">
-                {pinnedFeeds.length > 0 ? (
-                  pinnedFeeds.map((feed) => (
-                    <div key={feed.id}>
-                      <FeedItem
-                        feed={feed}
-                        onGeneralUpdate={onGeneralUpdate}
-                        onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
-                        commentCount={feed.answers || 0}
-                        onShowUserReactions={onShowUserReactions}
-                        onDelete={onDelete}
-                        onTogglePin={onTogglePin}
-                      />
+        {
+          loading ?
+            <div className="d-flex justify-content-center mt-5 text-center">
+              <div className="wb-loader">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+            </div>
+            :
+            <>
+              {/* Pinned Feeds Section */}
+              {pinnedFeeds.length > 0 && (
+                <div className="wb-pinned-feeds-section bg-light border-top border-bottom">
+                  <div className="d-flex justify-content-between align-items-center py-2">
+                    <h6 className="text-warning mb-0"><FaMapPin /> Pinned Posts</h6>
+                    <Button size='sm' variant='link' className='text-secondary' onClick={togglePinnedVisibility}>{pinnedVisible ? <FaEye /> : <FaEyeSlash />}</Button>
+                  </div>
+                  {pinnedVisible && (
+                    <div>
+                      {pinnedFeeds.map((feed) => (
+                        <div key={feed.id} className='border-2 border-bottom mt-3'>
+                          <FeedItem
+                            feed={feed}
+                            onGeneralUpdate={onGeneralUpdate}
+                            onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                            commentCount={feed.answers || 0}
+                            onShowUserReactions={onShowUserReactions}
+                            onDelete={onDelete}
+                            onTogglePin={onTogglePin}
+                          />
+                        </div>
+                      ))}
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center text-muted py-4">
-                    <p className="mb-0">No pinned posts available</p>
+                  )}
+                </div>
+              )}
+
+              {/* Content */}
+              <div className="wb-feed-items"> 
+                {feeds.error && (
+                  <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
+                    <FaExclamationCircle />
+                    <div>
+                      <strong>Error loading feeds</strong>
+                      <p className="mb-0">{feeds.error}</p>
+                      <button
+                        onClick={handleRefresh}
+                        className="btn btn-sm btn-outline-danger mt-2"
+                      >
+                        Try Again
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {!feeds.loading && !feeds.error && feeds.results.length === 0 && (
+                  <div className="text-center py-5">
+                    <FaSearch size={40} className="opacity-50 mb-3" />
+                    <h5 className="text-muted">No feeds found</h5>
+                    <p className="text-muted small">
+                      {searchQuery
+                        ? `No results found for "${searchQuery}". Try adjusting search or filters.`
+                        : "No feeds available at the moment."}
+                    </p>
+                  </div>
+                )}
+
+                {/* Feed Items */}
+                <div>
+                  {feeds.results.map((feed, index) => {
+                    const isLast = index === feeds.results.length - 1;
+                    return (
+                      <div
+                        className='border-2 border-bottom mt-3'
+                        key={feed.id}
+                        ref={isLast ? lastFeedRef : undefined}
+                      >
+                        <FeedItem
+                          feed={feed}
+                          onGeneralUpdate={onGeneralUpdate}
+                          onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                          commentCount={feed.answers || 0}
+                          onShowUserReactions={onShowUserReactions}
+                          onDelete={onDelete}
+                          onTogglePin={onTogglePin}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {!feeds.hasNextPage && feeds.results.length > 0 && (
+                  <div className="text-center py-4 text-muted small">
+                    <span>You've reached the end of the feed</span>
                   </div>
                 )}
               </div>
-            )}
-          </div>}
-        </div>
-
-        {/* Content */}
-        <div className="wb-feed-items">
-          {error && (
-            <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
-              <FaExclamationCircle size={20} />
-              <div>
-                <strong>Error loading feeds</strong>
-                <p className="mb-0">{error}</p>
-                <button
-                  onClick={handleRefresh}
-                  className="btn btn-sm btn-outline-danger mt-2"
-                >
-                  Try Again
-                </button>
-              </div>
-            </div>
-          )}
-
-          {loading && feeds.length === 0 && (
-            <div className="text-center py-5">
-              <div className="wb-loader">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <p className="text-muted">Loading feeds...</p>
-            </div>
-          )}
-
-          {!loading && !error && feeds.length === 0 && (
-            <div className="text-center py-5">
-              <FaSearch size={40} className="opacity-50 mb-3" />
-              <h5 className="text-muted">No feeds found</h5>
-              <p className="text-muted small">
-                {searchQuery
-                  ? `No results found for "${searchQuery}". Try adjusting search or filters.`
-                  : "No feeds available at the moment."}
-              </p>
-            </div>
-          )}
-
-          {/* Feed Items */}
-          <div className="d-flex flex-column gap-3">
-            {feeds.map((feed, index) => {
-              const isLast = index === feeds.length - 1;
-              return (
-                <div
-                  key={feed.id}
-                  ref={isLast ? lastFeedRef : undefined}
-                >
-                  <div>
-                    <FeedItem
-                      feed={feed}
-                      onGeneralUpdate={onGeneralUpdate}
-                      onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
-                      commentCount={feed.answers || 0}
-                      onShowUserReactions={onShowUserReactions}
-                      onDelete={onDelete}
-                      onTogglePin={onTogglePin}
-                    />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Load More */}
-          {loadingMore && (
-            <div className="text-center py-4">
-              <div className="wb-loader">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <p className="text-muted mb-0">Loading more feeds...</p>
-            </div>
-          )}
-
-          {!hasMore && feeds.length > 0 && (
-            <div className="text-center py-4 text-muted small">
-              <hr className="my-3" />
-              <span>You've reached the end of the feed</span>
-            </div>
-          )}
-        </div>
+            </>
+        }
 
         {/* Floating New Post Button */}
         <button

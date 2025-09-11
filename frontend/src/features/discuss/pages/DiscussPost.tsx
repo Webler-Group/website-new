@@ -353,7 +353,7 @@ const DiscussPost = () => {
                 <span>&rsaquo;</span>
                 <span>{truncate(question.title, 20)}</span>
             </div>
-            <div className="p-2 bg-white rounded border mb-3 d-flex flex-column position-relative">
+            <div className="mb-3 d-flex flex-column position-relative">
                 <div className="wb-discuss-reply__edit-button">
                     <Dropdown drop="start">
                         <Dropdown.Toggle as={EllipsisDropdownToggle} />

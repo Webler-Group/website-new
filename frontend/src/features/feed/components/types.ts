@@ -13,6 +13,7 @@ export interface OriginalPost {
   message: string;
   title: string;
   date: string;
+  userId: string;
   userName: string;
   userAvatarImage: string | null;
   tags: string[];

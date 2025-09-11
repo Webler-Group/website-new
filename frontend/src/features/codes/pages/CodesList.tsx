@@ -111,7 +111,7 @@ const CodesList = () => {
     return (
         <div className="d-flex flex-column">
             <h2>Codes</h2>
-            <div className="d-flex mt-2 gap-2">
+            <div className="d-flex gap-2">
                 <FormControl
                     type="search"
                     size='sm'

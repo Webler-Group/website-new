@@ -32,7 +32,7 @@ const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.
     let title = code.name;
 
     let body = (
-        <div className="rounded border p-2 bg-white d-md-flex">
+        <div className="border-bottom py-1 bg-white d-md-flex">
             <div className="flex-grow-1 d-flex gap-2">
                 <div>
                     <div className="rounded-circle d-flex justify-content-center align-items-center text-light small"
@@ -40,9 +40,9 @@ const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.
                 </div>
                 <div>
                     <Link to={"/Compiler-Playground/" + code.id}>
-                        <h5 style={{ wordBreak: "break-word" }}>{title}</h5>
+                        <b style={{ wordBreak: "break-word" }}>{title}</b>
                     </Link>
-                    <div className="d-flex small mt-3 align-items-center gap-3">
+                    <div className="d-flex small mt-2 align-items-center gap-3">
                         <div className="d-flex align-items-center">
                             <FaThumbsUp />
                             <span className="ms-1">{code.votes}</span>
@@ -68,7 +68,7 @@ const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.
             </div>
             {
                 showUserProfile &&
-                <div className="d-flex justify-content-end align-items-end mt-3">
+                <div className="d-flex justify-content-end align-items-end mt-2">
                     <div className="d-flex align-items-center">
                         <div>
                             <div>

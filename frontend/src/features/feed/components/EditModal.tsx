@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import PostTextareaControl from '../../../components/PostTextareaControl';
-import InputTags from '../../../components/InputTags';
 import { IFeed } from './types';
 import { FaSave, FaTimes, FaEye, FaPen } from 'react-icons/fa';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
+import allowedUrls from '../../../data/discussAllowedUrls';
 
 interface EditModalProps {
   feed: IFeed;
@@ -13,7 +13,7 @@ interface EditModalProps {
 
 const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
   const [content, setContent] = useState(feed.message);
-  const [tags, setTags] = useState<string[]>(feed.tags);
+  const [tags] = useState<string[]>(feed.tags);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<"write" | "preview">("write");
 
@@ -82,21 +82,17 @@ const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
               )}
 
               {mode === "preview" && (
-                <div className="p-3 border rounded bg-light">
-                  {content.trim() ? (
-                    <MarkdownRenderer
-                      content={content}
-                      allowedUrls={["http", /^\/Profile\//]}
-                    />
-                  ) : (
-                    <span className="text-muted">Nothing to preview</span>
-                  )}
+                <div className='wb-feed-content__message'>
+                  <MarkdownRenderer
+                    content={content}
+                    allowedUrls={allowedUrls}
+                  />
                 </div>
               )}
             </div>
 
             {/* Tags */}
-            <div className="mb-3">
+            {/* <div className="mb-3">
               <label className="form-label fw-semibold">Tags</label>
               <InputTags
                 values={tags}
@@ -106,7 +102,7 @@ const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
               <div className="mt-1 text-muted small">
                 {tags.length}/10 tags selected
               </div>
-            </div>
+            </div> */ }
           </div>
 
           {/* Footer */}

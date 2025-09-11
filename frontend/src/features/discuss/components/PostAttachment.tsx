@@ -31,7 +31,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     switch (data.type) {
         case 1: // Code
             title = data.codeName || "Untitled Code";
-            subtitle = `${data.codeLanguage} • by ${data.userName}`;
+            subtitle = `${data.codeLanguage} • ${data.userName}`;
             to = `/Compiler-Playground/${data.codeId}`;
             bgColor = "bg-primary";
             info = "code";
@@ -39,7 +39,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
 
         case 2: // Question / Discussion
             title = data.questionTitle || "Question";
-            subtitle = `by ${data.userName}`;
+            subtitle = `${data.userName}`;
             to = `/Discuss/${data.questionId}`;
             bgColor = "bg-success";
             info = "question";
@@ -47,7 +47,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
 
         case 4: // Feed
             title = `${truncate(data.feedMessage, 20)}`;
-            subtitle = `by ${data.userName}`;
+            subtitle = `${data.userName}`;
             to = `/feed/${data.feedId}`;
             bgColor = "bg-info";
             info = "post";
@@ -60,7 +60,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     return (
         <Link
             to={to}
-            className="d-flex align-items-center gap-3 p-3 border rounded-3 bg-white text-decoration-none shadow-sm position-relative overflow-hidden"
+            className="d-flex align-items-center gap-3 p-2 border rounded-3 bg-white text-decoration-none shadow-sm position-relative overflow-hidden"
             style={{
                 transition: "all 0.2s ease",
                 borderLeft: `4px solid var(--bs-${bgColor.split('-')[1]})`

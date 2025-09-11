@@ -743,16 +743,6 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
           { $limit: 1 }
         ]
       }
-    },
-    {
-      $graphLookup: {
-        from: "posts",
-        startWith: "$_id",
-        connectFromField: "_id",
-        connectToField: "parentId",
-        as: "allReplies",
-        restrictSearchWithMatch: { hidden: false }
-      }
     }
   );
 
