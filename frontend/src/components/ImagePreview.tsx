@@ -7,29 +7,20 @@ interface ImagePreviewProps {
 }
 
 const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
-    const imgRef = useRef<HTMLImageElement>(null);
+    const imgRef = useRef<HTMLImageElement | null>(null);
 
     const currentScale = useRef<number>(1);
     const translation = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
-    const pinchState = useRef<{
-        isPinching: boolean;
-        initialDistance: number;
-        initialScale: number;
-    }>({
-        isPinching: false,
+    // gesture tracker: set ONLY on touchstart and not changed mid-gesture
+    const gesture = useRef<"none" | "pinch" | "drag">("none");
+
+    const pinchData = useRef<{ initialDistance: number; initialScale: number }>({
         initialDistance: 0,
         initialScale: 1,
     });
 
-    const dragState = useRef<{
-        isDragging: boolean;
-        startX: number;
-        startY: number;
-        initialX: number;
-        initialY: number;
-    }>({
-        isDragging: false,
+    const dragData = useRef<{ startX: number; startY: number; initialX: number; initialY: number }>({
         startX: 0,
         startY: 0,
         initialX: 0,
@@ -64,17 +55,13 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
     };
 
     useEffect(() => {
-        if (loaded) {
-            updateScaleLimits();
-        }
+        if (loaded) updateScaleLimits();
     }, [loaded]);
 
     useEffect(() => {
-        const handleResize = () => {
-            updateScaleLimits();
-        };
-        window.addEventListener("resize", handleResize);
-        return () => window.removeEventListener("resize", handleResize);
+        const onResize = () => updateScaleLimits();
+        window.addEventListener("resize", onResize);
+        return () => window.removeEventListener("resize", onResize);
     }, []);
 
     useEffect(() => {
@@ -86,19 +73,28 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
 
     useEffect(() => {
         const handleTouchStart = (e: TouchEvent) => {
-            if (e.touches.length === 2) {
-                // pinch start
-                e.preventDefault();
-                pinchState.current = {
-                    isPinching: true,
+            // Only start handling gestures if the initial touch was on the image
+            const target = e.target as Node | null;
+            const startedOnImg = imgRef.current ? imgRef.current.contains(target) : false;
+            if (!startedOnImg) {
+                // don't interfere with touches that started elsewhere (close button, background, ...)
+                return;
+            }
+
+            // prevent scrolling/pinch-zoom of the page for touches that start on the image
+            e.preventDefault();
+
+            if (e.touches.length >= 2) {
+                // start pinch gesture
+                gesture.current = "pinch";
+                pinchData.current = {
                     initialDistance: getDistance(e),
                     initialScale: currentScale.current,
                 };
-            } else if (e.touches.length === 1) {
-                // drag start
-                e.preventDefault();
-                dragState.current = {
-                    isDragging: true,
+            } else {
+                // start drag gesture (ONLY if it started as single-finger)
+                gesture.current = "drag";
+                dragData.current = {
                     startX: e.touches[0].clientX,
                     startY: e.touches[0].clientY,
                     initialX: translation.current.x,
@@ -108,55 +104,57 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
         };
 
         const handleTouchMove = (e: TouchEvent) => {
-            if (pinchState.current.isPinching && e.touches.length === 2) {
-                // pinch zoom
+            // If gesture was not started on image, ignore
+            if (gesture.current === "none") return;
+
+            // If gesture was started as pinch, handle pinch only when two touches are present
+            if (gesture.current === "pinch") {
+                if (e.touches.length < 2) {
+                    // do not convert to drag — we keep gesture 'pinch' until all touches end
+                    return;
+                }
                 e.preventDefault();
                 const distance = getDistance(e);
-                if (distance > 0 && pinchState.current.initialDistance > 0) {
-                    const newScale =
-                        pinchState.current.initialScale *
-                        (distance / pinchState.current.initialDistance);
-                    const clamped = Math.max(
-                        minScale,
-                        Math.min(newScale, maxScale)
-                    );
+                if (distance > 0 && pinchData.current.initialDistance > 0) {
+                    const newScale = pinchData.current.initialScale * (distance / pinchData.current.initialDistance);
+                    const clamped = Math.max(minScale, Math.min(newScale, maxScale));
                     currentScale.current = clamped;
                     updateTransform();
                 }
-            } else if (dragState.current.isDragging && e.touches.length === 1) {
-                // drag move
+                return;
+            }
+
+            // If gesture started as drag, handle single-finger moves
+            if (gesture.current === "drag") {
+                if (e.touches.length < 1) return;
                 e.preventDefault();
-                const dx = e.touches[0].clientX - dragState.current.startX;
-                const dy = e.touches[0].clientY - dragState.current.startY;
-                translation.current.x = dragState.current.initialX + dx;
-                translation.current.y = dragState.current.initialY + dy;
+                const dx = e.touches[0].clientX - dragData.current.startX;
+                const dy = e.touches[0].clientY - dragData.current.startY;
+                translation.current.x = dragData.current.initialX + dx;
+                translation.current.y = dragData.current.initialY + dy;
                 updateTransform();
             }
         };
 
         const handleTouchEnd = (e: TouchEvent) => {
-            if (e.touches.length < 2) {
-                pinchState.current.isPinching = false;
-            }
+            // If no more touches, end gesture fully and allow new gestures to start normally
             if (e.touches.length === 0) {
-                dragState.current.isDragging = false;
+                gesture.current = "none";
             }
+            // otherwise: keep the gesture type as it was until all touches end.
+            // this prevents switching pinch -> drag mid-gesture.
         };
 
-        document.addEventListener("touchstart", handleTouchStart, {
-            passive: false,
-        });
-        document.addEventListener("touchmove", handleTouchMove, {
-            passive: false,
-        });
-        document.addEventListener("touchend", handleTouchEnd, {
-            passive: false,
-        });
+        document.addEventListener("touchstart", handleTouchStart, { passive: false });
+        document.addEventListener("touchmove", handleTouchMove, { passive: false });
+        document.addEventListener("touchend", handleTouchEnd, { passive: false });
+        document.addEventListener("touchcancel", handleTouchEnd, { passive: false });
 
         return () => {
             document.removeEventListener("touchstart", handleTouchStart);
             document.removeEventListener("touchmove", handleTouchMove);
             document.removeEventListener("touchend", handleTouchEnd);
+            document.removeEventListener("touchcancel", handleTouchEnd);
         };
     }, [maxScale]);
 
@@ -173,7 +171,8 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
                 alignItems: "center",
                 justifyContent: "center",
                 zIndex: 9999,
-                touchAction: "none",
+                // important: don't block touch behavior for non-image elements (close button)
+                touchAction: "auto",
             }}
             onClick={onClose}
         >
@@ -210,6 +209,8 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
                     objectFit: "contain",
                     transform: `translate(${translation.current.x}px, ${translation.current.y}px) scale(${currentScale.current})`,
                     transformOrigin: "center",
+                    // allow handling of touch gestures only on the image itself
+                    touchAction: "none",
                 }}
                 onClick={(e) => e.stopPropagation()}
                 onLoad={() => setLoaded(true)}
