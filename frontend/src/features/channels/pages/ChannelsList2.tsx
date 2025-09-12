@@ -171,23 +171,43 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
 
                     <Tab.Content className="flex-grow-1 overflow-auto pb-4">
                         <Tab.Pane eventKey="channels">
-                            {channels.results.length === 0 ? (
+                            {(channels.results.length === 0 && !channels.isLoading) ? (
                                 <div className="text-center text-muted mt-5">
                                     You have no channels yet. Create a group or wait for invites!
                                 </div>
                             ) : (
                                 channelsListContent
                             )}
+                            {
+                                channels.isLoading &&
+                                <div className="d-flex justify-content-center mt-5 text-center">
+                                    <div className="wb-loader">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            }
                         </Tab.Pane>
 
                         <Tab.Pane eventKey="invites">
-                            {invites.results.length === 0 ? (
+                            {(invites.results.length === 0 && !invites.isLoading) ? (
                                 <div className="text-center text-muted mt-5">
                                     You have no pending invites.
                                 </div>
                             ) : (
                                 invitesListContent
                             )}
+                            {
+                                invites.isLoading &&
+                                <div className="d-flex justify-content-center mt-5 text-center">
+                                    <div className="wb-loader">
+                                        <span></span>
+                                        <span></span>
+                                        <span></span>
+                                    </div>
+                                </div>
+                            }
                         </Tab.Pane>
                     </Tab.Content>
                 </Tab.Container>
