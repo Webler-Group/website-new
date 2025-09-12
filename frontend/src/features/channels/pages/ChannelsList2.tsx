@@ -171,13 +171,24 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
 
                     <Tab.Content className="flex-grow-1 overflow-auto pb-4">
                         <Tab.Pane eventKey="channels">
-                            {channelsListContent}
+                            {channels.results.length === 0 ? (
+                                <div className="text-center text-muted mt-5">
+                                    You have no channels yet. Create a group or wait for invites!
+                                </div>
+                            ) : (
+                                channelsListContent
+                            )}
                         </Tab.Pane>
 
                         <Tab.Pane eventKey="invites">
-                            {invitesListContent}
+                            {invites.results.length === 0 ? (
+                                <div className="text-center text-muted mt-5">
+                                    You have no pending invites.
+                                </div>
+                            ) : (
+                                invitesListContent
+                            )}
                         </Tab.Pane>
-
                     </Tab.Content>
                 </Tab.Container>
             </div>
