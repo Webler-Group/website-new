@@ -8,16 +8,10 @@ interface ImagePreviewProps {
 
 const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
     const imgRef = useRef<HTMLImageElement>(null);
-    const wrapperRef = useRef<HTMLDivElement>(null);
+
     const currentScale = useRef<number>(1);
-    const currentTx = useRef<number>(0);
-    const currentTy = useRef<number>(0);
-    const initialWidth = useRef<number>(0);
-    const initialHeight = useRef<number>(0);
-    const centerLeft = useRef<number>(0);
-    const centerTop = useRef<number>(0);
-    const viewportWidth = useRef<number>(0);
-    const viewportHeight = useRef<number>(0);
+    const translation = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
     const pinchState = useRef<{
         isPinching: boolean;
         initialDistance: number;
@@ -27,19 +21,21 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
         initialDistance: 0,
         initialScale: 1,
     });
-    const panState = useRef<{
-        isPanning: boolean;
+
+    const dragState = useRef<{
+        isDragging: boolean;
         startX: number;
         startY: number;
-        startTx: number;
-        startTy: number;
+        initialX: number;
+        initialY: number;
     }>({
-        isPanning: false,
+        isDragging: false,
         startX: 0,
         startY: 0,
-        startTx: 0,
-        startTy: 0,
+        initialX: 0,
+        initialY: 0,
     });
+
     const [maxScale, setMaxScale] = useState<number>(1);
     const minScale = 1;
     const [loaded, setLoaded] = useState(false);
@@ -51,59 +47,19 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
         return Math.sqrt(dx * dx + dy * dy);
     };
 
+    const updateTransform = () => {
+        const img = imgRef.current;
+        if (img) {
+            img.style.transform = `translate(${translation.current.x}px, ${translation.current.y}px) scale(${currentScale.current})`;
+        }
+    };
+
     const updateScaleLimits = () => {
         const img = imgRef.current;
-        const wrapper = wrapperRef.current;
-        if (!img || !wrapper) return;
-        const visualScale = img.clientWidth / img.naturalWidth;
-        setMaxScale(1 / visualScale || 1);
-        initialWidth.current = img.clientWidth;
-        initialHeight.current = img.clientHeight;
-        viewportWidth.current = wrapper.clientWidth;
-        viewportHeight.current = wrapper.clientHeight;
-        centerLeft.current = (viewportWidth.current - initialWidth.current) / 2;
-        centerTop.current = (viewportHeight.current - initialHeight.current) / 2;
-        if (img) {
-            img.style.position = "absolute";
-            img.style.left = `${centerLeft.current}px`;
-            img.style.top = `${centerTop.current}px`;
-            img.style.width = `${initialWidth.current}px`;
-            img.style.height = `${initialHeight.current}px`;
-            img.style.maxWidth = "none";
-            img.style.maxHeight = "none";
-            img.style.objectFit = "none";
-            img.style.transformOrigin = "0 0";
-            updateImageStyle();
-        }
-        clampTranslate();
-    };
-
-    const clampTranslate = () => {
-        const scale = currentScale.current;
-        const scaledW = initialWidth.current * scale;
-        const scaledH = initialHeight.current * scale;
-        const minTx = viewportWidth.current - centerLeft.current - scaledW;
-        const maxTx = -centerLeft.current;
-        const minTy = viewportHeight.current - centerTop.current - scaledH;
-        const maxTy = -centerTop.current;
-
-        if (scaledW > viewportWidth.current) {
-            currentTx.current = Math.max(minTx, Math.min(currentTx.current, maxTx));
-        } else {
-            currentTx.current = 0;
-        }
-
-        if (scaledH > viewportHeight.current) {
-            currentTy.current = Math.max(minTy, Math.min(currentTy.current, maxTy));
-        } else {
-            currentTy.current = 0;
-        }
-    };
-
-    const updateImageStyle = () => {
-        const img = imgRef.current;
-        if (img) {
-            img.style.transform = `translate(${currentTx.current}px, ${currentTy.current}px) scale(${currentScale.current})`;
+        if (!img) return;
+        const initialVisualScale = img.clientWidth / img.naturalWidth;
+        if (initialVisualScale > 0) {
+            setMaxScale(1 / initialVisualScale);
         }
     };
 
@@ -115,73 +71,66 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
 
     useEffect(() => {
         const handleResize = () => {
-            if (loaded) {
-                updateScaleLimits();
-            }
+            updateScaleLimits();
         };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, [loaded]);
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, []);
 
     useEffect(() => {
         if (loaded && currentScale.current > maxScale) {
             currentScale.current = maxScale;
-            clampTranslate();
-            updateImageStyle();
+            updateTransform();
         }
     }, [maxScale, loaded]);
 
     useEffect(() => {
         const handleTouchStart = (e: TouchEvent) => {
             if (e.touches.length === 2) {
+                // pinch start
                 e.preventDefault();
-                const distance = getDistance(e);
-                if (distance > 0) {
-                    pinchState.current = {
-                        isPinching: true,
-                        initialDistance: distance,
-                        initialScale: currentScale.current,
-                    };
-                }
-            } else if (e.touches.length === 1 && currentScale.current > minScale) {
+                pinchState.current = {
+                    isPinching: true,
+                    initialDistance: getDistance(e),
+                    initialScale: currentScale.current,
+                };
+            } else if (e.touches.length === 1) {
+                // drag start
                 e.preventDefault();
-                panState.current = {
-                    isPanning: true,
+                dragState.current = {
+                    isDragging: true,
                     startX: e.touches[0].clientX,
                     startY: e.touches[0].clientY,
-                    startTx: currentTx.current,
-                    startTy: currentTy.current,
+                    initialX: translation.current.x,
+                    initialY: translation.current.y,
                 };
             }
         };
 
         const handleTouchMove = (e: TouchEvent) => {
             if (pinchState.current.isPinching && e.touches.length === 2) {
+                // pinch zoom
                 e.preventDefault();
                 const distance = getDistance(e);
                 if (distance > 0 && pinchState.current.initialDistance > 0) {
-                    const newScale = pinchState.current.initialScale * (distance / pinchState.current.initialDistance);
-                    const clampedScale = Math.max(minScale, Math.min(newScale, maxScale));
-                    if (clampedScale === currentScale.current) return;
-                    const oldScale = currentScale.current;
-                    const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
-                    const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
-                    const newTx = currentTx.current * (clampedScale / oldScale) + (midX - centerLeft.current) * (1 - clampedScale / oldScale);
-                    const newTy = currentTy.current * (clampedScale / oldScale) + (midY - centerTop.current) * (1 - clampedScale / oldScale);
-                    currentScale.current = clampedScale;
-                    currentTx.current = newTx;
-                    currentTy.current = newTy;
-                    clampTranslate();
-                    updateImageStyle();
+                    const newScale =
+                        pinchState.current.initialScale *
+                        (distance / pinchState.current.initialDistance);
+                    const clamped = Math.max(
+                        minScale,
+                        Math.min(newScale, maxScale)
+                    );
+                    currentScale.current = clamped;
+                    updateTransform();
                 }
-            } else if (panState.current.isPanning && e.touches.length === 1) {
+            } else if (dragState.current.isDragging && e.touches.length === 1) {
+                // drag move
                 e.preventDefault();
-                const deltaX = e.touches[0].clientX - panState.current.startX;
-                const deltaY = e.touches[0].clientY - panState.current.startY;
-                currentTx.current = panState.current.startTx + deltaX;
-                currentTy.current = panState.current.startTy + deltaY;
-                clampTranslate();
-                updateImageStyle();
+                const dx = e.touches[0].clientX - dragState.current.startX;
+                const dy = e.touches[0].clientY - dragState.current.startY;
+                translation.current.x = dragState.current.initialX + dx;
+                translation.current.y = dragState.current.initialY + dy;
+                updateTransform();
             }
         };
 
@@ -189,19 +138,25 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
             if (e.touches.length < 2) {
                 pinchState.current.isPinching = false;
             }
-            if (e.touches.length < 1) {
-                panState.current.isPanning = false;
+            if (e.touches.length === 0) {
+                dragState.current.isDragging = false;
             }
         };
 
-        document.addEventListener('touchstart', handleTouchStart, { passive: false });
-        document.addEventListener('touchmove', handleTouchMove, { passive: false });
-        document.addEventListener('touchend', handleTouchEnd, { passive: false });
+        document.addEventListener("touchstart", handleTouchStart, {
+            passive: false,
+        });
+        document.addEventListener("touchmove", handleTouchMove, {
+            passive: false,
+        });
+        document.addEventListener("touchend", handleTouchEnd, {
+            passive: false,
+        });
 
         return () => {
-            document.removeEventListener('touchstart', handleTouchStart);
-            document.removeEventListener('touchmove', handleTouchMove);
-            document.removeEventListener('touchend', handleTouchEnd);
+            document.removeEventListener("touchstart", handleTouchStart);
+            document.removeEventListener("touchmove", handleTouchMove);
+            document.removeEventListener("touchend", handleTouchEnd);
         };
     }, [maxScale]);
 
@@ -243,30 +198,22 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
                 <FaTimes />
             </button>
 
-            <div
-                ref={wrapperRef}
+            <img
+                ref={imgRef}
+                src={src}
+                alt=""
                 style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "100%",
-                    overflow: "hidden",
+                    maxWidth: "100%",
+                    maxHeight: "100%",
+                    width: "auto",
+                    height: "auto",
+                    objectFit: "contain",
+                    transform: `translate(${translation.current.x}px, ${translation.current.y}px) scale(${currentScale.current})`,
+                    transformOrigin: "center",
                 }}
-            >
-                <img
-                    ref={imgRef}
-                    src={src}
-                    alt=""
-                    style={{
-                        maxWidth: "100%",
-                        maxHeight: "100%",
-                        width: "auto",
-                        height: "auto",
-                        objectFit: "contain",
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onLoad={() => setLoaded(true)}
-                />
-            </div>
+                onClick={(e) => e.stopPropagation()}
+                onLoad={() => setLoaded(true)}
+            />
         </div>
     );
 };
