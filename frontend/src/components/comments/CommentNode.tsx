@@ -98,11 +98,11 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
         onEdit(reply, editReply);
     }
 
-    const onReplyReply = () => {
+    const onReplyReply = (reply: IComment) => {
         setRepliesVisible(true);
-        onReply(comment.id, (post: IComment) => {
-            createReply(post);
-        }, `[user id="${comment.userId}"]${comment.userName}[/user]\n`);
+        onReply(reply.id, (reply: IComment) => {
+            createReply(reply);
+        }, `[user id="${reply.userId}"]${reply.userName}[/user]\n`);
     }
 
     const onReplyDelete = (reply: IComment) => {
@@ -147,7 +147,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                                 comment={reply}
                                 handleDelete={() => onReplyDelete(reply)}
                                 handleEdit={() => onReplyEdit(reply)}
-                                handleReply={() => onReplyReply()}
+                                handleReply={() => onReplyReply(reply)}
                                 handleShowVotes={() => onShowVotes(reply.id)}
                                 isHighlighted={highlightedCommentId === reply.id}
                                 onVote={onReplyVote}

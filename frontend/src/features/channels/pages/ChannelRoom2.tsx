@@ -9,7 +9,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
-import { FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
+import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
 
@@ -66,6 +66,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         getChannel();
@@ -199,6 +200,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     const getChannel = async () => {
+        setLoading(true);
         const result = await sendJsonRequest("/Channels/GetChannel", "POST", {
             channelId,
             includeParticipants: true,
@@ -207,6 +209,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (result && result.channel) {
             setChannel(result.channel);
         }
+        setLoading(false);
     }
 
     const handleSendMessage = async () => {
@@ -326,7 +329,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const onContextDelete = () => {
         setEditedMessage(null);
         setSelectedMessage(prev => {
-            if(prev) {
+            if (prev) {
                 setDeleteMessageId(prev.id);
             }
             return null;
@@ -336,7 +339,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const onContextEdit = () => {
         setDeleteMessageId(null);
         setSelectedMessage(prev => {
-            if(prev) {
+            if (prev) {
                 setEditedMessage(prev);
             }
             return null;
@@ -496,11 +499,22 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                     </>
                     :
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <div className="wb-loader">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                        {
+                            loading ?
+                                <div className="wb-loader">
+                                    <span></span>
+                                    <span></span>
+                                    <span></span>
+                                </div>
+                                :
+                                <div>
+                                    <h4>Channel not found</h4>
+                                    <Button onClick={onExit} variant='primary'>
+                                        <FaArrowLeft />
+                                        Back to Channels
+                                    </Button>
+                                </div>
+                        }
                     </div>
             }
             <MessageContextMenu

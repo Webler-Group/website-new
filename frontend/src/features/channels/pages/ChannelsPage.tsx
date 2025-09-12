@@ -21,7 +21,7 @@ const ChannelsPage = () => {
     return (
         <>
             <Modal
-                show={!!channelId}
+                show={channelId != null}
                 onHide={onExit}
                 fullscreen
                 className="p-0 m-0"
