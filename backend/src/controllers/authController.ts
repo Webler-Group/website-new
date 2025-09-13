@@ -12,16 +12,6 @@ const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
     const deviceId = req.headers["x-device-id"] as string;
 
-    if (!deviceId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
-
-    if (typeof email === "undefined" || typeof password === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
-
     const user = await User.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
@@ -68,16 +58,6 @@ const login = asyncHandler(async (req, res) => {
 const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, name, password, solution, captchaId } = req.body;
     const deviceId = req.headers["x-device-id"] as string;
-
-    if (!deviceId) {
-        res.status(401).json({ success: false, message : "Unauthorized" });
-        return;
-    }
-
-    if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
 
     const record = await CaptchaRecord.findById(captchaId);
 
@@ -211,11 +191,6 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
 const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) => {
     const { email } = req.body;
 
-    if (typeof email === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
-
     const user = await User.findOne({ email }).lean();
 
     if (user === null) {
@@ -242,11 +217,6 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
 
 const resetPassword = asyncHandler(async (req: Request, res: Response) => {
     const { token, password, resetId } = req.body;
-
-    if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
 
     jwt.verify(
         token,
@@ -309,11 +279,6 @@ const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
 
 const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { token, userId } = req.body;
-
-    if (typeof token === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return
-    }
 
     jwt.verify(
         token,
