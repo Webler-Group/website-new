@@ -1,11 +1,13 @@
 import express from "express";
 import authController from "../controllers/authController";
 import requestLimiter from "../middleware/requestLimiter";
+import { validate } from "../middleware/validation";
+import { loginSchema } from "../validation/auth.zod";
 
 const router = express.Router();
 
 router.route("/Login")
-    .post(requestLimiter(60, 5, "Too many login attempts, try again later"), authController.login);
+    .post(validate(loginSchema), requestLimiter(60, 5, "Too many login attempts, try again later"), authController.login);
 
 router.route("/Register")
     .post(authController.register);
