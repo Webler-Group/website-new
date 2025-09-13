@@ -290,7 +290,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 postId: reply._id
             });
         }
-        if (feed.user != currentUserId) {
+        if (feed.user != currentUserId && (parentComment == null || feed.user.toString() != parentComment.user.toString())) {
             await Notification_1.default.sendToUsers([feed.user], {
                 title: "New comment",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,

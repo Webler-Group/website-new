@@ -340,7 +340,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         postId: reply._id
       });
     }
-    if (feed.user != currentUserId) {
+    if (feed.user != currentUserId && (parentComment == null || feed.user.toString() != parentComment.user.toString())) {
       await Notification.sendToUsers([feed.user as Types.ObjectId], {
         title: "New comment",
         type: NotificationTypeEnum.FEED_COMMENT,
