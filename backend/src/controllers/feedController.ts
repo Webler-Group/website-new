@@ -330,17 +330,6 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   });
 
   if (reply) {
-    if (currentUserId != feed.user) {
-      await Notification.sendToUsers([feed.user as Types.ObjectId], {
-        title: "New comment",
-        type: NotificationTypeEnum.FEED_COMMENT,
-        actionUser: currentUserId!,
-        message: `{action_user} commented on your post "${truncate(feed.message, 20)}"`,
-        feedId: feed._id,
-        postId: reply._id
-      });
-    }
-
     if (parentComment != null && parentComment.user != currentUserId) {
       await Notification.sendToUsers([parentComment.user as Types.ObjectId], {
         title: "New reply",
@@ -351,7 +340,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         postId: reply._id
       });
     }
-    if (parentComment == null && feed.user != currentUserId) {
+    if (feed.user != currentUserId) {
       await Notification.sendToUsers([feed.user as Types.ObjectId], {
         title: "New comment",
         type: NotificationTypeEnum.FEED_COMMENT,

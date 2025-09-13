@@ -280,16 +280,6 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
         user: currentUserId
     });
     if (reply) {
-        if (currentUserId != feed.user) {
-            await Notification_1.default.sendToUsers([feed.user], {
-                title: "New comment",
-                type: NotificationTypeEnum_1.default.FEED_COMMENT,
-                actionUser: currentUserId,
-                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
-                feedId: feed._id,
-                postId: reply._id
-            });
-        }
         if (parentComment != null && parentComment.user != currentUserId) {
             await Notification_1.default.sendToUsers([parentComment.user], {
                 title: "New reply",
@@ -300,7 +290,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 postId: reply._id
             });
         }
-        if (parentComment == null && feed.user != currentUserId) {
+        if (feed.user != currentUserId) {
             await Notification_1.default.sendToUsers([feed.user], {
                 title: "New comment",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,
