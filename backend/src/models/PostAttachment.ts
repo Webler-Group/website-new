@@ -65,7 +65,7 @@ postAttachmentSchema.post("save", async function () {
                 })
                 .populate<{ feedId: any }>("feedId", "message")
                 .lean();
-            if (!post || this.user == post.user._id) return;
+            if (!post || this.user.toString() == post.user._id.toString()) return;
 
             switch (post._type) {
                 case PostTypeEnum.QUESTION:

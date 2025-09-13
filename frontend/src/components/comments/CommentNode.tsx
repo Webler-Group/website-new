@@ -100,8 +100,8 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const onReplyReply = (reply: IComment) => {
         setRepliesVisible(true);
-        onReply(reply.id, (reply: IComment) => {
-            createReply(reply);
+        onReply(comment.id, (post: IComment) => {
+            createReply(post);
         }, `[user id="${reply.userId}"]${reply.userName}[/user]\n`);
     }
 

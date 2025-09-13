@@ -346,19 +346,21 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New reply",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
+        message: `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
+        feedId: feed._id,
+        postId: reply._id
+      });
+    }
+    if (parentComment == null && feed.user != currentUserId) {
+      await Notification.sendToUsers([feed.user as Types.ObjectId], {
+        title: "New comment",
+        type: NotificationTypeEnum.FEED_COMMENT,
+        actionUser: currentUserId!,
         message: `{action_user} commented on your post "${truncate(feed.message, 20)}"`,
         feedId: feed._id,
         postId: reply._id
       });
     }
-    await Notification.sendToUsers([feed.user as Types.ObjectId], {
-      title: "New comment",
-      type: NotificationTypeEnum.FEED_COMMENT,
-      actionUser: currentUserId!,
-      message: `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
-      feedId: feed._id,
-      postId: reply._id
-    });
 
     // Increment answers count on the main feed
     feed.$inc("answers", 1);

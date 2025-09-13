@@ -24,7 +24,6 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const channel = await Channel.create({ _type: ChannelTypeEnum.GROUP, createdBy: currentUserId, title });
-
     await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER });
 
     res.json({
@@ -51,17 +50,14 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 
     if (!channel) {
         channel = await Channel.create({ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId });
-
         await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
-        // await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
-
     } else {
         const myInvite = await ChannelInvite.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
             await myInvite.accept();
 
         } else {
-            await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
+            await Channel.join(channel._id, new mongoose.Types.ObjectId(currentUserId));
         }
     }
 
@@ -635,20 +631,20 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
 
     try {
         const participant = await ChannelParticipant.findOne({ user: currentUserId, channel: channelId });
-    if (!participant) {
-        return;
-    }
+        if (!participant) {
+            return;
+        }
 
-    participant.lastActiveAt = new Date();
-    participant.unreadCount = 0;
-    await participant.save();
+        participant.lastActiveAt = new Date();
+        participant.unreadCount = 0;
+        await participant.save();
 
-    socket.emit("channels:messages_seen", {
-        channelId,
-        userId: currentUserId,
-        lastActiveAt: participant.lastActiveAt
-    });
-    } catch(err: any) {
+        socket.emit("channels:messages_seen", {
+            channelId,
+            userId: currentUserId,
+            lastActiveAt: participant.lastActiveAt
+        });
+    } catch (err: any) {
         console.log("Mark messages seen failed:", err.message);
     }
 }
@@ -671,12 +667,12 @@ const createMessageWS = async (socket: Socket, payload: any) => {
         });
 
         const channel = await Channel.findById(newMessage.channel).select("_type createdBy DMUser").lean();
-        
-        if(channel && channel._type == ChannelTypeEnum.DM) {
+
+        if (channel && channel._type == ChannelTypeEnum.DM) {
             const messages = await ChannelMessage.find({ channel: channel._id }).limit(2).lean();
-            if(messages.length == 1) {
+            if (messages.length == 1) {
                 const exists = await ChannelParticipant.exists({ channel: channel._id, user: channel.DMUser });
-                if(!exists) {
+                if (!exists) {
                     await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
                 }
             }
