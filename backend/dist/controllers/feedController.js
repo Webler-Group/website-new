@@ -57,7 +57,7 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
             title: "New post",
             type: NotificationTypeEnum_1.default.FEED_FOLLOWER_POST,
             actionUser: currentUserId,
-            message: `{action_user} made a new post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+            message: `{action_user} made a new post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 40)}"`,
             feedId: feed._id,
         });
         res.json({
@@ -285,7 +285,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "New reply",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,
                 actionUser: currentUserId,
-                message: `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                message: `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 40)}"`,
                 feedId: feed._id,
                 postId: reply._id
             });
@@ -295,7 +295,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "New comment",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,
                 actionUser: currentUserId,
-                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 40)}"`,
                 feedId: feed._id,
                 postId: reply._id
             });
@@ -670,7 +670,7 @@ const getFeedList = (0, express_async_handler_1.default)(async (req, res) => {
                     ? {
                         id: x.originalPost[0]._id,
                         title: x.originalPost[0].title || null,
-                        message: x.originalPost[0].message,
+                        message: (0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(x.originalPost[0].message), 40),
                         tags: x.originalPost[0].tags.map((x) => x.name),
                         userId: x.originalPost[0].user,
                         userName: x.originalPost[0].users.length
@@ -802,7 +802,7 @@ const getFeed = (0, express_async_handler_1.default)(async (req, res) => {
             ? {
                 id: feed.originalPost[0]._id,
                 title: feed.originalPost[0].title || null,
-                message: feed.originalPost[0].message,
+                message: (0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.originalPost[0].message), 40),
                 tags: feed.originalPost[0].tags.map((x) => x.name),
                 userId: feed.originalPost[0].user,
                 userName: feed.originalPost[0].users.length
@@ -943,7 +943,7 @@ const togglePinFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "Feed pin",
                 type: NotificationTypeEnum_1.default.FEED_PIN,
                 actionUser: currentUserId,
-                message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)(feed.message, 20)}"`,
+                message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 40)}"`,
                 feedId: feed._id,
             });
         }

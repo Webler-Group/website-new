@@ -7,7 +7,7 @@ import Upvote from "../models/Upvote";
 import Notification from "../models/Notification";
 import mongoose, { PipelineStage, Types } from "mongoose";
 import PostAttachment from "../models/PostAttachment";
-import { escapeRegex } from "../utils/regexUtils";
+import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
 import UserFollowing from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
@@ -66,7 +66,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
       title: "New post",
       type: NotificationTypeEnum.FEED_FOLLOWER_POST,
       actionUser: currentUserId!,
-      message: `{action_user} made a new post "${truncate(feed.message, 20)}"`,
+      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 40)}"`,
       feedId: feed._id,
     });
 
@@ -335,7 +335,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New reply",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
-        message: `{action_user} replied to your comment on post "${truncate(feed.message, 20)}"`,
+        message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 40)}"`,
         feedId: feed._id,
         postId: reply._id
       });
@@ -345,7 +345,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New comment",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
-        message: `{action_user} commented on your post "${truncate(feed.message, 20)}"`,
+        message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 40)}"`,
         feedId: feed._id,
         postId: reply._id
       });
@@ -789,7 +789,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             ? {
               id: x.originalPost[0]._id,
               title: x.originalPost[0].title || null,
-              message: x.originalPost[0].message,
+              message: truncate(escapeMarkdown(x.originalPost[0].message), 40),
               tags: x.originalPost[0].tags.map((x: any) => x.name),
               userId: x.originalPost[0].user,
               userName: x.originalPost[0].users.length
@@ -934,7 +934,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
       ? {
         id: feed.originalPost[0]._id,
         title: feed.originalPost[0].title || null,
-        message: feed.originalPost[0].message,
+        message: truncate(escapeMarkdown(feed.originalPost[0].message), 40),
         tags: feed.originalPost[0].tags.map((x: any) => x.name),
         userId: feed.originalPost[0].user,
         userName: feed.originalPost[0].users.length
@@ -1103,7 +1103,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "Feed pin",
         type: NotificationTypeEnum.FEED_PIN,
         actionUser: currentUserId!,
-        message: `{action_user} pinned your Post "${truncate(feed.message, 20)}"`,
+        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 40)}"`,
         feedId: feed._id,
       });
 

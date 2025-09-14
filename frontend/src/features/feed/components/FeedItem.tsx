@@ -45,7 +45,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       </div>
 
       <div className='wb-feed-content__message'>
-        <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+        {originalPost.message}
       </div>
 
       {/* {originalPost.tags?.length > 0 && (
