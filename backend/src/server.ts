@@ -17,6 +17,7 @@ import courseRoutes from "./routes/courseRoutes";
 import channelRoutes from "./routes/channelsRoutes";
 import sitemapRoutes from "./routes/sitemapRoutes";
 import tagRoutes from "./routes/tagRoutes";
+import challengeRoutes from "./routes/ChallengeRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import http from "http";
@@ -70,6 +71,7 @@ async function main() {
     app.use(`${apiPrefix}/Courses`, courseRoutes);
     app.use(`${apiPrefix}/Channels`, channelRoutes);
     app.use(`${apiPrefix}/Tag`, tagRoutes);
+    app.use(`${apiPrefix}/Challenge`, challengeRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
 

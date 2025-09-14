@@ -46,6 +46,9 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
             <LinkContainer to="/Feed">
               <Nav.Link>Feed</Nav.Link>
             </LinkContainer>
+            <LinkContainer to="/Challenge">
+              <Nav.Link>Challenges</Nav.Link>
+            </LinkContainer>
             {
               userInfo && userInfo.roles.some(role => role !== "User") &&
               <LinkContainer to="/Tools">

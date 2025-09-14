@@ -43,6 +43,9 @@ import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
 import FeedLayout from './features/feed/FeedLayout';
 import FeedCreate from './features/feed/components/FeedCreate';
+import ChallengeList from './features/challenges/pages/ChallengeList';
+import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
+import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
 
 function App() {
 
@@ -101,6 +104,16 @@ function App() {
           })
         }
         <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
+      </Route>
+
+      <Route path="Challenge">
+        <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+          <Route index element={<ChallengeList />} />
+          <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
+            <Route path="Create" element={<ChallengeCreate />} />
+          </Route>
+          <Route path=":challengeId" element={<ChallengeDetails />} />
+        </Route>
       </Route>
 
       <Route path="Feed">
