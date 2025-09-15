@@ -66,7 +66,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
     let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
-        <div className="gap-2 d-flex flex-column border-bottom py-2" style={{ background: bg }}>
+        <div className="gap-2 d-flex flex-column border-bottom border-2 py-2" style={{ background: bg }}>
             <div className="d-flex gap-2">
                 <div className="d-flex flex-column align-items-center">
                     {

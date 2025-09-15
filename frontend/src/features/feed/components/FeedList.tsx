@@ -188,7 +188,7 @@ const FeedList = () => {
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
       <div className="wb-feed-list-container">
         {/* Header */}
-        <div className={`wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
+        <div className={`p-2 wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             {/* Search */}
@@ -248,7 +248,7 @@ const FeedList = () => {
             <>
               {/* Pinned Feeds Section */}
               {pinnedFeeds.length > 0 && (
-                <div className="wb-pinned-feeds-section bg-light border-top border-bottom">
+                <div className="px-2 wb-pinned-feeds-section bg-light">
                   <div className="d-flex justify-content-between align-items-center py-2">
                     <h6 className="text-warning mb-0"><FaMapPin /> Pinned Posts</h6>
                     <Button size='sm' variant='link' className='text-secondary' onClick={togglePinnedVisibility}>{pinnedVisible ? <FaEye /> : <FaEyeSlash />}</Button>
@@ -265,6 +265,8 @@ const FeedList = () => {
                             onShowUserReactions={onShowUserReactions}
                             onDelete={onDelete}
                             onTogglePin={onTogglePin}
+                            showFullContent={false}
+                            onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
                           />
                         </div>
                       ))}
@@ -274,7 +276,7 @@ const FeedList = () => {
               )}
 
               {/* Content */}
-              <div className="wb-feed-items"> 
+              <div className="px-2 wb-feed-items">
                 {feeds.error && (
                   <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
                     <FaExclamationCircle />
@@ -321,6 +323,8 @@ const FeedList = () => {
                           onShowUserReactions={onShowUserReactions}
                           onDelete={onDelete}
                           onTogglePin={onTogglePin}
+                          showFullContent={false}
+                          onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
                         />
                       </div>
                     );

@@ -66,7 +66,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
       title: "New post",
       type: NotificationTypeEnum.FEED_FOLLOWER_POST,
       actionUser: currentUserId!,
-      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 40)}"`,
+      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
       feedId: feed._id,
     });
 
@@ -335,7 +335,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New reply",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
-        message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 40)}"`,
+        message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
         feedId: feed._id,
         postId: reply._id
       });
@@ -1103,7 +1103,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "Feed pin",
         type: NotificationTypeEnum.FEED_PIN,
         actionUser: currentUserId!,
-        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 40)}"`,
+        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
         feedId: feed._id,
       });
 
