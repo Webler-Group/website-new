@@ -41,6 +41,9 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   };
 
   const handleTouchStart = () => {
+    if (!userInfo?.id) {
+      navigate("/Users/Login");
+    }
     const timer = window.setTimeout(() => {
       setShowPicker(true);
     }, 500);

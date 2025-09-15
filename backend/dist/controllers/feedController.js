@@ -57,7 +57,7 @@ const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
             title: "New post",
             type: NotificationTypeEnum_1.default.FEED_FOLLOWER_POST,
             actionUser: currentUserId,
-            message: `{action_user} made a new post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/, " ")}"`,
+            message: `{action_user} made a new post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/g, " ")}"`,
             feedId: feed._id,
         });
         res.json({
@@ -285,7 +285,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "New reply",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,
                 actionUser: currentUserId,
-                message: `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/, " ")}"`,
+                message: `{action_user} replied to your comment on post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/g, " ")}"`,
                 feedId: feed._id,
                 postId: reply._id
             });
@@ -295,7 +295,7 @@ const createReply = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "New comment",
                 type: NotificationTypeEnum_1.default.FEED_COMMENT,
                 actionUser: currentUserId,
-                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/, " ")}"`,
+                message: `{action_user} commented on your post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/g, " ")}"`,
                 feedId: feed._id,
                 postId: reply._id
             });
@@ -470,7 +470,7 @@ const shareFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "Feed share",
                 type: NotificationTypeEnum_1.default.FEED_SHARE,
                 actionUser: currentUserId,
-                message: `{action_user} shared your Post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(originalFeed.message), 30).replaceAll(/\n+/, " ")}"`,
+                message: `{action_user} shared your Post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(originalFeed.message), 30).replaceAll(/\n+/g, " ")}"`,
                 feedId: feed._id,
             });
         }
@@ -943,7 +943,7 @@ const togglePinFeed = (0, express_async_handler_1.default)(async (req, res) => {
                 title: "Feed pin",
                 type: NotificationTypeEnum_1.default.FEED_PIN,
                 actionUser: currentUserId,
-                message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/, " ")}"`,
+                message: `{action_user} pinned your Post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(feed.message), 30).replaceAll(/\n+/g, " ")}"`,
                 feedId: feed._id,
             });
         }

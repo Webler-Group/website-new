@@ -202,6 +202,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       }
 
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
+    } else {
+      showNotification("error", result.message);
     }
   }
 
