@@ -261,7 +261,7 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: (0, StringUtils_1.truncate)(x.feed.message, 120),
+                    feedMessage: (0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(x.feed.message), 20),
                     feedType: x.feed._type
                 };
         }

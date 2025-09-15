@@ -1042,7 +1042,7 @@ ul {
 }
 
 .wb-feed-content.truncated {
-    max-height: 150px;
+    max-height: 300px;
     /* adjust */
     overflow: hidden;
     position: relative;
