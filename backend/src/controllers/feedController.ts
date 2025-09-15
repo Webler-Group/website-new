@@ -66,7 +66,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
       title: "New post",
       type: NotificationTypeEnum.FEED_FOLLOWER_POST,
       actionUser: currentUserId!,
-      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
+      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 30).replaceAll("\n", "")}"`,
       feedId: feed._id,
     });
 
@@ -335,7 +335,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New reply",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
-        message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
+        message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 30).replaceAll("\n", "")}"`,
         feedId: feed._id,
         postId: reply._id
       });
@@ -345,7 +345,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "New comment",
         type: NotificationTypeEnum.FEED_COMMENT,
         actionUser: currentUserId!,
-        message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 40)}"`,
+        message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 30).replaceAll("\n", "")}"`,
         feedId: feed._id,
         postId: reply._id
       });
@@ -559,7 +559,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "Feed share",
         type: NotificationTypeEnum.FEED_SHARE,
         actionUser: currentUserId!,
-        message: `{action_user} shared your Post "${truncate(originalFeed.message, 20)}"`,
+        message: `{action_user} shared your Post "${truncate(escapeMarkdown(originalFeed.message), 30).replaceAll("\n", "")}"`,
         feedId: feed._id,
       });
     }
@@ -1103,7 +1103,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: "Feed pin",
         type: NotificationTypeEnum.FEED_PIN,
         actionUser: currentUserId!,
-        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 40).replaceAll("\n", "")}"`,
+        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 30).replaceAll("\n", "")}"`,
         feedId: feed._id,
       });
 
