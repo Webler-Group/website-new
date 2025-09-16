@@ -237,7 +237,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         {/* Header */}
         <div className="d-flex justify-content-between">
-          <div className="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+          <div className="d-flex align-items-start gap-2 flex-grow-1">
             <ProfileAvatar size={36} avatarImage={feed.userAvatarImage} />
 
             <div className='d-flex flex-column'>

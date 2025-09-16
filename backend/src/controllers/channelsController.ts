@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import { truncate } from "../utils/StringUtils";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
@@ -374,16 +375,16 @@ const createMessage = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getMessage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const {channelId, id} = req.body;
-    if(!channelId || !id) {
-        
+    const { channelId, id } = req.body;
+    if (!channelId || !id) {
+
         res.status(400).json({ message: "Invalid body" });
         return;
     }
-    const x = await ChannelMessage.findOne({channel:channelId, _id:id}).populate<{ user: any }>("user", "name avatarImage").lean();
-    
-    if(!x){
-        
+    const x = await ChannelMessage.findOne({ channel: channelId, _id: id }).populate<{ user: any }>("user", "name avatarImage").lean();
+
+    if (!x) {
+
         res.json(404);
         return;
     }
@@ -399,8 +400,8 @@ const getMessage = asyncHandler(async (req: IAuthRequest, res: Response) => {
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
         channelId: x.channel,
-        repliedTo: x.deleted? null : x.repliedTo,
-        attachments:x.deleted? [] : attachments,
+        repliedTo: x.deleted ? null : x.repliedTo,
+        attachments: x.deleted ? [] : attachments,
     })
 });
 const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -427,6 +428,14 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: -1 })
         .limit(count)
         .populate<{ user: any }>("user", "name avatarImage level roles")
+        .populate<{ repliedTo: any }>({
+            path: "repliedTo",
+            select: "content createdAt updatedAt deleted user",
+            populate: {
+                path: "user",
+                select: "name avatarImage",
+            },
+        })
         .lean();
 
     const data = messages.map(x => ({
@@ -439,7 +448,16 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
-        repliedTo: x.deleted? null : x.repliedTo,
+        repliedTo: x.repliedTo ? {
+            id: x.repliedTo._id,
+            content: x.repliedTo.deleted ? "" : truncate(x.repliedTo.content, 50),
+            createdAt: x.repliedTo.createdAt,
+            updatedAt: x.repliedTo.updatedAt,
+            userId: x.repliedTo.user._id,
+            userName: x.repliedTo.user.name,
+            userAvatar: x.repliedTo.user.avatarImage,
+            deleted: x.repliedTo.deleted
+        } : null,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
@@ -453,7 +471,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     await Promise.all(promises);
-    
+
     res.json({
         messages: data
     });
@@ -681,7 +699,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
 }
 
 const createMessageWS = async (socket: Socket, payload: any) => {
-    const { channelId, content , repliedTo = null} = payload;
+    const { channelId, content, repliedTo = null } = payload;
     const currentUserId = socket.data.userId;
 
     try {

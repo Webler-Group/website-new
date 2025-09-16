@@ -3,7 +3,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import PostAttachment, { IPostAttachment } from "../../discuss/components/PostAttachment";
-import { RepliedMessage } from "./RepliedMessage";
+import RepliedMessage from "./RepliedMessage";
 
 interface IChannelMessage {
     id: string;
@@ -15,7 +15,7 @@ interface IChannelMessage {
     createdAt: string;
     updatedAt: string;
     channelId: string;
-    repliedTo:  IChannelMessage | string | null; // initilly  will be received as id or null if this is not a reply
+    repliedTo?: IChannelMessage;
     deleted: boolean;
     viewed: boolean;
     attachments: IPostAttachment[];
@@ -76,11 +76,10 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
                     </div>
                 )}
 
-                <div
-                    className="flex-grow-1">
+                <div className="flex-grow-1">
                     {showHeader && (
                         <div className="d-flex align-items-center mb-1">
-                            <ProfileName userId={message.userId} userName={message.userName} />
+                            <ProfileName className="fw-bold" userId={message.userId} userName={message.userName} />
                             <small className="text-muted ms-2">
                                 {DateUtils.format(new Date(message.createdAt))}
                             </small>
@@ -113,12 +112,15 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             </div>
         );
     }
-    
-    // OPTIMIZE: check if the message is already among the loaded messages and alter the id with the message object
-    
+
     body = <div style={{ maxWidth: "720px" }}>
-        {message.repliedTo && <RepliedMessage channelId={message.channelId } maxWidth="720px" iconWidth={`${AVATAR_SIZE}px`} message={message.repliedTo}/>} 
-        {body}</div>;
+        {message.repliedTo &&
+            <div className="ms-5 indented">
+                <RepliedMessage message={message.repliedTo} />
+            </div>
+        }
+        {body}
+    </div>;
 
     return (
         <div ref={ref} className="wb-channels-message">

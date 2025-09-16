@@ -12,7 +12,7 @@ import { useAuth } from "../../auth/context/authContext";
 import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
-import { RepliedMessage } from "../components/RepliedMessage";
+import RepliedMessage from "../components/RepliedMessage";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -67,8 +67,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
     const [loading, setLoading] = useState(false);
-    const [repliedMessage, setRepliedMessage] = useState<IChannelMessage|null>(null);
- 
+    const [repliedMessage, setRepliedMessage] = useState<IChannelMessage | null>(null);
+
     useEffect(() => {
         getChannel();
         setMessagesFromDate(null);
@@ -357,7 +357,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             return null;
         });
     }
-    
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
 
@@ -432,7 +432,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                 firstTime = nextTime;
                                             }
                                         }
-                                        
+
                                         return (
                                             <CSSTransition
                                                 key={message.id}
@@ -471,7 +471,22 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </div>
                                     </div>
                                 )}
-                                {repliedMessage && <RepliedMessage message={repliedMessage} channelId={repliedMessage.channelId} maxWidth="720px" iconWidth="42px" onClose={()=>setRepliedMessage(null)}/> }
+                                {repliedMessage &&
+                                    <div className="d-flex align-items-center">
+                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                            <RepliedMessage message={repliedMessage} />
+                                        </div>
+
+                                        <Button
+                                            size="sm"
+                                            variant="link"
+                                            className="text-muted ms-2 p-0 flex-shrink-0"
+                                            onClick={() => setRepliedMessage(null)}
+                                        >
+                                            <FaTimes />
+                                        </Button>
+                                    </div>
+                                }
                                 <div className="d-flex align-items-center">
                                     {showJumpButton && (
                                         <Button

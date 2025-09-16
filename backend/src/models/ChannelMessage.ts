@@ -8,6 +8,7 @@ import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import Notification from "./Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { truncate } from "../utils/StringUtils";
 
 const channelMessageSchema = new Schema({
     _type: {
@@ -32,7 +33,7 @@ const channelMessageSchema = new Schema({
         ref: "Channel",
         required: true,
     },
-    repliedTo:{
+    repliedTo: {
         type: SchemaTypes.ObjectId,
         ref: "ChannelMessage",
         default: null,
@@ -140,6 +141,11 @@ channelMessageSchema.post("save", async function () {
                     channelTitle = channel.title!;
                 }
 
+                const reply = this.repliedTo ?
+                    await ChannelMessage.findById(this.repliedTo)
+                        .populate<{ user: any }>("user", "name avatarImage level roles")
+                        .lean() : null;
+
                 io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
                     id: this._id,
                     type: this._type,
@@ -153,7 +159,16 @@ channelMessageSchema.post("save", async function () {
                     userAvatar: user.avatarImage,
                     viewed: false,
                     deleted: this.deleted,
-                    repliedTo: this.deleted? null : this.repliedTo,
+                    repliedTo: reply ? {
+                        id: reply._id,
+                        content: truncate(reply.content, 50),
+                        createdAt: reply.createdAt,
+                        updatedAt: reply.updatedAt,
+                        userId: reply.user._id.toString(),
+                        userName: reply.user.name,
+                        userAvatar: reply.user.avatarImage,
+                        deleted: reply.deleted
+                    } : null,
                     attachments
                 });
 

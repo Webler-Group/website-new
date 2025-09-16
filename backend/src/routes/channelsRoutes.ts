@@ -2,7 +2,6 @@ import express from "express";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import channelsController from "../controllers/channelsController";
-import verifyEmail from "../middleware/verifyEmail";
 
 const router = express.Router();
 
@@ -19,7 +18,6 @@ router.route("/Invites").post(channelsController.getInvitesList);
 router.route("/AcceptInvite").post(channelsController.acceptInvite);
 router.route("/GroupRemoveUser").post(channelsController.groupRemoveUser);
 router.route("/Messages").post(channelsController.getMessages);
-router.route("/getMessage").post(channelsController.getMessage);
 router.route("/LeaveChannel").post(channelsController.leaveChannel);
 router.route("/GroupCancelInvite").post(channelsController.groupCancelInvite);
 router.route("/GroupRename").post(channelsController.groupRename);

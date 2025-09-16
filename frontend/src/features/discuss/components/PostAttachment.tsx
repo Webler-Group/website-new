@@ -73,8 +73,8 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
                 e.currentTarget.style.boxShadow = "0 2px 8px rgba(0,0,0,0.05)";
             }}
         >
-            <div className="d-flex justify-content-between align-items-start flex-grow-1 min-w-0">
-                <div className="min-w-0">
+            <div className="d-flex justify-content-between align-items-start flex-grow-1">
+                <div>
                     <h6 className="fw-semibold mb-1 text-truncate text-dark bold">
                         {title}
                     </h6>

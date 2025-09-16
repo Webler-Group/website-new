@@ -19,20 +19,18 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        if(!value) return;
 
         const delayDebounce = setTimeout(async () => {
-            try {
-                const res = await sendJsonRequest(
-                    "/Profile/Search",
-                    "POST",
-                    { searchQuery: value }
-                );
-                setResults(res.users ?? []);
-            } catch (err) {
-                console.error(err);
-                setResults([]);
+            const result = await sendJsonRequest(
+                "/Profile/Search",
+                "POST",
+                { searchQuery: value }
+            );
+            if(result && result.users) {
+                setResults(result.users);
             }
-        }, 300); // debounce
+        }, 500);
 
         return () => clearTimeout(delayDebounce);
     }, [value]);
@@ -60,7 +58,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
                 onBlur={() => setTimeout(() => setIsFocused(false), 100)}
             />
 
-            {isFocused && (
+            {isFocused && value && (
                 <ListGroup
                     className="position-absolute"
                     style={{

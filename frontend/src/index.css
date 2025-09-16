@@ -804,6 +804,13 @@ ul {
     max-height: 500px;
 }
 
+.wb-channels-reply__text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
 .wb-feed-comment-modal__backdrop {
     z-index: 1059 !important;
 }
