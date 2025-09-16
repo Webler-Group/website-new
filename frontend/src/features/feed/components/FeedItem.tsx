@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { IFeed, OriginalPost, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
@@ -28,6 +28,8 @@ interface FeedItemProps {
   commentCount?: number;
   onDelete: (feed: IFeed) => void;
   onTogglePin?: (feed: IFeed) => void;
+  showFullContent?: boolean;
+  onShowFullContent?: (feedId: string) => void;
 }
 
 const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
@@ -39,13 +41,14 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       className="mt-2 border bg-light p-2 text-dark text-decoration-none mb-2"
       style={{ cursor: "pointer" }}
     >
-      <div className='d-flex gap-2 align-items-start mb-2'>
+      <div className='d-flex gap-2 align-items-center mb-2'>
         <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
         <ProfileName userId={originalPost.userId} userName={originalPost.userName} />
+        <span>wrote</span>
       </div>
 
       <div className='wb-feed-content__message'>
-        <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+        <i>{originalPost.message}</i>
       </div>
 
       {/* {originalPost.tags?.length > 0 && (
@@ -67,11 +70,13 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
 const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   feed,
   onCommentsClick,
+  onShowFullContent,
   onShowUserReactions,
   onGeneralUpdate,
   commentCount,
   onDelete,
-  onTogglePin
+  onTogglePin,
+  showFullContent = true
 }, ref) => {
   const { sendJsonRequest } = useApi();
   const { userInfo } = useAuth();
@@ -86,10 +91,23 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
+  const [needsTruncation, setNeedsTruncation] = useState(false);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
   }, []);
+
+  useLayoutEffect(() => {
+    if (contentRef.current && !showFullContent) {
+      const { scrollHeight, clientHeight } = contentRef.current;
+      setNeedsTruncation(scrollHeight > clientHeight);
+    } else {
+      setNeedsTruncation(false);
+    }
+  }, [feed.message, feed.attachments, showFullContent]);
 
   const handleTogglePin = async () => {
     const result = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id, pinned: !feed.isPinned });
@@ -184,6 +202,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       }
 
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
+    } else {
+      showNotification("error", result.message);
     }
   }
 
@@ -203,6 +223,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const handleShowUserReactions = () => {
     onShowUserReactions?.(feed.id);
   }
+
+  const handleShowFullContentClick = () => {
+    onShowFullContent?.(feed.id);
+  };
 
   const canEdit = feed.userId === currentUserId;
 
@@ -282,23 +306,32 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             </div>
         )}
 
-        <div className="mt-2 wb-feed-content">
-
-          <div className='wb-feed-content__message'>
+        <div
+          ref={contentRef}
+          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated" : ""} ${!showFullContent && needsTruncation ? "clickable" : ""}`}
+          onClick={!showFullContent && needsTruncation ? handleShowFullContentClick : undefined}
+        >
+          <div className="wb-feed-content__message" style={!showFullContent && needsTruncation ? { pointerEvents: "none" } : {}}>
             <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
           </div>
 
           {feed.attachments?.length > 0 && (
             <div className="mt-2 rounded text-dark text-decoration-none">
-              <div className="d-flex flex-column gap-2">
-                {feed.attachments.map(data => (
-                  <div key={data.id} className='mt-1'>
-                    <PostAttachment data={data} />
+              {feed.attachments?.length > 0 && (
+                <div className="mt-2 rounded text-dark text-decoration-none">
+                  <div className="d-flex flex-column gap-2">
+                    {feed.attachments.map(data => (
+                      <div key={data.id} className='mt-1'>
+                        <PostAttachment data={data} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
+
+          {!showFullContent && needsTruncation && <div className="fade-overlay"></div>}
         </div>
 
         {/* Reactions */}

@@ -27,15 +27,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const socketServer_1 = require("../config/socketServer");
 const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
 const Notification_1 = __importDefault(require("./Notification"));
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
-const ChannelMessage_1 = __importDefault(require("./ChannelMessage"));
-const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
 const channelInviteSchema = new mongoose_1.Schema({
     invitedUser: {
         type: mongoose_1.SchemaTypes.ObjectId,
@@ -83,13 +80,7 @@ channelInviteSchema.post("save", async function () {
 });
 channelInviteSchema.methods.accept = async function (accepted = true) {
     if (accepted) {
-        await ChannelParticipant_1.default.create({ channel: this.channel, user: this.invitedUser });
-        await ChannelMessage_1.default.create({
-            _type: ChannelMessageTypeEnum_1.default.USER_JOINED,
-            content: "{action_user} joined",
-            channel: this.channel,
-            user: this.invitedUser
-        });
+        await Channel_1.default.join(this.channel, this.invitedUser);
     }
     await ChannelInvite.deleteMany({ channel: this.channel, invitedUser: this.invitedUser });
 };

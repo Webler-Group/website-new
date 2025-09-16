@@ -2,7 +2,7 @@ import mongoose, { InferSchemaType, isObjectIdOrHexString, Model, Types } from "
 import Post from "./Post";
 import Code from "./Code";
 import { config } from "../confg";
-import { escapeRegex } from "../utils/regexUtils";
+import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import User from "./User";
 import Notification from "./Notification";
 import { truncate } from "../utils/StringUtils";
@@ -65,7 +65,7 @@ postAttachmentSchema.post("save", async function () {
                 })
                 .populate<{ feedId: any }>("feedId", "message")
                 .lean();
-            if (!post || this.user == post.user._id) return;
+            if (!post || this.user.toString() == post.user._id.toString()) return;
 
             switch (post._type) {
                 case PostTypeEnum.QUESTION:
@@ -235,7 +235,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: truncate(x.feed.message, 120),
+                    feedMessage: truncate(escapeMarkdown(x.feed.message), 20),
                     feedType: x.feed._type
                 }
 

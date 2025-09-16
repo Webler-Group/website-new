@@ -929,7 +929,8 @@ ul {
     border-radius: 16px;
 }
 
-.wb-feed-action-btn, .wb-reaction-picker-btn {
+.wb-feed-action-btn,
+.wb-reaction-picker-btn {
     color: #65676b;
     display: flex;
     gap: 0.5rem;
@@ -940,7 +941,8 @@ ul {
     font-weight: 600;
 }
 
-.wb-feed-action-btn:hover, .wb-reaction-picker-btn:hover {
+.wb-feed-action-btn:hover,
+.wb-reaction-picker-btn:hover {
     background: #e4e6ea;
 }
 
@@ -1026,7 +1028,8 @@ ul {
     white-space: pre-wrap;
 }
 
-.wb-feed-layout-container, .wb-feed-details-container {
+.wb-feed-layout-container,
+.wb-feed-details-container {
     max-width: 720px;
     margin: 0 auto;
     min-height: 100vh;
@@ -1036,4 +1039,29 @@ ul {
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.wb-feed-content.truncated {
+    max-height: 300px;
+    /* adjust */
+    overflow: hidden;
+    position: relative;
+}
+
+.wb-feed-content.truncated .fade-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    /* gradient height */
+    background: linear-gradient(to bottom, transparent, #fff);
+    pointer-events: none;
+}
+
+.wb-feed-content.clickable {
+    cursor: pointer;
+}
+
+.wb-feed-content.clickable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }

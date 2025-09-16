@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { compilerLanguages } from "../../../data/compilerLanguages";
-import { truncate } from "../../../utils/StringUtils";
 
 interface IPostAttachment {
     id: string;
@@ -46,7 +45,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             break;
 
         case 4: // Feed
-            title = `${truncate(data.feedMessage, 20)}`;
+            title = `${data.feedMessage}`;
             subtitle = `${data.userName}`;
             to = `/feed/${data.feedId}`;
             bgColor = "bg-info";

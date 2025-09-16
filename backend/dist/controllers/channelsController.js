@@ -46,7 +46,6 @@ const createDirectMessages = (0, express_async_handler_1.default)(async (req, re
     if (!channel) {
         channel = await Channel_1.default.create({ _type: ChannelTypeEnum_1.default.DM, createdBy: currentUserId, DMUser: userId });
         await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum_1.default.MEMBER });
-        // await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
     }
     else {
         const myInvite = await ChannelInvite_1.default.findOne({ channel: channel._id, invitedUser: currentUserId });
@@ -54,7 +53,7 @@ const createDirectMessages = (0, express_async_handler_1.default)(async (req, re
             await myInvite.accept();
         }
         else {
-            await ChannelParticipant_1.default.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum_1.default.MEMBER });
+            await Channel_1.default.join(channel._id, new mongoose_1.default.Types.ObjectId(currentUserId));
         }
     }
     res.json({
