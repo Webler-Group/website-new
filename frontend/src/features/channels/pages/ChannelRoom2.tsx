@@ -349,7 +349,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     const onMessageReply = () => {
-        if(selectedMessage) setRepliedMessage(selectedMessage);
+        setSelectedMessage(prev => {
+            if (prev) {
+                setRepliedMessage(prev);
+                textareaRef.current?.focus();
+            }
+            return null;
+        });
     }
     
     let firstTime: number;
