@@ -19,6 +19,7 @@ router.route("/Invites").post(channelsController.getInvitesList);
 router.route("/AcceptInvite").post(channelsController.acceptInvite);
 router.route("/GroupRemoveUser").post(channelsController.groupRemoveUser);
 router.route("/Messages").post(channelsController.getMessages);
+router.route("/getMessage").post(channelsController.getMessage);
 router.route("/LeaveChannel").post(channelsController.leaveChannel);
 router.route("/GroupCancelInvite").post(channelsController.groupCancelInvite);
 router.route("/GroupRename").post(channelsController.groupRename);

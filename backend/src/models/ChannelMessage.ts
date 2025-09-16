@@ -32,6 +32,11 @@ const channelMessageSchema = new Schema({
         ref: "Channel",
         required: true,
     },
+    repliedTo:{
+        type: SchemaTypes.ObjectId,
+        ref: "ChannelMessage",
+        default: null,
+    },
     deleted: {
         type: Boolean,
         default: false
@@ -148,6 +153,7 @@ channelMessageSchema.post("save", async function () {
                     userAvatar: user.avatarImage,
                     viewed: false,
                     deleted: this.deleted,
+                    repliedTo: this.deleted? null : this.repliedTo,
                     attachments
                 });
 

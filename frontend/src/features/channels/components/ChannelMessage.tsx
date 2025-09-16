@@ -3,6 +3,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import PostAttachment, { IPostAttachment } from "../../discuss/components/PostAttachment";
+import { RepliedMessage } from "./RepliedMessage";
 
 interface IChannelMessage {
     id: string;
@@ -14,6 +15,7 @@ interface IChannelMessage {
     createdAt: string;
     updatedAt: string;
     channelId: string;
+    repliedTo:  IChannelMessage | string | null; // initilly  will be received as id or null if this is not a reply
     deleted: boolean;
     viewed: boolean;
     attachments: IPostAttachment[];
@@ -25,6 +27,7 @@ interface ChannelMessageProps {
     onContextMenu: (message: IChannelMessage, target: HTMLElement | null) => void;
 }
 
+const AVATAR_SIZE = 42;
 const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const bodyRef = useRef<HTMLDivElement>(null);
     const touchTimer = useRef<NodeJS.Timeout | null>(null);
@@ -69,7 +72,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             <div className="d-flex">
                 {showHeader && (
                     <div className="me-2 flex-shrink-0">
-                        <ProfileAvatar avatarImage={message.userAvatar} size={42} />
+                        <ProfileAvatar avatarImage={message.userAvatar} size={AVATAR_SIZE} />
                     </div>
                 )}
 
@@ -110,8 +113,12 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             </div>
         );
     }
-
-    body = <div style={{ maxWidth: "720px" }}>{body}</div>;
+    
+    // OPTIMIZE: check if the message is already among the loaded messages and alter the id with the message object
+    
+    body = <div style={{ maxWidth: "720px" }}>
+        {message.repliedTo && <RepliedMessage channelId={message.channelId } maxWidth="720px" iconWidth={`${AVATAR_SIZE}px`} message={message.repliedTo}/>} 
+        {body}</div>;
 
     return (
         <div ref={ref} className="wb-channels-message">

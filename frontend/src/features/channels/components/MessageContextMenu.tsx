@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaEdit } from "react-icons/fa";
-import { FaRegCopy, FaTrash } from "react-icons/fa6";
+import { FaRegCopy, FaReply, FaTrash } from "react-icons/fa6";
+
 
 interface MessageContextMenuProps {
     visible: boolean;
@@ -8,6 +9,7 @@ interface MessageContextMenuProps {
     onCopy: () => void;
     onEdit: () => void;
     onDelete: () => void;
+    onReply: () => void;
     isOwn: boolean;
     anchorRef: React.RefObject<HTMLElement>;
 }
@@ -15,7 +17,7 @@ interface MessageContextMenuProps {
 const MARGIN = 8;
 
 const MessageContextMenu = ({
-    visible, onClose, onCopy, onEdit, onDelete, isOwn, anchorRef
+    visible, onClose, onCopy, onEdit, onDelete, onReply, isOwn, anchorRef
 }: MessageContextMenuProps) => {
     const menuRef = useRef<HTMLDivElement>(null);
     const [pos, setPos] = useState({ top: 0, left: 0 });
@@ -81,6 +83,12 @@ const MessageContextMenu = ({
                 onClick={onCopy}
             >
                 <FaRegCopy className="me-2 text-muted" /> Copy text
+            </button>
+            <button type="button" role="menuitem"
+                className="w-100 text-start d-flex align-items-center px-3 py-2 btn btn-link text-decoration-none"
+                onClick={onReply}
+            >
+                <FaReply className="me-2 text-muted" /> Reply to
             </button>
             {isOwn && (
                 <>
