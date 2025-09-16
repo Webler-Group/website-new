@@ -16,6 +16,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const ChannelRolesEnum_1 = __importDefault(require("../data/ChannelRolesEnum"));
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
+const StringUtils_1 = require("../utils/StringUtils");
 const createGroup = (0, express_async_handler_1.default)(async (req, res) => {
     const { title } = req.body;
     const currentUserId = req.userId;
@@ -340,6 +341,14 @@ const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(count)
         .populate("user", "name avatarImage level roles")
+        .populate({
+        path: "repliedTo",
+        select: "content createdAt updatedAt deleted user",
+        populate: {
+            path: "user",
+            select: "name avatarImage",
+        },
+    })
         .lean();
     const data = messages.map(x => ({
         id: x._id,
@@ -351,6 +360,16 @@ const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
         updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
+        repliedTo: x.repliedTo ? {
+            id: x.repliedTo._id,
+            content: x.repliedTo.deleted ? "" : (0, StringUtils_1.truncate)(x.repliedTo.content, 50),
+            createdAt: x.repliedTo.createdAt,
+            updatedAt: x.repliedTo.updatedAt,
+            userId: x.repliedTo.user._id,
+            userName: x.repliedTo.user.name,
+            userAvatar: x.repliedTo.user.avatarImage,
+            deleted: x.repliedTo.deleted
+        } : null,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
@@ -542,7 +561,7 @@ const markMessagesSeenWS = async (socket, payload) => {
     }
 };
 const createMessageWS = async (socket, payload) => {
-    const { channelId, content } = payload;
+    const { channelId, content, repliedTo = null } = payload;
     const currentUserId = socket.data.userId;
     try {
         const participant = await ChannelParticipant_1.default.findOne({ channel: channelId, user: currentUserId });
@@ -553,6 +572,7 @@ const createMessageWS = async (socket, payload) => {
             _type: ChannelMessageTypeEnum_1.default.MESSAGE,
             content,
             channel: channelId,
+            repliedTo,
             user: currentUserId
         });
         const channel = await Channel_1.default.findById(newMessage.channel).select("_type createdBy DMUser").lean();

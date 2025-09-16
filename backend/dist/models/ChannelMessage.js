@@ -36,6 +36,7 @@ const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessage
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const Notification_1 = __importDefault(require("./Notification"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const StringUtils_1 = require("../utils/StringUtils");
 const channelMessageSchema = new mongoose_1.Schema({
     _type: {
         type: Number,
@@ -58,6 +59,11 @@ const channelMessageSchema = new mongoose_1.Schema({
         type: mongoose_1.SchemaTypes.ObjectId,
         ref: "Channel",
         required: true,
+    },
+    repliedTo: {
+        type: mongoose_1.SchemaTypes.ObjectId,
+        ref: "ChannelMessage",
+        default: null,
     },
     deleted: {
         type: Boolean,
@@ -145,6 +151,10 @@ channelMessageSchema.post("save", async function () {
                 else if (this._type == ChannelMessageTypeEnum_1.default.TITLE_CHANGED) {
                     channelTitle = channel.title;
                 }
+                const reply = this.repliedTo ?
+                    await ChannelMessage.findById(this.repliedTo)
+                        .populate("user", "name avatarImage level roles")
+                        .lean() : null;
                 io.to(userIds.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message", {
                     id: this._id,
                     type: this._type,
@@ -158,6 +168,16 @@ channelMessageSchema.post("save", async function () {
                     userAvatar: user.avatarImage,
                     viewed: false,
                     deleted: this.deleted,
+                    repliedTo: reply ? {
+                        id: reply._id,
+                        content: (0, StringUtils_1.truncate)(reply.content, 50),
+                        createdAt: reply.createdAt,
+                        updatedAt: reply.updatedAt,
+                        userId: reply.user._id.toString(),
+                        userName: reply.user.name,
+                        userAvatar: reply.user.avatarImage,
+                        deleted: reply.deleted
+                    } : null,
                     attachments
                 });
                 io.to(userIdsNotMuted.map(x => (0, socketServer_1.uidRoom)(x.toString()))).emit("channels:new_message_info", {});
