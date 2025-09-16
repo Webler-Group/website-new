@@ -374,36 +374,6 @@ const createMessage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
-const getMessage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { channelId, id } = req.body;
-    if (!channelId || !id) {
-
-        res.status(400).json({ message: "Invalid body" });
-        return;
-    }
-    const x = await ChannelMessage.findOne({ channel: channelId, _id: id }).populate<{ user: any }>("user", "name avatarImage").lean();
-
-    if (!x) {
-
-        res.json(404);
-        return;
-    }
-    const attachments = await PostAttachment.getByPostId({ channelMessage: id });
-    res.json({
-        id: x._id,
-        type: x._type,
-        userId: x.user._id,
-        userName: x.user.name,
-        userAvatar: x.user.avatarImage,
-        createdAt: x.createdAt,
-        updatedAt: x.updatedAt,
-        content: x.deleted ? "" : x.content,
-        deleted: x.deleted,
-        channelId: x.channel,
-        repliedTo: x.deleted ? null : x.repliedTo,
-        attachments: x.deleted ? [] : attachments,
-    })
-});
 const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, count, fromDate } = req.body;
     const currentUserId = req.userId;
@@ -791,7 +761,6 @@ const channelsController = {
     getInvitesList,
     createMessage,
     getMessages,
-    getMessage,
     groupRemoveUser,
     leaveChannel,
     groupCancelInvite,
