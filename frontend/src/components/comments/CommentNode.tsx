@@ -13,7 +13,7 @@ interface CommentNodeProps {
     onReply: (id: string, onReplyCallback: (post: IComment) => void, message?: string) => void;
     onShowVotes: (id: string) => void;
     highlightedCommentId: string | null;
-    onVote: (id: string, vote: number) => void;
+    onVote: (id: string, vote: number, error?: string) => void;
 }
 
 const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
@@ -100,9 +100,9 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const onReplyReply = (reply: IComment) => {
         setRepliesVisible(true);
-        onReply(reply.id, (reply: IComment) => {
-            createReply(reply);
-        }, `[user id="${reply.userId}"]${reply.userName}[/user]\n`);
+        onReply(comment.id, (post: IComment) => {
+            createReply(post);
+        }, `[user id="${reply.userId}"]${reply.userName}[/user] `);
     }
 
     const onReplyDelete = (reply: IComment) => {

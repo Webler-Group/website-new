@@ -12,7 +12,7 @@ import { useAuth } from "../../auth/context/authContext";
 import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
-
+import RepliedMessage from "../components/RepliedMessage";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -67,6 +67,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
     const [loading, setLoading] = useState(false);
+    const [repliedMessage, setRepliedMessage] = useState<IChannelMessage | null>(null);
 
     useEffect(() => {
         getChannel();
@@ -219,9 +220,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             messages.editMessage(editedMessage.id, newMessage);
             setEditedMessage(null);
         } else {
-            messages.sendMessage(newMessage);
+            messages.sendMessage(newMessage, repliedMessage);
         }
         setNewMessage("");
+        setRepliedMessage(null);
     };
 
     const handleTextareaKeydown = (e: KeyboardEvent) => {
@@ -346,6 +348,16 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
+    const onMessageReply = () => {
+        setSelectedMessage(prev => {
+            if (prev) {
+                setRepliedMessage(prev);
+                textareaRef.current?.focus();
+            }
+            return null;
+        });
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
 
@@ -432,13 +444,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                         <ChannelMessage
                                                             ref={lastMessageRef}
                                                             message={message}
-                                                            showHeader={isLastFromUser}
+                                                            showHeader={isLastFromUser || message.repliedTo != null}
                                                             onContextMenu={onContextMenu}
                                                         />
                                                     ) : (
                                                         <ChannelMessage
                                                             message={message}
-                                                            showHeader={isLastFromUser}
+                                                            showHeader={isLastFromUser || message.repliedTo != null}
                                                             onContextMenu={onContextMenu}
                                                         />
                                                     )}
@@ -459,6 +471,22 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </div>
                                     </div>
                                 )}
+                                {repliedMessage &&
+                                    <div className="d-flex align-items-center">
+                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                            <RepliedMessage message={repliedMessage} />
+                                        </div>
+
+                                        <Button
+                                            size="sm"
+                                            variant="link"
+                                            className="text-muted ms-2 p-0 flex-shrink-0"
+                                            onClick={() => setRepliedMessage(null)}
+                                        >
+                                            <FaTimes />
+                                        </Button>
+                                    </div>
+                                }
                                 <div className="d-flex align-items-center">
                                     {showJumpButton && (
                                         <Button
@@ -523,6 +551,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 onCopy={onContextCopy}
                 onEdit={onContextEdit}
                 onDelete={onContextDelete}
+                onReply={onMessageReply}
                 isOwn={selectedMessage?.userId === userInfo?.id}
                 anchorRef={anchorRef}
             />

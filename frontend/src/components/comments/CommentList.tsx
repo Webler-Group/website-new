@@ -156,7 +156,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             setMessage([true, parentCommentId ? 'Reply posted successfully' : 'Comment posted successfully']);
             hideAnswerForm();
         } else {
-            setMessage([false, 'Failed to post comment']);
+            setMessage([false, result?.message ?? 'Failed to post comment']);
         }
 
         setAnswerFormLoading(false);
@@ -239,8 +239,12 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setDeleteModalVisible(true);
     }
 
-    const onVote = (id: string, vote: number) => {
-        editComment(id, prev => ({ ...prev, votes: prev.votes + 2 * vote - 1, isUpvoted: vote == 1 }));
+    const onVote = (id: string, vote: number, error?: string) => {
+        if(error) {
+            setMessage([false, error]);
+        } else {
+            editComment(id, prev => ({ ...prev, votes: prev.votes + 2 * vote - 1, isUpvoted: vote == 1 }));
+        }
     }
 
     const onShowVotes = (id: string) => {

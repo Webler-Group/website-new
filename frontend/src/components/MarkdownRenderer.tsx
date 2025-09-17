@@ -69,7 +69,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
                             cursor: "pointer",
                             objectFit: "cover",
                         }}
-                        onClick={() => setPreviewSrc(src || null)}
+                        onClick={() => {
+                            setPreviewSrc(src || null);
+                        }}
                     />
                 );
             }

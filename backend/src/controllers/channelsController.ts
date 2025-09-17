@@ -13,6 +13,7 @@ import mongoose from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import { truncate } from "../utils/StringUtils";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = req.body;
@@ -24,7 +25,6 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const channel = await Channel.create({ _type: ChannelTypeEnum.GROUP, createdBy: currentUserId, title });
-
     await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER });
 
     res.json({
@@ -51,17 +51,14 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 
     if (!channel) {
         channel = await Channel.create({ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId });
-
         await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
-        // await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
-
     } else {
         const myInvite = await ChannelInvite.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
             await myInvite.accept();
 
         } else {
-            await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
+            await Channel.join(channel._id, new mongoose.Types.ObjectId(currentUserId));
         }
     }
 
@@ -401,6 +398,14 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: -1 })
         .limit(count)
         .populate<{ user: any }>("user", "name avatarImage level roles")
+        .populate<{ repliedTo: any }>({
+            path: "repliedTo",
+            select: "content createdAt updatedAt deleted user",
+            populate: {
+                path: "user",
+                select: "name avatarImage",
+            },
+        })
         .lean();
 
     const data = messages.map(x => ({
@@ -413,6 +418,16 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
         deleted: x.deleted,
+        repliedTo: x.repliedTo ? {
+            id: x.repliedTo._id,
+            content: x.repliedTo.deleted ? "" : truncate(x.repliedTo.content, 50),
+            createdAt: x.repliedTo.createdAt,
+            updatedAt: x.repliedTo.updatedAt,
+            userId: x.repliedTo.user._id,
+            userName: x.repliedTo.user.name,
+            userAvatar: x.repliedTo.user.avatarImage,
+            deleted: x.repliedTo.deleted
+        } : null,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt : false,
         attachments: new Array()
@@ -635,26 +650,26 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
 
     try {
         const participant = await ChannelParticipant.findOne({ user: currentUserId, channel: channelId });
-    if (!participant) {
-        return;
-    }
+        if (!participant) {
+            return;
+        }
 
-    participant.lastActiveAt = new Date();
-    participant.unreadCount = 0;
-    await participant.save();
+        participant.lastActiveAt = new Date();
+        participant.unreadCount = 0;
+        await participant.save();
 
-    socket.emit("channels:messages_seen", {
-        channelId,
-        userId: currentUserId,
-        lastActiveAt: participant.lastActiveAt
-    });
-    } catch(err: any) {
+        socket.emit("channels:messages_seen", {
+            channelId,
+            userId: currentUserId,
+            lastActiveAt: participant.lastActiveAt
+        });
+    } catch (err: any) {
         console.log("Mark messages seen failed:", err.message);
     }
 }
 
 const createMessageWS = async (socket: Socket, payload: any) => {
-    const { channelId, content } = payload;
+    const { channelId, content, repliedTo = null } = payload;
     const currentUserId = socket.data.userId;
 
     try {
@@ -667,16 +682,17 @@ const createMessageWS = async (socket: Socket, payload: any) => {
             _type: ChannelMessageTypeEnum.MESSAGE,
             content,
             channel: channelId,
+            repliedTo,
             user: currentUserId
         });
 
         const channel = await Channel.findById(newMessage.channel).select("_type createdBy DMUser").lean();
-        
-        if(channel && channel._type == ChannelTypeEnum.DM) {
+
+        if (channel && channel._type == ChannelTypeEnum.DM) {
             const messages = await ChannelMessage.find({ channel: channel._id }).limit(2).lean();
-            if(messages.length == 1) {
+            if (messages.length == 1) {
                 const exists = await ChannelParticipant.exists({ channel: channel._id, user: channel.DMUser });
-                if(!exists) {
+                if (!exists) {
                     await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
                 }
             }

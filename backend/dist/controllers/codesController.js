@@ -424,7 +424,7 @@ const createCodeComment = (0, express_async_handler_1.default)(async (req, res) 
             postId: reply._id
         });
     }
-    if (code.user != currentUserId) {
+    if (code.user != currentUserId && (parentPost == null || code.user.toString() != parentPost.user.toString())) {
         await Notification_1.default.sendToUsers([code.user], {
             title: "New comment",
             message: `{action_user} posted comment on your code "${code.name}"`,

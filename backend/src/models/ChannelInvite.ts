@@ -59,13 +59,7 @@ channelInviteSchema.post("save", async function () {
 
 channelInviteSchema.methods.accept = async function (accepted: boolean = true) {
     if (accepted) {
-        await ChannelParticipant.create({ channel: this.channel, user: this.invitedUser });
-        await ChannelMessage.create({
-            _type: ChannelMessageTypeEnum.USER_JOINED,
-            content: "{action_user} joined",
-            channel: this.channel,
-            user: this.invitedUser
-        });
+        await Channel.join(this.channel, this.invitedUser);
     }
     await ChannelInvite.deleteMany({ channel: this.channel, invitedUser: this.invitedUser });
 }

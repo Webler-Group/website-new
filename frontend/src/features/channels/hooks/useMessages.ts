@@ -108,12 +108,13 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         });
     }, [socket, channelId]);
 
-    const sendMessage = useCallback((content: string) => {
+    const sendMessage = useCallback((content: string, repliedTo:IChannelMessage|null) => {
         if(!socket) return;
 
         socket.emit("channels:send_message", {
             channelId,
-            content
+            content,
+            repliedTo:repliedTo && repliedTo.id,
         });
     }, [socket, channelId]);
 
