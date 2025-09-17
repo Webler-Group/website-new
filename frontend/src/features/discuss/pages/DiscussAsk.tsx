@@ -53,7 +53,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
     const createQuestion = async () => {
         const result = await sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
         if (result && result.question) {
-            navigate("/Discuss");
+            navigate("/Discuss/" + result.question.id);
         } else {
             setError(result.error ? result.error.message : result.message);
         }

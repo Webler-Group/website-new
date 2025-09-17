@@ -192,7 +192,7 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
 });
 
 
-postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }) {
+postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose.Types.ObjectId | string; channelMessage?: mongoose.Types.ObjectId; }) {
     const result = await PostAttachment
         .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null, _type: { $ne: PostAttachmentTypeEnum.MENTION } })
         .populate("code", "name language")
@@ -341,7 +341,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
 declare interface IPostAttachment extends InferSchemaType<typeof postAttachmentSchema> { }
 
 interface PostAttachmentModel extends Model<IPostAttachment> {
-    getByPostId(id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }): Promise<any[]>;
+    getByPostId(id: { post?: mongoose.Types.ObjectId | string; channelMessage?: mongoose.Types.ObjectId; }): Promise<any[]>;
     updateAttachments(message: string, id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }): Promise<void>;
 
 }

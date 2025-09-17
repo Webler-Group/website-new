@@ -68,7 +68,7 @@ const CodesList = () => {
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const language = searchParams.has("language") ? searchParams.get("language")! : "";
+        const language = searchParams.has("language") ? searchParams.get("language")! : null;
         const result = await sendJsonRequest(`/Codes`, "POST", {
             page,
             count: codesPerPage,

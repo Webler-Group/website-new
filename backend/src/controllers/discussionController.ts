@@ -12,25 +12,21 @@ import { escapeRegex } from "../utils/regexUtils";
 import UserFollowing from "../models/UserFollowing";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
+import { parseWithZod } from "../utils/zodUtils";
+import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { title, message, tags } = req.body;
+    const { body } = parseWithZod(createQuestionSchema, req);
+    const { title, message, tags } = body;
     const currentUserId = req.userId;
-
-    if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
 
     const tagIds: any[] = [];
 
     for (let tagName of tags) {
         const tag = await Tag.findOne({ name: tagName });
-        if (!tag) {
-            res.status(400).json({ message: `${tagName} does not exists` });
-            return;
+        if (tag) {
+            tagIds.push(tag._id);
         }
-        tagIds.push(tag._id);
     }
 
     const question = await Post.create({
@@ -41,44 +37,30 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         user: currentUserId
     })
 
-    if (question) {
+    await PostFollowing.create({
+        user: currentUserId,
+        following: question._id
+    });
 
-        await PostFollowing.create({
-            user: currentUserId,
-            following: question._id
-        });
-
-        res.json({
-            question: {
-                id: question._id,
-                title: question.title,
-                message: question.message,
-                tags: question.tags,
-                date: question.createdAt,
-                userId: question.user,
-                isAccepted: question.isAccepted,
-                votes: question.votes,
-                answers: question.answers
-            }
-        });
-    }
-    else {
-        res.status(500).json({ message: "Error" });
-    }
-
+    res.json({
+        question: {
+            id: question._id,
+            title: question.title,
+            message: question.message,
+            tags: question.tags,
+            date: question.createdAt,
+            userId: question.user,
+            isAccepted: question.isAccepted,
+            votes: question.votes,
+            answers: question.answers
+        }
+    });
 });
 
 const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { page, count, filter, searchQuery, userId } = req.body;
+    const { body } = parseWithZod(getQuestionListSchema, req);
+    const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
-
-    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ message: "Invalid body" });
-        return
-    }
-
-    const safeQuery = escapeRegex(searchQuery.trim());
-    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
 
     let pipeline: PipelineStage[] = [
         { $match: { _type: PostTypeEnum.QUESTION, hidden: false } },
@@ -95,7 +77,10 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             hidden: false
         })
 
-    if (searchQuery.trim().length > 0) {
+    if (searchQuery && searchQuery.trim().length > 0) {
+        const safeQuery = escapeRegex(searchQuery.trim());
+        const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
+
         const tagIds = (await Tag.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
@@ -138,8 +123,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         }
         // My Questions
         case 3: {
-            if (userId === null) {
-                res.status(400).json({ message: "Invalid request" });
+            if (!userId) {
+                res.status(400).json({ error: [{ message: "Invalid request" }] });
                 return
             }
             pipeline.push({
@@ -154,8 +139,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         }
         // My Replies
         case 4: {
-            if (userId === null) {
-                res.status(400).json({ message: "Invalid request" });
+            if (!userId) {
+                res.status(400).json({ error: [{ message: "Invalid request" }] });
                 return
             }
             const replies = await Post.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId");
@@ -193,7 +178,8 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             break;
         }
         default:
-            throw new Error("Unknown filter");
+            res.status(400).json({ error: [{ message: "Unknown filter" }] });
+            return;
     }
 
     const questionCount = await dbQuery.clone().countDocuments();
@@ -209,62 +195,45 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }, {
         $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
     })
-    /*const result = await dbQuery
-        .skip((page - 1) * count)
-        .limit(count)
-        .select("-message")
-        .populate("user", "name avatarUrl countryCode level roles")
-        .populate("tags", "name") as any[];*/
 
     const result = await Post.aggregate(pipeline)
 
-    if (result) {
-        const data = result.map(x => ({
-            id: x._id,
-            title: x.title,
-            tags: x.tags.map((y: any) => y.name),
-            date: x.createdAt,
-            userId: x.user._id,
-            userName: x.users.length ? x.users[0].name : undefined,
-            userAvatar: x.users.length ? x.users[0].avatarImage : undefined,
-            level: x.users.length ? x.users[0].level : undefined,
-            roles: x.users.length ? x.users[0].roles : undefined,
-            answers: x.answers,
-            votes: x.votes,
-            isUpvoted: false,
-            isAccepted: x.isAccepted,
-            score: x.score
-        }));
+    const data = result.map(x => ({
+        id: x._id,
+        title: x.title,
+        tags: x.tags.map((y: any) => y.name),
+        date: x.createdAt,
+        userId: x.user._id,
+        userName: x.users.length ? x.users[0].name : undefined,
+        userAvatar: x.users.length ? x.users[0].avatarImage : undefined,
+        level: x.users.length ? x.users[0].level : undefined,
+        roles: x.users.length ? x.users[0].roles : undefined,
+        answers: x.answers,
+        votes: x.votes,
+        isUpvoted: false,
+        isAccepted: x.isAccepted,
+        score: x.score
+    }));
 
-        let promises = [];
+    let promises = [];
 
-        for (let i = 0; i < data.length; ++i) {
-            /*promises.push(Post.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].answers = count;
-            }));*/
-            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].votes = count;
-            }));*/
-            if (currentUserId) {
-                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                    data[i].isUpvoted = !(upvote === null);
-                }));
-            }
+    for (let i = 0; i < data.length; ++i) {
+        if (currentUserId) {
+            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                data[i].isUpvoted = !(upvote === null);
+            }));
         }
-
-        await Promise.all(promises);
-
-        res.status(200).json({ count: questionCount, questions: data });
-    }
-    else {
-        res.status(500).json({ message: "Error" });
     }
 
+    await Promise.all(promises);
+
+    res.status(200).json({ count: questionCount, questions: data });
 });
 
 const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getQuestionSchema, req);
+    const { questionId } = body;
     const currentUserId = req.userId;
-    const { questionId } = req.body;
 
     const question = await Post.findById(questionId)
         .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
@@ -299,17 +268,18 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         });
     }
     else {
-        res.status(404).json({ message: "Question not found" })
+        res.status(404).json({ error: [{ message: "Question not found" }] })
     }
 });
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(createReplySchema, req);
+    const { message, questionId } = body;
     const currentUserId = req.userId;
-    const { message, questionId } = req.body;
 
     const question = await Post.findById(questionId);
     if (question === null) {
-        res.status(404).json({ message: "Question not found" });
+        res.status(404).json({ error: [{ message: "Question not found" }] });
         return
     }
 
@@ -320,73 +290,63 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         user: currentUserId
     })
 
-    if (reply) {
+    const questionFollowed = await PostFollowing.findOne({
+        user: currentUserId,
+        following: question._id
+    })
 
-        const questionFollowed = await PostFollowing.findOne({
+    if (questionFollowed === null) {
+        await PostFollowing.create({
             user: currentUserId,
             following: question._id
-        })
+        });
+    }
 
-        if (questionFollowed === null) {
-            await PostFollowing.create({
-                user: currentUserId,
-                following: question._id
-            });
-        }
+    const followers = await PostFollowing.find({ following: question._id });
+    await Notification.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user) as Types.ObjectId[], {
+        title: "New answer",
+        type: NotificationTypeEnum.QA_ANSWER,
+        actionUser: currentUserId!,
+        message: `{action_user} posted in "${question.title}"`,
+        questionId: question._id,
+        postId: reply._id
+    });
 
-        const followers = await PostFollowing.find({ following: question._id });
-        await Notification.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user) as Types.ObjectId[], {
+    if (question.user != currentUserId) {
+        await Notification.sendToUsers([question.user as Types.ObjectId], {
             title: "New answer",
             type: NotificationTypeEnum.QA_ANSWER,
             actionUser: currentUserId!,
-            message: `{action_user} posted in "${question.title}"`,
+            message: `{action_user} answered your question "${question.title}"`,
             questionId: question._id,
             postId: reply._id
         });
+    }
 
-        if (question.user != currentUserId) {
-            await Notification.sendToUsers([question.user as Types.ObjectId], {
-                title: "New answer",
-                type: NotificationTypeEnum.QA_ANSWER,
-                actionUser: currentUserId!,
-                message: `{action_user} answered your question "${question.title}"`,
-                questionId: question._id,
-                postId: reply._id
-            });
+    question.$inc("answers", 1)
+    await question.save();
+
+    const attachments = await PostAttachment.getByPostId({ post: reply._id })
+
+    res.json({
+        post: {
+            id: reply._id,
+            message: reply.message,
+            date: reply.createdAt,
+            userId: reply.user,
+            parentId: reply.parentId,
+            isAccepted: reply.isAccepted,
+            votes: reply.votes,
+            answers: reply.answers,
+            attachments
         }
-
-        question.$inc("answers", 1)
-        await question.save();
-
-        const attachments = await PostAttachment.getByPostId({ post: reply._id })
-
-        res.json({
-            post: {
-                id: reply._id,
-                message: reply.message,
-                date: reply.createdAt,
-                userId: reply.user,
-                parentId: reply.parentId,
-                isAccepted: reply.isAccepted,
-                votes: reply.votes,
-                answers: reply.answers,
-                attachments
-            }
-        })
-    }
-    else {
-        res.status(500).json({ message: "error" });
-    }
+    })
 });
 
 const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getRepliesSchema, req);
+    const { questionId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
-    const { questionId, index, count, filter, findPostId } = req.body;
-
-    if (typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof findPostId === "undefined") {
-        res.status(400).json({ message: "Invalid body" });
-        return
-    }
 
     let dbQuery = Post.find({ parentId: questionId, _type: PostTypeEnum.ANSWER, hidden: false });
 
@@ -397,7 +357,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const reply = await Post.findById(findPostId);
 
         if (reply === null) {
-            res.status(404).json({ message: "Post not found" })
+            res.status(404).json({ error: [{ message: "Post not found" }] })
             return
         }
 
@@ -430,7 +390,8 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 break;
             }
             default:
-                throw new Error("Unknown filter");
+                res.status(400).json({ error: [{ message: "Unknown filter" }] });
+                return;
         }
     }
 
@@ -439,82 +400,61 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .limit(count)
         .populate("user", "name avatarImage countryCode level roles") as any[];
 
-    if (result) {
-        const data = result.map((x, offset) => ({
-            id: x._id,
-            parentId: x.parentId,
-            message: x.message,
-            date: x.createdAt,
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatar: x.user.avatarImage,
-            level: x.user.level,
-            roles: x.user.roles,
-            votes: x.votes,
-            isUpvoted: false,
-            isAccepted: x.isAccepted,
-            answers: x.answers,
-            index: skipCount + offset,
-            attachments: new Array()
-        }))
+    const data = result.map((x, offset) => ({
+        id: x._id,
+        parentId: x.parentId,
+        message: x.message,
+        date: x.createdAt,
+        userId: x.user._id,
+        userName: x.user.name,
+        userAvatar: x.user.avatarImage,
+        level: x.user.level,
+        roles: x.user.roles,
+        votes: x.votes,
+        isUpvoted: false,
+        isAccepted: x.isAccepted,
+        answers: x.answers,
+        index: skipCount + offset,
+        attachments: new Array()
+    }))
 
-        let promises = [];
+    let promises = [];
 
-        for (let i = 0; i < data.length; ++i) {
-            /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-                data[i].votes = count;
-            }));*/
-            if (currentUserId) {
-                promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                    data[i].isUpvoted = !(upvote === null);
-                }));
-            }
-            promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+    for (let i = 0; i < data.length; ++i) {
+        if (currentUserId) {
+            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+                data[i].isUpvoted = !(upvote === null);
+            }));
         }
-
-        await Promise.all(promises);
-
-        res.status(200).json({ posts: data })
-    }
-    else {
-        res.status(500).json({ message: "Error" });
+        promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
-});
+    await Promise.all(promises);
 
-const getTags = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { query } = req.body;
+    res.status(200).json({ posts: data })
 
-    if (typeof query === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    if (query.length < 1) {
-        res.json({ tags: [] })
-    }
-    else {
-        const result = await Tag.find({ name: new RegExp("^" + query) });
-
-        res.json({
-            tags: result.map(x => x.name)
-        })
-    }
 });
 
 const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { accepted, postId } = req.body;
+    const { body } = parseWithZod(toggleAcceptedAnswerSchema, req);
+    const { accepted, postId } = body;
+    const currentUserId = req.userId;
 
     const post = await Post.findById(postId);
 
     if (post === null) {
-        res.status(404).json({ success: false, message: "Post not found" })
+        res.status(404).json({ error: [{ message: "Post not found" }] })
         return
     }
 
     const question = await Post.findById(post.parentId);
     if (question === null) {
-        res.status(404).json({ message: "Question not found" })
+        res.status(404).json({ error: [{ message: "Question not found" }] })
+        return
+    }
+
+    if (question.user != currentUserId) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] })
         return
     }
 
@@ -544,24 +484,19 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
 });
 
 const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(editQuestionSchema, req);
+    const { questionId, title, message, tags } = body;
     const currentUserId = req.userId;
-
-    const { questionId, title, message, tags } = req.body;
-
-    if (typeof title === "undefined" || typeof message === "undefined" || typeof tags === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
 
     const question = await Post.findById(questionId);
 
     if (question === null) {
-        res.status(404).json({ message: "Question not found" })
+        res.status(404).json({ error: [{ message: "Question not found" }] })
         return
     }
 
     if (question.user != currentUserId) {
-        res.status(401).json({ message: "Unauthorized" })
+        res.status(401).json({ error: [{ message: "Unauthorized" }] })
         return
     }
 
@@ -571,150 +506,114 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     question.message = message;
     question.tags = tagIds;
 
-    try {
-        await question.save();
+    await question.save();
 
-        const attachments = await PostAttachment.getByPostId({ post: question._id });
+    const attachments = await PostAttachment.getByPostId({ post: question._id });
 
-        res.json({
-            success: true,
-            data: {
-                id: question._id,
-                title: question.title,
-                message: question.message,
-                tags: question.tags,
-                attachments
-            }
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
+    res.json({
+        success: true,
+        data: {
+            id: question._id,
+            title: question.title,
+            message: question.message,
+            tags: question.tags,
+            attachments
+        }
+    })
 
 });
 
 const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteQuestionSchema, req);
+    const { questionId } = body;
     const currentUserId = req.userId;
-    const { questionId } = req.body;
 
     const question = await Post.findById(questionId);
 
     if (question === null) {
-        res.status(404).json({ message: "Question not found" })
+        res.status(404).json({ error: [{ message: "Question not found" }] })
         return
     }
 
     if (question.user != currentUserId) {
-        res.status(401).json({ message: "Unauthorized" })
+        res.status(401).json({ error: [{ message: "Unauthorized" }] })
         return
     }
 
-    try {
-        await Post.deleteAndCleanup({ _id: questionId });
+    await Post.deleteAndCleanup({ _id: questionId });
 
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, error: err })
-    }
+    res.json({ success: true });
 })
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(editReplySchema, req);
+    const { replyId, message } = body;
     const currentUserId = req.userId;
-    const { replyId, message } = req.body;
-
-    if (typeof message === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" })
-        return
-    }
 
     const reply = await Post.findById(replyId);
 
     if (reply === null) {
-        res.status(404).json({ message: "Post not found" })
+        res.status(404).json({ error: [{ message: "Post not found" }] })
         return
     }
 
     if (currentUserId != reply.user) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return
     }
 
     reply.message = message;
 
-    try {
-        await reply.save();
+    await reply.save();
 
-        const attachments = await PostAttachment.getByPostId({ post: reply._id })
+    const attachments = await PostAttachment.getByPostId({ post: reply._id })
 
-        res.json({
-            success: true,
-            data: {
-                id: reply._id,
-                message: reply.message,
-                attachments
-            }
-        })
-    }
-    catch (err: any) {
-
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        })
-    }
-
+    res.json({
+        success: true,
+        data: {
+            id: reply._id,
+            message: reply.message,
+            attachments
+        }
+    });
 });
 
 const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteReplySchema, req);
+    const { replyId } = body;
     const currentUserId = req.userId;
-    const { replyId } = req.body;
 
     const reply = await Post.findById(replyId);
 
     if (reply === null) {
-        res.status(404).json({ message: "Post not found" })
+        res.status(404).json({ error: [{ message: "Post not found" }] })
         return
     }
 
     if (currentUserId != reply.user) {
-        res.status(401).json({ message: "Unauthorized" });
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return
     }
 
     const question = await Post.findById(reply.parentId);
     if (question === null) {
-        res.status(404).json({ message: "Question not found" })
+        res.status(404).json({ error: [{ message: "Question not found" }] })
         return
     }
 
-    try {
-        await Post.deleteAndCleanup({ _id: replyId });
+    await Post.deleteAndCleanup({ _id: replyId });
 
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, error: err })
-    }
+    res.json({ success: true });
 })
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(votePostSchema, req);
+    const { postId, vote } = body;
     const currentUserId = req.userId;
-    const { postId, vote } = req.body;
-
-    if (typeof vote === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
 
     const post = await Post.findById(postId);
     if (post === null) {
-        res.status(404).json({ message: "Post not found" })
+        res.status(404).json({ error: [{ message: "Post not found" }] })
         return
     }
 
@@ -740,73 +639,54 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 })
 
 const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(followQuestionSchema, req);
+    const { postId } = body;
     const currentUserId = req.userId;
-    const { postId } = req.body;
 
-    if (typeof postId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    const postExists = await Post.findOne({ _id: postId, _type: PostTypeEnum.QUESTION })
+    const postExists = await Post.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
-        res.status(404).json({ message: "Question not found" });
+        res.status(404).json({ error: [{ message: "Question not found" }] });
         return
     }
 
-    const exists = await PostFollowing.findOne({ user: currentUserId, following: postId });
+    const exists = await PostFollowing.exists({ user: currentUserId, following: postId });
     if (exists) {
-        res.status(204).json({ success: true })
-        return
+        res.status(204).json({ success: true });
+        return;
     }
 
-    const postFollowing = await PostFollowing.create({
+    await PostFollowing.create({
         user: currentUserId,
         following: postId
     });
 
-    if (postFollowing) {
-
-        res.json({ success: true })
-        return
-    }
-
-    res.status(500).json({ success: false });
+    res.json({ success: true });
 });
 
 const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(unfollowQuestionSchema, req);
+    const { postId } = body;
     const currentUserId = req.userId;
-    const { postId } = req.body;
 
-    if (typeof postId === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return
-    }
-
-    const postExists = await Post.findOne({ _id: postId, _type: PostTypeEnum.QUESTION })
+    const postExists = await Post.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
-        res.status(404).json({ message: "Question not found" });
-        return
+        res.status(404).json({ error: [{ message: "Question not found" }] });
+        return;
     }
 
-    const postFollowing = await PostFollowing.findOne({ user: currentUserId, following: postId });
+    const postFollowing = await PostFollowing.exists({ user: currentUserId, following: postId });
     if (postFollowing === null) {
-        res.status(204).json({ success: true })
-        return
+        res.status(204).json({ success: true });
+        return;
     }
 
-    const result = await PostFollowing.deleteOne({ user: currentUserId, following: postId })
-    if (result.deletedCount == 1) {
-
-        res.json({ success: true })
-        return
-    }
-
-    res.status(500).json({ success: false });
+    await PostFollowing.deleteOne({ user: currentUserId, following: postId });
+    res.json({ success: true });
 });
 
 const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { parentId, page, count } = req.body;
+    const { body } = parseWithZod(getVotersListSchema, req);
+    const { parentId, page, count } = body;
     const currentUserId = req.userId;
 
     const result = await Upvote.find({ parentId })
@@ -849,7 +729,6 @@ const discussController = {
     getQuestion,
     createReply,
     getReplies,
-    getTags,
     toggleAcceptedAnswer,
     editQuestion,
     deleteQuestion,

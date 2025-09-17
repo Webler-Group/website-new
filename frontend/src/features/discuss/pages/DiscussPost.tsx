@@ -21,6 +21,7 @@ import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import PostTextareaControl from "../../../components/PostTextareaControl";
 import ReactionsList from "../../../components/reactions/ReactionsList";
+import QuestionPlaceholder from "../components/QuestionPlaceholder";
 
 const DiscussPost = () => {
     const { sendJsonRequest } = useApi();
@@ -31,6 +32,7 @@ const DiscussPost = () => {
     const [question, setQuestion] = useState<IQuestion | null>(null);
     const [message, setMessage] = useState(["", ""]);
     const [loading, setLoading] = useState(false);
+    const [answersLoading, setAnswersLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const answersPerPage = 10;
     const [answers, setAnswers] = useState<IAnswer[]>([]);
@@ -119,7 +121,7 @@ const DiscussPost = () => {
     }
 
     const getAnswers = async () => {
-        setLoading(true);
+        setAnswersLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const result = await sendJsonRequest(`/Discussion/GetQuestionReplies`, "POST", {
@@ -149,7 +151,7 @@ const DiscussPost = () => {
 
             setAcceptedAnswer(accepted);
         }
-        setLoading(false);
+        setAnswersLoading(false);
     }
 
     const handlePostAnswer = async () => {
@@ -334,6 +336,11 @@ const DiscussPost = () => {
 
     let charactersRemaining = maxCharacters - formInput.length;
 
+    let placeholders = [];
+    for (let i = 0; i < answersPerPage; ++i) {
+        placeholders.push(<QuestionPlaceholder key={i} />);
+    }
+
     return (
         question !== null &&
         <>
@@ -478,6 +485,9 @@ const DiscussPost = () => {
             </div>
             <div className="mt-2 d-flex flex-column w-100">
                 {
+                    answersLoading ?
+                    placeholders
+                    :
                     answers.map(answer => {
                         if (postId === answer.id) {
                             return <Answer
