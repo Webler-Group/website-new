@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface LoginFormProps {
     onToggleClick: () => void;
@@ -15,7 +16,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
     const { authenticate, updateUser, deviceId } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: FormEvent) => {
@@ -29,7 +30,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
     }
 
     const loginUser = async () => {
-        setError("");
+        setError([]);
         const result = await sendJsonRequest("/Auth/Login", "POST", { email, password, deviceId });
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
@@ -37,7 +38,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
             onLogin();
         }
         else {
-            setError(result.message);
+            setError(result.error);
         }
     }
 
@@ -45,7 +46,7 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
         <>
             <h1 className="text-center mb-4">Sign In</h1>
             <Form onSubmit={(e) => handleSubmit(e)}>
-                {error && <Alert variant="danger">{error}</Alert>}
+                <RequestResultAlert errors={error} />
                 <FormGroup>
                     <FormLabel>Email</FormLabel>
                     <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

@@ -1,12 +1,13 @@
 import { FormEvent, useState } from "react";
-import { Alert, Button, Container, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap"
+import { Button, Container, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 const ForgotPassword = () => {
     const { sendJsonRequest } = useApi();
     const [email, setEmail] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const navigate = useNavigate();
@@ -22,13 +23,13 @@ const ForgotPassword = () => {
     }
 
     const sendPasswordResetCode = async () => {
-        setError("");
+        setError([]);
         const result = await sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email });
         if (result && result.success) {
             setIsSubmitted(true);
         }
         else {
-            setError(result.message);
+            setError(result.error);
         }
     }
 
@@ -46,7 +47,7 @@ const ForgotPassword = () => {
                             :
                             <>
                                 <Form onSubmit={(e) => handleSubmit(e)}>
-                                    {error && <Alert variant="danger">{error}</Alert>}
+                                    <RequestResultAlert errors={error} />
                                     <FormGroup>
                                         <FormLabel>Enter your account's email address to recover your password.</FormLabel>
                                         <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

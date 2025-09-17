@@ -1,5 +1,5 @@
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
 import { UserDetails } from "./Profile";
@@ -9,6 +9,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "../components/NotificationsTab";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -27,18 +28,18 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [email, setEmail] = useState("");
     const [bio, setBio] = useState("");
     const [countryCode, setCountryCode] = useState("");
-    const [infoMessage, setInfoMessage] = useState([true, ""]);
+    const [infoMessage, setInfoMessage] = useState<{ message?: string; errors?: any[]; }>({});
 
-    const [emailMessage, setEmailMessage] = useState([true, ""]);
+    const [emailMessage, setEmailMessage] = useState<{ message?: string; errors?: any[]; }>({});
     const [emailPassword, setEmailPassword] = useState("");
     const [verificationCode, setVerificationCode] = useState("");
     const [emailStep, setEmailStep] = useState(0);
     const [emailVerified, setEmailVerified] = useState(false);
 
-    const [passwordMessage, setPasswordMessage] = useState([true, ""]);
+    const [passwordMessage, setPasswordMessage] = useState<{ message?: string; errors?: any[]; }>({});
 
     const [avatarImageFile, setAvatarImageFile] = useState<File | null>(null);
-    const [avatarMessage, setAvatarMessage] = useState([true, ""]);
+    const [avatarMessage, setAvatarMessage] = useState<{ message?: string; errors?: any[]; }>({});
 
     useEffect(() => {
         if (userDetails) {
@@ -71,25 +72,25 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     const saveInfo = async () => {
 
-        setInfoMessage([true, ""]);
+        setInfoMessage({});
         if (!userInfo) {
             return;
         }
-        const data = await sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
+        const result = await sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
             userId: userInfo.id,
             name: username,
             bio,
             countryCode
         });
-        if (data.success) {
-            userInfo.name = data.data.name;
-            userInfo.countryCode = data.data.coutryCode;
+        if (result.success) {
+            userInfo.name = result.data.name;
+            userInfo.countryCode = result.data.coutryCode;
             updateUser(userInfo);
-            onUpdate(data.data);
-            setInfoMessage([true, "Information saved successfully"]);
+            onUpdate(result.data);
+            setInfoMessage({ message: "Information saved successfully", errors: [] });
         }
         else {
-            setInfoMessage([false, data.error?._message ? data.error._message : "Bad request"])
+            setInfoMessage({ errors: result.error });
         }
     }
 
@@ -99,52 +100,47 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setBio(userDetails.bio || "");
             setCountryCode(userDetails.countryCode || "");
         }
-        setInfoMessage([true, ""])
+        setInfoMessage({});
     }
 
     const initiateEmailChange = async () => {
-        setEmailMessage([true, ""]);
+        setEmailMessage({});
         if (!userInfo) {
             return;
         }
-        const data = await sendJsonRequest(`/Profile/ChangeEmail`, "POST", {
+        const result = await sendJsonRequest(`/Profile/ChangeEmail`, "POST", {
             email,
             password: emailPassword
         });
-        if (data.success) {
+        if (result.success) {
             setEmailStep(2);
-            setEmailMessage([true, "Verification code sent to your current email."])
+            setEmailMessage({ message: "Verification code sent to your current email." });
             setEmailPassword("");
         }
         else {
-            if (data.error.code === 11000) {
-                setEmailMessage([false, "Email already exists"]);
-            }
-            else {
-                setEmailMessage([false, data.error?._message ? data.error._message : data.message ?? "Bad request"])
-            }
-            setEmailPassword("")
+            setEmailMessage({ errors: result.error });
+            setEmailPassword("");
         }
     }
 
     const verifyEmailChange = async () => {
-        if(!userInfo) return;
-        setEmailMessage([true, ""]);
-        const data = await sendJsonRequest(`/Profile/VerifyEmailChange`, "POST", {
+        if (!userInfo) return;
+        setEmailMessage({});
+        const result = await sendJsonRequest(`/Profile/VerifyEmailChange`, "POST", {
             code: verificationCode
         });
-        if (data.success) {
-            userInfo.email = data.data.email;
+        if (result.success) {
+            userInfo.email = result.data.email;
             updateUser(userInfo);
-            onUpdate({ email: data.data.email, emailVerified: false });
-            setEmailMessage([true, "Email changed successfully"])
+            onUpdate({ email: result.data.email, emailVerified: false });
+            setEmailMessage({ message: "Email changed successfully" });
             setEmailStep(0);
-            setEmailVerified(false)
+            setEmailVerified(false);
             setVerificationCode("");
         }
         else {
-            setEmailMessage([false, data.error?._message ? data.error._message : data.message ?? "Invalid code or error"])
-            setVerificationCode("")
+            setEmailMessage({ errors: result.error });
+            setVerificationCode("");
         }
     }
 
@@ -153,53 +149,46 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setEmail(userDetails.email || "");
         }
         setEmailStep(0);
-        setEmailPassword("")
-        setVerificationCode("")
-        setEmailMessage([true, ""])
+        setEmailPassword("");
+        setVerificationCode("");
+        setEmailMessage({});
     }
 
     const handleEmailNext = () => {
         setEmailStep(1);
         setEmail("");
-        setEmailMessage([true, ""]);
+        setEmailMessage({});
     }
 
     const handleSendVerificationEmail = async () => {
         setLoading(true)
-        setEmailMessage([true, ""]);
-        const data = await sendJsonRequest(`/Profile/SendActivationCode`, "POST");
-        if (data.success) {
-            setEmailMessage([true, "Verification email was sent"])
+        setEmailMessage({});
+        const result = await sendJsonRequest(`/Profile/SendActivationCode`, "POST");
+        if (result.success) {
+            setEmailMessage({ message: "Verification email was sent" });
         }
         else {
-            setEmailMessage([false, data.message ? data.message : "Verification email could not be sent"])
+            setEmailMessage({ errors: result.error });
         }
-        setLoading(false)
+        setLoading(false);
     }
 
     const handleAvatarUpload = async (e: FormEvent) => {
         if (!userInfo) return;
         e.preventDefault();
 
-        // Validate file presence
         if (!avatarImageFile) {
-            setAvatarMessage([false, "Please select an image file."]);
-            return;
-        }
-
-        // Validate file type
-        if (!/^image\/(png|jpe?g|gif)$/i.test(avatarImageFile.type)) {
-            setAvatarMessage([false, "Only PNG, JPG, JPEG or GIF images are allowed."]);
+            setAvatarMessage({ errors: [{ message: "avatarImage is required" }] });
             return;
         }
 
         if (avatarImageFile.size > 10 * 1024 * 1024) {
-            setAvatarMessage([false, "File size must be less than or equal to 10 MB."]);
+            setAvatarMessage({ errors: [{ message: "avatarImage size must be less than 10 MB" }] });
             return;
         }
 
         setLoading(true);
-        setAvatarMessage([true, ""]);
+        setAvatarMessage({});
 
         const result = await sendJsonRequest(
             "/Profile/UploadProfileAvatarImage",
@@ -212,9 +201,9 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (result && result.success) {
             userInfo.avatarImage = result.data.avatarImage;
             updateUser(userInfo);
-            setAvatarMessage([true, "Avatar image updated successfully"]);
+            setAvatarMessage({ message: "Avatar image updated successfully" });
         } else {
-            setAvatarMessage([false, result.message ?? "Avatar image failed to update"]);
+            setAvatarMessage({ errors: result.error });
         }
 
         setLoading(false);
@@ -233,13 +222,13 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     const handleSendPasswordResetEmail = async () => {
         setLoading(true);
-        setPasswordMessage([true, ""]);
+        setPasswordMessage({});
         const result = await sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email: userInfo?.email });
         if (result && result.success) {
-            setPasswordMessage([true, "Email sent successfully"]);
+            setPasswordMessage({ message: "Email sent successfully" });
         }
         else {
-            setPasswordMessage([false, result.message ? result.message : "Email could not be sent"])
+            setPasswordMessage({ errors: result.error });
         }
         setLoading(false);
     }
@@ -253,7 +242,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                 <Tabs defaultActiveKey="information" className="mb-3">
                     <Tab eventKey="information" title="Information">
                         <Form onSubmit={(e) => handleSubmit(e, saveInfo)}>
-                            {infoMessage[1] && <Alert variant={infoMessage[0] ? "success" : "danger"}>{infoMessage[1]}</Alert>}
+                            <RequestResultAlert errors={infoMessage.errors} message={infoMessage.message} />
                             <FormGroup>
                                 <FormLabel>Username</FormLabel>
                                 <FormControl type="text" required value={username} minLength={3} maxLength={20} onChange={(e) => setUsername(e.target.value)} />
@@ -282,8 +271,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         </Form>
                     </Tab>
                     <Tab eventKey="email" title="Email" onEnter={resetEmail}>
-                        <Form onSubmit={(e) => handleSubmit(e, emailStep === 1 ? initiateEmailChange : (emailStep === 2 ? verifyEmailChange : async () => {}))}>
-                            {emailMessage[1] && <Alert variant={emailMessage[0] ? "success" : "danger"}>{emailMessage[1]}</Alert>}
+                        <Form onSubmit={(e) => handleSubmit(e, emailStep === 1 ? initiateEmailChange : (emailStep === 2 ? verifyEmailChange : async () => { }))}>
+                            <RequestResultAlert errors={emailMessage.errors} message={emailMessage.message} />
                             <FormGroup>
                                 <FormLabel>{emailStep === 0 ? "Email" : "New Email"}</FormLabel>
                                 <FormControl readOnly={emailStep === 0 || emailStep === 2} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -357,13 +346,13 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                     </Tab>
                     <Tab eventKey="password" title="Password">
                         <div>
-                            {passwordMessage[1] && <Alert variant={passwordMessage[0] ? "success" : "danger"}>{passwordMessage[1]}</Alert>}
+                            <RequestResultAlert errors={passwordMessage.errors} message={passwordMessage.message} />
                             <Button onClick={handleSendPasswordResetEmail} disabled={loading}>Send password reset email</Button>
                         </div>
                     </Tab>
                     <Tab eventKey="avatar" title="Avatar">
                         <Form onSubmit={handleAvatarUpload}>
-                            {avatarMessage[1] && <Alert variant={avatarMessage[0] ? "success" : "danger"}>{avatarMessage[1]}</Alert>}
+                            <RequestResultAlert errors={avatarMessage.errors} message={avatarMessage.message} />
                             <FormGroup>
                                 <FormLabel>Avatar image</FormLabel>
                                 <FormControl

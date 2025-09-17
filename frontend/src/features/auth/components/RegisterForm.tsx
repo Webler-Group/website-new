@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { FormEvent, useEffect, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface RegisterFormProps {
     onToggleClick: () => void;
@@ -16,7 +17,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [captchaId, setCaptchaId] = useState<string | null>(null);
@@ -30,9 +31,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         e.preventDefault();
 
         setLoading(true);
-
         await registerUser();
-
         setLoading(false);
     }
 
@@ -48,7 +47,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     }
 
     const registerUser = async () => {
-        setError("");
+        setError([]);
         const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution, deviceId });
         if (result && result.accessToken && result.user && result.expiresIn) {
             authenticate(result.accessToken, result.expiresIn);
@@ -56,8 +55,8 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
             onRegister();
         }
         else {
-            setError(result.message)
-            generateCaptcha()
+            setError(result.error);
+            await generateCaptcha();
         }
     }
 
@@ -65,7 +64,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         <>
             <h1 className="text-center mb-4">Sign Up</h1>
             <Form onSubmit={(e) => handleSubmit(e)}>
-                {error && <Alert variant="danger">{error}</Alert>}
+                <RequestResultAlert errors={error} />
                 <FormGroup>
                     <FormLabel>Email</FormLabel>
                     <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />

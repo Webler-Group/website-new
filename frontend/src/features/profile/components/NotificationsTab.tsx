@@ -4,6 +4,7 @@ import { ChangeEvent, useState, useEffect } from "react";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 const notificationInfo = [
     { type: "profile follow", value: NotificationTypeEnum.PROFILE_FOLLOW },
@@ -32,7 +33,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
     const { subscribed, error, subscribe, unsubscribe } = usePushNotifications();
     const [notifications, setNotifications] = useState<Record<NotificationTypeEnum, boolean>>(userNotifications);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState([false, ""]);
+    const [message, setMessage] = useState<{ message?: string; errors?: any[] }>({});
     const { sendJsonRequest } = useApi();
 
     useEffect(() => {
@@ -60,17 +61,17 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
 
     const handleSaveNotificationSettings = async () => {
         setLoading(true);
-        setMessage([false, ""]);
+        setMessage({});
 
         const result = await sendJsonRequest("/Profile/UpdateNotifications", "POST", {
-            notifications: notifications
+            notifications: Object.entries(notifications).map(entry => ({ type: Number(entry[0]), enabled: entry[1] }))
         });
 
         if (result && result.success) {
             onUpdate(result.data.notifications);
-            setMessage([true, "Notification settings saved successfully"]);
+            setMessage({ message: "Notification settings saved successfully" });
         } else {
-            setMessage([false, result?.message ?? "Notification settings failed to save"]);
+            setMessage({ errors: result.error });
         }
 
         setLoading(false);
@@ -79,8 +80,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
     return (
         <div className="mt-3">
             {error && <Alert variant="danger" dismissible>{error}</Alert>}
-            {message[1] != "" && <Alert variant={message[0] ? "success" : "danger"} dismissible onClose={() => setMessage([false, ""])}>{message[1]}</Alert>}
-
+            <RequestResultAlert errors={message.errors} message={message.message} />
             <Form>
                 <div className="d-flex flex-column">
                     {notificationInfo.map(item => (

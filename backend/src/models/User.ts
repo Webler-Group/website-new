@@ -41,9 +41,10 @@ const userSchema = new mongoose.Schema({
     name: {
         type: String,
         trim: true,
-        default: "User_" + uuid().slice(0, 12),
+        required: true,
         minLength: 3,
-        maxLength: 20
+        maxLength: 20,
+        unique: true
     },
     countryCode: {
         type: String,
@@ -108,6 +109,9 @@ const userSchema = new mongoose.Schema({
     tokenVersion: {
         type: Number,
         default: 0
+    },
+    lastLoginAt: {
+        type: Date
     }
 },
     {
