@@ -330,6 +330,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const onContextDelete = () => {
         setEditedMessage(null);
+        setRepliedMessage(null);
         setSelectedMessage(prev => {
             if (prev) {
                 setDeleteMessageId(prev.id);
@@ -340,6 +341,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const onContextEdit = () => {
         setDeleteMessageId(null);
+        setRepliedMessage(null);
         setSelectedMessage(prev => {
             if (prev) {
                 setEditedMessage(prev);
@@ -349,6 +351,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     const onMessageReply = () => {
+        setDeleteMessageId(null);
+        setEditedMessage(null);
         setSelectedMessage(prev => {
             if (prev) {
                 setRepliedMessage(prev);

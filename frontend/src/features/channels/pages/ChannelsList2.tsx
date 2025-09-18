@@ -5,6 +5,7 @@ import { useApi } from "../../../context/apiCommunication";
 import useChannels from "../hooks/useChannels";
 import useInvites from "../hooks/useInvites";
 import InvitesListItem from "../components/InvitesListItem";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface ChannelsListProps {
     onChannelSelect: (channelId: string) => void;
@@ -15,6 +16,7 @@ interface ChannelsListProps {
 const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
     const [activeTab, setActiveTab] = useState("channels");
     const [groupTitle, setGroupTitle] = useState("");
+    const [createGroupError, setCreateGroupError] = useState<any[] | undefined>();
     const [createGroupModalVisible, setCreateGroupModalVisible] = useState(false);
     const { sendJsonRequest } = useApi();
     const [channelsFromDate, setChannelsFromDate] = useState<Date | null>(null);
@@ -65,12 +67,16 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
         });
         if (result && result.channel) {
             channels.addChannel(result.channel);
+            closeCreateGroupModal();
+            setGroupTitle("");
+        } else {
+            setCreateGroupError(result.error);
         }
-        setGroupTitle("");
-        closeCreateGroupModal();
     };
 
     const closeCreateGroupModal = () => {
+        setGroupTitle("");
+        setCreateGroupError(undefined);
         setCreateGroupModalVisible(false);
     }
 
@@ -138,6 +144,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                 <Modal.Body>
                     <p>How would you like to name your group?</p>
                     <FormControl className="mt-2" type="text" placeholder="Group title" value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} />
+                    <RequestResultAlert errors={createGroupError} />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={closeCreateGroupModal}>Cancel</Button>

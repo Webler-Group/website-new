@@ -10,7 +10,6 @@ import {
     Col,
     Badge,
     InputGroup,
-    Alert,
     Modal
 } from "react-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
@@ -21,6 +20,7 @@ import { IChannelInvite } from "../components/InvitesListItem";
 import { FaPen } from "react-icons/fa6";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import UserSearch from "../../../components/UserSearch";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface ChannelRoomSettingsProps {
     channel: IChannel;
@@ -39,8 +39,8 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const { userInfo } = useAuth();
     const { sendJsonRequest } = useApi();
-    const [inviteMessage, setInviteMessage] = useState(["", ""]);
-    const [changeTitleMessage, setChangeTitleMessage] = useState(["", ""]);
+    const [inviteMessage, setInviteMessage] = useState<{ message?: string; errors?: any[] }>({});
+    const [changeTitleMessage, setChangeTitleMessage] = useState<{ message?: string; errors?: any[] }>({});
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [leaveModalVisible, setLeaveModalVisible] = useState(false);
     const [editedParticipantId, setEditedParticipantId] = useState<string | null>(null);
@@ -51,8 +51,8 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     }, [channel?.id]);
 
     useEffect(() => {
-        setInviteMessage(["", ""]);
-        setChangeTitleMessage(["", ""]);
+        setInviteMessage({});
+        setChangeTitleMessage({});
         if (activeTab == "general") {
             setNewTitle(channel.title ?? "");
             setNotificationsEnabled(!channel.muted);
@@ -84,7 +84,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
         });
 
         if (result && result.invite) {
-            setInviteMessage(["success", "Invite created successfully"]);
+            setInviteMessage({ message: "Invite created successfully" });
             onUserInvite({
                 ...result.invite,
                 authorId: userInfo?.id,
@@ -92,7 +92,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                 authorAvatar: userInfo?.avatarImage
             });
         } else {
-            setInviteMessage(["danger", result?.message ?? "Invite failed"]);
+            setInviteMessage({ errors: result.error });
         }
         setInviteUsername("");
     }
@@ -130,10 +130,10 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             title: newTitle.trim()
         });
         if (result && result.success) {
-            setChangeTitleMessage(["success", "Title changed successfully"]);
+            setChangeTitleMessage({ message: "Title changed successfully" });
             onTitleChange(result.data.title);
         } else {
-            setChangeTitleMessage(["danger", result?.message ?? "Title failed to change"]);
+            setChangeTitleMessage({ errors: result.error });
         }
     };
 
@@ -267,16 +267,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                                 setValue={setInviteUsername}
                                                 onSelect={(user) => handleInvite(user.id)}
                                             />
-                                            {inviteMessage[1] && (
-                                                <Alert
-                                                    className="mt-2"
-                                                    variant={inviteMessage[0]}
-                                                    onClose={() => setInviteMessage(["", ""])}
-                                                    dismissible
-                                                >
-                                                    {inviteMessage[1]}
-                                                </Alert>
-                                            )}
+                                            <RequestResultAlert errors={inviteMessage.errors} message={inviteMessage.message} />
                                         </div>
                                     )}
 
@@ -368,7 +359,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                                 Save
                                             </Button>
                                         </InputGroup>
-                                        {changeTitleMessage[1] && <Alert className="mt-2" variant={changeTitleMessage[0]} onClose={() => setChangeTitleMessage(["", ""])} dismissible>{changeTitleMessage[1]}</Alert>}
+                                        <RequestResultAlert errors={changeTitleMessage.errors} message={changeTitleMessage.message} />
                                     </div>
                                 )}
 
