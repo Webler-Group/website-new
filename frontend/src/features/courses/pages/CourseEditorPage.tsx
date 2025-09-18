@@ -12,7 +12,7 @@ const CoursesEditorPage = ({ MainPage }: CoursesPageProps) => {
 
     return (
         <Container>
-            <div className="wb-courses-main p-4">{MainPage}</div>
+            <div className="wb-courses-main pt-2">{MainPage}</div>
         </Container>
     );
 }

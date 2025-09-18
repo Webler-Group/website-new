@@ -19,7 +19,7 @@ const lessonNodeSchema = new mongoose.Schema({
         required: false,
         trim: true,
         minLength: 0,
-        maxLength: 1000
+        maxLength: 2000
     },
     lessonId: {
         type: mongoose.Types.ObjectId,

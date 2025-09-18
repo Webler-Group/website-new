@@ -100,6 +100,8 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
                 newNodes[oldIndex - 1] = newNodes[newIndex - 1];
                 newNodes[newIndex - 1] = node;
 
+                searchParams.set("slide", newIndex.toString());
+                setSearchParams(searchParams, { replace: true });
             }
             return {
                 ...current,

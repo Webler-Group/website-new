@@ -93,6 +93,9 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                 if (showMessage) setMessage(["danger", "Question cannot have more than 4 answers"]);
                 return false;
             }
+        } else if(nodeType == 4 && questionCorrectAnswer.length == 0) {
+            if (showMessage) setMessage(["danger", "Correct answer cannot be empty"]);
+            return false;
         }
 
         const result = await sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
@@ -115,9 +118,13 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
             });
             setQuestionsAnswers(result.data.answers);
             if (showMessage) setMessage(["success", "Lessson node was saved successfully."])
+            return true;
+        } else {
+            if(result.error?.length) {
+                if (showMessage) setMessage(["danger", result.error[0].message]);
+            }
         }
-
-        return true;
+        return false;
     }
 
     const handleSubmit = async (e: FormEvent) => {
@@ -171,7 +178,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         }
 
         setLoading(true);
-        const success = await saveNode(false);
+        const success = await saveNode(true);
         if (success) {
             const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
                 nodeId: node.id,
@@ -193,7 +200,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
 
     const handlePreview = async () => {
         setLoading(true);
-        const success = await saveNode(false);
+        const success = await saveNode(true);
         setLoading(false);
         if (success) {
             onPreview(nodeId);

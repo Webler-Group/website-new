@@ -5,6 +5,7 @@ import { Modal, Button, Form, Card, Spinner, Alert, Breadcrumb, Badge, Container
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../../features/auth/context/authContext";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface IAdminUser {
     id: string;
@@ -29,51 +30,46 @@ const ModView = () => {
     const { userInfo } = useAuth();
     const [user, setUser] = useState<IAdminUser | null>(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
 
     const [showModal, setShowModal] = useState(false);
     const [banNote, setBanNote] = useState("");
 
     const [rolesInput, setRolesInput] = useState("");
-    const [rolesAlert, setRolesAlert] = useState<{ type: "success" | "danger"; message: string } | null>(null);
+    const [rolesAlert, setRolesAlert] = useState<{ errors?: any[]; message?: string; }>({});
 
     // Load user
     useEffect(() => {
+        if (!userId) return;
+
         const fetchUser = async () => {
-            try {
-                setLoading(true);
-                const res = await sendJsonRequest("/Admin/GetUser", "POST", { userId });
-                setUser(res.user);
-                setRolesInput(res.user.roles.join(", "));
-            } catch (err: any) {
-                setError(err.message || "Failed to load user");
-            } finally {
-                setLoading(false);
-            }
+            setLoading(true);
+            const result = await sendJsonRequest("/Admin/GetUser", "POST", { userId });
+            if (result && result.user) {
+                setUser(result.user);
+                setRolesInput(result.user.roles.join(", "));
+            }   
+            setLoading(false);
         };
-        if (userId) fetchUser();
+
+        fetchUser();
     }, [userId, sendJsonRequest]);
 
     const handleBanToggle = async () => {
         if (!user) return;
-        try {
-            const res = await sendJsonRequest("/Admin/BanUser", "POST", {
-                userId: user.id,
-                active: !user.active,
-                note: banNote,
-            });
+        const result = await sendJsonRequest("/Admin/BanUser", "POST", {
+            userId: user.id,
+            active: !user.active,
+            note: banNote,
+        });
 
-            if (res.success) {
-                setUser(prev => {
-                    if (!prev) return null;
-                    return { ...prev, active: res.data.active, ban: res.data.ban };
-                })
-            }
-            setShowModal(false);
-            setBanNote("");
-        } catch (err: any) {
-            setError(err.message || "Action failed");
+        if (result.success) {
+            setUser(prev => {
+                if (!prev) return null;
+                return { ...prev, active: result.data.active, ban: result.data.ban };
+            })
         }
+        setShowModal(false);
+        setBanNote("");
     };
 
     const handleUpdateRoles = async () => {
@@ -82,17 +78,17 @@ const ModView = () => {
         if (newRoles.length === 0) return;
 
         setLoading(true);
-        const res = await sendJsonRequest("/Admin/UpdateRoles", "POST", {
+        const result = await sendJsonRequest("/Admin/UpdateRoles", "POST", {
             userId: user.id,
             roles: newRoles
         });
 
-        if (res.success) {
-            setUser(prev => prev ? { ...prev, roles: res.data.roles } : null);
-            setRolesAlert({ type: "success", message: "Roles updated successfully." });
-            setRolesInput(res.data.roles.join(", "));
+        if (result.success) {
+            setUser(prev => prev ? { ...prev, roles: result.data.roles } : null);
+            setRolesAlert({ message: "Roles updated successfully." });
+            setRolesInput(result.data.roles.join(", "));
         } else {
-            setRolesAlert({ type: "danger", message: res.message ?? "Roles update failed." });
+            setRolesAlert({ errors: result.error });
         }
 
         setLoading(false);
@@ -104,7 +100,6 @@ const ModView = () => {
     }
 
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
-    if (error) return <Alert variant="danger">{error}</Alert>;
     if (!user) return <Alert variant="warning">No user found</Alert>;
 
     const isAdmin = user.roles.includes("Admin");
@@ -127,6 +122,7 @@ const ModView = () => {
                                     as="textarea"
                                     rows={3}
                                     value={banNote}
+                                    maxLength={120}
                                     onChange={e => setBanNote(e.target.value)}
                                 />
                             </Form.Group>
@@ -171,7 +167,7 @@ const ModView = () => {
                             </div>
                             <div>Verified: {user.verified ? "Yes" : "No"}</div>
                             <div>Active: {user.active ? "Yes" : "No"}</div>
-                            <div>Registered: {new Date(user.registerDate).toLocaleString()}</div>
+                            <div>Registered: {new Date(user.registerDate).toLocaleDateString("en")}</div>
                             <div className="mt-3">
                                 <LinkContainer to={`/Profile/${user.id}`}>
                                     <Button variant="primary">View Profile</Button>
@@ -215,15 +211,7 @@ const ModView = () => {
                 {userInfo?.roles.includes("Admin") && (
                     <Card className="mt-3">
                         <Card.Body>
-                            {rolesAlert && (
-                                <Alert
-                                    variant={rolesAlert.type}
-                                    dismissible
-                                    onClose={() => setRolesAlert(null)}
-                                >
-                                    {rolesAlert.message}
-                                </Alert>
-                            )}
+                            <RequestResultAlert message={rolesAlert.message} errors={rolesAlert.errors} />
                             <Form.Group className="mb-2">
                                 <Form.Label>Roles (comma separated)</Form.Label>
                                 <Form.Control
@@ -235,15 +223,15 @@ const ModView = () => {
                             </Form.Group>
                             <div className="d-flex gap-2">
                                 <Button
-                                variant="primary"
-                                onClick={handleUpdateRoles}
-                                disabled={loading}
-                            >
-                                Update roles
-                            </Button>
-                            <Button variant="secondary" onClick={handleResetRoles}>
-                                Reset Roles
-                            </Button>
+                                    variant="primary"
+                                    onClick={handleUpdateRoles}
+                                    disabled={loading}
+                                >
+                                    Update roles
+                                </Button>
+                                <Button variant="secondary" onClick={handleResetRoles}>
+                                    Reset Roles
+                                </Button>
                             </div>
                         </Card.Body>
                     </Card>

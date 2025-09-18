@@ -30,11 +30,11 @@ const emailChangeRecordScheme = new mongoose.Schema({
 
 emailChangeRecordScheme.statics.generate = async function (userId: mongoose.Types.ObjectId, newEmail: string) {
     await EmailChangeRecord.deleteMany({ userId });
-    const code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    const count = await User.countDocuments({ email: newEmail });
-    if (count != 0) {
-        throw new Error("Email is already used");
+    const exists = await User.exists({ email: newEmail });
+    if (exists) {
+        return null;
     }
+    const code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     await EmailChangeRecord.create({
         userId,
         newEmail,
@@ -47,7 +47,7 @@ emailChangeRecordScheme.statics.generate = async function (userId: mongoose.Type
 declare interface IEmailChangeRecord extends InferSchemaType<typeof emailChangeRecordScheme> { }
 
 interface EmailChangeRecordModel extends Model<IEmailChangeRecord> {
-    generate(userId: mongoose.Types.ObjectId, newEmail: string): Promise<string>
+    generate(userId: mongoose.Types.ObjectId, newEmail: string): Promise<string | null>
 }
 
 const EmailChangeRecord = mongoose.model<IEmailChangeRecord, EmailChangeRecordModel>("EmailChangeRecord", emailChangeRecordScheme);

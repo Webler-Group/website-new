@@ -27,10 +27,10 @@ import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(_req, file, cb) {
-        if (/^image\/(png|jpe?g|gif)$/i.test(file.mimetype)) {
+        if (/^image\/(png|jpe?g)$/i.test(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(new MulterFileTypeError("Only .png, .jpg, .jpeg and .gif files are allowed"));
+            cb(new MulterFileTypeError("Only .png, .jpg and .jpeg files are allowed"));
         }
     },
     storage: multer.diskStorage({
@@ -204,6 +204,10 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const code = await EmailChangeRecord.generate(new mongoose.Types.ObjectId(currentUserId), email);
+    if(!code) {
+        res.status(401).json({ error: [{ message: "Email is already used" }] });
+        return;
+    }
     await sendEmailChangeVerification(user.name, user.email, email, code);
 
     res.json({

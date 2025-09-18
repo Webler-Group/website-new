@@ -1,9 +1,10 @@
-import { Alert, Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface CreateCourseProps {
     courseId: string | null;
@@ -17,9 +18,12 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [visible, setVisible] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[] | undefined>();
+    const [editMessage, setEditMessage] = useState("");
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
+    const [coverImage, setCoverImage] = useState<string | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
+    const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
 
     useEffect(() => {
         if (courseId) {
@@ -37,6 +41,7 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
             setTitle(result.course.title);
             setDescription(result.course.description);
             setVisible(result.course.visible);
+            setCoverImage(result.course.coverImage);
         }
         setLoading(false);
     }
@@ -52,24 +57,25 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
     }
 
     const createCourse = async () => {
-        setError("");
+        setError(undefined);
         const result = await sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
         if (result && result.course) {
             navigate("/Courses/Editor");
         }
         else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result.error);
         }
     }
 
     const editCourse = async () => {
-        setError("");
+        setError(undefined);
+        setEditMessage("");
         const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
-            navigate("/Courses/Editor/Edit/" + courseId);
+            setEditMessage("Course edited successfully");
         }
         else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result.error);
         }
     }
 
@@ -93,13 +99,15 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
     const handleCoverImageUpload = async (e: FormEvent) => {
         e.preventDefault();
 
+        setUploadMessage({});
         setLoading(true);
         const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
-
+            setCoverImage(result.data.coverImage);
+            setUploadMessage({ message: "Course cover image updated successfully" })
         }
         else {
-            setError(result.error ? result.error.message : result.message);
+            setUploadMessage({ errors: result.error });
         }
         setLoading(false);
     }
@@ -123,54 +131,64 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
                     <Button variant="danger" onClick={handleDeleteCourse}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="d-md-flex gap-3">
+            <div className="row">
                 {
                     courseId !== null &&
-                    <Form onSubmit={handleCoverImageUpload}>
+                    <div className="col-12 col-md-4">
+                        <div className="d-flex justify-content-center">
+                            <div className="rounded-circle">
+                                <img className="wb-courses-course__cover-image" src={coverImage ? "/uploads/courses/" + coverImage : "/resources/images/logoicon.png"} />
+                            </div>
+                        </div>
+                        <Form onSubmit={handleCoverImageUpload}>
+                            <RequestResultAlert errors={uploadMessage.errors} message={uploadMessage.message} />
+                            <FormGroup>
+                                <FormLabel>Cover image</FormLabel>
+                                <FormControl size="sm" type="file" required onChange={handleCoverImageChange} accept="image/png" />
+                            </FormGroup>
+                            <div className="d-flex justify-content-end mt-2">
+                                <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
+                            </div>
+                        </Form>
+                    </div>
+                }
+                <div className="col-12 col-md-8">
+                    <Form onSubmit={handleSubmit}>
+                        <RequestResultAlert errors={error} message={editMessage} />
                         <FormGroup>
-                            <FormLabel>Cover image</FormLabel>
-                            <FormControl size="sm" type="file" required onChange={handleCoverImageChange} />
+                            <FormLabel>Course title</FormLabel>
+                            <FormControl type="text" required value={title} onChange={(e) => setTitle(e.target.value)} />
                         </FormGroup>
-                        <div className="d-flex justify-content-end mt-2">
-                            <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
+                        <FormGroup>
+                            <FormLabel>Course code</FormLabel>
+                            <FormControl type="text" required value={code} onChange={(e) => setCode(e.target.value)} />
+                        </FormGroup>
+                        <FormGroup>
+                            <FormLabel>Course description</FormLabel>
+                            <FormControl as="textarea" rows={8} maxLength={1000} required value={description} onChange={(e) => setDescription(e.target.value)} />
+                        </FormGroup>
+                        <FormGroup className="d-flex align-items-center mt-2 gap-2">
+                            <FormLabel>Is visible</FormLabel>
+                            <ToggleSwitch value={visible} onChange={(e) => setVisible((e.target as HTMLInputElement).checked)} />
+                        </FormGroup>
+                        <div className="d-flex justify-content-end">
+                            <LinkContainer to="/Courses/Editor">
+                                <Button size="sm" type="button" variant="secondary" disabled={loading}>Cancel</Button>
+                            </LinkContainer>
+                            {
+                                courseId ?
+                                    <>
+                                        <Button size="sm" variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
+                                        <Button size="sm" variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
+                                    </>
+                                    :
+                                    <>
+                                        <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Create course</Button>
+                                    </>
+                            }
                         </div>
                     </Form>
-                }
-                <Form className="flex-grow-1" onSubmit={handleSubmit}>
-                    {error && <Alert variant="danger">{error}</Alert>}
-                    <FormGroup>
-                        <FormLabel>Course title</FormLabel>
-                        <FormControl type="text" required value={title} onChange={(e) => setTitle(e.target.value)} />
-                    </FormGroup>
-                    <FormGroup>
-                        <FormLabel>Course code</FormLabel>
-                        <FormControl type="text" required value={code} onChange={(e) => setCode(e.target.value)} />
-                    </FormGroup>
-                    <FormGroup>
-                        <FormLabel>Course description</FormLabel>
-                        <FormControl as="textarea" rows={8} maxLength={1000} required value={description} onChange={(e) => setDescription(e.target.value)} />
-                    </FormGroup>
-                    <FormGroup className="d-flex align-items-center mt-2 gap-2">
-                        <FormLabel>Is visible</FormLabel>
-                        <ToggleSwitch value={visible} onChange={(e) => setVisible((e.target as HTMLInputElement).checked)} />
-                    </FormGroup>
-                    <div className="d-flex justify-content-end">
-                        <LinkContainer to="/Courses/Editor">
-                            <Button size="sm" type="button" variant="secondary" disabled={loading}>Cancel</Button>
-                        </LinkContainer>
-                        {
-                            courseId ?
-                                <>
-                                    <Button size="sm" variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                    <Button size="sm" variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
-                                </>
-                                :
-                                <>
-                                    <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Create course</Button>
-                                </>
-                        }
-                    </div>
-                </Form>
+                </div>
             </div>
         </>
     );

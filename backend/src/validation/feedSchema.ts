@@ -31,14 +31,14 @@ export const createReplySchema = z.object({
 
 export const editReplySchema = z.object({
     body: z.object({
-        id: idSchema("postId"),
+        id: idSchema("id"),
         message: commentMessageSchema
     })
 });
 
 export const deleteReplySchema = z.object({
     body: z.object({
-        id: idSchema("postId")
+        id: idSchema("id")
     })
 });
 

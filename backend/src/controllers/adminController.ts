@@ -5,57 +5,38 @@ import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
 import RolesEnum from "../data/RolesEnum";
+import {
+    getUsersListSchema,
+    getUserSchema,
+    banUserSchema,
+    updateRolesSchema
+} from "../validation/adminSchema";
+import { parseWithZod } from "../utils/zodUtils";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { search, count, page, date, role, active } = req.body as {
-        search?: string;
-        count?: number;
-        page?: number;
-        date?: string;
-        role?: string;
-        active?: boolean; // optional active filter
-    };
-
-    // validate body (ignore search if undefined)
-    if (
-        typeof count !== "number" ||
-        typeof page !== "number" ||
-        count <= 0 || count > 100 ||
-        page <= 0 ||
-        (date && typeof date !== "string") ||
-        (role && typeof role !== "string") ||
-        (active !== undefined && typeof active !== "boolean")
-    ) {
-        res.status(400).json({ message: "Invalid body" });
-        return;
-    }
+    const { body } = parseWithZod(getUsersListSchema, req);
+    const { search, count, page, date, role, active } = body;
 
     const filter: any = {};
 
-    // name filter (only if search is non-empty)
     if (search && search.trim().length > 0) {
         const safeQuery = escapeRegex(search.trim());
         filter.name = new RegExp(safeQuery, "i");
     }
 
-    // date filter
     if (date) {
         const parsed = new Date(date);
-        if (!isNaN(parsed.getTime())) {
-            const start = new Date(parsed);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(parsed);
-            end.setHours(23, 59, 59, 999);
-            filter.createdAt = { $gte: start, $lte: end };
-        }
+        const start = new Date(parsed);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(parsed);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt = { $gte: start, $lte: end };
     }
 
-    // role filter
     if (role) {
         filter.roles = role;
     }
 
-    // active filter
     if (active !== undefined) {
         filter.active = active;
     }
@@ -69,6 +50,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const total = await User.countDocuments(filter);
 
     res.json({
+        success: true,
         users: users.map(u => ({
             id: u._id,
             email: u.email,
@@ -93,22 +75,19 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId } = req.body as { userId?: string };
-
-    if (!userId || typeof userId !== "string") {
-        res.status(400).json({ success: false, message: "Invalid body" });
-        return;
-    }
+    const { body } = parseWithZod(getUserSchema, req);
+    const { userId } = body;
 
     const user = await User.findById(userId)
         .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
 
     if (!user) {
-        res.status(404).json({ success: false, message: "User not found" });
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
 
     res.json({
+        success: true,
         user: {
             id: user._id,
             email: user.email,
@@ -133,19 +112,19 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId, active, note } = req.body;
+    const { body } = parseWithZod(banUserSchema, req);
+    const { userId, active, note } = body;
     const currentUserId = req.userId;
 
     const user = await User.findById(userId);
-
     if (!user) {
-        res.status(404).json({ success: false, message: "User not found" });
-        return
+        res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
     }
 
     if (user.roles.includes(RolesEnum.ADMIN)) {
-        res.status(404).json({ success: false, message: "Unauthorized" });
-        return
+        res.status(403).json({ error: [{ message: "Unauthorized" }] });
+        return;
     }
 
     user.active = active;
@@ -156,51 +135,37 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
             note,
             date: new Date()
         };
+    } else {
+        user.ban = null as any;
     }
 
-    try {
-        await user.save();
-
-        res.json({
-            success: true, data: {
-                active: user.active,
-                ban: user.active ? null : user.ban
-            }
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err
-        })
-    }
+    await user.save();
+    res.json({
+        success: true,
+        data: {
+            active: user.active,
+            ban: user.active ? null : user.ban
+        }
+    });
 });
 
 const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { userId, roles } = req.body as { userId?: string; roles?: RolesEnum[] };
-
-    if (!Array.isArray(roles) || roles.some(role => !Object.values(RolesEnum).includes(role))) {
-        res.status(400).json({ message: "Invalid body" });
-        return;
-    }
+    const { body } = parseWithZod(updateRolesSchema, req);
+    const { userId, roles } = body;
 
     const user = await User.findById(userId);
-
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
 
-    try {
-        user.roles = roles;
-        await user.save();
-
-        res.json({ success: true, data: { roles: user.roles } });
-    } catch(err: any) {
-        res.json({ message: "Roles not valid" });
-    }
+    user.roles = roles;
+    await user.save();
+    res.json({
+        success: true,
+        data: { roles: user.roles }
+    });
 });
-
 
 const controller = {
     getUsersList,

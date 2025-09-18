@@ -202,7 +202,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                     <h4>{editedLessonId === null ? "New lesson" : "Edit lesson"}</h4>
                     <FormGroup>
                         <FormLabel>Title</FormLabel>
-                        <FormControl type="text" placeholder="Enter lesson title" value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        <FormControl type="text" placeholder="Enter lesson title" maxLength={60} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
                     </FormGroup>
                     <div className="d-flex justify-content-end mt-2">
                         <Button size="sm" variant="secondary" disabled={loading} onClick={() => hideLessonForm()}>Cancel</Button>

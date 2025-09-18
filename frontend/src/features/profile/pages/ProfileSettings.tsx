@@ -359,7 +359,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                     size="sm"
                                     type="file"
                                     required
-                                    accept="image/png, image/jpeg, image/jpg, image/gif"
+                                    accept="image/png, image/jpeg, image/jpg"
                                     onChange={handleAvatarChange}
                                 />
                             </FormGroup>

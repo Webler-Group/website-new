@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import mongoose, { InferSchemaType, Model, MongooseError } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import RolesEnum from "../data/RolesEnum";
@@ -17,7 +17,8 @@ const banSchema = new mongoose.Schema({
     },
     note: {
         type: String,
-        trim: true
+        trim: true,
+        maxLength: 120
     },
     date: {
         type: Date,
