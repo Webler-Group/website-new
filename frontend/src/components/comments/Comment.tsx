@@ -32,7 +32,7 @@ interface CommentProps {
   handleEdit: () => void;
   handleDelete: () => void;
   handleShowVotes: () => void;
-  onVote: (id: string, vote: number, error?: string) => void;
+  onVote: (id: string, vote: number, error?: any[]) => void;
 }
 
 const Comment: React.FC<CommentProps> = ({
@@ -60,7 +60,7 @@ const Comment: React.FC<CommentProps> = ({
     if (result.success && result.vote === vote) {
       onVote(comment.id, result.vote);
     } else {
-      onVote(comment.id, 0, result?.message ?? "Failed to vote");
+      onVote(comment.id, 0, result.error);
     }
   }
 

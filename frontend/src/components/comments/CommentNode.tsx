@@ -13,7 +13,7 @@ interface CommentNodeProps {
     onReply: (id: string, onReplyCallback: (post: IComment) => void, message?: string) => void;
     onShowVotes: (id: string) => void;
     highlightedCommentId: string | null;
-    onVote: (id: string, vote: number, error?: string) => void;
+    onVote: (id: string, vote: number, error?: any[]) => void;
 }
 
 const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({

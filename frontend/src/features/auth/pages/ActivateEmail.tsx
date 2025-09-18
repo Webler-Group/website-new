@@ -7,7 +7,6 @@ const ActivateEmail = () => {
     const [searchParams, _] = useSearchParams();
     const { sendJsonRequest } = useApi();
     const [submitState, setSubmitState] = useState(0);
-    const [_1, setError] = useState("");
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -15,15 +14,11 @@ const ActivateEmail = () => {
     }, []);
 
     const activateEmail = async () => {
-        setError("");
         const userId = searchParams.get("id");
         const token = searchParams.get("token");
         const result = await sendJsonRequest("/Auth/Activate", "POST", { userId, token });
-        if (result && typeof result.success === "boolean") {
+        if (result) {
             setSubmitState(result.success ? 1 : 2);
-        }
-        else {
-            setError(result.message);
         }
     }
 

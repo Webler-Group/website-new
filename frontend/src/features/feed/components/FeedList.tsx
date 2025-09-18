@@ -277,12 +277,16 @@ const FeedList = () => {
 
               {/* Content */}
               <div className="px-2 wb-feed-items">
-                {feeds.error && (
+                {feeds.error.length > 0 && (
                   <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
                     <FaExclamationCircle />
                     <div>
                       <strong>Error loading feeds</strong>
-                      <p className="mb-0">{feeds.error}</p>
+                      <ul>
+                        {
+                          feeds.error.map((err, idx) => <li key={idx}>{err.message}</li>)
+                        }
+                      </ul>
                       <button
                         onClick={handleRefresh}
                         className="btn btn-sm btn-outline-danger mt-2"
@@ -293,7 +297,7 @@ const FeedList = () => {
                   </div>
                 )}
 
-                {!feeds.loading && !feeds.error && feeds.results.length === 0 && (
+                {!feeds.loading && feeds.error.length == 0 && feeds.results.length === 0 && (
                   <div className="text-center py-5">
                     <FaSearch size={40} className="opacity-50 mb-3" />
                     <h5 className="text-muted">No feeds found</h5>

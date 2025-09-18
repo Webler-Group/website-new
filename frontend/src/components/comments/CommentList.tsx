@@ -29,7 +29,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     const [onReplyCallback, setOnReplyCallback] = useState<(post: IComment) => void>();
     const [onEditCallback, setOnEditCallback] = useState<(id: string, setter: (prev: IComment) => IComment) => void>();
     const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
-    const [message, setMessage] = useState<[boolean, string]>([true, '']);
+    const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
     const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(findPost?.id || null);
     const commentContainerRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
@@ -55,14 +55,14 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         if (highlightedCommentId) {
             const timer = setTimeout(() => {
                 setHighlightedCommentId(null);
-            }, 2500);
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [highlightedCommentId]);
 
     useEffect(() => {
         if (error) {
-            setMessage([false, error]);
+            setMessage({ success: false, errors: error });
         }
     }, [error]);
 
@@ -153,10 +153,10 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             }
             setCommentCount?.(prev => prev + 1);
 
-            setMessage([true, parentCommentId ? 'Reply posted successfully' : 'Comment posted successfully']);
+            setMessage({ success: true, message: parentCommentId ? 'Reply posted successfully' : 'Comment posted successfully' });
             hideAnswerForm();
         } else {
-            setMessage([false, result?.message ?? 'Failed to post comment']);
+            setMessage({ success: false, errors: result.error });
         }
 
         setAnswerFormLoading(false);
@@ -176,10 +176,10 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     editComment(result.data.id, prev => ({ ...prev, message: result.data.message, attachments: result.data.attachments }));
                 }
 
-                setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment edited successfully']);
+                setMessage({ success: true, message: editedComment.parentId ? 'Reply edited successfully' : 'Comment edited successfully' });
                 hideAnswerForm();
             } else {
-                setMessage([false, result.message ? result.message : "Comment could not be updated"])
+                setMessage({ success: false, errors: result.error });
             }
             setAnswerFormLoading(false);
         }
@@ -197,9 +197,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     deleteComment(editedComment.id);
                 }
                 setCommentCount?.(prev => prev - editedComment.answers - 1);
-                setMessage([true, editedComment.parentId ? 'Reply edited successfully' : 'Comment deleted successfully']);
+                setMessage({ success: true, message: editedComment.parentId ? 'Reply deleted successfully' : 'Comment deleted successfully' });
             } else {
-                setMessage([false, result.message ? result.message : 'Comment could not be deleted']);
+                setMessage({ success: false, errors: result.error });
             }
             setAnswerFormLoading(false);
             closeDeleteModal();
@@ -239,9 +239,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setDeleteModalVisible(true);
     }
 
-    const onVote = (id: string, vote: number, error?: string) => {
-        if(error) {
-            setMessage([false, error]);
+    const onVote = (id: string, vote: number, error?: any[]) => {
+        if (error) {
+            setMessage({ success: false, errors: error });
         } else {
             editComment(id, prev => ({ ...prev, votes: prev.votes + 2 * vote - 1, isUpvoted: vote == 1 }));
         }
@@ -318,14 +318,14 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             <Toast
                 className="position-absolute"
                 style={{ zIndex: '999', bottom: '68px', width: '90%' }}
-                bg={message[0] ? 'success' : 'danger'}
-                onClose={() => setMessage([true, ''])}
-                show={message[1] !== ''}
+                bg={message.success ? 'success' : 'danger'}
+                onClose={() => setMessage(prev => ({ success: prev.success }))}
+                show={(message.errors && message.errors.length > 0) || !!message.message}
                 delay={2500}
                 autohide
             >
                 <Toast.Body className="text-white">
-                    <b>{message[1]}</b>
+                    <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
                 </Toast.Body>
             </Toast>
             <div className="py-2 border-top">

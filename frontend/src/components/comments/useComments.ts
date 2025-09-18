@@ -23,14 +23,14 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [initialFetchDone, setInitialFetchDone] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[]>([]);
     const { sendJsonRequest } = useApi();
 
     useEffect(() => {
         const fetchComments = async () => {
             if (state.direction === 'dont load') return;
 
-            setError("");
+            setError([]);
             setLoading(true);
             const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
                 ...options.params,
@@ -55,7 +55,7 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
                 }
                 setInitialFetchDone(true);
             } else {
-                setError(result?.message ?? "Something went wrong");
+                setError(result.error);
             }
             setLoading(false);
         }

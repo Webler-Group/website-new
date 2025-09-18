@@ -7,11 +7,12 @@ interface WebOutputProps {
     cssSource: string;
     jsSource: string;
     tabOpen: boolean;
+    consoleVisible: boolean;
+    hideConosole: () => void;
 }
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole }: WebOutputProps) => {
 
-    const [consoleVisible, setConsoleVisible] = useState(false);
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const consoleRef = useRef<HTMLDivElement>(null);
@@ -161,15 +162,6 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
         return '<!DOCTYPE HTML>\n' + doc.documentElement.outerHTML;
     };
 
-
-    const onConsoleShow = () => {
-        setConsoleVisible(true);
-    }
-
-    const onConsoleHide = () => {
-        setConsoleVisible(false);
-    }
-
     const processDataItem = (item: any, depth: number, method: string) => {
         if (typeof item === "undefined") {
             return <span style={{ color: "#80868B" }}>{"undefined"}</span>
@@ -262,7 +254,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
 
     return (
         <>
-            <Modal show={consoleVisible} onHide={onConsoleHide} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
+            <Modal show={consoleVisible} onHide={hideConosole} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
                 <Modal.Header closeButton>
                     <div className="d-flex">
                         <Button size="sm" variant="secondary" onClick={clearConsole}>Clear</Button>
@@ -342,9 +334,6 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => 
             </Modal>
             <div className="h-100">
                 <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
-                <div className="wb-web-wrapper__frame-wrapper__console-btn">
-                    <Button size="sm" variant="link" onClick={onConsoleShow}>Console</Button>
-                </div>
             </div>
         </>
     )

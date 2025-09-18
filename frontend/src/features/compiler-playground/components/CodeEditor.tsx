@@ -19,9 +19,11 @@ interface CodeEditorProps {
     setJs: (value: string) => void;
     loading: boolean;
     options: { scale: number };
+    consoleVisible: boolean;
+    hideConsole: () => void;
 }
 
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const [tabHeight, setTabHeight] = useState("auto");
@@ -107,7 +109,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
-                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
+                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} /> :
                                 <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>

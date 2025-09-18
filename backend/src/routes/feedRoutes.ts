@@ -14,7 +14,6 @@ router.use(verifyJWT);
 router.route("/").post(feedController.getFeedList);
 router.route("/GetFeed").post(feedController.getFeed);
 router.route("/GetComments").post(feedController.getReplies);
-router.route("/GetReactions").post(feedController.getReactions);
 router.route("/GetUserReactions").post(feedController.getUserReactions);
 
 router.use(protectRoute);

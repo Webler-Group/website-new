@@ -114,17 +114,19 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     if (result && result.success) {
       onTogglePin?.({ ...feed, isPinned: result.data.isPinned });
       showNotification("success", result.data.isPinned ? "Post pinned" : "Post unpinned");
+    } else {
+      showNotification("error", result?.error[0]?.message);
     }
   }
 
-  const handleEdit = async (updatedContent: string, tags: string[]) => {
-    const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent, tags });
+  const handleEdit = async (updatedContent: string) => {
+    const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
     if (result && result.success) {
-      onGeneralUpdate?.({ ...feed, message: result.data.message, tags: result.data.tags, attachments: result.data.attachments });
+      onGeneralUpdate?.({ ...feed, message: result.data.message, attachments: result.data.attachments });
       showNotification("success", "Post updated successfully");
       setShowEditModal(false);
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result?.error[0]?.message);
     }
   }
 
@@ -135,7 +137,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       navigate("/feed")
       showNotification("success", "Post deleted successfully");
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result?.error[0]?.message);
     }
   }
 
@@ -203,7 +205,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result?.error[0]?.message);
     }
   }
 
@@ -213,6 +215,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       navigate(`/feed/${result.feed.id}`);
       setShowShareModal(false);
       showNotification("success", "Post shared successfully");
+    } else {
+      showNotification("error", result?.error[0]?.message);
     }
   }
 
@@ -339,10 +343,12 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           <div className='d-flex'>
             {feed.topReactions.map((r: any, index: number) => (
               <span
-                className='bg-white rounded-circle'
+                className='bg-white rounded-circle d-flex align-items-center justify-content-center'
                 key={`${r.reaction}-${index}`}
                 style={{
                   marginLeft: index === 0 ? "0" : "-6px",
+                  width: "18px",
+                  height: "18px",
                   zIndex: (feed.topReactions.length - index).toString()
                 }}
               >

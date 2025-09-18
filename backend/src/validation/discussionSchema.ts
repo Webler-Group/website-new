@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, titleSchema, tagNameSchema, voteSchema } from "./commonSchema";
+import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, titleSchema, tagNameSchema, voteSchema, questionTitleSchema } from "./commonSchema";
 
 export const createQuestionSchema = z.object({
     body: z.object({
-        title: titleSchema,
+        title: questionTitleSchema,
         message: messageSchema,
         tags: z.array(tagNameSchema).max(10, "Maximum 10 tags allowed")
     })
@@ -52,7 +52,7 @@ export const toggleAcceptedAnswerSchema = z.object({
 export const editQuestionSchema = z.object({
     body: z.object({
         questionId: idSchema("questionId"),
-        title: titleSchema,
+        title: questionTitleSchema,
         message: messageSchema,
         tags: z.array(tagNameSchema).max(10, "Maximum 10 tags allowed")
     })

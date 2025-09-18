@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { IFeed } from "../components/types";
 import { useApi } from "../../../context/apiCommunication";
+import { useAuth } from "../../auth/context/authContext";
 
 interface UseFeedState {
     page: number;
@@ -10,10 +11,11 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     const [state, setState] = useState<UseFeedState>({ page: 0 });
     const [results, setResults] = useState<IFeed[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[]>([]);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
     const { sendJsonRequest } = useApi();
+    const { userInfo } = useAuth();
 
     useEffect(() => {
         if(state.page == 0) return;
@@ -25,7 +27,7 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     }, [filter, searchQuery]);
 
     const fetchFeeds = async () => {
-            setError("");
+            setError([]);
             setLoading(true);
 
             let keepPrev = state.page != 1;
@@ -37,7 +39,8 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
                 page: state.page,
                 count: countPerPage,
                 filter,
-                searchQuery
+                searchQuery,
+                userId: userInfo?.id
             });
             if (result && result.success) {
                 if (keepPrev) {
@@ -54,7 +57,7 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
                 setTotalCount(result.count);
                 setHasNextPage(result.feeds.length === countPerPage);
             } else {
-                setError(result?.message ?? "Something went wrong");
+                setError(result.error);
             }
 
             setLoading(false);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, titleSchema, compilerLanguageSchema, voteSchema } from "./commonSchema";
+import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, titleSchema, compilerLanguageSchema, voteSchema, commentMessageSchema } from "./commonSchema";
 
 export const createCodeSchema = z.object({
     body: z.object({
@@ -72,7 +72,7 @@ export const getCodeCommentsSchema = z.object({
 export const createCodeCommentSchema = z.object({
     body: z.object({
         codeId: idSchema("codeId"),
-        message: messageSchema,
+        message: commentMessageSchema,
         parentId: idSchema("parentId").nullish()
     })
 });
@@ -80,7 +80,7 @@ export const createCodeCommentSchema = z.object({
 export const editCodeCommentSchema = z.object({
     body: z.object({
         id: idSchema("id"),
-        message: messageSchema
+        message: commentMessageSchema
     })
 });
 

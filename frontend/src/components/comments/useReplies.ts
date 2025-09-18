@@ -19,33 +19,29 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
             if (state.direction === 'dont load' || !repliesVisible) return;
 
             setLoading(true);
-            try {
-                const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
-                    ...options.params,
-                    parentId,
-                    findPostId: null,
-                    count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
-                    index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
-                    filter: 2,
+            const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
+                ...options.params,
+                parentId,
+                findPostId: null,
+                count: state.direction === 'from start' ? Math.min(state.firstIndex, countPerPage) : countPerPage,
+                index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
+                filter: 2,
+            });
+            if (result && result.posts) {
+                setResults((prev) => {
+                    const newPosts = result.posts.filter(
+                        (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    );
+                    return state.direction === 'from start'
+                        ? [...newPosts, ...prev]
+                        : [...prev, ...newPosts];
                 });
-                if (result && result.posts) {
-                    setResults((prev) => {
-                        const newPosts = result.posts.filter(
-                            (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
-                        );
-                        return state.direction === 'from start'
-                            ? [...newPosts, ...prev]
-                            : [...prev, ...newPosts];
-                    });
-                    if (state.direction === 'from end') {
-                        setHasNextPage(result.posts.length === countPerPage);
-                    }
+                if (state.direction === 'from end') {
+                    setHasNextPage(result.posts.length === countPerPage);
                 }
-            } catch (error) {
-                console.error('Error fetching replies:', error);
-            } finally {
-                setLoading(false);
             }
+
+            setLoading(false);
         }
 
         fetchReplies();

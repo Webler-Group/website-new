@@ -51,10 +51,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [findPost, setFindPost] = useState<any | null>(null);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
     const location = useLocation();
-    const [message, setMessage] = useState([true, ""]);
+    const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
     const [pageTitle, setPageTitle] = useState("");
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
+    const [consoleVisible, setConsoleVisible] = useState(false);
 
     PageTitle(pageTitle);
 
@@ -230,7 +231,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             return;
         }
         setLoading(true)
-        closeSaveModal();
         if (saveAsNew) {
             let creditsHeaders: string[] = [];
             if (code.userId && code.userId !== userInfo.id) {
@@ -244,10 +244,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 jsSource: (creditsHeaders[2] ? creditsHeaders[2] + "\n" : "") + js
             });
             if (result && result.code) {
+                closeSaveModal();
                 navigate("/Compiler-Playground/" + result.code.id, { replace: code.userId === undefined })
             }
             else {
-                setMessage([false, result.message ? result.message : "Code could not be created"]);
+                setMessage({ success: false, errors: result.error });
             }
             setLoading(false)
         }
@@ -255,11 +256,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             const result = await editCode(code.isPublic);
             if (result && result.success) {
                 setCode(code => ({ ...code, ...result.data }));
-
-                setMessage([true, "Code updated successfully"]);
+                closeSaveModal();
+                setMessage({ success: true, message: "Code updated successfully" });
             }
             else {
-                setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
+                setMessage({ success: false, errors: result.error });
             }
             setLoading(false)
         }
@@ -279,10 +280,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             if (result && result.success) {
                 setCode(code => ({ ...code, ...result.data }));
 
-                setMessage([true, "Code updated successfully"]);
+                setMessage({ success: true, message: "Code updated successfully" });
             }
             else {
-                setMessage([false, result?.message ?? "Code could not be updated (saved locally)"])
+                setMessage({ success: false, errors: result.error });
             }
             setLoading(false)
         }
@@ -318,7 +319,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const showCodeVotesModal = (id: string | null) => {
-        if(!id) return;
+        if (!id) return;
         setCodeVotesModalOptions({ parentId: id });
         setCodeVotesModalVisible(true);
     }
@@ -357,7 +358,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             });
         }
         else {
-            setMessage([false, result.message ? result.message : "Could not vote the code"])
+            setMessage({ success: false, errors: result.error });
         }
     }
 
@@ -456,9 +457,16 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                     <AuthNavigation />
                 </div>
             </div>
-            <Toast className="position-absolute bottom-0 end-0 m-2" style={{ zIndex: "999" }} bg={message[0] === false ? "danger" : "success"} onClose={() => setMessage([true, ""])} show={message[1] !== ""} delay={3000} autohide>
+            <Toast
+                className="position-absolute bottom-0 end-0 m-2"
+                style={{ zIndex: "9999" }}
+                bg={message.success ? "success" : "danger"}
+                onClose={() => setMessage(prev => ({ success: prev.success }))}
+                show={(message.errors && message.errors.length > 0) || !!message.message}
+                delay={2500}
+                autohide>
                 <Toast.Body className="text-white">
-                    <b>{message[1]}</b>
+                    <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
                 </Toast.Body>
             </Toast>
             {
@@ -551,6 +559,14 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                             </Dropdown.Item>
                                         </>
                                     }
+                                    {
+                                        code.language == "web" &&
+                                        <Dropdown.Item
+                                            onClick={() => setConsoleVisible(true)}
+                                        >
+                                            Console
+                                        </Dropdown.Item>
+                                    }
                                 </Dropdown.Menu>
                             </Dropdown>
                         </div>
@@ -565,6 +581,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         js={js}
                         setJs={(value: string) => setJs(value)}
                         options={editorOptions}
+                        consoleVisible={consoleVisible}
+                        hideConsole={() => setConsoleVisible(false)}
                     />
                 </div>
             }

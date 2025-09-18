@@ -4,12 +4,14 @@ import PostTextareaControl from "../../../components/PostTextareaControl";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import RequestResultAlert from "../../../components/RequestResultAlert";
+
+const MAX_LENGTH = 4096;
 
 const FeedCreate = () => {
     const [message, setMessage] = useState('');
-    const [tags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<any[] | undefined>();
     const [mode, setMode] = useState<"write" | "preview">("write"); // <-- toggle state
     const navigate = useNavigate();
     const { sendJsonRequest } = useApi();
@@ -19,17 +21,16 @@ const FeedCreate = () => {
         if (!message.trim()) return;
 
         setLoading(true);
-        setError(null);
+        setError(undefined);
 
-        const response = await sendJsonRequest("/Feed/CreateFeed", "POST", { 
-            message,
-            tags 
+        const result = await sendJsonRequest("/Feed/CreateFeed", "POST", { 
+            message 
         });
 
-        if (response.success) {
-            navigate("/Feed/" + response.feed.id);
+        if (result.success) {
+            navigate("/Feed/" + result.feed.id);
         } else {
-            setError(response.message ?? "Failed to create feed");
+            setError(result.error);
         }
 
         setLoading(false);
@@ -43,11 +44,7 @@ const FeedCreate = () => {
         <Container className="min-vh-100">
             <h2 className="fw-semibold my-3">Create New Post</h2>
             <Form onSubmit={handleSubmit}>
-                {error && (
-                    <div className="alert alert-danger" role="alert">
-                        {error}
-                    </div>
-                )}
+                <RequestResultAlert errors={error} />
 
                 {/* Toggle Write/Preview */}
                 <div className="mb-3">
@@ -75,10 +72,10 @@ const FeedCreate = () => {
                             value={message}
                             setValue={setMessage}
                             required
-                            maxLength={2000}
+                            maxLength={MAX_LENGTH}
                         />
                         <div className="mt-2 text-muted small">
-                            {message.length}/2000 characters
+                            {message.length}/{MAX_LENGTH} characters
                         </div>
                     </FormGroup>
                 )}
@@ -93,19 +90,6 @@ const FeedCreate = () => {
                         )}
                     </div>
                 )}
-
-                {/* Tags */}
-                {/* <FormGroup className="mb-3 mt-3">
-                    <label className="form-label fw-semibold">Tags</label>
-                    <InputTags 
-                        values={tags} 
-                        setValues={setTags} 
-                        placeholder="Add tags..." 
-                    />
-                    <div className="mt-1 text-muted small">
-                        {tags.length}/10 tags selected
-                    </div>
-                </FormGroup> */}
 
                 {/* Actions */}
                 <div className="d-flex justify-content-end gap-2">
