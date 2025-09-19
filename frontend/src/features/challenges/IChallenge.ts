@@ -12,12 +12,19 @@ export interface IChallengeFilter {
   difficulty?: challenge_diff_t;
 }
 
+
+export interface IChallengeTemplate {
+  name: string;
+  source: string;
+}
+
 export default interface IChallenge {
+    _id: string;
     title: string;
     description: string;
-    tags: string[];
-    testCases: ITestCase[];
     xp: number;
-    difficulty?: string;
+    difficulty: string;
     createdBy?: string;
+    templates?: IChallengeTemplate[];
+    testCases?: ITestCase[];
 }

@@ -1,28 +1,39 @@
-import { Schema, model, Document, Model, Types } from "mongoose";
+import mongoose, { Schema, model, Document, Model, Types } from "mongoose";
+import { ChallengeSub } from "./ChallengeSub";
 
 type difficulty_t = "easy" | "medium" | "hard";
 
-interface ITestCase {
+type languages = "c" | "cpp" | "javascript" | "python" | "lua" | "nodejs" | "ruby";
+
+export interface ITestCase {
   input: string;
   expectedOutput: string;
   isHidden: boolean,
 }
 
+
+export interface IChallengeTemplate {
+  name: languages;
+  source: string;
+}
+
+
 export interface IChallenge extends Document {
   title: string;
   description: string;
   difficulty: difficulty_t;
-  tags: string[];
   testCases: ITestCase[];
+  templates: IChallengeTemplate[];
   xp: number,
   createdBy?: Types.ObjectId;
 
   addTestCase(input: string, expectedOutput: string): Promise<IChallenge>;
+  addTemplate(name: languages, source: string): Promise<IChallenge>;
 }
 
 interface IChallengeModel extends Model<IChallenge> {
   findByDifficulty(level: difficulty_t): Promise<IChallenge[]>;
-  searchByTag(tag: string): Promise<IChallenge[]>;
+  deleteAndCleanup(filter: mongoose.FilterQuery<IChallenge>): unknown;
 }
 
 const testCaseSchema = new Schema<ITestCase>({
@@ -30,6 +41,12 @@ const testCaseSchema = new Schema<ITestCase>({
   expectedOutput: { type: String, required: true },
   isHidden: { type: Boolean, required: true }
 });
+
+
+const templateSchema = new Schema<IChallengeTemplate>({
+  name: { type: String, required: true },
+  source: { type: String }
+})
 
 const challengeSchema = new Schema<IChallenge>(
   {
@@ -40,21 +57,30 @@ const challengeSchema = new Schema<IChallenge>(
       enum: ["easy", "medium", "hard"],
       default: "easy",
     },
-    tags: [{ type: String }],
     testCases: [testCaseSchema],
+    templates: [templateSchema],
     xp: { type: Number, required: true, default: 10 },
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
 
+
+challengeSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    await ChallengeSub.deleteMany({ challenge: doc._id });
+  }
+});
+
+
 challengeSchema.statics.findByDifficulty = function (level: string) {
   return this.find({ difficulty: level });
 };
 
-challengeSchema.statics.searchByTag = function (tag: string) {
-  return this.find({ tags: tag });
-};
+
+challengeSchema.statics.deleteAndCleanup =  async function (filter: mongoose.FilterQuery<IChallenge>) {
+
+}
 
 challengeSchema.methods.addTestCase = function (
   input: string,
@@ -64,6 +90,14 @@ challengeSchema.methods.addTestCase = function (
   this.testCases.push({ input, expectedOutput, isHidden });
   return this.save();
 };
+
+
+challengeSchema.methods.addTemplate = function(name: languages, source: string){
+  if (!this.language.some((i: IChallengeTemplate) => i.name === name))
+    this.languages.push({ name, source });
+  
+  return this.save();
+}
 
 const Challenge = model<IChallenge, IChallengeModel>(
   "Challenge",

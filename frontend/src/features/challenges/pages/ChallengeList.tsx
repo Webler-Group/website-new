@@ -1,146 +1,78 @@
-import { ChangeEvent, useEffect, useState } from "react";
-import { Container, Row, Col, Card, Form, Button, InputGroup } from "react-bootstrap";
+import { Container, Row, Col, Card, Button } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa6";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { TagSearch, WeblerBadge } from "../../../components/InputTags";
-import { useApi } from "../../../context/apiCommunication";
+import { TagSearch } from "../../../components/InputTags";
 import { PaginationControl } from "react-bootstrap-pagination-control";
-import { challenge_diff_t, IChallengeFilter } from "../IChallenge";
+import IChallenge from "../IChallenge";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import { SelectFormField } from "../../../components/FormField";
+import { EllipsisLoaderPlaceholder } from "../../../components/Loader";
+import useListView from "../../../components/hooks/useListView";
+import PageTitle from "../../../layouts/PageTitle";
 
 
 const ChallengeList = () => {
-    const { sendJsonRequest } = useApi();
+    PageTitle("Code Challenge");
+
+    const challengesPerPage = 10;
+
+    const { items, loading, itemsCount, filter, searchQuery, currentPage, 
+        handleSearch,  handlePageChange, handleFilterSelect } = useListView<IChallenge>({
+        endPoint: "/Challenge",
+        method: "POST",
+        itemsPerPage: challengesPerPage
+    });
+
     const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const [challenges, setChallenges] = useState<any[]>([]);
-    const challengesPerPage = 10;
-    const [currentPage, setCurrentPage] = useState(1);
-    const [challengeCount, setChallengeCount] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [filter, setFilter] = useState<IChallengeFilter>({ solved: false });
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchParams, setSearchParams] = useSearchParams();
-
-    useEffect(() => {
-        getChallenges();
-    }, [searchParams, filter]);
-
-
-    useEffect(() => {
-        handlePageChange(1);
-    }, [filter, searchQuery]);
-
-    useEffect(() => {
-        if (searchParams.has("page")) {
-            setCurrentPage(Number(searchParams.get("page")))
-        }
-        if (searchParams.has("query")) {
-            setSearchQuery(searchParams.get("query")!)
-        }
-    }, []);
-
-    const handlePageChange = (page: number) => {
-        if (currentPage === page) {
-            return
-        }
-        searchParams.set("page", page.toString());
-        setSearchParams(searchParams, { replace: true })
-        setCurrentPage(page);
-    }
-
-    const handleSearch = (value: string) => {
-        searchParams.set("query", value);
-        setSearchParams(searchParams, { replace: true });
-        setSearchQuery(value);
-    }
-    
-    const getChallenges = async () => {
-        setLoading(true);
-        const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
-        const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const result = await sendJsonRequest(`/Challenge`, "POST", {
-            page,
-            count: challengesPerPage,
-            filter,
-            searchQuery,
-        });
-
-        if (result && result.challenges) {
-            setChallenges(result.challenges);
-            setChallengeCount(result.count);
-        }
-
-        setLoading(false);
-    }
-    
-    const handleSolvedSelect = (e: ChangeEvent) => {
-        const value = ((e.target as HTMLSelectElement).selectedOptions[0].value);
-        setFilter({ solved: value === "unsolved" ? false: true, difficulty: filter.difficulty });
-    }
-
-    const handleDifficultySelect = (e: ChangeEvent) => {
-        const value = ((e.target as HTMLSelectElement).selectedOptions[0].value) as challenge_diff_t;
-        if(!value) {
-            setFilter({ solved: filter.solved });
-            return;
-        }
-        setFilter({ solved: filter.solved, difficulty: value });
-    }
-
 
     return (
         <Container className="py-4 position-relative">
             <TagSearch
-                placeholder="Search by tags or title..."
+                placeholder="Search by title..."
                 maxWidthPx={360}
                 query={searchQuery}
                 handleSearch={handleSearch}
             />
 
             <div className="mt-2 d-flex justify-content-between">
-                <Form.Select style={{ width: "140px" }} size='sm'  onChange={handleDifficultySelect}>
-                    <option value="" selected>All</option>
-                    <option value="easy">Easy</option>
-                    <option value="medium">Medium</option>
-                    <option value="hard">Hard</option>
-                </Form.Select>
+                <SelectFormField onChange={handleFilterSelect} value={filter} 
+                    options={[
+                        {label: "Easy", value: "1"},
+                        {label: "Medium", value: "2"},
+                        {label: "Hard", value: "3"},
+                    ]}     
+                />
 
-                <Form.Select style={{ width: "140px" }} size='sm'  onChange={handleSolvedSelect}>
-                    <option value="solved">Solved</option>
-                    <option value="unsolved" selected>Unsolved</option>
-                </Form.Select>
+                <SelectFormField onChange={() => {}} value={filter} 
+                    options={[
+                        {label: "Unsolved", value: "1"},
+                        {label: "Solved", value: "2"}
+                    ]}     
+                />
             </div>
 
             <div className="mt-2">
                 {
                     loading ?
-                        <p>Loading...</p>
+                        <EllipsisLoaderPlaceholder />
                         :
-                        challengeCount == 0 ?
+                        itemsCount == 0 ?
                             <div className="wb-discuss-empty-questions">
                                 <h3>Nothing to show</h3>
                             </div>
                             :
                             <Row className="mt-3">
-                                {challenges.map((c, idx) => (
+                                {items.map((c: IChallenge, idx) => (
                                 <Col md={6} lg={4} key={idx} className="mb-3">
                                     <Card className="shadow-sm h-100">
                                     <Card.Body onClick={() => { navigate("./" + c._id) }} style={{cursor:"pointer"}}>
                                         <Card.Title>{c.title}</Card.Title>
-                                        <Card.Text>
-                                            <MarkdownRenderer content={(c.description as string).substr(0, 30)} allowedUrls={allowedUrls} />
-                                        </Card.Text>
-                                        <div className="d-flex flex-wrap gap-2 m-1">
-                                        {c.tags.map((tag:string, idx: number) => (
-                                            <WeblerBadge state="neutral" name={tag} key={idx} />
-                                        ))}
-                                        </div>
                                         <div className="d-flex flex-wrap gap-2">
-                                            <span className="bg-success-subtle text-success p-1 rounded">{c.difficulty}</span>
-                                            <span className="bg-success-subtle text-success p-1 rounded">{c.xp}</span>
+                                            <span className="text-info p-1 rounded btn-text">{c.difficulty}</span>
+                                            <span className="text-success p-1 rounded">+{c.xp} Reward</span>
                                         </div>
                                     </Card.Body>
                                     </Card>
@@ -155,7 +87,7 @@ const ChallengeList = () => {
                 <PaginationControl
                     page={currentPage}
                     between={3}
-                    total={challengeCount}
+                    total={itemsCount}
                     limit={challengesPerPage}
                     changePage={handlePageChange}
                     ellipsis={1}

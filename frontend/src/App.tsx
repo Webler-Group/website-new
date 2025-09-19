@@ -46,6 +46,7 @@ import FeedCreate from './features/feed/components/FeedCreate';
 import ChallengeList from './features/challenges/pages/ChallengeList';
 import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
 import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
+import ChallengeEdit from "./features/challenges/pages/ChallengeEdit";
 
 function App() {
 
@@ -113,6 +114,7 @@ function App() {
             <Route path="Create" element={<ChallengeCreate />} />
           </Route>
           <Route path=":challengeId" element={<ChallengeDetails />} />
+          <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
         </Route>
       </Route>
 
