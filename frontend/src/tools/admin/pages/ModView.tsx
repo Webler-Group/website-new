@@ -88,7 +88,7 @@ const ModView = () => {
             setRolesAlert({ message: "Roles updated successfully." });
             setRolesInput(result.data.roles.join(", "));
         } else {
-            setRolesAlert({ errors: result.error });
+            setRolesAlert({ errors: result?.error });
         }
 
         setLoading(false);

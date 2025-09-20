@@ -71,7 +71,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
             onUpdate(result.data.notifications);
             setMessage({ message: "Notification settings saved successfully" });
         } else {
-            setMessage({ errors: result.error });
+            setMessage({ errors: result?.error });
         }
 
         setLoading(false);

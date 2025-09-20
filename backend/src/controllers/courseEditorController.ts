@@ -370,7 +370,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             index: lessonNode.index,
             type: lessonNode._type,
             text: lessonNode.text ?? "",
-            correctAnswer: lessonNode.correctAnswer,
+            correctAnswer: lessonNode.correctAnswer ?? "",
             answers: answers.map(x => ({
                 id: x._id,
                 text: x.text,

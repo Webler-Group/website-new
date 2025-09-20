@@ -10,6 +10,7 @@ import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
 import { IFeed } from './types';
+import Loader from '../../../components/Loader';
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest', requireLogin: false },
@@ -238,11 +239,7 @@ const FeedList = () => {
         {
           loading ?
             <div className="d-flex justify-content-center mt-5 text-center">
-              <div className="wb-loader">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
+              <Loader />
             </div>
             :
             <>

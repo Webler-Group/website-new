@@ -80,7 +80,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
             closeDeleteModal();
             navigate("/Discuss");
         } else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result?.error ? result.error.message : result.message);
         }
         setLoading(false);
     }

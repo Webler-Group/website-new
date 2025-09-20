@@ -7,22 +7,22 @@ const TermsOfUse = () => {
     PageTitle("Terms of Use", false);
 
     return (
-        <Container>
-            <div className="wb-term-conditions-container">
-                <div className="wb-term-conditions">
-                    <div >
-                        <h1>Terms & Conditions</h1>
+        <div className="bg-light py-4" style={{ minHeight: "100vh" }}>
+            <Container>
+                <div className="bg-white rounded p-3 shadow">
+                    <div>
+                        <h2 className="fw-bold">Terms & Conditions</h2>
                     </div>
-                    <hr className="mb-4" />
+                    <hr className="mb-2" />
                     <div>
                         <p>Terms of Use</p>
                         <p>Last revised: June 18, 2023</p>
                         <br />
                         <p>Please note that your use of and access to our services are subject to the following Terms; if you do not agree to all of the following, you may not use or access the services in any manner.</p>
                         <br />
-                        <p>Welcome to Webler Codes! Please read these Terms of Use (these “Terms”) carefully before using the website(s) (including https://www.Webler Codes.com/), products, services and applications (the “Services”) operated by Webler Codes Inc. ("Webler Codes", "us", "we", or "our"). </p>
+                        <p>Welcome to Webler Codes! Please read these Terms of Use (these “Terms”) carefully before using the website(s) (including <a href="https://www.weblercodes.com/">https://www.weblercodes.com/</a>), products, services and applications (the “Services”) operated by Webler Codes Inc. ("Webler Codes", "us", "we", or "our"). </p>
                         <p></p><br />
-                        <p>If you have any questions, comments, or concerns regarding these Terms or the Services, please contact us by emailing us at <a href="mailto:info@Webler Codes.com">info@Webler Codes.com</a>.</p>
+                        <p>If you have any questions, comments, or concerns regarding these Terms or the Services, please contact us by emailing us at <a href="mailto:support@weblercodes.com">support@weblercodes.com</a>.</p>
                         <p></p><br />
                         <p>These Terms are a legally binding contract between you and Webler Codes. You must agree to and accept all of these Terms, or you don’t have the right to access or use the Services in any manner. These Terms apply to all visitors, users and others who access or use the Services. Your access or use of the Services in any way means that you agree to all of these Terms, and these Terms will remain in effect while you access or use the Services. These Terms include the provisions in this document, as well as those in the Privacy Policy, the Content Creation Guidelines, and Copyright Dispute Policy. If you disagree with any part of these Terms, then you may not access or use the Services.</p>
                         <p></p><br />
@@ -36,7 +36,7 @@ const TermsOfUse = () => {
                         <br />
                         <h5>Will these Terms ever change?</h5>
                         <p></p>
-                        <p>We are constantly trying to improve our Services, so these Terms may need to change along with our Services. We reserve the right to change these Terms at any time, but if we do, we will place a notice on the https://www.Webler Codes.com/ site, send you an email, and/or notify you by some other means.</p>
+                        <p>We are constantly trying to improve our Services, so these Terms may need to change along with our Services. We reserve the right to change these Terms at any time, but if we do, we will place a notice on the <a href="https://www.weblercodes.com/">https://www.weblercodes.com/</a> site, send you an email, and/or notify you by some other means.</p>
                         <p></p><br />
                         <p>If you don’t agree with the new Terms, you are free to reject them; unfortunately, that means you will no longer be able to use the Services. If you use the Services in any way after a change to the Terms is effective, that means you agree to all of the changes. Except for changes by us as described here, no other amendment or modification of these Terms will be effective unless in writing and signed by both you and us.</p>
                         <p></p>
@@ -46,7 +46,7 @@ const TermsOfUse = () => {
                         <p></p>
                         <p>Webler Codes takes the privacy of its users very seriously. For the current Webler Codes Privacy Policy, please click here.</p>
                         <p></p><br />
-                        <p>The Children’s Online Privacy Protection Act ("COPPA") requires that online service providers obtain parental consent before they knowingly collect personally identifiable information online from children who are under eighteen (18). We do not knowingly collect or solicit personally identifiable information from children under eighteen (18); if you are a child under eighteen (18), please do not attempt to register for or otherwise use the Services or send us any personal information. If we learn we have collected personal information from a child under eighteen (18), we will delete that information as quickly as possible. If you believe that a child under eighteen (18) may have provided us personal information, please contact us at info@Webler Codes.com.</p>
+                        <p>The Children’s Online Privacy Protection Act ("COPPA") requires that online service providers obtain parental consent before they knowingly collect personally identifiable information online from children who are under eighteen (18). We do not knowingly collect or solicit personally identifiable information from children under eighteen (18); if you are a child under eighteen (18), please do not attempt to register for or otherwise use the Services or send us any personal information. If we learn we have collected personal information from a child under eighteen (18), we will delete that information as quickly as possible. If you believe that a child under eighteen (18) may have provided us personal information, please contact us at <a href="mailto:support@weblercodes.com">support@weblercodes.com</a>.</p>
                         <p></p>
                         <br />
                         <p></p>
@@ -103,7 +103,7 @@ const TermsOfUse = () => {
                         <p></p><br />
                         <p>If you share a User Submission only in a manner that only certain specified users can view (for example, a private message to one or more other users) (a “Limited Audience User Submission”), then you grant Webler Codes the licenses above, as well as a license to display, perform, and distribute your Limited Audience User Submission for the sole purpose of making that Limited Audience User Submission accessible to such other specified users, and providing the Services necessary to do so. Also, you grant such other specified users a license to access that Limited Audience User Submission, and to use and exercise all rights in it, as permitted by the functionality of the Services.</p>
                         <p></p><br />
-                        <p>If you interact with S.I.A, OpenAI may use your input and output to provide and maintain the OpenAI services, comply with applicable law, and to enforce their policies (https://openai.com/policies/terms-of-use).</p>
+                        <p>If you interact with S.I.A, OpenAI may use your input and output to provide and maintain the OpenAI services, comply with applicable law, and to enforce their policies.</p>
                         <p></p><br />
                         <p>If you share a User Submission publicly on the Services and/or in a manner that more than just you or certain specified users can view, or if you provide us (in a direct email or otherwise) with any feedback, suggestions, improvements, enhancements, and/or feature requests relating to the Services (each of the foregoing, a “Public User Submission”), then you grant Webler Codes the licenses above, as well as a license to display, perform, and distribute your Public User Submission for the purpose of making that Public User Submission accessible to all Webler Codes users and providing the Services necessary to do so, as well as all other rights necessary to use and exercise all rights in that Public User Submission in connection with the Services and/or otherwise in connection with Webler Codes’s business for any purpose. Also, you grant all other users of the Services a license to access that Public User Submission, and to use and exercise all rights in it, as permitted by the functionality of the Services (which may permit certain users to make modifications to and remove your Public User Submissions).</p>
                         <p></p><br />
@@ -145,17 +145,15 @@ const TermsOfUse = () => {
                         <p></p>
                         <p>The Services are currently free, but we reserve the right to charge for certain or all Services in the future. We will notify you before any Services you are then using begin carrying a fee, and if you wish to continue using such Services, you must pay all applicable fees for such Services.</p>
                         <p></p><br />
-                        <p>There are also PRO and VIP subscriptions available to purchase via the app stores and website. You can find more information on the subscription and our refund policy here: https://www.Webler Codes.com/refund-policy</p>
-                        <p></p>
                         <br />
                         <p></p>
                         <h5>What if I want to stop using the Services?</h5>
                         <p></p>
-                        <p>You’re free to do that at any time by contacting us at info@Webler Codes.com; please refer to our Privacy Policy, as well as the licenses above, to understand how we treat information you provide to us after you have stopped using our Services.</p>
+                        <p>You’re free to do that at any time by contacting us at <a href="mailto:support@weblercodes.com">support@weblercodes.com</a>; please refer to our Privacy Policy, as well as the licenses above, to understand how we treat information you provide to us after you have stopped using our Services.</p>
                         <p></p><br />
                         <p>Webler Codes is also free to terminate (or suspend access to) your use of the Services or your account, for any reason in our discretion, including your breach of these Terms. Webler Codes has the sole right to decide whether you are in violation of any of the restrictions set forth in these Terms. Account deactivation or termination may result in destruction of any Content associated with your account, so keep that in mind before you decide to deactivate or terminate your account.</p>
                         <p></p><br />
-                        <p>If you have deleted your account by mistake, contact us immediately at info@Webler Codes.com - we will try to help, but unfortunately, we can’t promise that we can recover or restore anything. </p>
+                        <p>If you have deleted your account by mistake, contact us immediately at <a href="mailto:support@weblercodes.com">support@weblercodes.com</a> - we will try to help, but unfortunately, we can’t promise that we can recover or restore anything. </p>
                         <p></p><br />
                         <p>Provisions that, by their nature, should survive termination of these Terms shall survive termination. By way of example, all of the following will survive termination: any obligation you have to pay us or indemnify us, any limitations on our liability, any terms regarding ownership or intellectual property rights, and terms regarding disputes between us, including without limitation the arbitration agreement.</p>
                         <p></p>
@@ -248,8 +246,8 @@ const TermsOfUse = () => {
                         <p>Except as expressly set forth in the section(s) above regarding the Apple Application and the arbitration agreement, you and Webler Codes agree there are no third-party beneficiaries intended under these Terms</p>
                     </div>
                 </div>
-            </div>
-        </Container>
+            </Container>
+        </div>
     );
 }
 

@@ -4,8 +4,9 @@ import { FaPlus } from "react-icons/fa6";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNodeEditor from "./LessonNodeEditor";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import LessonNode from "../components/LessonNode";
+import Loader from "../../../components/Loader";
 
 interface LessonEditorProps {
     lessonId: string;
@@ -17,6 +18,9 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const [nodePreviewVisible, setNodePreviewVisible] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const { courseId } = useParams();
+    const navigate = useNavigate();
 
     useEffect(() => {
         getLesson();
@@ -34,12 +38,14 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }, [lesson?.id]);
 
     const getLesson = async () => {
+        setLoading(true);
         const result = await sendJsonRequest("/CourseEditor/GetLesson", "POST", {
             lessonId
         });
         if (result && result.lesson) {
             setLesson(result.lesson);
         }
+        setLoading(false);
     }
 
     const createLessonNode = async () => {
@@ -134,49 +140,60 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     }
 
     return (
-        lesson !== null &&
-        <>
-            <div className="p-2">
-                <h4>{lesson.title}</h4>
-                <div className="d-flex justify-content-between my-3">
-                    <ButtonGroup size="sm">
-                        {lesson.nodes.map((node, i) => (
-                            <ToggleButton
-                                key={i}
-                                id={`current-lesson-input-${node.index}`}
-                                type="radio"
-                                variant="outline-primary"
-                                name="current-lesson"
-                                value={node.id}
-                                checked={currentNodeId === node.id}
-                                onChange={(e) => handleNodeChange(e.currentTarget.value)}
-                                size="sm"
-                            >
-                                {node.index}
-                            </ToggleButton>
-                        ))}
-                    </ButtonGroup>
-                    <Button size="sm" onClick={createLessonNode}>
-                        <FaPlus />
-                    </Button>
+        lesson !== null ?
+            <>
+                <div className="p-2">
+                    <h4>{lesson.title}</h4>
+                    <div className="d-flex justify-content-between my-3">
+                        <ButtonGroup size="sm">
+                            {lesson.nodes.map((node, i) => (
+                                <ToggleButton
+                                    key={i}
+                                    id={`current-lesson-input-${node.index}`}
+                                    type="radio"
+                                    variant="outline-primary"
+                                    name="current-lesson"
+                                    value={node.id}
+                                    checked={currentNodeId === node.id}
+                                    onChange={(e) => handleNodeChange(e.currentTarget.value)}
+                                    size="sm"
+                                >
+                                    {node.index}
+                                </ToggleButton>
+                            ))}
+                        </ButtonGroup>
+                        <Button size="sm" onClick={createLessonNode}>
+                            <FaPlus />
+                        </Button>
+                    </div>
+                    {
+                        currentNodeId !== null &&
+                        (nodePreviewVisible ?
+                            <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
+                                <div className="flex-grow-1 border border-2">
+                                    <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
+                                </div>
+                                <div className="d-flex justify-content-end mt-2">
+                                    <Button variant="secondary" size="sm" onClick={handleExitPreview}>Exit Preview</Button>
+                                </div>
+                            </div>
+                            :
+                            <LessonNodeEditor nodeId={currentNodeId} nodeCount={lesson.nodeCount} onChangeIndex={onLessonNodeChangeIndex} onDelete={onLessonNodeDelete} onPreview={onNodePreview} />
+                        )
+                    }
                 </div>
+            </>
+            :
+            <div className="my-5 text-center">
                 {
-                    currentNodeId !== null &&
-                    (nodePreviewVisible ?
-                        <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
-                            <div className="flex-grow-1 border border-2">
-                                <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
-                            </div>
-                            <div className="d-flex justify-content-end mt-2">
-                                <Button variant="secondary" size="sm" onClick={handleExitPreview}>Exit Preview</Button>
-                            </div>
+                    loading ?
+                        <Loader /> :
+                        <div>
+                            <p className="mb-2">Lesson could not be loaded</p>
+                            <Button size="sm" onClick={() => navigate("/Courses/Editor/" + courseId)}>Back to course</Button>
                         </div>
-                        :
-                        <LessonNodeEditor nodeId={currentNodeId} nodeCount={lesson.nodeCount} onChangeIndex={onLessonNodeChangeIndex} onDelete={onLessonNodeDelete} onPreview={onNodePreview} />
-                    )
                 }
             </div>
-        </>
     );
 }
 

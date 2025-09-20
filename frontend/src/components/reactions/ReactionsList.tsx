@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react';
 import useReactions from './useReactions';
 import ReactionListItem, { IUserReaction } from './ReactionListItem';
 import { Modal } from 'react-bootstrap';
+import Loader from '../Loader';
 
 interface ReactionsListProps {
     options: { parentId: string | null; };
@@ -56,13 +57,7 @@ const ReactionsList = ({ options, visible, onClose, title, showReactions, countP
                 }
 
                 {loading && (
-                    <div className="d-flex flex-column justify-content-center align-items-center text-center py-2">
-                        <div className="wb-loader">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
-                    </div>
+                    <Loader />
                 )}
             </Modal.Body>
         </Modal>

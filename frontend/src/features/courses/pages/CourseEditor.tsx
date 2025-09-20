@@ -6,6 +6,8 @@ import Lesson, { ILesson } from "../components/Lesson";
 import LessonEditor from "./LessonEditor";
 import { useApi } from "../../../context/apiCommunication";
 import { truncate } from "../../../utils/StringUtils";
+import NotificationToast from "../../../components/NotificationToast";
+import Loader from "../../../components/Loader";
 
 interface CourseEditorProps {
 }
@@ -21,6 +23,7 @@ const CourseEditor = ({ }: CourseEditorProps) => {
     const [formInput, setFormInput] = useState("");
     const [editedLessonId, setEditedLessonId] = useState<string | null>(null);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [notification, setNotification] = useState<{ type: "success" | "error"; message: string; } | null>(null);
 
     useEffect(() => {
         getCourse(true);
@@ -56,6 +59,9 @@ const CourseEditor = ({ }: CourseEditorProps) => {
         if (result && result.lesson) {
             setLessons(lessons => [...lessons, { ...result.lesson }]);
             hideLessonForm();
+            setNotification({ type: "success", message: "Lesson created successfully" });
+        } else {
+            setNotification({ type: "error", message: result?.error[0].message });
         }
         setLoading(false);
     }
@@ -83,6 +89,9 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                 return currentLessons;
             });
             hideLessonForm();
+            setNotification({ type: "success", message: "Lesson edited successfully" });
+        } else {
+            setNotification({ type: "error", message: result?.error[0].message });
         }
         setLoading(false);
     }
@@ -108,6 +117,9 @@ const CourseEditor = ({ }: CourseEditorProps) => {
                 }
                 return newLessons;
             });
+            setNotification({ type: "success", message: "Lesson deleted successfully" });
+        } else {
+            setNotification({ type: "error", message: result?.error[0].message });
         }
         setLoading(false);
     }
@@ -135,6 +147,9 @@ const CourseEditor = ({ }: CourseEditorProps) => {
 
                 return lessonsCopy;
             });
+            setNotification({ type: "success", message: "Lesson index changed successfully" });
+        } else {
+            setNotification({ type: "error", message: result?.error[0].message });
         }
 
         setLoading(false);
@@ -169,82 +184,94 @@ const CourseEditor = ({ }: CourseEditorProps) => {
     }
 
     return (
-        course !== null &&
-        <>
-            <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Are you sure?</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>Lesson will be permanently deleted.</Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
-                    <Button variant="danger" onClick={handleDeleteLesson}>Delete</Button>
-                </Modal.Footer>
-            </Modal>
-            <div className="d-flex gap-2 py-2">
-                <Link to="/Courses/Editor">Course Editor</Link>
-                <span>&rsaquo;</span>
-                {
-                    lessonId !== null ?
-                        <>
-                            <Link to={"/Courses/Editor/" + course.id}>{truncate(course.title, 20)}</Link>
-                            {getLessonTitlePath()}
-                        </>
-                        :
-                        <span>{truncate(course.title, 20)}</span>
-                }
-            </div>
-            <div className="mb-3">
-                <h3 className="wb-courses-course__title" style={{ wordBreak: "break-word" }}>{course.title}</h3>
-            </div>
-            <div hidden={!formVisible} className="mb-2 border bg-white rounded p-2">
-                <Form>
-                    <h4>{editedLessonId === null ? "New lesson" : "Edit lesson"}</h4>
-                    <FormGroup>
-                        <FormLabel>Title</FormLabel>
-                        <FormControl type="text" placeholder="Enter lesson title" maxLength={60} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
-                    </FormGroup>
-                    <div className="d-flex justify-content-end mt-2">
-                        <Button size="sm" variant="secondary" disabled={loading} onClick={() => hideLessonForm()}>Cancel</Button>
-                        {
-                            editedLessonId === null ?
-                                <Button size="sm" variant="primary" className="ms-2" onClick={handleCreateLesson} disabled={loading || formInput.length === 0}>Create</Button>
-                                :
-                                <Button size="sm" variant="primary" className="ms-2" onClick={handleEditLesson} disabled={loading}>Save</Button>
-                        }
-                    </div>
-                </Form>
-            </div>
-            {
-                lessonId ?
-                    <LessonEditor lessonId={lessonId} />
-                    :
-                    <>
-                        <div className="d-flex justify-content-end">
-                            <Button className="ms-2 btn btn-primary btn-sm" onClick={() => showLessonForm("", null)}>Create Lesson</Button>
-                        </div>
-                        <div className="mt-3">
+        course !== null ?
+            <>
+                <NotificationToast notification={notification} onClose={() => setNotification(null)} />
+                <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Are you sure?</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>Lesson will be permanently deleted.</Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDeleteLesson}>Delete</Button>
+                    </Modal.Footer>
+                </Modal>
+                <div className="d-flex gap-2 py-2">
+                    <Link to="/Courses/Editor">Course Editor</Link>
+                    <span>&rsaquo;</span>
+                    {
+                        lessonId !== null ?
+                            <>
+                                <Link to={"/Courses/Editor/" + course.id}>{truncate(course.title, 20)}</Link>
+                                {getLessonTitlePath()}
+                            </>
+                            :
+                            <span>{truncate(course.title, 20)}</span>
+                    }
+                </div>
+                <div className="mb-3">
+                    <h3 className="wb-courses-course__title" style={{ wordBreak: "break-word" }}>{course.title}</h3>
+                </div>
+                <div hidden={!formVisible} className="mb-2 border bg-white rounded p-2">
+                    <Form>
+                        <h4>{editedLessonId === null ? "New lesson" : "Edit lesson"}</h4>
+                        <FormGroup>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl type="text" placeholder="Enter lesson title" maxLength={60} value={formInput} onChange={(e) => setFormInput(e.target.value)} />
+                        </FormGroup>
+                        <div className="d-flex justify-content-end mt-2">
+                            <Button size="sm" variant="secondary" disabled={loading} onClick={() => hideLessonForm()}>Cancel</Button>
                             {
-                                lessons.map(lesson => {
-                                    return (
-                                        <div key={lesson.index} className="mt-2">
-                                            <Lesson
-                                                lesson={lesson}
-                                                courseId={course.id}
-                                                onDelete={onDelete}
-                                                onEdit={onEdit}
-                                                onChangeIndex={handleChangeLessonIndex}
-                                                isFirst={lesson.index === 1}
-                                                isLast={lesson.index === lessons.length}
-                                            />
-                                        </div>
-                                    );
-                                })
+                                editedLessonId === null ?
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleCreateLesson} disabled={loading || formInput.length === 0}>Create</Button>
+                                    :
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleEditLesson} disabled={loading}>Save</Button>
                             }
                         </div>
-                    </>
-            }
-        </>
+                    </Form>
+                </div>
+                {
+                    lessonId ?
+                        <LessonEditor lessonId={lessonId} />
+                        :
+                        <>
+                            <div className="d-flex justify-content-end">
+                                <Button className="ms-2 btn btn-primary btn-sm" onClick={() => showLessonForm("", null)}>Create Lesson</Button>
+                            </div>
+                            <div className="mt-3">
+                                {
+                                    lessons.map(lesson => {
+                                        return (
+                                            <div key={lesson.index} className="mt-2">
+                                                <Lesson
+                                                    lesson={lesson}
+                                                    courseId={course.id}
+                                                    onDelete={onDelete}
+                                                    onEdit={onEdit}
+                                                    onChangeIndex={handleChangeLessonIndex}
+                                                    isFirst={lesson.index === 1}
+                                                    isLast={lesson.index === lessons.length}
+                                                />
+                                            </div>
+                                        );
+                                    })
+                                }
+                            </div>
+                        </>
+                }
+            </>
+            :
+            <div className="my-5 text-center">
+                {
+                    loading ?
+                        <Loader /> :
+                        <div>
+                            <p className="mb-2">Course could not be loaded</p>
+                            <Link to="/Courses/Editor">Back</Link>
+                        </div>
+                }
+            </div>
     );
 }
 

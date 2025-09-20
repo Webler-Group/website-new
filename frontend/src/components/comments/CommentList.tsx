@@ -156,7 +156,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             setMessage({ success: true, message: parentCommentId ? 'Reply posted successfully' : 'Comment posted successfully' });
             hideAnswerForm();
         } else {
-            setMessage({ success: false, errors: result.error });
+            setMessage({ success: false, errors: result?.error });
         }
 
         setAnswerFormLoading(false);
@@ -179,7 +179,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 setMessage({ success: true, message: editedComment.parentId ? 'Reply edited successfully' : 'Comment edited successfully' });
                 hideAnswerForm();
             } else {
-                setMessage({ success: false, errors: result.error });
+                setMessage({ success: false, errors: result?.error });
             }
             setAnswerFormLoading(false);
         }
@@ -199,7 +199,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 setCommentCount?.(prev => prev - editedComment.answers - 1);
                 setMessage({ success: true, message: editedComment.parentId ? 'Reply deleted successfully' : 'Comment deleted successfully' });
             } else {
-                setMessage({ success: false, errors: result.error });
+                setMessage({ success: false, errors: result?.error });
             }
             setAnswerFormLoading(false);
             closeDeleteModal();

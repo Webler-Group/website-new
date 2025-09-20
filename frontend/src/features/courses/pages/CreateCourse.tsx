@@ -91,7 +91,7 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
             navigate("/Courses/Editor")
         }
         else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result?.error ? result.error.message : result.message);
         }
         setLoading(false);
     }
@@ -107,7 +107,7 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
             setUploadMessage({ message: "Course cover image updated successfully" })
         }
         else {
-            setUploadMessage({ errors: result.error });
+            setUploadMessage({ errors: result?.error });
         }
         setLoading(false);
     }

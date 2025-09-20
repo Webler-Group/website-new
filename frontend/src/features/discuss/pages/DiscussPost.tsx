@@ -176,7 +176,7 @@ const DiscussPost = () => {
             setMessage(["success", "Your answer was posted successfully"])
         }
         else {
-            setMessage(["danger", result.error ? result.error.message : result.message]);
+            setMessage(["danger", result?.error ? result.error.message : result.message]);
         }
         setLoading(false);
     }
@@ -206,7 +206,7 @@ const DiscussPost = () => {
             setMessage(["success", "Your answer was updated successfully"]);
         }
         else {
-            setMessage(["danger", result.error ? result.error.message : result.message]);
+            setMessage(["danger", result?.error ? result.error.message : result.message]);
         }
         setLoading(false);
     }
@@ -278,7 +278,7 @@ const DiscussPost = () => {
             })
         }
         else {
-            setMessage(["danger", result.error ? result.error._message : result.message]);
+            setMessage(["danger", result?.error ? result.error._message : result.message]);
         }
         setLoading(false);
     }
@@ -467,7 +467,7 @@ const DiscussPost = () => {
                                 :
                                 <>
                                     <Button size="sm" variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading}>Save</Button>
+                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading  || formInput.length === 0}>Save</Button>
                                 </>
                         }
                     </div>

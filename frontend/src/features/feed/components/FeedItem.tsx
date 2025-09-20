@@ -5,7 +5,7 @@ import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import { useNavigate } from "react-router-dom";
 import ShareModal from './ShareModal';
 import { useAuth } from '../../auth/context/authContext';
-import NotificationToast from './comments/NotificationToast';
+import NotificationToast from '../../../components/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
 import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
@@ -115,7 +115,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       onTogglePin?.({ ...feed, isPinned: result.data.isPinned });
       showNotification("success", result.data.isPinned ? "Post pinned" : "Post unpinned");
     } else {
-      showNotification("error", result?.error[0]?.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -126,7 +126,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       showNotification("success", "Post updated successfully");
       setShowEditModal(false);
     } else {
-      showNotification("error", result?.error[0]?.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -137,7 +137,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       navigate("/feed")
       showNotification("success", "Post deleted successfully");
     } else {
-      showNotification("error", result?.error[0]?.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -205,7 +205,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
     } else {
-      showNotification("error", result?.error[0]?.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -216,7 +216,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       setShowShareModal(false);
       showNotification("success", "Post shared successfully");
     } else {
-      showNotification("error", result?.error[0]?.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 

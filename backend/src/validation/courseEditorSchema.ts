@@ -98,7 +98,7 @@ export const editLessonNodeSchema = z.object({
         nodeId: idSchema("nodeId"),
         type: z.enum(LessonNodeTypeEnum),
         text: z.string().min(1, "Text must not be empty").max(2000, "Text must not exceed 2000 characters"),
-        correctAnswer: z.string().max(500, "Correct answer must not exceed 500 characters").optional(),
+        correctAnswer: z.string().max(60, "Correct answer must not exceed 500 characters").optional(),
         answers: z.array(quizAnswerSchema).optional()
     })
 });

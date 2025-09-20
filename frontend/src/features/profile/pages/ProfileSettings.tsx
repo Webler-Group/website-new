@@ -90,7 +90,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setInfoMessage({ message: "Information saved successfully", errors: [] });
         }
         else {
-            setInfoMessage({ errors: result.error });
+            setInfoMessage({ errors: result?.error });
         }
     }
 
@@ -118,7 +118,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setEmailPassword("");
         }
         else {
-            setEmailMessage({ errors: result.error });
+            setEmailMessage({ errors: result?.error });
             setEmailPassword("");
         }
     }
@@ -139,7 +139,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setVerificationCode("");
         }
         else {
-            setEmailMessage({ errors: result.error });
+            setEmailMessage({ errors: result?.error });
             setVerificationCode("");
         }
     }
@@ -168,7 +168,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setEmailMessage({ message: "Verification email was sent" });
         }
         else {
-            setEmailMessage({ errors: result.error });
+            setEmailMessage({ errors: result?.error });
         }
         setLoading(false);
     }
@@ -203,7 +203,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             updateUser(userInfo);
             setAvatarMessage({ message: "Avatar image updated successfully" });
         } else {
-            setAvatarMessage({ errors: result.error });
+            setAvatarMessage({ errors: result?.error });
         }
 
         setLoading(false);
@@ -228,7 +228,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setPasswordMessage({ message: "Email sent successfully" });
         }
         else {
-            setPasswordMessage({ errors: result.error });
+            setPasswordMessage({ errors: result?.error });
         }
         setLoading(false);
     }

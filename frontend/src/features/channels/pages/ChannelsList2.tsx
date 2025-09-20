@@ -6,6 +6,7 @@ import useChannels from "../hooks/useChannels";
 import useInvites from "../hooks/useInvites";
 import InvitesListItem from "../components/InvitesListItem";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import Loader from "../../../components/Loader";
 
 interface ChannelsListProps {
     onChannelSelect: (channelId: string) => void;
@@ -188,11 +189,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                             {
                                 channels.isLoading &&
                                 <div className="d-flex justify-content-center mt-5 text-center">
-                                    <div className="wb-loader">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
+                                    <Loader />
                                 </div>
                             }
                         </Tab.Pane>
@@ -208,11 +205,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                             {
                                 invites.isLoading &&
                                 <div className="d-flex justify-content-center mt-5 text-center">
-                                    <div className="wb-loader">
-                                        <span></span>
-                                        <span></span>
-                                        <span></span>
-                                    </div>
+                                    <Loader />
                                 </div>
                             }
                         </Tab.Pane>

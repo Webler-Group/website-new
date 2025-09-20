@@ -2,6 +2,7 @@ import mongoose, { InferSchemaType, Model } from "mongoose";
 import QuizAnswer from "./QuizAnswer";
 import CourseLesson from "./CourseLesson";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import { maxLength } from "zod";
 
 const lessonNodeSchema = new mongoose.Schema({
     
@@ -16,7 +17,7 @@ const lessonNodeSchema = new mongoose.Schema({
     },
     text: {
         type: String,
-        required: false,
+        default: "",
         trim: true,
         minLength: 0,
         maxLength: 2000
@@ -28,7 +29,7 @@ const lessonNodeSchema = new mongoose.Schema({
     },
     correctAnswer: {
         type: String,
-        required: false
+        maxLength: 60
     }
 });
 

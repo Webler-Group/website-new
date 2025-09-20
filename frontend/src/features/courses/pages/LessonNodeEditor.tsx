@@ -80,11 +80,20 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         setLoading(false);
     }
 
-    const saveNode = async (showMessage: boolean) => {
-        if (!node) {
-            return false;
-        }
+    const hasUnsavedChanges = () => {
+        return node && (
+            nodeType != node.type ||
+            nodeText.trim() != node.text ||
+            questionCorrectAnswer != node.correctAnswer ||
+            questionAnswers.length != node.answers.length ||
+            !node.answers.every(x => {
+                const answer = questionAnswers.find(y => y.id == x.id);
+                return answer && answer.text == x.text && answer.correct == x.correct;
+            })
+        );
+    }
 
+    const validateNode = (showMessage: boolean) => {
         if ((nodeType == 2 || nodeType == 3)) {
             if (questionAnswers.length < 2) {
                 if (showMessage) setMessage(["danger", "Question cannot have less than 2 answers"]);
@@ -93,8 +102,19 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                 if (showMessage) setMessage(["danger", "Question cannot have more than 4 answers"]);
                 return false;
             }
-        } else if(nodeType == 4 && questionCorrectAnswer.length == 0) {
+        } else if (nodeType == 4 && questionCorrectAnswer.length == 0) {
             if (showMessage) setMessage(["danger", "Correct answer cannot be empty"]);
+            return false;
+        }
+        return true;
+    }
+
+    const saveNode = async (showMessage: boolean) => {
+        if (!node) {
+            return false;
+        }
+
+        if (!validateNode(showMessage)) {
             return false;
         }
 
@@ -117,12 +137,10 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                 }
             });
             setQuestionsAnswers(result.data.answers);
-            if (showMessage) setMessage(["success", "Lessson node was saved successfully."])
+            if (showMessage) setMessage(["success", "Lessson node was saved successfully."]);
             return true;
         } else {
-            if(result.error?.length) {
-                if (showMessage) setMessage(["danger", result.error[0].message]);
-            }
+            if (showMessage) setMessage(["danger", result?.error[0].message]);
         }
         return false;
     }
@@ -178,7 +196,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         }
 
         setLoading(true);
-        const success = await saveNode(true);
+        const success = hasUnsavedChanges() ? await saveNode(true) : validateNode(true);
         if (success) {
             const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
                 nodeId: node.id,
@@ -193,6 +211,9 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                     };
                 });
                 onChangeIndex(node.id, newIndex);
+                setMessage(["success", "Node index changed successfully."]);
+            } else {
+                setMessage(["danger", result?.error[0].message]);
             }
         }
         setLoading(false);
@@ -200,7 +221,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
 
     const handlePreview = async () => {
         setLoading(true);
-        const success = await saveNode(true);
+        const success = hasUnsavedChanges() ? await saveNode(true) : validateNode(true);
         setLoading(false);
         if (success) {
             onPreview(nodeId);
@@ -239,7 +260,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                         <FormLabel>Answers</FormLabel>
                         {questionAnswers.map((answer, i) => (
                             <div className="d-flex gap-3 align-items-center mb-2" key={i}>
-                                <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required />
+                                <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required  maxLength={120} />
                                 <FormCheck name="answer-correct" type="checkbox" label="Correct" id={"answer-correct-input-" + i} checked={answer.correct} onChange={(e) => toggleCorrectAnswer(i, e.target.checked, false)} />
                                 <span className="wb-user-comment__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
                             </div>
@@ -253,7 +274,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
             case 4:
                 fields = (<FormGroup>
                     <FormLabel>Correct answer</FormLabel>
-                    <FormControl value={questionCorrectAnswer} onChange={(e) => setQuestionCorrectAnswer(e.target.value)} required />
+                    <FormControl value={questionCorrectAnswer} onChange={(e) => setQuestionCorrectAnswer(e.target.value)} required maxLength={60} />
                 </FormGroup>);
                 break;
         }
@@ -271,7 +292,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Text</FormLabel>
-                        <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={3} required />
+                        <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={10} maxLength={2000} required />
                     </FormGroup>
                     {fields}
                     <div className="d-sm-flex justify-content-between mt-4">

@@ -248,7 +248,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 navigate("/Compiler-Playground/" + result.code.id, { replace: code.userId === undefined })
             }
             else {
-                setMessage({ success: false, errors: result.error });
+                setMessage({ success: false, errors: result?.error });
             }
             setLoading(false)
         }
@@ -260,7 +260,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setMessage({ success: true, message: "Code updated successfully" });
             }
             else {
-                setMessage({ success: false, errors: result.error });
+                setMessage({ success: false, errors: result?.error });
             }
             setLoading(false)
         }
@@ -283,7 +283,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setMessage({ success: true, message: "Code updated successfully" });
             }
             else {
-                setMessage({ success: false, errors: result.error });
+                setMessage({ success: false, errors: result?.error });
             }
             setLoading(false)
         }
@@ -358,7 +358,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             });
         }
         else {
-            setMessage({ success: false, errors: result.error });
+            setMessage({ success: false, errors: result?.error });
         }
     }
 

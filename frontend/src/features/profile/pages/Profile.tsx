@@ -16,6 +16,7 @@ import Question, { IQuestion } from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
 import PageTitle from "../../../layouts/PageTitle";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
+import Loader from "../../../components/Loader";
 
 export interface UserDetails {
     id: string;
@@ -374,11 +375,7 @@ const Profile = () => {
                     </>
                     :
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <div className="wb-loader">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                        <Loader />
                     </div>
 
             }

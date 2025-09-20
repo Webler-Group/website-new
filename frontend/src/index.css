@@ -127,6 +127,7 @@ ul {
 
 .wb-p-follow-item__name {
     font-size: 14px;
+    white-space: nowrap;
 }
 
 .wb-p-details__bio {

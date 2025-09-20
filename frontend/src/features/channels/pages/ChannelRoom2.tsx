@@ -13,6 +13,7 @@ import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
 import RepliedMessage from "../components/RepliedMessage";
+import Loader from "../../../components/Loader";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -533,11 +534,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
                         {
                             loading ?
-                                <div className="wb-loader">
-                                    <span></span>
-                                    <span></span>
-                                    <span></span>
-                                </div>
+                                <Loader />
                                 :
                                 <div>
                                     <h4>Channel not found</h4>

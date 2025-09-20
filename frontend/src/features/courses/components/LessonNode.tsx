@@ -13,7 +13,7 @@ interface ILessonNode {
     id: string;
     type: number;
     index: number;
-    text?: string;
+    text: string;
     answers: ILessonNodeAnswer[];
     correctAnswer?: string;
 }

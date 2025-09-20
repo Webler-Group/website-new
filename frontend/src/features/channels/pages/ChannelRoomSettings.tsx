@@ -92,7 +92,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                 authorAvatar: userInfo?.avatarImage
             });
         } else {
-            setInviteMessage({ errors: result.error });
+            setInviteMessage({ errors: result?.error });
         }
         setInviteUsername("");
     }
@@ -133,7 +133,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             setChangeTitleMessage({ message: "Title changed successfully" });
             onTitleChange(result.data.title);
         } else {
-            setChangeTitleMessage({ errors: result.error });
+            setChangeTitleMessage({ errors: result?.error });
         }
     };
 
