@@ -148,6 +148,7 @@ ul {
 
     .wb-modal__container.codes {
         width: 360px;
+        height: 600px;
         max-height: 80vh;
     }
 
@@ -806,10 +807,24 @@ ul {
 }
 
 .wb-channels-reply__text {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-  min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.wb-channels-reply__text--expanded {
+    display: none;
+    /* Hide the truncated version when expanded */
+}
+
+.wb-channels-reply__full-content {
+    margin-left: 29px;
+    /* Adjust based on icon + avatar + gaps width */
+    margin-top: 2px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
 }
 
 .wb-feed-comment-modal__backdrop {

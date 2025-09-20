@@ -44,7 +44,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
         touchTimer.current = setTimeout(() => {
             if (message.type !== 1 || message.deleted) return;
             onContextMenu(message, bodyRef.current);
-        }, 600); // 600ms long press
+        }, 500);
     };
 
     const handleTouchMove = () => {

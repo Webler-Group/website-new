@@ -6,6 +6,7 @@ import { Components } from 'react-markdown';
 import remarkGfm from "remark-gfm";
 import remarkBreaks from 'remark-breaks';
 import ImagePreview from './ImagePreview';
+import { Link } from 'react-router-dom';
 
 interface MarkdownRendererProps {
     content: string;
@@ -47,6 +48,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
         },
 
         a({ href, children }) {
+            if (href && href.startsWith("/")) {
+                return <Link to={href}>{children}</Link>;
+            }
             if (isAllowedUrl(href)) {
                 return (
                     <a href={href} target="_blank" rel="noopener noreferrer">

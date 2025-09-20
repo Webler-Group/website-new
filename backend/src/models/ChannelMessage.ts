@@ -161,7 +161,7 @@ channelMessageSchema.post("save", async function () {
                     deleted: this.deleted,
                     repliedTo: reply ? {
                         id: reply._id,
-                        content: truncate(reply.content, 50),
+                        content: reply.content,
                         createdAt: reply.createdAt,
                         updatedAt: reply.updatedAt,
                         userId: reply.user._id.toString(),

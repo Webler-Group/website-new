@@ -418,7 +418,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         deleted: x.deleted,
         repliedTo: x.repliedTo ? {
             id: x.repliedTo._id,
-            content: x.repliedTo.deleted ? "" : truncate(x.repliedTo.content, 50),
+            content: x.repliedTo.deleted ? "" : x.repliedTo.content,
             createdAt: x.repliedTo.createdAt,
             updatedAt: x.repliedTo.updatedAt,
             userId: x.repliedTo.user._id,

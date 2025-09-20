@@ -115,6 +115,11 @@ const userSchema = new mongoose_1.default.Schema({
     },
     lastLoginAt: {
         type: Date
+    },
+    feed: {
+        filter: {
+            type: Number
+        }
     }
 }, {
     timestamps: true

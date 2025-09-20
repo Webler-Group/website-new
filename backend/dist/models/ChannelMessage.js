@@ -36,7 +36,6 @@ const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessage
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const Notification_1 = __importDefault(require("./Notification"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
-const StringUtils_1 = require("../utils/StringUtils");
 const channelMessageSchema = new mongoose_1.Schema({
     _type: {
         type: Number,
@@ -170,7 +169,7 @@ channelMessageSchema.post("save", async function () {
                     deleted: this.deleted,
                     repliedTo: reply ? {
                         id: reply._id,
-                        content: (0, StringUtils_1.truncate)(reply.content, 50),
+                        content: reply.content,
                         createdAt: reply.createdAt,
                         updatedAt: reply.updatedAt,
                         userId: reply.user._id.toString(),

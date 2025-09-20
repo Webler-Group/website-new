@@ -194,11 +194,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     };
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-        const container = messagesContainerRef.current;
-        if (!container) return;
-
-        // For flex-column-reverse, the bottom is scrollTop = 0
-        container.scrollTo({ top: 0, behavior })
+        setTimeout(() => {
+            const container = messagesContainerRef.current;
+            if (container) {
+                // For flex-column-reverse, the bottom is scrollTop = 0
+                container.scrollTo({ top: 0, behavior })
+            }
+        }, 50);
     }
 
     const getChannel = async () => {

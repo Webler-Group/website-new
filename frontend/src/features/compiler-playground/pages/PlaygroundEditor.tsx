@@ -331,7 +331,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
         if (result && result.success) {
-            navigate("/Codes", { replace: true })
+            navigate("/Codes?filter=3", { replace: true })
         }
         else {
 

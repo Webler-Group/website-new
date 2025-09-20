@@ -16,7 +16,6 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const ChannelRolesEnum_1 = __importDefault(require("../data/ChannelRolesEnum"));
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
 const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
-const StringUtils_1 = require("../utils/StringUtils");
 const channelsSchema_1 = require("../validation/channelsSchema");
 const zodUtils_1 = require("../utils/zodUtils");
 const zod_1 = __importDefault(require("zod"));
@@ -349,7 +348,7 @@ const getMessages = (0, express_async_handler_1.default)(async (req, res) => {
         deleted: x.deleted,
         repliedTo: x.repliedTo ? {
             id: x.repliedTo._id,
-            content: x.repliedTo.deleted ? "" : (0, StringUtils_1.truncate)(x.repliedTo.content, 50),
+            content: x.repliedTo.deleted ? "" : x.repliedTo.content,
             createdAt: x.repliedTo.createdAt,
             updatedAt: x.repliedTo.updatedAt,
             userId: x.repliedTo.user._id,

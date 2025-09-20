@@ -10,30 +10,35 @@ const useQuestions = (userId: string, count: number, pageNum: number) => {
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        setIsLoading(true)
-        setError("")
+        const controller = new AbortController();
+        const { signal } = controller;
 
-        const controller = new AbortController()
-        const { signal } = controller
+        const fetchData = async () => {
+            setIsLoading(true)
+            setError("")
 
-        sendJsonRequest(`/Discussion`, "POST", {
-            page: pageNum,
-            count,
-            filter: 3,
-            searchQuery: "",
-            userId
-        }, { signal })
-            .then(result => {
-                if (!result || !result.questions) {
-                    setIsLoading(false)
-                    if (signal.aborted) return
-                    setError("Something went wrong");
-                    return
-                }
+            const result = await sendJsonRequest(`/Discussion`, "POST", {
+                page: pageNum,
+                count,
+                filter: 3,
+                userId
+            }, { signal });
+
+            if (signal.aborted) {
+                setIsLoading(false)
+                return;
+            }
+
+            if (result && result.questions) {
                 setResults(prev => [...prev, ...result.questions])
                 setHasNextPage(result.questions.length === count)
-                setIsLoading(false)
-            })
+            } else {
+                setError(result?.error[0].message || "Something went wrong");
+            }
+            setIsLoading(false)
+        };
+
+        fetchData();
 
         return () => controller.abort()
 

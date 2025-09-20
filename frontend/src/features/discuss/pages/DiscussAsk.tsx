@@ -78,7 +78,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId });
         if (result && result.success) {
             closeDeleteModal();
-            navigate("/Discuss");
+            navigate("/Discuss?filter=3");
         } else {
             setError(result?.error ? result.error.message : result.message);
         }

@@ -113,6 +113,11 @@ const userSchema = new mongoose.Schema({
     },
     lastLoginAt: {
         type: Date
+    },
+    feed: {
+        filter: {
+            type: Number
+        }
     }
 },
     {

@@ -24,14 +24,24 @@ const FILTER_OPTIONS = [
 const FeedList = () => {
   const { feedId } = useParams();
   const navigate = useNavigate();
+  const { userInfo } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState(1);
+
+  let defaultFilter = 1;
+  const feedOptionsItem = localStorage.getItem('feed');
+  if (feedOptionsItem) {
+    const feedOptions: { filter: number } = JSON.parse(feedOptionsItem);
+    const option = FILTER_OPTIONS.find(x => x.value === feedOptions.filter);
+    if (option && (!option.requireLogin || userInfo != null)) {
+      defaultFilter = feedOptions.filter;
+    }
+  }
+  const [filter, setFilter] = useState(defaultFilter);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [votesModalVisible, setVotesModalVisible] = useState(false);
   const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
   const [pinnedVisible, setPinnedVisible] = useState(true);
-  const { userInfo } = useAuth();
   const { sendJsonRequest } = useApi();
   const feeds = useFeed(filter, searchQuery, 10);
   const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
@@ -88,6 +98,10 @@ const FeedList = () => {
       });
     }
   }, [feeds.state]);
+
+  useEffect(() => {
+    localStorage.setItem('feed', JSON.stringify({ filter }));
+  }, [filter]);
 
   const fetchPinnedFeeds = async () => {
     setLoading(true);
