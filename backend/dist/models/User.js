@@ -10,7 +10,6 @@ const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const Post_1 = __importDefault(require("./Post"));
 const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
-const uuid_1 = require("uuid");
 const regexUtils_1 = require("../utils/regexUtils");
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const banSchema = new mongoose_1.default.Schema({
@@ -21,7 +20,8 @@ const banSchema = new mongoose_1.default.Schema({
     },
     note: {
         type: String,
-        trim: true
+        trim: true,
+        maxLength: 120
     },
     date: {
         type: Date,
@@ -44,9 +44,10 @@ const userSchema = new mongoose_1.default.Schema({
     name: {
         type: String,
         trim: true,
-        default: "User_" + (0, uuid_1.v4)().slice(0, 12),
+        required: true,
         minLength: 3,
-        maxLength: 20
+        maxLength: 20,
+        unique: true
     },
     countryCode: {
         type: String,
@@ -111,6 +112,9 @@ const userSchema = new mongoose_1.default.Schema({
     tokenVersion: {
         type: Number,
         default: 0
+    },
+    lastLoginAt: {
+        type: Date
     }
 }, {
     timestamps: true

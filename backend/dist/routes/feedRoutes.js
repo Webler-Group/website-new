@@ -16,7 +16,6 @@ router.use(verifyJWT_1.default);
 router.route("/").post(feedController_1.default.getFeedList);
 router.route("/GetFeed").post(feedController_1.default.getFeed);
 router.route("/GetComments").post(feedController_1.default.getReplies);
-router.route("/GetReactions").post(feedController_1.default.getReactions);
 router.route("/GetUserReactions").post(feedController_1.default.getUserReactions);
 router.use(protectRoute_1.default);
 router.route("/PinFeed").post((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR]), feedController_1.default.togglePinFeed);

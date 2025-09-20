@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.compressAvatar = exports.safeReadFile = void 0;
 const fs_1 = __importDefault(require("fs"));
 const sharp_1 = __importDefault(require("sharp"));
+const MulterFileTypeError_1 = __importDefault(require("../exceptions/MulterFileTypeError"));
 function safeReadFile(filePath, maxSaveSize) {
     if (!fs_1.default.existsSync(filePath))
         return "";
@@ -42,7 +43,7 @@ async function compressAvatar({ inputPath, size = 256, quality = 80, }) {
             buffer = await image.webp({ quality }).toBuffer();
             break;
         default:
-            throw new Error(`Unsupported image format: ${metadata.format}`);
+            throw new MulterFileTypeError_1.default(`Unsupported image format: ${metadata.format}`);
     }
     return buffer;
 }

@@ -11,122 +11,112 @@ const email_1 = require("../services/email");
 const captcha_1 = require("../utils/captcha");
 const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const confg_1 = require("../confg");
+const zodUtils_1 = require("../utils/zodUtils");
+const authSchema_1 = require("../validation/authSchema");
 const login = (0, express_async_handler_1.default)(async (req, res) => {
-    const { email, password } = req.body;
-    const deviceId = req.headers["x-device-id"];
-    if (!deviceId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
-    if (typeof email === "undefined" || typeof password === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return;
-    }
+    const { body, headers } = (0, zodUtils_1.parseWithZod)(authSchema_1.loginSchema, req);
+    const { email, password } = body;
     const user = await User_1.default.findOne({ email });
-    if (user && (await user.matchPassword(password))) {
-        if (!user.active) {
-            res.status(401).json({ success: false, message: "Account is deactivated" });
-            return;
+    if (!user || !(await user.matchPassword(password))) {
+        res.status(401).json({ error: [{ message: "Invalid email or password" }] });
+        return;
+    }
+    if (!user.active) {
+        res.status(401).json({ error: [{ message: "Account is deactivated" }] });
+        return;
+    }
+    user.lastLoginAt = new Date();
+    const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
+        userId: user._id.toString(),
+        roles: user.roles
+    }, headers["x-device-id"]);
+    const expiresIn = typeof tokenInfo.exp == "number" ?
+        tokenInfo.exp * 1000 : 0;
+    await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
+    res.json({
+        accessToken,
+        expiresIn,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            avatarImage: user.avatarImage,
+            roles: user.roles,
+            emailVerified: user.emailVerified,
+            countryCode: user.countryCode,
+            registerDate: user.createdAt,
+            level: user.level,
+            xp: user.xp
         }
-        const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
-            userId: user._id.toString(),
-            roles: user.roles
-        }, deviceId);
-        const expiresIn = typeof tokenInfo.exp == "number" ?
-            tokenInfo.exp * 1000 : 0;
-        await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
-        res.json({
-            accessToken,
-            expiresIn,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                avatarImage: user.avatarImage,
-                roles: user.roles,
-                emailVerified: user.emailVerified,
-                countryCode: user.countryCode,
-                registerDate: user.createdAt,
-                level: user.level,
-                xp: user.xp
-            }
-        });
-    }
-    else {
-        res.status(401).json({ success: false, message: "Invalid email or password" });
-    }
+    });
 });
 const register = (0, express_async_handler_1.default)(async (req, res) => {
-    const { email, name, password, solution, captchaId } = req.body;
-    const deviceId = req.headers["x-device-id"];
-    if (!deviceId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
-    if (typeof email === "undefined" || typeof password === "undefined" || typeof solution === "undefined" || typeof captchaId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return;
-    }
-    const record = await CaptchaRecord_1.default.findById(captchaId);
+    const { body, headers } = (0, zodUtils_1.parseWithZod)(authSchema_1.registerSchema, req);
+    const { email, name, password, solution, captchaId } = body;
+    const record = await CaptchaRecord_1.default.findById(captchaId).lean();
     if (record === null || !(0, captcha_1.verifyCaptcha)(solution, record.encrypted)) {
-        res.status(403).json({ message: "Captcha verification failed" });
+        res.status(403).json({ error: [{ message: "Captcha verification failed" }] });
         return;
     }
     await CaptchaRecord_1.default.deleteOne({ _id: captchaId });
-    const userExists = await User_1.default.findOne({ email });
-    if (userExists) {
-        res.status(400).json({ success: false, message: "Email is already registered" });
+    const emailExists = await User_1.default.exists({ email });
+    const usernameExists = await User_1.default.exists({ name });
+    if (emailExists || usernameExists) {
+        let errors = [];
+        if (emailExists) {
+            errors.push({ message: "Email is already registered" });
+        }
+        if (usernameExists) {
+            errors.push({ message: "Username is already used" });
+        }
+        res.status(400).json({ error: errors });
         return;
     }
     const user = await User_1.default.create({
         email,
         name,
         password,
-        emailVerified: confg_1.config.nodeEnv == "development"
+        emailVerified: confg_1.config.nodeEnv == "development",
+        lastLoginAt: new Date()
     });
-    if (user) {
-        const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
-            userId: user._id.toString(),
-            roles: user.roles
-        }, deviceId);
-        const expiresIn = typeof tokenInfo.exp == "number" ?
-            tokenInfo.exp * 1000 : 0;
-        await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
-        const { emailToken } = (0, tokenUtils_1.signEmailToken)({
-            userId: user._id.toString(),
-            email: user.email,
-            action: "verify-email"
-        });
-        if (confg_1.config.nodeEnv === "production") {
-            try {
-                await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
-                user.lastVerificationEmailTimestamp = Date.now();
-                await user.save();
-            }
-            catch {
-                console.log("Activation email could not be sent");
-            }
+    const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
+        userId: user._id.toString(),
+        roles: user.roles
+    }, headers["x-device-id"]);
+    const expiresIn = typeof tokenInfo.exp == "number" ?
+        tokenInfo.exp * 1000 : 0;
+    await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
+    const { emailToken } = (0, tokenUtils_1.signEmailToken)({
+        userId: user._id.toString(),
+        email: user.email,
+        action: "verify-email"
+    });
+    if (confg_1.config.nodeEnv === "production") {
+        try {
+            await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
+            user.lastVerificationEmailTimestamp = Date.now();
+            await user.save();
         }
-        res.json({
-            accessToken,
-            expiresIn,
-            user: {
-                id: user._id,
-                name: user.name,
-                email: user.email,
-                avatarImage: user.avatarImage,
-                roles: user.roles,
-                emailVerified: user.emailVerified,
-                countryCode: user.countryCode,
-                registerDate: user.createdAt,
-                level: user.level,
-                xp: user.xp
-            }
-        });
+        catch (err) {
+            console.log("Activation email error:", err.message);
+        }
     }
-    else {
-        res.status(401).json({ success: false, message: "Invalid email or password" });
-    }
+    res.json({
+        accessToken,
+        expiresIn,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            avatarImage: user.avatarImage,
+            roles: user.roles,
+            emailVerified: user.emailVerified,
+            countryCode: user.countryCode,
+            registerDate: user.createdAt,
+            level: user.level,
+            xp: user.xp
+        }
+    });
 });
 const logout = (0, express_async_handler_1.default)(async (req, res) => {
     const cookies = req.cookies;
@@ -136,28 +126,22 @@ const logout = (0, express_async_handler_1.default)(async (req, res) => {
     res.json({});
 });
 const refresh = (0, express_async_handler_1.default)(async (req, res) => {
-    const deviceId = req.headers["x-device-id"];
-    const cookies = req.cookies;
-    if (!cookies?.refreshToken || !deviceId) {
-        res.status(401).json({ success: false, message: "Unauthorized" });
-        return;
-    }
-    const refreshToken = cookies.refreshToken;
-    jsonwebtoken_1.default.verify(refreshToken, confg_1.config.refreshTokenSecret, async (err, decoded) => {
+    const { headers, cookies } = (0, zodUtils_1.parseWithZod)(authSchema_1.refreshSchema, req);
+    jsonwebtoken_1.default.verify(cookies.refreshToken, confg_1.config.refreshTokenSecret, async (err, decoded) => {
         if (err) {
-            res.status(403).json({ success: false, message: "Please Login First" });
+            res.status(403).json({ error: [{ message: "Please Login First" }] });
             return;
         }
         const payload = decoded;
         const user = await User_1.default.findById(payload.userId).select('roles active tokenVersion');
         if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) { // NEW: Check version
-            res.status(401).json({ success: false, message: "Unauthorized" });
+            res.status(401).json({ error: [{ message: "Unauthorized" }] });
             return;
         }
         const { accessToken, data: tokenInfo } = await (0, tokenUtils_1.signAccessToken)({
             userId: user._id.toString(),
             roles: user.roles
-        }, deviceId);
+        }, headers["x-device-id"]);
         const expiresIn = typeof tokenInfo.exp == "number" ?
             tokenInfo.exp * 1000 : 0;
         res.json({
@@ -167,14 +151,11 @@ const refresh = (0, express_async_handler_1.default)(async (req, res) => {
     });
 });
 const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, res) => {
-    const { email } = req.body;
-    if (typeof email === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(authSchema_1.sendPasswordResetCodeSchema, req);
+    const { email } = body;
     const user = await User_1.default.findOne({ email }).lean();
     if (user === null) {
-        res.status(404).json({ success: false, message: "Email is not registered" });
+        res.status(404).json({ error: [{ message: "Email is not registered" }] });
         return;
     }
     const { emailToken } = (0, tokenUtils_1.signEmailToken)({
@@ -186,44 +167,37 @@ const sendPasswordResetCode = (0, express_async_handler_1.default)(async (req, r
         await (0, email_1.sendPasswordResetEmail)(user.name, user.email, user._id.toString(), emailToken);
         res.json({ success: true });
     }
-    catch {
-        res.status(500).json({ success: false, message: "Email could not be sent" });
+    catch (err) {
+        console.log("REset email error:", err.message);
+        res.status(500).json({ error: [{ message: "Email could not be sent" }] });
     }
 });
 const resetPassword = (0, express_async_handler_1.default)(async (req, res) => {
-    const { token, password, resetId } = req.body;
-    if (typeof password === "undefined" || typeof token === "undefined" || typeof resetId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(authSchema_1.resetPasswordSchema, req);
+    const { token, password, resetId } = body;
     jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
         if (!err) {
             const userId = decoded.userId;
             if (userId !== resetId || decoded.action != "reset-password") {
-                res.json({ success: false });
+                res.json({ error: [{ message: "Unauthorized" }] });
                 return;
             }
             const user = await User_1.default.findById(resetId);
             if (user === null) {
-                res.status(404).json({ success: false, message: "User not found" });
+                res.status(404).json({ error: [{ message: "User not found" }] });
                 return;
             }
             user.password = password;
             user.tokenVersion = (user.tokenVersion || 0) + 1;
-            try {
-                await user.save();
-                const cookies = req.cookies;
-                if (cookies?.refreshToken) {
-                    (0, tokenUtils_1.clearRefreshToken)(res);
-                }
-                res.json({ success: true });
+            await user.save();
+            const cookies = req.cookies;
+            if (cookies?.refreshToken) {
+                (0, tokenUtils_1.clearRefreshToken)(res);
             }
-            catch (err) {
-                res.json({ success: false });
-            }
+            res.json({ success: true });
         }
         else {
-            res.json({ success: false });
+            res.json({ error: [{ message: "Invalid token" }] });
         }
     });
 });
@@ -238,39 +212,31 @@ const generateCaptcha = (0, express_async_handler_1.default)(async (req, res) =>
     });
 });
 const verifyEmail = (0, express_async_handler_1.default)(async (req, res) => {
-    const { token, userId } = req.body;
-    if (typeof token === "undefined" || typeof userId === "undefined") {
-        res.status(400).json({ success: false, message: "Some fields are missing" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(authSchema_1.verifyEmailSchema, req);
+    const { token, userId } = body;
     jsonwebtoken_1.default.verify(token, confg_1.config.emailTokenSecret, async (err, decoded) => {
         if (!err) {
             const userId2 = decoded.userId;
             const email = decoded.email;
             if (userId2 !== userId || decoded.action != "verify-email") {
-                res.json({ success: false });
+                res.json({ error: [{ message: "Unauthorized" }] });
                 return;
             }
             const user = await User_1.default.findById(userId);
             if (user === null) {
-                res.status(404).json({ success: false, message: "User not found" });
+                res.status(404).json({ error: [{ message: "User not found" }] });
                 return;
             }
             if (user.email !== email) {
-                res.json({ success: false });
+                res.json({ error: [{ message: "Unauthorized" }] });
                 return;
             }
             user.emailVerified = true;
-            try {
-                await user.save();
-                res.json({ success: true });
-            }
-            catch (err) {
-                res.json({ success: false });
-            }
+            await user.save();
+            res.json({ success: true });
         }
         else {
-            res.json({ success: false });
+            res.json({ error: [{ message: "Invalid token" }] });
         }
     });
 });

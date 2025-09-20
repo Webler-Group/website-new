@@ -15,7 +15,6 @@ const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const discussionRoutes_1 = __importDefault(require("./routes/discussionRoutes"));
 const feedRoutes_1 = __importDefault(require("./routes/feedRoutes"));
-const blogRoutes_1 = __importDefault(require("./routes/blogRoutes"));
 const codesRoutes_1 = __importDefault(require("./routes/codesRoutes"));
 const courseEditorRoutes_1 = __importDefault(require("./routes/courseEditorRoutes"));
 const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
@@ -58,7 +57,6 @@ async function main() {
     app.use(`${apiPrefix}/Profile`, profileRoutes_1.default);
     app.use(`${apiPrefix}/Discussion`, discussionRoutes_1.default);
     app.use(`${apiPrefix}/Feed`, feedRoutes_1.default);
-    app.use(`${apiPrefix}/Blog`, blogRoutes_1.default);
     app.use(`${apiPrefix}/Codes`, codesRoutes_1.default);
     app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes_1.default);
     app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
@@ -67,7 +65,7 @@ async function main() {
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes_1.default);
     app.use(`${apiPrefix}/Admin`, adminRoutes_1.default);
     app.all("*", (req, res) => {
-        res.status(404).json({ success: false, message: "404 Not Found" });
+        res.status(404).json({ success: false, error: [{ message: "resource not found" }] });
     });
     app.use(errorHandler_1.default);
     server.listen(confg_1.config.port, () => console.log(`Server running on port ${confg_1.config.port}`));
