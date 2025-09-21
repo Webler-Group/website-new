@@ -10,6 +10,8 @@ router.use(protectRoute);
 
 // router.route("/").post(ChallengeController.getChallengeList);
 router.route("/AddEntry").post(ChallengeSubController.createChallengeSubmission);
+// @todo: add a request limiter to CreateEntryJob
+router.route("/CreateEntryJob").post(ChallengeSubController.submitChallengeJob);
 router.route("/GetEntry").post(ChallengeSubController.getChallengeSubmissionTemplate);
 router.route("/DeleteEntry").post(ChallengeSubController.deleteChallengeSubmission);
 router.route("/UpdateEntryStatus").post(ChallengeSubController.updateSubmissionStatus);

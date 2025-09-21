@@ -107,10 +107,18 @@ function ChallengeDetails() {
       
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async() => {
     // setShowModal(true);
     // console.log(testCases);
-    alert("This challenge is currently locked");
+    const submission = await sendJsonRequest(`/Challenge/Submission/AddEntry`, "POST", {
+      challengeId,
+      language: selectedLanguage,
+      code: source
+    });
+
+    console.log(submission);
+
+    // alert("This challenge is currently locked");
     
   };
 

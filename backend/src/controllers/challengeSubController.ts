@@ -3,7 +3,8 @@ import { ChallengeSub } from "../models/ChallengeSub";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import asyncHandler from "express-async-handler";
 import RolesEnum from "../data/RolesEnum";
-import Challenge, { IChallengeTemplate } from "../models/Challenge";
+import Challenge, { IChallengeTemplate, ITestCase } from "../models/Challenge";
+import EvaluationJob from "../models/EvaluationJob";
 
 
 // Create or update a challenge submission
@@ -77,6 +78,57 @@ export const createChallengeSubmission = asyncHandler(async (req: IAuthRequest, 
     });
 
 });
+
+
+export const submitChallengeJob =  asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const deviceId = req.deviceId;
+    const { submissionId, challengeId } = req.body;
+
+    if(!submissionId || !challengeId) {
+      res.status(400).json({ success: false, message: "Atleast one required field is missing" });
+      return;
+    }
+
+    const submission = await ChallengeSub.findById(submissionId);
+    const challenge = await Challenge.findById(challengeId);
+
+    if(!submission || !challenge) {
+      res.status(404).json({ success: false, message: "Challenge or submission does not exists" });
+      return;
+    }
+
+    const language = submission?.language;
+    const source = submission?.code;
+    const testCases = challenge?.testCases;
+
+    let execTime = 0;
+
+    const jobRes: any = [];
+
+    // create job
+    for(let test of testCases as ITestCase[]) {
+      const stdin = test.input;
+      const t1 = new Date().getTime();
+      const jobId = await EvaluationJob.create({ language, source, stdin, deviceId });
+      const job = await EvaluationJob.findById(jobId).select("-source");
+      const t2 = new Date().getTime();
+      execTime += (t2 - t1);
+      const output = job?.stdout;
+      const isPassed = output === test.expectedOutput;
+      jobRes.push({ 
+        input: stdin,
+        output: output,
+        expectedOutput: test.expectedOutput,
+        isHidden: test.isHidden,
+        isPassed: isPassed
+      });
+    }    
+
+    // execTime /= testCases?.length || 0;
+
+    res.status(200).json({ success: true, jobRes });
+
+})
 
 
 
@@ -175,7 +227,8 @@ const ChallengeSubController = {
   createChallengeSubmission,
   getChallengeSubmissionTemplate,
   deleteChallengeSubmission,
-  updateSubmissionStatus
+  updateSubmissionStatus,
+  submitChallengeJob
 }
 
 export default ChallengeSubController;
