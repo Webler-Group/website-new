@@ -12,37 +12,10 @@ if (args.length !== 1) {
 const projectDir = path.resolve(args[0]);
 
 const nginxConfig = `
-# Redirect HTTP to HTTPS and non-www to www
-server {
-    listen 80;
-    server_name weblercodes.com www.weblercodes.com;
-
-    # Redirect to HTTPS with www
-    return 301 https://www.weblercodes.com$request_uri;
-}
-
-# Redirect HTTPS non-www to www
-server {
-    listen 443 ssl;
-    server_name weblercodes.com;
-
-    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
-
-    return 301 https://www.weblercodes.com$request_uri;
-}
-
 # Main server block for www version
 server {
-    listen 443 ssl;
-    server_name www.weblercodes.com;
-
-    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+    listen 80;
+    server_name www.weblercodes.com weblercdes.com;
 
     client_max_body_size 10M;
 
