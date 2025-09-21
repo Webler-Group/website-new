@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import {useApi} from "../../../context/apiCommunication"
+import { useApi } from "../../../context/apiCommunication"
 import { ICode } from "../../codes/components/Code";
 
 const useCodes = (userId: string, count: number, pageNum: number) => {
@@ -10,34 +10,28 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        setIsLoading(true)
-        setError("")
 
-        const controller = new AbortController()
-        const { signal } = controller
+        const fetchData = async () => {
+            setIsLoading(true)
+            setError("")
 
-        sendJsonRequest(`/Codes`, "POST", {
-            page: pageNum,
-            count,
-            filter: 3,
-            searchQuery: "",
-            language: "",
-            userId
-        }, { signal })
-            .then(result => {
-                if (!result || !result.codes) {
-                    setIsLoading(false)
-                    if (signal.aborted) return
-                    setError("Something went wrong");
-                    return
-                }
+            const result = await sendJsonRequest(`/Codes`, "POST", {
+                page: pageNum,
+                count,
+                filter: 3,
+                userId
+            });
+
+            if (result && result.codes) {
                 setResults(prev => [...prev, ...result.codes])
                 setHasNextPage(result.codes.length === count)
-                setIsLoading(false)
-            })
+            } else {
+                setError(result?.error[0].message ?? "Something went wrong");
+            }
+            setIsLoading(false)
+        };
 
-        return () => controller.abort()
-
+        fetchData();
     }, [pageNum])
 
     return { isLoading, error, results, hasNextPage }

@@ -27,7 +27,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importStar(require("mongoose"));
-const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const socketServer_1 = require("../config/socketServer");
 const User_1 = __importDefault(require("./User"));
 const Channel_1 = __importDefault(require("./Channel"));
@@ -81,7 +80,7 @@ channelInviteSchema.post("save", async function () {
 });
 channelInviteSchema.methods.accept = async function (accepted = true) {
     if (accepted) {
-        await ChannelParticipant_1.default.create({ channel: this.channel, user: this.invitedUser });
+        await Channel_1.default.join(this.channel, this.invitedUser);
     }
     await ChannelInvite.deleteMany({ channel: this.channel, invitedUser: this.invitedUser });
 };

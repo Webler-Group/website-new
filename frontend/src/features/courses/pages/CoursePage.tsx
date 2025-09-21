@@ -73,7 +73,7 @@ const CoursePage = () => {
 
     return (
         <Container>
-            <div className="wb-courses-main p-4">
+            <div className="wb-courses-main pt-2">
                 {loading ? (
                     <p>Loading...</p>
                 ) : course ? (

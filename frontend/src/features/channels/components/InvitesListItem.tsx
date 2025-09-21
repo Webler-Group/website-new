@@ -1,6 +1,7 @@
 import React from "react";
 import { Button, Card } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import ProfileName from "../../../components/ProfileName";
 
 interface IChannelInvite {
     id: string;
@@ -29,7 +30,7 @@ const InvitesListItem = React.forwardRef(({ invite, onAccept, onDecline }: Invit
             <div className="flex-grow-1">
                 <div><strong>{invite.channelTitle}</strong></div>
                 <div className="text-muted small">
-                    Invited by {invite.authorName}
+                    Invited by <ProfileName userId={invite.authorId} userName={invite.authorName} />
                 </div>
             </div>
             <div className="d-flex flex-column gap-2 ms-3">

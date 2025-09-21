@@ -2,7 +2,7 @@ import { Nav, NavDropdown, Button } from "react-bootstrap";
 import { FaQuestion, FaSignOutAlt } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import ProfileAvatar from "../../../components/ProfileAvatar";
@@ -39,9 +39,9 @@ const AuthNavigation = () => {
                                     <Link className="dropdown-item" to={"/Profile/" + userInfo.id + "?settings=true"}>
                                         <FaGear /> Settings
                                     </Link>
-                                    <NavDropdown.Item>
+                                    <Link className="dropdown-item" to={"/Faq"}>
                                         <FaQuestion /> Help
-                                    </NavDropdown.Item>
+                                    </Link>
                                     <NavDropdown.Item onClick={handleLogout}>
                                         <FaSignOutAlt /> Logout
                                     </NavDropdown.Item>

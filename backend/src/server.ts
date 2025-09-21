@@ -10,7 +10,6 @@ import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
 import discussionRoutes from "./routes/discussionRoutes";
 import feedRoutes from "./routes/feedRoutes"
-import blogRoutes from "./routes/blogRoutes";
 import codesRoutes from "./routes/codesRoutes";
 import courseEditorRoutes from "./routes/courseEditorRoutes";
 import courseRoutes from "./routes/courseRoutes";
@@ -66,7 +65,6 @@ async function main() {
     app.use(`${apiPrefix}/Profile`, profileRoutes);
     app.use(`${apiPrefix}/Discussion`, discussionRoutes);
     app.use(`${apiPrefix}/Feed`, feedRoutes);
-    app.use(`${apiPrefix}/Blog`, blogRoutes);
     app.use(`${apiPrefix}/Codes`, codesRoutes);
     app.use(`${apiPrefix}/CourseEditor`, courseEditorRoutes);
     app.use(`${apiPrefix}/Courses`, courseRoutes);
@@ -78,7 +76,7 @@ async function main() {
     app.use(`${apiPrefix}/Admin`, adminRoutes);
 
     app.all("*", (req, res) => {
-        res.status(404).json({ success: false, message: "404 Not Found" });
+        res.status(404).json({ success: false, error: [{ message: "resource not found" }] });
     });
 
     app.use(errorHandler);

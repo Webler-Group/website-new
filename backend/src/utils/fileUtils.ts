@@ -1,5 +1,6 @@
 import fs from "fs";
 import sharp from "sharp";
+import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 
 export function safeReadFile(filePath: string, maxSaveSize: number): string {
     if (!fs.existsSync(filePath)) return "";
@@ -47,7 +48,7 @@ export async function compressAvatar({
             buffer = await image.webp({ quality }).toBuffer();
             break;
         default:
-            throw new Error(`Unsupported image format: ${metadata.format}`);
+            throw new MulterFileTypeError(`Unsupported image format: ${metadata.format}`);
     }
 
     return buffer;

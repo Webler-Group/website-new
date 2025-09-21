@@ -92,8 +92,13 @@ postSchema.pre("save", async function (next) {
     next();
 });
 postSchema.post("save", async function () {
-    if (this._messageWasModified) {
-        await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
+    try {
+        if (this._messageWasModified) {
+            await PostAttachment_1.default.updateAttachments(this.message, { post: this._id });
+        }
+    }
+    catch (err) {
+        console.log("postSchema.pre(save) failed:", err.message);
     }
 });
 postSchema.statics.deleteAndCleanup = async function (filter) {
@@ -108,36 +113,34 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
             }
             case PostTypeEnum_1.default.ANSWER: {
                 const question = await Post.findById(post.parentId);
-                if (question === null) {
-                    throw new Error("Question not found");
+                if (question) {
+                    question.$inc("answers", -1);
+                    await question.save();
+                    await Notification_1.default.deleteMany({
+                        _type: NotificationTypeEnum_1.default.QA_ANSWER,
+                        questionId: question._id,
+                        postId: post._id
+                    });
                 }
-                question.$inc("answers", -1);
-                await question.save();
-                await Notification_1.default.deleteMany({
-                    _type: NotificationTypeEnum_1.default.QA_ANSWER,
-                    questionId: question._id,
-                    postId: post._id
-                });
                 break;
             }
             case PostTypeEnum_1.default.CODE_COMMENT: {
                 const code = await Code_1.default.findById(post.codeId);
-                if (code === null) {
-                    throw new Error("Code not found");
+                if (code) {
+                    code.$inc("comments", -1);
+                    await code.save();
+                    const parentComment = await Post.findById(post.parentId);
+                    if (parentComment) {
+                        parentComment.$inc("answers", -1);
+                        await parentComment.save();
+                    }
+                    await Post.deleteAndCleanup({ parentId: post._id });
+                    await Notification_1.default.deleteMany({
+                        _type: NotificationTypeEnum_1.default.CODE_COMMENT,
+                        codeId: code._id,
+                        postId: post._id
+                    });
                 }
-                code.$inc("comments", -1);
-                await code.save();
-                const parentComment = await Post.findById(post.parentId);
-                if (parentComment) {
-                    parentComment.$inc("answers", -1);
-                    await parentComment.save();
-                }
-                await Post.deleteAndCleanup({ parentId: post._id });
-                await Notification_1.default.deleteMany({
-                    _type: NotificationTypeEnum_1.default.CODE_COMMENT,
-                    codeId: code._id,
-                    postId: post._id
-                });
                 break;
             }
             case PostTypeEnum_1.default.FEED:
@@ -150,42 +153,40 @@ postSchema.statics.deleteAndCleanup = async function (filter) {
             }
             case PostTypeEnum_1.default.FEED_COMMENT: {
                 const feed = await Post.findById(post.feedId);
-                if (feed === null) {
-                    throw new Error("Feed not found");
+                if (feed) {
+                    feed.$inc("answers", -1);
+                    await feed.save();
+                    const parentComment = await Post.findById(post.parentId);
+                    if (parentComment) {
+                        parentComment.$inc("answers", -1);
+                        await parentComment.save();
+                    }
+                    await Post.deleteAndCleanup({ parentId: post._id });
+                    await Notification_1.default.deleteMany({
+                        _type: NotificationTypeEnum_1.default.FEED_COMMENT,
+                        feedId: feed._id,
+                        postId: post._id
+                    });
                 }
-                feed.$inc("answers", -1);
-                await feed.save();
-                const parentComment = await Post.findById(post.parentId);
-                if (parentComment) {
-                    parentComment.$inc("answers", -1);
-                    await parentComment.save();
-                }
-                await Post.deleteAndCleanup({ parentId: post._id });
-                await Notification_1.default.deleteMany({
-                    _type: NotificationTypeEnum_1.default.FEED_COMMENT,
-                    feedId: feed._id,
-                    postId: post._id
-                });
                 break;
             }
             case PostTypeEnum_1.default.LESSON_COMMENT: {
                 const lesson = await CourseLesson_1.default.findById(post.lessonId);
-                if (lesson === null) {
-                    throw new Error("Lesson not found");
+                if (lesson) {
+                    lesson.$inc("comments", -1);
+                    await lesson.save();
+                    const parentComment = await Post.findById(post.parentId);
+                    if (parentComment) {
+                        parentComment.$inc("answers", -1);
+                        await parentComment.save();
+                    }
+                    await Post.deleteAndCleanup({ parentId: post._id });
+                    await Notification_1.default.deleteMany({
+                        _type: NotificationTypeEnum_1.default.LESSON_COMMENT,
+                        lessonId: lesson._id,
+                        postId: post._id
+                    });
                 }
-                lesson.$inc("comments", -1);
-                await lesson.save();
-                const parentComment = await Post.findById(post.parentId);
-                if (parentComment) {
-                    parentComment.$inc("answers", -1);
-                    await parentComment.save();
-                }
-                await Post.deleteAndCleanup({ parentId: post._id });
-                await Notification_1.default.deleteMany({
-                    _type: NotificationTypeEnum_1.default.LESSON_COMMENT,
-                    lessonId: lesson._id,
-                    postId: post._id
-                });
                 break;
             }
         }

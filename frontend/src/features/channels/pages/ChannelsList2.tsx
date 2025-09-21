@@ -1,10 +1,12 @@
-import { Button, Tab, Nav, Modal, FormControl } from "react-bootstrap";
+import { Button, Tab, Nav, Modal, FormControl, Alert } from "react-bootstrap";
 import ChannelListItem from "../components/ChannelListItem";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import useChannels from "../hooks/useChannels";
 import useInvites from "../hooks/useInvites";
 import InvitesListItem from "../components/InvitesListItem";
+import Loader from "../../../components/Loader";
+import RequestResultAlert from "../../../components/RequestResultAlert";
 
 interface ChannelsListProps {
     onChannelSelect: (channelId: string) => void;
@@ -15,6 +17,7 @@ interface ChannelsListProps {
 const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
     const [activeTab, setActiveTab] = useState("channels");
     const [groupTitle, setGroupTitle] = useState("");
+    const [createGroupError, setCreateGroupError] = useState<any[] | undefined>();
     const [createGroupModalVisible, setCreateGroupModalVisible] = useState(false);
     const { sendJsonRequest } = useApi();
     const [channelsFromDate, setChannelsFromDate] = useState<Date | null>(null);
@@ -65,12 +68,16 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
         });
         if (result && result.channel) {
             channels.addChannel(result.channel);
+            closeCreateGroupModal();
+            setGroupTitle("");
+        } else {
+            setCreateGroupError(result.error);
         }
-        setGroupTitle("");
-        closeCreateGroupModal();
     };
 
     const closeCreateGroupModal = () => {
+        setGroupTitle("");
+        setCreateGroupError(undefined);
         setCreateGroupModalVisible(false);
     }
 
@@ -137,7 +144,8 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                 </Modal.Header>
                 <Modal.Body>
                     <p>How would you like to name your group?</p>
-                    <FormControl className="mt-2" type="text" placeholder="Group title" value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} />
+                    <FormControl className="my-2" type="text" placeholder="Group title" value={groupTitle} onChange={(e) => setGroupTitle(e.target.value)} />
+                    <RequestResultAlert errors={createGroupError} />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={closeCreateGroupModal}>Cancel</Button>
@@ -169,15 +177,40 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                         </Nav.Item>
                     </Nav>
 
-                    <Tab.Content className="flex-grow-1 overflow-auto">
+                    <Tab.Content className="flex-grow-1 overflow-auto pb-4">
                         <Tab.Pane eventKey="channels">
-                            {channelsListContent}
+                            {!channels.isLoading && channels.error !== "" ? (
+                                <Alert variant="danger">{channels.error}</Alert>
+                            ) : (!channels.isLoading && channels.results.length === 0) ? (
+                                <div className="text-center text-muted mt-5">
+                                    You have no channels yet. Create a group or wait for invites!
+                                </div>
+                            ) : (
+                                channelsListContent
+                            )}
+                            {channels.isLoading && (
+                                <div className="d-flex justify-content-center mt-5 text-center">
+                                    <Loader />
+                                </div>
+                            )}
                         </Tab.Pane>
 
                         <Tab.Pane eventKey="invites">
-                            {invitesListContent}
+                            {!invites.isLoading && invites.error !== "" ? (
+                                <Alert variant="danger">{invites.error}</Alert>
+                            ) : (!invites.isLoading && invites.results.length === 0) ? (
+                                <div className="text-center text-muted mt-5">
+                                    You have no pending invites.
+                                </div>
+                            ) : (
+                                invitesListContent
+                            )}
+                            {invites.isLoading && (
+                                <div className="d-flex justify-content-center mt-5 text-center">
+                                    <Loader />
+                                </div>
+                            )}
                         </Tab.Pane>
-
                     </Tab.Content>
                 </Tab.Container>
             </div>

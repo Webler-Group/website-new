@@ -31,6 +31,7 @@ const ChannelParticipant_1 = __importDefault(require("./ChannelParticipant"));
 const ChannelInvite_1 = __importDefault(require("./ChannelInvite"));
 const ChannelMessage_1 = __importDefault(require("./ChannelMessage"));
 const ChannelTypeEnum_1 = __importDefault(require("../data/ChannelTypeEnum"));
+const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessageTypeEnum"));
 const channelSchema = new mongoose_1.Schema({
     _type: {
         type: Number,
@@ -71,6 +72,18 @@ channelSchema.statics.deleteAndCleanup = async function (channelId) {
     await ChannelMessage_1.default.deleteMany({ channel: channelId });
     // finally delete channel itself
     await Channel.deleteOne({ _id: channelId });
+};
+channelSchema.statics.join = async function (channelId, userId) {
+    const exists = await ChannelParticipant_1.default.exists({ channel: channelId, user: userId });
+    if (exists == null) {
+        await ChannelParticipant_1.default.create({ channel: channelId, user: userId });
+        await ChannelMessage_1.default.create({
+            _type: ChannelMessageTypeEnum_1.default.USER_JOINED,
+            content: "{action_user} joined",
+            channel: channelId,
+            user: userId
+        });
+    }
 };
 const Channel = mongoose_1.default.model("Channel", channelSchema);
 exports.default = Channel;

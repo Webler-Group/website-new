@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { Alert, Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
+import { Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
 import InputTags from '../../../components/InputTags';
 import { LinkContainer } from 'react-router-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import PostTextareaControl from '../../../components/PostTextareaControl';
+import RequestResultAlert from '../../../components/RequestResultAlert';
 
 interface AskQuestionProps {
     questionId: string | null;
@@ -17,7 +18,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
     const [message, setMessage] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[] | undefined>();
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
 
     useEffect(() => {
@@ -39,7 +40,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
 
     const handleSubmit = async () => {
         setLoading(true);
-        setError("");
+        setError(undefined);
 
         if (questionId) {
             await editQuestion();
@@ -53,9 +54,9 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
     const createQuestion = async () => {
         const result = await sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
         if (result && result.question) {
-            navigate("/Discuss");
+            navigate("/Discuss/" + result.question.id);
         } else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result.error);
         }
     }
 
@@ -64,7 +65,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         if (result && result.success) {
             navigate("/Discuss/" + questionId);
         } else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result.error);
         }
     }
 
@@ -77,9 +78,9 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
         const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId });
         if (result && result.success) {
             closeDeleteModal();
-            navigate("/Discuss");
+            navigate("/Discuss?filter=3");
         } else {
-            setError(result.error ? result.error.message : result.message);
+            setError(result?.error ? result.error.message : result.message);
         }
         setLoading(false);
     }
@@ -102,7 +103,7 @@ const AskQuestion = ({ questionId }: AskQuestionProps) => {
             {questionId === null && <h2 className="mb-4">Ask the community a question</h2>}
 
             <div className='small'>
-                {error && <Alert variant="danger" dismissible>{error}</Alert>}
+                <RequestResultAlert errors={error} />
 
                 <FormGroup>
                     <FormLabel>Your question</FormLabel>

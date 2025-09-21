@@ -9,10 +9,11 @@ import { useApi } from "../../../context/apiCommunication";
 import { IChannelInvite } from "../components/InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
-import { FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
+import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
 import { IChannelMessage } from "../components/ChannelMessage";
 import MessageContextMenu from "../components/MessageContextMenu";
-
+import RepliedMessage from "../components/RepliedMessage";
+import Loader from "../../../components/Loader";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -66,6 +67,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
+    const [loading, setLoading] = useState(false);
+    const [repliedMessage, setRepliedMessage] = useState<IChannelMessage | null>(null);
 
     useEffect(() => {
         getChannel();
@@ -191,14 +194,17 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     };
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
-        const container = messagesContainerRef.current;
-        if (!container) return;
-
-        // For flex-column-reverse, the bottom is scrollTop = 0
-        container.scrollTo({ top: 0, behavior })
+        setTimeout(() => {
+            const container = messagesContainerRef.current;
+            if (container) {
+                // For flex-column-reverse, the bottom is scrollTop = 0
+                container.scrollTo({ top: 0, behavior })
+            }
+        }, 50);
     }
 
     const getChannel = async () => {
+        setLoading(true);
         const result = await sendJsonRequest("/Channels/GetChannel", "POST", {
             channelId,
             includeParticipants: true,
@@ -207,6 +213,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (result && result.channel) {
             setChannel(result.channel);
         }
+        setLoading(false);
     }
 
     const handleSendMessage = async () => {
@@ -216,9 +223,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             messages.editMessage(editedMessage.id, newMessage);
             setEditedMessage(null);
         } else {
-            messages.sendMessage(newMessage);
+            messages.sendMessage(newMessage, repliedMessage);
         }
         setNewMessage("");
+        setRepliedMessage(null);
     };
 
     const handleTextareaKeydown = (e: KeyboardEvent) => {
@@ -325,8 +333,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const onContextDelete = () => {
         setEditedMessage(null);
+        setRepliedMessage(null);
         setSelectedMessage(prev => {
-            if(prev) {
+            if (prev) {
                 setDeleteMessageId(prev.id);
             }
             return null;
@@ -335,9 +344,22 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const onContextEdit = () => {
         setDeleteMessageId(null);
+        setRepliedMessage(null);
         setSelectedMessage(prev => {
-            if(prev) {
+            if (prev) {
                 setEditedMessage(prev);
+            }
+            return null;
+        });
+    }
+
+    const onMessageReply = () => {
+        setDeleteMessageId(null);
+        setEditedMessage(null);
+        setSelectedMessage(prev => {
+            if (prev) {
+                setRepliedMessage(prev);
+                textareaRef.current?.focus();
             }
             return null;
         });
@@ -429,13 +451,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                         <ChannelMessage
                                                             ref={lastMessageRef}
                                                             message={message}
-                                                            showHeader={isLastFromUser}
+                                                            showHeader={isLastFromUser || message.repliedTo != null}
                                                             onContextMenu={onContextMenu}
                                                         />
                                                     ) : (
                                                         <ChannelMessage
                                                             message={message}
-                                                            showHeader={isLastFromUser}
+                                                            showHeader={isLastFromUser || message.repliedTo != null}
                                                             onContextMenu={onContextMenu}
                                                         />
                                                     )}
@@ -450,12 +472,28 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     <div className="small">
                                         <div className="d-flex justify-content-between align-items-center">
                                             <div className="fw-bold text-info"><FaPen /> Edit message</div>
-                                            <Button variant="link" className="text-muted" onClick={handleEditCancel}>
+                                            <Button size="sm" variant="link" className="text-muted" onClick={handleEditCancel}>
                                                 <FaTimes />
                                             </Button>
                                         </div>
                                     </div>
                                 )}
+                                {repliedMessage &&
+                                    <div className="d-flex align-items-center">
+                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                            <RepliedMessage message={repliedMessage} />
+                                        </div>
+
+                                        <Button
+                                            size="sm"
+                                            variant="link"
+                                            className="text-muted ms-2 p-0 flex-shrink-0"
+                                            onClick={() => setRepliedMessage(null)}
+                                        >
+                                            <FaTimes />
+                                        </Button>
+                                    </div>
+                                }
                                 <div className="d-flex align-items-center">
                                     {showJumpButton && (
                                         <Button
@@ -473,7 +511,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </Button>
                                     )}
                                     <Form.Control
-                                        size="sm"
                                         ref={textareaRef}
                                         as="textarea"
                                         rows={1}
@@ -487,7 +524,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                     />
                                     {
                                         newMessage.trim().length > 0 &&
-                                        <Button size="sm" variant="primary" onClick={handleSendMessage}>
+                                        <Button variant="primary" onClick={handleSendMessage}>
                                             {editedMessage ? <FaCheck /> : <FaPaperPlane />}
                                         </Button>
                                     }
@@ -497,11 +534,18 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                     </>
                     :
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <div className="wb-loader">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                        {
+                            loading ?
+                                <Loader />
+                                :
+                                <div>
+                                    <h4>Channel not found</h4>
+                                    <Button onClick={onExit} variant='primary'>
+                                        <FaArrowLeft />
+                                        Back to Channels
+                                    </Button>
+                                </div>
+                        }
                     </div>
             }
             <MessageContextMenu
@@ -510,6 +554,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 onCopy={onContextCopy}
                 onEdit={onContextEdit}
                 onDelete={onContextDelete}
+                onReply={onMessageReply}
                 isOwn={selectedMessage?.userId === userInfo?.id}
                 anchorRef={anchorRef}
             />

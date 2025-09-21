@@ -31,7 +31,6 @@ import EditCourse from './features/courses/pages/EditCourse';
 import CourseEditor from './features/courses/pages/CourseEditor';
 import CourseList from './features/courses/pages/CourseList';
 import { compilerLanguages, languagesInfo } from './data/compilerLanguages';
-// import {  ChannelsList } from './features/channels/pages/ChannelsList';
 import CoursePage from './features/courses/pages/CoursePage';
 import CourseLessonPage from './features/courses/pages/CourseLessonPage';
 import ChannelsPage from './features/channels/pages/ChannelsPage';
@@ -43,6 +42,7 @@ import AdminUserList from './tools/admin/pages/AdminUserList';
 import ModView from './tools/admin/pages/ModView';
 import FeedLayout from './features/feed/FeedLayout';
 import FeedCreate from './features/feed/components/FeedCreate';
+import FAQ from './pages/FAQ';
 import ChallengeList from './features/challenges/pages/ChallengeList';
 import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
 import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
@@ -69,6 +69,7 @@ function App() {
         <Route index element={<Home />} />
         <Route path="Terms-of-use" element={<TermsOfUse />} />
         <Route path="Contact" element={<Contact />} />
+        <Route path='Faq' element={<FAQ />} />
       </Route>
 
       <Route path="Users">
@@ -198,7 +199,7 @@ function App() {
         </Route>
       </Route>
 
-      <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
         <Route path="/*" element={<NotFound />} />
       </Route>
     </Routes>

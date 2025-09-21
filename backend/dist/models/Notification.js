@@ -25,23 +25,6 @@ const notificationSchema = new mongoose_1.default.Schema({
 }, {
     timestamps: true
 });
-notificationSchema.pre("save", async function (next) {
-    try {
-        const user = await User_1.default.findById(this.user)
-            .select({ notifications: 1 })
-            .lean();
-        if (!user) {
-            return next(new Error("User not found, cannot create notification"));
-        }
-        if (user.notifications && user.notifications[this._type] === false) {
-            return next(new Error("Notification type disabled for this user"));
-        }
-        return next();
-    }
-    catch (err) {
-        return next(err);
-    }
-});
 // --- SAVE ---
 notificationSchema.post("save", (doc, next) => {
     const io = (0, socketServer_1.getIO)();

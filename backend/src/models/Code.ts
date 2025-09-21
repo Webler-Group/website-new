@@ -70,7 +70,7 @@ codeSchema.pre("save", function (next) {
     next();
 });
 
-codeSchema.statics.deleteAndCleanup = async function (codeId: mongoose.Types.ObjectId) {
+codeSchema.statics.deleteAndCleanup = async function (codeId: mongoose.Types.ObjectId | string) {
     await Post.deleteAndCleanup({ codeId: codeId, parentId: null });
     await Upvote.deleteMany({ parentId: codeId });
     await Code.deleteOne({ _id: codeId });
@@ -79,7 +79,7 @@ codeSchema.statics.deleteAndCleanup = async function (codeId: mongoose.Types.Obj
 declare interface ICode extends InferSchemaType<typeof codeSchema> { }
 
 interface CodeModel extends Model<ICode> {
-    deleteAndCleanup(codeId: mongoose.Types.ObjectId): Promise<void>;
+    deleteAndCleanup(codeId: mongoose.Types.ObjectId | string): Promise<void>;
 }
 
 const Code = mongoose.model<ICode, CodeModel>("Code", codeSchema);

@@ -30,8 +30,6 @@ router.route("/GetNotifications")
     .post(profileController_1.default.getNotifications);
 router.route("/GetUnseenNotificationCount")
     .post(profileController_1.default.getUnseenNotificationCount);
-router.route("/MarkNotificationsSeen")
-    .post(profileController_1.default.markNotificationsSeen);
 router.route("/MarkNotificationsClicked")
     .post(profileController_1.default.markNotificationsClicked);
 router.route("/SendActivationCode")

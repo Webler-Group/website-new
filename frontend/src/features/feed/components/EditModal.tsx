@@ -7,20 +7,19 @@ import allowedUrls from '../../../data/discussAllowedUrls';
 
 interface EditModalProps {
   feed: IFeed;
-  onSave: (content: string, tags: string[]) => void | Promise<void>;
+  onSave: (content: string) => void | Promise<void>;
   onClose: () => void;
 }
 
 const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
   const [content, setContent] = useState(feed.message);
-  const [tags] = useState<string[]>(feed.tags);
   const [isSaving, setIsSaving] = useState(false);
   const [mode, setMode] = useState<"write" | "preview">("write");
 
   const handleSave = async () => {
     if (!content.trim()) return;
     setIsSaving(true);
-    await onSave(content.trim(), tags);
+    await onSave(content.trim());
     setIsSaving(false);
   };
 

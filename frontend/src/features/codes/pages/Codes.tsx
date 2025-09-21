@@ -24,7 +24,6 @@ const Codes = ({ MainPage }: CodesProps) => {
             count: 10,
             filter: 5,
             searchQuery: "",
-            language: "",
             userId: null
         });
         if (result && result.codes) {
@@ -34,9 +33,9 @@ const Codes = ({ MainPage }: CodesProps) => {
 
     return (
         <Container>
-            <div className="wb-discuss-questions-list-page d-block d-lg-flex mt-2 gap-3">
-                <div className="flex-grow-1">{MainPage}</div>
-                <div style={{ minWidth: "300px" }}>
+            <div className="wb-discuss-questions-list-page row mt-2">
+                <div className="col-12 col-md-8">{MainPage}</div>
+                <div className="col-12 col-md-4">
                     <h2>Hot today</h2>
                     <div className="my-3">
                         {

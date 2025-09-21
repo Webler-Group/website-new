@@ -8,41 +8,27 @@ const express_async_handler_1 = __importDefault(require("express-async-handler")
 const mongoose_1 = __importDefault(require("mongoose"));
 const regexUtils_1 = require("../utils/regexUtils");
 const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const adminSchema_1 = require("../validation/adminSchema");
+const zodUtils_1 = require("../utils/zodUtils");
 const getUsersList = (0, express_async_handler_1.default)(async (req, res) => {
-    const { search, count, page, date, role, active } = req.body;
-    // validate body (ignore search if undefined)
-    if (typeof count !== "number" ||
-        typeof page !== "number" ||
-        count <= 0 || count > 100 ||
-        page <= 0 ||
-        (date && typeof date !== "string") ||
-        (role && typeof role !== "string") ||
-        (active !== undefined && typeof active !== "boolean")) {
-        res.status(400).json({ message: "Invalid body" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(adminSchema_1.getUsersListSchema, req);
+    const { search, count, page, date, role, active } = body;
     const filter = {};
-    // name filter (only if search is non-empty)
     if (search && search.trim().length > 0) {
         const safeQuery = (0, regexUtils_1.escapeRegex)(search.trim());
         filter.name = new RegExp(safeQuery, "i");
     }
-    // date filter
     if (date) {
         const parsed = new Date(date);
-        if (!isNaN(parsed.getTime())) {
-            const start = new Date(parsed);
-            start.setHours(0, 0, 0, 0);
-            const end = new Date(parsed);
-            end.setHours(23, 59, 59, 999);
-            filter.createdAt = { $gte: start, $lte: end };
-        }
+        const start = new Date(parsed);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(parsed);
+        end.setHours(23, 59, 59, 999);
+        filter.createdAt = { $gte: start, $lte: end };
     }
-    // role filter
     if (role) {
         filter.roles = role;
     }
-    // active filter
     if (active !== undefined) {
         filter.active = active;
     }
@@ -53,6 +39,7 @@ const getUsersList = (0, express_async_handler_1.default)(async (req, res) => {
         .limit(count);
     const total = await User_1.default.countDocuments(filter);
     res.json({
+        success: true,
         users: users.map(u => ({
             id: u._id,
             email: u.email,
@@ -76,18 +63,16 @@ const getUsersList = (0, express_async_handler_1.default)(async (req, res) => {
     });
 });
 const getUser = (0, express_async_handler_1.default)(async (req, res) => {
-    const { userId } = req.body;
-    if (!userId || typeof userId !== "string") {
-        res.status(400).json({ success: false, message: "Invalid body" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(adminSchema_1.getUserSchema, req);
+    const { userId } = body;
     const user = await User_1.default.findById(userId)
         .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
     if (!user) {
-        res.status(404).json({ success: false, message: "User not found" });
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
     res.json({
+        success: true,
         user: {
             id: user._id,
             email: user.email,
@@ -111,15 +96,16 @@ const getUser = (0, express_async_handler_1.default)(async (req, res) => {
     });
 });
 const banUser = (0, express_async_handler_1.default)(async (req, res) => {
-    const { userId, active, note } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(adminSchema_1.banUserSchema, req);
+    const { userId, active, note } = body;
     const currentUserId = req.userId;
     const user = await User_1.default.findById(userId);
     if (!user) {
-        res.status(404).json({ success: false, message: "User not found" });
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
     if (user.roles.includes(RolesEnum_1.default.ADMIN)) {
-        res.status(404).json({ success: false, message: "Unauthorized" });
+        res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
     user.active = active;
@@ -130,41 +116,32 @@ const banUser = (0, express_async_handler_1.default)(async (req, res) => {
             date: new Date()
         };
     }
-    try {
-        await user.save();
-        res.json({
-            success: true, data: {
-                active: user.active,
-                ban: user.active ? null : user.ban
-            }
-        });
+    else {
+        user.ban = null;
     }
-    catch (err) {
-        res.json({
-            success: false,
-            error: err
-        });
-    }
+    await user.save();
+    res.json({
+        success: true,
+        data: {
+            active: user.active,
+            ban: user.active ? null : user.ban
+        }
+    });
 });
 const updateRoles = (0, express_async_handler_1.default)(async (req, res) => {
-    const { userId, roles } = req.body;
-    if (!Array.isArray(roles) || roles.some(role => !Object.values(RolesEnum_1.default).includes(role))) {
-        res.status(400).json({ message: "Invalid body" });
-        return;
-    }
+    const { body } = (0, zodUtils_1.parseWithZod)(adminSchema_1.updateRolesSchema, req);
+    const { userId, roles } = body;
     const user = await User_1.default.findById(userId);
     if (!user) {
-        res.status(404).json({ message: "User not found" });
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
-    try {
-        user.roles = roles;
-        await user.save();
-        res.json({ success: true, data: { roles: user.roles } });
-    }
-    catch (err) {
-        res.json({ message: "Roles not valid" });
-    }
+    user.roles = roles;
+    await user.save();
+    res.json({
+        success: true,
+        data: { roles: user.roles }
+    });
 });
 const controller = {
     getUsersList,

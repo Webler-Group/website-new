@@ -18,10 +18,13 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const Upvote_1 = __importDefault(require("../models/Upvote"));
+const courseSchema_1 = require("../validation/courseSchema");
+const zodUtils_1 = require("../utils/zodUtils");
 const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
-    const { excludeUserId } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getCourseListSchema, req);
+    const { excludeUserId } = body;
     let result;
-    if (typeof excludeUserId !== "undefined") {
+    if (excludeUserId) {
         const progresses = await CourseProgress_1.default.find({ userId: excludeUserId }).select("course");
         const startedCourseIds = progresses.map(x => x.course);
         result = await Course_1.default.find({
@@ -41,13 +44,14 @@ const getCourseList = (0, express_async_handler_1.default)(async (req, res) => {
         coverImage: course.coverImage
     }));
     res.json({
+        success: true,
         courses: data
     });
 });
 const getUserCourseList = (0, express_async_handler_1.default)(async (req, res) => {
-    const { userId } = req.body;
-    const result = await CourseProgress_1.default.find({ userId })
-        .populate("course");
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getUserCourseListSchema, req);
+    const { userId } = body;
+    const result = await CourseProgress_1.default.find({ userId }).populate("course");
     const data = result.map(x => ({
         id: x.course._id,
         code: x.course.code,
@@ -59,11 +63,13 @@ const getUserCourseList = (0, express_async_handler_1.default)(async (req, res) 
         updatedAt: x.updatedAt
     }));
     res.json({
+        success: true,
         courses: data
     });
 });
 const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
-    const { courseId, courseCode, includeLessons } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getCourseSchema, req);
+    const { courseId, courseCode, includeLessons } = body;
     const currentUserId = req.userId;
     let course = null;
     if (courseId) {
@@ -73,7 +79,7 @@ const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
         course = await Course_1.default.findOne({ code: courseCode });
     }
     if (!course) {
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
     let userProgress = await CourseProgress_1.default.findOne({ course: course.id, userId: currentUserId });
@@ -82,7 +88,7 @@ const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
     }
     let lessons = [];
     if (includeLessons === true) {
-        lessons = await CourseLesson_1.default.find({ course: course.id }).sort({ "index": "asc" });
+        lessons = await CourseLesson_1.default.find({ course: course.id }).sort({ index: "asc" });
         const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
         let lastUnlockedNodeIndex = 1;
         if (userProgress.lastLessonNodeId) {
@@ -102,6 +108,7 @@ const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
         }));
     }
     res.json({
+        success: true,
         course: {
             id: course._id,
             code: course.code,
@@ -118,21 +125,22 @@ const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
     });
 });
 const getLesson = (0, express_async_handler_1.default)(async (req, res) => {
-    const { lessonId } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getLessonSchema, req);
+    const { lessonId } = body;
     const currentUserId = req.userId;
     const lesson = await CourseLesson_1.default.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
     const userProgress = await CourseProgress_1.default.findOne({ course: lesson.course, userId: currentUserId }).populate("lastLessonNodeId", "index lessonId");
     if (!userProgress) {
-        res.status(404).json({ message: "User progress not found" });
+        res.status(404).json({ error: [{ message: "User progress not found" }] });
         return;
     }
     const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
     if (lesson.index > lastUnlockedLessonIndex) {
-        res.status(400).json({ message: "Lesson is not unlocked" });
+        res.status(400).json({ error: [{ message: "Lesson is not unlocked" }] });
         return;
     }
     const data = {
@@ -154,30 +162,31 @@ const getLesson = (0, express_async_handler_1.default)(async (req, res) => {
         unlocked: lesson.index < lastUnlockedLessonIndex || x.index <= lastUnlockedNodeIndex
     }));
     res.json({
+        success: true,
         lesson: data
     });
 });
 const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
-    const { nodeId, mock } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getLessonNodeSchema, req);
+    const { nodeId, mock } = body;
     const currentUserId = req.userId;
-    const lessonNode = await LessonNode_1.default.findById(nodeId)
-        .populate("lessonId");
+    const lessonNode = await LessonNode_1.default.findById(nodeId).populate("lessonId");
     if (!lessonNode) {
-        res.status(404).json({ message: "Lesson node not found" });
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
     if (!mock) {
         const userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
-            res.status(404).json({ message: "User progress not found" });
+            res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
-        const { unlocked, isLast } = await userProgress.getLessonNodeInfo(lessonNode._id);
+        const { unlocked, isLast } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
         if (!unlocked) {
-            res.status(400).json({ message: "Node is not unlocked" });
+            res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
-        if (lessonNode._type == LessonNodeTypeEnum_1.default.TEXT && isLast) {
+        if (lessonNode._type === LessonNodeTypeEnum_1.default.TEXT && isLast) {
             userProgress.lastLessonNodeId = lessonNode._id;
             await userProgress.save();
         }
@@ -185,17 +194,18 @@ const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     else {
         const user = await User_1.default.findById(currentUserId).select("roles");
         if (!user || ![RolesEnum_1.default.CREATOR, RolesEnum_1.default.ADMIN].some(role => user.roles.includes(role))) {
-            res.status(403).json({ message: "Unauthorized" });
+            res.status(403).json({ error: [{ message: "Unauthorized" }] });
             return;
         }
     }
     const answers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode._id });
     res.json({
+        success: true,
         lessonNode: {
             id: lessonNode._id,
             index: lessonNode.index,
             type: lessonNode._type,
-            text: lessonNode.text,
+            text: lessonNode.text ?? "",
             correctAnswer: lessonNode.correctAnswer,
             answers: answers.map(x => ({
                 id: x._id,
@@ -206,12 +216,12 @@ const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     });
 });
 const solve = (0, express_async_handler_1.default)(async (req, res) => {
-    const { nodeId, correctAnswer, answers, mock } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.solveSchema, req);
+    const { nodeId, correctAnswer, answers, mock } = body;
     const currentUserId = req.userId;
-    const lessonNode = await LessonNode_1.default.findById(nodeId)
-        .populate("lessonId");
+    const lessonNode = await LessonNode_1.default.findById(nodeId).populate("lessonId");
     if (!lessonNode) {
-        res.status(404).json({ message: "Lesson node not found" });
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
     let userProgress = null;
@@ -219,12 +229,12 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     if (!mock) {
         userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index");
         if (!userProgress) {
-            res.status(404).json({ message: "User progress not found" });
+            res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
         const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode._id);
         if (!nodeInfo.unlocked) {
-            res.status(400).json({ message: "Node is not unlocked" });
+            res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
         isLast = nodeInfo.isLast;
@@ -232,29 +242,26 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     else {
         const user = await User_1.default.findById(currentUserId).select("roles");
         if (!user || ![RolesEnum_1.default.CREATOR, RolesEnum_1.default.ADMIN].some(role => user.roles.includes(role))) {
-            res.status(403).json({ message: "Unauthorized" });
+            res.status(403).json({ error: [{ message: "Unauthorized" }] });
             return;
         }
     }
     const nodeAnswers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
     let correct = false;
     switch (lessonNode._type) {
-        case LessonNodeTypeEnum_1.default.TEXT: {
+        case LessonNodeTypeEnum_1.default.TEXT:
             correct = true;
             break;
-        }
         case LessonNodeTypeEnum_1.default.SINGLECHOICE_QUESTION:
-        case LessonNodeTypeEnum_1.default.MULTICHOICE_QUESTION: {
+        case LessonNodeTypeEnum_1.default.MULTICHOICE_QUESTION:
             correct = nodeAnswers.every(x => {
-                const myAnswer = answers.find((y) => y.id == x._id);
-                return myAnswer && myAnswer.correct == x.correct;
+                const myAnswer = answers?.find((y) => y.id.toString() === x._id.toString());
+                return myAnswer && myAnswer.correct === x.correct;
             });
             break;
-        }
-        case LessonNodeTypeEnum_1.default.TEXT_QUESTION: {
-            correct = correctAnswer == lessonNode.correctAnswer;
+        case LessonNodeTypeEnum_1.default.TEXT_QUESTION:
+            correct = correctAnswer === lessonNode.correctAnswer;
             break;
-        }
     }
     if (!mock && isLast && correct) {
         userProgress.lastLessonNodeId = lessonNode.id;
@@ -262,32 +269,26 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     }
     res.json({
         success: true,
-        data: {
-            correct
-        }
+        data: { correct }
     });
 });
 const resetCourseProgress = (0, express_async_handler_1.default)(async (req, res) => {
-    const { courseId } = req.body;
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.resetCourseProgressSchema, req);
+    const { courseId } = body;
     const currentUserId = req.userId;
     const userProgress = await CourseProgress_1.default.findOne({ course: courseId, userId: currentUserId });
     if (!userProgress) {
-        res.status(404).json({ message: "Course progress not found" });
+        res.status(404).json({ error: [{ message: "Course progress not found" }] });
         return;
     }
     userProgress.lastLessonNodeId = null;
-    userProgress.save();
-    res.json({
-        success: true
-    });
+    await userProgress.save();
+    res.json({ success: true });
 });
 const getLessonComments = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.getLessonCommentsSchema, req);
+    const { lessonId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
-    const { lessonId, parentId, index, count, filter, findPostId } = req.body;
-    if (typeof filter !== "number" || typeof index !== "number" || index < 0 || typeof count !== "number" || count < 1 || count > 100) {
-        res.status(400).json({ message: "Some fileds are missing" });
-        return;
-    }
     let parentPost = null;
     if (parentId) {
         parentPost = await Post_1.default
@@ -298,46 +299,32 @@ const getLessonComments = (0, express_async_handler_1.default)(async (req, res) 
     let skipCount = index;
     if (findPostId) {
         const reply = await Post_1.default.findById(findPostId);
-        if (reply === null) {
-            res.status(404).json({ message: "Post not found" });
+        if (!reply) {
+            res.status(404).json({ error: [{ message: "Post not found" }] });
             return;
         }
         parentPost = reply.parentId ? await Post_1.default
             .findById(reply.parentId)
             .populate("user", "name avatarImage countryCode level roles")
-            :
-                null;
+            : null;
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
         skipCount = Math.max(0, (await dbQuery
             .clone()
             .where({ createdAt: { $lt: reply.createdAt } })
             .countDocuments()));
-        dbQuery = dbQuery
-            .sort({ createdAt: "asc" });
     }
     else {
         dbQuery = dbQuery.where({ parentId });
         switch (filter) {
-            // Most popular
-            case 1: {
-                dbQuery = dbQuery
-                    .sort({ votes: "desc", createdAt: "desc" });
+            case 1: // Most popular
+                dbQuery = dbQuery.sort({ votes: "desc", createdAt: "desc" });
                 break;
-            }
-            // Oldest first
-            case 2: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "asc" });
+            case 2: // Oldest first
+                dbQuery = dbQuery.sort({ createdAt: "asc" });
                 break;
-            }
-            // Newest first
-            case 3: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "desc" });
+            case 3: // Newest first
+                dbQuery = dbQuery.sort({ createdAt: "desc" });
                 break;
-            }
-            default:
-                throw new Error("Unknown filter");
         }
     }
     const result = await dbQuery
@@ -357,40 +344,35 @@ const getLessonComments = (0, express_async_handler_1.default)(async (req, res) 
         votes: x.votes,
         isUpvoted: false,
         answers: x.answers,
-        index: (findPostId && parentPost) ?
-            offset === 0 ? -1 : skipCount + offset - 1 :
-            skipCount + offset,
+        index: (findPostId && parentPost) ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
         attachments: new Array()
     }));
-    let promises = [];
-    for (let i = 0; i < data.length; ++i) {
-        /*promises.push(Upvote.countDocuments({ parentId: data[i].id }).then(count => {
-            data[i].votes = count;
-        }));*/
-        if (currentUserId) {
-            promises.push(Upvote_1.default.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                data[i].isUpvoted = !(upvote === null);
-            }));
-        }
-        promises.push(PostAttachment_1.default.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
-    }
+    const promises = data.map((item, i) => [
+        Upvote_1.default.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
+            data[i].isUpvoted = !!upvote;
+        }),
+        PostAttachment_1.default.getByPostId({ post: item.id }).then(attachments => {
+            data[i].attachments = attachments;
+        })
+    ]).flat();
     await Promise.all(promises);
-    res.status(200).json({ posts: data });
+    res.json({ success: true, posts: data });
 });
 const createLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.createLessonCommentSchema, req);
+    const { lessonId, message, parentId } = body;
     const currentUserId = req.userId;
-    const { lessonId, message, parentId } = req.body;
     const lesson = await CourseLesson_1.default.findById(lessonId)
         .populate("course", "code title");
-    if (lesson === null) {
-        res.status(404).json({ message: "Code not found" });
+    if (!lesson) {
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
     let parentPost = null;
-    if (parentId !== null) {
+    if (parentId) {
         parentPost = await Post_1.default.findById(parentId);
-        if (parentPost === null) {
-            res.status(404).json({ message: "Parent post not found" });
+        if (!parentPost) {
+            res.status(404).json({ error: [{ message: "Parent post not found" }] });
             return;
         }
     }
@@ -401,7 +383,7 @@ const createLessonComment = (0, express_async_handler_1.default)(async (req, res
         parentId,
         user: currentUserId
     });
-    if (parentPost != null && parentPost.user != currentUserId) {
+    if (parentPost && parentPost.user != currentUserId) {
         await Notification_1.default.sendToUsers([parentPost.user], {
             title: "New reply",
             type: NotificationTypeEnum_1.default.LESSON_COMMENT,
@@ -420,6 +402,7 @@ const createLessonComment = (0, express_async_handler_1.default)(async (req, res
     }
     const attachments = await PostAttachment_1.default.getByPostId({ post: reply._id });
     res.json({
+        success: true,
         post: {
             id: reply._id,
             message: reply.message,
@@ -433,67 +416,50 @@ const createLessonComment = (0, express_async_handler_1.default)(async (req, res
     });
 });
 const editLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.editLessonCommentSchema, req);
+    const { id, message } = body;
     const currentUserId = req.userId;
-    const { id, message } = req.body;
-    if (typeof message === "undefined") {
-        res.status(400).json({ message: "Some fields are missing" });
-        return;
-    }
     const comment = await Post_1.default.findById(id);
-    if (comment === null) {
-        res.status(404).json({ message: "Post not found" });
+    if (!comment) {
+        res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
-    if (currentUserId != comment.user) {
-        res.status(401).json({ message: "Unauthorized" });
+    if (comment.user != currentUserId) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
     comment.message = message;
-    try {
-        await comment.save();
-        const attachments = await PostAttachment_1.default.getByPostId({ post: comment._id });
-        res.json({
-            success: true,
-            data: {
-                id: comment._id,
-                message: comment.message,
-                attachments
-            }
-        });
-    }
-    catch (err) {
-        res.json({
-            success: false,
-            error: err?.message,
-            data: null
-        });
-    }
+    await comment.save();
+    const attachments = await PostAttachment_1.default.getByPostId({ post: comment._id });
+    res.json({
+        success: true,
+        data: {
+            id: comment._id,
+            message: comment.message,
+            attachments
+        }
+    });
 });
 const deleteLessonComment = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.deleteLessonCommentSchema, req);
+    const { id } = body;
     const currentUserId = req.userId;
-    const { id } = req.body;
     const comment = await Post_1.default.findById(id);
-    if (comment === null) {
-        res.status(404).json({ message: "Post not found" });
+    if (!comment) {
+        res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
-    if (currentUserId != comment.user) {
-        res.status(401).json({ message: "Unauthorized" });
+    if (comment.user != currentUserId) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
     const lesson = await CourseLesson_1.default.findById(comment.lessonId);
-    if (lesson === null) {
-        res.status(404).json({ message: "Lesson not found" });
+    if (!lesson) {
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
-    try {
-        await Post_1.default.deleteAndCleanup({ _id: id });
-        res.json({ success: true });
-    }
-    catch (err) {
-        console.log(err);
-        res.json({ success: false, error: err?.message });
-    }
+    await Post_1.default.deleteAndCleanup({ _id: id });
+    res.json({ success: true });
 });
 const courseController = {
     getCourseList,

@@ -10,6 +10,10 @@ router.use(verifyJWT);
 
 router.use(protectRoute);
 
+router.route("/GetUnseenMessagesCount").post(channelsController.getUnseenMessagesCount);
+
+router.use(verifyEmail);
+
 router.route("/").post(channelsController.getChannelsList);
 router.route("/CreateDirectMessages").post(channelsController.createDirectMessages);
 router.route("/CreateGroup").post(channelsController.createGroup);
@@ -24,7 +28,6 @@ router.route("/GroupCancelInvite").post(channelsController.groupCancelInvite);
 router.route("/GroupRename").post(channelsController.groupRename);
 router.route("/GroupChangeRole").post(channelsController.groupChangeRole);
 router.route("/DeleteChannel").post(channelsController.deleteChannel);
-router.route("/GetUnseenMessagesCount").post(channelsController.getUnseenMessagesCount);
 router.route("/MuteChannel").post(channelsController.muteChannel);
 
 export default router;

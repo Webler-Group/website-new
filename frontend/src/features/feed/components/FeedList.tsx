@@ -10,7 +10,7 @@ import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
 import { IFeed } from './types';
-import { EllipsisLoaderPlaceholder } from '../../../components/Loader';
+import Loader from '../../../components/Loader';
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest', requireLogin: false },
@@ -24,14 +24,24 @@ const FILTER_OPTIONS = [
 const FeedList = () => {
   const { feedId } = useParams();
   const navigate = useNavigate();
+  const { userInfo } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filter, setFilter] = useState(1);
+
+  let defaultFilter = 1;
+  const feedOptionsItem = localStorage.getItem('feed');
+  if (feedOptionsItem) {
+    const feedOptions: { filter: number } = JSON.parse(feedOptionsItem);
+    const option = FILTER_OPTIONS.find(x => x.value === feedOptions.filter);
+    if (option && (!option.requireLogin || userInfo != null)) {
+      defaultFilter = feedOptions.filter;
+    }
+  }
+  const [filter, setFilter] = useState(defaultFilter);
   const [headerVisible, setHeaderVisible] = useState(true);
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [votesModalVisible, setVotesModalVisible] = useState(false);
   const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
   const [pinnedVisible, setPinnedVisible] = useState(true);
-  const { userInfo } = useAuth();
   const { sendJsonRequest } = useApi();
   const feeds = useFeed(filter, searchQuery, 10);
   const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
@@ -88,6 +98,10 @@ const FeedList = () => {
       });
     }
   }, [feeds.state]);
+
+  useEffect(() => {
+    localStorage.setItem('feed', JSON.stringify({ filter }));
+  }, [filter]);
 
   const fetchPinnedFeeds = async () => {
     setLoading(true);
@@ -189,7 +203,7 @@ const FeedList = () => {
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
       <div className="wb-feed-list-container">
         {/* Header */}
-        <div className={`wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
+        <div className={`p-2 wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             {/* Search */}
@@ -238,12 +252,14 @@ const FeedList = () => {
 
         {
           loading ?
-            <EllipsisLoaderPlaceholder />
+            <div className="d-flex justify-content-center mt-5 text-center">
+              <Loader />
+            </div>
             :
             <>
               {/* Pinned Feeds Section */}
               {pinnedFeeds.length > 0 && (
-                <div className="wb-pinned-feeds-section bg-light border-top border-bottom">
+                <div className="px-2 wb-pinned-feeds-section bg-light">
                   <div className="d-flex justify-content-between align-items-center py-2">
                     <h6 className="text-warning mb-0"><FaMapPin /> Pinned Posts</h6>
                     <Button size='sm' variant='link' className='text-secondary' onClick={togglePinnedVisibility}>{pinnedVisible ? <FaEye /> : <FaEyeSlash />}</Button>
@@ -260,6 +276,8 @@ const FeedList = () => {
                             onShowUserReactions={onShowUserReactions}
                             onDelete={onDelete}
                             onTogglePin={onTogglePin}
+                            showFullContent={false}
+                            onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
                           />
                         </div>
                       ))}
@@ -269,13 +287,17 @@ const FeedList = () => {
               )}
 
               {/* Content */}
-              <div className="wb-feed-items"> 
-                {feeds.error && (
+              <div className="px-2 wb-feed-items">
+                {feeds.error.length > 0 && (
                   <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
                     <FaExclamationCircle />
                     <div>
                       <strong>Error loading feeds</strong>
-                      <p className="mb-0">{feeds.error}</p>
+                      <ul>
+                        {
+                          feeds.error.map((err, idx) => <li key={idx}>{err.message}</li>)
+                        }
+                      </ul>
                       <button
                         onClick={handleRefresh}
                         className="btn btn-sm btn-outline-danger mt-2"
@@ -286,7 +308,7 @@ const FeedList = () => {
                   </div>
                 )}
 
-                {!feeds.loading && !feeds.error && feeds.results.length === 0 && (
+                {!feeds.loading && feeds.error.length == 0 && feeds.results.length === 0 && (
                   <div className="text-center py-5">
                     <FaSearch size={40} className="opacity-50 mb-3" />
                     <h5 className="text-muted">No feeds found</h5>
@@ -316,6 +338,8 @@ const FeedList = () => {
                           onShowUserReactions={onShowUserReactions}
                           onDelete={onDelete}
                           onTogglePin={onTogglePin}
+                          showFullContent={false}
+                          onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
                         />
                       </div>
                     );

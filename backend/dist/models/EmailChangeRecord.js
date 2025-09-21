@@ -33,11 +33,11 @@ const emailChangeRecordScheme = new mongoose_1.default.Schema({
 });
 emailChangeRecordScheme.statics.generate = async function (userId, newEmail) {
     await EmailChangeRecord.deleteMany({ userId });
-    const code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
-    const count = await User_1.default.countDocuments({ email: newEmail });
-    if (count != 0) {
-        throw new Error("Email is already used");
+    const exists = await User_1.default.exists({ email: newEmail });
+    if (exists) {
+        return null;
     }
+    const code = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
     await EmailChangeRecord.create({
         userId,
         newEmail,

@@ -1,5 +1,6 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
 import LessonNode from "./LessonNode";
+import Post from "./Post";
 
 const courseLessonSchema = new mongoose.Schema({
     title: {
@@ -33,6 +34,7 @@ courseLessonSchema.statics.deleteAndCleanup = async function(filter: mongoose.Fi
     for(let i = 0; i < lessonsToDelete.length; ++i) {
         const lesson = lessonsToDelete[i];
         await LessonNode.deleteAndCleanup({ lessonId: lesson._id });
+        await Post.deleteAndCleanup({ lessonId: lesson._id });
     }
 
     await CourseLesson.deleteMany(filter);

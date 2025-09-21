@@ -7,14 +7,14 @@ const useReactions = (options: { parentId: string | null }, countPerPage: number
     const [results, setResults] = useState<IUserReaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(true);
-    const [error, setError] = useState("");
+    const [error, setError] = useState<any[] | undefined>();
     const [state, setState] = useState({ page: 1 });
 
     useEffect(() => {
         const fetchData = async () => {
             if (state.page == 0 || !options.parentId) return;
 
-            setError("");
+            setError(undefined);
             setLoading(true);
             const result = await sendJsonRequest(
                 "/Feed/GetUserReactions",
@@ -26,7 +26,7 @@ const useReactions = (options: { parentId: string | null }, countPerPage: number
                 setResults((prev) => state.page == 1 ? result.userReactions : [...prev, ...result.userReactions]);
                 setHasNextPage(result.userReactions.length === countPerPage);
             } else {
-                setError("Something went wrong")
+                setError(result.error);
             }
             setLoading(false);
         }

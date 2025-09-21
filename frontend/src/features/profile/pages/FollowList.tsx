@@ -2,6 +2,7 @@ import { useCallback, useRef } from "react";
 import { Modal } from "react-bootstrap";
 import useFollows from "../hooks/useFollows";
 import FollowListProfile from "../components/FollowListProfile";
+import Loader from "../../../components/Loader";
 
 interface FollowListProps {
     options: { path?: string; userId: string | null; };
@@ -66,11 +67,7 @@ const FollowList = ({ options, visible, title, onClose, setCount }: FollowListPr
                 {
                     isLoading &&
                     <div className="flex-grow-1 d-flex flex-column justify-content-center align-items-center text-center">
-                        <div className="wb-loader">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </div>
+                        <Loader />
                     </div>
                 }
             </Modal.Body>

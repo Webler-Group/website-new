@@ -78,17 +78,9 @@ const DateUtils = (function () {
         return (date.getMonth() + 1) + "/" + date.getDate() + "/" + date.getFullYear()
     }
 
-    const formatDateForServer = (date: Date) => {
-        const year = date.getFullYear();
-        const month = (date.getMonth() + 1).toString().padStart(2, "0");
-        const day = date.getDate().toString().padStart(2, "0");
-        return `${year}-${month}-${day}`;
-    };
-
     return {
         format,
-        format2,
-        formatDateForServer
+        format2
     }
 
 })()

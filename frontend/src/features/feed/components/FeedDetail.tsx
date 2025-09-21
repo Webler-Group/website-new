@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { IFeed } from './types';
 import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
-import NotificationToast from './comments/NotificationToast';
-import { Offcanvas } from 'react-bootstrap';
+import NotificationToast from '../../../components/NotificationToast';
+import { Button, Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
 import { FaArrowLeft } from 'react-icons/fa6';
+import Loader from '../../../components/Loader';
 
 interface FeedDetailsProps {
   feedId?: string;
@@ -99,11 +100,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
     return (
       <>
         <div className="loading-container">
-          <div className="wb-loader">
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
+          <Loader />
         </div>
       </>
     );
@@ -118,16 +115,13 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
             onClose={() => setNotification(null)}
           />
           <div className="error-content">
-            <h2 className="error-title">
+            <h4 className="error-title">
               {error || 'Feed not found'}
-            </h2>
-            <button
-              onClick={() => navigate('/feed')}
-              className="error-back-button"
-            >
-              <FaArrowLeft size={16} />
+            </h4>
+            <Button onClick={() => navigate('/feed')} variant='primary'>
+              <FaArrowLeft />
               Back to Feed
-            </button>
+            </Button>
           </div>
         </div>
       </>

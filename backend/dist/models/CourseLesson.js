@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const LessonNode_1 = __importDefault(require("./LessonNode"));
+const Post_1 = __importDefault(require("./Post"));
 const courseLessonSchema = new mongoose_1.default.Schema({
     title: {
         type: String,
@@ -36,6 +37,7 @@ courseLessonSchema.statics.deleteAndCleanup = async function (filter) {
     for (let i = 0; i < lessonsToDelete.length; ++i) {
         const lesson = lessonsToDelete[i];
         await LessonNode_1.default.deleteAndCleanup({ lessonId: lesson._id });
+        await Post_1.default.deleteAndCleanup({ lessonId: lesson._id });
     }
     await CourseLesson.deleteMany(filter);
 };

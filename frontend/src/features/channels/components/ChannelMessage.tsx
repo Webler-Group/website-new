@@ -3,6 +3,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import PostAttachment, { IPostAttachment } from "../../discuss/components/PostAttachment";
+import RepliedMessage from "./RepliedMessage";
 
 interface IChannelMessage {
     id: string;
@@ -12,7 +13,9 @@ interface IChannelMessage {
     userName: string;
     userAvatar: string;
     createdAt: string;
+    updatedAt: string;
     channelId: string;
+    repliedTo?: IChannelMessage;
     deleted: boolean;
     viewed: boolean;
     attachments: IPostAttachment[];
@@ -24,6 +27,7 @@ interface ChannelMessageProps {
     onContextMenu: (message: IChannelMessage, target: HTMLElement | null) => void;
 }
 
+const AVATAR_SIZE = 42;
 const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const bodyRef = useRef<HTMLDivElement>(null);
     const touchTimer = useRef<NodeJS.Timeout | null>(null);
@@ -40,7 +44,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
         touchTimer.current = setTimeout(() => {
             if (message.type !== 1 || message.deleted) return;
             onContextMenu(message, bodyRef.current);
-        }, 600); // 600ms long press
+        }, 500);
     };
 
     const handleTouchMove = () => {
@@ -68,15 +72,14 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             <div className="d-flex">
                 {showHeader && (
                     <div className="me-2 flex-shrink-0">
-                        <ProfileAvatar avatarImage={message.userAvatar} size={42} />
+                        <ProfileAvatar avatarImage={message.userAvatar} size={AVATAR_SIZE} />
                     </div>
                 )}
 
-                <div
-                    className="flex-grow-1">
+                <div className="flex-grow-1">
                     {showHeader && (
                         <div className="d-flex align-items-center mb-1">
-                            <ProfileName userId={message.userId} userName={message.userName} />
+                            <ProfileName className="fw-bold" userId={message.userId} userName={message.userName} />
                             <small className="text-muted ms-2">
                                 {DateUtils.format(new Date(message.createdAt))}
                             </small>
@@ -92,6 +95,9 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
                         onTouchEnd={handleTouchEnd}
                     >
                         {message.deleted ? <i className="text-muted">Message was deleted</i> : message.content}
+                        {(!message.deleted && new Date(message.createdAt) < new Date(message.updatedAt)) && (
+                            <small className="text-muted"> (edited)</small>
+                        )}
                         {!message.deleted && (
                             <div>
                                 {message.attachments.map((attachment) => (
@@ -107,7 +113,14 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
         );
     }
 
-    body = <div style={{ maxWidth: "720px" }}>{body}</div>;
+    body = <div style={{ maxWidth: "720px" }}>
+        {message.repliedTo &&
+            <div className="ms-5 indented">
+                <RepliedMessage message={message.repliedTo} />
+            </div>
+        }
+        {body}
+    </div>;
 
     return (
         <div ref={ref} className="wb-channels-message">

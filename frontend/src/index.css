@@ -127,6 +127,7 @@ ul {
 
 .wb-p-follow-item__name {
     font-size: 14px;
+    white-space: nowrap;
 }
 
 .wb-p-details__bio {
@@ -147,6 +148,7 @@ ul {
 
     .wb-modal__container.codes {
         width: 360px;
+        height: 600px;
         max-height: 80vh;
     }
 
@@ -774,7 +776,7 @@ ul {
 }
 
 .wb-channels-message__body {
-    font-size: 14px;
+    font-size: 0.95rem;
     line-height: 1.3;
     width: fit-content;
     max-width: 100%;
@@ -795,13 +797,34 @@ ul {
 
 .wb-channels-message-enter {
     opacity: 0;
-    height: 0;
+    max-height: 0;
 }
 
 .wb-channels-message-enter-active {
     opacity: 1;
-    transition: opacity 0.4s ease-out, height 0.8s ease-out;
-    height: 100%;
+    transition: opacity 0.4s ease-out, max-height 0.8s ease-out;
+    max-height: 500px;
+}
+
+.wb-channels-reply__text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.wb-channels-reply__text--expanded {
+    display: none;
+    /* Hide the truncated version when expanded */
+}
+
+.wb-channels-reply__full-content {
+    margin-left: 29px;
+    /* Adjust based on icon + avatar + gaps width */
+    margin-top: 2px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
 }
 
 .wb-feed-comment-modal__backdrop {
@@ -929,7 +952,8 @@ ul {
     border-radius: 16px;
 }
 
-.wb-feed-action-btn, .wb-reaction-picker-btn {
+.wb-feed-action-btn,
+.wb-reaction-picker-btn {
     color: #65676b;
     display: flex;
     gap: 0.5rem;
@@ -940,7 +964,8 @@ ul {
     font-weight: 600;
 }
 
-.wb-feed-action-btn:hover, .wb-reaction-picker-btn:hover {
+.wb-feed-action-btn:hover,
+.wb-reaction-picker-btn:hover {
     background: #e4e6ea;
 }
 
@@ -1026,7 +1051,8 @@ ul {
     white-space: pre-wrap;
 }
 
-.wb-feed-layout-container, .wb-feed-details-container {
+.wb-feed-layout-container,
+.wb-feed-details-container {
     max-width: 720px;
     margin: 0 auto;
     min-height: 100vh;
@@ -1036,4 +1062,29 @@ ul {
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
+}
+
+.wb-feed-content.truncated {
+    max-height: 300px;
+    /* adjust */
+    overflow: hidden;
+    position: relative;
+}
+
+.wb-feed-content.truncated .fade-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    /* gradient height */
+    background: linear-gradient(to bottom, transparent, #fff);
+    pointer-events: none;
+}
+
+.wb-feed-content.clickable {
+    cursor: pointer;
+}
+
+.wb-feed-content.clickable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }

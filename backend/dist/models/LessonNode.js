@@ -19,10 +19,10 @@ const lessonNodeSchema = new mongoose_1.default.Schema({
     },
     text: {
         type: String,
-        required: false,
+        default: "",
         trim: true,
         minLength: 0,
-        maxLength: 1000
+        maxLength: 2000
     },
     lessonId: {
         type: mongoose_1.default.Types.ObjectId,
@@ -31,7 +31,7 @@ const lessonNodeSchema = new mongoose_1.default.Schema({
     },
     correctAnswer: {
         type: String,
-        required: false
+        maxLength: 60
     }
 });
 lessonNodeSchema.statics.deleteAndCleanup = async function (filter) {

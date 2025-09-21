@@ -5,7 +5,6 @@ import roles from "../../../data/roles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { PaginationControl } from "react-bootstrap-pagination-control";
-import DateUtils from "../../../utils/DateUtils";
 import { Link, useNavigate } from "react-router-dom";
 import { IAdminUser } from "./ModView";
 
@@ -28,7 +27,7 @@ const AdminUserList = () => {
     const fetchUsers = async () => {
         const result = await sendJsonRequest("/Admin/Users", "POST", {
             search: search.trim() || undefined,
-            date: date ? DateUtils.formatDateForServer(date) : undefined,
+            date: date ? date.toISOString() : undefined,
             active: activeFilter === "all" ? undefined : activeFilter === "true",
             role: role !== "All" ? role : undefined,
             count: pageSize,

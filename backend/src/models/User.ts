@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import mongoose, { InferSchemaType, Model, MongooseError } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import RolesEnum from "../data/RolesEnum";
@@ -17,7 +17,8 @@ const banSchema = new mongoose.Schema({
     },
     note: {
         type: String,
-        trim: true
+        trim: true,
+        maxLength: 120
     },
     date: {
         type: Date,
@@ -41,9 +42,10 @@ const userSchema = new mongoose.Schema({
     name: {
         type: String,
         trim: true,
-        default: "User_" + uuid().slice(0, 12),
+        required: true,
         minLength: 3,
-        maxLength: 20
+        maxLength: 20,
+        unique: true
     },
     countryCode: {
         type: String,
@@ -108,6 +110,14 @@ const userSchema = new mongoose.Schema({
     tokenVersion: {
         type: Number,
         default: 0
+    },
+    lastLoginAt: {
+        type: Date
+    },
+    feed: {
+        filter: {
+            type: Number
+        }
     }
 },
     {

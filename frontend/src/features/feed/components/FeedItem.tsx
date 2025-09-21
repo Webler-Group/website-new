@@ -1,11 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { IFeed, OriginalPost, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import { useNavigate } from "react-router-dom";
 import ShareModal from './ShareModal';
 import { useAuth } from '../../auth/context/authContext';
-import NotificationToast from './comments/NotificationToast';
+import NotificationToast from '../../../components/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
 import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
@@ -28,6 +28,8 @@ interface FeedItemProps {
   commentCount?: number;
   onDelete: (feed: IFeed) => void;
   onTogglePin?: (feed: IFeed) => void;
+  showFullContent?: boolean;
+  onShowFullContent?: (feedId: string) => void;
 }
 
 const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
@@ -39,13 +41,14 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       className="mt-2 border bg-light p-2 text-dark text-decoration-none mb-2"
       style={{ cursor: "pointer" }}
     >
-      <div className='d-flex gap-2 align-items-start mb-2'>
+      <div className='d-flex gap-2 align-items-center mb-2'>
         <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
         <ProfileName userId={originalPost.userId} userName={originalPost.userName} />
+        <span>wrote</span>
       </div>
 
       <div className='wb-feed-content__message'>
-        <MarkdownRenderer content={originalPost.message} allowedUrls={allowedUrls} />
+        <i>{originalPost.message}</i>
       </div>
 
       {/* {originalPost.tags?.length > 0 && (
@@ -67,11 +70,13 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
 const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   feed,
   onCommentsClick,
+  onShowFullContent,
   onShowUserReactions,
   onGeneralUpdate,
   commentCount,
   onDelete,
-  onTogglePin
+  onTogglePin,
+  showFullContent = true
 }, ref) => {
   const { sendJsonRequest } = useApi();
   const { userInfo } = useAuth();
@@ -86,27 +91,42 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
+  const [needsTruncation, setNeedsTruncation] = useState(false);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 3000);
   }, []);
+
+  useLayoutEffect(() => {
+    if (contentRef.current && !showFullContent) {
+      const { scrollHeight, clientHeight } = contentRef.current;
+      setNeedsTruncation(scrollHeight > clientHeight);
+    } else {
+      setNeedsTruncation(false);
+    }
+  }, [feed.message, feed.attachments, showFullContent]);
 
   const handleTogglePin = async () => {
     const result = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id, pinned: !feed.isPinned });
     if (result && result.success) {
       onTogglePin?.({ ...feed, isPinned: result.data.isPinned });
       showNotification("success", result.data.isPinned ? "Post pinned" : "Post unpinned");
+    } else {
+      showNotification("error", result?.error[0].message);
     }
   }
 
-  const handleEdit = async (updatedContent: string, tags: string[]) => {
-    const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent, tags });
+  const handleEdit = async (updatedContent: string) => {
+    const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
     if (result && result.success) {
-      onGeneralUpdate?.({ ...feed, message: result.data.message, tags: result.data.tags, attachments: result.data.attachments });
+      onGeneralUpdate?.({ ...feed, message: result.data.message, attachments: result.data.attachments });
       showNotification("success", "Post updated successfully");
       setShowEditModal(false);
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -117,7 +137,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       navigate("/feed")
       showNotification("success", "Post deleted successfully");
     } else {
-      showNotification("error", result.message);
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -184,6 +204,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       }
 
       onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
+    } else {
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -193,6 +215,8 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
       navigate(`/feed/${result.feed.id}`);
       setShowShareModal(false);
       showNotification("success", "Post shared successfully");
+    } else {
+      showNotification("error", result?.error[0].message);
     }
   }
 
@@ -204,6 +228,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     onShowUserReactions?.(feed.id);
   }
 
+  const handleShowFullContentClick = () => {
+    onShowFullContent?.(feed.id);
+  };
+
   const canEdit = feed.userId === currentUserId;
 
   const body = (
@@ -213,7 +241,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         {/* Header */}
         <div className="d-flex justify-content-between">
-          <div className="d-flex align-items-start gap-2 flex-grow-1 min-w-0">
+          <div className="d-flex align-items-start gap-2 flex-grow-1">
             <ProfileAvatar size={36} avatarImage={feed.userAvatarImage} />
 
             <div className='d-flex flex-column'>
@@ -282,23 +310,32 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             </div>
         )}
 
-        <div className="mt-2 wb-feed-content">
-
-          <div className='wb-feed-content__message'>
+        <div
+          ref={contentRef}
+          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated" : ""} ${!showFullContent && needsTruncation ? "clickable" : ""}`}
+          onClick={!showFullContent && needsTruncation ? handleShowFullContentClick : undefined}
+        >
+          <div className="wb-feed-content__message" style={!showFullContent && needsTruncation ? { pointerEvents: "none" } : {}}>
             <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
           </div>
 
           {feed.attachments?.length > 0 && (
             <div className="mt-2 rounded text-dark text-decoration-none">
-              <div className="d-flex flex-column gap-2">
-                {feed.attachments.map(data => (
-                  <div key={data.id} className='mt-1'>
-                    <PostAttachment data={data} />
+              {feed.attachments?.length > 0 && (
+                <div className="mt-2 rounded text-dark text-decoration-none">
+                  <div className="d-flex flex-column gap-2">
+                    {feed.attachments.map(data => (
+                      <div key={data.id} className='mt-1'>
+                        <PostAttachment data={data} />
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
+
+          {!showFullContent && needsTruncation && <div className="fade-overlay"></div>}
         </div>
 
         {/* Reactions */}
@@ -306,10 +343,12 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           <div className='d-flex'>
             {feed.topReactions.map((r: any, index: number) => (
               <span
-                className='bg-white rounded-circle'
+                className='bg-white rounded-circle d-flex align-items-center justify-content-center'
                 key={`${r.reaction}-${index}`}
                 style={{
                   marginLeft: index === 0 ? "0" : "-6px",
+                  width: "18px",
+                  height: "18px",
                   zIndex: (feed.topReactions.length - index).toString()
                 }}
               >

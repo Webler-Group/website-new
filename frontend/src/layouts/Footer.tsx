@@ -10,6 +10,7 @@ function Footer() {
                     <div className="wb-home-footer p-3 d-flex flex-column gap-3">
                         <div className='d-flex justify-content-around'>
                             <Link to={"/"}>Home</Link>
+                            <Link to={"/Faq"}>FAQ</Link>
                             <Link to={"/Contact"}>Contact</Link>
                             <Link to={"/Terms-of-use"}>Terms of Use</Link>
                         </div>

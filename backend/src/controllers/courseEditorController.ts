@@ -11,14 +11,33 @@ import fs from "fs";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import mongoose from "mongoose";
+import MulterFileTypeError from "../exceptions/MulterFileTypeError";
+import {
+    createCourseSchema,
+    getCourseSchema,
+    deleteCourseSchema,
+    editCourseSchema,
+    getLessonSchema,
+    getLessonListSchema,
+    createLessonSchema,
+    editLessonSchema,
+    deleteLessonSchema,
+    uploadCourseCoverImageSchema,
+    createLessonNodeSchema,
+    deleteLessonNodeSchema,
+    editLessonNodeSchema,
+    changeLessonIndexSchema,
+    changeLessonNodeIndexSchema
+} from "../validation/courseEditorSchema";
+import { parseWithZod } from "../utils/zodUtils";
 
 const coverImageUpload = multer({
-    limits: { fileSize: 1024 * 1024 },
+    limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter(req, file, cb) {
-        if (file.mimetype === 'image/png') {
+        if (/^image\/(png)$/i.test(file.mimetype)) {
             cb(null, true);
         } else {
-            cb(null, false);
+            cb(new MulterFileTypeError("Only .png files are allowed"));
         }
     },
     storage: multer.diskStorage({
@@ -36,7 +55,8 @@ const coverImageUpload = multer({
 });
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { title, description, code } = req.body;
+    const { body } = parseWithZod(createCourseSchema, req);
+    const { title, description, code } = body;
 
     const course = await Course.create({
         title,
@@ -46,6 +66,7 @@ const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     res.json({
+        success: true,
         course: {
             id: course._id,
             code: course.code,
@@ -68,12 +89,14 @@ const getCoursesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }));
 
     res.json({
+        success: true,
         courses: data
     });
 });
 
 const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId, courseCode, includeLessons } = req.body;
+    const { body } = parseWithZod(getCourseSchema, req);
+    const { courseId, courseCode, includeLessons } = body;
 
     let course = null;
     if (courseId) {
@@ -83,14 +106,13 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!course) {
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
     let lessons: any[] = [];
     if (includeLessons === true) {
-        lessons = await CourseLesson.find({ course: course.id }).sort({ "index": "asc" });
-        
+        lessons = await CourseLesson.find({ course: course.id }).sort({ index: "asc" });
         lessons = lessons.map(lesson => ({
             id: lesson._id,
             title: lesson.title,
@@ -100,6 +122,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     res.json({
+        success: true,
         course: {
             id: course._id,
             code: course.code,
@@ -113,30 +136,26 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId } = req.body;
+    const { body } = parseWithZod(deleteCourseSchema, req);
+    const { courseId } = body;
 
     const course = await Course.findById(courseId);
     if (!course) {
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
-    try {
-        await Course.deleteAndCleanup(courseId);
-
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, error: err })
-    }
+    await Course.deleteAndCleanup(courseId);
+    res.json({ success: true });
 });
 
 const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId, code, title, description, visible } = req.body;
+    const { body } = parseWithZod(editCourseSchema, req);
+    const { courseId, code, title, description, visible } = body;
 
     const course = await Course.findById(courseId);
     if (!course) {
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
@@ -145,36 +164,25 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     course.visible = visible;
     course.code = code;
 
-    try {
-        await course.save();
-
-        res.json({
-            success: true,
-            data: {
-                id: course._id,
-                title: course.title,
-                description: course.description,
-                visible: course.visible
-            }
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
-
-
+    await course.save();
+    res.json({
+        success: true,
+        data: {
+            id: course._id,
+            title: course.title,
+            description: course.description,
+            visible: course.visible
+        }
+    });
 });
 
 const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { lessonId } = req.body;
+    const { body } = parseWithZod(getLessonSchema, req);
+    const { lessonId } = body;
 
     const lesson = await CourseLesson.findById(lessonId);
-    if(!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+    if (!lesson) {
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
@@ -193,42 +201,16 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     res.json({
+        success: true,
         lesson: data
     });
 });
 
-const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { nodeId } = req.body;
-
-    const lessonNode = await LessonNode.findById(nodeId);
-
-    if (!lessonNode) {
-        res.status(404).json({ message: "Lesson node not found" });
-        return;
-    }
-
-    const answers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id });
-
-    res.json({
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type,
-            text: lessonNode.text,
-            correctAnswer: lessonNode.correctAnswer,
-            answers: answers.map(x => ({
-                id: x._id,
-                text: x.text,
-                correct: x.correct
-            }))
-        }
-    });
-});
-
 const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId } = req.body;
+    const { body } = parseWithZod(getLessonListSchema, req);
+    const { courseId } = body;
 
-    let lessons: any[] = await CourseLesson.find({ course: courseId }).sort({ "index": "asc" });
+    let lessons: any[] = await CourseLesson.find({ course: courseId }).sort({ index: "asc" });
     lessons = lessons.map(lesson => ({
         id: lesson._id,
         title: lesson.title,
@@ -237,20 +219,22 @@ const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }));
 
     res.json({
+        success: true,
         lessons
     });
 });
 
 const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { title, courseId } = req.body;
+    const { body } = parseWithZod(createLessonSchema, req);
+    const { title, courseId } = body;
 
     const course = await Course.findById(courseId);
     if (!course) {
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
-    const lastLessonIndex = await CourseLesson.count({ course: courseId });
+    const lastLessonIndex = await CourseLesson.countDocuments({ course: courseId });
 
     const lesson = await CourseLesson.create({
         title,
@@ -259,6 +243,7 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     res.json({
+        success: true,
         lesson: {
             id: lesson._id,
             title: lesson.title,
@@ -268,77 +253,59 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const editLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { lessonId, title } = req.body;
+    const { body } = parseWithZod(editLessonSchema, req);
+    const { lessonId, title } = body;
 
     const lesson = await CourseLesson.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
     lesson.title = title;
 
-    try {
-        await lesson.save();
-
-        res.json({
-            success: true,
-            data: {
-                id: lesson._id,
-                title: lesson.title,
-                index: lesson.index,
-            }
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
+    await lesson.save();
+    res.json({
+        success: true,
+        data: {
+            id: lesson._id,
+            title: lesson.title,
+            index: lesson.index
+        }
+    });
 });
 
 const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { lessonId } = req.body;
+    const { body } = parseWithZod(deleteLessonSchema, req);
+    const { lessonId } = body;
 
     const lesson = await CourseLesson.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
-    try {
-        await CourseLesson.deleteAndCleanup({ _id: lessonId });
-
-        await CourseLesson.updateMany(
-            { course: lesson.course, index: { $gt: lesson.index } }, 
-            { $inc: { index: -1 } }
-        );
-
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, error: err })
-    }
+    await CourseLesson.deleteAndCleanup({ _id: lessonId });
+    await CourseLesson.updateMany(
+        { course: lesson.course, index: { $gt: lesson.index } },
+        { $inc: { index: -1 } }
+    );
+    res.json({ success: true });
 });
 
 const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { courseId } = req.body;
+    const { body } = parseWithZod(uploadCourseCoverImageSchema, req);
+    const { courseId } = body;
 
     if (!req.file) {
-        res.status(400).json({
-            success: false,
-            message: "No file uploaded"
-        });
+        res.status(400).json({ error: [{ message: "No file uploaded" }] });
         return;
     }
 
     const course = await Course.findById(courseId);
     if (!course) {
         fs.unlinkSync(req.file.path);
-
-        res.status(404).json({ message: "Course not found" });
+        res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
@@ -351,27 +318,17 @@ const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Respo
 
     course.coverImage = req.file.filename;
 
-    try {
-        await course.save();
-
-        res.json({
-            success: true
-        });
-    } catch (err: any) {
-        res.json({
-            success: false,
-            error: err
-        });
-    }
-
+    await course.save();
+    res.json({ success: true, data: { coverImage: course.coverImage } });
 });
 
 const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { lessonId } = req.body;
+    const { body } = parseWithZod(createLessonNodeSchema, req);
+    const { lessonId } = body;
 
     const lesson = await CourseLesson.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
@@ -385,172 +342,170 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
     await lesson.save();
 
     res.json({
+        success: true,
         lessonNode: {
             id: lessonNode._id,
             index: lessonNode.index,
             type: lessonNode._type
         }
-    })
+    });
 });
 
-const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { nodeId } = req.body;
+const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteLessonNodeSchema, req); // Reusing schema as it matches
+    const { nodeId } = body;
 
-    const node = await LessonNode.findById(nodeId);
-    if (!node) {
-        res.status(404).json({ message: "Lesson node not found" });
+    const lessonNode = await LessonNode.findById(nodeId);
+    if (!lessonNode) {
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
-    try {
-        await LessonNode.deleteAndCleanup({ _id: nodeId });
+    const answers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id });
 
-        await CourseLesson.updateOne({ _id: node.lessonId }, {
-            $inc: { nodes: -1 }
-        });
-
-        await LessonNode.updateMany(
-            { lessonId: node.lessonId, index: { $gt: node.index } }, 
-            { $inc: { index: -1 } }
-        );
-
-        res.json({ success: true });
-    }
-    catch (err: any) {
-        res.json({ success: false, error: err })
-    }
+    res.json({
+        success: true,
+        lessonNode: {
+            id: lessonNode._id,
+            index: lessonNode.index,
+            type: lessonNode._type,
+            text: lessonNode.text ?? "",
+            correctAnswer: lessonNode.correctAnswer ?? "",
+            answers: answers.map(x => ({
+                id: x._id,
+                text: x.text,
+                correct: x.correct
+            }))
+        }
+    });
 });
 
-const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { nodeId, type, text, correctAnswer, answers } = req.body;
+const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteLessonNodeSchema, req);
+    const { nodeId } = body;
 
     const node = await LessonNode.findById(nodeId);
     if (!node) {
-        res.status(404).json({ message: "Lesson node not found" });
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
+        return;
+    }
+
+    await LessonNode.deleteAndCleanup({ _id: nodeId });
+    await CourseLesson.updateOne({ _id: node.lessonId }, {
+        $inc: { nodes: -1 }
+    });
+    await LessonNode.updateMany(
+        { lessonId: node.lessonId, index: { $gt: node.index } },
+        { $inc: { index: -1 } }
+    );
+    res.json({ success: true });
+});
+
+const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(editLessonNodeSchema, req);
+    const { nodeId, type, text, correctAnswer, answers } = body;
+
+    const node = await LessonNode.findById(nodeId);
+    if (!node) {
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     node._type = type;
     node.text = text;
-    node.correctAnswer = correctAnswer;
+    node.correctAnswer = correctAnswer ?? "";
 
-    const currentAnswersIds = (await QuizAnswer.find({ courseLessonNodeId: node.id }).select("_id")).map(x => x._id);
+    const currentAnswersIds = (await QuizAnswer.find({ courseLessonNodeId: node.id }).select("_id")).map(x => x._id.toString());
 
-    const answersToDelete = [];
-    for(let answerId of currentAnswersIds) {
-        if(!answers.find((x: any) => new mongoose.Types.ObjectId(x.id) == answerId)) {
-            answersToDelete.push(answerId);
+    const answersToDelete = currentAnswersIds.filter(
+        answerId => !answers?.some((x: any) => x.id && new mongoose.Types.ObjectId(x.id).toString() === answerId)
+    );
+
+    await node.save();
+    await QuizAnswer.deleteMany({ _id: { $in: answersToDelete } });
+
+    const updatedAnswers = answers?.map(async (answer: any) => {
+        if (answer.id && currentAnswersIds.includes(new mongoose.Types.ObjectId(answer.id).toString())) {
+            await QuizAnswer.updateOne(
+                { _id: answer.id },
+                { text: answer.text, correct: answer.correct }
+            );
+            return answer;
+        } else {
+            const result = await QuizAnswer.create({
+                text: answer.text,
+                correct: answer.correct,
+                courseLessonNodeId: node.id
+            });
+            return { ...answer, id: result._id };
         }
-    }
+    }) || [];
 
-    try {
-        await node.save();
+    const savedAnswers = await Promise.all(updatedAnswers);
 
-        await QuizAnswer.deleteMany({ _id: { $in: answersToDelete } });
-        for(let answer of answers) {
-            let answerId = new mongoose.Types.ObjectId(answer.id);
-            if(currentAnswersIds.includes(answerId)) {
-                await QuizAnswer.updateOne({ _id: answerId }, { text: answer.text, correct: answer.correct });
-            } else {
-                const result = await QuizAnswer.create({ text: answer.text, correct: answer.correct, courseLessonNodeId: node.id });
-                answer.id = result._id;
-            }
+    res.json({
+        success: true,
+        data: {
+            id: node._id,
+            type: node._type,
+            text: node.text,
+            index: node.index,
+            correctAnswer: node.correctAnswer,
+            answers: savedAnswers
         }
-
-        res.json({
-            success: true,
-            data: {
-                id: node._id,
-                type: node._type,
-                text: node.text,
-                index: node.index,
-                correctAnswer: node.correctAnswer,
-                answers
-            }
-        })
-    }
-    catch (err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
+    });
 });
 
 const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { lessonId, newIndex } = req.body;
+    const { body } = parseWithZod(changeLessonIndexSchema, req);
+    const { lessonId, newIndex } = body;
 
     const lesson = await CourseLesson.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ message: "Lesson not found" });
+        res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
     const otherLesson = await CourseLesson.findOne({ course: lesson.course, index: newIndex });
     if (!otherLesson) {
-        res.status(404).json({ message: "New index is not valid" });
+        res.status(400).json({ error: [{ message: "New index is not valid" }] });
         return;
     }
 
     otherLesson.index = lesson.index;
     lesson.index = newIndex;
-
-    try {
-        await lesson.save();
-        await otherLesson.save();
-
-        res.json({
-            success: true,
-            data: {
-                index: newIndex
-            }
-        });
-    } catch(err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
+    await lesson.save();
+    await otherLesson.save();
+    res.json({
+        success: true,
+        data: { index: newIndex }
+    });
 });
 
 const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { nodeId, newIndex } = req.body;
+    const { body } = parseWithZod(changeLessonNodeIndexSchema, req);
+    const { nodeId, newIndex } = body;
 
     const node = await LessonNode.findById(nodeId);
     if (!node) {
-        res.status(404).json({ message: "Lesson node not found" });
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     const otherNode = await LessonNode.findOne({ lessonId: node.lessonId, index: newIndex });
     if (!otherNode) {
-        res.status(404).json({ message: "New index is not valid" });
+        res.status(400).json({ error: [{ message: "New index is not valid" }] });
         return;
     }
 
     otherNode.index = node.index;
     node.index = newIndex;
-
-    try {
-        await node.save();
-        await otherNode.save();
-
-        res.json({
-            success: true,
-            data: {
-                index: newIndex
-            }
-        });
-    } catch(err: any) {
-        res.json({
-            success: false,
-            error: err,
-            data: null
-        });
-    }
-
+    await node.save();
+    await otherNode.save();
+    res.json({
+        success: true,
+        data: { index: newIndex }
+    });
 });
 
 const courseEditorController = {

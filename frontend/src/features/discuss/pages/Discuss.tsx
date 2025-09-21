@@ -34,9 +34,9 @@ const Discuss = ({ MainPage }: DiscussProps) => {
     return (
         <div className="bg-white">
             <Container>
-                <div className="wb-discuss-questions-list-page d-block d-lg-flex gap-3 pt-2">
-                    <div className="flex-grow-1">{MainPage}</div>
-                    <div style={{ minWidth: "300px" }}>
+                <div className="wb-discuss-questions-list-page row pt-2">
+                    <div className="col-12 col-md-8">{MainPage}</div>
+                    <div className="col-12 col-md-4">
                         <h2>Hot today</h2>
                         <div className="my-3">
                             {

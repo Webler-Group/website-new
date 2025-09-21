@@ -32,7 +32,7 @@ interface CommentProps {
   handleEdit: () => void;
   handleDelete: () => void;
   handleShowVotes: () => void;
-  onVote: (id: string, vote: number) => void;
+  onVote: (id: string, vote: number, error?: any[]) => void;
 }
 
 const Comment: React.FC<CommentProps> = ({
@@ -59,6 +59,8 @@ const Comment: React.FC<CommentProps> = ({
     const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: comment.id, vote });
     if (result.success && result.vote === vote) {
       onVote(comment.id, result.vote);
+    } else {
+      onVote(comment.id, 0, result.error);
     }
   }
 

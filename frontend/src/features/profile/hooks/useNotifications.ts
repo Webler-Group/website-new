@@ -9,37 +9,26 @@ const useNotifications = (count: number, prevId: string | null, isOpened: boolea
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        if (!isOpened) return
+        if (!isOpened) return;
 
-        setIsLoading(true)
-        setError("")
+        const fetchNotifications = async () => {
+            setIsLoading(true)
+            setError("");
 
-        const controller = new AbortController()
-        const { signal } = controller
+            const result = await sendJsonRequest(`/Profile/GetNotifications`, "POST", { count, fromId: prevId ?? null })
 
-        let body = {
-            count
-        } as any;
-
-        if (prevId) {
-            body.fromId = prevId;
-        }
-
-        sendJsonRequest(`/Profile/GetNotifications`, "POST", body, { signal })
-            .then(result => {
-                if (!result || !result.notifications) {
-                    setIsLoading(false)
-                    if (signal.aborted) return
-                    setError("Something went wrong");
-                    return
-                }
+            if (result && result.notifications) {
                 setResults(prev => prevId ? [...prev, ...result.notifications] : result.notifications)
                 setHasNextPage(result.notifications.length === count)
                 setIsLoading(false)
-            })
+            } else {
+                setError(result?.error[0].message ?? "Something went wrong");
+            }
 
-        return () => controller.abort()
+            setIsLoading(false);
+        }
 
+        fetchNotifications();
     }, [prevId, isOpened])
 
     const onMarkAllAsRead = () => {
