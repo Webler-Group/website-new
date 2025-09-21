@@ -24,7 +24,6 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     let title = "";
     let subtitle = "";
     let to = "#";
-    let bgColor = "";
     let info = "";
 
     switch (data.type) {
@@ -32,7 +31,6 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             title = data.codeName || "Untitled Code";
             subtitle = `${data.codeLanguage} • ${data.userName}`;
             to = `/Compiler-Playground/${data.codeId}`;
-            bgColor = "bg-primary";
             info = "code";
             break;
 
@@ -40,7 +38,6 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             title = data.questionTitle || "Question";
             subtitle = `${data.userName}`;
             to = `/Discuss/${data.questionId}`;
-            bgColor = "bg-success";
             info = "question";
             break;
 
@@ -48,7 +45,6 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             title = `${data.feedMessage}`;
             subtitle = `${data.userName}`;
             to = `/feed/${data.feedId}`;
-            bgColor = "bg-info";
             info = "post";
             break;
 
