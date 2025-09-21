@@ -433,7 +433,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
         .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
 
-    if (typeof fromId !== "undefined") {
+    if (fromId) {
         const prevNotification = await Notification.findById(fromId);
 
         if (prevNotification !== null) {

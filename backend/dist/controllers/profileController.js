@@ -361,7 +361,7 @@ const getNotifications = (0, express_async_handler_1.default)(async (req, res) =
     let dbQuery = Notification_1.default
         .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
-    if (typeof fromId !== "undefined") {
+    if (fromId) {
         const prevNotification = await Notification_1.default.findById(fromId);
         if (prevNotification !== null) {
             dbQuery = dbQuery

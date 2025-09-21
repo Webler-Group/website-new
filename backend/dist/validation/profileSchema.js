@@ -58,7 +58,7 @@ exports.getFollowingSchema = zod_1.z.object({
 exports.getNotificationsSchema = zod_1.z.object({
     body: zod_1.z.object({
         count: commonSchema_1.countPerPageSchema,
-        fromId: (0, commonSchema_1.idSchema)("fromId").optional()
+        fromId: (0, commonSchema_1.idSchema)("fromId").nullish()
     }),
 });
 exports.markNotificationsSeenSchema = zod_1.z.object({
@@ -68,7 +68,7 @@ exports.markNotificationsSeenSchema = zod_1.z.object({
 });
 exports.markNotificationsClickedSchema = zod_1.z.object({
     body: zod_1.z.object({
-        ids: zod_1.z.array((0, commonSchema_1.idSchema)("id")).optional()
+        ids: zod_1.z.array((0, commonSchema_1.idSchema)("id")).nullish()
     }),
 });
 exports.updateNotificationsSchema = zod_1.z.object({

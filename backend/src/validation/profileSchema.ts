@@ -61,7 +61,7 @@ export const getFollowingSchema = z.object({
 export const getNotificationsSchema = z.object({
   body: z.object({
     count: countPerPageSchema,
-    fromId: idSchema("fromId").optional()
+    fromId: idSchema("fromId").nullish()
   }),
 });
 
@@ -73,7 +73,7 @@ export const markNotificationsSeenSchema = z.object({
 
 export const markNotificationsClickedSchema = z.object({
   body: z.object({
-    ids: z.array(idSchema("id")).optional()
+    ids: z.array(idSchema("id")).nullish()
   }),
 });
 

@@ -18,5 +18,6 @@ const userFollowingSchema = new mongoose_1.default.Schema({
 }, {
     timestamps: true
 });
+userFollowingSchema.index({ user: 1, following: 1 }, { unique: true });
 const UserFollowing = mongoose_1.default.model("UserFollowing", userFollowingSchema);
 exports.default = UserFollowing;
