@@ -97,7 +97,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const showNotification = useCallback((type: 'success' | 'error', message: string) => {
     setNotification({ type, message });
-    setTimeout(() => setNotification(null), 5000);
+    setTimeout(() => setNotification(null), 3000);
   }, []);
 
   useLayoutEffect(() => {

@@ -13,6 +13,7 @@ const CaptchaRecord_1 = __importDefault(require("../models/CaptchaRecord"));
 const confg_1 = require("../confg");
 const zodUtils_1 = require("../utils/zodUtils");
 const authSchema_1 = require("../validation/authSchema");
+const UserFollowing_1 = __importDefault(require("../models/UserFollowing"));
 const login = (0, express_async_handler_1.default)(async (req, res) => {
     const { body, headers } = (0, zodUtils_1.parseWithZod)(authSchema_1.loginSchema, req);
     const { email, password } = body;
@@ -86,12 +87,12 @@ const register = (0, express_async_handler_1.default)(async (req, res) => {
     const expiresIn = typeof tokenInfo.exp == "number" ?
         tokenInfo.exp * 1000 : 0;
     await (0, tokenUtils_1.generateRefreshToken)(res, { userId: user._id.toString() });
-    const { emailToken } = (0, tokenUtils_1.signEmailToken)({
-        userId: user._id.toString(),
-        email: user.email,
-        action: "verify-email"
-    });
     if (confg_1.config.nodeEnv === "production") {
+        const { emailToken } = (0, tokenUtils_1.signEmailToken)({
+            userId: user._id.toString(),
+            email: user.email,
+            action: "verify-email"
+        });
         try {
             await (0, email_1.sendActivationEmail)(user.name, user.email, user._id.toString(), emailToken);
             user.lastVerificationEmailTimestamp = Date.now();
@@ -100,6 +101,10 @@ const register = (0, express_async_handler_1.default)(async (req, res) => {
         catch (err) {
             console.log("Activation email error:", err.message);
         }
+    }
+    const weblercodesUser = await User_1.default.exists({ email: confg_1.config.adminEmail });
+    if (weblercodesUser) {
+        await UserFollowing_1.default.create({ user: user._id, following: weblercodesUser._id });
     }
     res.json({
         accessToken,

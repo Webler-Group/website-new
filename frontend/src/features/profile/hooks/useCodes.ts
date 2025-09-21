@@ -10,8 +10,6 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        const controller = new AbortController();
-        const { signal } = controller;
 
         const fetchData = async () => {
             setIsLoading(true)
@@ -22,26 +20,18 @@ const useCodes = (userId: string, count: number, pageNum: number) => {
                 count,
                 filter: 3,
                 userId
-            }, { signal });
-
-            if (signal.aborted) {
-                setIsLoading(false)
-                return;
-            }
+            });
 
             if (result && result.codes) {
                 setResults(prev => [...prev, ...result.codes])
                 setHasNextPage(result.codes.length === count)
             } else {
-                setError(result?.error[0].message || "Something went wrong");
+                setError(result?.error[0].message ?? "Something went wrong");
             }
             setIsLoading(false)
         };
 
         fetchData();
-
-        return () => controller.abort()
-
     }, [pageNum])
 
     return { isLoading, error, results, hasNextPage }

@@ -484,40 +484,15 @@ const updateNotifications = (0, express_async_handler_1.default)(async (req, res
 const searchProfiles = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.searchProfilesSchema, req);
     const { searchQuery } = body;
-    const match = { active: true };
+    const match = { active: true, roles: RolesEnum_1.default.USER };
     if (searchQuery && searchQuery.trim() !== "") {
         const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
         const searchRegex = new RegExp(`^${safeQuery}`, "i");
         match.name = searchRegex;
     }
-    const users = await User_1.default.aggregate([
-        { $match: match },
-        {
-            $lookup: {
-                from: "userfollowings",
-                localField: "_id",
-                foreignField: "following",
-                as: "followers"
-            }
-        },
-        {
-            $addFields: {
-                followersCount: { $size: "$followers" }
-            }
-        },
-        {
-            $project: {
-                name: 1,
-                avatarImage: 1,
-                level: 1,
-                roles: 1,
-                followersCount: 1,
-                countryCode: 1
-            }
-        },
-        { $sort: { followersCount: -1 } },
-        { $limit: 10 }
-    ]);
+    const users = await User_1.default.find()
+        .where(match)
+        .select("name avatarImage level roles countryCode");
     res.json({
         users: users.map(u => ({
             id: u._id,

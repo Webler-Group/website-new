@@ -10,8 +10,6 @@ const useQuestions = (userId: string, count: number, pageNum: number) => {
     const [hasNextPage, setHasNextPage] = useState(false)
 
     useEffect(() => {
-        const controller = new AbortController();
-        const { signal } = controller;
 
         const fetchData = async () => {
             setIsLoading(true)
@@ -22,25 +20,18 @@ const useQuestions = (userId: string, count: number, pageNum: number) => {
                 count,
                 filter: 3,
                 userId
-            }, { signal });
-
-            if (signal.aborted) {
-                setIsLoading(false)
-                return;
-            }
+            });
 
             if (result && result.questions) {
                 setResults(prev => [...prev, ...result.questions])
                 setHasNextPage(result.questions.length === count)
             } else {
-                setError(result?.error[0].message || "Something went wrong");
+                setError(result?.error[0].message ?? "Something went wrong");
             }
             setIsLoading(false)
         };
 
         fetchData();
-
-        return () => controller.abort()
 
     }, [pageNum])
 

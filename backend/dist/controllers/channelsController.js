@@ -19,6 +19,7 @@ const ChannelMessageTypeEnum_1 = __importDefault(require("../data/ChannelMessage
 const channelsSchema_1 = require("../validation/channelsSchema");
 const zodUtils_1 = require("../utils/zodUtils");
 const zod_1 = __importDefault(require("zod"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const createGroup = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(channelsSchema_1.createGroupSchema, req);
     const { title } = body;
@@ -40,7 +41,7 @@ const createDirectMessages = (0, express_async_handler_1.default)(async (req, re
     const { userId } = body;
     const currentUserId = req.userId;
     const DMUser = await User_1.default.findById(userId, "name avatarImage level roles");
-    if (!DMUser) {
+    if (!DMUser || !DMUser.roles.includes(RolesEnum_1.default.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
@@ -79,7 +80,7 @@ const groupInviteUser = (0, express_async_handler_1.default)(async (req, res) =>
         return;
     }
     const invitedUser = await User_1.default.findById(userId, "name avatarImage roles level");
-    if (!invitedUser) {
+    if (!invitedUser || !invitedUser.roles.includes(RolesEnum_1.default.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
@@ -469,6 +470,11 @@ const deleteChannel = (0, express_async_handler_1.default)(async (req, res) => {
 });
 const getUnseenMessagesCount = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
+    const user = await User_1.default.findById(currentUserId, "emailVerified").lean();
+    if (user?.emailVerified === false) {
+        res.json({ success: true, count: 0 });
+        return;
+    }
     const results = await ChannelParticipant_1.default.aggregate([
         {
             $match: {

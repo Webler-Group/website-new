@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
@@ -17,6 +17,7 @@ import QuestionsSection from "../components/QuestionsSection";
 import PageTitle from "../../../layouts/PageTitle";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import Loader from "../../../components/Loader";
+import NotificationToast from "../../../components/NotificationToast";
 
 export interface UserDetails {
     id: string;
@@ -65,6 +66,7 @@ const Profile = () => {
     const [questions, setQuestions] = useState<IQuestion[]>([]);
     const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
     const [pageTitle, setPageTitle] = useState("Webler Codes");
+    const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
     const navigate = useNavigate();
 
@@ -89,6 +91,11 @@ const Profile = () => {
                 }
             })
     }, [userId]);
+
+    const showNotification = useCallback((type: 'success' | 'error', message: string) => {
+        setNotification({ type, message });
+        setTimeout(() => setNotification(null), 3000);
+    }, []);
 
     const onUserUpdate = (data: any) => {
         if (userDetails) {
@@ -136,13 +143,13 @@ const Profile = () => {
     }
 
     const showFollowers = () => {
-        if(!userDetails?.id) return;
+        if (!userDetails?.id) return;
         setFollowListTitle("Followers");
         setFollowListOptions({ path: "/Profile/GetFollowers", userId: userDetails.id })
     }
 
     const showFollowing = () => {
-        if(!userDetails?.id) return;
+        if (!userDetails?.id) return;
         setFollowListTitle("Following");
         setFollowListOptions({ path: "/Profile/GetFollowing", userId: userDetails.id })
     }
@@ -176,6 +183,8 @@ const Profile = () => {
         })
         if (result && result.channel) {
             navigate("/Channels/" + result.channel.id);
+        } else {
+            showNotification("error", result?.error[0].message ?? "Something went wrong");
         }
     }
 
@@ -267,6 +276,7 @@ const Profile = () => {
             {
                 userDetails ?
                     <>
+                        <NotificationToast notification={notification} onClose={() => setNotification(null)} />
                         {
                             codesSectionVisible &&
                             <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
@@ -322,7 +332,10 @@ const Profile = () => {
                                                                 :
                                                                 <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
                                                         }
-                                                        <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>Message</Button>
+                                                        {
+                                                            userDetails.roles.includes("User") &&
+                                                            <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>Message</Button>
+                                                        }
 
                                                     </div>
                                                 )

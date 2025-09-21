@@ -4,7 +4,11 @@ import { IChannel } from "../components/ChannelListItem";
 import { useWS } from "../../../context/wsCommunication";
 import { useAuth } from "../../auth/context/authContext";
 
-const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (channelId: string) => void) => {
+const useChannels = (
+    count: number,
+    fromDate: Date | null,
+    onLeaveChannel?: (channelId: string) => void
+) => {
     const { sendJsonRequest } = useApi();
     const [results, setResults] = useState<IChannel[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -25,37 +29,38 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
 
     // Load initial channels
     useEffect(() => {
-        setIsLoading(true);
-        setError("");
 
-        const controller = new AbortController();
-        const { signal } = controller;
+        const fetchChannels = async () => {
+            setIsLoading(true);
+            setError("");
 
-        sendJsonRequest(`/Channels`, "POST", {
-            fromDate,
-            count
-        }, { signal })
-            .then(result => {
-                if (!result || !result.channels) {
-                    setIsLoading(false);
-                    if (signal.aborted) return;
-                    setError("Something went wrong");
-                    return;
-                }
+            const result = await sendJsonRequest(
+                `/Channels`,
+                "POST",
+                { fromDate, count }
+            );
+
+            if (result && result.channels) {
                 setResults(prev => [...prev, ...result.channels]);
                 setHasNextPage(result.channels.length === count);
-                setIsLoading(false);
-            });
+            } else {
+                setError(result?.error[0].message ?? "Something went wrong");
+            }
 
-        return () => controller.abort();
+            setIsLoading(false);
+        };
+
+        fetchChannels();
     }, [fromDate]);
 
-    // Handle new message events
+    // WebSocket listeners
     useEffect(() => {
         if (!socket) return;
 
         const handleNewMessage = async (data: any) => {
-            const existing = resultsRef.current.find(x => x.id === data.channelId);
+            const existing = resultsRef.current.find(
+                x => x.id === data.channelId
+            );
 
             if (data.type === 3 && data.userId === userInfo?.id) {
                 setResults(prev => prev.filter(x => x.id !== data.channelId));
@@ -64,56 +69,108 @@ const useChannels = (count: number, fromDate: Date | null, onLeaveChannel?: (cha
             }
 
             if (!existing) {
-                // Channel not loaded yet — fetch it
-                const result = await sendJsonRequest("/Channels/GetChannel", "POST", {
-                    channelId: data.channelId
-                });
+                const result = await sendJsonRequest(
+                    "/Channels/GetChannel",
+                    "POST",
+                    { channelId: data.channelId }
+                );
+
                 if (result && result.channel) {
-                    setResults(prev => [{ ...result.channel, lastMessage: data }, ...prev]);
+                    setResults(prev => [
+                        { ...result.channel, lastMessage: data },
+                        ...prev,
+                    ]);
                 }
             } else {
-                // Move channel to the top & update lastMessage
                 setResults(prev => {
                     const updated = prev.map(ch =>
                         ch.id === data.channelId
-                            ? { ...ch, updatedAt: data.createdAt, unreadCount: ch.unreadCount + 1, lastMessage: data, title: data.type == 4 ? data.channelTitle : ch.title }
+                            ? {
+                                ...ch,
+                                updatedAt: data.createdAt,
+                                unreadCount: ch.unreadCount + 1,
+                                lastMessage: data,
+                                title:
+                                    data.type == 4
+                                        ? data.channelTitle
+                                        : ch.title,
+                            }
                             : ch
                     );
-                    const channelToMove = updated.find(ch => ch.id === data.channelId);
-                    const others = updated.filter(ch => ch.id !== data.channelId);
-                    return channelToMove ? [channelToMove, ...others] : updated;
+                    const channelToMove = updated.find(
+                        ch => ch.id === data.channelId
+                    );
+                    const others = updated.filter(
+                        ch => ch.id !== data.channelId
+                    );
+                    return channelToMove
+                        ? [channelToMove, ...others]
+                        : updated;
                 });
             }
         };
 
         const handleMessagesSeen = (data: any) => {
-            setResults(prev => prev.map(ch =>
-                ch.id === data.channelId
-                    ? { ...ch, lastMessage: ch.lastMessage ? { ...ch.lastMessage, viewed: true } : undefined, unreadCount: 0 }
-                    : ch
-            ));
-        }
+            setResults(prev =>
+                prev.map(ch =>
+                    ch.id === data.channelId
+                        ? {
+                            ...ch,
+                            lastMessage: ch.lastMessage
+                                ? { ...ch.lastMessage, viewed: true }
+                                : undefined,
+                            unreadCount: 0,
+                        }
+                        : ch
+                )
+            );
+        };
 
         const handleChannelDeleted = (data: any) => {
-            setResults(prev => prev.filter(x => x.id != data.channelId));
+            setResults(prev => prev.filter(x => x.id !== data.channelId));
             onLeaveChannelRef.current?.(data.channelId);
-        }
+        };
 
         const handleMessageDeleted = (data: any) => {
-            setResults(prev => prev.map(ch =>
-                ch.id === data.channelId
-                    ? { ...ch, lastMessage: (ch.lastMessage && ch.lastMessage.id == data.messageId) ? { ...ch.lastMessage, deleted: true, content: "" } : undefined }
-                    : ch
-            ));
-        }
+            setResults(prev =>
+                prev.map(ch =>
+                    ch.id === data.channelId
+                        ? {
+                            ...ch,
+                            lastMessage:
+                                ch.lastMessage &&
+                                    ch.lastMessage.id == data.messageId
+                                    ? {
+                                        ...ch.lastMessage,
+                                        deleted: true,
+                                        content: "",
+                                    }
+                                    : undefined,
+                        }
+                        : ch
+                )
+            );
+        };
 
         const handleMessageEdited = (data: any) => {
-            setResults(prev => prev.map(ch =>
-                ch.id === data.channelId
-                    ? { ...ch, lastMessage: (ch.lastMessage && ch.lastMessage.id == data.messageId) ? { ...ch.lastMessage, content: data.content } : undefined }
-                    : ch
-            ));
-        }
+            setResults(prev =>
+                prev.map(ch =>
+                    ch.id === data.channelId
+                        ? {
+                            ...ch,
+                            lastMessage:
+                                ch.lastMessage &&
+                                    ch.lastMessage.id == data.messageId
+                                    ? {
+                                        ...ch.lastMessage,
+                                        content: data.content,
+                                    }
+                                    : undefined,
+                        }
+                        : ch
+                )
+            );
+        };
 
         socket.on("channels:new_message", handleNewMessage);
         socket.on("channels:messages_seen", handleMessagesSeen);

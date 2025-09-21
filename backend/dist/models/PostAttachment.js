@@ -240,7 +240,7 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
                     type: x._type,
                     ...userDetails,
                     codeId: x.code._id,
-                    codeName: x.code.name,
+                    codeName: (0, StringUtils_1.truncate)(x.code.name, 40),
                     codeLanguage: x.code.language
                 };
             case PostAttachmentTypeEnum_1.default.QUESTION:
@@ -251,7 +251,7 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
                     type: x._type,
                     ...userDetails,
                     questionId: x.question._id,
-                    questionTitle: x.question.title
+                    questionTitle: (0, StringUtils_1.truncate)(x.question.title, 40)
                 };
             case PostAttachmentTypeEnum_1.default.FEED:
                 if (!x.feed)
@@ -261,7 +261,7 @@ postAttachmentSchema.statics.getByPostId = async function (id) {
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: (0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(x.feed.message), 20),
+                    feedMessage: (0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(x.feed.message), 40).replaceAll(/\n+/g, " "),
                     feedType: x.feed._type
                 };
         }

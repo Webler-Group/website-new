@@ -216,7 +216,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                     type: x._type,
                     ...userDetails,
                     codeId: x.code._id,
-                    codeName: x.code.name,
+                    codeName: truncate(x.code.name, 40),
                     codeLanguage: x.code.language
                 }
             case PostAttachmentTypeEnum.QUESTION:
@@ -226,7 +226,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                     type: x._type,
                     ...userDetails,
                     questionId: x.question._id,
-                    questionTitle: x.question.title
+                    questionTitle: truncate(x.question.title, 40)
                 }
             case PostAttachmentTypeEnum.FEED:
                 if (!x.feed) return null;
@@ -235,7 +235,7 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
                     type: x._type,
                     ...userDetails,
                     feedId: x.feed._id,
-                    feedMessage: truncate(escapeMarkdown(x.feed.message), 20),
+                    feedMessage: truncate(escapeMarkdown(x.feed.message), 40).replaceAll(/\n+/g, " "),
                     feedType: x.feed._type
                 }
 

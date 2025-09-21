@@ -9,6 +9,7 @@ import CaptchaRecord from "../models/CaptchaRecord";
 import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
+import UserFollowing from "../models/UserFollowing";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -105,13 +106,13 @@ const register = asyncHandler(async (req: Request, res: Response) => {
 
     await generateRefreshToken(res, { userId: user._id.toString() });
 
-    const { emailToken } = signEmailToken({
-        userId: user._id.toString(),
-        email: user.email,
-        action: "verify-email"
-    });
-
     if (config.nodeEnv === "production") {
+        const { emailToken } = signEmailToken({
+            userId: user._id.toString(),
+            email: user.email,
+            action: "verify-email"
+        });
+
         try {
             await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
 
@@ -121,6 +122,11 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         catch (err: any) {
             console.log("Activation email error:", err.message);
         }
+    }
+
+    const weblercodesUser = await User.exists({ email: config.adminEmail });
+    if(weblercodesUser) {
+        await UserFollowing.create({ user: user._id, following: weblercodesUser._id });
     }
 
     res.json({

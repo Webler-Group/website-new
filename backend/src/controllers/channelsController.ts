@@ -37,6 +37,7 @@ import {
 } from "../validation/channelsSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
+import RolesEnum from "../data/RolesEnum";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createGroupSchema, req);
@@ -63,7 +64,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
     const currentUserId = req.userId;
 
     const DMUser = await User.findById(userId, "name avatarImage level roles");
-    if (!DMUser) {
+    if (!DMUser || !DMUser.roles.includes(RolesEnum.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
@@ -106,7 +107,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     const invitedUser = await User.findById(userId, "name avatarImage roles level");
-    if (!invitedUser) {
+    if (!invitedUser || !invitedUser.roles.includes(RolesEnum.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
@@ -574,6 +575,12 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
+
+    const user = await User.findById(currentUserId, "emailVerified").lean();
+    if(user?.emailVerified === false) {
+        res.json({ success: true, count: 0 });
+        return;
+    }
 
     const results = await ChannelParticipant.aggregate([
         {

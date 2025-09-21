@@ -584,7 +584,7 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { body } = parseWithZod(searchProfilesSchema, req);
     const { searchQuery } = body;
 
-    const match: any = { active: true };
+    const match: any = { active: true, roles: RolesEnum.USER };
 
     if (searchQuery && searchQuery.trim() !== "") {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -592,34 +592,9 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
         match.name = searchRegex;
     }
 
-    const users = await User.aggregate([
-        { $match: match },
-        {
-            $lookup: {
-                from: "userfollowings",
-                localField: "_id",
-                foreignField: "following",
-                as: "followers"
-            }
-        },
-        {
-            $addFields: {
-                followersCount: { $size: "$followers" }
-            }
-        },
-        {
-            $project: {
-                name: 1,
-                avatarImage: 1,
-                level: 1,
-                roles: 1,
-                followersCount: 1,
-                countryCode: 1
-            }
-        },
-        { $sort: { followersCount: -1 } },
-        { $limit: 10 }
-    ]);
+    const users = await User.find()
+        .where(match)
+        .select("name avatarImage level roles countryCode");
 
     res.json({
         users: users.map(u => ({

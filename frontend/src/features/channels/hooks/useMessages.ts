@@ -16,31 +16,22 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         setIsLoading(true);
         setError("");
 
-        const controller = new AbortController();
-        const { signal } = controller;
+        const result = await sendJsonRequest(`/Channels/Messages`, "POST", {
+            fromDate: date,
+            count,
+            channelId
+        });
 
-        try {
-            const result = await sendJsonRequest(`/Channels/Messages`, "POST", {
-                fromDate: date,
-                count,
-                channelId
-            }, { signal });
-
-            if (!result || !result.messages) {
-                if (!signal.aborted) setError("Something went wrong");
-                setIsLoading(false);
-                return;
-            }
-
+        if (result && result.messages) {
             setResults(prev =>
                 replace ? result.messages : [...prev, ...result.messages]
             );
             setHasNextPage(result.messages.length === count);
-        } finally {
-            setIsLoading(false);
+        } else {
+            setError(result?.error[0].message ?? "Something went wrong");
         }
 
-        return () => controller.abort();
+        setIsLoading(false);
     };
 
     // Load on channel change (full reset)
@@ -101,25 +92,25 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
     }, [socket, channelId]);
 
     const markMessagesSeen = useCallback(() => {
-        if(!socket) return;
+        if (!socket) return;
 
         socket.emit("channels:messages_seen", {
             channelId
         });
     }, [socket, channelId]);
 
-    const sendMessage = useCallback((content: string, repliedTo:IChannelMessage|null) => {
-        if(!socket) return;
+    const sendMessage = useCallback((content: string, repliedTo: IChannelMessage | null) => {
+        if (!socket) return;
 
         socket.emit("channels:send_message", {
             channelId,
             content,
-            repliedTo:repliedTo && repliedTo.id,
+            repliedTo: repliedTo && repliedTo.id,
         });
     }, [socket, channelId]);
 
     const deleteMessage = useCallback((messageId: string) => {
-        if(!socket) return;
+        if (!socket) return;
 
         socket.emit("channels:delete_message", {
             channelId,
@@ -128,7 +119,7 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
     }, [socket, channelId]);
 
     const editMessage = useCallback((messageId: string, content: string) => {
-        if(!socket) return;
+        if (!socket) return;
 
         socket.emit("channels:edit_message", {
             channelId,
