@@ -50,7 +50,7 @@ const MessageContextMenu = ({
         if (!visible) return;
 
         let ignoreScroll = true;
-        const scrollTimeout = setTimeout(() => { ignoreScroll = false; }, 500);
+        const scrollTimeout = setTimeout(() => { ignoreScroll = false; }, 250);
 
         const handleDocClick = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
@@ -58,7 +58,11 @@ const MessageContextMenu = ({
         const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
         const handleResize = () => updatePosition();
         const handleScroll = () => {
-            if (!ignoreScroll) onClose();
+            if (ignoreScroll) {
+                updatePosition();
+            } else {
+                onClose();
+            }
         };
 
         document.addEventListener("mousedown", handleDocClick);
