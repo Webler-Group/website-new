@@ -50,7 +50,7 @@ const MessageContextMenu = ({
         if (!visible) return;
 
         let ignoreScroll = true;
-        const scrollTimeout = setTimeout(() => { ignoreScroll = false; }, 100);
+        const scrollTimeout = setTimeout(() => { ignoreScroll = false; }, 500);
 
         const handleDocClick = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
