@@ -46,26 +46,35 @@ const MessageContextMenu = ({
         updatePosition();
     }, [visible]);
 
-    // Close on outside click, scroll, resize, and Escape
     useEffect(() => {
         if (!visible) return;
+
+        let ignoreScroll = true;
+        const scrollTimeout = setTimeout(() => { ignoreScroll = false; }, 100);
+
         const handleDocClick = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
         };
         const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
         const handleResize = () => updatePosition();
-        const handleScroll = () => onClose();
+        const handleScroll = () => {
+            if (!ignoreScroll) onClose();
+        };
+
         document.addEventListener("mousedown", handleDocClick);
+        document.addEventListener("keydown", handleKey);
         window.addEventListener("resize", handleResize);
         window.addEventListener("scroll", handleScroll, true);
-        document.addEventListener("keydown", handleKey);
+
         return () => {
+            clearTimeout(scrollTimeout);
             document.removeEventListener("mousedown", handleDocClick);
+            document.removeEventListener("keydown", handleKey);
             window.removeEventListener("resize", handleResize);
             window.removeEventListener("scroll", handleScroll, true);
-            document.removeEventListener("keydown", handleKey);
         };
     }, [visible, onClose]);
+
 
     if (!visible) return null;
 
