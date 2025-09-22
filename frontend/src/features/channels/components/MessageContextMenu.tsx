@@ -26,21 +26,17 @@ const MessageContextMenu = ({
         const el = menuRef.current;
         const { offsetWidth: w, offsetHeight: h } = el;
         const rect = anchorRef.current.getBoundingClientRect();
-
         let top = rect.bottom;
         let left = rect.left;
-
         if (top + h > window.innerHeight - MARGIN) {
             top = rect.top - h;
         }
         if (left + w > window.innerWidth - MARGIN) {
             left = rect.right - w;
         }
-
         // Clamp to viewport
         top = Math.min(Math.max(MARGIN, top), window.innerHeight - h - MARGIN);
         left = Math.min(Math.max(MARGIN, left), window.innerWidth - w - MARGIN);
-
         setPos({ top, left });
     };
 
@@ -53,22 +49,20 @@ const MessageContextMenu = ({
     // Close on outside click, scroll, resize, and Escape
     useEffect(() => {
         if (!visible) return;
-
         const handleDocClick = (e: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(e.target as Node)) onClose();
         };
         const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
-        const handleViewportChange = () => updatePosition();
-
+        const handleResize = () => updatePosition();
+        const handleScroll = () => onClose();
         document.addEventListener("mousedown", handleDocClick);
-        window.addEventListener("resize", handleViewportChange);
-        window.addEventListener("scroll", handleViewportChange, true);
+        window.addEventListener("resize", handleResize);
+        window.addEventListener("scroll", handleScroll, true);
         document.addEventListener("keydown", handleKey);
-
         return () => {
             document.removeEventListener("mousedown", handleDocClick);
-            window.removeEventListener("resize", handleViewportChange);
-            window.removeEventListener("scroll", handleViewportChange, true);
+            window.removeEventListener("resize", handleResize);
+            window.removeEventListener("scroll", handleScroll, true);
             document.removeEventListener("keydown", handleKey);
         };
     }, [visible, onClose]);
