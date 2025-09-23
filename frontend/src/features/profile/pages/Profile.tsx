@@ -302,8 +302,7 @@ const Profile = () => {
                                             }
                                             {
                                                 (userInfo &&
-                                                    userInfo.roles.some(role => ["Moderator", "Admin"].includes(role)) &&
-                                                    !userDetails.roles.some(role => ["Moderator", "Admin"].includes(role))) &&
+                                                    userInfo.roles.some(role => ["Moderator", "Admin"].includes(role))) &&
                                                 <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
                                                     <FaHammer /> Open in Mod View
                                                 </Dropdown.Item>
