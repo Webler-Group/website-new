@@ -168,6 +168,10 @@ ul {
     }
 }
 
+.wb-p-details-delete-modal__backdrop {
+    z-index: 1059 !important;
+}
+
 /*Webler home page*/
 
 .wb-home {

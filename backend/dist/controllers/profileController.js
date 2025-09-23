@@ -134,11 +134,11 @@ const updateProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.updateProfileSchema, req);
     const { userId, name, bio, countryCode } = body;
-    if (currentUserId !== userId) {
-        res.status(401).json({ message: "Unauthorized" });
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum_1.default.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
-    const user = await User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(userId);
     if (!user) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
         return;
@@ -428,15 +428,22 @@ const markNotificationsClicked = (0, express_async_handler_1.default)(async (req
     res.json({});
 });
 const uploadProfileAvatarImage = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.uploadProfileAvatarImageSchema, req);
+    const { userId } = body;
     const currentUserId = req.userId;
     if (!req.file) {
         res.status(400).json({ error: [{ message: "No file uploaded" }] });
         return;
     }
-    const user = await User_1.default.findById(currentUserId);
+    const user = await User_1.default.findById(userId);
     if (!user) {
         fs_1.default.unlinkSync(req.file.path);
         res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
+    }
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum_1.default.ADMIN)) {
+        fs_1.default.unlinkSync(req.file.path);
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
     const compressedBuffer = await (0, fileUtils_1.compressAvatar)({
@@ -457,6 +464,31 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)(async (req
         data: {
             avatarImage: user.avatarImage
         }
+    });
+});
+const removeProfileAvatarImage = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.removeProfileImageSchema, req);
+    const { userId } = body;
+    const currentUserId = req.userId;
+    const user = await User_1.default.findById(userId);
+    if (!user) {
+        res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
+    }
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum_1.default.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+    if (user.avatarImage) {
+        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
+        if (fs_1.default.existsSync(oldPath)) {
+            fs_1.default.unlinkSync(oldPath);
+        }
+        user.avatarImage = null;
+        await user.save();
+    }
+    res.json({
+        success: true
     });
 });
 const updateNotifications = (0, express_async_handler_1.default)(async (req, res) => {
@@ -517,6 +549,7 @@ const controller = {
     markNotificationsClicked,
     sendActivationCode,
     uploadProfileAvatarImage,
+    removeProfileAvatarImage,
     avatarImageUpload,
     updateNotifications,
     searchProfiles,

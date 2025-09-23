@@ -24,7 +24,7 @@ export interface UserDetails {
     name: string;
     email: string;
     bio: string;
-    avatarImage: string;
+    avatarImage: string | null;
     countryCode: string;
     followers: number;
     following: number;
@@ -194,6 +194,7 @@ const Profile = () => {
     }
 
     let isCurrentUser = userInfo && userInfo.id === userId;
+    let isAdmin = userInfo && userInfo.roles.includes("Admin");
 
     let codesSectionContent = isCurrentUser || codes.length > 0 ?
         <Col>
@@ -287,7 +288,7 @@ const Profile = () => {
                         }
                         <FollowList options={followListOptions} visible={followListTitle != ""} title="Followers" onClose={closeFollowList} setCount={setFollowingCount} />
                         {
-                            isCurrentUser &&
+                            (isCurrentUser || isAdmin) &&
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                         }
                         <Container className="p-2">
@@ -297,7 +298,7 @@ const Profile = () => {
                                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
                                         <Dropdown.Menu>
                                             {
-                                                isCurrentUser &&
+                                                (isCurrentUser || isAdmin) &&
                                                 <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
                                             }
                                             {
