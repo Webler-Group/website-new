@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
@@ -56,6 +56,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
+    const historyCounter = useRef(0);
 
     PageTitle(pageTitle);
 
@@ -111,6 +112,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setEditorOptions(JSON.parse(editorValue));
         }
     }, []);
+
+    useEffect(() => {
+        historyCounter.current++;
+        return () => { historyCounter.current = 0 };
+    }, [location]);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);
@@ -370,14 +376,19 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setCodePublic(result.data.isPublic);
         }
         else {
-
+            setMessage({ success: false, errors: result?.error });
         }
         setLoading(false)
     }
 
     const goBack = () => {
-        navigate(-1);
-    }
+        if (historyCounter.current > 1) {
+            navigate(-(historyCounter.current - 1));
+            historyCounter.current = 1;
+        } else {
+            navigate("/");
+        }
+    };
 
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
