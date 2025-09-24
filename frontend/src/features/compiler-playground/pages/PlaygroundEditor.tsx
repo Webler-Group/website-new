@@ -86,6 +86,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         else {
             getCodeByTemplate();
         }
+        setHistoryCounter(1);
     }, [codeId]);
 
     useEffect(() => {
@@ -115,7 +116,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
 
     useEffect(() => {
         setHistoryCounter(prev => prev + 1);
-    }, [location.pathname]);
+    }, [location]);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);
