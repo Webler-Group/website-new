@@ -5,26 +5,15 @@ import asyncHandler from "express-async-handler";
 import { escapeRegex } from "../utils/regexUtils";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
+import { createChallengeSchema, getChallengeListSchema, getChallengeSchema } from "../validation/challengeSchema";
+import { parseWithZod } from "../utils/zodUtils";
+import { PipelineStage } from "mongoose";
 
-
-
-const isChallengeAuthor = async (challenge: IChallenge, userId: string) => {
-  const user = await User.findById(userId);
-
-  if (challenge.createdBy?.toString() != userId || !(user && user.roles.includes(RolesEnum.ADMIN)))
-    return false;
-
-  return true;
-}
 
 
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
-      const { title, description, difficulty, testCases, xp, templates } = req.body;
-
-      if(!title || !description || !difficulty || testCases.length < 1 || !xp || templates.length < 1) {
-        res.status(400).json({ success: false, message: "One or more required field is missing" });
-        return;
-      }
+      const { body } = parseWithZod(createChallengeSchema, req);
+      const { title, description, difficulty, testCases, xp, templates } = body;
 
       const challenge = await Challenge.create({
         title,
@@ -33,7 +22,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         testCases,
         xp,
         templates,
-        createdBy: req.userId,
+        author: req.userId,
       });
 
       if(!challenge) {
@@ -46,91 +35,130 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 
 const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { page, count, filter, searchQuery } = req.body;
-    const currentUserId = req.userId;
+    const { body } = parseWithZod(getChallengeListSchema, req);
+    const { page, count, filter, searchQuery } = body;
 
-    if (typeof page !== "number" || page < 1 || typeof count !== "number" || count < 1 || count > 100 || typeof filter === "undefined" || typeof searchQuery === "undefined") {
-        res.status(400).json({ message: "Invalid body" });
-        return
-    }
+    let pipeline: PipelineStage[] = [];
 
-    const safeQuery = escapeRegex(searchQuery.trim());
-    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
-
-    const skip = (page - 1) * count;
-    const limit = parseInt(count.toString());
-
-    const query: any = {};
-
-    let filterValue = "";
-    switch(filter) {
-        case 1:
-          filterValue = "easy";
-          break;
-        case 2:
-          filterValue = "medium";
-          break;
-        case 3:
-          filterValue = "hard";
-          break;
-        default:
-          filterValue = "";
-          break;
-    }
-
-    query.difficulty = { $in: filterValue };
+    let dbQuery = Challenge.find();
     
-    if (searchQuery) {
-      query.$or = [
-        { title: { $regex: safeQuery, $options: "i" } },
-        { tags: { $in: [searchRegex] } },
-      ];
+    if (searchQuery && searchQuery.trim().length > 0) {
+        const safeQuery = escapeRegex(searchQuery.trim());
+        const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
+
+        pipeline.push({
+            $match: {
+                $or: [
+                    { title: searchRegex }
+                ]
+            }
+        })
+
+        dbQuery.where({
+            $or: [
+                { title: searchRegex }
+            ]
+        })
     }
 
-    let challenges = await Challenge.find(query)
-      .sort({ createdAt: -1 }) 
-      .skip(skip)
-      .limit(limit)
-      .lean()
-      .select("title xp difficulty");
-
-    if(!challenges) {
-        res.status(500).json({ error: "Server error while fetching challenges" });
-        return;
-    }
+    //@todo query for solved and unsolved right here
     
-    if (currentUserId) {
-      // const submissions = await Submission.find({ user: userId }).select("challenge status");
-      // const solvedSet = new Set(
-      //   submissions.filter((s) => s.status === "passed").map((s) => s.challenge.toString())
-      // );
-
-      // challenges = challenges.map((ch) => ({
-      //   ...ch,
-      //   solved: solvedSet.has(ch._id.toString()),
-      // }));
-
-      // if (filter.solved !== undefined) {
-      //   challenges = challenges.filter((ch) => ch.solved === filter.solved);
-      // }
-    }
-
-    const total = await Challenge.countDocuments(query);
-
-    res.json({
-      page,
-      count: challenges.length,
-      total,
-      items: challenges,
-    });
+    switch (filter) {
+        // Most Recent
+        case 1: {
+            pipeline.push({
+                $sort: { createdAt: -1 }
+            })
+            dbQuery = dbQuery
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        // easy
+        case 2: {
+            pipeline.push({
+                $match: { difficulty: "easy" }
+            }, {
+                $sort: { createdAt: -1 }
+            })
+            dbQuery = dbQuery
+                .where({ difficulty: "easy" })
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        // medium
+        case 3: {
+            pipeline.push({
+                $match: { difficulty: "medium" }
+            }, {
+                $sort: { createdAt: -1 }
+            })
+            dbQuery = dbQuery
+                .where({ difficulty: "medium" })
+                .sort({ createdAt: "desc" })
+            break;
+        }
+        // hard
+        case 4: {
+            pipeline.push({
+                $match: { difficulty: "hard" }
+            }, {
+                $sort: { createdAt: -1 }
+            })
+            dbQuery = dbQuery
+                .where({ difficulty: "hard" })
+                .sort({ createdAt: "desc" })
+            break;
+        }
+          
+          default:
+              res.status(400).json({ error: [{ message: "Unknown filter" }] });
+              return;
+        }
+    
+        const challengeCount = await dbQuery.clone().countDocuments();
+    
+        pipeline.push({
+            $skip: (page - 1) * count
+        }, {
+            $limit: count
+        }, {
+            $project: { description: 0 }
+        }, {
+            $lookup: { from: "users", localField: "user", foreignField: "_id", as: "users" }
+        })
+    
+        const result = await Challenge.aggregate(pipeline);
+    
+        const data = result.map(x => ({
+            id: x._id,
+            title: x.title,
+            difficulty: x.difficulty,
+            xp: x.xp
+        }));
+    
+        // let promises = [];
+    
+        // for (let i = 0; i < data.length; ++i) {
+        //     if (currentUserId) {
+        //         promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+        //             data[i].isUpvoted = !(upvote === null);
+        //         }));
+        //     }
+        // }
+    
+        // await Promise.all(promises);
+    
+        res.status(200).json({ count: challengeCount, challenges: data });
 })
 
 
 const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { challengeId } = req.body;
+    const { body } = parseWithZod(getChallengeSchema, req);
+    const { challengeId } = body;
+
     const challenge = await Challenge.findById(challengeId)
       .populate<{templates: IChallengeTemplate}>("templates", "name source")
-      .select("tags title description xp createdBy");
+      .select("title description xp author");
 
     if (!challenge) {
       res.status(404).json({ success: false, message: "Challenge not found" });
@@ -143,8 +171,10 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const getChallengeInfo = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { challengeId } = req.body;
-    const challenge = await Challenge.findById(challengeId)
+    const { body } = parseWithZod(getChallengeSchema, req);
+    const { challengeId } = body;
+
+    const challenge = await Challenge.findById(challengeId);
    
     if (!challenge) {
       res.status(404).json({ success: false, message: "Challenge not found" });
@@ -153,6 +183,16 @@ const getChallengeInfo = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     res.json({ success: true, challenge });
 })
+
+
+const isChallengeAuthor = async (challenge: IChallenge, userId: string) => {
+  const user = await User.findById(userId);
+
+  if (challenge.author?.toString() != userId || !(user && user.roles.includes(RolesEnum.ADMIN)))
+    return false;
+  
+  return true;
+}
 
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -198,7 +238,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 
 const deleteChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { challengeId } = req.body;
+    const { body } = parseWithZod(getChallengeSchema, req);
+    const { challengeId } = body;
 
     const challenge = await Challenge.findById(challengeId);
 
@@ -207,13 +248,8 @@ const deleteChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
       return;
     }
 
-    if (challenge === null) {
-      res.status(404).json({ message: "Challenge not found" })
-      return;
-    }
-
     if (!(await isChallengeAuthor(challenge, req.userId as string))) {
-      res.status(401).json({ message: "Author Mismatch" })
+      res.status(401).json({ message: "Author Mismatch" });
       return;
     }
 

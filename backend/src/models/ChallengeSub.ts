@@ -3,14 +3,14 @@ import User from "./User";
 import Challenge from "./Challenge";
 
 export interface IChallengeSub extends Document {
-  challenge: Types.ObjectId;     // reference to Challenge
-  user: Types.ObjectId;          // reference to User
-  language: string;              // e.g. "python", "javascript"
-  code: string;                  // submitted code
-  codeLength: number;            // code.length
-  status: "pending" | "passed" | "failed"; // result after test cases
-  executionTime?: number;        // runtime in ms
-  memoryUsed?: number;           // memory usage in KB
+  challenge: Types.ObjectId;     
+  author: Types.ObjectId;         
+  language: string;              
+  code: string;                 
+  codeLength: number;            
+  status: "pending" | "passed" | "failed"; 
+  executionTime?: number;        
+  memoryUsed?: number;           
   createdAt: Date;
   updatedAt: Date;
   hasPassed: boolean;
@@ -19,7 +19,7 @@ export interface IChallengeSub extends Document {
 const ChallengeSubSchema = new Schema<IChallengeSub>(
   {
     challenge: { type: Schema.Types.ObjectId, ref: "Challenge", required: true },
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
+    author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     language: { type: String, required: true },
     code: { type: String, required: true },
     codeLength: { type: Number, required: true },
@@ -45,7 +45,7 @@ ChallengeSubSchema.pre("save", async function (next) {
   if (sub.status === "passed") {
     try {
       const challenge = await Challenge.findById(sub.challenge);
-      await User.findByIdAndUpdate(sub.user, { $inc: { xp: (challenge?.xp) || 0 } });
+      await User.findByIdAndUpdate(sub.author, { $inc: { xp: (challenge?.xp) || 0 } });
       sub.hasPassed = true;
     } catch (err) {
       return next(err as any);

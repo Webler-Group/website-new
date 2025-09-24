@@ -1,5 +1,3 @@
-export type challenge_diff_t = "easy" | "medium" | "hard";
-
 export interface ITestCase {
   input: string;
   expectedOutput: string;
@@ -7,24 +5,18 @@ export interface ITestCase {
   passed?: boolean
 }
 
-export interface IChallengeFilter {
-  solved: boolean;
-  difficulty?: challenge_diff_t;
-}
-
-
 export interface IChallengeTemplate {
   name: string;
   source: string;
 }
 
 export default interface IChallenge {
-    _id: string;
+    id: string;
     title: string;
     description: string;
     xp: number;
-    difficulty: string;
-    createdBy?: string;
+    difficulty: "easy" | "medium" | "hard";
+    author?: string;
     templates?: IChallengeTemplate[];
     testCases?: ITestCase[];
 }

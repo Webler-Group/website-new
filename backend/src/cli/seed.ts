@@ -35,12 +35,14 @@ async function main() {
             description: "Write a program that output the string `Hello world` to the standard output\n" +
             "***This program requires to input domain***",
             xp: 20,
-            createdBy: adminUser,
+            author: adminUser,
             testCases: [{input:"", expectedOutput: "Hello world", isHidden: false}],
             templates: [{name: "python", source: ""}, {name: "cpp", source: ""}, {name: "c", source: ""}]
         });
 
         console.log("Code Challenge added successfully")
+    } else {
+        console.log("Code Challenge: Not added - Appear to exists already");
     }
 
     process.exit(0);

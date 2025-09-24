@@ -47,6 +47,7 @@ import ChallengeList from './features/challenges/pages/ChallengeList';
 import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
 import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
 import ChallengeEdit from "./features/challenges/pages/ChallengeEdit";
+import SnackbarLayout from './layouts/SnackbarLayout';
 
 function App() {
 
@@ -108,14 +109,14 @@ function App() {
         <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
       </Route>
 
-      <Route path="Challenge">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+      <Route path="Challenge" element={<RequireAuth allowedRoles={allRoles}/>}>
+        <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
           <Route index element={<ChallengeList />} />
           <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
             <Route path="Create" element={<ChallengeCreate />} />
+            <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
           </Route>
           <Route path=":challengeId" element={<ChallengeDetails />} />
-          <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
         </Route>
       </Route>
 

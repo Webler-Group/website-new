@@ -1,9 +1,8 @@
 import mongoose, { Schema, model, Document, Model, Types } from "mongoose";
 import { ChallengeSub } from "./ChallengeSub";
+import { compilerLanguate_t } from "../config/compilerLanguages";
 
 type difficulty_t = "easy" | "medium" | "hard";
-
-type languages = "c" | "cpp" | "javascript" | "python" | "lua" | "nodejs" | "ruby";
 
 export interface ITestCase {
   input: string;
@@ -13,7 +12,7 @@ export interface ITestCase {
 
 
 export interface IChallengeTemplate {
-  name: languages;
+  name: compilerLanguate_t;
   source: string;
 }
 
@@ -25,10 +24,10 @@ export interface IChallenge extends Document {
   testCases: ITestCase[];
   templates: IChallengeTemplate[];
   xp: number,
-  createdBy?: Types.ObjectId;
+  author: Types.ObjectId;
 
   addTestCase(input: string, expectedOutput: string): Promise<IChallenge>;
-  addTemplate(name: languages, source: string): Promise<IChallenge>;
+  addTemplate(name: compilerLanguate_t, source: string): Promise<IChallenge>;
 }
 
 interface IChallengeModel extends Model<IChallenge> {
@@ -60,7 +59,7 @@ const challengeSchema = new Schema<IChallenge>(
     testCases: [testCaseSchema],
     templates: [templateSchema],
     xp: { type: Number, required: true, default: 10 },
-    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+    author: { type: Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );
@@ -92,7 +91,7 @@ challengeSchema.methods.addTestCase = function (
 };
 
 
-challengeSchema.methods.addTemplate = function(name: languages, source: string){
+challengeSchema.methods.addTemplate = function(name: compilerLanguate_t, source: string){
   if (!this.language.some((i: IChallengeTemplate) => i.name === name))
     this.languages.push({ name, source });
   

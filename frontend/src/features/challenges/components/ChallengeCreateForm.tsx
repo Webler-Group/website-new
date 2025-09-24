@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
 import IChallenge, { IChallengeTemplate, ITestCase } from "../IChallenge";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
+import { useSnackbar } from "../../../context/SnackbarProvider";
 
 
 interface IChallengeCreateFormProps {
@@ -23,16 +24,17 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
     const [difficulty, setDifficulty] = useState("easy");
     const [description, setDescription] = useState("");
     const [submitBtnDisabled, setSubmitBtnDisabled] = useState(false);
+    const { showMessage } = useSnackbar();
 
     const [testCases, setTestCases] = useState<ITestCase[]>([
     { input: "", expectedOutput: "", isHidden: true },
     ]);
 
     const [templates, setTemplates] = useState<IChallengeTemplate[]>([
-    { name: "cpp", source: "#include<iostream>\nint main(){\n\n   return 0;\n}" },
+    { name: "cpp", source: "#include <iostream>\nint main(){\n\n   return 0;\n}" },
     { name: "c", source: "#include <cstdio>\nvoid main(){\n\n}" }
     ]);
-
+ 
     useEffect(() => {
         setDefaultEdit();
     }, []);
@@ -58,7 +60,6 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
             templates,
             xp
         });
-
         return result;
     }
 
@@ -72,7 +73,6 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
             templates,
             xp
         });
-
         return result;
     }
 
@@ -84,8 +84,6 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
 
         const result = challengeId ? await updateRequest(): await createRequest();
 
-        // console.log(result);
-
         setSubmitBtnDisabled(false);
 
         if(result) {
@@ -94,6 +92,9 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
                 setError(result.message);
                 return;
             }
+
+            showMessage(`Challenge ${challengeId ? "Updated": "Created"} Successfully`);
+
             navigate("../");
         } else {
         setError("Something went wrong");
@@ -144,14 +145,14 @@ const ChallengeCreateForm = ({ challenge, challengeId }: IChallengeCreateFormPro
                     <Form.Label>
                         <FaLevelUpAlt className="me-2" /> Difficulty
                     </Form.Label>
-                    <Form.Select
-                        value={difficulty}
-                        onChange={(e) => setDifficulty(e.target.value)}
-                    >
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                    </Form.Select>
+                        <Form.Select
+                            value={difficulty}
+                            onChange={(e) => setDifficulty(e.target.value)}
+                        >
+                            <option value="easy">Easy</option>
+                            <option value="medium">Medium</option>
+                            <option value="hard">Hard</option>
+                        </Form.Select>
                     </Form.Group>
                 </Col>
                     

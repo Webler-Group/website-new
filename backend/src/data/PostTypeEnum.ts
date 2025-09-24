@@ -5,8 +5,7 @@ enum PostTypeEnum {
     FEED = 4,
     SHARED_FEED = 5,
     FEED_COMMENT = 6,
-    LESSON_COMMENT = 7,
-    CHALLENGE = 8
+    LESSON_COMMENT = 7
 }
 
 export default PostTypeEnum;

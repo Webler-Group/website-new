@@ -4,7 +4,7 @@ import { useParams } from "react-router-dom";
 import IChallenge from "../IChallenge";
 import { useNavigate } from "react-router-dom";
 import { useApi } from '../../../context/apiCommunication';
-import { EllipsisLoaderPlaceholder } from "../../../components/Loader";
+import Loader from "../../../components/Loader";
 import ChallengeCreateForm from "../components/ChallengeCreateForm";
 
 const ChallengeEdit = () => {
@@ -19,17 +19,17 @@ const ChallengeEdit = () => {
 
     useEffect(() => {
         console.log(challengeId);
-        getChallenge();
+        getChallengeEditInfo();
     }, []);
 
-    const getChallenge = async() => {
+    const getChallengeEditInfo = async() => {
         setLoading(true);
 
         const req = await sendJsonRequest(`/Challenge/GetEditInfo`, "POST", {
             challengeId
         });
 
-        if(!req.success || !req.challenge) {
+        if(!req.success) {
             navigate("/PageNotFound");
             return;
         }
@@ -41,7 +41,7 @@ const ChallengeEdit = () => {
 
     return <>
         {
-            loading ?  <EllipsisLoaderPlaceholder />
+            loading ?  <Loader />
             : <ChallengeCreateForm challenge={challenge} challengeId={challengeId} />
         }
     </>
