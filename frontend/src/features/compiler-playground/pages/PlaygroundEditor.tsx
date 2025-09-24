@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
+import { FaArrowLeft, FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -375,6 +375,10 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
+    const goBack = () => {
+        navigate(-1);
+    }
+
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -474,6 +478,11 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
                         <div className="d-flex">
+                            <Button className="text-muted" variant="link" onClick={goBack}>
+                                <FaArrowLeft />
+                            </Button>
+                        </div>
+                        <div className="d-flex gap-2 align-items-center">
                             {
                                 code.id &&
                                 <>
@@ -500,18 +509,14 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                         </span>
                                         <span>{commentCount}</span>
                                     </div>
-                                    <div className="wb-playground-public small">
-                                        <span>
-                                            {
-                                                !code.isPublic &&
-                                                <FaLock />
-                                            }
-                                        </span>
-                                    </div>
+                                    {
+                                        !code.isPublic &&
+                                        <div className="wb-playground-public small">
+                                            <FaLock />
+                                        </div>
+                                    }
                                 </>
                             }
-                        </div>
-                        <div className="d-flex gap-1 align-items-center">
                             {
                                 code.language == "web" &&
                                 <Button size="sm" variant="link" className="text-dark" onClick={() => setConsoleVisible(true)}>

@@ -38,7 +38,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
             setEditorTabs([code.language]);
             setActiveKey(code.language);
         }
-    }, [code]);
+    }, [code.id]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
