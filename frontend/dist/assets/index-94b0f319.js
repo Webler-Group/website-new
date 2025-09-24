@@ -225,7 +225,7 @@ In order to be iterable, non-array objects must have a [Symbol.iterator]() metho
             pushToConsole([message], "error");
         }
         window.addEventListener("unhandledrejection", function (event) {
-            pushToConsole([event.reason], "error");
+            pushToConsole([event.reason?.message ?? event.reason], "error");
         });
       })();
     `,m.insertBefore(S,m.firstChild);const v=document.createElement("script");return v.text=n,y.appendChild(v),`<!DOCTYPE HTML>

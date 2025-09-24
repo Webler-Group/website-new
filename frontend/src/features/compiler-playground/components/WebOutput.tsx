@@ -148,7 +148,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
             pushToConsole([message], "error");
         }
         window.addEventListener("unhandledrejection", function (event) {
-            pushToConsole([event.reason], "error");
+            pushToConsole([event.reason?.message ?? event.reason], "error");
         });
       })();
     `;
