@@ -55,7 +55,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [pageTitle, setPageTitle] = useState("");
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
-    const [consoleVisible, setConsoleVisible] = useState(false);
 
     PageTitle(pageTitle);
 
@@ -559,14 +558,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                             </Dropdown.Item>
                                         </>
                                     }
-                                    {
-                                        code.language == "web" &&
-                                        <Dropdown.Item
-                                            onClick={() => setConsoleVisible(true)}
-                                        >
-                                            Console
-                                        </Dropdown.Item>
-                                    }
                                 </Dropdown.Menu>
                             </Dropdown>
                         </div>
@@ -581,9 +572,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         js={js}
                         setJs={(value: string) => setJs(value)}
                         options={editorOptions}
-                        consoleVisible={consoleVisible}
-                        hideConsole={() => setConsoleVisible(false)}
-                        toggleConsole={() => setConsoleVisible(prev => !prev)}
                     />
                 </div>
             }

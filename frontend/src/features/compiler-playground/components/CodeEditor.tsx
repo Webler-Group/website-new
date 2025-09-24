@@ -19,12 +19,9 @@ interface CodeEditorProps {
     setJs: (value: string) => void;
     loading: boolean;
     options: { scale: number };
-    consoleVisible: boolean;
-    hideConsole: () => void;
-    toggleConsole: () => void;
 }
 
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole, toggleConsole }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -46,20 +43,15 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
 
             const match = /^Digit(\d)$/.exec(e.code);
             if (match) {
-                e.preventDefault();
-
                 const index = parseInt(match[1], 10) - 1;
 
                 if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
+                    e.preventDefault();
                     const tab = index == editorTabs.length ?  "output" : editorTabs[index];
                     if (tab) {
                         setActiveKey(tab);
                     }
                 }
-            } else if(e.key === "k") {
-                e.preventDefault();
-
-                toggleConsole();
             }
         };
 
@@ -151,7 +143,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} key={"output"} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
-                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} /> :
+                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
                                 <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>

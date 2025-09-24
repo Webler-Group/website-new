@@ -7,15 +7,14 @@ interface WebOutputProps {
     cssSource: string;
     jsSource: string;
     tabOpen: boolean;
-    consoleVisible: boolean;
-    hideConosole: () => void;
 }
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen }: WebOutputProps) => {
 
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const consoleRef = useRef<HTMLDivElement>(null);
+    const [consoleVisible, setConsoleVisible] = useState(false);
 
     useEffect(() => {
         const callback = function (response: any) {
@@ -53,6 +52,22 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
             }
         }
     }, [tabOpen, source, jsSource, cssSource]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isMac = navigator.userAgent.includes("Mac");
+
+            if (((isMac && e.metaKey) || (!isMac && e.ctrlKey)) && e.key === "k") {
+                e.preventDefault();
+                setConsoleVisible(prev => !prev);
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, []);
 
     const clearConsole = () => {
         setConsoleLogs(() => []);
@@ -274,7 +289,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
 
     return (
         <>
-            <Modal show={consoleVisible} onHide={hideConosole} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
+            <Modal show={consoleVisible} onHide={() => setConsoleVisible(false)} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
                 <Modal.Header closeButton>
                     <div className="d-flex">
                         <Button size="sm" variant="secondary" onClick={clearConsole}>Clear</Button>
@@ -287,7 +302,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             let messageContainer = <div>
                                 {
                                     item.data.map((itemData, idx) => {
-                                        return <span key={idx} className="me-2" style={{ whiteSpace: "pre-wrap", wordWrap: "break-word", wordBreak: "break-all", fontSize: "14px" }}>
+                                        return <span key={idx} className="me-2" style={{ whiteSpace: "pre-wrap", wordWrap: "break-word", wordBreak: "break-all", fontSize: "0.85rem" }}>
                                             {processDataItem(itemData, 0, item.method)}
                                         </span>
                                     })
@@ -354,6 +369,9 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
             </Modal>
             <div className="h-100">
                 <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
+                <div className="position-absolute bottom-0 end-0">
+                    <Button size="sm" variant="link" onClick={() => setConsoleVisible(true)}>console</Button>
+                </div>
             </div>
         </>
     )
