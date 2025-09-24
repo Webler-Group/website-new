@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaArrowLeft, FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -56,7 +56,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
-    const [_, setHistoryStack] = useState<string[]>([]);
 
     PageTitle(pageTitle);
 
@@ -112,11 +111,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setEditorOptions(JSON.parse(editorValue));
         }
     }, []);
-
-    useEffect(() => {
-        console.log(location);
-        setHistoryStack(prev => [...prev, location.pathname]);
-    }, [location]);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);
@@ -381,9 +375,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         setLoading(false)
     }
 
-    const goBack = () => {
-    }
-
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
 
@@ -483,9 +474,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
                         <div className="d-flex">
-                            <Button className="text-muted" variant="link" onClick={goBack}>
+                            {/* <Button className="text-muted" variant="link" onClick={goBack}>
                                 <FaArrowLeft />
-                            </Button>
+                            </Button> */}
                         </div>
                         <div className="d-flex gap-2 align-items-center">
                             {
