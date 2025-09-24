@@ -21,9 +21,10 @@ interface CodeEditorProps {
     options: { scale: number };
     consoleVisible: boolean;
     hideConsole: () => void;
+    toggleConsole: () => void;
 }
 
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole, toggleConsole }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -53,9 +54,12 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                     const tab = index == editorTabs.length ?  "output" : editorTabs[index];
                     if (tab) {
                         setActiveKey(tab);
-                        e.preventDefault();
                     }
                 }
+            } else if(e.key === "k") {
+                e.preventDefault();
+
+                toggleConsole();
             }
         };
 

@@ -583,6 +583,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         options={editorOptions}
                         consoleVisible={consoleVisible}
                         hideConsole={() => setConsoleVisible(false)}
+                        toggleConsole={() => setConsoleVisible(prev => !prev)}
                     />
                 </div>
             }
