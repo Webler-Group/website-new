@@ -56,7 +56,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
-    const [historyCounter, setHistoryCounter] = useState(0);
+    const [_, setHistoryStack] = useState<string[]>([]);
 
     PageTitle(pageTitle);
 
@@ -86,7 +86,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         else {
             getCodeByTemplate();
         }
-        setHistoryCounter(1);
     }, [codeId]);
 
     useEffect(() => {
@@ -115,7 +114,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }, []);
 
     useEffect(() => {
-        setHistoryCounter(prev => prev + 1);
+        console.log(location);
+        setHistoryStack(prev => [...prev, location.pathname]);
     }, [location]);
 
     const updateEditorOptions = (options: any) => {
@@ -382,12 +382,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const goBack = () => {
-        if(historyCounter > 0) {
-            navigate(-historyCounter);
-        } else {
-            navigate("/");
-        }
-    };
+    }
 
     let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     let characterCount = source.length + css.length + js.length;
