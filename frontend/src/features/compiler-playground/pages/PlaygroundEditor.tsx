@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
@@ -56,7 +56,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
-    const historyCounter = useRef(0);
+    const [historyCounter, setHistoryCounter] = useState(0);
 
     PageTitle(pageTitle);
 
@@ -114,9 +114,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }, []);
 
     useEffect(() => {
-        historyCounter.current++;
-        return () => { historyCounter.current = 0 };
-    }, [location]);
+        setHistoryCounter(prev => prev + 1);
+    }, [location.pathname]);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);
@@ -382,9 +381,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const goBack = () => {
-        if (historyCounter.current > 1) {
-            navigate(-(historyCounter.current - 1));
-            historyCounter.current = 1;
+        if(historyCounter > 0) {
+            navigate(-historyCounter);
         } else {
             navigate("/");
         }
