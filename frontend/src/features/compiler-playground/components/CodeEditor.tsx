@@ -25,16 +25,46 @@ interface CodeEditorProps {
 
 const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
+    const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const [tabHeight, setTabHeight] = useState("auto");
 
     useEffect(() => {
         if (code.language == "web") {
             setEditorTabs(["html", "css", "javascript"]);
+            setActiveKey("html");
         } else {
             setEditorTabs([code.language]);
+            setActiveKey(code.language);
         }
     }, [code]);
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isMac = navigator.userAgent.includes("Mac");
+
+            const match = /^Digit(\d)$/.exec(e.code);
+            if (match) {
+                e.preventDefault();
+
+                const index = parseInt(match[1], 10) - 1;
+
+                if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
+                    const tab = index == editorTabs.length ?  "output" : editorTabs[index];
+                    if (tab) {
+                        setActiveKey(tab);
+                        e.preventDefault();
+                    }
+                }
+            }
+        };
+
+        window.addEventListener("keydown", handleKeyDown);
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [editorTabs]);
+
 
     useEffect(() => {
         const callback = () => {
@@ -51,11 +81,17 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
         { value: js, setValue: setJs }
     ];
 
+    const onTabSelect = (key: string | null) => {
+        if (key) {
+            setActiveKey(key);
+        }
+    }
+
     return (
         <div className="bg-dark" data-bs-theme="dark">
             {
                 editorTabs.length > 0 &&
-                <Tabs defaultActiveKey={editorTabs[0]} fill justify>
+                <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {
                         editorTabs.map((lang, idx) => {
 
@@ -66,7 +102,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                                         onChange={value => editorStates[idx].setValue(value)}
                                         width="100%"
                                         height="100%"
-                                        style={{ height: "100%", fontSize: `${options.scale * 100}%` }}
+                                        style={{ height: "100%", fontSize: `${options.scale * 100}%`, overscrollBehavior: 'contain' }}
                                         theme={vscodeDark}
                                         extensions={[
                                             loadLanguage(lang) as any,
@@ -108,7 +144,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                             )
                         })
                     }
-                    <Tab onEnter={onTabEnter} onExit={onTabLeave} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
+                    <Tab onEnter={onTabEnter} onExit={onTabLeave} key={"output"} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
                                 <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} /> :

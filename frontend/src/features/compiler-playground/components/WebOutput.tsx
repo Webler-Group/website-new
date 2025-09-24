@@ -150,6 +150,26 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
         window.addEventListener("unhandledrejection", function (event) {
             pushToConsole([event.reason?.message ?? event.reason], "error");
         });
+        if ("gpu" in navigator) {
+            const origRequestAdapter = navigator.gpu.requestAdapter;
+            navigator.gpu.requestAdapter = async function (...args) {
+                const adapter = await origRequestAdapter.apply(this, args);
+                if (!adapter) return adapter;
+
+                const origRequestDevice = adapter.requestDevice;
+                adapter.requestDevice = async function (...args) {
+                    const device = await origRequestDevice.apply(this, args);
+
+                    device.onuncapturederror = (event) => {
+                        pushToConsole([event.error.message], "error");
+                    };
+
+                    return device;
+                };
+
+                return adapter;
+            };
+        }
       })();
     `;
         head.insertBefore(consoleOverrideScript, head.firstChild);
