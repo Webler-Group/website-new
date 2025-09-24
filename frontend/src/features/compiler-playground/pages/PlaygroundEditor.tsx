@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaLock, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
 import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -55,6 +55,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [pageTitle, setPageTitle] = useState("");
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
+    const [consoleVisible, setConsoleVisible] = useState(false);
 
     PageTitle(pageTitle);
 
@@ -510,7 +511,13 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                 </>
                             }
                         </div>
-                        <div>
+                        <div className="d-flex gap-1 align-items-center">
+                            {
+                                code.language == "web" &&
+                                <Button size="sm" variant="link" className="text-dark" onClick={() => setConsoleVisible(true)}>
+                                    <FaTerminal />
+                                </Button>
+                            }
                             <Dropdown>
                                 <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
                                 <Dropdown.Menu style={{ width: "200px" }}>
@@ -572,6 +579,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         js={js}
                         setJs={(value: string) => setJs(value)}
                         options={editorOptions}
+                        consoleVisible={consoleVisible}
+                        hideConsole={() => setConsoleVisible(false)}
+                        toggleConsole={() => setConsoleVisible(prev => !prev)}
                     />
                 </div>
             }

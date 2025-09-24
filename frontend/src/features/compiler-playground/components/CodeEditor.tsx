@@ -19,9 +19,12 @@ interface CodeEditorProps {
     setJs: (value: string) => void;
     loading: boolean;
     options: { scale: number };
+    consoleVisible: boolean;
+    hideConsole: () => void;
+    toggleConsole: () => void;
 }
 
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole, toggleConsole }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -52,6 +55,10 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                         setActiveKey(tab);
                     }
                 }
+            } else if(e.key === "k") {
+                e.preventDefault();
+
+                toggleConsole();
             }
         };
 
@@ -143,7 +150,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options }
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} key={"output"} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
-                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} /> :
+                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} /> :
                                 <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>
