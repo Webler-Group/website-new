@@ -22,9 +22,10 @@ interface CodeEditorProps {
     consoleVisible: boolean;
     hideConsole: () => void;
     toggleConsole: () => void;
+    setLogsCount: (setter: (prev: number) => number) => void;
 }
 
-const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole, toggleConsole }: CodeEditorProps) => {
+const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, consoleVisible, hideConsole, toggleConsole, setLogsCount }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -150,7 +151,7 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                     <Tab onEnter={onTabEnter} onExit={onTabLeave} key={"output"} eventKey={"output"} title={"output"} style={{ height: tabHeight }}>
                         {
                             code.language === "web" ?
-                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} /> :
+                                <WebOutput source={source} cssSource={css} jsSource={js} tabOpen={tabOpen} consoleVisible={consoleVisible} hideConosole={hideConsole} setLogsCount={setLogsCount} /> :
                                 <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         }
                     </Tab>

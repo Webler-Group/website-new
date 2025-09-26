@@ -4,7 +4,7 @@ import CodeEditor from "../components/CodeEditor";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
-import { Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
+import { Badge, Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import { useAuth } from "../../auth/context/authContext";
@@ -56,6 +56,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
     const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
+    const [logsCount, setLogsCount] = useState(0);
 
     PageTitle(pageTitle);
 
@@ -474,11 +475,6 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
                         <div className="d-flex">
-                            {/* <Button className="text-muted" variant="link" onClick={goBack}>
-                                <FaArrowLeft />
-                            </Button> */}
-                        </div>
-                        <div className="d-flex gap-2 align-items-center">
                             {
                                 code.id &&
                                 <>
@@ -513,11 +509,23 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     }
                                 </>
                             }
+                        </div>
+                        <div className="d-flex gap-3 align-items-center">
                             {
                                 code.language == "web" &&
-                                <Button size="sm" variant="link" className="text-dark" onClick={() => setConsoleVisible(true)}>
+                                <Button size="sm" variant="link" className="text-dark position-relative" onClick={() => setConsoleVisible(true)}>
                                     <FaTerminal />
+                                    {logsCount > 0 && (
+                                        <Badge
+                                            bg="danger"
+                                            pill
+                                            className="position-absolute"
+                                        >
+                                            {logsCount > 99 ? "99+" : logsCount}
+                                        </Badge>
+                                    )}
                                 </Button>
+
                             }
                             <Dropdown>
                                 <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
@@ -583,6 +591,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                         consoleVisible={consoleVisible}
                         hideConsole={() => setConsoleVisible(false)}
                         toggleConsole={() => setConsoleVisible(prev => !prev)}
+                        setLogsCount={setLogsCount}
                     />
                 </div>
             }

@@ -9,9 +9,10 @@ interface WebOutputProps {
     tabOpen: boolean;
     consoleVisible: boolean;
     hideConosole: () => void;
+    setLogsCount: (setter: (prev: number) => number) => void;
 }
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole, setLogsCount }: WebOutputProps) => {
 
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -33,6 +34,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             }
                             return [...logs, { data: console.data, method: console.method, count: 1 }]
                         });
+                        setLogsCount(prev => prev + 1);
                 }
             }
         }
@@ -41,21 +43,20 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
     }, []);
 
     useEffect(() => {
+        clearConsole();
         if (iframeRef.current) {
-
             if (tabOpen) {
                 const output = genOutput();
                 iframeRef.current.srcdoc = output;
-
-                setConsoleLogs([]);
             } else {
                 iframeRef.current.srcdoc = "<!DOCTYPE HTML><html><head></head><body></body></html>";
             }
         }
-    }, [tabOpen, source, jsSource, cssSource]);
+    }, [tabOpen]);
 
     const clearConsole = () => {
         setConsoleLogs(() => []);
+        setLogsCount(() => 0);
     }
 
     const genOutput = () => {
