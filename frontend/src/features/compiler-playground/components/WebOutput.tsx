@@ -185,13 +185,13 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
 
     const processDataItem = (item: any, depth: number, method: string) => {
         if (typeof item === "undefined") {
-            return <span style={{ color: "#80868B" }}>{"undefined"}</span>
+            return <span style={{ color: "gray" }}>{"undefined"}</span>
         }
         if (typeof item === "bigint") {
-            return <span style={{ color: "#80868B" }}>{item + "n"}</span>
+            return <span style={{ color: "forestgreen" }}>{item + "n"}</span>
         }
         if (typeof item === "number" || typeof item === "boolean") {
-            return <span style={{ color: "#9980FF" }}>{item.toString()}</span>
+            return <span style={{ color: "forestgreen" }}>{item.toString()}</span>
         }
         if (typeof item === "string") {
             if (depth === 0) {
@@ -203,62 +203,67 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                         default: return "text-white";
                     }
                 })()
-                return <span className={textColorClass}>{item}</span>
+                return item.length > 0 ? 
+                    <span className={textColorClass}>{item}</span> : 
+                    <i className={textColorClass}>&lt;empty string&gt;</i>
             }
-            return <span style={{ color: "#35D4C7" }}>{`'${item}'`}</span>
+            return <span style={{ color: "violet" }}>{`"${item}"`}</span>
         }
         if (typeof item === "object") {
             if (item === null) {
-                return <span style={{ color: "#80868B" }}>{"null"}</span>
+                return <span style={{ color: "gray" }}>{"null"}</span>
             }
             if (item.__type === "function") {
-                return <i>
-                    <span style={{ color: "#F29766" }}>{"f "}</span>
-                    <span style={{ color: "#FFFFFF" }}>{item.__name}</span>
-                </i>
+                return <>
+                    <span style={{ color: "orange" }}>{"f "}</span>
+                    <span style={{ color: "orange" }}>{item.__name}</span>
+                </>
             }
             if (item.__type === "symbol") {
-                let description = typeof item.__description === "undefined" ? "" : `'${item.__description}'`;
-                return <span style={{ color: "#35D4C7" }}>{`Symbol(${description})`}</span>
+                let description = typeof item.__description === "undefined" ? "" : `"${item.__description}"`;
+                return <span style={{ color: "violet" }}>{`Symbol(${description})`}</span>
             }
             if (item instanceof Date) {
-                return <span style={{ color: "#35D4C7" }}>{`'${item.toString()}'`}</span>
+                return <>
+                    <span style={{ color: "dodgerblue" }}>Date </span>
+                    <span style={{ color: "violet" }}>{item.toString()}</span>
+                </>
             }
             if (item instanceof Array) {
-                return <i>
-                    <span style={{ color: "#FFFFFF" }}>{"["}</span>
+                return <>
+                    <span style={{ color: "dodgerblue" }}>{"["}</span>
                     {
                         item.map((elem, idx) => {
                             return idx > 0 ?
                                 <span key={idx}>
-                                    <span style={{ color: "#FFFFFF" }}>{", "}</span>
+                                    <span style={{ color: "white" }}>{", "}</span>
                                     {processDataItem(elem, depth + 1, method)}
                                 </span>
                                 :
                                 <span key={idx}>{processDataItem(elem, depth + 1, method)}</span>
                         })
                     }
-                    <span style={{ color: "#FFFFFF" }}>{"]"}</span>
-                </i>
+                    <span style={{ color: "dodgerblue" }}>{"]"}</span>
+                </>
             }
             if (item instanceof RegExp) {
-                return <span style={{ color: "#35D4C7" }}>{`${item.toString()}`}</span>
+                return <span style={{ color: "dodgerblue" }}>{`${item.toString()}`}</span>
             }
             if (item.__type == "object") {
-                return <i style={{ color: "#FFFFFF" }}>{item.__constructor}</i>
+                return <i style={{ color: "dodgerblue" }}>{item.__constructor}</i>
             }
-            return (<i>
-                <span style={{ color: "#FFFFFF" }}>{"{ "}</span>
+            return (<>
+                <span style={{ color: "dodgerblue" }}>{"{ "}</span>
                 {
                     Object.entries(item).map((entry, idx) => {
                         let content = <>
-                            <span style={{ color: "#80868B" }}>{entry[0]}</span>
-                            <span style={{ color: "#FFFFFF" }}>{": "}</span>
+                            <span style={{ color: "dodgerblue" }}>{entry[0]}</span>
+                            <span style={{ color: "gray" }}>{": "}</span>
                             {processDataItem(entry[1], depth + 1, method)}
                         </>
                         return idx > 0 ?
                             <span key={idx}>
-                                <span style={{ color: "#FFFFFF" }}>{", "}</span>
+                                <span style={{ color: "dodgerblue" }}>{", "}</span>
                                 {content}
                             </span>
                             :
@@ -267,10 +272,10 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             </span>
                     })
                 }
-                <span style={{ color: "#FFFFFF" }}>{" }"}</span>
-            </i>);
+                <span style={{ color: "dodgerblue" }}>{" }"}</span>
+            </>);
         }
-        return <span style={{ color: "#FFFFFF" }}>{item}</span>
+        return <span style={{ color: "white" }}>{item}</span>
     }
 
     return (

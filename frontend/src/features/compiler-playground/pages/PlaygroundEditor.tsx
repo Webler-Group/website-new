@@ -474,7 +474,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 code &&
                 <div className="wb-playground-container">
                     <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
-                        <div className="d-flex">
+                        <div className="d-flex align-items-center">
                             {
                                 code.id &&
                                 <>
@@ -510,7 +510,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                 </>
                             }
                         </div>
-                        <div className="d-flex gap-3 align-items-center">
+                        <div className="d-flex gap-2 align-items-center">
                             {
                                 code.language == "web" &&
                                 <Button size="sm" variant="link" className="text-dark position-relative" onClick={() => setConsoleVisible(true)}>
