@@ -45,23 +45,23 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
         const handleKeyDown = (e: KeyboardEvent) => {
             const isMac = navigator.userAgent.includes("Mac");
 
-            const match = /^Digit(\d)$/.exec(e.code);
-            if (match) {
-                const index = parseInt(match[1], 10) - 1;
-
-                if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
+            if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
+                const match = /^Digit(\d)$/.exec(e.code);
+                if (match) {
                     e.preventDefault();
-                    const tab = index == editorTabs.length ?  "output" : editorTabs[index];
+
+                    const index = parseInt(match[1], 10) - 1;
+                    const tab = index == editorTabs.length ? "output" : editorTabs[index];
                     if (tab) {
                         setActiveKey(tab);
                     }
-                }
-            } else if(e.key === "k") {
-                e.preventDefault();
+                } else if (e.key === "k") {
+                    e.preventDefault();
 
-                toggleConsole();
+                    toggleConsole();
+                }
             }
-        };
+        }
 
         window.addEventListener("keydown", handleKeyDown);
         return () => {
