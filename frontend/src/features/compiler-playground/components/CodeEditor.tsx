@@ -1,7 +1,7 @@
 import { LanguageName, loadLanguage } from "@uiw/codemirror-extensions-langs";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import ReactCodeMirror from "@uiw/react-codemirror";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Tab, Tabs } from "react-bootstrap";
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
@@ -14,7 +14,7 @@ import {
     completionStatus,
 } from "@codemirror/autocomplete";
 import { indentWithTab } from "@codemirror/commands";
-import { EditorSelection, Prec } from "@codemirror/state";
+import { Prec } from "@codemirror/state";
 
 interface CodeEditorProps {
     code: ICode;
@@ -51,6 +51,15 @@ const CodeEditor = ({
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const [tabHeight, setTabHeight] = useState("auto");
 
+    const editorStates = useMemo(
+        () => [
+            { value: source, setValue: setSource, lang: "html" as LanguageName },
+            { value: css, setValue: setCss, lang: "css" as LanguageName },
+            { value: js, setValue: setJs, lang: "javascript" as LanguageName },
+        ],
+        [source, css, js, setSource, setCss, setJs]
+    );
+
     useEffect(() => {
         if (code.language == "web") {
             setEditorTabs(["html", "css", "javascript"]);
@@ -59,7 +68,7 @@ const CodeEditor = ({
             setEditorTabs([code.language as LanguageName]);
             setActiveKey(code.language);
         }
-    }, [code.id]);
+    }, [code.id, code.language]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -99,26 +108,45 @@ const CodeEditor = ({
         return () => removeEventListener("resize", callback);
     }, []);
 
-    const editorStates = [
-        { value: source, setValue: setSource },
-        { value: css, setValue: setCss },
-        { value: js, setValue: setJs },
-    ];
-
     const onTabSelect = (key: string | null) => {
         if (key) {
             setActiveKey(key);
         }
     };
 
-    const insertTab = (view: EditorView) => {
-        const changes = view.state.changeByRange(range => ({
-            changes: { from: range.from, insert: "\t" },
-            range: EditorSelection.cursor(range.from + 1)
-        }));
-        view.dispatch(changes, { userEvent: "input" });
-        return true;
-    };
+    const getExtensions = useCallback(
+        (lang: LanguageName) => [
+            loadLanguage(lang) as any,
+            EditorView.theme({
+                ".cm-content": {
+                    paddingBottom: tabHeight,
+                    paddingRight: "64px",
+                },
+            }),
+            EditorView.scrollMargins.of(() => ({ bottom: 64, right: 64 })),
+            Prec.high(
+                keymap.of([
+                    {
+                        key: "Tab",
+                        run: (view) => {
+                            const status = completionStatus(view.state);
+                            if (status === "active" || status === "pending") return acceptCompletion(view);
+                            return indentWithTab.run ? indentWithTab.run(view) : false;
+                        },
+                    },
+                    {
+                        key: "Enter",
+                        run: (view) => {
+                            const status = completionStatus(view.state);
+                            if (status === "active" || status === "pending") return acceptCompletion(view);
+                            return false;
+                        },
+                    },
+                ])
+            ),
+            keymap.of(completionKeymap),
+        ],
+        [tabHeight]);
 
     return (
         <div className="bg-dark" data-bs-theme="dark">
@@ -143,66 +171,7 @@ const CodeEditor = ({
                                         overscrollBehavior: "contain",
                                     }}
                                     theme={vscodeDark}
-                                    extensions={[
-                                        loadLanguage(lang) as any,
-                                        EditorView.theme({
-                                            ".cm-content": {
-                                                paddingBottom: tabHeight,
-                                                paddingRight: "64px",
-                                            },
-                                        }),
-                                        EditorView.scrollMargins.of(() => ({
-                                            bottom: 64,
-                                            right: 64,
-                                        })),
-                                        EditorView.updateListener.of((update) => {
-                                            if (update.selectionSet) {
-                                                const selectionPos =
-                                                    update.state.selection.main.head;
-                                                const visibleRanges = update.view.visibleRanges;
-                                                let inView = false;
-                                                for (const range of visibleRanges) {
-                                                    if (
-                                                        selectionPos >= range.from &&
-                                                        selectionPos <= range.to
-                                                    ) {
-                                                        inView = true;
-                                                        break;
-                                                    }
-                                                }
-                                                if (!inView) {
-                                                    update.view.dispatch({
-                                                        effects: EditorView.scrollIntoView(selectionPos, {
-                                                            y: "nearest",
-                                                        }),
-                                                    });
-                                                }
-                                            }
-                                        }),
-                                        Prec.high(
-                                            keymap.of([
-                                                {
-                                                    key: "Tab",
-                                                    run: (view) => {
-                                                        const status = completionStatus(view.state);
-                                                        if (status === "active" || status === "pending") return acceptCompletion(view);
-                                                        return indentWithTab.run ? indentWithTab.run(view) : insertTab(view);
-                                                    }
-                                                },
-                                                {
-                                                    key: "Enter",
-                                                    run: (view) => {
-                                                        const status = completionStatus(view.state);
-                                                        if (status === "active" || status === "pending") {
-                                                            return acceptCompletion(view);
-                                                        }
-                                                        return false;
-                                                    },
-                                                },
-                                            ])
-                                        ),
-                                        keymap.of(completionKeymap),
-                                    ]}
+                                    extensions={getExtensions(lang)}
                                 />
                             </Tab>
                         );
