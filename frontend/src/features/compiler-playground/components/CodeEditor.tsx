@@ -7,7 +7,8 @@ import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
 import CompileOutput from "./CompileOutput";
-import { EditorView } from "@codemirror/view";
+import { EditorView, keymap } from "@codemirror/view";
+import { acceptCompletion } from "@codemirror/autocomplete";
 
 interface CodeEditorProps {
     code: ICode;
@@ -141,7 +142,11 @@ const CodeEditor = ({ code, source, setSource, css, setCss, js, setJs, options, 
                                                         });
                                                     }
                                                 }
-                                            })
+                                            }),
+                                            keymap.of([
+                                                { key: "Tab", run: acceptCompletion },
+                                                { key: "Enter", run: acceptCompletion }
+                                            ])
                                         ]}
                                     />
                                 </Tab>
