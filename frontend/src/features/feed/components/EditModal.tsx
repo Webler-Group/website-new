@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import PostTextareaControl from '../../../components/PostTextareaControl';
 import { IFeed } from './types';
 import { FaSave, FaTimes, FaEye, FaPen } from 'react-icons/fa';
-import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import allowedUrls from '../../../data/discussAllowedUrls';
+import Loader from '../../../components/Loader';
+
+const MarkdownRenderer = React.lazy(() => import("../../../components/MarkdownRenderer"));
 
 interface EditModalProps {
   feed: IFeed;
@@ -82,10 +84,12 @@ const EditModal: React.FC<EditModalProps> = ({ feed, onSave, onClose }) => {
 
               {mode === "preview" && (
                 <div className='wb-feed-content__message'>
-                  <MarkdownRenderer
-                    content={content}
-                    allowedUrls={allowedUrls}
-                  />
+                  <Suspense fallback={<div className="py-4"><Loader /></div>}>
+                    <MarkdownRenderer
+                      content={content}
+                      allowedUrls={allowedUrls}
+                    />
+                  </Suspense>
                 </div>
               )}
             </div>

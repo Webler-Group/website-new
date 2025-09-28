@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Button, Form, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
-import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import React from "react";
+import Loader from "../../../components/Loader";
+const MarkdownRenderer = React.lazy(() => import("../../../components/MarkdownRenderer"));
 
 interface ILessonNodeAnswer {
     id?: string;
@@ -142,7 +144,9 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
         content = (
             <Form className="h-100 d-flex flex-column">
                 <div className="wb-lesson-node-question p-2 flex-grow-1">
-                    <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
+                    <Suspense fallback={<div className="py-4"><Loader /></div>}>
+                        <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
+                    </Suspense>
 
                     {node.type === 2 || node.type === 3 ? (
                         renderAnswers()

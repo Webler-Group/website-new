@@ -1,1 +1,0 @@
-import{u as i,c}from"./ThemeProvider-ec2a0fef.js";import{r as n,j as x}from"./index-c193dc40.js";const r=n.forwardRef(({bsPrefix:e,bg:s="primary",pill:o=!1,text:a,className:t,as:p="span",...m},d)=>{const f=i(e,"badge");return x.jsx(p,{ref:d,...m,className:c(t,f,o&&"rounded-pill",a&&`text-${a}`,s&&`bg-${s}`)})});r.displayName="Badge";const B=r;export{B};

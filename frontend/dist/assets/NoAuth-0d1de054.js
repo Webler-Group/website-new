@@ -1,1 +1,0 @@
-import{e as s,f as a,j as t,N as n,O as r}from"./index-c193dc40.js";const i=()=>{const e=s(),{userInfo:o}=a();return o?t.jsx(n,{to:"/Profile",state:{from:e},replace:!0}):t.jsx(r,{})};export{i as default};

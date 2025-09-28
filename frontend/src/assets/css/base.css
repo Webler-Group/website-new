@@ -1,0 +1,1020 @@
+ul,
+p {
+    margin: 0;
+}
+
+ul {
+    list-style: none;
+}
+
+.wb-loader {
+    display: flex;
+    gap: 8px;
+}
+
+.wb-loader span {
+    width: 10px;
+    height: 10px;
+    background: #6c757d;
+    /* bootstrap secondary color */
+    border-radius: 50%;
+    animation: wb-loader__bounce 0.6s infinite alternate;
+}
+
+.wb-loader span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.wb-loader span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes wb-loader__bounce {
+    from {
+        transform: translateY(0);
+        opacity: 0.6;
+    }
+
+    to {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+
+.wb-login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wb-login-container {
+    width: 392px;
+}
+
+.wb-user__image {
+    border-radius: 50%;
+}
+
+@media(max-width: 449px) {
+    .wb-login-container {
+        width: 100%;
+        padding: 32px 24px;
+    }
+}
+
+@media(min-width: 576px) {
+    .wb-modal__container.edit-profile {
+        width: 567px;
+        min-height: 544px;
+    }
+
+    .wb-modal__container.follows {
+        width: 367px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.codes {
+        width: 360px;
+        height: 600px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.console {
+        height: 923px;
+        max-height: 90vh;
+    }
+
+    .wb-modal__container.comments {
+        height: 796px;
+        max-height: 90vh;
+        position: relative;
+    }
+}
+
+/*Webler home page*/
+
+.wb-home {
+    width: 100%;
+    height: 700px;
+    background-color: rgb(34, 34, 34);
+    color: aliceblue;
+}
+
+.wb-home .header p {
+    font-size: 60px;
+
+}
+
+
+.wb-home-why-wb {
+    width: 100%;
+    height: auto;
+    background-color: aliceblue;
+}
+
+
+.wb-home-why-wb img {
+    width: 100%;
+}
+
+
+/*Webler discuss page*/
+
+.wb-discuss-questions-list-page {
+    min-height: 100vh;
+}
+
+.wb-discuss-empty-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}
+
+.wb-discuss-question__title {
+    word-break: break-word;
+    width: 80%;
+}
+
+.wb-home-why_wb_card {
+    border: none;
+    color: rgb(57, 57, 57);
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
+}
+
+.wb-home-why-wb img {
+    width: 100%;
+
+}
+
+.wb-home-platform_header {
+    margin-top: 80px;
+    margin-bottom: 80px;
+    color: rgb(57, 57, 57);
+}
+
+.wb-home-perfect-platform {
+
+    width: 100%;
+    height: auto;
+
+}
+
+.wb-home-perfect-platform_card {
+    border: none;
+    box-shadow: 0px 0px 10px rgb(224, 224, 224);
+    color: rgb(64, 85, 104);
+    margin-bottom: 80px;
+
+}
+
+.wb-banner::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100dvw;
+    height: 100dvh;
+    background-image: url("/resources/images/collageBlurred.jpg");
+    background-size: min(100%, 1200px);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    z-index: -10;
+}
+
+.wb-banner {
+    position: relative;
+    height: calc(100dvh - 60px);
+    min-height: 360px;
+    padding: 48px;
+}
+
+.wb-banner__logo {
+    display: flex;
+    width: 100%;
+}
+
+.wb-banner__logo__img {
+    width: 480px;
+}
+
+.wb-banner__text {
+    font-size: 60px;
+    font-weight: 600;
+}
+
+.wb-banner__slogan {
+    border-top: 2px solid #f2f2f2;
+    font-size: 40px;
+}
+
+@media (max-width: 720px) {
+    .wb-banner {
+        padding: 24px;
+    }
+
+    .wb-banner__logo {
+        justify-content: center;
+    }
+
+    .wb-banner__logo__img {
+        width: 360px;
+    }
+
+    .wb-banner__text {
+        font-size: 45px;
+    }
+
+    .wb-banner__slogan {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wb-banner {
+        padding: 12px;
+    }
+
+    .wb-banner__logo__img {
+        width: 240px;
+    }
+
+    .wb-banner__text {
+        font-size: 30px;
+        font-weight: 600;
+    }
+
+    .wb-banner__slogan {
+        font-size: 20px;
+    }
+}
+
+.wb-home-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wb-home-content {
+    padding: 80px 0 80px 0;
+}
+
+.wb-home-card {
+    min-height: 360px;
+}
+
+/* wb join us */
+
+.wb-home-sign-up-form {
+    padding: 24px;
+    color: rgb(61, 76, 88);
+    background-color: rgb(236, 236, 236);
+    border-radius: 5px;
+    min-height: 720px;
+}
+
+
+.wb-home-footer {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-home-footer a {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-made-by {
+    color: rgb(121, 121, 121);
+    font-weight: bolder;
+    margin-right: 50px;
+}
+
+.wb-made-by b {
+    color: #fff;
+}
+
+/* Webler Contact Page */
+
+.wb-contact-page {
+    width: 100%;
+    height: 100vh;
+    padding: 30px;
+    background-color: #f2f2f2;
+}
+
+.wb-contact-form {
+    color: rgb(61, 76, 88);
+    max-width: 800px;
+    font-weight: 600;
+    padding: 20px;
+    transform: translate(0, 10px);
+    background-color: rgb(255, 255, 255);
+    box-shadow: 0 0 10px 0px #c6c6c6;
+    border-radius: 5px;
+}
+
+/* Webler Terms of use page */
+
+.wb-term-conditions-container {
+    background-color: #f2f2f2;
+    padding: 10px;
+    height: 100%;
+}
+
+.wb-term-conditions {
+    padding: 40px;
+    border-radius: 5px;
+    color: rgb(61, 76, 88);
+    height: auto;
+    margin-top: 50px;
+    margin-bottom: 50px;
+    background-color: #ffffff;
+    box-shadow: 0 0 10px rgb(231, 229, 229);
+}
+
+/* Make the Header NavBar to be sticky on the top of screen always */
+.stickyNavbarOnTop {
+    position: -webkit-sticky;
+    position: -moz-sticky;
+    position: sticky;
+    top: 0px;
+    z-index: 245;
+}
+
+.wb-feature-create_posts {
+    max-width: 700px;
+    background-color: rgb(255, 255, 255);
+    padding: 20px;
+}
+
+.wb-feed-posts-container {
+    width: 100%;
+    padding: 10px;
+    background-color: #e8eaf0;
+}
+
+.wb-feed-posts {
+    max-width: 800px;
+}
+
+.wb-post {
+    border: none;
+}
+
+.wb-discuss-question__description {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.3;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.wb-discuss-question__description table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.wb-discuss-question__description img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+.wb-discuss-reply__edit-button {
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.wb-discuss-voting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-discuss-voting__button {
+    cursor: pointer;
+    color: silver;
+    padding: 0 4px;
+}
+
+.wb-discuss-voting__button:hover {
+    color: gray;
+}
+
+.wb-discuss-reply__actions {
+    width: 40px;
+    text-align: center;
+}
+
+.wb-discuss-reply__actions__best-answer-button {
+    font-size: 26px;
+}
+
+.wb-playground-wrapper {
+    min-height: 100vh;
+}
+
+.wb-playground-container {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+}
+
+.wb-editor-tab {
+    height: calc(100dvh - 130px);
+}
+
+.wb-web-wrapper__frame-wrapper__console-btn {
+    position: absolute;
+    right: 2px;
+    bottom: 4px;
+}
+
+.wb-language-types__item {
+    display: flex;
+    justify-content: center;
+}
+
+.wb-language-types__language-button {
+    width: 364px;
+    max-width: 100%;
+    border-radius: 8px;
+    border-style: solid;
+    border-width: 1px;
+    box-shadow: 0 4px 0;
+}
+
+.wb-language-types__language-button:hover {
+    box-shadow: 0 10px 0;
+    transform: translateY(-6px);
+}
+
+.wb-language-types__language-button a {
+    font-size: 24px;
+    height: 100%;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    padding: 24px;
+    width: 100%;
+    display: block;
+    text-decoration: none;
+    color: #fff;
+}
+
+
+.wb-playground-voting {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-playground-voting__button {
+    cursor: pointer;
+    color: silver;
+}
+
+.wb-playground-voting__button:hover {
+    color: gray;
+}
+
+.wb-playground-comments {
+    min-width: 35px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-playground-comments__button {
+    cursor: pointer;
+}
+
+.wb-playground-public {
+    min-width: 35px;
+    display: flex;
+    justify-content: center;
+}
+
+.wb-playground-public>span {
+    padding: 0 4px;
+}
+
+.wb-playground-comments__message {
+    font-size: 13px;
+    line-height: 1.3;
+    width: 100%;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.wb-playground-output-web {
+    display: flex;
+    height: 100%;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    -moz-user-select: none;
+    user-select: none;
+    white-space: pre;
+    width: 100%;
+}
+
+.wb-playground-options__button {
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.wb-user-comment__options {
+    position: absolute;
+    right: 8px;
+    top: 5px;
+}
+
+.wb-user-comment__options__item {
+    cursor: pointer;
+}
+
+.wb-user-comment__options__item:hover {
+    color: gray;
+}
+
+.wb-user-comment-footer__replies,
+.wb-user-comment-footer__reply {
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.wb-user-comment-footer__replies:hover,
+.wb-user-comment-footer__reply:hover {
+    background: none;
+    text-shadow: -0.025rem -0.012rem 0 currentcolor, .025rem .012rem currentcolor;
+}
+
+.wb-user-comment__thread {
+    margin-left: 56px;
+    margin-top: 24px
+}
+
+.wb-blog {
+    min-height: 100vh;
+    margin: 0 auto;
+    max-width: 720px;
+}
+
+.wb-blog__content-item__title {
+    cursor: pointer;
+}
+
+.wb-courses-main {
+    min-height: 100vh;
+}
+
+.wb-courses-course__edit-button {
+    cursor: pointer;
+    position: absolute;
+    right: 16px;
+    top: 16px;
+}
+
+.wb-courses-course__description {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.3;
+    width: 100%;
+}
+
+.wb-courses-course__cover-image {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+}
+
+.wb-courses-course-card {
+    box-shadow: 0 4px 0 rgba(107, 127, 153, .5);
+    cursor: pointer;
+}
+
+.wb-courses-course-card:hover {
+    box-shadow: 0 6px 0 rgba(107, 127, 153, .5);
+    transform: translateY(-2px);
+}
+
+.wb-course-lesson-container {
+    position: relative;
+    height: 100vh;
+}
+
+.wb-course-lesson-main {
+    max-width: 648px;
+    margin: 0 auto;
+}
+
+.wb-lesson-node-question {
+    width: 100%;
+    max-width: 552px;
+    margin: 0 auto;
+    flex-grow: 1;
+}
+
+.wb-course-lesson-answer {
+    background-color: #fff;
+    border: 2px solid #c8d2db;
+    border-radius: 4px;
+    width: 100%;
+    font-family: "Fira Mono", sans-serif;
+    color: #2d3846;
+}
+
+.wb-course-lesson-answer.initial {
+    box-shadow: 0 2px 0 1px #c8d2db;
+}
+
+.wb-course-lesson-answer.selected {
+    background: rgba(20, 158, 242, .1);
+    border-color: #149ef2;
+}
+
+.wb-course-lesson-answer.correct {
+    background: rgba(64, 175, 12, .1);
+    border-color: #40af0c;
+}
+
+.wb-course-lesson-answer.incorrect {
+    background: rgba(242, 0, 87, .1);
+    border-color: #f20057;
+}
+
+.wb-course-lesson-arrow-pill {
+    width: 48px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* double arrow tip: left and right both angled forward */
+    clip-path: polygon(0% 0%,
+            /* top-left inward angle */
+            85% 0%,
+            /* top-right inward angle */
+            100% 50%,
+            /* right point */
+            85% 100%,
+            /* bottom-right inward */
+            0% 100%,
+            /* bottom-left inward */
+            15% 50%
+            /* left point */
+        );
+}
+
+.wb-channels-container {
+    width: 100%;
+}
+
+.wb-channels-list__button {
+    cursor: pointer;
+    font-size: 20px;
+}
+
+.wb-channels-settings {
+    position: absolute;
+    width: 100%;
+    height: calc(100% - 44px);
+    transition: 500ms transform;
+    overflow: auto;
+}
+
+.wb-channels-settings__closed {
+    transform: translateY(-100%);
+}
+
+.wb-channels-message__body {
+    font-size: 0.95rem;
+    line-height: 1.3;
+    width: fit-content;
+    max-width: 100%;
+    word-break: break-word;
+    white-space: pre-wrap;
+    user-select: none;
+    background-color: #f8f9fa;
+}
+
+.wb-channels-message__body:hover {
+    background-color: #e9ecef;
+}
+
+.wb-channels-message__body.indented {
+    max-width: calc(100% - 3rem);
+    /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */
+}
+
+.wb-channels-message-enter {
+    opacity: 0;
+    max-height: 0;
+}
+
+.wb-channels-message-enter-active {
+    opacity: 1;
+    transition: opacity 0.4s ease-out, max-height 0.8s ease-out;
+    max-height: 500px;
+}
+
+.wb-channels-reply__text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.wb-channels-reply__text--expanded {
+    display: none;
+    /* Hide the truncated version when expanded */
+}
+
+.wb-channels-reply__full-content {
+    margin-left: 29px;
+    /* Adjust based on icon + avatar + gaps width */
+    margin-top: 2px;
+    white-space: normal;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.wb-feed-comment-modal__backdrop {
+    z-index: 1059 !important;
+}
+
+.wb-reactions-modal__backdrop {
+    z-index: 1069 !important;
+}
+
+.wb-feed-list-container {
+    position: relative;
+}
+
+.wb-feed-list-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    padding-top: 1rem;
+    padding-bottom: 1rem;
+}
+
+.wb-feed-list-header.wb-feed-visible {
+    transform: translateY(0);
+}
+
+.wb-feed-list-header.wb-feed-hidden {
+    transform: translateY(-100%);
+}
+
+.dropdown-menu {
+    min-width: 150px;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.wb-feed-new-post-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transition: background-color 0.2s;
+    z-index: 1000;
+}
+
+.wb-feed-new-post-button:hover {
+    background-color: #0056b3;
+}
+
+.wb-feed-author-name {
+    font-weight: 600;
+    font-size: 15px;
+    color: #1a1a1a;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.wb-feed-author-name:hover {
+    color: #1976d2;
+}
+
+.wb-feed-dropdown-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+    border: none;
+    background: #f0f2f5;
+    color: #65676b;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wb-feed-dropdown-toggle-btn:hover {
+    background: #e4e6ea;
+    color: #1a1a1a;
+}
+
+.wb-feed-custom-dropdown {
+    background: #ffffff;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+    padding: 8px;
+    min-width: 180px;
+    z-index: 1000;
+}
+
+.wb-feed-custom-dropdown .dropdown-item {
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #1a1a1a;
+    transition: background-color 0.2s ease;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+}
+
+.wb-feed-custom-dropdown .dropdown-item:hover {
+    background: #f0f2f5;
+}
+
+.wb-feed-custom-dropdown .dropdown-item.text-danger:hover {
+    background: #fef2f2;
+    color: #dc3545;
+}
+
+.wb-feed-custom-dropdown .dropdown-item.text-warning:hover {
+    background: #fffbf0;
+    color: #f59e0b;
+    border-radius: 16px;
+}
+
+.wb-feed-action-btn,
+.wb-reaction-picker-btn {
+    color: #65676b;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    padding: 4px 8px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.wb-feed-action-btn:hover,
+.wb-reaction-picker-btn:hover {
+    background: #e4e6ea;
+}
+
+.wb-feed-shared-post-unavailable {
+    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
+    border: 1px solid #fecaca;
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin-top: 16px;
+    text-align: center;
+}
+
+.wb-feed-back-button {
+    background: none;
+    border: none;
+    color: #1976d2;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 0;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    transition: color 0.2s ease;
+}
+
+.wb-feed-back-button:hover {
+    color: #1565c0;
+    text-decoration: none;
+}
+
+.wb-feed-loading-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.wb-feed-error-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #f8f9fa;
+}
+
+.wb-feed-error-content {
+    text-align: center;
+    padding: 32px;
+}
+
+.wb-feed-error-title {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+    font-size: 24px;
+}
+
+.wb-feed-error-back-button {
+    background: #1976d2;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s ease;
+}
+
+.wb-feed-error-back-button:hover {
+    background: #1565c0;
+}
+
+.wb-feed-content__message {
+    font-size: 0.9rem;
+    line-height: 1.3;
+    width: 100%;
+    word-break: break-word;
+    white-space: pre-wrap;
+}
+
+.wb-feed-layout-container,
+.wb-feed-details-container {
+    max-width: 720px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.wb-feed-reactions {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.wb-feed-content.truncated {
+    max-height: 300px;
+    /* adjust */
+    overflow: hidden;
+    position: relative;
+}
+
+.wb-feed-content.truncated .fade-overlay {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 60px;
+    /* gradient height */
+    background: linear-gradient(to bottom, transparent, #fff);
+    pointer-events: none;
+}
+
+.wb-feed-content.clickable {
+    cursor: pointer;
+}
+
+.wb-feed-content.clickable:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}

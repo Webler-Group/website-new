@@ -3,7 +3,7 @@ import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
 import { LinkContainer } from 'react-router-bootstrap';
 import AuthNavigation from '../features/auth/components/AuthNavigation';
-import NotificationList from '../features/profile/pages/NotificationList';
+import NotificationList from '../features/profile/components/NotificationList';
 import { useAuth } from '../features/auth/context/authContext';
 import ChannelsButton from '../features/channels/components/ChannelsButton';
 

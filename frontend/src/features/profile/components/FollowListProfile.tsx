@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { UserMinimal } from '../pages/Profile'
+import { UserMinimal } from '../pages/ProfilePage'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';

@@ -1,0 +1,57 @@
+import { Container } from "react-bootstrap";
+import PageTitle from "../layouts/PageTitle";
+
+const FAQPage = () => {
+    PageTitle("Frequently Asked Questions", false);
+
+    return (
+        <div className="bg-light py-4" style={{ minHeight: "100vh" }}>
+            <Container>
+                <div className="bg-white rounded p-4 shadow">
+                    <h2 className="mb-4">Frequently Asked Questions</h2>
+
+                    <ul>
+                        <li><a href="#email-verification">Do I need to verify my email?</a></li>
+                        <li><a href="#markdown-support">What content is supported in Feed and QA?</a></li>
+                        <li><a href="#user-mentions">How do I mention other users in posts?</a></li>
+                    </ul>
+
+                    <hr />
+
+                    <div id="email-verification" className="mb-4">
+                        <h5>Do I need to verify my email?</h5>
+                        <p>
+                            Yes. Email verification is required to post questions in the QA forum, create feed
+                            posts, leave comments, or upvote any content. This helps maintain a trustworthy and spam-free community.
+                        </p>
+                    </div>
+
+                    <div id="markdown-support" className="mb-4">
+                        <h5>What content is supported in Feed and QA?</h5>
+                        <p>
+                            Feed posts and QA discussions support <strong>GitHub-flavored Markdown</strong>.
+                            This allows you to format your text with headers, code blocks, lists, links, images, and more —
+                            making technical discussions clean and readable.
+                        </p>
+                    </div>
+
+                    <div id="user-mentions" className="mb-4">
+                        <h5>How do I mention other users in posts?</h5>
+                        <p>
+                            You can mention users in QA discussions and comments using the following syntax:
+                        </p>
+                        <pre className="bg-light p-2 rounded">
+                            [user id="user_id"]username[/user]
+                        </pre>
+                        <p>
+                            Alternatively, just type <strong>@</strong> to trigger the user search modal and
+                            select the person you want to mention. Once selected, it will auto-fill the correct mention syntax.
+                        </p>
+                    </div>
+                </div>
+            </Container>
+        </div>
+    );
+};
+
+export default FAQPage;

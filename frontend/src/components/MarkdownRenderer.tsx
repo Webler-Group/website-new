@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -13,7 +13,7 @@ interface MarkdownRendererProps {
     allowedUrls?: (string | RegExp)[];
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrls = [] }) => {
+const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) => {
     const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
     const isAllowedUrl = (url?: string) => {

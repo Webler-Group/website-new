@@ -28,6 +28,12 @@ server {
         expires 1d;  # Cache for 1 day to reduce requests
     }
 
+    location ~* \.(?:js|css|ico|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, immutable";
+    }
+
     location / {
         try_files $uri $uri/ /index.html;
     }
