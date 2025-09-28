@@ -1,7 +1,7 @@
 import { LanguageName, loadLanguage } from "@uiw/codemirror-extensions-langs";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import ReactCodeMirror from "@uiw/react-codemirror";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, Tabs } from "react-bootstrap";
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
@@ -49,6 +49,7 @@ const CodeEditor = ({
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const editorStates = useMemo(
         () => [
@@ -60,7 +61,7 @@ const CodeEditor = ({
     );
 
     useEffect(() => {
-        if (code.language == "web") {
+        if (code.language === "web") {
             setEditorTabs(["html", "css", "javascript"]);
             setActiveKey("html");
         } else {
@@ -77,12 +78,9 @@ const CodeEditor = ({
                 const match = /^Digit(\d)$/.exec(e.code);
                 if (match) {
                     e.preventDefault();
-
                     const index = parseInt(match[1], 10) - 1;
-                    const tab = index == editorTabs.length ? "output" : editorTabs[index];
-                    if (tab) {
-                        setActiveKey(tab);
-                    }
+                    const tab = index === editorTabs.length ? "output" : editorTabs[index];
+                    if (tab) setActiveKey(tab);
                 } else if (e.key === "k") {
                     e.preventDefault();
                     toggleConsole();
@@ -91,15 +89,11 @@ const CodeEditor = ({
         };
 
         window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, [editorTabs]);
 
     const onTabSelect = (key: string | null) => {
-        if (key) {
-            setActiveKey(key);
-        }
+        if (key) setActiveKey(key);
     };
 
     const getExtensions = useCallback(
@@ -118,7 +112,8 @@ const CodeEditor = ({
                         key: "Tab",
                         run: (view) => {
                             const status = completionStatus(view.state);
-                            if (status === "active" || status === "pending") return acceptCompletion(view);
+                            if (status === "active" || status === "pending")
+                                return acceptCompletion(view);
                             return indentWithTab.run ? indentWithTab.run(view) : false;
                         },
                     },
@@ -126,7 +121,8 @@ const CodeEditor = ({
                         key: "Enter",
                         run: (view) => {
                             const status = completionStatus(view.state);
-                            if (status === "active" || status === "pending") return acceptCompletion(view);
+                            if (status === "active" || status === "pending")
+                                return acceptCompletion(view);
                             return false;
                         },
                     },
@@ -134,41 +130,42 @@ const CodeEditor = ({
             ),
             keymap.of(completionKeymap),
         ],
-        []);
+        []
+    );
 
     return (
-        <div className="bg-dark wb-code-editor" data-bs-theme="dark">
+        <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
-                    {editorTabs.map((lang, idx) => {
-                        return (
-                            <Tab
-                                key={lang}
-                                eventKey={lang}
-                                title={lang}
-                            >
-                                <ReactCodeMirror
-                                    value={editorStates[idx].value}
-                                    onChange={(value) => editorStates[idx].setValue(value)}
-                                    width="100%"
-                                    height="100%"
-                                    style={{
-                                        height: "100%",
-                                        fontSize: `${options.scale * 100}%`,
-                                        overscrollBehavior: "contain",
-                                    }}
-                                    theme={vscodeDark}
-                                    extensions={getExtensions(lang)}
-                                />
-                            </Tab>
-                        );
-                    })}
+                    {editorTabs.map((lang, idx) => (
+                        <Tab
+                            key={lang}
+                            eventKey={lang}
+                            title={lang}
+                            className="wb-editor-tab"
+                        >
+                            <ReactCodeMirror
+                                value={editorStates[idx].value}
+                                onChange={(value) => editorStates[idx].setValue(value)}
+                                width="100%"
+                                height="100%"
+                                style={{
+                                    height: "100%",
+                                    fontSize: `${options.scale * 100}%`,
+                                    overscrollBehavior: "contain",
+                                }}
+                                theme={vscodeDark}
+                                extensions={getExtensions(lang)}
+                            />
+                        </Tab>
+                    ))}
                     <Tab
                         onEnter={onTabEnter}
                         onExit={onTabLeave}
                         key={"output"}
                         eventKey={"output"}
                         title={"output"}
+                        className="wb-editor-tab"
                     >
                         {code.language === "web" ? (
                             <WebOutput
@@ -181,11 +178,7 @@ const CodeEditor = ({
                                 setLogsCount={setLogsCount}
                             />
                         ) : (
-                            <CompileOutput
-                                source={source}
-                                language={code.language}
-                                tabOpen={tabOpen}
-                            />
+                            <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
                         )}
                     </Tab>
                 </Tabs>

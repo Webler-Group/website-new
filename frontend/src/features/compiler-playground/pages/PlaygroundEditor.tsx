@@ -40,6 +40,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [source, setSource] = useState("");
     const [css, setCss] = useState("");
     const [js, setJs] = useState("");
+    const [initialSource, setInitialSource] = useState("");
+    const [initialCss, setInitialCss] = useState("");
+    const [initialJs, setInitialJs] = useState("");
     const [saveAsNew, setSaveAsNew] = useState(true);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -60,6 +63,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     const [logsCount, setLogsCount] = useState(0);
 
     PageTitle(pageTitle);
+
+    const hasUnsavedChanges = source !== initialSource || css !== initialCss || js !== initialJs;
 
     useEffect(() => {
         if (code) {
@@ -113,6 +118,25 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setEditorOptions(JSON.parse(editorValue));
         }
     }, []);
+
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = true;
+            }
+        };
+
+        if (hasUnsavedChanges) {
+            window.addEventListener('beforeunload', handleBeforeUnload);
+        } else {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        }
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [hasUnsavedChanges]);
 
     const updateEditorOptions = (options: any) => {
         setEditorOptions(options);
@@ -169,6 +193,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setSource(result.code.source);
             setCss(result.code.cssSource);
             setJs(result.code.jsSource);
+            setInitialSource(result.code.source);
+            setInitialCss(result.code.cssSource);
+            setInitialJs(result.code.jsSource);
             setCommentCount(result.code.comments);
         }
         setLoading(false);
@@ -188,6 +215,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setSource(template.source);
             setCss(template.cssSource);
             setJs(template.jsSource);
+            setInitialSource(template.source);
+            setInitialCss(template.cssSource);
+            setInitialJs(template.jsSource);
         }
     }
 
@@ -260,6 +290,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
                 closeSaveModal();
                 setMessage({ success: true, message: "Code updated successfully" });
+                setInitialSource(source);
+                setInitialCss(css);
+                setInitialJs(js);
             }
             else {
                 setMessage({ success: false, errors: result?.error });
@@ -283,6 +316,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 setCode(code => ({ ...code, ...result.data }));
 
                 setMessage({ success: true, message: "Code updated successfully" });
+                setInitialSource(source);
+                setInitialCss(css);
+                setInitialJs(js);
             }
             else {
                 setMessage({ success: false, errors: result?.error });
@@ -370,6 +406,9 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
         if (result && result.success) {
             setCode(code => ({ ...code, ...result.data }));
             setCodePublic(result.data.isPublic);
+            setInitialSource(source);
+            setInitialCss(css);
+            setInitialJs(js);
         }
         else {
             setMessage({ success: false, errors: result?.error });
@@ -580,23 +619,21 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     </Dropdown>
                                 </div>
                             </div>
-                            <div className="wb-playground-editor">
-                                <CodeEditor
-                                    loading={loading}
-                                    code={code}
-                                    source={source}
-                                    setSource={(value: string) => setSource(value)}
-                                    css={css}
-                                    setCss={(value: string) => setCss(value)}
-                                    js={js}
-                                    setJs={(value: string) => setJs(value)}
-                                    options={editorOptions}
-                                    consoleVisible={consoleVisible}
-                                    hideConsole={() => setConsoleVisible(false)}
-                                    toggleConsole={() => setConsoleVisible(prev => !prev)}
-                                    setLogsCount={setLogsCount}
-                                />
-                            </div>
+                            <CodeEditor
+                                loading={loading}
+                                code={code}
+                                source={source}
+                                setSource={(value: string) => setSource(value)}
+                                css={css}
+                                setCss={(value: string) => setCss(value)}
+                                js={js}
+                                setJs={(value: string) => setJs(value)}
+                                options={editorOptions}
+                                consoleVisible={consoleVisible}
+                                hideConsole={() => setConsoleVisible(false)}
+                                toggleConsole={() => setConsoleVisible(prev => !prev)}
+                                setLogsCount={setLogsCount}
+                            />
                         </>
                         :
                         !loading &&
