@@ -1,0 +1,1 @@
+import{r as e}from"./index-c193dc40.js";function u(t,f=!1){const c=e.useRef(document.title);e.useEffect(()=>{document.title=t},[t]),e.useEffect(()=>()=>{f||(document.title=c.current)},[])}export{u as P};

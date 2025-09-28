@@ -1,0 +1,1 @@
+import{j as s}from"./index-c193dc40.js";import{A as t}from"./Alert-e497ba45.js";const m=({message:e,errors:r})=>s.jsxs(s.Fragment,{children:[s.jsx("div",{children:r&&r.map((i,n)=>s.jsx(t,{variant:"danger",dismissible:!0,children:i.message},n))}),e&&s.jsx(t,{variant:"success",dismissible:!0,children:e})]});export{m as R};

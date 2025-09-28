@@ -1,1 +1,0 @@
-import{j as r}from"./index-b2f3d98e.js";import{P as o}from"./PageTitle-83c92925.js";import{C as e}from"./Container-aded6eb3.js";import"./ThemeProvider-c318c21f.js";const n=({MainPage:s})=>(o("Course Editor",!1),r.jsx(e,{children:r.jsx("div",{className:"wb-courses-main pt-2",children:s})}));export{n as default};

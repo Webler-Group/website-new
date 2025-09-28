@@ -20,7 +20,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
     <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom" collapseOnSelect>
       <Container fluid>
         <LinkContainer to="/">
-          <Navbar.Brand><img src="/resources/images/logo.png" height="32px" width="96px" /></Navbar.Brand>
+          <Navbar.Brand><img src="/resources/images/logo.svg" height="32px" width="96px" /></Navbar.Brand>
         </LinkContainer>
         <div className="d-flex align-items-center gap-3">
           <Navbar.Toggle aria-controls="navbarScroll" />

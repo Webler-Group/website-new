@@ -137,7 +137,7 @@ const CreateCourse = ({ courseId }: CreateCourseProps) => {
                     <div className="col-12 col-md-4">
                         <div className="d-flex justify-content-center">
                             <div className="rounded-circle">
-                                <img className="wb-courses-course__cover-image" src={coverImage ? "/uploads/courses/" + coverImage : "/resources/images/logoicon.png"} />
+                                <img className="wb-courses-course__cover-image" src={coverImage ? "/uploads/courses/" + coverImage : "/resources/images/logoicon.svg"} />
                             </div>
                         </div>
                         <Form onSubmit={handleCoverImageUpload}>

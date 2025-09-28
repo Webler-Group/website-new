@@ -24,7 +24,7 @@ function Home() {
 
         <div className="wb-banner text-light d-flex flex-column justify-content-center gap-2">
           <div className="wb-banner__logo">
-            <img className="wb-banner__logo__img" src="../resources/images/logotransparent.png" alt="Webler logo" />
+            <img className="wb-banner__logo__img" src="../resources/images/logotransparent.svg" alt="Webler logo" />
           </div>
           <h2 className="wb-banner__text">Software Engineering</h2>
           <p className="wb-banner__slogan">- Building the future, one code at a time</p>

@@ -453,7 +453,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
                     <div>
                         <Link to="/">
-                            <img src="/resources/images/logo.png" height="32px" width="96px" />
+                            <img src="/resources/images/logo.svg" height="32px" width="96px" />
                         </Link>
                     </div>
                     <div>
