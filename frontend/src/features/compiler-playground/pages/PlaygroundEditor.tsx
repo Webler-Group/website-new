@@ -464,7 +464,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                 bg={message.success ? "success" : "danger"}
                 onClose={() => setMessage(prev => ({ success: prev.success }))}
                 show={(message.errors && message.errors.length > 0) || !!message.message}
-                delay={2500}
+                delay={1500}
                 autohide>
                 <Toast.Body className="text-white">
                     <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>

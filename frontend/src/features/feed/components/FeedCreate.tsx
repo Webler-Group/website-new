@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import allowedUrls from "../../../data/discussAllowedUrls";
 
 const MAX_LENGTH = 4096;
 
@@ -23,8 +24,8 @@ const FeedCreate = () => {
         setLoading(true);
         setError(undefined);
 
-        const result = await sendJsonRequest("/Feed/CreateFeed", "POST", { 
-            message 
+        const result = await sendJsonRequest("/Feed/CreateFeed", "POST", {
+            message
         });
 
         if (result.success) {
@@ -83,11 +84,9 @@ const FeedCreate = () => {
                 {/* Preview Mode */}
                 {mode === "preview" && (
                     <div className="p-3 border rounded bg-light">
-                        {message.trim() ? (
-                            <MarkdownRenderer content={message} allowedUrls={["http", /^\/Profile\//]} />
-                        ) : (
-                            <span className="text-muted">Nothing to preview</span>
-                        )}
+                        <div className="wb-feed-content__message">
+                            <MarkdownRenderer content={message} allowedUrls={allowedUrls} />
+                        </div>
                     </div>
                 )}
 

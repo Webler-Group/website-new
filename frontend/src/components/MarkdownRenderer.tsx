@@ -48,8 +48,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
         },
 
         a({ href, children }) {
-            if (href && href.startsWith("/")) {
+            if (!href) {
+                return <span>{children}</span>;
+            }
+            if (href.startsWith("/")) {
                 return <Link to={href}>{children}</Link>;
+            }
+            const domain = "weblercodes.com";
+            if (href.includes(domain)) {
+                const relativePath = href.split(domain)[1] || "/";
+                return <Link to={relativePath}>{children}</Link>;
             }
             if (isAllowedUrl(href)) {
                 return (
