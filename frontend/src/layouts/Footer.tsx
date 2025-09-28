@@ -1,6 +1,6 @@
 import Container from 'react-bootstrap/Container';
 import { Link } from 'react-router-dom';
-import { FaHeart } from 'react-icons/fa6';
+import { FaHeart, FaTwitter, FaFacebook, FaInstagram, FaGithub } from 'react-icons/fa6';
 
 function Footer() {
     return (
@@ -8,6 +8,20 @@ function Footer() {
             <footer className='bg-black'>
                 <Container>
                     <div className="wb-home-footer p-3 d-flex flex-column gap-3">
+                        <div className='d-flex justify-content-around'>
+                            <a href="https://twitter.com" target="_blank" rel="noopener noreferrer">
+                                <FaTwitter />
+                            </a>
+                            <a href="https://facebook.com" target="_blank" rel="noopener noreferrer">
+                                <FaFacebook />
+                            </a>
+                            <a href="https://instagram.com" target="_blank" rel="noopener noreferrer">
+                                <FaInstagram />
+                            </a>
+                            <a href="https://github.com/Webler-Group" target="_blank" rel="noopener noreferrer">
+                                <FaGithub />
+                            </a>
+                        </div>
                         <div className='d-flex justify-content-around'>
                             <Link to={"/"}>Home</Link>
                             <Link to={"/Faq"}>FAQ</Link>

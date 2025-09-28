@@ -1,0 +1,1 @@
+import{e as n,f as r,j as s,O as u,N as c}from"./index-b2f3d98e.js";const m=({allowedRoles:o})=>{const e=n(),{userInfo:t}=r();return t!=null&&t.roles.some(a=>o.includes(a))?s.jsx(u,{}):s.jsx(c,{to:"/Users/Login?returnUrl="+e.pathname,state:{from:e},replace:!0})};export{m as default};

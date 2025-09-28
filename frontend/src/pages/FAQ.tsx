@@ -13,8 +13,7 @@ const FAQ = () => {
                     <ul>
                         <li><a href="#email-verification">Do I need to verify my email?</a></li>
                         <li><a href="#markdown-support">What content is supported in Feed and QA?</a></li>
-                        <li><a href="#allowed-links">Which image and link URLs are allowed?</a></li>
-                        <li><a href="#user-mentions">How do I mention other users in discussions?</a></li>
+                        <li><a href="#user-mentions">How do I mention other users in posts?</a></li>
                     </ul>
 
                     <hr />
@@ -36,32 +35,8 @@ const FAQ = () => {
                         </p>
                     </div>
 
-                    <div id="allowed-links" className="mb-4">
-                        <h5>Which image and link URLs are allowed?</h5>
-                        <p>
-                            For safety and spam prevention, only links and images from the following domains are allowed in posts:
-                        </p>
-                        <ul>
-                            <li><code>imgur.com</code> or <code>i.imgur.com</code></li>
-                            <li><code>ibb.co</code> or <code>i.ibb.co</code></li>
-                            <li><code>postimg.cc</code> or <code>i.postimg.cc</code></li>
-                            <li><code>github.com</code></li>
-                            <li><code>*.github.io</code> (GitHub Pages)</li>
-                            <li><code>raw.githubusercontent.com</code> (raw files)</li>
-                            <li><code>dropbox.com</code> or <code>dl.dropboxusercontent.com</code></li>
-                            <li><code>weblercodes.com</code></li>
-                        </ul>
-                        <p>
-                            The image URL must be a <strong>direct link to the file</strong> (e.g. ending with <code>.jpg</code>, <code>.png</code>, etc.), not a preview or page link.
-                        </p>
-                        <p>
-                            Any other external URLs will be stripped out or not rendered.
-                        </p>
-                    </div>
-
-
                     <div id="user-mentions" className="mb-4">
-                        <h5>How do I mention other users in discussions?</h5>
+                        <h5>How do I mention other users in posts?</h5>
                         <p>
                             You can mention users in QA discussions and comments using the following syntax:
                         </p>

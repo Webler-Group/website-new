@@ -1,0 +1,1 @@
+import{r as n}from"./index-b2f3d98e.js";function u(){var t=n.useReducer(function(a){return!a},!1),e=t[1];return e}const o=n.createContext(null),c=(t,e=null)=>t!=null?String(t):e||null,l=o,r=n.createContext(null);r.displayName="NavContext";const x=r;export{x as N,l as S,c as m,u};

@@ -1,0 +1,1 @@
+import{j as e}from"./index-b2f3d98e.js";const t=({avatarImage:s,size:r})=>e.jsx("img",{className:"wb-user__image",width:r,height:r,src:s?"/uploads/users/"+s:"/resources/images/user.svg"});export{t as P};
