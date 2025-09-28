@@ -319,10 +319,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         <div
           ref={contentRef}
-          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated" : ""} ${!showFullContent && needsTruncation ? "clickable" : ""}`}
-          onClick={!showFullContent && needsTruncation ? handleShowFullContentClick : undefined}
+          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated clickable" : ""}`}
+          onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
-          <div className="wb-feed-content__message" style={!showFullContent && needsTruncation ? { pointerEvents: "none" } : {}}>
+          <div className="wb-feed-content__message" style={!showFullContent ? { pointerEvents: "none" } : {}}>
             <Suspense fallback={<div className="py-4"><Loader /></div>}>
               <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
             </Suspense>
