@@ -506,6 +506,7 @@ ul {
 .wb-playground-container {
     position: fixed;
     width: 100%;
+    height: 100%;
 }
 
 .wb-web-wrapper__frame-wrapper__console-btn {

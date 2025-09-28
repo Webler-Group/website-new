@@ -19,6 +19,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
 import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
+import { FaSearch } from "react-icons/fa";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -157,6 +158,7 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
     }
 
     const getCode = async () => {
+        setLoading(true);
         const result = await sendJsonRequest(`/codes/GetCode`, "POST", {
             codeId
         });
@@ -168,9 +170,8 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
             setCss(result.code.cssSource);
             setJs(result.code.jsSource);
             setCommentCount(result.code.comments);
-        } else {
-            navigate("/PageNotFound")
         }
+        setLoading(false);
     }
 
     const getCodeByTemplate = async () => {
@@ -448,153 +449,166 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                     <Button variant="primary" onClick={saveCode} disabled={codeName.length === 0}>Save</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
-                <div>
-                    <Link to="/">
-                        <img src="/resources/images/logo.png" height="32px" width="96px" />
-                    </Link>
+            <div className="wb-playground-container">
+                <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
+                    <div>
+                        <Link to="/">
+                            <img src="/resources/images/logo.png" height="32px" width="96px" />
+                        </Link>
+                    </div>
+                    <div>
+                        <AuthNavigation />
+                    </div>
                 </div>
-                <div>
-                    <AuthNavigation />
-                </div>
-            </div>
-            <Toast
-                className="position-absolute bottom-0 end-0 m-2"
-                style={{ zIndex: "9999" }}
-                bg={message.success ? "success" : "danger"}
-                onClose={() => setMessage(prev => ({ success: prev.success }))}
-                show={(message.errors && message.errors.length > 0) || !!message.message}
-                delay={1500}
-                autohide>
-                <Toast.Body className="text-white">
-                    <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
-                </Toast.Body>
-            </Toast>
-            {
-                code &&
-                <div className="wb-playground-container">
-                    <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
-                        <div className="d-flex align-items-center">
-                            {
-                                code.id &&
-                                <>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
-                                        <div>
-                                            <div>
-                                                <b>{truncate(code.name!, 10)}</b>
-                                            </div>
-                                            <div className="d-flex justify-content-start small">
-                                                <ProfileName userId={code.userId!} userName={code.userName!} />
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="wb-playground-voting small">
-                                        <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
-                                            <FaThumbsUp />
-                                        </span>
-                                        <span className="wb-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
-                                    </div>
-                                    <div className="wb-playground-comments small">
-                                        <span className="wb-playground-comments__button" onClick={openCommentModal}>
-                                            <FaComment />
-                                        </span>
-                                        <span>{commentCount}</span>
-                                    </div>
+                <Toast
+                    className="position-absolute bottom-0 end-0 m-2"
+                    style={{ zIndex: "9999" }}
+                    bg={message.success ? "success" : "danger"}
+                    onClose={() => setMessage(prev => ({ success: prev.success }))}
+                    show={(message.errors && message.errors.length > 0) || !!message.message}
+                    delay={1500}
+                    autohide>
+                    <Toast.Body className="text-white">
+                        <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
+                    </Toast.Body>
+                </Toast>
+                {
+                    code ?
+                        <>
+                            <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
+                                <div className="d-flex align-items-center">
                                     {
-                                        !code.isPublic &&
-                                        <div className="wb-playground-public small">
-                                            <FaLock />
-                                        </div>
-                                    }
-                                </>
-                            }
-                        </div>
-                        <div className="d-flex gap-2 align-items-center">
-                            {
-                                code.language == "web" &&
-                                <Button size="sm" variant="link" className="text-dark position-relative" onClick={() => setConsoleVisible(true)}>
-                                    <FaTerminal />
-                                    {logsCount > 0 && (
-                                        <Badge
-                                            bg="danger"
-                                            pill
-                                            className="position-absolute"
-                                        >
-                                            {logsCount > 99 ? "99+" : logsCount}
-                                        </Badge>
-                                    )}
-                                </Button>
-
-                            }
-                            <Dropdown>
-                                <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
-                                <Dropdown.Menu style={{ width: "200px" }}>
-                                    <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
-                                    <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
-                                    {
-                                        userInfo &&
+                                        code.id &&
                                         <>
+                                            <div className="d-flex align-items-center gap-2">
+                                                <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
+                                                <div>
+                                                    <div>
+                                                        <b>{truncate(code.name!, 10)}</b>
+                                                    </div>
+                                                    <div className="d-flex justify-content-start small">
+                                                        <ProfileName userId={code.userId!} userName={code.userName!} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="wb-playground-voting small">
+                                                <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
+                                                    <FaThumbsUp />
+                                                </span>
+                                                <span className="wb-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
+                                            </div>
+                                            <div className="wb-playground-comments small">
+                                                <span className="wb-playground-comments__button" onClick={openCommentModal}>
+                                                    <FaComment />
+                                                </span>
+                                                <span>{commentCount}</span>
+                                            </div>
                                             {
-                                                (code && code.id) &&
+                                                !code.isPublic &&
+                                                <div className="wb-playground-public small">
+                                                    <FaLock />
+                                                </div>
+                                            }
+                                        </>
+                                    }
+                                </div>
+                                <div className="d-flex gap-2 align-items-center">
+                                    {
+                                        code.language == "web" &&
+                                        <Button size="sm" variant="link" className="text-dark position-relative" onClick={() => setConsoleVisible(true)}>
+                                            <FaTerminal />
+                                            {logsCount > 0 && (
+                                                <Badge
+                                                    bg="danger"
+                                                    pill
+                                                    className="position-absolute"
+                                                >
+                                                    {logsCount > 99 ? "99+" : logsCount}
+                                                </Badge>
+                                            )}
+                                        </Button>
+
+                                    }
+                                    <Dropdown>
+                                        <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
+                                        <Dropdown.Menu style={{ width: "200px" }}>
+                                            <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
+                                            <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
+                                            {
+                                                userInfo &&
                                                 <>
                                                     {
-                                                        code.userId == userInfo.id &&
+                                                        (code && code.id) &&
                                                         <>
-                                                            <Dropdown.Item onClick={handleRename}>Rename</Dropdown.Item>
-                                                            <Dropdown.Item onClick={() => setDeleteModalVisible(true)}>Delete</Dropdown.Item>
-                                                            <Dropdown.ItemText className="d-flex justify-content-between align-items-center">
-                                                                <span>Public</span>
-                                                                <ToggleSwitch value={codePublic} onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)} />
-                                                            </Dropdown.ItemText>
+                                                            {
+                                                                code.userId == userInfo.id &&
+                                                                <>
+                                                                    <Dropdown.Item onClick={handleRename}>Rename</Dropdown.Item>
+                                                                    <Dropdown.Item onClick={() => setDeleteModalVisible(true)}>Delete</Dropdown.Item>
+                                                                    <Dropdown.ItemText className="d-flex justify-content-between align-items-center">
+                                                                        <span>Public</span>
+                                                                        <ToggleSwitch value={codePublic} onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)} />
+                                                                    </Dropdown.ItemText>
+                                                                </>
+                                                            }
                                                         </>
                                                     }
                                                 </>
                                             }
-                                        </>
-                                    }
-                                    <Dropdown.ItemText className="border d-flex justify-content-between">
-                                        <div>Font</div>
-                                        <div className="d-flex gap-1">
-                                            <span className="wb-playground-options__button" onClick={zoomOut}>-</span>
-                                            <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
-                                            <span className="wb-playground-options__button" onClick={zoomIn}>+</span>
-                                        </div>
-                                    </Dropdown.ItemText>
-                                    {
-                                        (code && code.id) &&
-                                        <>
-                                            <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
-                                            <Dropdown.Item
-                                                onClick={() => {
-                                                    navigator.clipboard.writeText(window.location.href);
-                                                }}
-                                            >
-                                                Share
-                                            </Dropdown.Item>
-                                        </>
-                                    }
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                            <Dropdown.ItemText className="border d-flex justify-content-between">
+                                                <div>Font</div>
+                                                <div className="d-flex gap-1">
+                                                    <span className="wb-playground-options__button" onClick={zoomOut}>-</span>
+                                                    <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
+                                                    <span className="wb-playground-options__button" onClick={zoomIn}>+</span>
+                                                </div>
+                                            </Dropdown.ItemText>
+                                            {
+                                                (code && code.id) &&
+                                                <>
+                                                    <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                                    <Dropdown.Item
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(window.location.href);
+                                                        }}
+                                                    >
+                                                        Share
+                                                    </Dropdown.Item>
+                                                </>
+                                            }
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
+                            </div>
+                            <CodeEditor
+                                loading={loading}
+                                code={code}
+                                source={source}
+                                setSource={(value: string) => setSource(value)}
+                                css={css}
+                                setCss={(value: string) => setCss(value)}
+                                js={js}
+                                setJs={(value: string) => setJs(value)}
+                                options={editorOptions}
+                                consoleVisible={consoleVisible}
+                                hideConsole={() => setConsoleVisible(false)}
+                                toggleConsole={() => setConsoleVisible(prev => !prev)}
+                                setLogsCount={setLogsCount}
+                            />
+                        </>
+                        :
+                        !loading &&
+                        <div className="d-flex h-100 flex-column align-items-center justify-content-center text-center">
+                            <h4>
+                                <FaSearch />
+                            </h4>
+                            <h5>Code not found</h5>
+                            <div>
+                                <Link to="/Codes">Go back</Link>
+                            </div>
                         </div>
-                    </div>
-                    <CodeEditor
-                        loading={loading}
-                        code={code}
-                        source={source}
-                        setSource={(value: string) => setSource(value)}
-                        css={css}
-                        setCss={(value: string) => setCss(value)}
-                        js={js}
-                        setJs={(value: string) => setJs(value)}
-                        options={editorOptions}
-                        consoleVisible={consoleVisible}
-                        hideConsole={() => setConsoleVisible(false)}
-                        toggleConsole={() => setConsoleVisible(prev => !prev)}
-                        setLogsCount={setLogsCount}
-                    />
-                </div>
-            }
+                }
+            </div>
         </>
     )
 }

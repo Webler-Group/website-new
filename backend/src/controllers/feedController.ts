@@ -29,6 +29,7 @@ import {
   getUserReactionsSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
+import RolesEnum from "../data/RolesEnum";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -182,7 +183,7 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (feed.user != currentUserId) {
+  if (feed.user != currentUserId && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }

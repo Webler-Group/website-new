@@ -277,6 +277,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     >
                       <FaEdit /> Edit Post
                     </Dropdown.Item>
+                  </>
+                )}
+                {(canEdit || canModerate) && (
+                  <>
                     <Dropdown.Item
                       className="dropdown-item d-flex align-items-center gap-2 text-danger"
                       onClick={() => setShowDeleteModal(true)}
@@ -285,6 +289,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     </Dropdown.Item>
                   </>
                 )}
+
                 {canModerate && (
                   <Dropdown.Item
                     className="dropdown-item d-flex align-items-center gap-2 text-warning"

@@ -8,7 +8,7 @@ import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
 import { LinkContainer } from "react-router-bootstrap";
-import { FaThumbsUp } from "react-icons/fa";
+import { FaSearch, FaThumbsUp } from "react-icons/fa";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
 import PostAttachment from "../components/PostAttachment";
@@ -114,8 +114,6 @@ const DiscussPost = () => {
         });
         if (result && result.question) {
             setQuestion(result.question)
-        } else {
-            navigate("/PageNotFound")
         }
         setLoading(false);
     }
@@ -324,7 +322,7 @@ const DiscussPost = () => {
     }
 
     const handleShowVoters = () => {
-        if(!question?.id) return;
+        if (!question?.id) return;
         setVotesModalOptions({ parentId: question.id });
         setVotesModalVisible(true);
     }
@@ -342,188 +340,199 @@ const DiscussPost = () => {
     }
 
     return (
-        question !== null &&
-        <>
-            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title>Are you sure?</Modal.Title>
-                </Modal.Header>
-                <Modal.Body>Your answer will be permanently deleted.</Modal.Body>
-                <Modal.Footer>
-                    <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
-                    <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
-                </Modal.Footer>
-            </Modal>
-            <ReactionsList title="Likes" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
-            <div className="d-flex gap-2 py-2">
-                <Link to="/Discuss">Q&A</Link>
-                <span>&rsaquo;</span>
-                <span>{truncate(question.title, 20)}</span>
-            </div>
-            <div className="mb-3 d-flex flex-column position-relative">
-                <div className="wb-discuss-reply__edit-button">
-                    <Dropdown drop="start">
-                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                        <Dropdown.Menu>
-                            {
-                                userInfo &&
-                                <>
-                                    {
-                                        (question && question.userId === userInfo.id) &&
-                                        <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                                            <Dropdown.Item>Edit</Dropdown.Item>
-                                        </LinkContainer>
-                                    }
-                                    <Dropdown.Item onClick={handleFollowQuestion}>
+        question !== null ?
+            <>
+                <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title>Are you sure?</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>Your answer will be permanently deleted.</Modal.Body>
+                    <Modal.Footer>
+                        <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
+                        <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
+                    </Modal.Footer>
+                </Modal>
+                <ReactionsList title="Likes" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
+                <div className="d-flex gap-2 py-2">
+                    <Link to="/Discuss">Q&A</Link>
+                    <span>&rsaquo;</span>
+                    <span>{truncate(question.title, 20)}</span>
+                </div>
+                <div className="mb-3 d-flex flex-column position-relative">
+                    <div className="wb-discuss-reply__edit-button">
+                        <Dropdown drop="start">
+                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                            <Dropdown.Menu>
+                                {
+                                    userInfo &&
+                                    <>
                                         {
-                                            question.isFollowed ?
-                                                "Unfollow"
-                                                :
-                                                "Follow"
+                                            (question && question.userId === userInfo.id) &&
+                                            <LinkContainer to={"/Discuss/Edit/" + questionId}>
+                                                <Dropdown.Item>Edit</Dropdown.Item>
+                                            </LinkContainer>
                                         }
-                                    </Dropdown.Item>
-                                </>
-                            }
-                            <Dropdown.Item
-                                onClick={() => {
-                                    navigator.clipboard.writeText(window.location.href);
-                                }}
-                            >
-                                Share
-                            </Dropdown.Item>
-                        </Dropdown.Menu>
-                    </Dropdown>
-                </div>
-
-                <div className="d-flex gap-2">
-                    <div className="d-flex flex-column align-items-center">
-                        <div className="wb-discuss-voting">
-                            <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
-                                <FaThumbsUp />
-                            </span>
-                            <b className="wb-discuss-voting__button text-black" onClick={handleShowVoters}>{question.votes}</b>
-                        </div>
-                        <div>
-                            <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
-                                <FaStar />
-                            </span>
-                        </div>
+                                        <Dropdown.Item onClick={handleFollowQuestion}>
+                                            {
+                                                question.isFollowed ?
+                                                    "Unfollow"
+                                                    :
+                                                    "Follow"
+                                            }
+                                        </Dropdown.Item>
+                                    </>
+                                }
+                                <Dropdown.Item
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(window.location.href);
+                                    }}
+                                >
+                                    Share
+                                </Dropdown.Item>
+                            </Dropdown.Menu>
+                        </Dropdown>
                     </div>
 
-                    <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
-                        <h3 className="wb-discuss-question__title">{question.title}</h3>
-                        <div className="d-flex mb-1 flex-wrap gap-1">
-                            {
-                                question.tags.map((tag, idx) => {
-                                    return (
-                                        <WeblerBadge key={idx} name={tag} state="neutral" />
-                                    )
-                                })
-                            }
+                    <div className="d-flex gap-2">
+                        <div className="d-flex flex-column align-items-center">
+                            <div className="wb-discuss-voting">
+                                <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
+                                    <FaThumbsUp />
+                                </span>
+                                <b className="wb-discuss-voting__button text-black" onClick={handleShowVoters}>{question.votes}</b>
+                            </div>
+                            <div>
+                                <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
+                                    <FaStar />
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-1 wb-discuss-question__description">
-                            <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
-                        </div>
-                        <div className="mt-1">
-                            {
-                                question.attachments.map(attachment => {
-                                    return (
-                                        <div key={attachment.id} className="mt-1">
-                                            <PostAttachment data={attachment} />
-                                        </div>
-                                    )
-                                })
-                            }
+
+                        <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
+                            <h3 className="wb-discuss-question__title">{question.title}</h3>
+                            <div className="d-flex mb-1 flex-wrap gap-1">
+                                {
+                                    question.tags.map((tag, idx) => {
+                                        return (
+                                            <WeblerBadge key={idx} name={tag} state="neutral" />
+                                        )
+                                    })
+                                }
+                            </div>
+                            <div className="mt-1 wb-discuss-question__description">
+                                <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
+                            </div>
+                            <div className="mt-1">
+                                {
+                                    question.attachments.map(attachment => {
+                                        return (
+                                            <div key={attachment.id} className="mt-1">
+                                                <PostAttachment data={attachment} />
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="d-flex justify-content-end mt-2 align-items-center gap-2">
-                    <div>
+                    <div className="d-flex justify-content-end mt-2 align-items-center gap-2">
                         <div>
-                            <small>{DateUtils.format(new Date(question.date))}</small>
+                            <div>
+                                <small>{DateUtils.format(new Date(question.date))}</small>
+                            </div>
+                            <div className="d-flex justify-content-end">
+                                <ProfileName userId={question.userId} userName={question.userName} />
+                            </div>
                         </div>
+                        <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                    </div>
+                </div>
+                {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
+                <div hidden={!formVisible} className="mt-2 border bg-white rounded p-2">
+                    <Form ref={form}>
+                        <FormGroup>
+                            <FormLabel><b>{userInfo?.name}</b></FormLabel>
+                            <PostTextareaControl ref={formInputRef} rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
+                            <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
+                        </FormGroup>
                         <div className="d-flex justify-content-end">
-                            <ProfileName userId={question.userId} userName={question.userName} />
+                            <Button size="sm" variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
+                            {
+                                editedAnswer === null ?
+                                    <>
+                                        <Button size="sm" variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading || formInput.length === 0}>Post</Button>
+                                    </>
+                                    :
+                                    <>
+                                        <Button size="sm" variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
+                                        <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading || formInput.length === 0}>Save</Button>
+                                    </>
+                            }
                         </div>
-                    </div>
-                    <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                    </Form>
+                </div>
+                <div className="d-flex">
+                    <h4>{question.answers} Answers</h4>
+                </div>
+                <div className="d-flex justify-content-between">
+                    <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                        <option value="1">Sort by: Votes</option>
+                        <option value="2">Sort by: Date</option>
+                    </Form.Select>
+                    <Button size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
+                </div>
+                <div className="mt-2 d-flex flex-column w-100">
+                    {
+                        answersLoading ?
+                            placeholders
+                            :
+                            answers.map(answer => {
+                                if (postId === answer.id) {
+                                    return <Answer
+                                        ref={findPostRef}
+                                        answer={answer}
+                                        acceptedAnswer={acceptedAnswer}
+                                        toggleAcceptedAnswer={toggleAcceptedAnswer}
+                                        isQuestionOwner={userInfo?.id === question.userId}
+                                        key={answer.id}
+                                        showEditAnswer={showEditAnswer}
+                                        newlyCreatedAnswer={postId}
+                                        onShowVoters={onShowAnswerVoters} />
+                                }
+                                return <Answer
+                                    answer={answer}
+                                    acceptedAnswer={acceptedAnswer}
+                                    toggleAcceptedAnswer={toggleAcceptedAnswer}
+                                    isQuestionOwner={userInfo?.id === question!.userId}
+                                    key={answer.id}
+                                    showEditAnswer={showEditAnswer}
+                                    newlyCreatedAnswer={postId}
+                                    onShowVoters={onShowAnswerVoters} />
+                            })
+                    }
+                </div>
+                <div className="my-3">
+                    <PaginationControl
+                        page={currentPage}
+                        between={3}
+                        total={question.answers}
+                        limit={answersPerPage}
+                        changePage={handlePageChange}
+                        ellipsis={1}
+                    />
+                </div>
+            </>
+            :
+            !loading &&
+            <div className="d-flex h-100 flex-column align-items-center justify-content-center text-center">
+                <h4>
+                    <FaSearch />
+                </h4>
+                <h5>Question not found</h5>
+                <div>
+                    <Link to="/Discuss">Go back</Link>
                 </div>
             </div>
-            {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
-            <div hidden={!formVisible} className="mt-2 border bg-white rounded p-2">
-                <Form ref={form}>
-                    <FormGroup>
-                        <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                        <PostTextareaControl ref={formInputRef} rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
-                        <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
-                    </FormGroup>
-                    <div className="d-flex justify-content-end">
-                        <Button size="sm" variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
-                        {
-                            editedAnswer === null ?
-                                <>
-                                    <Button size="sm" variant="primary" className="ms-2" onClick={handlePostAnswer} disabled={loading || formInput.length === 0}>Post</Button>
-                                </>
-                                :
-                                <>
-                                    <Button size="sm" variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
-                                    <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading  || formInput.length === 0}>Save</Button>
-                                </>
-                        }
-                    </div>
-                </Form>
-            </div>
-            <div className="d-flex">
-                <h4>{question.answers} Answers</h4>
-            </div>
-            <div className="d-flex justify-content-between">
-                <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
-                    <option value="1">Sort by: Votes</option>
-                    <option value="2">Sort by: Date</option>
-                </Form.Select>
-                <Button size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
-            </div>
-            <div className="mt-2 d-flex flex-column w-100">
-                {
-                    answersLoading ?
-                    placeholders
-                    :
-                    answers.map(answer => {
-                        if (postId === answer.id) {
-                            return <Answer
-                                ref={findPostRef}
-                                answer={answer}
-                                acceptedAnswer={acceptedAnswer}
-                                toggleAcceptedAnswer={toggleAcceptedAnswer}
-                                isQuestionOwner={userInfo?.id === question.userId}
-                                key={answer.id}
-                                showEditAnswer={showEditAnswer}
-                                newlyCreatedAnswer={postId}
-                                onShowVoters={onShowAnswerVoters} />
-                        }
-                        return <Answer
-                            answer={answer}
-                            acceptedAnswer={acceptedAnswer}
-                            toggleAcceptedAnswer={toggleAcceptedAnswer}
-                            isQuestionOwner={userInfo?.id === question!.userId}
-                            key={answer.id}
-                            showEditAnswer={showEditAnswer}
-                            newlyCreatedAnswer={postId}
-                            onShowVoters={onShowAnswerVoters} />
-                    })
-                }
-            </div>
-            <div className="my-3">
-                <PaginationControl
-                    page={currentPage}
-                    between={3}
-                    total={question.answers}
-                    limit={answersPerPage}
-                    changePage={handlePageChange}
-                    ellipsis={1}
-                />
-            </div>
-        </>
     )
 }
 

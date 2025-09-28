@@ -17,6 +17,7 @@ const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationType
 const ReactionsEnum_1 = __importDefault(require("../data/ReactionsEnum"));
 const feedSchema_1 = require("../validation/feedSchema");
 const zodUtils_1 = require("../utils/zodUtils");
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
 const createFeed = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(feedSchema_1.createFeedSchema, req);
     const { message } = body;
@@ -143,7 +144,7 @@ const deleteFeed = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(404).json({ error: [{ message: "Feed not found" }] });
         return;
     }
-    if (feed.user != currentUserId) {
+    if (feed.user != currentUserId && !req.roles?.some(role => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR].includes(role))) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
