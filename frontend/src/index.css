@@ -504,9 +504,24 @@ ul {
 }
 
 .wb-playground-container {
-    position: fixed;
+    position: relative;
     width: 100%;
-    height: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.wb-playground-editor {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.wb-code-editor {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 .wb-web-wrapper__frame-wrapper__console-btn {

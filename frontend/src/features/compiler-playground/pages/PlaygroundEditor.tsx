@@ -580,21 +580,23 @@ const PlaygroundEditor = ({ language }: PlaygroundEditorProps) => {
                                     </Dropdown>
                                 </div>
                             </div>
-                            <CodeEditor
-                                loading={loading}
-                                code={code}
-                                source={source}
-                                setSource={(value: string) => setSource(value)}
-                                css={css}
-                                setCss={(value: string) => setCss(value)}
-                                js={js}
-                                setJs={(value: string) => setJs(value)}
-                                options={editorOptions}
-                                consoleVisible={consoleVisible}
-                                hideConsole={() => setConsoleVisible(false)}
-                                toggleConsole={() => setConsoleVisible(prev => !prev)}
-                                setLogsCount={setLogsCount}
-                            />
+                            <div className="wb-playground-editor">
+                                <CodeEditor
+                                    loading={loading}
+                                    code={code}
+                                    source={source}
+                                    setSource={(value: string) => setSource(value)}
+                                    css={css}
+                                    setCss={(value: string) => setCss(value)}
+                                    js={js}
+                                    setJs={(value: string) => setJs(value)}
+                                    options={editorOptions}
+                                    consoleVisible={consoleVisible}
+                                    hideConsole={() => setConsoleVisible(false)}
+                                    toggleConsole={() => setConsoleVisible(prev => !prev)}
+                                    setLogsCount={setLogsCount}
+                                />
+                            </div>
                         </>
                         :
                         !loading &&

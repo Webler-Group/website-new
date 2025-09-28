@@ -49,7 +49,6 @@ const CodeEditor = ({
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
-    const [tabHeight, setTabHeight] = useState("auto");
 
     const editorStates = useMemo(
         () => [
@@ -97,17 +96,6 @@ const CodeEditor = ({
         };
     }, [editorTabs]);
 
-    useEffect(() => {
-        const callback = () => {
-            setTabHeight(
-                `calc(100dvh - ${(document.querySelector(".nav-tabs")?.clientHeight || 0) + 90}px)`
-            );
-        };
-        addEventListener("resize", callback);
-        callback();
-        return () => removeEventListener("resize", callback);
-    }, []);
-
     const onTabSelect = (key: string | null) => {
         if (key) {
             setActiveKey(key);
@@ -119,7 +107,7 @@ const CodeEditor = ({
             loadLanguage(lang) as any,
             EditorView.theme({
                 ".cm-content": {
-                    paddingBottom: tabHeight,
+                    paddingBottom: "64px",
                     paddingRight: "64px",
                 },
             }),
@@ -146,10 +134,10 @@ const CodeEditor = ({
             ),
             keymap.of(completionKeymap),
         ],
-        [tabHeight]);
+        []);
 
     return (
-        <div className="bg-dark" data-bs-theme="dark">
+        <div className="bg-dark wb-code-editor" data-bs-theme="dark">
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {editorTabs.map((lang, idx) => {
@@ -158,7 +146,6 @@ const CodeEditor = ({
                                 key={lang}
                                 eventKey={lang}
                                 title={lang}
-                                style={{ height: tabHeight }}
                             >
                                 <ReactCodeMirror
                                     value={editorStates[idx].value}
@@ -182,7 +169,6 @@ const CodeEditor = ({
                         key={"output"}
                         eventKey={"output"}
                         title={"output"}
-                        style={{ height: tabHeight }}
                     >
                         {code.language === "web" ? (
                             <WebOutput
