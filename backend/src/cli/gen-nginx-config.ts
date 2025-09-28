@@ -12,31 +12,48 @@ if (args.length !== 1) {
 const projectDir = path.resolve(args[0]);
 
 const nginxConfig = `
+# Redirect non-www → www (for HTTPS)
+server {
+    listen 443 ssl;
+    server_name weblercodes.com;
+
+    # SSL certificates for the non-www domain
+    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Redirect to www
+    return 301 https://www.weblercodes.com$request_uri;
+}
+
 # Main server block for www
 server {
     listen 443 ssl;
     server_name www.weblercodes.com;
-    root ${path.join(projectDir, "frontend/dist")};
+
+    # SSL certificates for the www domain
+    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
+    include /etc/letsencrypt/options-ssl-nginx.conf;
+    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Root directory and index file
+    root ${path.join(projectDir, "frontend", "dist")};
     index index.html index.htm;
+
+    # Increase the maximum request size if needed
     client_max_body_size 10M;
 
-    # Explicit handling for robots.txt (best for crawlers: correct MIME type, no logging, caching)
+    # Handle robots.txt with correct MIME type and caching
     location = /robots.txt {
         try_files $uri =404;
         access_log off;
         add_header Content-Type text/plain;
-        expires 1d;  # Cache for 1 day to reduce requests
+        expires 1d;  # Cache for 1 day
     }
 
-    location ~* \.(?:js|css|ico|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
-        expires 1y;
-        access_log off;
-        add_header Cache-Control "public, immutable";
-    }
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+    # Handle /api routes, proxy to backend
     location /api {
         proxy_pass http://localhost:5500;
         proxy_http_version 1.1;
@@ -45,6 +62,8 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
+
+    # Handle /uploads routes, proxy to backend
     location /uploads {
         proxy_pass http://localhost:5500;
         proxy_http_version 1.1;
@@ -53,6 +72,8 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
+
+    # Handle /socket.io routes, proxy to backend
     location /socket.io {
         proxy_pass http://localhost:5500;
         proxy_http_version 1.1;
@@ -61,11 +82,26 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
-    ssl_certificate /etc/letsencrypt/live/weblercodes.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/weblercodes.com/privkey.pem;
-    include /etc/letsencrypt/options-ssl-nginx.conf;
-    ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
+
+    # Only cache frontend build assets
+    location ~* ^/assets/.*\.(?:js|css|ico|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
+        expires 1y;
+        access_log off;
+        add_header Cache-Control "public, immutable";
+    }
+
+    # index.html should never be cached
+    location = /index.html {
+        expires -1;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Catch-all for React Router
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
 }
+
 # Redirect HTTP → HTTPS (both domains)
 server {
     listen 80;
