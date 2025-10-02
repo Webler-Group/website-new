@@ -82,7 +82,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
                     <FormControl id="captcha" type="text" required value={solution} onChange={(e) => setSolution(e.target.value)} />
                     <div className="mt-2 d-flex gap-2">
                         <div style={{ height: "50px" }}>
-                            {imageSrc && <img height="100%" src={imageSrc} />}
+                            {imageSrc && <img height="100%" src={imageSrc} alt="Captcha" />}
                         </div>
                         <button disabled={captchaId === null} onClick={generateCaptcha} className="d-flex justify-content-center align-items-center" style={{ width: "25px", height: "25px" }} type="button">⟳</button>
                     </div>

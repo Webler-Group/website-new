@@ -34,7 +34,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
     return (
         <div className="bg-white">
             <Container>
-                <div className="wb-discuss-questions-list-page row pt-2">
+                <div className="row pt-2" style={{ minHeight: "100vh" }}>
                     <div className="col-12 col-md-8">{MainPage}</div>
                     <div className="col-12 col-md-4">
                         <h2>Hot today</h2>

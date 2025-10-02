@@ -33,7 +33,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
 
     return (
         <Container>
-            <div className="wb-discuss-questions-list-page row mt-2">
+            <div className="row mt-2" style={{ minHeight: "100vh" }}>
                 <div className="col-12 col-md-8">{MainPage}</div>
                 <div className="col-12 col-md-4">
                     <h2>Hot today</h2>

@@ -9,6 +9,7 @@ import { IComment } from "./Comment";
 import { useApi } from "../../context/apiCommunication";
 import ReactionsList from "../reactions/ReactionsList";
 import { useNavigate } from "react-router-dom";
+import "./CommentList.css"
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;

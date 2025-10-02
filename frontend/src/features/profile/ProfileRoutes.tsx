@@ -3,6 +3,7 @@ import Layout from "../../components/Layout"
 import Header from "../../layouts/Header"
 import Footer from "../../layouts/Footer"
 import ProfilePage, { ProfileFromAuth } from "./pages/ProfilePage"
+import "./profile.css"
 
 const ProfileRoutes = () => {
     return (

@@ -1,0 +1,49 @@
+/*Webler discuss page*/
+
+.wb-discuss-empty-questions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}
+
+.wb-discuss-question__title {
+    word-break: break-word;
+    width: 80%;
+}
+
+.wb-discuss-question__description {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.3;
+    width: 100%;
+    overflow-x: auto;
+}
+
+.wb-discuss-question__description table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+}
+
+.wb-discuss-question__description img {
+    max-width: 100%;
+    height: auto;
+}
+
+.wb-discuss-voting {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wb-discuss-reply__actions {
+    width: 40px;
+    text-align: center;
+}
+
+.wb-discuss-reply__actions__best-answer-button {
+    font-size: 26px;
+}

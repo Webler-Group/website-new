@@ -5,6 +5,7 @@ import Header from "../../layouts/Header";
 import PlaygroundMenuPage from "./pages/PlaygroundMenuPage";
 import PlaygroundEditorPage from "./pages/PlaygroundEditorPage";
 import Footer from "../../layouts/Footer";
+import "./compiler-playground.css"
 
 const CompilerPlaygroundRoutes = () => {
     return (

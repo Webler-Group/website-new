@@ -78,7 +78,7 @@ const Code = React.forwardRef(({ code, showUserProfile }: CodeProps, ref: React.
                                 <ProfileName userId={code.userId!} userName={code.userName!} />
                             </div>
                         </div>
-                        <div className="ms-2 wb-p-follow-item__avatar">
+                        <div className="ms-2">
                             <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
                         </div>
                     </div>

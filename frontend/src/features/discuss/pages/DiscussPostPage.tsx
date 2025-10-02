@@ -359,7 +359,7 @@ const DiscussPostPage = () => {
                     <span>{truncate(question.title, 20)}</span>
                 </div>
                 <div className="mb-3 d-flex flex-column position-relative">
-                    <div className="wb-discuss-reply__edit-button">
+                    <div className="wb-edit-button">
                         <Dropdown drop="start">
                             <Dropdown.Toggle as={EllipsisDropdownToggle} />
                             <Dropdown.Menu>
@@ -396,10 +396,10 @@ const DiscussPostPage = () => {
                     <div className="d-flex gap-2">
                         <div className="d-flex flex-column align-items-center">
                             <div className="wb-discuss-voting">
-                                <span onClick={voteQuestion} className={"wb-discuss-voting__button" + (question.isUpvoted ? " text-black" : "")}>
+                                <span onClick={voteQuestion} className={"wb-icon-button" + (question.isUpvoted ? " text-black" : "")}>
                                     <FaThumbsUp />
                                 </span>
-                                <b className="wb-discuss-voting__button text-black" onClick={handleShowVoters}>{question.votes}</b>
+                                <b className="wb-icon-button text-black" onClick={handleShowVoters}>{question.votes}</b>
                             </div>
                             <div>
                                 <span className={question.isFollowed ? "text-warning" : "text-secondary"}>

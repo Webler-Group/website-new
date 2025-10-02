@@ -9,6 +9,7 @@ import DiscussPostPage from "./pages/DiscussPostPage"
 import DiscussEditPage from "./pages/DiscussEditPage"
 import RequireAuth from "../auth/components/RequireAuth"
 import roles from "../../data/roles"
+import "./discuss.css"
 
 const DiscussRoutes = () => {
     return (

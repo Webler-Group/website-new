@@ -359,7 +359,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                 </Modal.Body>
             </Modal>
             <div className="h-100">
-                <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
+                <iframe className="wb-compiler-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
             </div>
         </>
     )

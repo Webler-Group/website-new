@@ -12,6 +12,7 @@ import CourseEditorPage from "./pages/CourseEditorPage";
 import CourseLessonPage from "./pages/CourseLessonPage";
 import CreateCoursePage from "./pages/CreateCoursePage";
 import EditCoursePage from "./pages/EditCoursePage";
+import "./courses.css"
 
 const CoursesRoutes = () => {
     return (

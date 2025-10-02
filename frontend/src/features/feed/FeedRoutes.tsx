@@ -6,6 +6,7 @@ import FeedListPage from "./pages/FeedListPage"
 import RequireAuth from "../auth/components/RequireAuth"
 import roles from "../../data/roles"
 import FeedCreatePage from "./pages/FeedCreatePage"
+import "./feed.css"
 
 const FeedRoutes = () => {
     return (

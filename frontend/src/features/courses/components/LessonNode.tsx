@@ -127,7 +127,7 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
             node.answers.map((answer, idx) => (
                 <div
                     key={idx}
-                    className={`wb-course-lesson-answer p-2 mt-3 ${getAnswerClass(answer.id!)}`}
+                    className={`wb-courses-lesson-answer p-2 mt-3 ${getAnswerClass(answer.id!)}`}
                     role="button"
                     onClick={() => {
                         node.type === 2
@@ -141,7 +141,7 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
 
         content = (
             <Form className="h-100 d-flex flex-column">
-                <div className="wb-lesson-node-question p-2 flex-grow-1">
+                <div className="wb-courses-lesson-node-question p-2 flex-grow-1">
                     <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
 
                     {node.type === 2 || node.type === 3 ? (
@@ -149,7 +149,7 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
                     ) : node.type === 4 ? (
                         <div className="d-flex justify-content-center">
                             <FormControl
-                                className={"wb-course-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
+                                className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "120px" }}
                                 value={textAnswer}
                                 readOnly={isCorrect !== null}

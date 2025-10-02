@@ -18,7 +18,6 @@ import PageTitle from "../../../layouts/PageTitle";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
-import "./ProfilePage.css";
 
 export interface UserDetails {
     id: string;
@@ -294,7 +293,7 @@ const ProfilePage = () => {
                         }
                         <Container className="p-2">
                             <Card className="p-2">
-                                <div className="wb-discuss-reply__edit-button">
+                                <div className="wb-edit-button">
                                     <Dropdown drop="start">
                                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
                                         <Dropdown.Menu>

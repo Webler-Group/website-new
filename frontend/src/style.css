@@ -1,0 +1,243 @@
+ul,
+p {
+    margin: 0;
+}
+
+ul {
+    list-style: none;
+}
+
+.wb-loader {
+    display: flex;
+    gap: 8px;
+}
+
+.wb-loader span {
+    width: 10px;
+    height: 10px;
+    background: #6c757d;
+    /* bootstrap secondary color */
+    border-radius: 50%;
+    animation: wb-loader__bounce 0.6s infinite alternate;
+}
+
+.wb-loader span:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.wb-loader span:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes wb-loader__bounce {
+    from {
+        transform: translateY(0);
+        opacity: 0.6;
+    }
+
+    to {
+        transform: translateY(-8px);
+        opacity: 1;
+    }
+}
+
+.wb-edit-button {
+    cursor: pointer;
+    position: absolute;
+    right: 0;
+    top: 0;
+}
+
+.wb-icon-button {
+    cursor: pointer;
+    color: silver;
+    padding: 0 4px;
+}
+
+.wb-icon-button:hover {
+    color: gray;
+}
+
+.wb-login-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wb-login-container {
+    width: 392px;
+}
+
+@media(max-width: 449px) {
+    .wb-login-container {
+        width: 100%;
+        padding: 32px 24px;
+    }
+}
+
+@media(min-width: 576px) {
+    .wb-modal__container.edit-profile {
+        width: 567px;
+        min-height: 544px;
+    }
+
+    .wb-modal__container.follows {
+        width: 367px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.codes {
+        width: 360px;
+        height: 600px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.console {
+        height: 923px;
+        max-height: 90vh;
+    }
+
+    .wb-modal__container.comments {
+        height: 796px;
+        max-height: 90vh;
+        position: relative;
+    }
+}
+
+.wb-home {
+    width: 100%;
+    height: 700px;
+    background-color: rgb(34, 34, 34);
+    color: aliceblue;
+}
+
+.wb-home .header p {
+    font-size: 60px;
+
+}
+
+.wb-banner::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100dvw;
+    height: 100dvh;
+    background-image: url("/resources/images/collageBlurred.webp");
+    background-size: min(100%, 1200px);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    z-index: -10;
+}
+
+.wb-banner {
+    position: relative;
+    height: calc(100dvh - 60px);
+    min-height: 360px;
+    padding: 48px;
+}
+
+.wb-banner__logo {
+    display: flex;
+    width: 100%;
+}
+
+.wb-banner__logo__img {
+    width: 480px;
+}
+
+.wb-banner__text {
+    font-size: 60px;
+    font-weight: 600;
+}
+
+.wb-banner__slogan {
+    border-top: 2px solid #f2f2f2;
+    font-size: 40px;
+}
+
+@media (max-width: 720px) {
+    .wb-banner {
+        padding: 24px;
+    }
+
+    .wb-banner__logo {
+        justify-content: center;
+    }
+
+    .wb-banner__logo__img {
+        width: 360px;
+    }
+
+    .wb-banner__text {
+        font-size: 45px;
+    }
+
+    .wb-banner__slogan {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wb-banner {
+        padding: 12px;
+    }
+
+    .wb-banner__logo__img {
+        width: 240px;
+    }
+
+    .wb-banner__text {
+        font-size: 30px;
+        font-weight: 600;
+    }
+
+    .wb-banner__slogan {
+        font-size: 20px;
+    }
+}
+
+.wb-home-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wb-home-content {
+    padding: 80px 0 80px 0;
+}
+
+.wb-home-card {
+    min-height: 360px;
+}
+
+.wb-home-sign-up-form {
+    padding: 24px;
+    color: rgb(61, 76, 88);
+    background-color: rgb(236, 236, 236);
+    border-radius: 5px;
+    min-height: 720px;
+}
+
+.wb-home-footer {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-home-footer a {
+    color: rgb(121, 121, 121);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.wb-made-by {
+    color: rgb(121, 121, 121);
+    font-weight: bolder;
+    margin-right: 50px;
+}
+
+.wb-made-by b {
+    color: #fff;
+}

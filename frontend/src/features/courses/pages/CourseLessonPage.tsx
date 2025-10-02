@@ -148,7 +148,7 @@ const CourseLessonPage = () => {
 
     return (
 
-        <div className="wb-course-lesson-container d-flex flex-column">
+        <div className="wb-courses-lesson-container d-flex flex-column">
             {lesson && (
                 <>
                     <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
@@ -178,7 +178,7 @@ const CourseLessonPage = () => {
                         </div>
                     </div>
 
-                    <div className="wb-course-lesson-main">
+                    <div className="wb-courses-lesson-main">
                         <Nav variant="pills" className="flex-row overflow-auto my-3 row-gap-1">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
@@ -187,7 +187,7 @@ const CourseLessonPage = () => {
                                 return (
                                     <Nav.Item key={node.id}>
                                         <Nav.Link
-                                            className={"wb-course-lesson-arrow-pill " + (node.unlocked ? isActive ? "bg-warning text-dark" : "bg-primary text-light" : "bg-secondary text-light")}
+                                            className={"wb-courses-lesson-arrow-pill " + (node.unlocked ? isActive ? "bg-warning text-dark" : "bg-primary text-light" : "bg-secondary text-light")}
                                             onClick={() => handleSelectNode(node.index, node.unlocked)}
                                             disabled={!node.unlocked}
                                         >

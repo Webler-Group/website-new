@@ -449,7 +449,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                     <Button variant="primary" onClick={saveCode} disabled={codeName.length === 0}>Save</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="wb-playground-container">
+            <div className="wb-compiler-playground-container">
                 <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
                     <div>
                         <Link to="/">
@@ -491,21 +491,21 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="wb-playground-voting small">
-                                                <span onClick={voteCode} className={"wb-discuss-voting__button" + (code.isUpvoted ? " text-black" : "")}>
+                                            <div className="wb-compiler-playground-voting small">
+                                                <span onClick={voteCode} className={"wb-icon-button" + (code.isUpvoted ? " text-black" : "")}>
                                                     <FaThumbsUp />
                                                 </span>
-                                                <span className="wb-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
+                                                <span className="wb-compiler-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
                                             </div>
-                                            <div className="wb-playground-comments small">
-                                                <span className="wb-playground-comments__button" onClick={openCommentModal}>
+                                            <div className="wb-compiler-playground-comments small">
+                                                <span className="wb-compiler-playground-comments__button" onClick={openCommentModal}>
                                                     <FaComment />
                                                 </span>
                                                 <span>{commentCount}</span>
                                             </div>
                                             {
                                                 !code.isPublic &&
-                                                <div className="wb-playground-public small">
+                                                <div className="wb-compiler-playground-public small">
                                                     <FaLock />
                                                 </div>
                                             }
@@ -558,9 +558,9 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                             <Dropdown.ItemText className="border d-flex justify-content-between">
                                                 <div>Font</div>
                                                 <div className="d-flex gap-1">
-                                                    <span className="wb-playground-options__button" onClick={zoomOut}>-</span>
+                                                    <span className="wb-compiler-playground-options__button" onClick={zoomOut}>-</span>
                                                     <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
-                                                    <span className="wb-playground-options__button" onClick={zoomIn}>+</span>
+                                                    <span className="wb-compiler-playground-options__button" onClick={zoomIn}>+</span>
                                                 </div>
                                             </Dropdown.ItemText>
                                             {

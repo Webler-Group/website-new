@@ -4,6 +4,7 @@ import Header from "../../layouts/Header"
 import RequireAuth from "../auth/components/RequireAuth"
 import roles from "../../data/roles"
 import ChannelsPage from "./pages/ChannelsPage"
+import "./channels.css"
 
 const ChannelsRoute = () => {
     return (

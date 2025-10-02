@@ -78,7 +78,7 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
                                 <ProfileName userId={question.userId} userName={question.userName} />
                             </div>
                         </div>
-                        <div className="ms-2 wb-p-follow-item__avatar">
+                        <div className="ms-2">
                             <ProfileAvatar size={32} avatarImage={question.userAvatar} />
                         </div>
                     </div>

@@ -245,7 +245,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                             <div className="d-flex gap-3 align-items-center mb-2" key={i}>
                                 <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required />
                                 <FormCheck name="answer-correct" type="radio" label="Correct" id={"answer-correct-input-" + i} checked={answer.correct} onChange={(e) => toggleCorrectAnswer(i, e.target.checked, true)} />
-                                <span className="wb-user-comment__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
+                                <span className="wb-comments__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
                             </div>
                         ))}
                         <div>
@@ -262,7 +262,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                             <div className="d-flex gap-3 align-items-center mb-2" key={i}>
                                 <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required  maxLength={120} />
                                 <FormCheck name="answer-correct" type="checkbox" label="Correct" id={"answer-correct-input-" + i} checked={answer.correct} onChange={(e) => toggleCorrectAnswer(i, e.target.checked, false)} />
-                                <span className="wb-user-comment__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
+                                <span className="wb-comments__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
                             </div>
                         ))}
                         <div>

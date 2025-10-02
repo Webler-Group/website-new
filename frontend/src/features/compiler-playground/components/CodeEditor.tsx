@@ -142,7 +142,7 @@ const CodeEditor = ({
                             key={lang}
                             eventKey={lang}
                             title={lang}
-                            className="wb-editor-tab"
+                            className="wb-compiler-playground__editor-tab"
                         >
                             <ReactCodeMirror
                                 value={editorStates[idx].value}
@@ -165,7 +165,7 @@ const CodeEditor = ({
                         key={"output"}
                         eventKey={"output"}
                         title={"output"}
-                        className="wb-editor-tab"
+                        className="wb-compiler-playground__editor-tab"
                     >
                         {code.language === "web" ? (
                             <WebOutput
