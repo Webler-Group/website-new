@@ -6,6 +6,7 @@ import AuthNavigation from '../features/auth/components/AuthNavigation';
 import NotificationList from '../features/profile/components/NotificationList';
 import { useAuth } from '../features/auth/context/authContext';
 import ChannelsButton from '../features/channels/components/ChannelsButton';
+import { Link } from 'react-router-dom';
 
 interface HeaderProps {
   variant?: string;
@@ -19,9 +20,9 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
   return (
     <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom" collapseOnSelect>
       <Container fluid>
-        <LinkContainer to="/">
-          <Navbar.Brand><img src="/resources/images/logo.svg" height="32px" width="96px" /></Navbar.Brand>
-        </LinkContainer>
+        <Link to="/" aria-label="Home">
+          <Navbar.Brand><img src="/resources/images/logo.svg" alt="Webler logo" height="32px" width="96px" /></Navbar.Brand>
+        </Link>
         <div className="d-flex align-items-center gap-3">
           <Navbar.Toggle aria-controls="navbarScroll" />
           {
