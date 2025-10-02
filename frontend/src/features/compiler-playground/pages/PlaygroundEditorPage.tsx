@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
@@ -19,9 +19,7 @@ import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguage
 import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import { FaSearch } from "react-icons/fa";
-import Loader from "../../../components/Loader";
-
-const CodeEditor = React.lazy(() => import("../components/CodeEditor"));
+import CodeEditor from "../components/CodeEditor";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -582,23 +580,21 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                     </Dropdown>
                                 </div>
                             </div>
-                            <Suspense fallback={<div className="py-4"><Loader /></div>}>
-                                <CodeEditor
-                                    loading={loading}
-                                    code={code}
-                                    source={source}
-                                    setSource={(value: string) => setSource(value)}
-                                    css={css}
-                                    setCss={(value: string) => setCss(value)}
-                                    js={js}
-                                    setJs={(value: string) => setJs(value)}
-                                    options={editorOptions}
-                                    consoleVisible={consoleVisible}
-                                    hideConsole={() => setConsoleVisible(false)}
-                                    toggleConsole={() => setConsoleVisible(prev => !prev)}
-                                    setLogsCount={setLogsCount}
-                                />
-                            </Suspense>
+                            <CodeEditor
+                                loading={loading}
+                                code={code}
+                                source={source}
+                                setSource={(value: string) => setSource(value)}
+                                css={css}
+                                setCss={(value: string) => setCss(value)}
+                                js={js}
+                                setJs={(value: string) => setJs(value)}
+                                options={editorOptions}
+                                consoleVisible={consoleVisible}
+                                hideConsole={() => setConsoleVisible(false)}
+                                toggleConsole={() => setConsoleVisible(prev => !prev)}
+                                setLogsCount={setLogsCount}
+                            />
                         </>
                         :
                         !loading &&

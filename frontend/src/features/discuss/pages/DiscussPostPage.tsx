@@ -1,4 +1,4 @@
-import { ChangeEvent, Suspense, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
@@ -21,10 +21,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import PostTextareaControl from "../../../components/PostTextareaControl";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import QuestionPlaceholder from "../components/QuestionPlaceholder";
-import React from "react";
-import Loader from "../../../components/Loader";
-
-const MarkdownRenderer = React.lazy(() => import("../../../components/MarkdownRenderer"));
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 const DiscussPostPage = () => {
     const { sendJsonRequest } = useApi();
@@ -423,9 +420,7 @@ const DiscussPostPage = () => {
                                 }
                             </div>
                             <div className="mt-1 wb-discuss-question__description">
-                                <Suspense fallback={<div className="py-4"><Loader /></div>}>
-                                    <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
-                                </Suspense>
+                                <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
                             </div>
                             <div className="mt-1">
                                 {

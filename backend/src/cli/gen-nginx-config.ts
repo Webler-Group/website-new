@@ -45,6 +45,26 @@ server {
     # Increase the maximum request size if needed
     client_max_body_size 10M;
 
+    # --- GZIP SETTINGS ---
+    gzip on;
+    gzip_vary on;
+    gzip_disable "msie6";
+    gzip_comp_level 6;
+    gzip_min_length 256;
+    gzip_proxied any;
+    gzip_types
+        text/plain
+        text/css
+        application/javascript
+        application/json
+        application/xml
+        text/xml
+        application/xml+rss
+        image/svg+xml
+        font/woff2
+        font/woff
+        font/ttf;
+
     # Handle robots.txt with correct MIME type and caching
     location = /robots.txt {
         try_files $uri =404;

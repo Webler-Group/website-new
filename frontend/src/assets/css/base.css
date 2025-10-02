@@ -178,7 +178,7 @@ ul {
     left: 0;
     width: 100dvw;
     height: 100dvh;
-    background-image: url("/resources/images/collageBlurred.jpg");
+    background-image: url("/resources/images/collageBlurred.webp");
     background-size: min(100%, 1200px);
     background-repeat: repeat;
     background-attachment: fixed;

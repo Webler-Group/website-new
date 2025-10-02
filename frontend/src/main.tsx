@@ -1,4 +1,3 @@
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
@@ -10,8 +9,7 @@ import ApiProvider from './context/apiCommunication';
 import WSProvider from './context/wsCommunication';
 import ScrollToTop from './components/ScrollToTop';
 import { HelmetProvider } from 'react-helmet-async';
-
-const App = React.lazy(() => import('./App'));
+import App from './App';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AuthProvider>

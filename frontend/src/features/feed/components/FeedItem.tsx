@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useLayoutEffect, Suspense } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { IFeed, OriginalPost, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { useNavigate } from "react-router-dom";
@@ -18,9 +18,8 @@ import { Dropdown } from 'react-bootstrap';
 import EllipsisDropdownToggle from '../../../components/EllipsisDropdownToggle';
 import ProfileName from '../../../components/ProfileName';
 import allowedUrls from '../../../data/discussAllowedUrls';
-import Loader from '../../../components/Loader';
-
-const MarkdownRenderer = React.lazy(() => import('../../../components/MarkdownRenderer'));
+import MarkdownRenderer from '../../../components/MarkdownRenderer';
+import React from 'react';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -323,9 +322,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
           <div className="wb-feed-content__message" style={!showFullContent ? { pointerEvents: "none" } : {}}>
-            <Suspense fallback={<div className="py-4"><Loader /></div>}>
-              <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
-            </Suspense>
+            <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
           </div>
 
           {feed.attachments?.length > 0 && (

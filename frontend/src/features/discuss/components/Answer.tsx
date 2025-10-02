@@ -2,7 +2,7 @@ import { FaPencil } from "react-icons/fa6";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { FaCheckCircle, FaThumbsUp } from "react-icons/fa";
-import { Suspense, useState } from "react";
+import { useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
@@ -10,9 +10,7 @@ import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import allowedUrls from "../../../data/discussAllowedUrls";
-import Loader from "../../../components/Loader";
-
-const MarkdownRenderer = React.lazy(() => import("../../../components/MarkdownRenderer"));
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 interface IAnswer {
     id: string;
@@ -95,9 +93,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         }
                     </div>
                     <div className="wb-discuss-question__description">
-                        <Suspense fallback={<div className="py-4"><Loader /></div>}>
-                            <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
-                        </Suspense>
+                        <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
                     </div>
                     <div className="mt-2">
                         {
