@@ -91,7 +91,11 @@ const DiscussListPage = () => {
         <div className="d-flex flex-column">
             <h2>Q&A Discussions</h2>
             <div className="mt-2">
+                <Form.Label htmlFor="search" className="visually-hidden">
+                    Search
+                </Form.Label>
                 <TagSearch
+                    id="search"
                     placeholder="Search by tags or title..."
                     maxWidthPx={360}
                     query={searchQuery}
@@ -99,7 +103,10 @@ const DiscussListPage = () => {
                 />
             </div>
             <div className="mt-2 d-flex justify-content-between">
-                <Form.Select style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
+                <Form.Label htmlFor="filter" className="visually-hidden">
+                    Filter
+                </Form.Label>
+                <Form.Select id="filter" style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
                     <option value="1">Most Recent</option>
                     <option value="2">Unanswered</option>
                     <option value="6">Trending</option>

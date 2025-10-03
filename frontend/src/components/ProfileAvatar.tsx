@@ -5,7 +5,7 @@ interface ProfileAvatarProps {
 
 const ProfileAvatar = ({ avatarImage, size }: ProfileAvatarProps) => {
     return (
-        <img className="rounded-circle" width={size} height={size} src={avatarImage ? "/uploads/users/" + avatarImage : "/resources/images/user.svg"} />
+        <img className="rounded-circle" width={size} height={size} src={avatarImage ? "/uploads/users/" + avatarImage : "/resources/images/user.svg"} alt="Avatar" />
     );
 }
 

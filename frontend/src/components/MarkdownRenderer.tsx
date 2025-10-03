@@ -14,7 +14,7 @@ interface MarkdownRendererProps {
 }
 
 const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) => {
-    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+    const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
 
     const isAllowedUrl = (url?: string) => {
         if (!url) return false;
@@ -82,7 +82,7 @@ const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) 
                             objectFit: "cover",
                         }}
                         onClick={() => {
-                            setPreviewSrc(src || null);
+                            setPreview(src ? { src, alt } : null);
                         }}
                     />
                 );
@@ -93,8 +93,8 @@ const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) 
 
     return (
         <>
-            {previewSrc && (
-                <ImagePreview src={previewSrc} onClose={() => setPreviewSrc(null)} />
+            {preview && (
+                <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
             )}
             <ReactMarkdown
                 components={components}

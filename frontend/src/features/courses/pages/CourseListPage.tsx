@@ -2,9 +2,9 @@ import Course, { ICourse } from "../components/Course";
 import { Button, Container, Modal } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import PageTitle from "../../../layouts/PageTitle";
 import { useAuth } from "../../auth/context/authContext";
 import MyCourse from "../components/MyCourse";
+import { Helmet } from "react-helmet-async";
 
 const CourseListPage = () => {
     const { sendJsonRequest } = useApi();
@@ -14,8 +14,6 @@ const CourseListPage = () => {
     const { userInfo } = useAuth();
     const [resetModalVisible, setResetModalVisible] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
-
-    PageTitle("Courses | Webler Codes");
 
     useEffect(() => {
         getCourses();
@@ -45,14 +43,14 @@ const CourseListPage = () => {
     }
 
     const handleRestartCourseProgress = async () => {
-        if(!selectedCourseId) {
+        if (!selectedCourseId) {
             return;
         }
         const result = await sendJsonRequest("/Courses/ResetCourseProgress", "POST", {
             courseId: selectedCourseId
         });
-        if(result?.success) {
-            
+        if (result?.success) {
+
         }
         setResetModalVisible(false);
     }
@@ -64,6 +62,7 @@ const CourseListPage = () => {
 
     return (
         <>
+            <Helmet> <title>Courses | Webler Codes</title> <meta name="description" content="Learn by doing with Webler’s interactive coding courses. Practice with hands-on lessons, quizzes, and real-world projects at your own pace." /> </Helmet>
             <Modal show={resetModalVisible} onHide={closeResetModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>

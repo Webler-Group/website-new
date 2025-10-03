@@ -112,7 +112,11 @@ const CodesListPage = () => {
         <div className="d-flex flex-column">
             <h2>Codes</h2>
             <div className="d-flex gap-2">
+                <Form.Label htmlFor="search" className="visually-hidden">
+                    Search codes
+                </Form.Label>
                 <FormControl
+                    id="search"
                     type="search"
                     size='sm'
                     placeholder="Search..."
@@ -134,7 +138,10 @@ const CodesListPage = () => {
                     </LinkContainer>
                 </div>
                 <div className="d-flex justify-content-between">
-                    <Form.Select size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                    <Form.Label htmlFor="filter" className="visually-hidden">
+                        Filter
+                    </Form.Label>
+                    <Form.Select id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
                         <option value="1">Most Recent</option>
                         <option value="2">Most Popular</option>
                         {
@@ -144,7 +151,10 @@ const CodesListPage = () => {
                             </>
                         }
                     </Form.Select>
-                    <Form.Select size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
+                    <Form.Label htmlFor="language" className="visually-hidden">
+                        Language
+                    </Form.Label>
+                    <Form.Select id="language" size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
                         <option key="all" value="all">All</option>
                         {
                             Object.entries(languagesInfo).map(entry => {

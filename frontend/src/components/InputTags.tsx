@@ -46,6 +46,7 @@ interface TagSearchProps {
     maxWidthPx?: number;
     handleSearch: (value: string) => void;
     size?: "sm" | "lg";
+    id?: string;
 }
 
 export const TagSearch = ({
@@ -53,7 +54,8 @@ export const TagSearch = ({
     placeholder = "Search...",
     maxWidthPx = 360,
     handleSearch,
-    size
+    size,
+    id
 }: TagSearchProps) => {
     const { sendJsonRequest } = useApi();
     const [validTags, setValidTags] = useState<string[]>([]);
@@ -101,6 +103,7 @@ export const TagSearch = ({
         <div className='d-flex gap-2'>
             <div className="position-relative" style={{ width: "100%" }}>
                 <FormControl
+                    id={id}
                     ref={inputRef}
                     type="search"
                     size={size}
@@ -164,9 +167,10 @@ interface InputTagsProps {
     values: string[];
     setValues: (callback: (data: string[]) => string[]) => void;
     placeholder: string;
+    id?: string;
 }
 
-const InputTags = ({ values, setValues, placeholder }: InputTagsProps) => {
+const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
     const [input, setInput] = useState("");
     const [filtered, setFiltered] = useState<string[]>([]);
     const [validTags, setValidTags] = useState<string[]>([]);
@@ -226,6 +230,7 @@ const InputTags = ({ values, setValues, placeholder }: InputTagsProps) => {
             {values.length < 10 && (
                 <div className="d-flex position-relative">
                     <FormControl
+                        id={id}
                         type="text"
                         size="sm"
                         style={{ width: "120px", marginLeft: values.length > 0 ? "0.25rem" : "0" }}

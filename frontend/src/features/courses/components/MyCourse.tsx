@@ -27,7 +27,7 @@ const MyCourse = ({ course, onRestart }: CourseProps) => {
                 </div>
                 <div className="d-flex justify-content-center">
                     <div className="rounded-circle">
-                        <img className="wb-courses-course__cover-image" src={course.coverImage ? "/uploads/courses/" + course.coverImage : "/resources/images/logoicon.svg"} />
+                        <img className="wb-courses-course__cover-image" src={course.coverImage ? "/uploads/courses/" + course.coverImage : "/resources/images/logoicon.svg"} alt="Cover image" />
                     </div>
                 </div>
                 <div className="d-flex flex-column align-items-sm-start align-items-center">

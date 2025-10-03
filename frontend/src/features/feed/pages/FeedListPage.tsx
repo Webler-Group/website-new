@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FeedItem from '../components/FeedItem';
-import { Button, FormControl, FormSelect, Modal } from 'react-bootstrap';
+import { Button, FormControl, FormLabel, FormSelect, Modal } from 'react-bootstrap';
 import FeedDetails from '../components/FeedDetail';
 import ReactionsList from '../../../components/reactions/ReactionsList';
 import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
@@ -208,7 +208,11 @@ const FeedListPage = () => {
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             {/* Search */}
             <div className="d-flex gap-2">
+              <FormLabel htmlFor="search" className="visually-hidden">
+                Search
+              </FormLabel>
               <FormControl
+                id="search"
                 type="search"
                 size='sm'
                 placeholder="Search..."
@@ -226,7 +230,10 @@ const FeedListPage = () => {
             {/* Controls */}
             <div className="d-flex align-items-center justify-content-between gap-2">
               {/* Filter Dropdown */}
-              <FormSelect size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+              <FormLabel htmlFor="filter" className="visually-hidden">
+                Filter
+              </FormLabel>
+              <FormSelect id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
                 {
                   FILTER_OPTIONS
                     .filter(x => x.requireLogin == false || userInfo != null)
