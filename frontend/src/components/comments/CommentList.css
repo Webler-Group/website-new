@@ -12,15 +12,23 @@
     color: gray;
 }
 
-.wb-comments-footer__replies,
-.wb-comments-footer__reply {
+.wb-comments__footer__replies,
+.wb-comments__footer__reply-btn {
     background: none;
     border: none;
     padding: 0;
 }
 
-.wb-comments-footer__replies:hover,
-.wb-comments-footer__reply:hover {
+.wb-comments__footer__replies:hover,
+.wb-comments__footer__reply-btn:hover {
     background: none;
     text-shadow: -0.025rem -0.012rem 0 currentcolor, .025rem .012rem currentcolor;
+}
+
+.wb-comments__message {
+    font-size: 13px;
+    line-height: 1.3;
+    width: 100%;
+    word-break: break-word;
+    white-space: pre-wrap;
 }

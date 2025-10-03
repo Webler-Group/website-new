@@ -495,10 +495,10 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                                 <span onClick={voteCode} className={"wb-icon-button" + (code.isUpvoted ? " text-black" : "")}>
                                                     <FaThumbsUp />
                                                 </span>
-                                                <span className="wb-compiler-playground-comments__button" onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
+                                                <span style={{ cursor: "pointer" }} onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
                                             </div>
                                             <div className="wb-compiler-playground-comments small">
-                                                <span className="wb-compiler-playground-comments__button" onClick={openCommentModal}>
+                                                <span style={{ cursor: "pointer" }} onClick={openCommentModal}>
                                                     <FaComment />
                                                 </span>
                                                 <span>{commentCount}</span>

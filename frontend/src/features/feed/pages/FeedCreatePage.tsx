@@ -43,7 +43,7 @@ const FeedCreatePage = () => {
     }
 
     return (
-        <div>
+        <div className="p-2">
             <h2 className="fw-semibold my-3">Create New Post</h2>
             <Form onSubmit={handleSubmit}>
                 <RequestResultAlert errors={error} />

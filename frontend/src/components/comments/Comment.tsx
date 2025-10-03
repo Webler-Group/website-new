@@ -89,7 +89,7 @@ const Comment: React.FC<CommentProps> = ({
           <div>
             <ProfileName userId={comment.userId} userName={comment.userName} />
           </div>
-          <div className="wb-compiler-playground-comments__message mt-2">
+          <div className="wb-comments__message mt-2">
             {parseMessage(comment.message)}
           </div>
           <div className="mt-2">
@@ -112,18 +112,18 @@ const Comment: React.FC<CommentProps> = ({
               </span>
               {
                 comment.votes > 0 ?
-                  <span className="ms-1 wb-compiler-playground-comments__button" onClick={handleShowVotes}>{comment.votes}</span>
+                  <span className="ms-1" style={{ cursor: "pointer" }} onClick={handleShowVotes}>{comment.votes}</span>
                   :
                   <span className="ms-1">{comment.votes}</span>
               }
             </div>
-            <button className="small wb-comments-footer__reply" onClick={handleReply}>
+            <button className="small wb-comments__footer__reply-btn" onClick={handleReply}>
               Reply
             </button>
             {
               (comment.parentId === null && comment.answers > 0) &&
               <>
-                <button className={"small wb-comments-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={handleToggleReplies}>
+                <button className={"small wb-comments__footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={handleToggleReplies}>
                   {comment.answers} replies
                 </button>
               </>
