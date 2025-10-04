@@ -70,3 +70,7 @@
     word-wrap: break-word;
     line-height: 1.4;
 }
+
+.wb-channels-room-modal__backdrop {
+    z-index: 1069 !important;
+}

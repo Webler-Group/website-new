@@ -42,7 +42,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
                             {
                                 codes.map(code => {
                                     return (
-                                        <div className="mb-2" key={code.id}>
+                                        <div key={code.id}>
                                             <Code code={code} searchQuery="" showUserProfile={false} />
                                         </div>
                                     );

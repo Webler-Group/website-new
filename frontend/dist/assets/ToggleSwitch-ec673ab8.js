@@ -1,0 +1,1 @@
+import{j as s}from"./index-c1ca0331.js";const o=({value:e,onChange:t,disabled:c,...a})=>s.jsx("span",{...a,children:s.jsxs("label",{className:"toggle-switch",children:[s.jsx("input",{className:"toggle-switch__input",type:"checkbox",checked:e,onChange:t,disabled:c}),s.jsx("span",{className:"toggle-switch__span"})]})});export{o as T};

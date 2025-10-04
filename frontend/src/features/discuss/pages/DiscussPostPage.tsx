@@ -22,6 +22,7 @@ import PostTextareaControl from "../../../components/PostTextareaControl";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import QuestionPlaceholder from "../components/QuestionPlaceholder";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import PostAttachmentSelect from "../../../components/PostAttachmentSelect";
 
 const DiscussPostPage = () => {
     const { sendJsonRequest } = useApi();
@@ -332,6 +333,10 @@ const DiscussPostPage = () => {
         setVotesModalVisible(true);
     }
 
+    const handlePostAttachments = (selected: string[]) => {
+        setFormInput(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
+    }
+
     let charactersRemaining = maxCharacters - formInput.length;
 
     let placeholders = [];
@@ -456,6 +461,7 @@ const DiscussPostPage = () => {
                             <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
                         </FormGroup>
                         <div className="d-flex justify-content-end">
+                            <PostAttachmentSelect onSubmit={handlePostAttachments} />
                             <Button size="sm" variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
                             {
                                 editedAnswer === null ?

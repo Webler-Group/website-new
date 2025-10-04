@@ -125,7 +125,7 @@ server {
     }
 
     # Only cache frontend build assets
-    location ~* ^/assets/.*\.(?:js|css|ico|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
+    location ~* ^/(assets|resources)/.*\.(?:js|css|ico|gif|jpe?g|png|woff2?|eot|ttf|svg)$ {
         expires 1y;
         access_log off;
         add_header Cache-Control "public, immutable";

@@ -177,7 +177,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     return (
         <>
             {/* Delete Channel Modal */}
-            <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
+            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -189,7 +189,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             </Modal>
 
             {/* Leave Channel Modal */}
-            <Modal show={leaveModalVisible} onHide={closeLeaveModal} centered>
+            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={leaveModalVisible} onHide={closeLeaveModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -201,7 +201,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             </Modal>
 
             {/* Edit Participant Modal */}
-            <Modal show={editedParticipantId !== null} onHide={closeParticipantModal} centered>
+            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={editedParticipantId !== null} onHide={closeParticipantModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>{selectedParticipant?.userName}</Modal.Title>
                 </Modal.Header>

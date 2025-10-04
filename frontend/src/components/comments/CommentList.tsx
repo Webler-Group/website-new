@@ -10,6 +10,7 @@ import { useApi } from "../../context/apiCommunication";
 import ReactionsList from "../reactions/ReactionsList";
 import { useNavigate } from "react-router-dom";
 import "./CommentList.css"
+import PostAttachmentSelect from "../PostAttachmentSelect";
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
@@ -253,6 +254,10 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setCommentVotesModalVisible(true);
     }
 
+    const handlePostAttachments = (selected: string[]) => {
+        setAnswerFormMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
+    }
+
     let loading = answerFormLoading || commentsLoading;
 
     return (
@@ -354,6 +359,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                         />
                     </FormGroup>
                     <div className="d-flex justify-content-end mt-2">
+                        <PostAttachmentSelect onSubmit={handlePostAttachments} />
                         <Button size="sm" variant="secondary" className="ms-2" onClick={hideAnswerForm}>
                             Cancel
                         </Button>

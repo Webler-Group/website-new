@@ -208,7 +208,7 @@ const ProfilePage = () => {
                         codes.length > 0 ?
                             codes.map(code => {
                                 return (
-                                    <div className="mt-2" key={code.id}>
+                                    <div key={code.id}>
                                         <Code code={code} searchQuery="" showUserProfile={false} />
                                     </div>
                                 );

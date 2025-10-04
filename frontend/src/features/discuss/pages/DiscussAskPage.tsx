@@ -6,6 +6,9 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import PostTextareaControl from '../../../components/PostTextareaControl';
 import RequestResultAlert from '../../../components/RequestResultAlert';
+import PostAttachmentSelect from '../../../components/PostAttachmentSelect';
+
+const MAX_LENGTH = 4096;
 
 interface DiscussAskPageProps {
     questionId: string | null;
@@ -85,6 +88,10 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
         setLoading(false);
     }
 
+    const handlePostAttachments = (selected: string[]) => {
+        setMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
+    }
+
     let disabled = loading || title.trim().length == 0 || message.trim().length == 0;
 
     return (
@@ -102,35 +109,36 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
 
             {questionId === null && <h2 className="mb-4">Ask the community a question</h2>}
 
-            <div className='small'>
+            <div className='d-flex flex-column gap-2'>
                 <RequestResultAlert errors={error} />
 
                 <FormGroup>
                     <FormLabel>Your question</FormLabel>
                     <FormControl
-                        size='sm'
                         placeholder="What would you like to know?"
                         type="text"
                         required
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-                    <p className="text-secondary">
-                        Tip: write as if asking a friend, being as specific as possible
-                    </p>
                 </FormGroup>
 
                 <FormGroup>
                     <FormLabel>Description</FormLabel>
                     <PostTextareaControl
-                        size='sm'
                         placeholder="Include as much detail as possible to get the most relevant answers."
                         rows={10}
-                        maxLength={4096}
+                        maxLength={MAX_LENGTH}
                         required
                         value={message}
                         setValue={setMessage}
                     />
+                    <div className='d-flex justify-content-between'>
+                        <div className="mt-2 text-muted small">
+                            {message.length}/{MAX_LENGTH} characters
+                        </div>
+                        <PostAttachmentSelect onSubmit={handlePostAttachments} />
+                    </div>
                 </FormGroup>
 
                 <FormGroup>
@@ -144,7 +152,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
 
                 <div className="mt-2 d-flex justify-content-end">
                     <LinkContainer to={questionId ? "/Discuss/" + questionId : "/Discuss"}>
-                        <Button size='sm' type="button" variant="secondary" disabled={loading}>
+                        <Button type="button" variant="secondary" disabled={loading}>
                             Cancel
                         </Button>
                     </LinkContainer>
@@ -152,7 +160,6 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                     {questionId ? (
                         <>
                             <Button
-                                size='sm'
                                 variant="secondary"
                                 className="ms-2"
                                 type="button"
@@ -162,7 +169,6 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                                 Delete
                             </Button>
                             <Button
-                                size='sm'
                                 variant="primary"
                                 className="ms-2"
                                 type="button"
@@ -174,7 +180,6 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                         </>
                     ) : (
                         <Button
-                            size='sm'
                             className="ms-2"
                             variant="primary"
                             type="button"

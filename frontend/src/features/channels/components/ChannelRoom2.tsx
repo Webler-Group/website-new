@@ -14,6 +14,7 @@ import { IChannelMessage } from "./ChannelMessage";
 import MessageContextMenu from "./MessageContextMenu";
 import RepliedMessage from "./RepliedMessage";
 import Loader from "../../../components/Loader";
+import PostAttachmentSelect from "../../../components/PostAttachmentSelect";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -365,6 +366,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
+    const handlePostAttachments = (selected: string[]) => {
+        setNewMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
 
@@ -494,7 +499,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </Button>
                                     </div>
                                 }
-                                <div className="d-flex align-items-center">
+                                <div className="d-flex align-items-center gap-2">
                                     {showJumpButton && (
                                         <Button
                                             size="sm"
@@ -522,6 +527,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         maxLength={1024}
                                         style={{ resize: "none", boxShadow: "none" }}
                                     />
+                                    <PostAttachmentSelect onSubmit={handlePostAttachments} />
                                     {
                                         newMessage.trim().length > 0 &&
                                         <Button variant="primary" onClick={handleSendMessage}>

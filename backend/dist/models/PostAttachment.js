@@ -139,7 +139,7 @@ postAttachmentSchema.post("save", async function () {
                         title: "New mention",
                         type: NotificationTypeEnum_1.default.FEED_COMMENT_MENTION,
                         actionUser: post.user._id,
-                        message: `{action_user} mentioned you in comment to post "${(0, StringUtils_1.truncate)(post.feedId?.message, 20)}"`,
+                        message: `{action_user} mentioned you in comment to post "${(0, StringUtils_1.truncate)((0, regexUtils_1.escapeMarkdown)(post.feedId?.message ?? ""), 20).replaceAll(/\n+/g, " ")}"`,
                         feedId: post.feedId?._id,
                         postId: post._id
                     });

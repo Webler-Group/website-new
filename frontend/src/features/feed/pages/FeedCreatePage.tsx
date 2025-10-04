@@ -7,6 +7,7 @@ import RequestResultAlert from "../../../components/RequestResultAlert";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import React from "react";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import PostAttachmentSelect from "../../../components/PostAttachmentSelect";
 
 const MAX_LENGTH = 4096;
 
@@ -40,6 +41,10 @@ const FeedCreatePage = () => {
 
     const handleClose = () => {
         navigate("/Feed");
+    }
+
+    const handlePostAttachments = (selected: string[]) => {
+        setMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
     }
 
     return (
@@ -76,8 +81,11 @@ const FeedCreatePage = () => {
                             required
                             maxLength={MAX_LENGTH}
                         />
-                        <div className="mt-2 text-muted small">
-                            {message.length}/{MAX_LENGTH} characters
+                        <div className="d-flex justify-content-between">
+                            <div className="mt-2 text-muted small">
+                                {message.length}/{MAX_LENGTH} characters
+                            </div>
+                            <PostAttachmentSelect onSubmit={handlePostAttachments} />
                         </div>
                     </FormGroup>
                 )}
