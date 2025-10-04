@@ -20,9 +20,9 @@ const DateUtils = (function () {
             result += "Yesterday at"
         }
         else {
-            result += "0" + (month + 1 < 10 ? (month + 1) : (month + 1)) +
+            result += (month + 1).toString().padStart(2, "0") +
                 "/" +
-                (day < 10 ? "0" + day : day) +
+                day.toString().padStart(2, "0") +
                 "/" +
                 year
         }
@@ -30,13 +30,13 @@ const DateUtils = (function () {
         if (hours < 12) {
             result += (hours == 0 ? 12 : hours).toString() +
                 ":" +
-                (minutes < 10 ? "0" + minutes : minutes).toString() +
+                minutes.toString().padStart(2, "0") +
                 " AM"
         }
         else {
             result += (hours - 12 == 0 ? 12 : hours - 12).toString() +
                 ":" +
-                (minutes < 10 ? "0" + minutes : minutes).toString() +
+                minutes.toString().padStart(2, "0") +
                 " PM"
         }
 
