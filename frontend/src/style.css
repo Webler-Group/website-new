@@ -66,7 +66,7 @@ ul {
 }
 
 .wb-login-container {
-    width: 392px;
+    width: 392px !important;
 }
 
 @media(max-width: 449px) {
@@ -211,4 +211,26 @@ ul {
 
 .wb-made-by b {
     color: #fff;
+}
+
+@media(min-width: 576px) {
+    .wb-modal__container.edit-profile {
+        width: 567px;
+        min-height: 544px;
+    }
+
+    .wb-modal__container.follows {
+        width: 360px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.codes {
+        width: 360px;
+        max-height: 80vh;
+    }
+
+    .wb-modal__container.console {
+        height: 923px;
+        max-height: 90vh;
+    }
 }
