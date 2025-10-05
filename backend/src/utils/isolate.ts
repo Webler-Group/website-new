@@ -22,46 +22,46 @@ interface SpawnResult {
 }
 
 function spawnWithTimeout(
-    command: string, 
-    args: string[], 
-    options: any, 
+    command: string,
+    args: string[],
+    options: any,
     timeoutMs: number = 10000
 ): Promise<SpawnResult> {
     return new Promise((resolve) => {
         let stdout = "";
         let stderr = "";
         let killed = false;
-        
+
         const child = spawn(command, args, {
             ...options,
             // Use ulimit to set memory limits on Unix-like systems
             shell: true
         });
-        
+
         // Set timeout for compilation
         const timer = setTimeout(() => {
             killed = true;
             child.kill("SIGKILL");
         }, timeoutMs);
-        
+
         child.stdout?.on("data", (data) => {
             stdout += data.toString();
         });
-        
+
         child.stderr?.on("data", (data) => {
             stderr += data.toString();
         });
-        
+
         child.on("error", (err) => {
             clearTimeout(timer);
-            resolve({ 
-                code: 1, 
-                stdout, 
+            resolve({
+                code: 1,
+                stdout,
                 stderr: stderr + "\n" + err.message,
-                killed 
+                killed
             });
         });
-        
+
         child.on("close", (code) => {
             clearTimeout(timer);
             resolve({ code, stdout, stderr, killed });
@@ -78,7 +78,7 @@ async function compileOutsideIsolate(
     let execFile: string;
     let compileCmd: string;
     let compileArgs: string[];
-    
+
     switch (language) {
         case 'c':
             sourceFile = path.join(tempDir, 'main.c');
@@ -92,24 +92,18 @@ async function compileOutsideIsolate(
             compileCmd = '/usr/bin/clang++-20';
             compileArgs = ['-o', execFile, sourceFile];
             break;
-        case 'java':
-            sourceFile = path.join(tempDir, 'Main.java');
-            execFile = 'Main'; // Java class name for execution
-            compileCmd = '/usr/bin/javac';
-            compileArgs = [sourceFile];
-            break;
         default:
             // No compilation needed for interpreted languages
             return { success: true, stderr: "" };
     }
-    
+
     // Write source file
     fs.writeFileSync(sourceFile, source);
-    
+
     // Apply resource limits using ulimit and timeout
     const memLimitKB = Math.floor(config.compilerMemLimit / 1024);
     const ulimitPrefix = `ulimit -v ${memLimitKB} -t 5 && `;
-    
+
     // Compile with timeout and resource limits
     const compileResult = await spawnWithTimeout(
         '/bin/bash',
@@ -120,52 +114,39 @@ async function compileOutsideIsolate(
         },
         5000 // 5 second timeout for compilation
     );
-    
+
     if (compileResult.killed) {
         return {
             success: false,
             stderr: "Compilation timeout: Process exceeded time limit (5 seconds)"
         };
     }
-    
+
     if (compileResult.code !== 0) {
         return {
             success: false,
             stderr: compileResult.stderr || "Compilation failed"
         };
     }
-    
-    // Check if compilation succeeded
-    if (language === 'java') {
-        // For Java, check if Main.class file was created
-        const classFile = path.join(tempDir, 'Main.class');
-        if (!fs.existsSync(classFile)) {
-            return {
-                success: false,
-                stderr: "Compilation failed: Main.class file not created"
-            };
-        }
-    } else {
-        // For C/C++, check if executable was created
-        if (!fs.existsSync(execFile)) {
-            return {
-                success: false,
-                stderr: "Compilation failed: executable not created"
-            };
-        }
+
+    if (!fs.existsSync(execFile)) {
+        return {
+            success: false,
+            stderr: "Compilation failed: executable not created"
+        };
     }
-    
+
     return {
         success: true,
         stderr: "",
-        execFile: language === 'java' ? execFile : path.basename(execFile)
+        execFile: path.basename(execFile)
     };
 }
 
 async function runInIsolate(
-    source: string, 
-    language: string, 
-    boxId: number, 
+    source: string,
+    language: string,
+    boxId: number,
     stdin: string = ""
 ): Promise<RunResult> {
     let tempDir: string | null = null;
@@ -173,34 +154,30 @@ async function runInIsolate(
     let stdout = "";
     let stderr = "";
     let success = true;
-    
+
     try {
         // Create temporary directory for compilation
         tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'compile-'));
-        
+
         // Initialize isolate box
         const { stdout: initOutput } = await exec(`isolate --box-id=${boxId} --init`);
         boxDir = initOutput.trim();
         const boxPath = path.join(boxDir, "box");
-        
+
         // Write stdin
         fs.writeFileSync(path.join(boxPath, "input.txt"), stdin);
-        
+
         let runCmd: string;
         let sourceFile: string;
         let needsCompilation = false;
         let className: string = "";
-        
+
         // Determine execution command and whether compilation is needed
         switch (language) {
             case 'c':
             case 'cpp':
                 needsCompilation = true;
                 runCmd = './main.out';
-                break;
-            case 'java':
-                needsCompilation = true;
-                runCmd = '/usr/bin/java Main';
                 break;
             case 'python':
                 sourceFile = 'main.py';
@@ -221,39 +198,26 @@ async function runInIsolate(
             default:
                 throw new Error('Unsupported language');
         }
-        
+
         // Handle compilation if needed
         if (needsCompilation) {
             const compileResult = await compileOutsideIsolate(source, language, tempDir);
-            
+
             if (!compileResult.success) {
                 success = false;
                 stderr = compileResult.stderr;
             } else if (compileResult.execFile) {
-                if (language === 'java') {
-                    // For Java, copy all .class files (including inner classes)
-                    const files = fs.readdirSync(tempDir);
-                    for (const file of files) {
-                        if (file.endsWith('.class')) {
-                            const srcPath = path.join(tempDir, file);
-                            const destPath = path.join(boxPath, file);
-                            fs.copyFileSync(srcPath, destPath);
-                        }
-                    }
-                } else {
-                    // For C/C++, copy compiled executable
-                    const execPath = path.join(tempDir, compileResult.execFile);
-                    const destPath = path.join(boxPath, compileResult.execFile);
-                    fs.copyFileSync(execPath, destPath);
-                    // Make executable
-                    fs.chmodSync(destPath, 0o755);
-                }
+                const execPath = path.join(tempDir, compileResult.execFile);
+                const destPath = path.join(boxPath, compileResult.execFile);
+                fs.copyFileSync(execPath, destPath);
+                // Make executable
+                fs.chmodSync(destPath, 0o755);
             }
         } else {
             // For interpreted languages, write source directly to box
             fs.writeFileSync(path.join(boxPath, sourceFile!), source);
         }
-        
+
         // Run the program inside isolate
         if (success) {
             const runArgs = [
@@ -271,25 +235,25 @@ async function runInIsolate(
                 "--",
                 ...runCmd.split(" ")
             ];
-            
+
             await spawnWithTimeout("isolate", runArgs, {
                 cwd: boxPath,
                 stdio: "inherit"
             }, 4000); // 4 second timeout for execution
-            
+
             // Read output files
             const runOutPath = path.join(boxPath, "run.out");
             const runErrPath = path.join(boxPath, "run.err");
-            
+
             if (fs.existsSync(runOutPath)) {
                 stdout = safeReadFile(runOutPath, config.compilerFsizeLimit);
             }
-            
+
             if (fs.existsSync(runErrPath)) {
                 const runErr = safeReadFile(runErrPath, config.compilerFsizeLimit);
                 stderr = stderr ? `${stderr}\n${runErr}` : runErr;
             }
-            
+
             // Check metadata for execution status
             const metaPath = path.join(boxPath, "meta");
             if (fs.existsSync(metaPath)) {
@@ -303,10 +267,10 @@ async function runInIsolate(
                             return [key.trim(), valueParts.join(":").trim()];
                         })
                 );
-                
+
                 if (meta["status"] && meta["status"] !== "OK") {
                     success = false;
-                    
+
                     if (meta["status"] === "SG" && meta["exitsig"] === "11") {
                         stderr += "\nSegmentation fault (core dumped)";
                     } else if (meta["status"] === "TO") {
@@ -321,7 +285,7 @@ async function runInIsolate(
                 }
             }
         }
-        
+
     } catch (error) {
         success = false;
         stderr += `\nInternal error: ${error instanceof Error ? error.message : String(error)}`;
@@ -334,7 +298,7 @@ async function runInIsolate(
                     // Ignore cleanup errors
                 });
             }
-            
+
             // Clean up temporary compilation directory
             if (tempDir && fs.existsSync(tempDir)) {
                 fs.rmSync(tempDir, { recursive: true, force: true });
@@ -344,7 +308,7 @@ async function runInIsolate(
             console.error("Cleanup error:", cleanupError);
         }
     }
-    
+
     return { stdout, stderr, success };
 }
 

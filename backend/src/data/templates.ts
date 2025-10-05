@@ -70,7 +70,7 @@ int main(int argc, char ** argv){
     },
     {
         language: "java",
-        source: `public class HelloWorld {
+        source: `public class Main {
     public static void main(String[] args) {
         System.out.println("Hello, World!");
     }
