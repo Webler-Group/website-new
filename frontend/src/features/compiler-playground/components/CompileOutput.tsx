@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
+import codeRequiresInput from "../InputReg";
 
 interface CompileOutputProps {
     source: string;
@@ -21,13 +22,17 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        setStdinVisible(tabOpen);
+        const inpReq = codeRequiresInput(source, language);
+        if(inpReq) setStdinVisible(tabOpen);
+
         if(tabOpen) {
             setTimeout(() => {
                 if(stdinRef.current) {
                     stdinRef.current.focus();
                 }
             }, 50);
+
+            if(!inpReq) handleRunCode();
         }
     }, [tabOpen]);
 
@@ -93,7 +98,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 data-bs-theme="dark"
             >
                 <Modal.Header>
-                    <h2>Stdin</h2>
+                    <div><h6>Input</h6><small>It looks like your program expect atleast 1 input</small></div>
                 </Modal.Header>
                 <Modal.Body className="overflow-auto">
                     <FormControl
