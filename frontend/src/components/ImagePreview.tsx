@@ -3,10 +3,11 @@ import { FaTimes } from "react-icons/fa";
 
 interface ImagePreviewProps {
     src: string;
+    alt?: string;
     onClose: () => void;
 }
 
-const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
+const ImagePreview: React.FC<ImagePreviewProps> = ({ src, alt, onClose }) => {
     const imgRef = useRef<HTMLImageElement | null>(null);
 
     const currentScale = useRef<number>(1);
@@ -182,7 +183,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, onClose }) => {
             <img
                 ref={imgRef}
                 src={src}
-                alt=""
+                alt={alt || ""}
                 style={{
                     maxWidth: "100%",
                     maxHeight: "100%",

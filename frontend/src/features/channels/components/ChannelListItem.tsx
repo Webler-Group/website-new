@@ -46,7 +46,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                     <img
                         src="/resources/images/group.svg"
                         alt="channel avatar"
-                        className="me-2"
+                        className="me-2 rounded-circle"
                         width={32}
                         height={32}
                     />

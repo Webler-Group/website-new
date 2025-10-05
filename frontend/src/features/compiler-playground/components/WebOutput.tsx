@@ -9,9 +9,10 @@ interface WebOutputProps {
     tabOpen: boolean;
     consoleVisible: boolean;
     hideConosole: () => void;
+    setLogsCount: (setter: (prev: number) => number) => void;
 }
 
-const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole }: WebOutputProps) => {
+const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole, setLogsCount }: WebOutputProps) => {
 
     const [consoleMessages, setConsoleLogs] = useState<{ data: any[]; method: string; count: number }[]>([]);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -33,6 +34,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             }
                             return [...logs, { data: console.data, method: console.method, count: 1 }]
                         });
+                        setLogsCount(prev => prev + 1);
                 }
             }
         }
@@ -41,21 +43,20 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
     }, []);
 
     useEffect(() => {
+        clearConsole();
         if (iframeRef.current) {
-
             if (tabOpen) {
                 const output = genOutput();
                 iframeRef.current.srcdoc = output;
-
-                setConsoleLogs([]);
             } else {
                 iframeRef.current.srcdoc = "<!DOCTYPE HTML><html><head></head><body></body></html>";
             }
         }
-    }, [tabOpen, source, jsSource, cssSource]);
+    }, [tabOpen]);
 
     const clearConsole = () => {
         setConsoleLogs(() => []);
+        setLogsCount(() => 0);
     }
 
     const genOutput = () => {
@@ -148,8 +149,28 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
             pushToConsole([message], "error");
         }
         window.addEventListener("unhandledrejection", function (event) {
-            pushToConsole([event.reason], "error");
+            pushToConsole([event.reason?.message ?? event.reason], "error");
         });
+        if ("gpu" in navigator) {
+            const origRequestAdapter = navigator.gpu.requestAdapter;
+            navigator.gpu.requestAdapter = async function (...args) {
+                const adapter = await origRequestAdapter.apply(this, args);
+                if (!adapter) return adapter;
+
+                const origRequestDevice = adapter.requestDevice;
+                adapter.requestDevice = async function (...args) {
+                    const device = await origRequestDevice.apply(this, args);
+
+                    device.onuncapturederror = (event) => {
+                        pushToConsole([event.error.message], "error");
+                    };
+
+                    return device;
+                };
+
+                return adapter;
+            };
+        }
       })();
     `;
         head.insertBefore(consoleOverrideScript, head.firstChild);
@@ -164,13 +185,13 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
 
     const processDataItem = (item: any, depth: number, method: string) => {
         if (typeof item === "undefined") {
-            return <span style={{ color: "#80868B" }}>{"undefined"}</span>
+            return <span style={{ color: "gray" }}>{"undefined"}</span>
         }
         if (typeof item === "bigint") {
-            return <span style={{ color: "#80868B" }}>{item + "n"}</span>
+            return <span style={{ color: "forestgreen" }}>{item + "n"}</span>
         }
         if (typeof item === "number" || typeof item === "boolean") {
-            return <span style={{ color: "#9980FF" }}>{item.toString()}</span>
+            return <span style={{ color: "forestgreen" }}>{item.toString()}</span>
         }
         if (typeof item === "string") {
             if (depth === 0) {
@@ -182,62 +203,67 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                         default: return "text-white";
                     }
                 })()
-                return <span className={textColorClass}>{item}</span>
+                return item.length > 0 ? 
+                    <span className={textColorClass}>{item}</span> : 
+                    <i className={textColorClass}>&lt;empty string&gt;</i>
             }
-            return <span style={{ color: "#35D4C7" }}>{`'${item}'`}</span>
+            return <span style={{ color: "violet" }}>{`"${item}"`}</span>
         }
         if (typeof item === "object") {
             if (item === null) {
-                return <span style={{ color: "#80868B" }}>{"null"}</span>
+                return <span style={{ color: "gray" }}>{"null"}</span>
             }
             if (item.__type === "function") {
-                return <i>
-                    <span style={{ color: "#F29766" }}>{"f "}</span>
-                    <span style={{ color: "#FFFFFF" }}>{item.__name}</span>
-                </i>
+                return <>
+                    <span style={{ color: "orange" }}>{"f "}</span>
+                    <span style={{ color: "orange" }}>{item.__name}</span>
+                </>
             }
             if (item.__type === "symbol") {
-                let description = typeof item.__description === "undefined" ? "" : `'${item.__description}'`;
-                return <span style={{ color: "#35D4C7" }}>{`Symbol(${description})`}</span>
+                let description = typeof item.__description === "undefined" ? "" : `"${item.__description}"`;
+                return <span style={{ color: "violet" }}>{`Symbol(${description})`}</span>
             }
             if (item instanceof Date) {
-                return <span style={{ color: "#35D4C7" }}>{`'${item.toString()}'`}</span>
+                return <>
+                    <span style={{ color: "dodgerblue" }}>Date </span>
+                    <span style={{ color: "violet" }}>{item.toString()}</span>
+                </>
             }
             if (item instanceof Array) {
-                return <i>
-                    <span style={{ color: "#FFFFFF" }}>{"["}</span>
+                return <>
+                    <span style={{ color: "dodgerblue" }}>{"["}</span>
                     {
                         item.map((elem, idx) => {
                             return idx > 0 ?
                                 <span key={idx}>
-                                    <span style={{ color: "#FFFFFF" }}>{", "}</span>
+                                    <span style={{ color: "white" }}>{", "}</span>
                                     {processDataItem(elem, depth + 1, method)}
                                 </span>
                                 :
                                 <span key={idx}>{processDataItem(elem, depth + 1, method)}</span>
                         })
                     }
-                    <span style={{ color: "#FFFFFF" }}>{"]"}</span>
-                </i>
+                    <span style={{ color: "dodgerblue" }}>{"]"}</span>
+                </>
             }
             if (item instanceof RegExp) {
-                return <span style={{ color: "#35D4C7" }}>{`${item.toString()}`}</span>
+                return <span style={{ color: "dodgerblue" }}>{`${item.toString()}`}</span>
             }
             if (item.__type == "object") {
-                return <i style={{ color: "#FFFFFF" }}>{item.__constructor}</i>
+                return <i style={{ color: "dodgerblue" }}>{item.__constructor}</i>
             }
-            return (<i>
-                <span style={{ color: "#FFFFFF" }}>{"{ "}</span>
+            return (<>
+                <span style={{ color: "dodgerblue" }}>{"{ "}</span>
                 {
                     Object.entries(item).map((entry, idx) => {
                         let content = <>
-                            <span style={{ color: "#80868B" }}>{entry[0]}</span>
-                            <span style={{ color: "#FFFFFF" }}>{": "}</span>
+                            <span style={{ color: "dodgerblue" }}>{entry[0]}</span>
+                            <span style={{ color: "gray" }}>{": "}</span>
                             {processDataItem(entry[1], depth + 1, method)}
                         </>
                         return idx > 0 ?
                             <span key={idx}>
-                                <span style={{ color: "#FFFFFF" }}>{", "}</span>
+                                <span style={{ color: "dodgerblue" }}>{", "}</span>
                                 {content}
                             </span>
                             :
@@ -246,10 +272,10 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             </span>
                     })
                 }
-                <span style={{ color: "#FFFFFF" }}>{" }"}</span>
-            </i>);
+                <span style={{ color: "dodgerblue" }}>{" }"}</span>
+            </>);
         }
-        return <span style={{ color: "#FFFFFF" }}>{item}</span>
+        return <span style={{ color: "white" }}>{item}</span>
     }
 
     return (
@@ -267,7 +293,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             let messageContainer = <div>
                                 {
                                     item.data.map((itemData, idx) => {
-                                        return <span key={idx} className="me-2" style={{ whiteSpace: "pre-wrap", wordWrap: "break-word", wordBreak: "break-all", fontSize: "14px" }}>
+                                        return <span key={idx} className="me-2" style={{ whiteSpace: "pre-wrap", wordWrap: "break-word", wordBreak: "break-all", fontSize: "0.85rem" }}>
                                             {processDataItem(itemData, 0, item.method)}
                                         </span>
                                     })
@@ -333,7 +359,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                 </Modal.Body>
             </Modal>
             <div className="h-100">
-                <iframe className="wb-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
+                <iframe className="wb-compiler-playground-output-web" ref={iframeRef} allow="fullscreen" sandbox="allow-scripts allow-modals"></iframe>
             </div>
         </>
     )

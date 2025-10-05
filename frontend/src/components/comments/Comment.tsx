@@ -66,15 +66,15 @@ const Comment: React.FC<CommentProps> = ({
 
   return (
     <div className="d-flex position-relative gap-2">
-      <div className="wb-user-comment__options">
+      <div className="wb-comments__options">
         <div className="d-flex gap-2">
           {
             (userInfo && userInfo.id === comment.userId) &&
             <>
-              <span className="wb-user-comment__options__item" onClick={handleEdit}>
+              <span className="wb-comments__options__item" onClick={handleEdit}>
                 <FaPencil />
               </span>
-              <span className="wb-user-comment__options__item" onClick={handleDelete}>
+              <span className="wb-comments__options__item" onClick={handleDelete}>
                 <FaTrash />
               </span>
             </>
@@ -82,16 +82,14 @@ const Comment: React.FC<CommentProps> = ({
         </div>
       </div>
       <div>
-        <div className="wb-p-follow-item__avatar">
-          <ProfileAvatar size={32} avatarImage={comment.userAvatar ?? null} />
-        </div>
+        <ProfileAvatar size={32} avatarImage={comment.userAvatar ?? null} />
       </div>
       <div className="flex-grow-1">
         <div className="rounded border p-2 mb-1" style={{ background: isHighlighted ? "beige" : "white" }}>
           <div>
             <ProfileName userId={comment.userId} userName={comment.userName} />
           </div>
-          <div className="wb-playground-comments__message mt-2">
+          <div className="wb-comments__message mt-2">
             {parseMessage(comment.message)}
           </div>
           <div className="mt-2">
@@ -109,23 +107,23 @@ const Comment: React.FC<CommentProps> = ({
         <div className="d-flex justify-content-between">
           <div className="d-flex gap-2 align-items-center">
             <div className="small">
-              <span className={"wb-discuss-voting__button" + (comment.isUpvoted ? " text-black" : "")} onClick={handleVote}>
+              <span className={"wb-icon-button" + (comment.isUpvoted ? " text-black" : "")} onClick={handleVote}>
                 <FaThumbsUp />
               </span>
               {
                 comment.votes > 0 ?
-                <span className="ms-1 wb-playground-comments__button" onClick={handleShowVotes}>{comment.votes}</span>
-                :
-                <span className="ms-1">{comment.votes}</span>
+                  <span className="ms-1" style={{ cursor: "pointer" }} onClick={handleShowVotes}>{comment.votes}</span>
+                  :
+                  <span className="ms-1">{comment.votes}</span>
               }
             </div>
-            <button className="small wb-user-comment-footer__reply" onClick={handleReply}>
+            <button className="small wb-comments__footer__reply-btn" onClick={handleReply}>
               Reply
             </button>
             {
               (comment.parentId === null && comment.answers > 0) &&
               <>
-                <button className={"small wb-user-comment-footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={handleToggleReplies}>
+                <button className={"small wb-comments__footer__replies " + (repliesVisible ? "text-secondary" : "text-black")} onClick={handleToggleReplies}>
                   {comment.answers} replies
                 </button>
               </>

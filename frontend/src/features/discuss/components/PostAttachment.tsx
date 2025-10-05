@@ -54,7 +54,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
 
     return (
         <LinkContainer to={to} style={{ cursor: "pointer" }}>
-            <div className="d-flex flex-column shadow-sm rounded-3 bg-white p-2">
+            <div className="d-flex flex-column border shadow-sm rounded-3 bg-white p-2">
                 <div className="d-flex gap-2 justify-content-between">
                     <h6 className="fw-semibold" style={{ wordBreak: "break-word", whiteSpace: "normal" }}>{title}</h6>
                     <div className="small text-muted" style={{ whiteSpace: "nowrap" }}>{info}</div>

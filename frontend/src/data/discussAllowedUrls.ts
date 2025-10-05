@@ -1,4 +1,5 @@
 const allowedUrls = [
+  /*
   /^https?:\/\/(?:i\.)?imgur\.com/i,
   /^https?:\/\/(?:i\.)?ibb\.co/i,
   /^https?:\/\/(?:i\.)?postimg\.cc/i,
@@ -8,6 +9,8 @@ const allowedUrls = [
   /^https?:\/\/(?:www\.)?dropbox\.com\/s\//i,             // Dropbox share
   /^https?:\/\/dl\.dropboxusercontent\.com\/s\//i,        // Direct Dropbox
   /^https?:\/\/(?:www\.)?weblercodes\.com/i,
+  */
+  /^https?:\/\/.*/i,  // allow any http/https URL
   /^\/.*/                                                 // relative paths
 ];
 

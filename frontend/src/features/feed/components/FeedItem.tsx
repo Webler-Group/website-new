@@ -1,7 +1,6 @@
-import React, { useState, useCallback, useRef, useLayoutEffect } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { IFeed, OriginalPost, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import { useNavigate } from "react-router-dom";
 import ShareModal from './ShareModal';
 import { useAuth } from '../../auth/context/authContext';
@@ -19,6 +18,8 @@ import { Dropdown } from 'react-bootstrap';
 import EllipsisDropdownToggle from '../../../components/EllipsisDropdownToggle';
 import ProfileName from '../../../components/ProfileName';
 import allowedUrls from '../../../data/discussAllowedUrls';
+import MarkdownRenderer from '../../../components/MarkdownRenderer';
+import React from 'react';
 
 interface FeedItemProps {
   feed: IFeed;
@@ -277,6 +278,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     >
                       <FaEdit /> Edit Post
                     </Dropdown.Item>
+                  </>
+                )}
+                {(canEdit || canModerate) && (
+                  <>
                     <Dropdown.Item
                       className="dropdown-item d-flex align-items-center gap-2 text-danger"
                       onClick={() => setShowDeleteModal(true)}
@@ -285,6 +290,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                     </Dropdown.Item>
                   </>
                 )}
+
                 {canModerate && (
                   <Dropdown.Item
                     className="dropdown-item d-flex align-items-center gap-2 text-warning"
@@ -312,10 +318,10 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         <div
           ref={contentRef}
-          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated" : ""} ${!showFullContent && needsTruncation ? "clickable" : ""}`}
-          onClick={!showFullContent && needsTruncation ? handleShowFullContentClick : undefined}
+          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated clickable" : ""}`}
+          onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
-          <div className="wb-feed-content__message" style={!showFullContent && needsTruncation ? { pointerEvents: "none" } : {}}>
+          <div className="wb-feed-content__message" style={!showFullContent ? { pointerEvents: "none" } : {}}>
             <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
           </div>
 

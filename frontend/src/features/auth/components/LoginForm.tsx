@@ -48,12 +48,12 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
             <Form onSubmit={(e) => handleSubmit(e)}>
                 <RequestResultAlert errors={error} />
                 <FormGroup>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                    <FormLabel htmlFor="email">Email</FormLabel>
+                    <FormControl id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </FormGroup>
                 <FormGroup>
-                    <FormLabel>Password</FormLabel>
-                    <PasswordFormControl password={password} setPassword={setPassword} />
+                    <FormLabel htmlFor="password">Password</FormLabel>
+                    <PasswordFormControl id="password" password={password} setPassword={setPassword} />
                 </FormGroup>
                 <FormGroup className="d-flex justify-content-end">
                     <Link to="/Users/Forgot-Password">Forgot Password?</Link>

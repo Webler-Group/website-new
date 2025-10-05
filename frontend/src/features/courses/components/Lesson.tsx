@@ -53,14 +53,14 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, is
         <div className="border p-2 bg-white d-flex justify-content-between gap-3 align-items-center">
             <div className="d-flex gap-2">
                 <span
-                    className={`wb-user-comment__options__item ${isFirst ? "text-muted" : ""}`}
+                    className={`wb-comments__options__item ${isFirst ? "text-muted" : ""}`}
                     onClick={handleMoveUp}
                     style={{ cursor: isFirst ? "not-allowed" : "pointer" }}
                 >
                     <FaArrowUp />
                 </span>
                 <span
-                    className={`wb-user-comment__options__item ${isLast ? "text-muted" : ""}`}
+                    className={`wb-comments__options__item ${isLast ? "text-muted" : ""}`}
                     onClick={handleMoveDown}
                     style={{ cursor: isLast ? "not-allowed" : "pointer" }}
                 >
@@ -74,10 +74,10 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, is
                 </div>
             </div>
             <div className="d-flex gap-2">
-                <span className="wb-user-comment__options__item" onClick={handleEdit}>
+                <span className="wb-comments__options__item" onClick={handleEdit}>
                     <FaPencil />
                 </span>
-                <span className="wb-user-comment__options__item" onClick={handleDelete}>
+                <span className="wb-comments__options__item" onClick={handleDelete}>
                     <FaTrash />
                 </span>
             </div>

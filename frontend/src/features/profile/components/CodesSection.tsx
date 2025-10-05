@@ -39,7 +39,7 @@ const CodesSection = ({ userId, onClose }: CodesSectionProps) => {
     const content = results.map((code, i) => {
 
         return (
-            <div key={code.id} className="mt-2">
+            <div key={code.id}>
                 {
                     results.length === i + 1 ?
                         <Code ref={lastCodeRef} code={code} searchQuery="" showUserProfile={false} />

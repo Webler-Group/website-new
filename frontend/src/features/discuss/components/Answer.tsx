@@ -9,8 +9,8 @@ import { useNavigate } from "react-router-dom";
 import React from "react";
 import PostAttachment, { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import allowedUrls from "../../../data/discussAllowedUrls";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
 interface IAnswer {
     id: string;
@@ -76,10 +76,10 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         </div>
                     }
                     <div className="wb-discuss-voting mt-2">
-                        <span onClick={voteAnswer} className={"wb-discuss-voting__button" + (upvoted ? " text-black" : "")}>
+                        <span onClick={voteAnswer} className={"wb-icon-button" + (upvoted ? " text-black" : "")}>
                             <FaThumbsUp />
                         </span>
-                        <b className="wb-discuss-voting__button text-black" onClick={showVoters}>{votes}</b>
+                        <b className="wb-icon-button text-black" onClick={showVoters}>{votes}</b>
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                             <ProfileName userId={answer.userId} userName={answer.userName} />
                         </div>
                     </div>
-                    <div className="ms-2 wb-p-follow-item__avatar">
+                    <div className="ms-2">
                         <ProfileAvatar size={32} avatarImage={answer.userAvatar} />
                     </div>
                 </div>

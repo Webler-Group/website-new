@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useApi } from "../context/apiCommunication";
-import { UserMinimal } from "../features/profile/pages/Profile";
+import { UserMinimal } from "../features/profile/pages/ProfilePage";
 import ProfileAvatar from "./ProfileAvatar";
 import { Form, ListGroup } from "react-bootstrap";
 

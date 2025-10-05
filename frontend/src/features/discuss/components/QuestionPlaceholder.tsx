@@ -18,9 +18,9 @@ const QuestionPlaceholder = () => {
                 </div>
             </div>
             <div className="d-flex align-items-end">
-                <div className="ms-2 wb-p-follow-item__avatar">
+                <div className="ms-2">
                     <Placeholder as="div" animation="glow">
-                        <Placeholder className="wb-p-follow-item__avatar-image" xs={12} />
+                        <Placeholder xs={12} />
                     </Placeholder>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -13,8 +13,8 @@ interface MarkdownRendererProps {
     allowedUrls?: (string | RegExp)[];
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrls = [] }) => {
-    const [previewSrc, setPreviewSrc] = useState<string | null>(null);
+const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) => {
+    const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
 
     const isAllowedUrl = (url?: string) => {
         if (!url) return false;
@@ -48,8 +48,16 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
         },
 
         a({ href, children }) {
-            if (href && href.startsWith("/")) {
+            if (!href) {
+                return <span>{children}</span>;
+            }
+            if (href.startsWith("/")) {
                 return <Link to={href}>{children}</Link>;
+            }
+            const domain = "weblercodes.com";
+            if (href.includes(domain)) {
+                const relativePath = href.split(domain)[1] || "/";
+                return <Link to={relativePath}>{children}</Link>;
             }
             if (isAllowedUrl(href)) {
                 return (
@@ -74,7 +82,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
                             objectFit: "cover",
                         }}
                         onClick={() => {
-                            setPreviewSrc(src || null);
+                            setPreview(src ? { src, alt } : null);
                         }}
                     />
                 );
@@ -85,8 +93,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, allowedUrl
 
     return (
         <>
-            {previewSrc && (
-                <ImagePreview src={previewSrc} onClose={() => setPreviewSrc(null)} />
+            {preview && (
+                <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
             )}
             <ReactMarkdown
                 components={components}

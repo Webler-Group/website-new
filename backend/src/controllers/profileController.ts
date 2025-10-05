@@ -21,7 +21,7 @@ import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
-import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
+import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 
 const avatarImageUpload = multer({
@@ -146,12 +146,12 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(updateProfileSchema, req);
     const { userId, name, bio, countryCode } = body;
 
-    if (currentUserId !== userId) {
-        res.status(401).json({ message: "Unauthorized" });
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    const user = await User.findById(currentUserId);
+    const user = await User.findById(userId);
 
     if (!user) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
@@ -204,7 +204,7 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const code = await EmailChangeRecord.generate(new mongoose.Types.ObjectId(currentUserId), email);
-    if(!code) {
+    if (!code) {
         res.status(401).json({ error: [{ message: "Email is already used" }] });
         return;
     }
@@ -511,6 +511,8 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(uploadProfileAvatarImageSchema, req);
+    const { userId } = body;
     const currentUserId = req.userId;
 
     if (!req.file) {
@@ -518,11 +520,16 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         return;
     }
 
-    const user = await User.findById(currentUserId);
+    const user = await User.findById(userId);
     if (!user) {
         fs.unlinkSync(req.file.path);
-
         res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
+    }
+
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
+        fs.unlinkSync(req.file.path);
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
@@ -551,6 +558,37 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         }
     });
 
+});
+
+const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(removeProfileImageSchema, req);
+    const { userId } = body;
+    const currentUserId = req.userId;
+
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
+    }
+
+    if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    if (user.avatarImage) {
+        const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
+        if (fs.existsSync(oldPath)) {
+            fs.unlinkSync(oldPath);
+        }
+
+        user.avatarImage = null as any;
+        await user.save();
+    }
+
+    res.json({
+        success: true
+    });
 });
 
 const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -621,6 +659,7 @@ const controller = {
     markNotificationsClicked,
     sendActivationCode,
     uploadProfileAvatarImage,
+    removeProfileAvatarImage,
     avatarImageUpload,
     updateNotifications,
     searchProfiles,

@@ -5,30 +5,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const sitemap_1 = require("sitemap");
-const confg_1 = require("../confg");
 const router = express_1.default.Router();
 router.get("/sitemap.xml", async (req, res) => {
     try {
         res.header("Content-Type", "application/xml");
-        const smStream = new sitemap_1.SitemapStream({ hostname: confg_1.config.allowedOrigins[0] });
+        const smStream = new sitemap_1.SitemapStream({ hostname: "https://www.weblercodes.com/" });
         const staticRoutes = [
             { url: "/", changefreq: "daily", priority: 1.0 },
-            { url: "/Users/Login", changefreq: "yearly", priority: 0.1 },
-            { url: "/Users/Register", changefreq: "yearly", priority: 0.1 },
-            { url: "/Users/Forgot-Password", changefreq: "yearly", priority: 0.1 },
-            { url: "/Users/Reset-Password", changefreq: "yearly", priority: 0.1 },
-            { url: "/Users/Activate", changefreq: "yearly", priority: 0.1 },
-            { url: "/Terms-of-use", changefreq: "yearly", priority: 0.2 },
-            { url: "/Contact", changefreq: "yearly", priority: 0.2 },
             { url: "/Discuss", changefreq: "hourly", priority: 0.9 },
-            { url: "/Codes", changefreq: "daily", priority: 0.6 },
-            { url: "/Compiler-Playground", changefreq: "monthly", priority: 0.4 },
+            { url: "/Codes", changefreq: "hourly", priority: 0.9 },
             { url: "/Feed", changefreq: "hourly", priority: 0.9 },
-            { url: "/Blog", changefreq: "weekly", priority: 0.7 },
-            { url: "/Profile", changefreq: "daily", priority: 0.6 },
-            { url: "/Courses", changefreq: "weekly", priority: 0.9 },
-            { url: "/Courses/Editor", changefreq: "daily", priority: 0.7 },
-            { url: "/Courses/Editor/New", changefreq: "monthly", priority: 0.5 }, // create course
+            { url: "/Courses", changefreq: "weekly", priority: 0.9 }, // list of all courses
         ];
         staticRoutes.forEach(entry => smStream.write(entry));
         smStream.end();

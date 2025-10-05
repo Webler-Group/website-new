@@ -1,209 +1,102 @@
 import { Routes, Route } from 'react-router-dom';
-import "bootstrap/dist/js/bootstrap.bundle.min.js";
-import NotFound from './pages/NotFound';
 import Layout from './components/Layout';
-import Login from './features/auth/pages/Login';
-import Register from './features/auth/pages/Register';
-import RequireAuth from './features/auth/components/RequireAuth';
-import Home from './pages/Home';
-import { Profile, ProfileFromAuth } from './features/profile/pages/Profile';
+import NotFoundPage from './pages/NotFoundPage';
 import NoAuth from './features/auth/components/NoAuth';
-import TermsOfUse from './pages/TermsOfUse';
-import Discuss from './features/discuss/pages/Discuss';
-import Contact from './pages/Contact';
-import QuestionList from './features/discuss/pages/DiscussList';
-import AskQuestion from './features/discuss/pages/DiscussAsk';
-import DiscussPost from './features/discuss/pages/DiscussPost';
-import DiscussEdit from './features/discuss/pages/DiscussEdit';
-import PlaygroundEditor from './features/compiler-playground/pages/PlaygroundEditor';
-import PlaygroundMenu from './features/compiler-playground/pages/PlaygroundMenu';
 import Header from './layouts/Header';
+import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
+import HomePage from './pages/HomePage';
+import TermsOfUsePage from './pages/TermsOfUsePage';
 import Footer from './layouts/Footer';
-import Codes from './features/codes/pages/Codes';
-import CodesList from './features/codes/pages/CodesList';
-import ForgotPassword from './features/auth/pages/ForgotPassword';
-import ResetPassword from './features/auth/pages/ResetPassword';
-import ActivateEmail from './features/auth/pages/ActivateEmail';
-import CoursesEditorPage from './features/courses/pages/CourseEditorPage';
-import CourseEditorList from './features/courses/pages/CourseEditorList';
-import CreateCourse from './features/courses/pages/CreateCourse';
-import EditCourse from './features/courses/pages/EditCourse';
-import CourseEditor from './features/courses/pages/CourseEditor';
-import CourseList from './features/courses/pages/CourseList';
-import { compilerLanguages, languagesInfo } from './data/compilerLanguages';
-import CoursePage from './features/courses/pages/CoursePage';
-import CourseLessonPage from './features/courses/pages/CourseLessonPage';
-import ChannelsPage from './features/channels/pages/ChannelsPage';
-import ToolsHome from './tools/ToolsHome';
-import TagHome from './tools/tags/pages/TagHome';
-import roles from './data/roles';
-import AdminHome from './tools/admin/pages/AdminHome';
-import AdminUserList from './tools/admin/pages/AdminUserList';
-import ModView from './tools/admin/pages/ModView';
-import FeedLayout from './features/feed/FeedLayout';
-import FeedCreate from './features/feed/components/FeedCreate';
-import FAQ from './pages/FAQ';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
+import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
+import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
+import ActivateEmailPage from './features/auth/pages/ActivateEmailPage';
+import React from 'react';
+import ToolsHomePage from './pages/ToolsHome';
+import RequireAuth from './features/auth/components/RequireAuth';
+import TagHomePage from './features/tags/pages/TagHome';
+import LoadingPage from './pages/LoadingPage';
 import ChallengeList from './features/challenges/pages/ChallengeList';
 import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
 import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
 import ChallengeEdit from "./features/challenges/pages/ChallengeEdit";
 import SnackbarLayout from './layouts/SnackbarLayout';
 
+const ChannelsRoutes = React.lazy(() => import("./features/channels/ChannelsRoutes"));
+const CoursesRoutes = React.lazy(() => import("./features/courses/CoursesRoutes"));
+const DiscussRoutes = React.lazy(() => import("./features/discuss/DiscussRoutes"));
+const FeedRoutes = React.lazy(() => import("./features/feed/FeedRoutes"));
+const CompilerPlaygroundRoutes = React.lazy(() => import('./features/compiler-playground/CompilerPlaygroundRoutes'));
+const CodesRoutes = React.lazy(() => import('./features/codes/CodesRoutes'));
+const AdminRoutes = React.lazy(() => import('./features/admin/AdminRoutes'));
+const ProfileRoutes = React.lazy(() => import('./features/profile/ProfileRoutes'));
+
 function App() {
 
-  const allRoles = [...roles];
-
   return (
-    <Routes>
+    <React.Suspense fallback={<LoadingPage />}>
+      <Routes>
 
-      <Route element={<NoAuth />}>
-        <Route path="Users">
-          <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-            <Route path="Login" element={<Login />} />
-            <Route path="Register" element={<Register />} />
-            <Route path="Forgot-Password" element={<ForgotPassword />} />
-          </Route>
-        </Route>
-      </Route>
-
-      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-        <Route index element={<Home />} />
-        <Route path="Terms-of-use" element={<TermsOfUse />} />
-        <Route path="Contact" element={<Contact />} />
-        <Route path='Faq' element={<FAQ />} />
-      </Route>
-
-      <Route path="Users">
-        <Route element={<Layout Header={null} Footer={null} />}>
-          <Route path="Reset-Password" element={<ResetPassword />} />
-          <Route path="Activate" element={<ActivateEmail />} />
-        </Route>
-      </Route>
-
-      <Route path="Discuss">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<Discuss MainPage={<QuestionList />} />} />
-          <Route path=":questionId" element={<Discuss MainPage={<DiscussPost />} />} />
-          <Route element={<RequireAuth allowedRoles={allRoles} />}>
-            <Route path="New" element={<Discuss MainPage={<AskQuestion questionId={null} />} />} />
-            <Route path="Edit/:questionId" element={<Discuss MainPage={<DiscussEdit />} />} />
-          </Route>
-        </Route>
-      </Route>
-
-      <Route path="Codes">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<Codes MainPage={<CodesList />} />} />
-        </Route>
-      </Route>
-
-      <Route path="Compiler-Playground">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<PlaygroundMenu />} />
-        </Route>
-        {
-          Object.keys(languagesInfo).map((lang, i) => {
-            return (<Route key={i} path={lang} element={<PlaygroundEditor language={lang as compilerLanguages} />} />);
-          })
-        }
-        <Route path=":codeId" element={<PlaygroundEditor language={null} />} />
-      </Route>
-
-      <Route path="Challenge" element={<RequireAuth allowedRoles={allRoles}/>}>
-        <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
-          <Route index element={<ChallengeList />} />
-          <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
-            <Route path="Create" element={<ChallengeCreate />} />
-            <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
-          </Route>
-          <Route path=":challengeId" element={<ChallengeDetails />} />
-        </Route>
-      </Route>
-
-      <Route path="Feed">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
-          <Route index element={<FeedLayout />} />
-          <Route element={<RequireAuth allowedRoles={allRoles} />}>
-            <Route path="New" element={<FeedCreate />} />
-          </Route>
-          <Route path=":feedId" element={<FeedLayout />} />
-        </Route>
-      </Route>
-
-      <Route path="Profile">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route path=":userId" element={<Profile />} />
-          <Route index element={<ProfileFromAuth />} />
-        </Route>
-      </Route>
-
-      <Route path="Courses">
-
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
-            <Route path="Editor">
-              <Route index element={<CoursesEditorPage MainPage={<CourseEditorList />} />} />
-              <Route path="New" element={<CoursesEditorPage MainPage={<CreateCourse courseId={null} />} />} />
-              <Route path="Edit/:courseId" element={<CoursesEditorPage MainPage={<EditCourse />} />} />
-              <Route path=":courseId">
-                <Route index element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-                <Route path="Lesson/:lessonId" element={<CoursesEditorPage MainPage={<CourseEditor />} />} />
-              </Route>
-            </Route>
-          </Route>
-        </Route>
-
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-          <Route index element={<CourseList />} />
-        </Route>
-
-        <Route element={<RequireAuth allowedRoles={allRoles} />}>
-          <Route path=":courseCode">
+        <Route element={<NoAuth />}>
+          <Route path="Users">
             <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-              <Route index element={<CoursePage />} />
-            </Route>
-            <Route path="Lesson/:lessonId" element={<CourseLessonPage />} />
-          </Route>
-        </Route>
-
-      </Route>
-
-      <Route path="Channels">
-
-        <Route element={<Layout Header={<Header variant="light" hideChannelsButton />} Footer={null} />}>
-          <Route element={<RequireAuth allowedRoles={allRoles} />}>
-            <Route index element={<ChannelsPage />} />
-            <Route path=":channelId" element={<ChannelsPage />} />
-          </Route>
-        </Route>
-
-      </Route>
-
-      <Route path="Admin">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
-          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
-            <Route index element={<AdminHome />} />
-            <Route path="UserSearch">
-              <Route index element={<AdminUserList />} />
-              <Route path=":userId" element={<ModView />} />
+              <Route path="Login" element={<LoginPage />} />
+              <Route path="Register" element={<RegisterPage />} />
+              <Route path="Forgot-Password" element={<ForgotPasswordPage />} />
             </Route>
           </Route>
         </Route>
-      </Route>
 
-      <Route path="Tools">
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
-          <Route index element={<ToolsHome />} />
-          <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
-            <Route path="Tags" element={<TagHome />} />
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route index element={<HomePage />} />
+          <Route path="Terms-of-use" element={<TermsOfUsePage />} />
+          <Route path="Contact" element={<ContactPage />} />
+          <Route path='Faq' element={<FAQPage />} />
+        </Route>
+
+        <Route path="Users">
+          <Route element={<Layout Header={null} Footer={null} />}>
+            <Route path="Reset-Password" element={<ResetPasswordPage />} />
+            <Route path="Activate" element={<ActivateEmailPage />} />
           </Route>
         </Route>
-      </Route>
 
-      <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
-        <Route path="/*" element={<NotFound />} />
-      </Route>
-    </Routes>
+        <Route path="Tools">
+          <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+            <Route index element={<ToolsHomePage />} />
+            <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+              <Route path="Tags" element={<TagHomePage />} />
+            </Route>
+          </Route>
+        </Route>
+
+        <Route path="Challenge" element={<RequireAuth allowedRoles={allRoles} />}>
+          <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
+            <Route index element={<ChallengeList />} />
+            <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
+              <Route path="Create" element={<ChallengeCreate />} />
+              <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
+            </Route>
+            <Route path=":challengeId" element={<ChallengeDetails />} />
+          </Route>
+        </Route>
+
+        <Route path="Admin/*" element={<AdminRoutes />} />
+        <Route path="Channels/*" element={<ChannelsRoutes />} />
+        <Route path="Codes/*" element={<CodesRoutes />} />
+        <Route path="Compiler-Playground/*" element={<CompilerPlaygroundRoutes />} />
+        <Route path="Courses/*" element={<CoursesRoutes />} />
+        <Route path="Discuss/*" element={<DiscussRoutes />} />
+        <Route path="Feed/*" element={<FeedRoutes />} />
+        <Route path="Profile/*" element={<ProfileRoutes />} />
+
+        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+          <Route path="/*" element={<NotFoundPage />} />
+        </Route>
+      </Routes>
+    </React.Suspense>
   );
 };
 

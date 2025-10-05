@@ -37,6 +37,8 @@ router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
 router.route("/UploadProfileAvatarImage")
     .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
+router.route("/RemoveProfileAvatarImage")
+    .post(profileController.removeProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController.updateNotifications);
 router.route("/Search")

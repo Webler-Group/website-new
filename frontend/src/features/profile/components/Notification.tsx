@@ -1,5 +1,5 @@
 import React, { MouseEvent, useEffect, useState } from "react";
-import { UserMinimal } from "../pages/Profile";
+import { UserMinimal } from "../pages/ProfilePage";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
 import { FaCircle } from "react-icons/fa6";
@@ -97,7 +97,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
 
     const body = (
         <div className="d-flex p-2 border-bottom gap-2 align-items-center" onClick={viewNotification} style={{ cursor: "pointer" }}>
-            <div className="wb-p-follow-item__avatar">
+            <div>
                 <ProfileAvatar size={32} avatarImage={notification.actionUser.avatar} />
             </div>
             <div className="flex-grow-1">

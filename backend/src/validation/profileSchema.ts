@@ -58,6 +58,18 @@ export const getFollowingSchema = z.object({
   }),
 });
 
+export const uploadProfileAvatarImageSchema = z.object({
+  body: z.object({
+    userId: idSchema("userId")
+  })
+});
+
+export const removeProfileImageSchema = z.object({
+  body: z.object({
+    userId: idSchema("userId")
+  })
+});
+
 export const getNotificationsSchema = z.object({
   body: z.object({
     count: countPerPageSchema,

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
-// import { useWS } from "../../../context/wsCommunication";
 
 interface CompileOutputProps {
     source: string;
@@ -11,55 +10,26 @@ interface CompileOutputProps {
 
 const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
     const { sendJsonRequest } = useApi();
-    // const { socket } = useWS();
 
     const [stdinVisible, setStdinVisible] = useState(false);
-    const stdinRef = useRef<HTMLDivElement>(null);
+    const stdinRef = useRef<HTMLTextAreaElement>(null);
     const [stdinValue, setStdinValue] = useState("");
 
-    // const [currentJobId, setCurrentJobId] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [stdout, setStdout] = useState<string | null>(null);
     const [stderr, setStderr] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (tabOpen) {
-            setStdinVisible(true);
+        setStdinVisible(tabOpen);
+        if(tabOpen) {
+            setTimeout(() => {
+                if(stdinRef.current) {
+                    stdinRef.current.focus();
+                }
+            }, 50);
         }
     }, [tabOpen]);
-
-    // useEffect(() => {
-    //     const timeoutId = setTimeout(() => {
-    //         setLoading(false);
-    //     }, 10000);
-
-    //     return () => clearTimeout(timeoutId);
-    // }, [currentJobId]);
-
-    // useEffect(() => {
-    //     if (!socket) return;
-
-    //     const handleGetJob = (payload: any) => {
-    //         if (payload.job) {
-    //             if (payload.job.status === "done") {
-    //                 setStdout(payload.job.stdout || "");
-    //                 setStderr(payload.job.stderr || "");
-    //             } else {
-    //                 setError("Something went wrong.");
-    //             }
-    //         } else {
-    //             setError("Something went wrong.");
-    //         }
-    //         setLoading(false);
-    //     };
-
-    //     socket.on("job:get", handleGetJob);
-
-    //     return () => {
-    //         socket.off("job:get", handleGetJob);
-    //     };
-    // }, [socket]);
 
     const stdinHide = () => {
         setStdinVisible(false);
@@ -79,14 +49,13 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         });
 
         if (createJobResult && createJobResult.jobId) {
-            // setCurrentJobId(createJobResult.jobId);
             let getJobResult = null;
             let status = "pending";
             let attempt = 0;
 
             while (status === "pending" || status === "running") {
                 ++attempt;
-                if (attempt > 10) {
+                if (attempt > 5) {
                     break;
                 }
                 getJobResult = await sendJsonRequest("/Codes/GetJob", "POST", { jobId: createJobResult.jobId });
@@ -94,7 +63,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                     status = getJobResult.job.status;
 
                     if (status === "pending" || status === "running") {
-                        await new Promise((resolve) => setTimeout(resolve, 1000));
+                        await new Promise((resolve) => setTimeout(resolve, 1500));
                     }
                 }
             }
@@ -106,7 +75,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 setError("Something went wrong.");
             }
         } else {
-            setError(createJobResult.message ?? "Something went wrong");
+            setError(createJobResult?.error[0].message ?? "Something went wrong");
             setLoading(false);
         }
         setLoading(false);
@@ -126,8 +95,10 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 <Modal.Header>
                     <h2>Stdin</h2>
                 </Modal.Header>
-                <Modal.Body className="overflow-auto" ref={stdinRef}>
+                <Modal.Body className="overflow-auto">
                     <FormControl
+                        tabIndex={1}
+                        ref={stdinRef}
                         as="textarea"
                         value={stdinValue}
                         onChange={(e) => setStdinValue(e.target.value)}
@@ -136,8 +107,8 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 </Modal.Body>
                 <Modal.Footer>
                     <div className="d-flex gap-2">
-                        <Button variant="secondary" onClick={stdinHide}>Cancel</Button>
-                        <Button variant="primary" onClick={handleRunCode}>Run</Button>
+                        <Button tabIndex={2} variant="secondary" onClick={stdinHide}>Cancel</Button>
+                        <Button tabIndex={3} variant="primary" onClick={handleRunCode}>Run</Button>
                     </div>
                 </Modal.Footer>
             </Modal>

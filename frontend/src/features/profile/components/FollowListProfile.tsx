@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { UserMinimal } from '../pages/Profile'
+import { UserMinimal } from '../pages/ProfilePage'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
@@ -65,7 +65,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
     const body = (
         <div className="d-flex justify-content-between py-2 border-bottom">
             <div className='d-flex align-items-start gap-2'>
-                <div className="wb-p-follow-item__avatar">
+                <div>
                     <ProfileAvatar size={42} avatarImage={user.avatar} />
                 </div>
                 <div className='d-flex flex-column gap-1'>

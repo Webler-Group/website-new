@@ -1,0 +1,14 @@
+.wb-post-attachment-select-modal {
+    z-index: 1070 !important;
+}
+
+@media(min-width: 576px) {
+    .wb-post-attachment-select-modal__body {
+        height: 720px;
+        max-height: 68vh;
+    }
+}
+
+.wb-post-attachment-select-modal__backdrop {
+    z-index: 1069 !important;
+}

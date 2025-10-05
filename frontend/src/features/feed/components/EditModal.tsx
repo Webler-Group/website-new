@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import PostTextareaControl from '../../../components/PostTextareaControl';
 import { IFeed } from './types';
 import { FaSave, FaTimes, FaEye, FaPen } from 'react-icons/fa';
-import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import allowedUrls from '../../../data/discussAllowedUrls';
+import MarkdownRenderer from '../../../components/MarkdownRenderer';
 
 interface EditModalProps {
   feed: IFeed;
