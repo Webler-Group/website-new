@@ -3,6 +3,7 @@ import { Alert, Button, Form, FormCheck, FormControl, FormGroup, FormLabel, Form
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
+import MdEditorField from "../../../components/MdEditorField";
 
 interface LessonNodeEditorProps {
     nodeId: string;
@@ -219,15 +220,6 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         setLoading(false);
     }
 
-    const handlePreview = async () => {
-        setLoading(true);
-        const success = hasUnsavedChanges() ? await saveNode(true) : validateNode(true);
-        setLoading(false);
-        if (success) {
-            onPreview(nodeId);
-        }
-    }
-
     const getEditorForm = () => {
         const nodeTypes = [
             { name: "Text block", value: 1 },
@@ -292,14 +284,24 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Text</FormLabel>
-                        <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={10} maxLength={2000} required />
+                        {
+                            nodeType == 1 ? 
+                            <MdEditorField 
+                                text={nodeText}
+                                setText={setNodeText}
+                                maxCharacters={2000}
+                                row={10}
+                                placeHolder={"Enter Description"}
+                            />
+                            :
+                            <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={3} maxLength={2000} required />
+                        }
                     </FormGroup>
                     {fields}
                     <div className="d-sm-flex justify-content-between mt-4">
                         <div className="d-flex gap-2 justify-content-end">
                             <Button size="sm" disabled={loading || node.index <= 1} onClick={() => handleChangeIndex(node.index - 1)}>Move left</Button>
                             <Button size="sm" disabled={loading || node.index >= nodeCount} onClick={() => handleChangeIndex(node.index + 1)}>Move right</Button>
-                            <Button size="sm" disabled={loading} onClick={handlePreview}>Preview</Button>
                         </div>
                         <div className="d-flex gap-2 justify-content-end mt-2 mt-sm-0">
                             <Button size="sm" disabled={loading} variant="secondary" type="button" onClick={() => setDeleteModalVisible(true)}>Delete</Button>

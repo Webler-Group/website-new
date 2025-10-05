@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaCopy, FaShare, FaShareNodes } from 'react-icons/fa6';
+import MdEditorField from '../../../components/MdEditorField';
 
 interface ShareModalProps {
   feedId: string;
@@ -51,15 +52,15 @@ const ShareModal: React.FC<ShareModalProps> = ({ feedId, onShare, onClose }) => 
           {/* Body */}
           <div className="modal-body">
             <div className="mb-3">
-              <label className="form-label">Add your thoughts</label>
-              <textarea
-                value={shareMessage}
-                onChange={(e) => setShareMessage(e.target.value)}
-                placeholder="What do you think about this post?"
-                rows={4}
-                className="form-control"
-                disabled={isSharing}
-              />
+              {
+                isSharing ? <p>Sharing...</p> :
+                <MdEditorField 
+                    text={shareMessage}
+                    setText={setShareMessage}
+                    row={4}
+                    placeHolder={"What do you think about this post?"}
+                />
+              }
             </div>
 
             {/* Tags input */}

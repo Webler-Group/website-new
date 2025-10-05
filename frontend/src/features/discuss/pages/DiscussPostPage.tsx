@@ -18,11 +18,10 @@ import { WeblerBadge } from "../../../components/InputTags";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
-import PostTextareaControl from "../../../components/PostTextareaControl";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import QuestionPlaceholder from "../components/QuestionPlaceholder";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
-import PostAttachmentSelect from "../../../components/PostAttachmentSelect";
+import MdEditorField from "../../../components/MdEditorField";
 
 const DiscussPostPage = () => {
     const { sendJsonRequest } = useApi();
@@ -40,7 +39,6 @@ const DiscussPostPage = () => {
     const form = useRef<HTMLFormElement>(null);
     const [formVisible, setFormVisible] = useState(false);
     const [formInput, setFormInput] = useState("");
-    const maxCharacters = 4096;
     const [acceptedAnswer, setAcceptedAnswer] = useState<string | null>(null);
     const [editedAnswer, setEditedAnswer] = useState<string | null>(null);
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
@@ -333,12 +331,6 @@ const DiscussPostPage = () => {
         setVotesModalVisible(true);
     }
 
-    const handlePostAttachments = (selected: string[]) => {
-        setFormInput(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
-    }
-
-    let charactersRemaining = maxCharacters - formInput.length;
-
     let placeholders = [];
     for (let i = 0; i < answersPerPage; ++i) {
         placeholders.push(<QuestionPlaceholder key={i} />);
@@ -457,11 +449,14 @@ const DiscussPostPage = () => {
                     <Form ref={form}>
                         <FormGroup>
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                            <PostTextareaControl ref={formInputRef} rows={10} placeholder="Write your reply here..." required maxLength={maxCharacters} value={formInput} setValue={setFormInput} />
-                            <p className={charactersRemaining > 0 ? "text-secondary" : "text-danger"}>{charactersRemaining} characters remaining</p>
+                            <MdEditorField 
+                                text={formInput}
+                                setText={setFormInput}
+                                row={10}
+                                placeHolder={"Write your reply here..."}
+                            />
                         </FormGroup>
                         <div className="d-flex justify-content-end">
-                            <PostAttachmentSelect onSubmit={handlePostAttachments} />
                             <Button size="sm" variant="secondary" onClick={hideAnswerForm} disabled={loading}>Cancel</Button>
                             {
                                 editedAnswer === null ?
