@@ -28,7 +28,8 @@ int main(int argc, char ** argv){
   printf("Hello World\\n");
   return 0;
 }
-`, cssSource: "", jsSource: ""
+`, 
+        cssSource: "", jsSource: ""
     },
     {
         language: "cpp",
@@ -40,27 +41,42 @@ int main(int argc, char ** argv){
   cout << "Hello World" << endl;
   return 0;
 }
-`, cssSource: "", jsSource: ""
+`, 
+        cssSource: "", jsSource: ""
     },
     {
         language: "python",
         source: `print("Hello World")
-`, cssSource: "", jsSource: ""
+`, 
+        cssSource: "", jsSource: ""
     },
     {
         language: "nodejs",
         source: `console.log("Hello world");
-`, cssSource: "", jsSource: ""
+`, 
+        cssSource: "", jsSource: ""
     },
     {
         language: "ruby",
         source: `puts "Hello world"
-`, cssSource: "", jsSource: ""
+`, 
+        cssSource: "", jsSource: ""
     },
     {
         language: "lua",
         source: `print("Hello world")
-`, cssSource: "", jsSource: ""
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
+        language: "java",
+        source: `public class HelloWorld {
+    public static void main(String[] args) {
+        System.out.println("Hello, World!");
+    }
+}
+`,
+        cssSource: "", jsSource: ""
     }
 ];
 

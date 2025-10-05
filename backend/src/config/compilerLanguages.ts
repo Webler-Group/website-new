@@ -1,5 +1,5 @@
 const compilerLanguages: string[] = [
-    "web", "c", "cpp", "python", "ruby", "lua", "nodejs", "java"
+    "web", "c", "cpp", "python", "ruby", "lua", "java"
 ];
 
 export default compilerLanguages;

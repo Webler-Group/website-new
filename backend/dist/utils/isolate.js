@@ -66,6 +66,12 @@ async function compileOutsideIsolate(source, language, tempDir) {
             compileCmd = '/usr/bin/clang++-20';
             compileArgs = ['-o', execFile, sourceFile];
             break;
+        case 'java':
+            sourceFile = path_1.default.join(tempDir, 'Main.java');
+            execFile = 'Main'; // Java class name for execution
+            compileCmd = '/usr/bin/javac';
+            compileArgs = [sourceFile];
+            break;
         default:
             // No compilation needed for interpreted languages
             return { success: true, stderr: "" };
@@ -93,17 +99,30 @@ async function compileOutsideIsolate(source, language, tempDir) {
             stderr: compileResult.stderr || "Compilation failed"
         };
     }
-    // Check if executable was created
-    if (!fs_1.default.existsSync(execFile)) {
-        return {
-            success: false,
-            stderr: "Compilation failed: executable not created"
-        };
+    // Check if compilation succeeded
+    if (language === 'java') {
+        // For Java, check if Main.class file was created
+        const classFile = path_1.default.join(tempDir, 'Main.class');
+        if (!fs_1.default.existsSync(classFile)) {
+            return {
+                success: false,
+                stderr: "Compilation failed: Main.class file not created"
+            };
+        }
+    }
+    else {
+        // For C/C++, check if executable was created
+        if (!fs_1.default.existsSync(execFile)) {
+            return {
+                success: false,
+                stderr: "Compilation failed: executable not created"
+            };
+        }
     }
     return {
         success: true,
         stderr: "",
-        execFile: path_1.default.basename(execFile)
+        execFile: language === 'java' ? execFile : path_1.default.basename(execFile)
     };
 }
 async function runInIsolate(source, language, boxId, stdin = "") {
@@ -124,12 +143,17 @@ async function runInIsolate(source, language, boxId, stdin = "") {
         let runCmd;
         let sourceFile;
         let needsCompilation = false;
+        let className = "";
         // Determine execution command and whether compilation is needed
         switch (language) {
             case 'c':
             case 'cpp':
                 needsCompilation = true;
                 runCmd = './main.out';
+                break;
+            case 'java':
+                needsCompilation = true;
+                runCmd = '/usr/bin/java Main';
                 break;
             case 'python':
                 sourceFile = 'main.py';
@@ -158,12 +182,25 @@ async function runInIsolate(source, language, boxId, stdin = "") {
                 stderr = compileResult.stderr;
             }
             else if (compileResult.execFile) {
-                // Copy compiled executable to isolate box
-                const execPath = path_1.default.join(tempDir, compileResult.execFile);
-                const destPath = path_1.default.join(boxPath, compileResult.execFile);
-                fs_1.default.copyFileSync(execPath, destPath);
-                // Make executable
-                fs_1.default.chmodSync(destPath, 0o755);
+                if (language === 'java') {
+                    // For Java, copy all .class files (including inner classes)
+                    const files = fs_1.default.readdirSync(tempDir);
+                    for (const file of files) {
+                        if (file.endsWith('.class')) {
+                            const srcPath = path_1.default.join(tempDir, file);
+                            const destPath = path_1.default.join(boxPath, file);
+                            fs_1.default.copyFileSync(srcPath, destPath);
+                        }
+                    }
+                }
+                else {
+                    // For C/C++, copy compiled executable
+                    const execPath = path_1.default.join(tempDir, compileResult.execFile);
+                    const destPath = path_1.default.join(boxPath, compileResult.execFile);
+                    fs_1.default.copyFileSync(execPath, destPath);
+                    // Make executable
+                    fs_1.default.chmodSync(destPath, 0o755);
+                }
             }
         }
         else {

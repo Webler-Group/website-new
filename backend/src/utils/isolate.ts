@@ -92,6 +92,12 @@ async function compileOutsideIsolate(
             compileCmd = '/usr/bin/clang++-20';
             compileArgs = ['-o', execFile, sourceFile];
             break;
+        case 'java':
+            sourceFile = path.join(tempDir, 'Main.java');
+            execFile = 'Main'; // Java class name for execution
+            compileCmd = '/usr/bin/javac';
+            compileArgs = [sourceFile];
+            break;
         default:
             // No compilation needed for interpreted languages
             return { success: true, stderr: "" };
@@ -129,18 +135,30 @@ async function compileOutsideIsolate(
         };
     }
     
-    // Check if executable was created
-    if (!fs.existsSync(execFile)) {
-        return {
-            success: false,
-            stderr: "Compilation failed: executable not created"
-        };
+    // Check if compilation succeeded
+    if (language === 'java') {
+        // For Java, check if Main.class file was created
+        const classFile = path.join(tempDir, 'Main.class');
+        if (!fs.existsSync(classFile)) {
+            return {
+                success: false,
+                stderr: "Compilation failed: Main.class file not created"
+            };
+        }
+    } else {
+        // For C/C++, check if executable was created
+        if (!fs.existsSync(execFile)) {
+            return {
+                success: false,
+                stderr: "Compilation failed: executable not created"
+            };
+        }
     }
     
     return {
         success: true,
         stderr: "",
-        execFile: path.basename(execFile)
+        execFile: language === 'java' ? execFile : path.basename(execFile)
     };
 }
 
@@ -171,6 +189,7 @@ async function runInIsolate(
         let runCmd: string;
         let sourceFile: string;
         let needsCompilation = false;
+        let className: string = "";
         
         // Determine execution command and whether compilation is needed
         switch (language) {
@@ -178,6 +197,10 @@ async function runInIsolate(
             case 'cpp':
                 needsCompilation = true;
                 runCmd = './main.out';
+                break;
+            case 'java':
+                needsCompilation = true;
+                runCmd = '/usr/bin/java Main';
                 break;
             case 'python':
                 sourceFile = 'main.py';
@@ -207,12 +230,24 @@ async function runInIsolate(
                 success = false;
                 stderr = compileResult.stderr;
             } else if (compileResult.execFile) {
-                // Copy compiled executable to isolate box
-                const execPath = path.join(tempDir, compileResult.execFile);
-                const destPath = path.join(boxPath, compileResult.execFile);
-                fs.copyFileSync(execPath, destPath);
-                // Make executable
-                fs.chmodSync(destPath, 0o755);
+                if (language === 'java') {
+                    // For Java, copy all .class files (including inner classes)
+                    const files = fs.readdirSync(tempDir);
+                    for (const file of files) {
+                        if (file.endsWith('.class')) {
+                            const srcPath = path.join(tempDir, file);
+                            const destPath = path.join(boxPath, file);
+                            fs.copyFileSync(srcPath, destPath);
+                        }
+                    }
+                } else {
+                    // For C/C++, copy compiled executable
+                    const execPath = path.join(tempDir, compileResult.execFile);
+                    const destPath = path.join(boxPath, compileResult.execFile);
+                    fs.copyFileSync(execPath, destPath);
+                    // Make executable
+                    fs.chmodSync(destPath, 0o755);
+                }
             }
         } else {
             // For interpreted languages, write source directly to box
