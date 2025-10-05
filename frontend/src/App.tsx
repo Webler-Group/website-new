@@ -23,6 +23,7 @@ import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
 import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
 import ChallengeEdit from "./features/challenges/pages/ChallengeEdit";
 import SnackbarLayout from './layouts/SnackbarLayout';
+import roles from './data/roles';
 
 const ChannelsRoutes = React.lazy(() => import("./features/channels/ChannelsRoutes"));
 const CoursesRoutes = React.lazy(() => import("./features/courses/CoursesRoutes"));
@@ -72,7 +73,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="Challenge" element={<RequireAuth allowedRoles={allRoles} />}>
+        <Route path="Challenge" element={<RequireAuth allowedRoles={roles} />}>
           <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
             <Route index element={<ChallengeList />} />
             <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
