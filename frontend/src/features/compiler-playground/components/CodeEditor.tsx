@@ -65,8 +65,8 @@ const CodeEditor = ({
             setEditorTabs(["html", "css", "javascript"]);
             setActiveKey("html");
         } else {
-            setEditorTabs([code.language as LanguageName]);
-            setActiveKey(code.language);
+            setEditorTabs([code.language == "nodejs" ? "javascript" : code.language as LanguageName]);
+            setActiveKey(code.language == "nodejs" ? "javascript" : code.language);
         }
     }, [code.id, code.language]);
 
