@@ -58,13 +58,13 @@ async function compileOutsideIsolate(source, language, tempDir) {
             sourceFile = path_1.default.join(tempDir, 'main.c');
             execFile = path_1.default.join(tempDir, 'main.out');
             compileCmd = '/usr/bin/clang-20';
-            compileArgs = ['-o', execFile, sourceFile];
+            compileArgs = ["-Wall", "-Wextra", "-o", execFile, sourceFile];
             break;
         case 'cpp':
             sourceFile = path_1.default.join(tempDir, 'main.cpp');
             execFile = path_1.default.join(tempDir, 'main.out');
             compileCmd = '/usr/bin/clang++-20';
-            compileArgs = ['-o', execFile, sourceFile];
+            compileArgs = ["-std=c++20", "-Wall", "-Wextra", "-o", execFile, sourceFile];
             break;
         default:
             // No compilation needed for interpreted languages
