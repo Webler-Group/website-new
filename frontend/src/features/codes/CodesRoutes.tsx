@@ -3,7 +3,7 @@ import CodesLayout from "./layouts/CodesLayout"
 import Header from "../../layouts/Header"
 import Footer from "../../layouts/Footer"
 import CodesListPage from "./pages/CodesListPage"
-import Layout from "../../components/Layout"
+import Layout from "../../layouts/Layout"
 
 const CodesRoutes = () => {
     return (

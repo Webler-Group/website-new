@@ -7,16 +7,18 @@ import verifyJWT from "../middleware/verifyJWT";
 
 const router =  express.Router();
 
-const allowdRoles = [RolesEnum.ADMIN, RolesEnum.CREATOR];
+const allowedRoles = [RolesEnum.ADMIN, RolesEnum.CREATOR];
 
 router.use(verifyJWT);
-router.use(protectRoute);
 
 router.route("/").post(ChallengeController.getChallengeList);
+
+router.use(protectRoute);
+
 router.route("/GetChallenge").post(ChallengeController.getChallenge);
-router.route("/Create").post(requireRoles(allowdRoles), ChallengeController.createChallenge);
-router.route("/Update").post(requireRoles(allowdRoles), ChallengeController.editChallenge);
-router.route("/GetEditInfo").post(requireRoles(allowdRoles), ChallengeController.getChallengeInfo);
-router.route("/Delete").post(requireRoles(allowdRoles), ChallengeController.deleteChallenge);
+router.route("/Create").post(requireRoles(allowedRoles), ChallengeController.createChallenge);
+router.route("/Update").post(requireRoles(allowedRoles), ChallengeController.editChallenge);
+router.route("/GetEditInfo").post(requireRoles(allowedRoles), ChallengeController.getChallengeInfo);
+router.route("/Delete").post(requireRoles(allowedRoles), ChallengeController.deleteChallenge);
 
 export default router;

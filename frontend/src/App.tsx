@@ -1,5 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
-import Layout from './components/Layout';
+import Layout from './layouts/Layout';
 import NotFoundPage from './pages/NotFoundPage';
 import NoAuth from './features/auth/components/NoAuth';
 import Header from './layouts/Header';
@@ -73,14 +73,16 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="Challenge" element={<RequireAuth allowedRoles={roles} />}>
+        <Route path="Challenge">
           <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
             <Route index element={<ChallengeList />} />
+            <Route element={<RequireAuth allowedRoles={roles} />}>
+              <Route path=":challengeId" element={<ChallengeDetails />} />
+            </Route>
             <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
               <Route path="Create" element={<ChallengeCreate />} />
               <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
             </Route>
-            <Route path=":challengeId" element={<ChallengeDetails />} />
           </Route>
         </Route>
 

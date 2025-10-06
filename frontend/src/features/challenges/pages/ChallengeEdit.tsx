@@ -18,7 +18,6 @@ const ChallengeEdit = () => {
     const [challenge, setChallenge] = useState<IChallenge>();
 
     useEffect(() => {
-        console.log(challengeId);
         getChallengeEditInfo();
     }, []);
 

@@ -103,21 +103,23 @@ const DiscussListPage = () => {
                 />
             </div>
             <div className="mt-2 d-flex justify-content-between">
-                <Form.Label htmlFor="filter" className="visually-hidden">
-                    Filter
-                </Form.Label>
-                <Form.Select id="filter" style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
-                    <option value="1">Most Recent</option>
-                    <option value="2">Unanswered</option>
-                    <option value="6">Trending</option>
-                    {
-                        userInfo &&
-                        <>
-                            <option value="3">My Questions</option>
-                            <option value="4">My Answers</option>
-                        </>
-                    }
-                </Form.Select>
+                <Form.Group>
+                    <Form.Label htmlFor="filter" className="visually-hidden">
+                        Filter
+                    </Form.Label>
+                    <Form.Select id="filter" style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
+                        <option value="1">Most Recent</option>
+                        <option value="2">Unanswered</option>
+                        <option value="6">Trending</option>
+                        {
+                            userInfo &&
+                            <>
+                                <option value="3">My Questions</option>
+                                <option value="4">My Answers</option>
+                            </>
+                        }
+                    </Form.Select>
+                </Form.Group>
                 <LinkContainer to="/Discuss/New">
                     <Button size='sm'>Ask a question</Button>
                 </LinkContainer>
@@ -128,7 +130,7 @@ const DiscussListPage = () => {
                         placeholders
                         :
                         questionCount == 0 ?
-                            <div className="wb-discuss-empty-questions">
+                            <div className="wb-empty-list">
                                 <h3>Nothing to show</h3>
                             </div>
                             :

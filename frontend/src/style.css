@@ -234,3 +234,11 @@ ul {
         max-height: 90vh;
     }
 }
+
+.wb-empty-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}

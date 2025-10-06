@@ -126,33 +126,37 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                         </LinkContainer>
                     </div>
                 }
-                <div className="d-flex justify-content-between">
-                    <Form.Label htmlFor="filter" className="visually-hidden">
-                        Filter
-                    </Form.Label>
-                    <Form.Select id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
-                        <option value="1">Most Recent</option>
-                        <option value="2">Most Popular</option>
-                        {
-                            userInfo &&
-                            <>
-                                <option value="3">My Codes</option>
-                            </>
-                        }
-                    </Form.Select>
-                    <Form.Label htmlFor="language" className="visually-hidden">
-                        Language
-                    </Form.Label>
-                    <Form.Select id="language" size='sm' style={{ width: "140px" }} className="ms-2" value={language} onChange={handleLanguageSelect}>
-                        <option key="all" value="all">All</option>
-                        {
-                            Object.entries(languagesInfo).map(entry => {
-                                return (
-                                    <option key={entry[0]} value={entry[0]}>{entry[1].displayName}</option>
-                                )
-                            })
-                        }
-                    </Form.Select>
+                <div className="d-flex gap-2 justify-content-between">
+                    <Form.Group>
+                        <Form.Label htmlFor="filter" className="visually-hidden">
+                            Filter
+                        </Form.Label>
+                        <Form.Select id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                            <option value="1">Most Recent</option>
+                            <option value="2">Most Popular</option>
+                            {
+                                userInfo &&
+                                <>
+                                    <option value="3">My Codes</option>
+                                </>
+                            }
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Label htmlFor="language" className="visually-hidden">
+                            Language
+                        </Form.Label>
+                        <Form.Select id="language" size='sm' style={{ width: "140px" }} value={language} onChange={handleLanguageSelect}>
+                            <option key="all" value="all">All</option>
+                            {
+                                Object.entries(languagesInfo).map(entry => {
+                                    return (
+                                        <option key={entry[0]} value={entry[0]}>{entry[1].displayName}</option>
+                                    )
+                                })
+                            }
+                        </Form.Select>
+                    </Form.Group>
                 </div>
             </div>
             <div className="my-3">
@@ -161,7 +165,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                         placeholders
                         :
                         codesCount == 0 ?
-                            <div className="wb-discuss-empty-questions">
+                            <div className="wb-empty-list">
                                 <h3>Nothing to show</h3>
                             </div>
                             :

@@ -8,10 +8,22 @@ import { config } from "../confg";
 
 const exec = promisify(execCallback);
 
+interface CompileResult { 
+    success: boolean; 
+    stderr: string; 
+    execFile?: string 
+}
+
 interface RunResult {
     stdout: string;
     stderr: string;
     success: boolean;
+}
+
+interface MultiRunResult {
+    index: number;
+    stdout: string;
+    stderr: string;
 }
 
 interface SpawnResult {
@@ -73,7 +85,7 @@ async function compileOutsideIsolate(
     source: string,
     language: string,
     tempDir: string
-): Promise<{ success: boolean; stderr: string; execFile?: string }> {
+): Promise<CompileResult> {
     let sourceFile: string;
     let execFile: string;
     let compileCmd: string;
@@ -147,13 +159,12 @@ async function runInIsolate(
     source: string,
     language: string,
     boxId: number,
-    stdin: string = ""
-): Promise<RunResult> {
+    stdin: string[],
+    repeat: number = 1
+): Promise<MultiRunResult[]> {
     let tempDir: string | null = null;
     let boxDir: string | null = null;
-    let stdout = "";
-    let stderr = "";
-    let success = true;
+    let results: MultiRunResult[] = [];
 
     try {
         // Create temporary directory for compilation
@@ -164,11 +175,8 @@ async function runInIsolate(
         boxDir = initOutput.trim();
         const boxPath = path.join(boxDir, "box");
 
-        // Write stdin
-        fs.writeFileSync(path.join(boxPath, "input.txt"), stdin);
-
         let runCmd: string;
-        let sourceFile: string;
+        let sourceFile: string | undefined;
         let needsCompilation = false;
         let className: string = "";
 
@@ -199,13 +207,18 @@ async function runInIsolate(
                 throw new Error('Unsupported language');
         }
 
+        let compileResult: CompileResult;
         // Handle compilation if needed
         if (needsCompilation) {
-            const compileResult = await compileOutsideIsolate(source, language, tempDir);
+            compileResult = await compileOutsideIsolate(source, language, tempDir);
 
             if (!compileResult.success) {
-                success = false;
-                stderr = compileResult.stderr;
+                results = Array.from({ length: repeat }, (_, index) => ({
+                    index,
+                    stdout: "",
+                    stderr: compileResult.stderr
+                }));
+                return results;
             } else if (compileResult.execFile) {
                 const execPath = path.join(tempDir, compileResult.execFile);
                 const destPath = path.join(boxPath, compileResult.execFile);
@@ -215,11 +228,19 @@ async function runInIsolate(
             }
         } else {
             // For interpreted languages, write source directly to box
-            fs.writeFileSync(path.join(boxPath, sourceFile!), source);
+            if (sourceFile) {
+                fs.writeFileSync(path.join(boxPath, sourceFile), source);
+            }
         }
 
-        // Run the program inside isolate
-        if (success) {
+        // Now run the program multiple times with different inputs
+        for (let i = 0; i < repeat; i++) {
+            const currentStdin = stdin.length > 0 ? stdin[i % stdin.length] : "";
+            fs.writeFileSync(path.join(boxPath, "input.txt"), currentStdin);
+
+            let stdout = "";
+            let stderr = "";
+
             const runArgs = [
                 `--box-id=${boxId}`,
                 "--run",
@@ -236,10 +257,23 @@ async function runInIsolate(
                 ...runCmd.split(" ")
             ];
 
-            await spawnWithTimeout("isolate", runArgs, {
+            const runSpawnResult = await spawnWithTimeout("isolate", runArgs, {
                 cwd: boxPath,
-                stdio: "inherit"
+                stdio: "inherit",
+                shell: false
             }, 4000); // 4 second timeout for execution
+
+            if (runSpawnResult.killed) {
+                stderr += "\nExecution timeout: Process exceeded time limit (4 seconds)";
+                results.push({ index: i, stdout, stderr });
+                continue;
+            }
+
+            if (runSpawnResult.code !== 0) {
+                stderr += `\nIsolate run failed with code ${runSpawnResult.code}`;
+                results.push({ index: i, stdout, stderr });
+                continue;
+            }
 
             // Read output files
             const runOutPath = path.join(boxPath, "run.out");
@@ -250,8 +284,7 @@ async function runInIsolate(
             }
 
             if (fs.existsSync(runErrPath)) {
-                const runErr = safeReadFile(runErrPath, config.compilerFsizeLimit);
-                stderr = stderr ? `${stderr}\n${runErr}` : runErr;
+                stderr += safeReadFile(runErrPath, config.compilerFsizeLimit);
             }
 
             // Check metadata for execution status
@@ -269,7 +302,6 @@ async function runInIsolate(
                 );
 
                 if (meta["status"] && meta["status"] !== "OK") {
-                    success = false;
 
                     if (meta["status"] === "SG" && meta["exitsig"] === "11") {
                         stderr += "\nSegmentation fault (core dumped)";
@@ -284,11 +316,16 @@ async function runInIsolate(
                     }
                 }
             }
+
+            results.push({ index: i, stdout, stderr });
         }
 
     } catch (error) {
-        success = false;
-        stderr += `\nInternal error: ${error instanceof Error ? error.message : String(error)}`;
+        results = Array.from({ length: repeat }, (_, index) => ({
+            index,
+            stdout: "",
+            stderr: `Internal error: ${error instanceof Error ? error.message : String(error)}`
+        }));
     } finally {
         // Cleanup resources
         try {
@@ -309,9 +346,10 @@ async function runInIsolate(
         }
     }
 
-    return { stdout, stderr, success };
+    return results;
 }
 
 // Export with backward compatibility
 export { runInIsolate };
 export type { RunResult };
+export type { MultiRunResult };

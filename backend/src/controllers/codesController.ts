@@ -549,7 +549,7 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const job = await EvaluationJob.create({
         language,
         source,
-        stdin,
+        stdin: [stdin],
         deviceId
     });
 
@@ -568,6 +568,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
+    const result = job.result.find(x => x.index == 0);
+
     res.json({
         job: {
             id: job._id,
@@ -575,8 +577,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
             status: job.status,
             language: job.language,
             stdin: job.stdin,
-            stdout: job.stdout,
-            stderr: job.stderr
+            stdout: result?.stdout ?? "",
+            stderr: result?.stderr ?? ""
         }
     });
 });

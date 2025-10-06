@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom"
-import Layout from "../../components/Layout"
+import Layout from "../../layouts/Layout"
 import Header from "../../layouts/Header"
 import Footer from "../../layouts/Footer"
 import ProfilePage, { ProfileFromAuth } from "./pages/ProfilePage"

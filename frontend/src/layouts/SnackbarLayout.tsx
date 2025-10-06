@@ -36,7 +36,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
           </header>
         )}
 
-        <Container fluid className="flex-grow-1">
+        <Container className="py-2">
           <Row>
             {/* Side Menu (desktop) */}
             {SideMenu && (
@@ -46,7 +46,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
             )}
 
             {/* Main Content */}
-            <Col xs={12} md={AsideMenu ? 8 : 10} className="p-3">
+            <Col xs={12} md={AsideMenu ? 8 : 10}>
               <Outlet />
             </Col>
 

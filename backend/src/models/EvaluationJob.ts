@@ -1,28 +1,30 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
-import compilerLanguagesEnum from "../config/compilerLanguages";
-import { devRoom, getIO } from "../config/socketServer";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+
+const jobResultSchema = new mongoose.Schema(
+  {
+    index: { type: Number, required: true },
+    stdout: { type: String, required: false },
+    stderr: { type: String, required: false },
+  },
+  { _id: false }
+);
 
 const evaluationJobSchema = new mongoose.Schema({
     language: {
         type: String,
         required: true,
-        enum: compilerLanguagesEnum
+        enum: Object.values(CompilerLanguagesEnum)
     },
     source: {
         type: String,
         required: true
     },
     stdin: {
-        type: String,
-        required: false
+        type: [String]
     },
-    stdout: {
-        type: String,
-        required: false
-    },
-    stderr: {
-        type: String,
-        required: false
+    result: {
+        type: [jobResultSchema]
     },
     status: {
         type: String,

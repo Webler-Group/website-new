@@ -73,24 +73,7 @@ const EditorView = ({ availableLang, selectedLanguage, setSelectedLanguage,
             onChange={setSelectedLanguage}
           />
       </div>
-      {
-        templateLoading ? <Loader />
-        :
-        <CodeEditor
-              loading={false}
-              code={code as ICode}
-              source={source}
-              setSource={(value: string) => setSource(value)}
-              css={""}
-              setCss={() => "" }
-              js={""}
-              setJs={() => "" }
-              options={editorOptions}
-              hideOutput={true}
-              consoleVisible={false}
-              hideConsole={() => {}}
-          />
-      }
+      
       <div className="d-flex justify-content-end mt-3">
         <Button onClick={handleSubmit} variant="primary" disabled={submitLoading}>
           { submitLoading ? "Running...": "Submit" }

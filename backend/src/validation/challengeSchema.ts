@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { compilerLanguageSchema, dbIdSchema, messageSchema, questionTitleSchema, xpSchema } from "./commonSchema";
+import { compilerLanguageSchema, countPerPageSchema, idSchema, messageSchema, pageSchema, questionTitleSchema } from "./commonSchema";
+import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 
-const difficultySchema = z.enum(["easy", "medium", "hard"]);
+const difficultySchema = z.enum(ChallengeDifficultyEnum, "Invalid difficulty");
 
 const testCaseSchema = z.object({
   input: z.string(),
@@ -15,33 +16,38 @@ const templateSchema = z.object({
 });
 
 export const createChallengeSchema = z.object({
-    body: z.object({
-        title: questionTitleSchema,
-        description: messageSchema,
-        difficulty: difficultySchema,
-        xp: xpSchema,
-        testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
-        templates: z.array(templateSchema).min(1, "At least one template is required")
-    })
+  body: z.object({
+    title: questionTitleSchema,
+    description: messageSchema,
+    difficulty: difficultySchema,
+    testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
+    templates: z.array(templateSchema).min(1, "At least one template is required")
+  })
 });
 
 export const editChallengeSchema = createChallengeSchema.extend({
   body: z.object({
-    challengeId: dbIdSchema
-  }),
+    challengeId: idSchema("challengeId"), 
+    title: questionTitleSchema,
+    description: messageSchema,
+    difficulty: difficultySchema,
+    testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
+    templates: z.array(templateSchema).min(1, "At least one template is required")
+  })
 });
 
 export const getChallengeSchema = z.object({
   body: z.object({
-    challengeId: dbIdSchema
+    challengeId: idSchema("challengeId")
   }),
 });
 
 export const getChallengeListSchema = z.object({
   body: z.object({
-    page: z.number().int().min(1),
-    count: z.number().int().min(1).max(100),
-    filter: z.number().optional(),
+    page: pageSchema,
+    count: countPerPageSchema,
+    difficulty: difficultySchema.nullish(),
+    status: z.enum(["solved", "unsolved"]).nullish(),
     searchQuery: z.string().optional(),
   })
 });

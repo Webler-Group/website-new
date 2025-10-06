@@ -1,13 +1,5 @@
 /*Webler discuss page*/
 
-.wb-discuss-empty-questions {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin: 160px auto;
-}
-
 .wb-discuss-question__title {
     word-break: break-word;
     width: 80%;
