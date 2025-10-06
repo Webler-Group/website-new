@@ -14,6 +14,8 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
+import RolesEnum from "../data/RolesEnum";
+import { isAuthorizedRole } from "../utils/modelUtils";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -535,7 +537,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return
     }
 
-    if (question.user != currentUserId) {
+    if (question.user != currentUserId && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] })
         return
     }
@@ -590,7 +592,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (currentUserId != reply.user) {
+    if (currentUserId != reply.user && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return
     }
