@@ -98,6 +98,32 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
+            }))
+        } 
+    });
+});
+
+const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getChallengeSchema, req);
+    const { challengeId } = body;
+
+    const challenge = await Challenge.findById(challengeId);
+
+    if (!challenge) {
+        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
+        return;
+    }
+
+    res.json({ 
+        success: true, 
+        challenge: {
+            id: challenge._id,
+            description: challenge.description,
+            difficulty: challenge.difficulty,
+            title: challenge.title,
+            templates: challenge.templates.map(x => ({
+                name: x.name,
+                source: x.source
             })),
             testCases: challenge.testCases.map(x => ({
                 input: x.input,
@@ -161,6 +187,7 @@ const ChallengeController = {
     createChallenge,
     getChallengeList,
     getChallenge,
+    getEditedChallenge,
     editChallenge,
     deleteChallenge
 };

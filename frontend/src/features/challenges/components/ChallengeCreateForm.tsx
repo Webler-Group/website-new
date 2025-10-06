@@ -35,7 +35,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
 
     const getChallenge = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Challenge/GetChallenge`, "POST", { challengeId });
+        const result = await sendJsonRequest(`/Challenge/GetUpdatedChallenge`, "POST", { challengeId });
         if (result && result.challenge) {
             setTitle(result.challenge.title);
             setDescription(result.challenge.description);
