@@ -51,8 +51,16 @@ const DiscussPostPage = () => {
     const [pageTitle, setPageTitle] = useState("");
     const [votesModalVisible, setVotesModalVisible] = useState(false);
     const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
+    const [isPriviledged, setIsPriviledged] = useState(false);
+    const [shouldDeletePost, setShouldDeletePost] = useState(false);
 
     PageTitle(pageTitle);
+
+    useEffect(() => {
+        const hasPriviledge = userInfo?.roles.some(i => ["Admin", "Moderator"].includes(i)) || false;
+        setIsPriviledged(hasPriviledge);
+    }, [userInfo]);
+
 
     useEffect(() => {
         if (question) {
@@ -258,7 +266,12 @@ const DiscussPostPage = () => {
         setVotesModalVisible(false);
     }
 
-    const handleDeletePost = async () => {
+    const openDeleteModal = (isPost = false) => {
+        setDeleteModalVisible(true);
+        setShouldDeletePost(isPost);
+    }
+
+    const handleDeleteReply = async () => {
         setLoading(true);
         const result = await sendJsonRequest("/Discussion/DeleteReply", "DELETE", { replyId: editedAnswer });
         if (result && result.success) {
@@ -278,6 +291,26 @@ const DiscussPostPage = () => {
             setMessage(["danger", result?.error ? result.error._message : result.message]);
         }
         setLoading(false);
+    }
+
+
+    const handleDeletePost = async () => {
+        setLoading(true);
+        const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId: questionId });
+        if (result && result.success) {
+            closeDeleteModal();
+            navigate("/Discuss");
+        }
+        else {
+            setMessage(["danger", result?.error ? result.error._message : result.message]);
+        }
+        setLoading(false);
+    }
+
+
+    const handleDeleteContent = async () => {
+        shouldDeletePost ? handleDeletePost() :
+        handleDeleteReply();
     }
 
     const voteQuestion = async () => {
@@ -343,10 +376,10 @@ const DiscussPostPage = () => {
                     <Modal.Header closeButton>
                         <Modal.Title>Are you sure?</Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>Your answer will be permanently deleted.</Modal.Body>
+                    <Modal.Body>Your { shouldDeletePost ? "Question":"Answer" } will be permanently deleted.</Modal.Body>
                     <Modal.Footer>
                         <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
-                        <Button variant="danger" onClick={handleDeletePost}>Delete</Button>
+                        <Button variant="danger" onClick={handleDeleteContent}>Confirm</Button>
                     </Modal.Footer>
                 </Modal>
                 <ReactionsList title="Likes" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
@@ -386,6 +419,10 @@ const DiscussPostPage = () => {
                                 >
                                     Share
                                 </Dropdown.Item>
+                                {
+                                    userInfo && (isPriviledged || (question && question.userId === userInfo.id)) && 
+                                        <Dropdown.Item onClick={() => openDeleteModal(true) }>Delete</Dropdown.Item>
+                                }
                             </Dropdown.Menu>
                         </Dropdown>
                     </div>
@@ -465,7 +502,7 @@ const DiscussPostPage = () => {
                                     </>
                                     :
                                     <>
-                                        <Button size="sm" variant="secondary" className="ms-2" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
+                                        <Button size="sm" variant="secondary" className="ms-2" onClick={() => openDeleteModal(false) } disabled={loading}>Delete</Button>
                                         <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading || formInput.length === 0}>Save</Button>
                                     </>
                             }
