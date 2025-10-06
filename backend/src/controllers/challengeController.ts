@@ -81,31 +81,32 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeSchema, req);
     const { challengeId } = body;
 
-    const challenge = await Challenge.findById(challengeId)
-        .populate<{ templates: any }>("templates", "name source")
-        .select("title description xp author");
-
-    if (!challenge) {
-        res.status(404).json({ success: false, message: "Challenge not found" });
-        return;
-    }
-
-    res.json({ success: true, challenge });
-})
-
-const getChallengeInfo = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(getChallengeSchema, req);
-    const { challengeId } = body;
-
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
-        res.status(404).json({ success: false, message: "Challenge not found" });
+        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
         return;
     }
 
-    res.json({ success: true, challenge });
-})
+    res.json({ 
+        success: true, 
+        challenge: {
+            id: challenge._id,
+            description: challenge.description,
+            difficulty: challenge.difficulty,
+            title: challenge.title,
+            templates: challenge.templates.map(x => ({
+                name: x.name,
+                source: x.source
+            })),
+            testCases: challenge.testCases.map(x => ({
+                input: x.input,
+                expectedOutput: x.expectedOutput,
+                isHidden: x.isHidden
+            }))
+        } 
+    });
+});
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editChallengeSchema, req);
@@ -113,7 +114,7 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
-        res.status(404).json({ success: false, message: "Challenge not found" });
+        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
         return;
     }
 
@@ -124,7 +125,17 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.templates = templates;
 
     await challenge.save();
-    res.json({ success: true, challenge });
+    res.json({
+        success: true,
+        data: {
+            id: challenge._id,
+            title: challenge.title,
+            description: challenge.description,
+            difficulty: challenge.difficulty,
+            testCases: challenge.testCases,
+            templates: challenge.templates
+        }
+    });
 });
 
 
@@ -136,13 +147,13 @@ const deleteChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
-        res.status(404).json({ success: false, message: "Challenge not found" });
+        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
         return;
     }
 
     await Challenge.findByIdAndDelete(challengeId);
 
-    res.json({ success: true, message: "Challenge and related submissions deleted" });
+    res.json({ success: true });
 })
 
 
@@ -150,7 +161,6 @@ const ChallengeController = {
     createChallenge,
     getChallengeList,
     getChallenge,
-    getChallengeInfo,
     editChallenge,
     deleteChallenge
 };

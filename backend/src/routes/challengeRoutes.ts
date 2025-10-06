@@ -18,7 +18,6 @@ router.use(protectRoute);
 router.route("/GetChallenge").post(ChallengeController.getChallenge);
 router.route("/Create").post(requireRoles(allowedRoles), ChallengeController.createChallenge);
 router.route("/Update").post(requireRoles(allowedRoles), ChallengeController.editChallenge);
-router.route("/GetEditInfo").post(requireRoles(allowedRoles), ChallengeController.getChallengeInfo);
 router.route("/Delete").post(requireRoles(allowedRoles), ChallengeController.deleteChallenge);
 
 export default router;

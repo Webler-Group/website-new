@@ -21,7 +21,7 @@ export const createChallengeSchema = z.object({
     description: messageSchema,
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
-    templates: z.array(templateSchema).min(1, "At least one template is required")
+    templates: z.array(templateSchema)
   })
 });
 
@@ -32,7 +32,7 @@ export const editChallengeSchema = createChallengeSchema.extend({
     description: messageSchema,
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
-    templates: z.array(templateSchema).min(1, "At least one template is required")
+    templates: z.array(templateSchema)
   })
 });
 
