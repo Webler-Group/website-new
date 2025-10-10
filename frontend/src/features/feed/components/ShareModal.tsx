@@ -46,7 +46,7 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
           <MdEditorField
             text={shareMessage}
             setText={setShareMessage}
-            row={4}
+            row={10}
             placeHolder={"What do you think about this post?"}
           />
         </div>

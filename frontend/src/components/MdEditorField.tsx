@@ -1,4 +1,4 @@
-import { FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
 import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./PostAttachmentSelect";
@@ -15,9 +15,10 @@ interface MdEditorFieldProps {
     maxCharacters?: number;
     customPreview?: ReactNode;
     onModeChange?: (mode: MDEditorMode) => void;
+    isPost?: boolean;
 }
 
-const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, customPreview, onModeChange }: MdEditorFieldProps) => {
+const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, customPreview, onModeChange, isPost = true }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -50,7 +51,7 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
                 start + syntaxStart.length,
                 end + syntaxStart.length
             );
-        }, 0);
+        }, 50);
     };
 
     const toolbarButtons = [
@@ -136,22 +137,44 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
 
             {mode === "write" && (
                 <FormGroup className="mb-3">
-                    <PostTextareaControl
-                        ref={textareaRef}
-                        rows={row}
-                        placeholder={placeHolder}
-                        value={text}
-                        setValue={setText}
-                        required
-                        maxLength={maxCharacters}
-                    />
+                    {
+                        isPost ?
+                            <>
+                                <PostTextareaControl
+                                    ref={textareaRef}
+                                    rows={row}
+                                    placeholder={placeHolder}
+                                    value={text}
+                                    setValue={setText}
+                                    required
+                                    maxLength={maxCharacters}
+                                />
 
-                    <div className="d-flex justify-content-between">
-                        <div className="mt-2 text-muted small">
-                            {text.length}/{maxCharacters} characters
-                        </div>
-                        <PostAttachmentSelect onSubmit={handlePostAttachments} />
-                    </div>
+                                <div className="d-flex justify-content-between">
+                                    <div className="mt-2 text-muted small">
+                                        {text.length}/{maxCharacters} characters
+                                    </div>
+                                    <PostAttachmentSelect onSubmit={handlePostAttachments} />
+                                </div>
+                            </>
+                            :
+                            <>
+                                <FormControl
+                                    ref={textareaRef}
+                                    as="textarea"
+                                    rows={row}
+                                    placeholder={placeHolder}
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                    required
+                                    maxLength={maxCharacters} />
+                                <div className="d-flex justify-content-between">
+                                    <div className="mt-2 text-muted small">
+                                        {text.length}/{maxCharacters} characters
+                                    </div>
+                                </div>
+                            </>
+                    }
                 </FormGroup>
             )}
 
@@ -159,7 +182,7 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
                 customPreview != null ?
                     customPreview
                     :
-                    <div className="p-3 border rounded bg-light">
+                    <div className="p-2 border rounded bg-light">
                         <MarkdownRenderer content={text} allowedUrls={allowedUrls} />
                     </div>
             )}

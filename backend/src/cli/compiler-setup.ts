@@ -47,10 +47,10 @@ async function main(): Promise<void> {
 
         // Install Clang
         console.log("Installing Clang...");
-        await runCommand('sudo apt-get install -y clang');
+        await runCommand('sudo apt-get install -y clang-18');
 
         // Verify Clang installation
-        if (await runCommand('command -v clang')) {
+        if (await runCommand('command -v clang-18')) {
             console.log("Clang installed successfully.");
         } else {
             throw new Error("Failed to install Clang. Exiting script.");

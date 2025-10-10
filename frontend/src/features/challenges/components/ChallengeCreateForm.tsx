@@ -8,6 +8,7 @@ import { IChallengeTemplate, ITestCase } from "../types";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { LinkContainer } from "react-router-bootstrap";
+import MdEditorField from "../../../components/MdEditorField";
 
 
 interface IChallengeCreateFormProps {
@@ -114,13 +115,12 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                     <Form.Label>
                         <FaAlignLeft className="me-2" /> Description
                     </Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={5}
-                        placeholder="Describe the challenge..."
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        required
+                    <MdEditorField
+                        text={description}
+                        setText={setDescription}
+                        placeHolder="Describe the challenge..."
+                        row={10}
+                        isPost={false}
                     />
                 </Form.Group>
 

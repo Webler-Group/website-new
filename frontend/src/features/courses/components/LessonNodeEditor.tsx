@@ -300,6 +300,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: Lesson
                                     <LessonNode nodeId={nodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
                                 </div>
                             </div>}
+                            isPost={false}
                         />
                     </FormGroup>
                     {formVisible && fields}
