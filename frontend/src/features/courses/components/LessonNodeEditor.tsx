@@ -2,18 +2,17 @@ import { FormEvent, useEffect, useState } from "react";
 import { Alert, Button, Form, FormCheck, FormControl, FormGroup, FormLabel, FormSelect, Modal } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
-import { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
-import MdEditorField from "../../../components/MdEditorField";
+import LessonNode, { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
+import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 
 interface LessonNodeEditorProps {
     nodeId: string;
     nodeCount: number;
     onDelete: (nodeId: string) => void;
     onChangeIndex: (nodeId: string, newIndex: number) => void;
-    onPreview: (nodeId: string) => void;
 }
 
-const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPreview }: LessonNodeEditorProps) => {
+const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex }: LessonNodeEditorProps) => {
     const { sendJsonRequest } = useApi();
     const [node, setNode] = useState<ILessonNode | null>(null);
     const [nodeText, setNodeText] = useState("");
@@ -23,6 +22,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [message, setMessage] = useState(["", ""]);
     const [loading, setLoading] = useState(false);
+    const [formVisible, setFormVisible] = useState(true);
 
     useEffect(() => {
         getNode();
@@ -220,6 +220,10 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
         setLoading(false);
     }
 
+    const onEditorModeChange = (mode: MDEditorMode) => {
+        setFormVisible(mode == "write");
+    }
+
     const getEditorForm = () => {
         const nodeTypes = [
             { name: "Text block", value: 1 },
@@ -252,7 +256,7 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                         <FormLabel>Answers</FormLabel>
                         {questionAnswers.map((answer, i) => (
                             <div className="d-flex gap-3 align-items-center mb-2" key={i}>
-                                <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required  maxLength={120} />
+                                <FormControl value={answer.text} onChange={(e) => handleEditAnswerText(i, e.target.value)} placeholder={`Answer ${i + 1}`} required maxLength={120} />
                                 <FormCheck name="answer-correct" type="checkbox" label="Correct" id={"answer-correct-input-" + i} checked={answer.correct} onChange={(e) => toggleCorrectAnswer(i, e.target.checked, false)} />
                                 <span className="wb-comments__options__item" onClick={() => handleRemoveAnswer(i)}><FaTrash /></span>
                             </div>
@@ -284,20 +288,21 @@ const LessonNodeEditor = ({ nodeId, nodeCount, onDelete, onChangeIndex, onPrevie
                     </FormGroup>
                     <FormGroup>
                         <FormLabel>Text</FormLabel>
-                        {
-                            nodeType == 1 ? 
-                            <MdEditorField 
-                                text={nodeText}
-                                setText={setNodeText}
-                                maxCharacters={2000}
-                                row={10}
-                                placeHolder={"Enter Description"}
-                            />
-                            :
-                            <FormControl value={nodeText} onChange={(e) => setNodeText(e.target.value)} as="textarea" rows={3} maxLength={2000} required />
-                        }
+                        <MdEditorField
+                            text={nodeText}
+                            setText={setNodeText}
+                            maxCharacters={2000}
+                            row={10}
+                            placeHolder={"Enter Description"}
+                            onModeChange={onEditorModeChange}
+                            customPreview={<div className="d-flex flex-column" style={{ minHeight: "368px" }}>
+                                <div className="flex-grow-1 border border-2 rounded">
+                                    <LessonNode nodeId={nodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
+                                </div>
+                            </div>}
+                        />
                     </FormGroup>
-                    {fields}
+                    {formVisible && fields}
                     <div className="d-sm-flex justify-content-between mt-4">
                         <div className="d-flex gap-2 justify-content-end">
                             <Button size="sm" disabled={loading || node.index <= 1} onClick={() => handleChangeIndex(node.index - 1)}>Move left</Button>

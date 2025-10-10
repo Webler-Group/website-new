@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Form, FormControl } from "react-bootstrap";
+import { Button, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 
@@ -140,7 +140,7 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
             ));
 
         content = (
-            <Form className="h-100 d-flex flex-column">
+            <div className="h-100 d-flex flex-column">
                 <div className="wb-courses-lesson-node-question p-2 flex-grow-1">
                     <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
 
@@ -190,7 +190,7 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
                         </>
                     }
                 </div>
-            </Form>
+            </div>
         );
     }
 

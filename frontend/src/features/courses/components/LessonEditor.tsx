@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNodeEditor from "./LessonNodeEditor";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import LessonNode from "./LessonNode";
 import Loader from "../../../components/Loader";
 
 interface LessonEditorProps {
@@ -17,7 +16,6 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     const [lesson, setLesson] = useState<ILesson | null>(null);
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
-    const [nodePreviewVisible, setNodePreviewVisible] = useState(false);
     const [loading, setLoading] = useState(false);
     const { courseId } = useParams();
     const navigate = useNavigate();
@@ -122,21 +120,12 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
             return;
         }
 
-        setNodePreviewVisible(false);
         setCurrentNodeId(nodeId);
         const node = lesson.nodes.find(x => x.id == nodeId);
         if (node) {
             searchParams.set("slide", node.index.toString());
             setSearchParams(searchParams, { replace: true });
         }
-    }
-
-    const onNodePreview = () => {
-        setNodePreviewVisible(true);
-    }
-
-    const handleExitPreview = () => {
-        setNodePreviewVisible(false);
     }
 
     return (
@@ -168,18 +157,11 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
                     </div>
                     {
                         currentNodeId !== null &&
-                        (nodePreviewVisible ?
-                            <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
-                                <div className="flex-grow-1 border border-2">
-                                    <LessonNode nodeId={currentNodeId} mock={true} onAnswered={() => { }} onContinue={() => { }} onEnter={() => { }} />
-                                </div>
-                                <div className="d-flex justify-content-end mt-2">
-                                    <Button variant="secondary" size="sm" onClick={handleExitPreview}>Exit Preview</Button>
-                                </div>
-                            </div>
-                            :
-                            <LessonNodeEditor nodeId={currentNodeId} nodeCount={lesson.nodeCount} onChangeIndex={onLessonNodeChangeIndex} onDelete={onLessonNodeDelete} onPreview={onNodePreview} />
-                        )
+                        <LessonNodeEditor
+                            nodeId={currentNodeId}
+                            nodeCount={lesson.nodeCount}
+                            onChangeIndex={onLessonNodeChangeIndex}
+                            onDelete={onLessonNodeDelete} />
                     }
                 </div>
             </>
