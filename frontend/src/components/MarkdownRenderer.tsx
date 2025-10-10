@@ -4,9 +4,10 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Components } from 'react-markdown';
 import remarkGfm from "remark-gfm";
-import remarkBreaks from 'remark-breaks';
 import ImagePreview from './ImagePreview';
 import { Link } from 'react-router-dom';
+import "./MarkdownRenderer.css";
+import remarkBreaks from 'remark-breaks';
 
 interface MarkdownRendererProps {
     content: string;
@@ -75,12 +76,6 @@ const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) 
                     <img
                         src={src}
                         alt={alt || ""}
-                        style={{
-                            maxWidth: "100%",
-                            maxHeight: "240px",
-                            cursor: "pointer",
-                            objectFit: "cover",
-                        }}
                         onClick={() => {
                             setPreview(src ? { src, alt } : null);
                         }}
@@ -92,7 +87,7 @@ const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) 
     };
 
     return (
-        <>
+        <div className='wb-markdown'>
             {preview && (
                 <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
             )}
@@ -102,7 +97,7 @@ const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) 
             >
                 {transformedContent}
             </ReactMarkdown>
-        </>
+        </div>
     );
 };
 

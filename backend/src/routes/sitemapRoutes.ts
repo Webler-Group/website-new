@@ -10,11 +10,12 @@ router.get("/sitemap.xml", async (req, res) => {
         const smStream = new SitemapStream({ hostname: "https://www.weblercodes.com/" });
 
         const staticRoutes = [
-            { url: "/", changefreq: "daily", priority: 1.0 },                         // homepage
-            { url: "/Discuss", changefreq: "hourly", priority: 0.9 },                 // questions update often
-            { url: "/Codes", changefreq: "hourly", priority: 0.9 },                   // public code list
-            { url: "/Feed", changefreq: "hourly", priority: 0.9 },                   // social content
-            { url: "/Courses", changefreq: "weekly", priority: 0.9 },                // list of all courses
+            { url: "/", changefreq: "daily", priority: 1.0 },
+            { url: "/Discuss", changefreq: "hourly", priority: 0.9 },
+            { url: "/Codes", changefreq: "hourly", priority: 0.9 },
+            { url: "/Feed", changefreq: "hourly", priority: 0.9 },
+            { url: "/Challenge", changefreq: "hourly", priority: 0.9 },
+            { url: "/Courses", changefreq: "weekly", priority: 0.9 },
         ];
 
         staticRoutes.forEach(entry => smStream.write(entry));

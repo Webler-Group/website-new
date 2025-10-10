@@ -1,7 +1,7 @@
 
 import { z } from "zod";
 import countryCodes from "../config/countryCodes";
-import compilerLanguages from "../config/compilerLanguages";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
 export const emailSchema = z.email("Invalid email").max(120, "Invalid email");
 export const passwordSchema = z.string("Password is required").min(6, "Password is required and must be atleast 6 characters long").max(120, "Password cannot exceed 60 characters");
@@ -21,7 +21,7 @@ export const questionTitleSchema = z.string().min(1, "Title is required").max(12
 export const titleSchema = z.string().min(1, "Title is required").max(60, "Title cannot exceed 60 characters");
 export const channelTitleSchema = z.string().min(1, "Title is required").max(20, "Title cannot exceed 20 characters");
 export const tagNameSchema = z.string().min(1, "Tag name is required").max(64, "Tag name cannot exceed 64 characters");
-export const compilerLanguageSchema = z.enum(compilerLanguages, "Invalid language");
+export const compilerLanguageSchema = z.enum(CompilerLanguagesEnum, "Invalid language");
 export const voteSchema = z.number().int("Vote must be an integer").min(0, "Vote must be 0 or 1").max(1, "Vote must be 0 or 1");
 export const isoDateTimeSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, "Invalid ISO 8601 datetime format");
 export const courseCodeSchema = z.string().min(1, "Course code is required").max(64, "Course code must not exceed 64 characters").regex(/^([a-z]+-)*[a-z]+$/i, "Course code can only contain words separated by \"-\"");

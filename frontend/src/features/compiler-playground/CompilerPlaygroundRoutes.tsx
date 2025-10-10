@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import Layout from "../../components/Layout";
+import Layout from "../../layouts/Layout";
 import { compilerLanguages, languagesInfo } from "../../data/compilerLanguages";
 import Header from "../../layouts/Header";
 import PlaygroundMenuPage from "./pages/PlaygroundMenuPage";

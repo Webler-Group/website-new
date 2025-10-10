@@ -51,19 +51,6 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       <div className='wb-feed-content__message'>
         <i>{originalPost.message}</i>
       </div>
-
-      {/* {originalPost.tags?.length > 0 && (
-        <div className="d-flex flex-wrap gap-1 mt-1">
-          {originalPost.tags.map((tag: any) => (
-            <span
-              key={tag}
-              className="badge bg-info text-dark d-flex align-items-center gap-1"
-            >
-              <FaTag size={12} /> {tag}
-            </span>
-          ))}
-        </div>
-      )} */}
     </div>
   );
 };
@@ -321,7 +308,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated clickable" : ""}`}
           onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
-          <div className="wb-feed-content__message" style={!showFullContent ? { pointerEvents: "none" } : {}}>
+          <div style={!showFullContent ? { pointerEvents: "none" } : {}}>
             <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
           </div>
 
@@ -369,16 +356,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           )}
         </div>
 
-        {/* {feed.tags?.length > 0 && (
-          <div className="d-flex flex-wrap gap-2 mt-2">
-            {feed.tags.map(tag => (
-              <span key={tag} className="badge bg-primary d-flex align-items-center gap-1">
-                <FaTag /> {tag}
-              </span>
-            ))}
-          </div>
-        )} */}
-
         {/* Actions */}
         <div className="mt-3 d-flex align-items-center justify-content-between">
 
@@ -409,16 +386,18 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           </span>
         </div>
 
-        {showEditModal && (
+        {showEditModal &&
           <EditModal
+            show={showEditModal}
             feed={feed}
             onSave={handleEdit}
             onClose={() => setShowEditModal(false)}
           />
-        )}
+        }
 
         {showDeleteModal && (
           <DeleteModal
+            show={showDeleteModal}
             onConfirm={handleDelete}
             onClose={() => setShowDeleteModal(false)}
           />
@@ -426,6 +405,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         {showShareModal && (
           <ShareModal
+            show={showShareModal}
             feedId={feed.id}
             onShare={handleShare}
             onClose={() => setShowShareModal(false)}

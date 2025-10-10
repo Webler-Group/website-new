@@ -13,6 +13,9 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
         await Tag.getOrCreateTagsByNames(tags);
     } else if (action === "delete") {
         await Tag.deleteMany({ name: { $in: tags } });
+    } else {
+        res.status(400).json({ success: false, message: "Invalid action" });
+        return;
     }
 
     res.json({

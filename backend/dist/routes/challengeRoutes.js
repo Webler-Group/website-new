@@ -1,0 +1,26 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = __importDefault(require("express"));
+const challengeController_1 = __importDefault(require("../controllers/challengeController"));
+const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const requireRoles_1 = __importDefault(require("../middleware/requireRoles"));
+const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
+const router = express_1.default.Router();
+router.use(verifyJWT_1.default);
+router.route("/").post(challengeController_1.default.getChallengeList);
+router.use(protectRoute_1.default);
+router.route("/GetChallenge").post(challengeController_1.default.getChallenge);
+router.route("/GetChallengeCode").post(challengeController_1.default.getChallengeCode);
+router.route("/SaveChallengeCode").post(challengeController_1.default.saveChallengeCode);
+router.route("/CreateChallengeJob").post(challengeController_1.default.createChallengeJob);
+router.route("/GetChallengeJob").post(challengeController_1.default.getChallengeJob);
+router.use((0, requireRoles_1.default)([RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR]));
+router.route("/GetUpdatedChallenge").post(challengeController_1.default.getEditedChallenge);
+router.route("/Create").post(challengeController_1.default.createChallenge);
+router.route("/Update").post(challengeController_1.default.editChallenge);
+router.route("/Delete").post(challengeController_1.default.deleteChallenge);
+exports.default = router;

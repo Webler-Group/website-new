@@ -1,7 +1,7 @@
 import mongoose, { InferSchemaType, Model } from "mongoose";
-import compilerLanguagesEnum from "../config/compilerLanguages";
 import Post from "./Post";
 import Upvote from "./Upvote";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
 const codeSchema = new mongoose.Schema({
     user: {
@@ -27,7 +27,7 @@ const codeSchema = new mongoose.Schema({
     language: {
         type: String,
         required: true,
-        enum: compilerLanguagesEnum
+        enum: Object.values(CompilerLanguagesEnum)
     },
     isPublic: {
         type: Boolean,
@@ -48,6 +48,11 @@ const codeSchema = new mongoose.Schema({
     hidden: {
         type: Boolean,
         default: false
+    },
+    challenge: {
+        type: mongoose.Types.ObjectId,
+        ref: "Challenge",
+        default: null
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

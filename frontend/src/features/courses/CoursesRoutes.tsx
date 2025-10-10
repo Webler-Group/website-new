@@ -1,7 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import Header from "../../layouts/Header";
 import CourseListPage from "./pages/CourseListPage";
-import Layout from "../../components/Layout";
+import Layout from "../../layouts/Layout";
 import RequireAuth from "../auth/components/RequireAuth";
 import CoursePage from "./pages/CoursePage";
 import roles from "../../data/roles";

@@ -15,6 +15,9 @@ import {
 } from "@codemirror/autocomplete";
 import { indentWithTab } from "@codemirror/commands";
 import { Prec } from "@codemirror/state";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
+import { IChallenge, IChallengeSubmission } from "../../challenges/types";
 
 interface CodeEditorProps {
     code: ICode;
@@ -24,12 +27,14 @@ interface CodeEditorProps {
     setCss: (value: string) => void;
     js: string;
     setJs: (value: string) => void;
-    loading: boolean;
     options: { scale: number };
-    consoleVisible: boolean;
-    hideConsole: () => void;
-    toggleConsole: () => void;
-    setLogsCount: (setter: (prev: number) => number) => void;
+    tabHeightStyle: string;
+    consoleVisible?: boolean;
+    hideConsole?: () => void;
+    toggleConsole?: () => void;
+    setLogsCount?: (setter: (prev: number) => number) => void;
+    challenge?: IChallenge;
+    submission?: IChallengeSubmission;
 }
 
 const CodeEditor = ({
@@ -41,10 +46,13 @@ const CodeEditor = ({
     js,
     setJs,
     options,
+    tabHeightStyle,
     consoleVisible,
     hideConsole,
     toggleConsole,
     setLogsCount,
+    challenge,
+    submission
 }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
@@ -79,11 +87,12 @@ const CodeEditor = ({
                 if (match) {
                     e.preventDefault();
                     const index = parseInt(match[1], 10) - 1;
-                    const tab = index === editorTabs.length ? "output" : editorTabs[index];
+                    const allTabs = challenge ? ["description", ...editorTabs, "output"] : [...editorTabs, "output"];
+                    const tab = allTabs[index];
                     if (tab) setActiveKey(tab);
                 } else if (e.key === "k") {
                     e.preventDefault();
-                    toggleConsole();
+                    toggleConsole?.();
                 }
             }
         };
@@ -101,8 +110,8 @@ const CodeEditor = ({
             loadLanguage(lang) as any,
             EditorView.theme({
                 ".cm-content": {
-                    paddingBottom: "64px",
-                    paddingRight: "64px",
+                    paddingBottom: "32px",
+                    paddingRight: "32px",
                 },
             }),
             EditorView.scrollMargins.of(() => ({ bottom: 64, right: 64 })),
@@ -137,12 +146,23 @@ const CodeEditor = ({
         <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
+                    {
+                        challenge != null &&
+                        <Tab
+                            key={"description"}
+                            eventKey={"description"}
+                            title={"description"}
+                            className="bg-white p-2"
+                            style={{ height: tabHeightStyle }}>
+                            <MarkdownRenderer content={challenge.description} />
+                        </Tab>
+                    }
                     {editorTabs.map((lang, idx) => (
                         <Tab
                             key={lang}
                             eventKey={lang}
                             title={lang}
-                            className="wb-compiler-playground__editor-tab"
+                            style={{ height: tabHeightStyle }}
                         >
                             <ReactCodeMirror
                                 value={editorStates[idx].value}
@@ -165,21 +185,24 @@ const CodeEditor = ({
                         key={"output"}
                         eventKey={"output"}
                         title={"output"}
-                        className="wb-compiler-playground__editor-tab"
+                        style={{ height: tabHeightStyle }}
                     >
-                        {code.language === "web" ? (
-                            <WebOutput
-                                source={source}
-                                cssSource={css}
-                                jsSource={js}
-                                tabOpen={tabOpen}
-                                consoleVisible={consoleVisible}
-                                hideConosole={hideConsole}
-                                setLogsCount={setLogsCount}
-                            />
-                        ) : (
-                            <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
-                        )}
+                        {code.challengeId != null ?
+                            <ChallengeCodeOutput source={source} language={code.language} challenge={challenge!} submission={submission} />
+                            :
+                            code.language === "web" ?
+                                <WebOutput
+                                    source={source}
+                                    cssSource={css}
+                                    jsSource={js}
+                                    tabOpen={tabOpen}
+                                    consoleVisible={consoleVisible}
+                                    hideConosole={hideConsole}
+                                    setLogsCount={setLogsCount}
+                                />
+                                :
+                                <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
+                        }
                     </Tab>
                 </Tabs>
             )}

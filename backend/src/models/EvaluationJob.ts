@@ -1,28 +1,28 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
-import compilerLanguagesEnum from "../config/compilerLanguages";
-import { devRoom, getIO } from "../config/socketServer";
+import mongoose, { Document, InferSchemaType, Model } from "mongoose";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
 const evaluationJobSchema = new mongoose.Schema({
     language: {
         type: String,
         required: true,
-        enum: compilerLanguagesEnum
+        enum: Object.values(CompilerLanguagesEnum)
     },
     source: {
         type: String,
         required: true
     },
     stdin: {
-        type: String,
-        required: false
+        type: [String]
     },
-    stdout: {
-        type: String,
-        required: false
-    },
-    stderr: {
-        type: String,
-        required: false
+    result: {
+        type: {
+            compileErr: { type: String, required: false },
+            runResults: [{
+                stdout: { type: String, default: "" },
+                stderr: { type: String, default: "" },
+                time: { type: Number, reqired: false }
+            }]
+        }
     },
     status: {
         type: String,
@@ -32,16 +32,32 @@ const evaluationJobSchema = new mongoose.Schema({
     deviceId: {
         type: String,
         required: true
-    }
+    },
+    challenge: {
+        type: mongoose.Types.ObjectId,
+        ref: "Challenge",
+        default: null
+    },
+    submission: {
+        type: mongoose.Types.ObjectId,
+        ref: "ChallengeSubmission",
+        default: null
+    },
+    user: {
+        type: mongoose.Types.ObjectId,
+        ref: "User",
+        default: null
+    },
 }, {
     timestamps: true
 });
 
-declare interface IEvaluationJob extends InferSchemaType<typeof evaluationJobSchema> {}
+interface IEvaluationJob extends InferSchemaType<typeof evaluationJobSchema> {}
 
-interface EvaluationJobModel extends Model<IEvaluationJob> {
-}
+interface EvaluationJobModel extends Model<IEvaluationJob> {}
 
 const EvaluationJob = mongoose.model<IEvaluationJob, EvaluationJobModel>("EvaluationJob", evaluationJobSchema);
+
+export type IEvaluationJobDocument = IEvaluationJob & Document;
 
 export default EvaluationJob;

@@ -18,7 +18,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
   const { userInfo } = useAuth();
 
   return (
-    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom" collapseOnSelect>
+    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom w-100" collapseOnSelect>
       <Container fluid>
         <Link to="/" aria-label="Home">
           <Navbar.Brand><img src="/resources/images/logo.svg" alt="Webler logo" height="32px" width="96px" /></Navbar.Brand>
@@ -46,6 +46,9 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
             </LinkContainer>
             <LinkContainer to="/Feed">
               <Nav.Link>Feed</Nav.Link>
+            </LinkContainer>
+            <LinkContainer to="/Challenge">
+              <Nav.Link>Challenges</Nav.Link>
             </LinkContainer>
             {
               userInfo && userInfo.roles.some(role => role !== "User") &&

@@ -92,7 +92,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                             </span>
                         }
                     </div>
-                    <div className="wb-discuss-question__description">
+                    <div className="mt-1">
                         <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
                     </div>
                     <div className="mt-2">

@@ -5,13 +5,10 @@ import Code from "../models/Code";
 import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
-import { devRoom } from "../config/socketServer";
-import { Socket } from "socket.io";
 import { escapeRegex } from "../utils/regexUtils";
 import Post from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
-import RolesEnum from "../data/RolesEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
@@ -549,7 +546,7 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const job = await EvaluationJob.create({
         language,
         source,
-        stdin,
+        stdin: [stdin],
         deviceId
     });
 
@@ -568,6 +565,18 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
+    let stdout = "";
+    let stderr = "";
+
+    if(job.result) {
+        stderr += job.result.compileErr ?? "";
+
+        if(job.result.runResults.length > 0) {
+            stdout = job.result.runResults[0].stdout ?? "";
+            stderr += job.result.runResults[0].stderr ?? "";
+        }
+    }
+
     res.json({
         job: {
             id: job._id,
@@ -575,8 +584,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
             status: job.status,
             language: job.language,
             stdin: job.stdin,
-            stdout: job.stdout,
-            stderr: job.stderr
+            stdout,
+            stderr
         }
     });
 });

@@ -15,7 +15,8 @@ router.get("/sitemap.xml", async (req, res) => {
             { url: "/Discuss", changefreq: "hourly", priority: 0.9 },
             { url: "/Codes", changefreq: "hourly", priority: 0.9 },
             { url: "/Feed", changefreq: "hourly", priority: 0.9 },
-            { url: "/Courses", changefreq: "weekly", priority: 0.9 }, // list of all courses
+            { url: "/Challenge", changefreq: "hourly", priority: 0.9 },
+            { url: "/Courses", changefreq: "weekly", priority: 0.9 },
         ];
         staticRoutes.forEach(entry => smStream.write(entry));
         smStream.end();

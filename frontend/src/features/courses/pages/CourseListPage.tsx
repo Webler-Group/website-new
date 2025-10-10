@@ -101,7 +101,7 @@ const CourseListPage = () => {
                     <div className="my-3">
                         {
                             courses.length == 0 ?
-                                <div className="wb-discuss-empty-questions">
+                                <div className="wb-empty-list">
                                     <h3>Nothing to show</h3>
                                 </div>
                                 :

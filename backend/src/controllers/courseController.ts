@@ -15,7 +15,7 @@ import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import Upvote from "../models/Upvote";
-import { ObjectId, Types } from "mongoose";
+import { Types } from "mongoose";
 import {
     getCourseListSchema,
     getUserCourseListSchema,

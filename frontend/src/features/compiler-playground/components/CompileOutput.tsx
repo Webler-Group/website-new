@@ -59,6 +59,8 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
             let attempt = 0;
 
             while (status === "pending" || status === "running") {
+                await new Promise((resolve) => setTimeout(resolve, 1500));
+
                 ++attempt;
                 if (attempt > 5) {
                     break;
@@ -66,10 +68,6 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 getJobResult = await sendJsonRequest("/Codes/GetJob", "POST", { jobId: createJobResult.jobId });
                 if (getJobResult && getJobResult.job) {
                     status = getJobResult.job.status;
-
-                    if (status === "pending" || status === "running") {
-                        await new Promise((resolve) => setTimeout(resolve, 1500));
-                    }
                 }
             }
 
@@ -95,7 +93,9 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 centered
                 fullscreen="sm-down"
                 contentClassName="wb-modal__container bg-dark text-light"
+                backdropClassName="wb-stdin-modal__backdrop"
                 data-bs-theme="dark"
+                style={{ zIndex: "1060" }}
             >
                 <Modal.Header>
                     <div><h6>Input</h6><small>It looks like your program expect atleast 1 input</small></div>

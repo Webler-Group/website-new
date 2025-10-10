@@ -453,7 +453,7 @@ const DiscussPostPage = () => {
                                     })
                                 }
                             </div>
-                            <div className="mt-1 wb-discuss-question__description">
+                            <div className="mt-1">
                                 <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
                             </div>
                             <div className="mt-1">

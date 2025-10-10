@@ -6,7 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.courseDescriptionSchema = exports.courseCodeSchema = exports.isoDateTimeSchema = exports.voteSchema = exports.compilerLanguageSchema = exports.tagNameSchema = exports.channelTitleSchema = exports.titleSchema = exports.questionTitleSchema = exports.filterSchema = exports.indexSchema = exports.channelMessageSchema = exports.commentMessageSchema = exports.messageSchema = exports.searchQuerySchema = exports.countPerPageSchema = exports.pageSchema = exports.countryCodeSchema = exports.idSchema = exports.deviceIdSchema = exports.usernameSchema = exports.passwordSchema = exports.emailSchema = void 0;
 const zod_1 = require("zod");
 const countryCodes_1 = __importDefault(require("../config/countryCodes"));
-const compilerLanguages_1 = __importDefault(require("../config/compilerLanguages"));
+const CompilerLanguagesEnum_1 = __importDefault(require("../data/CompilerLanguagesEnum"));
 exports.emailSchema = zod_1.z.email("Invalid email").max(120, "Invalid email");
 exports.passwordSchema = zod_1.z.string("Password is required").min(6, "Password is required and must be atleast 6 characters long").max(120, "Password cannot exceed 60 characters");
 exports.usernameSchema = zod_1.z.string("Username is required").min(3, "Username should be atleast 3 characters").max(20, "Username must be at most 20 characters");
@@ -27,7 +27,7 @@ exports.questionTitleSchema = zod_1.z.string().min(1, "Title is required").max(1
 exports.titleSchema = zod_1.z.string().min(1, "Title is required").max(60, "Title cannot exceed 60 characters");
 exports.channelTitleSchema = zod_1.z.string().min(1, "Title is required").max(20, "Title cannot exceed 20 characters");
 exports.tagNameSchema = zod_1.z.string().min(1, "Tag name is required").max(64, "Tag name cannot exceed 64 characters");
-exports.compilerLanguageSchema = zod_1.z.enum(compilerLanguages_1.default, "Invalid language");
+exports.compilerLanguageSchema = zod_1.z.enum(CompilerLanguagesEnum_1.default, "Invalid language");
 exports.voteSchema = zod_1.z.number().int("Vote must be an integer").min(0, "Vote must be 0 or 1").max(1, "Vote must be 0 or 1");
 exports.isoDateTimeSchema = zod_1.z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, "Invalid ISO 8601 datetime format");
 exports.courseCodeSchema = zod_1.z.string().min(1, "Course code is required").max(64, "Course code must not exceed 64 characters").regex(/^([a-z]+-)*[a-z]+$/i, "Course code can only contain words separated by \"-\"");
