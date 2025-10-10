@@ -17,6 +17,8 @@ const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationType
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const zodUtils_1 = require("../utils/zodUtils");
 const discussionSchema_1 = require("../validation/discussionSchema");
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const modelUtils_1 = require("../utils/modelUtils");
 const createQuestion = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(discussionSchema_1.createQuestionSchema, req);
     const { title, message, tags } = body;
@@ -462,7 +464,7 @@ const deleteQuestion = (0, express_async_handler_1.default)(async (req, res) => 
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return;
     }
-    if (question.user != currentUserId) {
+    if (question.user != currentUserId && !(0, modelUtils_1.isAuthorizedRole)(req, [RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -503,7 +505,7 @@ const deleteReply = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
-    if (currentUserId != reply.user) {
+    if (currentUserId != reply.user && !(0, modelUtils_1.isAuthorizedRole)(req, [RolesEnum_1.default.ADMIN, RolesEnum_1.default.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
