@@ -4,9 +4,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const compilerLanguages_1 = __importDefault(require("../config/compilerLanguages"));
 const Post_1 = __importDefault(require("./Post"));
 const Upvote_1 = __importDefault(require("./Upvote"));
+const CompilerLanguagesEnum_1 = __importDefault(require("../data/CompilerLanguagesEnum"));
 const codeSchema = new mongoose_1.default.Schema({
     user: {
         type: mongoose_1.default.Types.ObjectId,
@@ -31,7 +31,7 @@ const codeSchema = new mongoose_1.default.Schema({
     language: {
         type: String,
         required: true,
-        enum: compilerLanguages_1.default
+        enum: Object.values(CompilerLanguagesEnum_1.default)
     },
     isPublic: {
         type: Boolean,
@@ -52,6 +52,11 @@ const codeSchema = new mongoose_1.default.Schema({
     hidden: {
         type: Boolean,
         default: false
+    },
+    challenge: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "Challenge",
+        default: null
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }

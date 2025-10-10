@@ -470,7 +470,7 @@ const createJob = (0, express_async_handler_1.default)(async (req, res) => {
     const job = await EvaluationJob_1.default.create({
         language,
         source,
-        stdin,
+        stdin: [stdin],
         deviceId
     });
     res.json({
@@ -485,6 +485,15 @@ const getJob = (0, express_async_handler_1.default)(async (req, res) => {
         res.status(404).json({ error: [{ message: "Job does not exist" }] });
         return;
     }
+    let stdout = "";
+    let stderr = "";
+    if (job.result) {
+        stderr += job.result.compileErr ?? "";
+        if (job.result.runResults.length > 0) {
+            stdout = job.result.runResults[0].stdout ?? "";
+            stderr += job.result.runResults[0].stderr ?? "";
+        }
+    }
     res.json({
         job: {
             id: job._id,
@@ -492,8 +501,8 @@ const getJob = (0, express_async_handler_1.default)(async (req, res) => {
             status: job.status,
             language: job.language,
             stdin: job.stdin,
-            stdout: job.stdout,
-            stderr: job.stderr
+            stdout,
+            stderr
         }
     });
 });

@@ -4,7 +4,7 @@ import { FaPlus, FaAlignLeft, FaLevelUpAlt } from "react-icons/fa";
 import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
-import { IChallengeTemplate, ITestCase } from "../IChallenge";
+import { IChallengeTemplate, ITestCase } from "../types";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { LinkContainer } from "react-router-bootstrap";
@@ -55,7 +55,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             templates
         });
         if (result && result.challenge) {
-            showMessage(`Challenge ${challengeId ? "Updated" : "Created"} Successfully`);
+            showMessage(`Challenge created Successfully`);
 
             navigate("/Challenge/" + result.challenge.id);
         } else {
@@ -72,8 +72,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             testCases,
             templates
         });
-        if (result && result.challenge) {
-            showMessage(`Challenge ${challengeId ? "Updated" : "Created"} Successfully`);
+        if (result && result.data) {
+            showMessage(`Challenge updated Successfully`);
 
             navigate("/Challenge/" + result.data.id);
         } else {

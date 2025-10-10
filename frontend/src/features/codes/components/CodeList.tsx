@@ -41,11 +41,15 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
         if (codesState.ready) {
             getCodes();
         }
+        setFilter(codesState.filter);
+        setSearchInput(codesState.searchQuery);
+        setSearchQuery(codesState.searchQuery);
+        setLanguage(codesState.language || "all");
     }, [codesState]);
 
     useEffect(() => {
         handlePageChange(1);
-    }, [filter, searchQuery]);
+    }, [filter, language, searchQuery]);
 
     const handlePageChange = (page: number) => {
         if (currentPage === page) {

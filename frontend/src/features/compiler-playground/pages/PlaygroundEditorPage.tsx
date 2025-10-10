@@ -20,6 +20,7 @@ import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import { FaSearch } from "react-icons/fa";
 import CodeEditor from "../components/CodeEditor";
+import useEditorOptions from "../hooks/useEditorOptions";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
@@ -47,7 +48,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [authModalVisible, setAuthModalVisible] = useState(false);
     const [isUserRegistering, setUserAuthPage] = useState(true);
-    const [editorOptions, setEditorOptions] = useState<any>({ scale: 1.0 });
+    const { editorOptions, updateEditorOptions } = useEditorOptions();
     const [commentCount, setCommentCount] = useState(0);
     const [findPost, setFindPost] = useState<any | null>(null);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
@@ -105,19 +106,6 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
             window.removeEventListener("keydown", handleKeyDown);
         };
     }, [code, userInfo, source, css, js]);
-
-
-    useEffect(() => {
-        let editorValue = localStorage.getItem("editor");
-        if (editorValue !== null) {
-            setEditorOptions(JSON.parse(editorValue));
-        }
-    }, []);
-
-    const updateEditorOptions = (options: any) => {
-        setEditorOptions(options);
-        localStorage.setItem("editor", JSON.stringify(options));
-    }
 
     const zoomIn = () => {
         let currentIdx = scaleValues.indexOf(editorOptions.scale);
@@ -179,7 +167,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
         if (result && result.template) {
             const template = result.template;
             setCode({
-                language: language as compilerLanguages,
+                language: language!,
                 isUpvoted: false,
                 comments: 0,
                 votes: 0,
@@ -581,7 +569,6 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                 </div>
                             </div>
                             <CodeEditor
-                                loading={loading}
                                 code={code}
                                 source={source}
                                 setSource={(value: string) => setSource(value)}
@@ -590,6 +577,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                 js={js}
                                 setJs={(value: string) => setJs(value)}
                                 options={editorOptions}
+                                tabHeightStyle="calc(100dvh - 130px)"
                                 consoleVisible={consoleVisible}
                                 hideConsole={() => setConsoleVisible(false)}
                                 toggleConsole={() => setConsoleVisible(prev => !prev)}

@@ -93,9 +93,7 @@ const FeedCreatePage = () => {
                 {/* Preview Mode */}
                 {mode === "preview" && (
                     <div className="p-3 border rounded bg-light">
-                        <div className="wb-feed-content__message">
-                            <MarkdownRenderer content={message} allowedUrls={allowedUrls} />
-                        </div>
+                        <MarkdownRenderer content={message} allowedUrls={allowedUrls} />
                     </div>
                 )}
 

@@ -16,6 +16,10 @@ const executeTagJobs = (0, express_async_handler_1.default)(async (req, res) => 
     else if (action === "delete") {
         await Tag_1.default.deleteMany({ name: { $in: tags } });
     }
+    else {
+        res.status(400).json({ success: false, message: "Invalid action" });
+        return;
+    }
     res.json({
         success: true,
         message: action == "create" ? "Tags created successfully" : "Tags deleted successfully"

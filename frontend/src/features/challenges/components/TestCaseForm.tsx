@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
 import { Button, Form } from "react-bootstrap";
 import { FaTrash, FaPlus } from "react-icons/fa";
-import { ITestCase } from "../IChallenge";
+import { ITestCase } from "../types";
 
 interface ITestCaseFormProps {
   testCases: ITestCase[];
@@ -29,12 +29,16 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
   return (
     <div>
       <h5 className="mb-3">Test Cases</h5>
-      <div className="d-flex flex-column">
+      <div className="d-flex flex-column gap-2">
         {testCases.map((tc, index) => (
           <div key={index} className="border rounded p-2 d-flex flex-column gap-2 shadow-sm">
+            <div className="fw-semibold">Test case #{index}</div>
             <Form.Group>
+              <Form.Label htmlFor={"input" + index}>Input</Form.Label>
               <Form.Control
-                type="text"
+                id={"input" + index}
+                as="textarea"
+                rows={3}
                 value={tc.input}
                 placeholder="Input"
                 onChange={(e) =>
@@ -43,10 +47,13 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
               />
             </Form.Group>
             <Form.Group>
+              <Form.Label htmlFor={"expected-output" + index}>Expected Output</Form.Label>
               <Form.Control
-                type="text"
+                id={"expected-output" + index}
+                as="textarea"
+                rows={3}
                 value={tc.expectedOutput}
-                placeholder="Output"
+                placeholder="Expected output"
                 onChange={(e) =>
                   handleChange(index, "expectedOutput", e.target.value)
                 }

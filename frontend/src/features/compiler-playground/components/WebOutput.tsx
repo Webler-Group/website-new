@@ -7,9 +7,9 @@ interface WebOutputProps {
     cssSource: string;
     jsSource: string;
     tabOpen: boolean;
-    consoleVisible: boolean;
-    hideConosole: () => void;
-    setLogsCount: (setter: (prev: number) => number) => void;
+    consoleVisible?: boolean;
+    hideConosole?: () => void;
+    setLogsCount?: (setter: (prev: number) => number) => void;
 }
 
 const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideConosole, setLogsCount }: WebOutputProps) => {
@@ -34,7 +34,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
                             }
                             return [...logs, { data: console.data, method: console.method, count: 1 }]
                         });
-                        setLogsCount(prev => prev + 1);
+                        setLogsCount?.(prev => prev + 1);
                 }
             }
         }
@@ -56,7 +56,7 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
 
     const clearConsole = () => {
         setConsoleLogs(() => []);
-        setLogsCount(() => 0);
+        setLogsCount?.(() => 0);
     }
 
     const genOutput = () => {

@@ -8,10 +8,6 @@
     height: 100%;
 }
 
-.wb-compiler-playground__editor-tab {
-    height: calc(100dvh - 130px);
-}
-
 .wb-compiler-playground__language-types__item {
     display: flex;
     justify-content: center;

@@ -18,8 +18,8 @@ exports.getCodeListSchema = zod_1.z.object({
         count: commonSchema_1.countPerPageSchema,
         filter: (0, commonSchema_1.filterSchema)([1, 2, 3, 5]),
         searchQuery: commonSchema_1.searchQuerySchema,
-        userId: zod_1.z.union([(0, commonSchema_1.idSchema)("userId"), zod_1.z.null()]).optional(),
-        language: zod_1.z.union([commonSchema_1.compilerLanguageSchema, zod_1.z.null()]).optional()
+        userId: (0, commonSchema_1.idSchema)("userId").nullish(),
+        language: commonSchema_1.compilerLanguageSchema.nullish()
     })
 });
 exports.getCodeSchema = zod_1.z.object({

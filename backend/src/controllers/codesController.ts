@@ -5,13 +5,10 @@ import Code from "../models/Code";
 import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
-import { devRoom } from "../config/socketServer";
-import { Socket } from "socket.io";
 import { escapeRegex } from "../utils/regexUtils";
 import Post from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
-import RolesEnum from "../data/RolesEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
@@ -568,7 +565,17 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const result = job.result.find(x => x.index == 0);
+    let stdout = "";
+    let stderr = "";
+
+    if(job.result) {
+        stderr += job.result.compileErr ?? "";
+
+        if(job.result.runResults.length > 0) {
+            stdout = job.result.runResults[0].stdout ?? "";
+            stderr += job.result.runResults[0].stderr ?? "";
+        }
+    }
 
     res.json({
         job: {
@@ -577,8 +584,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
             status: job.status,
             language: job.language,
             stdin: job.stdin,
-            stdout: result?.stdout ?? "",
-            stderr: result?.stderr ?? ""
+            stdout,
+            stderr
         }
     });
 });

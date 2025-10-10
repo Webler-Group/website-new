@@ -7,10 +7,12 @@ import ProfileAvatar from '../../../components/ProfileAvatar';
 import { compilerLanguages, languagesInfo } from '../../../data/compilerLanguages';
 import { useNavigate } from 'react-router-dom';
 import "./Code.css";
+import { IChallengeSubmission } from '../../challenges/types';
 
 interface ICode {
     id?: string;
     name?: string;
+    challengeId?: string;
     language: compilerLanguages;
     userName?: string;
     userId?: string;
@@ -21,6 +23,8 @@ interface ICode {
     votes: number;
     isUpvoted: boolean;
     isPublic: boolean;
+    lastSubmission?: IChallengeSubmission;
+    source?: string;
 }
 
 interface CodeProps {

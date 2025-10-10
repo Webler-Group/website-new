@@ -235,6 +235,10 @@ ul {
     }
 }
 
+.wb-stdin-modal__backdrop {
+    z-index: 1059 !important;
+}
+
 .wb-empty-list {
     display: flex;
     flex-direction: column;

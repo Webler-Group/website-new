@@ -57,7 +57,9 @@ const ReactionsList = ({ options, visible, onClose, title, showReactions, countP
                 }
 
                 {loading && (
-                    <Loader />
+                    <div className='my-5 text-center'>
+                        <Loader />
+                    </div>
                 )}
             </Modal.Body>
         </Modal>

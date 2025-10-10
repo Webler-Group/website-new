@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { nullish, z } from "zod";
 import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, titleSchema, compilerLanguageSchema, voteSchema, commentMessageSchema } from "./commonSchema";
 
 export const createCodeSchema = z.object({
@@ -17,8 +17,8 @@ export const getCodeListSchema = z.object({
         count: countPerPageSchema,
         filter: filterSchema([1, 2, 3, 5]),
         searchQuery: searchQuerySchema,
-        userId: z.union([idSchema("userId"), z.null()]).optional(),
-        language: z.union([compilerLanguageSchema, z.null()]).optional()
+        userId: idSchema("userId").nullish(),
+        language: compilerLanguageSchema.nullish()
     })
 });
 

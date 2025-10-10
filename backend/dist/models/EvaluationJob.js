@@ -4,28 +4,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
-const compilerLanguages_1 = __importDefault(require("../config/compilerLanguages"));
+const CompilerLanguagesEnum_1 = __importDefault(require("../data/CompilerLanguagesEnum"));
 const evaluationJobSchema = new mongoose_1.default.Schema({
     language: {
         type: String,
         required: true,
-        enum: compilerLanguages_1.default
+        enum: Object.values(CompilerLanguagesEnum_1.default)
     },
     source: {
         type: String,
         required: true
     },
     stdin: {
-        type: String,
-        required: false
+        type: [String]
     },
-    stdout: {
-        type: String,
-        required: false
-    },
-    stderr: {
-        type: String,
-        required: false
+    result: {
+        type: {
+            compileErr: { type: String, required: false },
+            runResults: [{
+                    stdout: { type: String, default: "" },
+                    stderr: { type: String, default: "" },
+                    time: { type: Number, reqired: false }
+                }]
+        }
     },
     status: {
         type: String,
@@ -35,7 +36,22 @@ const evaluationJobSchema = new mongoose_1.default.Schema({
     deviceId: {
         type: String,
         required: true
-    }
+    },
+    challenge: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "Challenge",
+        default: null
+    },
+    submission: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "ChallengeSubmission",
+        default: null
+    },
+    user: {
+        type: mongoose_1.default.Types.ObjectId,
+        ref: "User",
+        default: null
+    },
 }, {
     timestamps: true
 });

@@ -21,6 +21,7 @@ const courseRoutes_1 = __importDefault(require("./routes/courseRoutes"));
 const channelsRoutes_1 = __importDefault(require("./routes/channelsRoutes"));
 const sitemapRoutes_1 = __importDefault(require("./routes/sitemapRoutes"));
 const tagRoutes_1 = __importDefault(require("./routes/tagRoutes"));
+const challengeRoutes_1 = __importDefault(require("./routes/challengeRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const adminRoutes_1 = __importDefault(require("./routes/adminRoutes"));
 const http_1 = __importDefault(require("http"));
@@ -62,6 +63,7 @@ async function main() {
     app.use(`${apiPrefix}/Courses`, courseRoutes_1.default);
     app.use(`${apiPrefix}/Channels`, channelsRoutes_1.default);
     app.use(`${apiPrefix}/Tag`, tagRoutes_1.default);
+    app.use(`${apiPrefix}/Challenge`, challengeRoutes_1.default);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes_1.default);
     app.use(`${apiPrefix}/Admin`, adminRoutes_1.default);
     app.all("*", (req, res) => {

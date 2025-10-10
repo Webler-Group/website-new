@@ -27,7 +27,7 @@ export const createChallengeSchema = z.object({
 
 export const editChallengeSchema = createChallengeSchema.extend({
   body: z.object({
-    challengeId: idSchema("challengeId"), 
+    challengeId: idSchema("challengeId"),
     title: questionTitleSchema,
     description: messageSchema,
     difficulty: difficultySchema,
@@ -47,7 +47,36 @@ export const getChallengeListSchema = z.object({
     page: pageSchema,
     count: countPerPageSchema,
     difficulty: difficultySchema.nullish(),
-    status: z.enum(["solved", "unsolved"]).nullish(),
+    // status: z.enum(["solved", "unsolved"]).nullish(),
     searchQuery: z.string().optional(),
+  })
+});
+
+export const getChallengeCodeSchema = z.object({
+  body: z.object({
+    challengeId: idSchema("challengeId"),
+    language: compilerLanguageSchema
+  })
+});
+
+export const saveChallengeCodeSchema = z.object({
+  body: z.object({
+    language: compilerLanguageSchema,
+    challengeId: idSchema("challengeId"),
+    source: z.string()
+  })
+});
+
+export const createChallengeJobSchema = z.object({
+  body: z.object({
+    challengeId: idSchema("challengeId"),
+    language: compilerLanguageSchema,
+    source: z.string()
+  })
+});
+
+export const getChallengeJobSchema = z.object({
+  body: z.object({
+    jobId: idSchema("jobId")
   })
 });

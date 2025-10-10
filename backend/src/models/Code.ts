@@ -49,6 +49,11 @@ const codeSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    challenge: {
+        type: mongoose.Types.ObjectId,
+        ref: "Challenge",
+        default: null
+    },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });

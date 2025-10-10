@@ -18,13 +18,8 @@ import ToolsHomePage from './pages/ToolsHome';
 import RequireAuth from './features/auth/components/RequireAuth';
 import TagHomePage from './features/tags/pages/TagHome';
 import LoadingPage from './pages/LoadingPage';
-import ChallengeList from './features/challenges/pages/ChallengeList';
-import ChallengeCreate from './features/challenges/pages/ChallengeCreate';
-import ChallengeDetails from './features/challenges/pages/ChallengeDetail';
-import ChallengeEdit from "./features/challenges/pages/ChallengeEdit";
-import SnackbarLayout from './layouts/SnackbarLayout';
-import roles from './data/roles';
 
+const ChallengeRoutes = React.lazy(() => import('./features/challenges/ChallengeRoutes'));
 const ChannelsRoutes = React.lazy(() => import("./features/channels/ChannelsRoutes"));
 const CoursesRoutes = React.lazy(() => import("./features/courses/CoursesRoutes"));
 const DiscussRoutes = React.lazy(() => import("./features/discuss/DiscussRoutes"));
@@ -73,20 +68,8 @@ function App() {
           </Route>
         </Route>
 
-        <Route path="Challenge">
-          <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
-            <Route index element={<ChallengeList />} />
-            <Route element={<RequireAuth allowedRoles={roles} />}>
-              <Route path=":challengeId" element={<ChallengeDetails />} />
-            </Route>
-            <Route element={<RequireAuth allowedRoles={["Admin", "Creator"]} />}>
-              <Route path="Create" element={<ChallengeCreate />} />
-              <Route path="Edit/:challengeId" element={<ChallengeEdit />} />
-            </Route>
-          </Route>
-        </Route>
-
         <Route path="Admin/*" element={<AdminRoutes />} />
+        <Route path="Challenge/*" element={<ChallengeRoutes />} />
         <Route path="Channels/*" element={<ChannelsRoutes />} />
         <Route path="Codes/*" element={<CodesRoutes />} />
         <Route path="Compiler-Playground/*" element={<CompilerPlaygroundRoutes />} />

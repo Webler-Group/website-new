@@ -6,7 +6,7 @@ import roles from "../../data/roles"
 import ChannelsPage from "./pages/ChannelsPage"
 import "./channels.css"
 
-const ChannelsRoute = () => {
+const ChannelsRoutes = () => {
     return (
         <Routes>
             <Route element={<Layout Header={<Header variant="light" hideChannelsButton />} Footer={null} />}>
@@ -19,4 +19,4 @@ const ChannelsRoute = () => {
     )
 }
 
-export default ChannelsRoute;
+export default ChannelsRoutes;

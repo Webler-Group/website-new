@@ -1,7 +1,7 @@
 import { Dispatch, SetStateAction } from "react";
 import { Button, Form } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa";
-import { IChallengeTemplate } from "../IChallenge";
+import { IChallengeTemplate } from "../types";
 
 interface IChallengeLangFormProps {
   languages: IChallengeTemplate[];
@@ -13,7 +13,6 @@ const ChallengeTemplateForm = ({ languages, setLanguages }: IChallengeLangFormPr
 
   const handleChange = (index: number, field: keyof IChallengeTemplate, value: any) => {
     const updated = [...languages];
-    // @ts-ignore
     updated[index][field] = value;
     setLanguages(updated);
   };

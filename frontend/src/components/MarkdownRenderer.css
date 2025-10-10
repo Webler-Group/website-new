@@ -1,0 +1,85 @@
+.wb-markdown {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    width: 100%;
+    word-break: break-word;
+    overflow-x: auto;
+    color: #222;
+}
+
+/* restore readable spacing between elements */
+.wb-markdown p,
+.wb-markdown ul,
+.wb-markdown ol,
+.wb-markdown table,
+.wb-markdown pre,
+.wb-markdown blockquote {
+    margin: 0.75em 0;
+}
+
+/* reset nested lists */
+.wb-markdown ul ul,
+.wb-markdown ol ol,
+.wb-markdown ul ol,
+.wb-markdown ol ul {
+    margin-top: 0.25em;
+    margin-bottom: 0.25em;
+}
+
+/* tables */
+.wb-markdown table {
+    display: block;
+    overflow-x: auto;
+    max-width: 100%;
+    border-collapse: collapse;
+    border-spacing: 0;
+    margin: 0.75em 0;
+    font-size: 0.95rem;
+    word-break: keep-all;
+}
+
+.wb-markdown th,
+.wb-markdown td {
+    border: 1px solid #ddd;
+    padding: 0.6em 0.8em;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.wb-markdown th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    color: #333;
+}
+
+.wb-markdown tr:nth-child(even) {
+    background-color: #fafafa;
+}
+
+.wb-markdown tr:hover {
+    background-color: #f2f2f2;
+}
+
+.wb-markdown img {
+    max-width: 100%;
+    height: auto;
+    max-height: 320px;
+    cursor: pointer;
+    border-radius: 4px;
+    object-fit: cover;
+    margin: 0.5em 0;
+}
+
+.wb-markdown ul,
+.wb-markdown ol {
+    margin-left: 1.25rem;
+    padding-left: 0.5rem;
+}
+
+.wb-markdown ul {
+    list-style-type: disc;
+}
+
+.wb-markdown ol {
+    list-style-type: decimal;
+}
