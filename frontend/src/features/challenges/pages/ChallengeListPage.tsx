@@ -9,12 +9,13 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { LinkContainer } from "react-router-bootstrap";
 import { FaCheckCircle } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
-
+import { useAuth } from "../../auth/context/authContext";
 
 const ChallengeList = () => {
     PageTitle("Code Challenge");
 
     const { sendJsonRequest } = useApi();
+    const { userInfo } = useAuth();
     const navigate = useNavigate();
     const [challenges, setChallenges] = useState<any[]>([]);
     const challengesPerPage = 10;
@@ -128,11 +129,14 @@ const ChallengeList = () => {
                 <Button size='sm' onClick={handleSearch}>Search</Button>
             </div>
             <div className="mt-2 d-sm-flex flex-row-reverse justify-content-between">
-                <div className="mb-2 d-flex justify-content-end">
-                    <LinkContainer to="/Challenge/Create">
-                        <Button size='sm'>New challenge</Button>
-                    </LinkContainer>
-                </div>
+                {
+                    userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) &&
+                    <div className="mb-2 d-flex justify-content-end">
+                        <LinkContainer to="/Challenge/Create">
+                            <Button size='sm'>New challenge</Button>
+                        </LinkContainer>
+                    </div>
+                }
                 <div className="d-flex gap-2 justify-content-between">
                     <Form.Group>
                         <Form.Label htmlFor="difficulty" className="visually-hidden">
