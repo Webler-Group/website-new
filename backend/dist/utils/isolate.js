@@ -98,72 +98,87 @@ async function runInIsolate(source, language, boxId, inputs) {
             compileErr = err?.message ?? "Something went wrong";
         }
     }
+    if (!compileSuccess) {
+        return {
+            compileErr,
+            runResults: []
+        };
+    }
     // Run step
-    if (compileSuccess) {
-        for (let i = 0; i < inputs.length; ++i) {
-            const runArgs = [
-                `--box-id=${boxId}`,
-                "--run",
-                `--stdin=input${i}`,
-                "--processes=1",
-                `--mem=${confg_1.config.compilerMemLimit}`,
-                `--meta=meta${i}`,
-                `--fsize=${confg_1.config.compilerFsizeLimit}`,
-                "--time=2",
-                "--wall-time=3",
-                `--stdout=run${i}.out`,
-                `--stderr=run${i}.err`,
-                "--",
-                ...runCmd.split(" ")
-            ];
-            let runOut = "";
-            let runErr = "";
-            try {
-                await spawnAsync("isolate", runArgs, {
-                    cwd: boxPath,
-                    stdio: "inherit"
-                });
-                const runOutPath = path_1.default.join(boxPath, `run${i}.out`);
-                const runErrPath = path_1.default.join(boxPath, `run${i}.err`);
-                if (fs_1.default.existsSync(runOutPath)) {
-                    runOut = (0, fileUtils_1.safeReadFile)(runOutPath, confg_1.config.compilerFsizeLimit);
+    for (let i = 0; i < inputs.length; ++i) {
+        const runArgs = [
+            `--box-id=${boxId}`,
+            "--run",
+            `--stdin=input${i}`,
+            "--processes=1",
+            `--mem=${confg_1.config.compilerMemLimit}`,
+            `--meta=meta${i}`,
+            `--fsize=${confg_1.config.compilerFsizeLimit}`,
+            "--time=2",
+            "--wall-time=3",
+            `--stdout=run${i}.out`,
+            `--stderr=run${i}.err`,
+            "--",
+            ...runCmd.split(" ")
+        ];
+        let runOut = "";
+        let runErr = "";
+        let time = undefined;
+        let failed = false;
+        try {
+            const spawnResult = await spawnAsync("isolate", runArgs, {
+                cwd: boxPath,
+                stdio: "inherit"
+            });
+            if (spawnResult.code !== 0) {
+                failed = true;
+            }
+            const runOutPath = path_1.default.join(boxPath, `run${i}.out`);
+            const runErrPath = path_1.default.join(boxPath, `run${i}.err`);
+            if (fs_1.default.existsSync(runOutPath)) {
+                runOut = (0, fileUtils_1.safeReadFile)(runOutPath, confg_1.config.compilerFsizeLimit);
+            }
+            if (fs_1.default.existsSync(runErrPath)) {
+                runErr += (0, fileUtils_1.safeReadFile)(runErrPath, confg_1.config.compilerFsizeLimit);
+            }
+            const metaPath = path_1.default.join(boxPath, `meta${i}`);
+            let meta;
+            if (fs_1.default.existsSync(metaPath)) {
+                const metaContent = fs_1.default.readFileSync(metaPath, "utf-8");
+                meta = Object.fromEntries(metaContent
+                    .split("\n")
+                    .filter(line => line.includes(":"))
+                    .map(line => line.split(":").map(part => part.trim())));
+                time = Number(meta.time);
+                if (Number.isNaN(time)) {
+                    time = undefined;
                 }
-                if (fs_1.default.existsSync(runErrPath)) {
-                    runErr += (0, fileUtils_1.safeReadFile)(runErrPath, confg_1.config.compilerFsizeLimit);
-                }
-                const metaPath = path_1.default.join(boxPath, `meta${i}`);
-                let meta;
-                if (fs_1.default.existsSync(metaPath)) {
-                    const metaContent = fs_1.default.readFileSync(metaPath, "utf-8");
-                    meta = Object.fromEntries(metaContent
-                        .split("\n")
-                        .filter(line => line.includes(":"))
-                        .map(line => line.split(":").map(part => part.trim())));
-                    if (meta.status && meta.status !== "OK") {
-                        if (meta.status === "SG" && meta.exitsig === "11") {
-                            runErr += "\nSegmentation fault (core dumped)";
-                        }
-                        else if (meta.message) {
-                            runErr += `\n${meta.message}`;
-                        }
-                        else {
-                            runErr += `\nProgram terminated with status ${meta.status}`;
-                        }
+                if (meta.status && meta.status !== "OK") {
+                    failed = true;
+                    if (meta.status === "SG" && meta.exitsig === "11") {
+                        runErr += "Segmentation fault (core dumped)\n";
+                    }
+                    else if (meta.message) {
+                        runErr += `${meta.message}\n`;
+                    }
+                    else {
+                        runErr += `Program terminated with status ${meta.status}\n`;
                     }
                 }
-                const time = Number(meta.time);
-                runResults.push({
-                    stdout: runOut,
-                    stderr: runErr,
-                    time: Number.isNaN(time) ? undefined : time
-                });
             }
-            catch (err) {
-                runResults.push({
-                    stdout: "",
-                    stderr: err?.message ?? "Something went wrong",
-                });
-            }
+        }
+        catch (err) {
+            failed = true;
+            runOut = "";
+            runErr = err?.message ?? "Something went wrong";
+        }
+        runResults.push({
+            stdout: runOut,
+            stderr: runErr,
+            time
+        });
+        if (failed) {
+            break;
         }
     }
     await exec(`isolate --box-id=${boxId} --cleanup`);

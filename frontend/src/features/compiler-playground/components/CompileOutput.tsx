@@ -98,7 +98,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 style={{ zIndex: "1060" }}
             >
                 <Modal.Header>
-                    <div><h6>Input</h6><small>It looks like your program expect atleast 1 input</small></div>
+                        <Modal.Title>Input</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="overflow-auto">
                     <FormControl

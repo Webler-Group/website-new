@@ -7,9 +7,8 @@ import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LinkContainer } from "react-router-bootstrap";
-import { FaCheckCircle } from "react-icons/fa";
-import { languagesInfo } from "../../../data/compilerLanguages";
 import { useAuth } from "../../auth/context/authContext";
+import LanguageIcons from "../components/LanguageIcons";
 
 const ChallengeList = () => {
     PageTitle("Code Challenge");
@@ -190,26 +189,8 @@ const ChallengeList = () => {
                                             {challenge.difficulty}
                                         </Badge>
                                     </div>
-                                    <div className="d-flex flex-wrap gap-2 mt-2">
-                                        {Object.entries(languagesInfo).filter(([key]) => key != "web").map(([key, info]) => (
-                                            <div
-                                                key={key}
-                                                className="d-flex justify-content-center align-items-center rounded-circle text-light position-relative small"
-                                                style={{
-                                                    backgroundColor: info.color,
-                                                    width: "32px",
-                                                    height: "32px"
-                                                }}
-                                            >
-                                                {info.shortName}
-                                                {challenge.submissions?.some(sub => sub.language === key && sub.passed) && (
-                                                    <div
-                                                        className="position-absolute bottom-0 end-0 text-success">
-                                                        <FaCheckCircle />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                    <div className="mt-2">
+                                        <LanguageIcons  challenge={challenge} />
                                     </div>
                                 </div>
                             </Col>

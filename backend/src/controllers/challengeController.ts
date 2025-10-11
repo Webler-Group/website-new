@@ -176,6 +176,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
             passed: submissions[0].passed,
             testResults: submissions[0].testResults.map(x => ({
                 output: x.output,
+                stderr: x.stderr,
                 passed: x.passed,
                 time: x.time
             }))
@@ -350,6 +351,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
             submission: job.submission ? {
                 testResults: job.submission.testResults.map(x => ({
                     output: x.output,
+                    stderr: x.stderr,
                     passed: x.passed,
                     time: x.time
                 })),

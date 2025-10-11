@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { FaCheckCircle, FaPen, FaSearch } from "react-icons/fa";
+import { FaPen, FaSearch } from "react-icons/fa";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import Loader from "../../../components/Loader";
 import { useAuth } from "../../auth/context/authContext";
-import { Container } from "react-bootstrap";
+import { Button, Container, FormLabel, FormSelect, InputGroup } from "react-bootstrap";
 import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import { IChallenge } from "../types";
+import LanguageIcons from "../components/LanguageIcons";
 
 const ChallengeDetailsPage = () => {
     const { challengeId } = useParams();
@@ -19,6 +20,7 @@ const ChallengeDetailsPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [challenge, setChallenge] = useState<IChallenge | null>(null);
+    const [languageChoice, setLanguageChoice] = useState("");
     const [selectedLanguage, setSelectedLanguage] = useState<compilerLanguages | null>(null);
 
     useEffect(() => {
@@ -84,28 +86,32 @@ const ChallengeDetailsPage = () => {
 
                     <MarkdownRenderer content={challenge.description} />
 
-                    <div className="d-flex flex-wrap gap-2 mt-2">
-                        {Object.entries(languagesInfo).filter(([key]) => key != "web").map(([key, info]) => (
-                            <div
-                                key={key}
-                                className="d-flex justify-content-center align-items-center rounded-circle text-light position-relative small"
-                                style={{
-                                    backgroundColor: info.color,
-                                    width: "32px",
-                                    height: "32px",
-                                    cursor: "pointer"
-                                }}
-                                onClick={() => handleLanguageSelect(key as compilerLanguages)}
+                    <div className="mt-2">
+                        <LanguageIcons challenge={challenge} />
+                    </div>
+
+                    <div className="mt-4">
+                        <FormLabel className="fw-semibold">Select language for solution:</FormLabel>
+                        <InputGroup className="mb-2" size="sm" style={{ maxWidth: "400px" }}>
+                            <FormSelect
+                                value={languageChoice}
+                                onChange={(e) => setLanguageChoice(e.target.value)}
                             >
-                                {info.shortName}
-                                {challenge.submissions?.some(sub => sub.language === key && sub.passed) && (
-                                    <div
-                                        className="position-absolute bottom-0 end-0 text-success">
-                                        <FaCheckCircle />
-                                    </div>
+                                <option value="">-- Select Language --</option>
+                                {Object.entries(languagesInfo).filter(([key]) => key != "web").map(([key, info]) =>
+                                    <option key={key} value={key}>
+                                        {info.displayName}
+                                    </option>
                                 )}
-                            </div>
-                        ))}
+                            </FormSelect>
+                            <Button
+                                variant="primary"
+                                disabled={!languageChoice}
+                                onClick={() => handleLanguageSelect(languageChoice as compilerLanguages)}
+                            >
+                                Open Editor
+                            </Button>
+                        </InputGroup>
                     </div>
                 </Container>
             </>

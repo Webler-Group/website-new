@@ -28,11 +28,15 @@ const challengeSubmissionSchema = new mongoose_1.Schema({
             },
             output: {
                 type: String,
-                required: true
+                required: false
+            },
+            stderr: {
+                type: String,
+                required: false
             },
             time: {
                 type: Number,
-                required: true
+                required: false
             }
         }],
     passed: {

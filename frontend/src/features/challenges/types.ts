@@ -21,7 +21,8 @@ export interface IChallenge {
 }
 
 export interface ITestResult {
-  output: string;
+  output?: string;
+  stderr?: string;
   passed: boolean;
   time?: number;
 }

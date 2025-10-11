@@ -155,6 +155,7 @@ const getChallengeCode = (0, express_async_handler_1.default)(async (req, res) =
             passed: submissions[0].passed,
             testResults: submissions[0].testResults.map(x => ({
                 output: x.output,
+                stderr: x.stderr,
                 passed: x.passed,
                 time: x.time
             }))
@@ -299,6 +300,7 @@ const getChallengeJob = (0, express_async_handler_1.default)(async (req, res) =>
             submission: job.submission ? {
                 testResults: job.submission.testResults.map(x => ({
                     output: x.output,
+                    stderr: x.stderr,
                     passed: x.passed,
                     time: x.time
                 })),

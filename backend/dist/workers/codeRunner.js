@@ -36,14 +36,11 @@ async function processSingleJob(job) {
             if (challenge) {
                 const testResults = challenge.testCases.map((x, i) => {
                     const runResult = job.result ? job.result.runResults[i] : null;
-                    return runResult ? {
-                        passed: x.expectedOutput == runResult.stdout,
-                        output: runResult.stdout,
-                        time: runResult.time ?? -1
-                    } : {
-                        passed: false,
-                        output: "",
-                        time: -1
+                    return {
+                        passed: runResult ? x.expectedOutput == runResult.stdout : false,
+                        output: runResult ? runResult.stdout : "",
+                        stderr: (job.result?.compileErr ?? "") + (runResult ? runResult.stderr : ""),
+                        time: runResult?.time
                     };
                 });
                 const passed = testResults.every(x => x.passed);
