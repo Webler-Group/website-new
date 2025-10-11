@@ -7,8 +7,6 @@ import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, g
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { PipelineStage } from "mongoose";
 import Code from "../models/Code";
-import templates from "../data/templates";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import EvaluationJob from "../models/EvaluationJob";
 import ChallengeSubmission, { IChallengeSubmissionDocument } from "../models/ChallengeSubmission";
 
@@ -158,11 +156,12 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
             challengeId
         }
     } else {
-        const template = templates.find(x => x.language === language);
+        const challenge = await Challenge.findById(challengeId);
+        const template = challenge?.templates.find(x => x.name === language) || {source:""};
 
         data = {
             language,
-            source: template?.source ?? "",
+            source: template.source,
             challengeId
         };
     }
@@ -190,7 +189,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
 const saveChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(saveChallengeCodeSchema, req);
-    const { challengeId, language, source } = body;
+    const { challengeId, language, source, title } = body;
     const currentUserId = req.userId;
 
     let code = await Code.findOne({ challenge: challengeId, language, user: currentUserId });
@@ -207,7 +206,7 @@ const saveChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) 
             language,
             user: currentUserId,
             source,
-            name: "Unnamed"
+            name: `CH: ${title}_${language}`
         });
 
     }
