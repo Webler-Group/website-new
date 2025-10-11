@@ -63,7 +63,8 @@ export const saveChallengeCodeSchema = z.object({
   body: z.object({
     language: compilerLanguageSchema,
     challengeId: idSchema("challengeId"),
-    source: z.string()
+    source: z.string(),
+    title: z.string().min(1, "Title is required"),
   })
 });
 
