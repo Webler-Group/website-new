@@ -22,7 +22,7 @@ exports.createChallengeSchema = zod_1.z.object({
         title: commonSchema_1.questionTitleSchema,
         description: commonSchema_1.messageSchema,
         difficulty: difficultySchema,
-        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required"),
+        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required").max(50, "At most 50 test cases is allowed"),
         templates: zod_1.z.array(templateSchema)
     })
 });
