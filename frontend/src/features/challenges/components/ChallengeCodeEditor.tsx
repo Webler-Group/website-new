@@ -27,10 +27,11 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const [showExitModal, setShowExitModal] = useState(false);
     const { editorOptions } = useEditorOptions();
     const { showMessage } = useSnackbar();
+    const [title, setTitle] = useState(challenge.title);
 
     useEffect(() => {
         if (!language) return;
-
+        setTitle(`${challenge.title}`);
         getCode();
     }, [challenge.id, language]);
 
@@ -72,7 +73,8 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
         const result = await sendJsonRequest("/Challenge/SaveChallengeCode", "POST", {
             challengeId: challenge.id,
             language,
-            source
+            source,
+            title
         });
         if (result && result.data) {
             setCode(prev => ({ ...prev, ...result.data }));
