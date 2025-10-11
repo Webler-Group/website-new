@@ -34,16 +34,16 @@ async function processSingleJob(job: IEvaluationJobDocument) {
         if ((job.status == "done" || job.status == "error") && job.challenge != null && job.user != null) {
             const challenge = await Challenge.findById(job.challenge, "-description");
             if (challenge) {
-                const testResults = challenge.testCases.map((x, i) => {
+                let testResults = challenge.testCases.map((x, i) => {
                     const runResult = job.result ? job.result.runResults[i] : null;
-                    return {
+                    return (i == 0 || runResult != null) ? {
                         passed: runResult ? x.expectedOutput == runResult.stdout : false,
                         output: runResult ? runResult.stdout : "",
                         stderr: (job.result?.compileErr ?? "") + (runResult ? runResult.stderr : ""),
-                        time: runResult?.time as number
-                    }
-                });
-                const passed = testResults.every(x => x.passed);
+                        time: runResult?.time
+                    } : null
+                }).filter(x => x != null);
+                const passed = testResults.every(x => x!.passed);
 
                 const submissions = await ChallengeSubmission.find({
                     challenge: job.challenge,
@@ -56,7 +56,7 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                 let submission: IChallengeSubmissionDocument | null = submissions.length > 0 ? submissions[0] : null;
 
                 if (submission) {
-                    submission.testResults = testResults;
+                    submission.testResults = testResults as any[];
                     submission.passed = passed;
                     await submission.save();
                 } else {

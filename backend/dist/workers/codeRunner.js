@@ -34,15 +34,15 @@ async function processSingleJob(job) {
         if ((job.status == "done" || job.status == "error") && job.challenge != null && job.user != null) {
             const challenge = await Challenge_1.default.findById(job.challenge, "-description");
             if (challenge) {
-                const testResults = challenge.testCases.map((x, i) => {
+                let testResults = challenge.testCases.map((x, i) => {
                     const runResult = job.result ? job.result.runResults[i] : null;
-                    return {
+                    return (i == 0 || runResult != null) ? {
                         passed: runResult ? x.expectedOutput == runResult.stdout : false,
                         output: runResult ? runResult.stdout : "",
                         stderr: (job.result?.compileErr ?? "") + (runResult ? runResult.stderr : ""),
                         time: runResult?.time
-                    };
-                });
+                    } : null;
+                }).filter(x => x != null);
                 const passed = testResults.every(x => x.passed);
                 const submissions = await ChallengeSubmission_1.default.find({
                     challenge: job.challenge,

@@ -100,19 +100,37 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                 <div className="mt-3">
                     <h4>Test Results</h4>
                     {challenge.testCases.map((testCase, index) => {
-                        const result = lastSubmission.testResults[index];
-                        if (!result) return null;
+                        const result = lastSubmission?.testResults?.[index] ?? null;
 
-                        const passed = result.passed;
-                        const icon = passed ? <FaCheck className="text-success" /> : <FaTimes className="text-danger" />;
+                        const passed = result?.passed ?? false;
+                        const icon = result
+                            ? passed
+                                ? <FaCheck className="text-success" />
+                                : <FaTimes className="text-danger" />
+                            : <FaTimes className="text-warning" />;
 
                         return (
                             <div
                                 key={index}
-                                className={`p-2 mb-2 rounded border ${passed ? 'border-success' : 'border-danger'}`}
+                                className={`p-2 mb-2 rounded border ${result
+                                        ? passed
+                                            ? "border-success"
+                                            : "border-danger"
+                                        : "border-warning"
+                                    }`}
                             >
-                                <h5 className={`${passed ? 'text-success' : 'text-danger'}`}>
-                                    Test {index + 1}: {passed ? 'Passed' : 'Failed'} {icon}
+                                <h5
+                                    className={
+                                        result
+                                            ? passed
+                                                ? "text-success"
+                                                : "text-danger"
+                                            : "text-warning"
+                                    }
+                                >
+                                    Test {index + 1}:{" "}
+                                    {result ? (passed ? "Passed" : "Failed") : "Did not run"}{" "}
+                                    {icon}
                                 </h5>
 
                                 {testCase.isHidden ? (
@@ -125,17 +143,25 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                                         <div>Expected Output:</div>
                                         {renderCodeBlock(testCase.expectedOutput)}
 
-                                        <div>Output:</div>
-                                        {renderCodeBlock(result.output)}
+                                        {result ? (
+                                            <>
+                                                <div>Output:</div>
+                                                {renderCodeBlock(result.output)}
 
-                                        {result.stderr && result.stderr.trim() !== "" && (
-                                            <div className="text-warning mt-2">
-                                                <strong>Stderr:</strong>
-                                                {renderCodeBlock(result.stderr)}
+                                                {result.stderr && result.stderr.trim() !== "" && (
+                                                    <div className="text-warning mt-2">
+                                                        <strong>Stderr:</strong>
+                                                        {renderCodeBlock(result.stderr)}
+                                                    </div>
+                                                )}
+
+                                                {result.time && <p>Execution Time: {result.time * 1000} ms</p>}
+                                            </>
+                                        ) : (
+                                            <div className="text-warning fst-italic mt-2">
+                                                Test case did not run
                                             </div>
                                         )}
-
-                                        {result.time && <p>Execution Time: {result.time * 1000} ms</p>}
                                     </>
                                 )}
                             </div>

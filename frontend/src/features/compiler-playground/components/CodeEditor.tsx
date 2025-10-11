@@ -152,9 +152,11 @@ const CodeEditor = ({
                             key={"description"}
                             eventKey={"description"}
                             title={"description"}
-                            className="bg-white p-2"
+                            className="bg-white"
                             style={{ height: tabHeightStyle }}>
-                            <MarkdownRenderer content={challenge.description} />
+                            <div className="overflow-y-auto h-100 p-2">
+                                <MarkdownRenderer content={challenge.description} />
+                            </div>
                         </Tab>
                     }
                     {editorTabs.map((lang, idx) => (
