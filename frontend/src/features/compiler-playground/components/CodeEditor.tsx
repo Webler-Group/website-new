@@ -35,6 +35,9 @@ interface CodeEditorProps {
     setLogsCount?: (setter: (prev: number) => number) => void;
     challenge?: IChallenge;
     submission?: IChallengeSubmission;
+    hideChallengeDescription?: boolean;
+    hideOutputTab?: boolean;
+    showOnlyOutput?: boolean;
 }
 
 const CodeEditor = ({
@@ -52,7 +55,10 @@ const CodeEditor = ({
     toggleConsole,
     setLogsCount,
     challenge,
-    submission
+    submission,
+    hideChallengeDescription = false,
+    hideOutputTab = false,
+    showOnlyOutput = false
 }: CodeEditorProps) => {
     const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
@@ -71,12 +77,20 @@ const CodeEditor = ({
     useEffect(() => {
         if (code.language === "web") {
             setEditorTabs(["html", "css", "javascript"]);
-            setActiveKey("html");
+            if (showOnlyOutput) {
+                setActiveKey("output");
+            } else {
+                setActiveKey("html");
+            }
         } else {
             setEditorTabs([code.language as LanguageName]);
-            setActiveKey(code.language);
+            if (showOnlyOutput) {
+                setActiveKey("output");
+            } else {
+                setActiveKey(code.language);
+            }
         }
-    }, [code.id, code.language]);
+    }, [code.id, code.language, showOnlyOutput]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -87,7 +101,9 @@ const CodeEditor = ({
                 if (match) {
                     e.preventDefault();
                     const index = parseInt(match[1], 10) - 1;
-                    const allTabs = challenge ? ["description", ...editorTabs, "output"] : [...editorTabs, "output"];
+                    const allTabs = challenge && !hideChallengeDescription 
+                        ? ["description", ...editorTabs, "output"] 
+                        : [...editorTabs, "output"];
                     const tab = allTabs[index];
                     if (tab) setActiveKey(tab);
                 } else if (e.key === "k") {
@@ -99,7 +115,7 @@ const CodeEditor = ({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [editorTabs]);
+    }, [editorTabs, hideChallengeDescription]);
 
     const onTabSelect = (key: string | null) => {
         if (key) setActiveKey(key);
@@ -142,12 +158,39 @@ const CodeEditor = ({
         []
     );
 
+    const renderOutput = () => (
+        code.challengeId != null ?
+            <ChallengeCodeOutput source={source} language={code.language} challenge={challenge!} submission={submission} />
+            :
+            code.language === "web" ?
+                <WebOutput
+                    source={source}
+                    cssSource={css}
+                    jsSource={js}
+                    tabOpen={tabOpen}
+                    consoleVisible={consoleVisible}
+                    hideConosole={hideConsole}
+                    setLogsCount={setLogsCount}
+                />
+                :
+                <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
+    );
+
+    // If showOnlyOutput is true, render only the output
+    if (showOnlyOutput) {
+        return (
+            <div ref={containerRef} className="bg-dark h-100" data-bs-theme="dark">
+                {renderOutput()}
+            </div>
+        );
+    }
+
     return (
         <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {
-                        challenge != null &&
+                        challenge != null && !hideChallengeDescription &&
                         <Tab
                             key={"description"}
                             eventKey={"description"}
@@ -181,31 +224,18 @@ const CodeEditor = ({
                             />
                         </Tab>
                     ))}
-                    <Tab
-                        onEnter={onTabEnter}
-                        onExit={onTabLeave}
-                        key={"output"}
-                        eventKey={"output"}
-                        title={"output"}
-                        style={{ height: tabHeightStyle }}
-                    >
-                        {code.challengeId != null ?
-                            <ChallengeCodeOutput source={source} language={code.language} challenge={challenge!} submission={submission} />
-                            :
-                            code.language === "web" ?
-                                <WebOutput
-                                    source={source}
-                                    cssSource={css}
-                                    jsSource={js}
-                                    tabOpen={tabOpen}
-                                    consoleVisible={consoleVisible}
-                                    hideConosole={hideConsole}
-                                    setLogsCount={setLogsCount}
-                                />
-                                :
-                                <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
-                        }
-                    </Tab>
+                    {!hideOutputTab && (
+                        <Tab
+                            onEnter={onTabEnter}
+                            onExit={onTabLeave}
+                            key={"output"}
+                            eventKey={"output"}
+                            title={"output"}
+                            style={{ height: tabHeightStyle }}
+                        >
+                            {renderOutput()}
+                        </Tab>
+                    )}
                 </Tabs>
             )}
         </div>

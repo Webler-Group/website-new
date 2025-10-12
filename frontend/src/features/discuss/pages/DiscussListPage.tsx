@@ -4,7 +4,7 @@ import { LinkContainer } from 'react-router-bootstrap';
 import { useApi } from '../../../context/apiCommunication';
 import Question from '../components/Question';
 import { useAuth } from '../../auth/context/authContext';
-import { PaginationControl } from 'react-bootstrap-pagination-control';
+import { PaginationControl } from '../../../components/ModernPagination';
 import QuestionPlaceholder from '../components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 import { TagSearch } from '../../../components/InputTags';

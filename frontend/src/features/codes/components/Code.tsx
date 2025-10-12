@@ -10,113 +10,118 @@ import "./Code.css";
 import { IChallengeSubmission } from '../../challenges/types';
 
 interface ICode {
-    id?: string;
-    name?: string;
-    challengeId?: string;
-    language: compilerLanguages;
-    userName?: string;
-    userId?: string;
-    userAvatar?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    comments: number;
-    votes: number;
-    isUpvoted: boolean;
-    isPublic: boolean;
-    lastSubmission?: IChallengeSubmission;
-    source?: string;
+  id?: string;
+  name?: string;
+  challengeId?: string;
+  language: compilerLanguages;
+  userName?: string;
+  userId?: string;
+  userAvatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  comments: number;
+  votes: number;
+  isUpvoted: boolean;
+  isPublic: boolean;
+  lastSubmission?: IChallengeSubmission;
+  source?: string;
 }
 
 interface CodeProps {
-    code: ICode;
-    searchQuery: string;
-    showUserProfile: boolean;
-    onClick?: () => void;
-    selected?: boolean;
+  code: ICode;
+  searchQuery: string;
+  showUserProfile: boolean;
+  onClick?: () => void;
+  selected?: boolean;
 }
 
 const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const handleClick = (e: MouseEvent) => {
+    if ((e.target as HTMLElement).closest("a")) return;
+    onClick ? onClick() : navigate("/Compiler-Playground/" + code.id);
+  };
 
-    let title = code.name;
+  const languageInfo = languagesInfo[code.language];
+  const title = code.name;
 
-    const handleClick = (e: MouseEvent) => {
-        if ((e.target as HTMLElement).closest("a")) {
-            return;
-        }
-
-        if(onClick) {
-            onClick();
-        } else {
-            navigate("/Compiler-Playground/" + code.id);
-        }
-    }
-
-    let body = (
-        <div className={"wb-codes-item border-bottom p-2 d-md-flex" + (selected ? " selected" : "")} onClick={handleClick}>
-            <div className="flex-grow-1 d-flex gap-2">
-                <div>
-                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light small"
-                        style={{ width: "32px", height: "32px", background: selected ? "dodgerblue" : languagesInfo[code.language].color }}>
-                        {selected ? <FaCheck /> : languagesInfo[code.language].shortName}
-                    </div>
-                </div>
-                <div>
-                    <div className='text-secondary'>
-                        <b style={{ wordBreak: "break-word" }}>{title}</b>
-                    </div>
-                    <div className="d-flex small mt-2 align-items-center gap-3">
-                        <div className="d-flex align-items-center">
-                            <FaThumbsUp />
-                            <span className="ms-1">{code.votes}</span>
-                        </div>
-                        <div className="d-flex align-items-center">
-                            <FaComment />
-                            <span className="ms-1">{code.comments}</span>
-                        </div>
-                        {
-                            showUserProfile === false &&
-                            <div>
-                                <span className="text-secondary">{DateUtils.format2(new Date(code.updatedAt!))}</span>
-                            </div>
-                        }
-                        {
-                            code.isPublic === false &&
-                            <div>
-                                <FaLock />
-                            </div>
-                        }
-                    </div>
-                </div>
-            </div>
-            {
-                showUserProfile &&
-                <div className="d-flex justify-content-end align-items-end mt-2">
-                    <div className="d-flex align-items-center">
-                        <div>
-                            <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(code.createdAt!))}</small>
-                            </div>
-                            <div className="d-flex justify-content-end">
-                                <ProfileName userId={code.userId!} userName={code.userName!} />
-                            </div>
-                        </div>
-                        <div className="ms-2">
-                            <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
-                        </div>
-                    </div>
-                </div>
-            }
+  const body = (
+    <div
+      className={`wb-codes-item border-bottom p-2 d-md-flex${selected ? " selected" : ""}`}
+      onClick={handleClick}
+    >
+      <div className="flex-grow-1 d-flex gap-2 align-items-center">
+        <div
+          className="language-logo-wrapper d-flex justify-content-center align-items-center"
+          style={{
+            width: "2rem",
+            height: "2rem",
+            minWidth: "2rem",
+            minHeight: "2rem",
+            overflow: "hidden",
+          }}
+        >
+          {selected ? (
+            <FaCheck size={20} color="dodgerblue" />
+          ) : (
+            <img
+              src={languageInfo.logo}
+              alt={languageInfo.displayName}
+              className="language-logo"
+            />
+          )}
         </div>
-    )
 
-    const content = ref ?
-        <div ref={ref}>{body}</div>
-        :
-        <div>{body}</div>
-    return content
-})
+        <div className="flex-grow-1">
+          <div className="text-secondary">
+            <b style={{ wordBreak: "break-word" }}>{title}</b>
+          </div>
 
-export type { ICode }
+          <div className="d-flex small mt-2 align-items-center gap-3">
+            <div className="d-flex align-items-center">
+              <FaThumbsUp />
+              <span className="ms-1">{code.votes}</span>
+            </div>
+            <div className="d-flex align-items-center">
+              <FaComment />
+              <span className="ms-1">{code.comments}</span>
+            </div>
+            {!showUserProfile && (
+              <div>
+                <span className="text-secondary">{DateUtils.format2(new Date(code.updatedAt!))}</span>
+              </div>
+            )}
+            {!code.isPublic && (
+              <div>
+                <FaLock />
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
 
-export default Code
+      {showUserProfile && (
+        <div className="d-flex justify-content-end align-items-end mt-2">
+          <div className="d-flex align-items-center">
+            <div>
+              <div>
+                <small className="text-secondary">{DateUtils.format(new Date(code.createdAt!))}</small>
+              </div>
+              <div className="d-flex justify-content-end">
+                <ProfileName userId={code.userId!} userName={code.userName!} />
+              </div>
+            </div>
+            <div className="ms-2">
+              <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return ref ? <div ref={ref}>{body}</div> : <div>{body}</div>;
+});
+
+export type { ICode };
+export default Code;

@@ -1,5 +1,5 @@
 import { Button, Form, FormControl } from "react-bootstrap";
-import { PaginationControl } from "react-bootstrap-pagination-control";
+import { PaginationControl } from "../../../components/ModernPagination";
 import { LinkContainer } from "react-router-bootstrap";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import Code from "./Code";
@@ -28,7 +28,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [codes, setCodes] = useState<any[]>([]);
-    const codesPerPage = 10;
+    const codesPerPage = 3;
     const [currentPage, setCurrentPage] = useState(1);
     const [codesCount, setCodesCount] = useState(0);
     const [loading, setLoading] = useState(false);

@@ -4,7 +4,7 @@ import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { Alert, Button, Dropdown, Form, FormGroup, FormLabel, Modal } from "react-bootstrap";
-import { PaginationControl } from "react-bootstrap-pagination-control";
+import { PaginationControl } from "../../../components/ModernPagination";
 import { useAuth } from "../../auth/context/authContext";
 import Answer, { IAnswer } from "../components/Answer";
 import { LinkContainer } from "react-router-bootstrap";

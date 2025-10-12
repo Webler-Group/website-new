@@ -4,7 +4,7 @@ import { useApi } from "../../../context/apiCommunication";
 import roles from "../../../data/roles";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { PaginationControl } from "react-bootstrap-pagination-control";
+import { PaginationControl } from "../../../components/ModernPagination";
 import { Link, useNavigate } from "react-router-dom";
 import { IAdminUser } from "./ModViewPage";
 

@@ -246,3 +246,77 @@ ul {
     justify-content: center;
     margin: 160px auto;
 }
+
+.wb-pagination-modern {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wb-pagination-modern .wb-page-item {
+  margin: 0;
+}
+
+.wb-pagination-modern .wb-page-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0.5rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.wb-pagination-modern .wb-page-link:hover {
+  background-color: #f3f4f6;
+  color: #1f2937;
+}
+
+.wb-pagination-modern .wb-page-link:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+}
+
+.wb-pagination-modern .wb-page-item.wb-active .wb-page-link {
+  background-color: #111827;
+  color: #ffffff;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.wb-pagination-modern .wb-page-item.wb-active .wb-page-link:hover {
+  background-color: #1f2937;
+  color: #ffffff;
+}
+
+.wb-pagination-modern .wb-page-item.wb-disabled .wb-page-link {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.wb-pagination-modern .wb-page-link-icon {
+  padding: 0.375rem;
+}
+
+.wb-pagination-modern .wb-page-ellipsis {
+  color: #9ca3af;
+  cursor: default;
+  pointer-events: none;
+}
+
+.wb-pagination-modern .wb-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
