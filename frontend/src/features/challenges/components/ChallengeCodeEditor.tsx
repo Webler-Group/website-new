@@ -161,6 +161,12 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
 
     const renderDescriptionPanel = () => (
         <div className="p-3">
+            {isMobile && (
+                <div className="mb-3">
+                    <h5 className="mb-0">{challenge.title}</h5>
+                </div>
+            )}
+            
             <div className="mb-3">
                 <span
                     className={`badge ${
@@ -217,7 +223,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                             <Button variant="link" className="text-secondary" onClick={handleExit}>
                                 <FaTimes />
                             </Button>
-                            <h5 className="mb-0">{challenge.title}</h5>
+                            {!isMobile && <h5 className="mb-0">{challenge.title}</h5>}
                         </div>
                         <div className="d-flex align-items-center gap-2">
                             <Dropdown>

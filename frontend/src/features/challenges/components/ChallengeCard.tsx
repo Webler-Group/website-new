@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { IChallenge } from "../types";
+import LanguageIcons from "./LanguageIcons";
 
 interface ChallengeCardProps {
   challenge: IChallenge;
@@ -70,6 +71,7 @@ const ChallengeCard = ({ challenge, i }: ChallengeCardProps) => {
           </p>
         </div>
       </div>
+    <LanguageIcons challenge={challenge} />
     </div>
   );
 };
