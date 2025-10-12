@@ -162,7 +162,6 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const renderDescriptionPanel = () => (
         <div className="p-3">
             <div className="mb-3">
-                <h4 className="mb-2">{challenge.title}</h4>
                 <span
                     className={`badge ${
                         challenge.difficulty === "easy"
