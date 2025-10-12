@@ -9,10 +9,12 @@ import mongoose, { PipelineStage } from "mongoose";
 import Code from "../models/Code";
 import EvaluationJob from "../models/EvaluationJob";
 import ChallengeSubmission, { IChallengeSubmissionDocument } from "../models/ChallengeSubmission";
+import User from "../models/User";
+import RolesEnum from "../data/RolesEnum";
 
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates } = body;
+    const { title, description, difficulty, testCases, templates, xp, isPublic } = body;
 
     const challenge = await Challenge.create({
         title,
@@ -20,6 +22,8 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         difficulty,
         testCases,
         templates,
+        xp,
+        isPublic,
         author: req.userId,
     });
 
@@ -28,12 +32,24 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeListSchema, req);
-    const { page, count, difficulty, searchQuery } = body;
+    const { page, count, difficulty, searchQuery, isPublic } = body;
     const currentUserId = req.userId;
 
     const pipeline: PipelineStage[] = [];
 
-    const matchStage: PipelineStage.Match = { $match: {} };
+    const user = await User.findById(currentUserId as string);
+    const isVisible = Number(isPublic) == 1;
+    const isAuthorized = user && user.roles.some(role => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(role));
+    if((!isVisible && !isAuthorized)) {
+        res.status(404).json({ status: false, error: [
+            { message: "Unauthorized User" },
+            { message: "IsPublic should be true"}
+        ] });
+        
+        return;
+    }
+
+    const matchStage: PipelineStage.Match = { $match: { isPublic: isVisible } };
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -241,6 +257,8 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
             description: challenge.description,
             difficulty: challenge.difficulty,
             title: challenge.title,
+            xp: challenge.xp,
+            isPublic: challenge.isPublic,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
@@ -256,7 +274,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editChallengeSchema, req);
-    const { challengeId, title, description, difficulty, testCases, templates } = body;
+    const { challengeId, title, description, difficulty, testCases, templates, xp, isPublic } = body;
     const challenge = await Challenge.findById(challengeId);
 
     if (!challenge) {
@@ -269,6 +287,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.difficulty = difficulty;
     challenge.testCases = testCases;
     challenge.templates = templates;
+    challenge.xp = xp;
+    challenge.isPublic = isPublic;
 
     await challenge.save();
     res.json({
@@ -279,7 +299,9 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             description: challenge.description,
             difficulty: challenge.difficulty,
             testCases: challenge.testCases,
-            templates: challenge.templates
+            templates: challenge.templates,
+            xp: challenge.xp,
+            isPublic: challenge.isPublic
         }
     });
 });
@@ -359,6 +381,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
         }
     });
 });
+
 
 const ChallengeController = {
     createChallenge,

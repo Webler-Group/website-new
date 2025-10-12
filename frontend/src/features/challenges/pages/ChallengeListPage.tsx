@@ -10,6 +10,7 @@ import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import LanguageIcons from "../components/LanguageIcons";
 
+
 const ChallengeList = () => {
     PageTitle("Code Challenge");
 
@@ -26,11 +27,12 @@ const ChallengeList = () => {
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
+    const [isPublic, setIsPublic] = useState(true);
     // const  { showMessage } = useSnackbar();
 
     useEffect(() => {
         getChallenges();
-    }, [searchParams]);
+    }, [searchParams, isPublic]);
 
     useEffect(() => {
         handlePageChange(1);
@@ -74,7 +76,8 @@ const ChallengeList = () => {
             count: challengesPerPage,
             difficulty: searchParams.has("difficulty") ? searchParams.get("difficulty") : null,
             // status: searchParams.has("status") ? searchParams.get("status") : null,
-            searchQuery: searchParams.has("query") ? searchParams.get("query")! : ""
+            searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
+            isPublic: isPublic ? 1 : 0,
         });
         if (result && result.challenges) {
             setChallenges(result.challenges);
@@ -131,8 +134,16 @@ const ChallengeList = () => {
                 {
                     userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) &&
                     <div className="mb-2 d-flex justify-content-end">
+                        <Form.Check
+                            type="checkbox"
+                            label="Public?"
+                            checked={isPublic}
+                            className="ml-1 border-secondary"
+                            onChange={(e) => setIsPublic(e.target.checked)}
+                        />
+                        
                         <LinkContainer to="/Challenge/Create">
-                            <Button size='sm'>New challenge</Button>
+                            <Button size='sm'>Create</Button>
                         </LinkContainer>
                     </div>
                 }

@@ -21,7 +21,9 @@ export const createChallengeSchema = z.object({
     description: messageSchema,
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
-    templates: z.array(templateSchema)
+    templates: z.array(templateSchema),
+    xp: z.number(),
+    isPublic: z.boolean()
   })
 });
 
@@ -32,7 +34,9 @@ export const editChallengeSchema = createChallengeSchema.extend({
     description: messageSchema,
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
-    templates: z.array(templateSchema)
+    templates: z.array(templateSchema),
+    xp: z.number(),
+    isPublic: z.boolean()
   })
 });
 
@@ -49,6 +53,7 @@ export const getChallengeListSchema = z.object({
     difficulty: difficultySchema.nullish(),
     // status: z.enum(["solved", "unsolved"]).nullish(),
     searchQuery: z.string().optional(),
+    isPublic: z.number()
   })
 });
 
