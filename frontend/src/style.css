@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ul,
 p {
     margin: 0;
@@ -320,3 +321,6 @@ ul {
   height: 1.25rem;
 }
 
+=======
+@import "tailwindcss";
+>>>>>>> e195059 (Tailwind setup)
