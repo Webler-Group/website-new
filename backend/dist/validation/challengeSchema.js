@@ -60,7 +60,8 @@ exports.saveChallengeCodeSchema = zod_1.z.object({
     body: zod_1.z.object({
         language: commonSchema_1.compilerLanguageSchema,
         challengeId: (0, commonSchema_1.idSchema)("challengeId"),
-        source: zod_1.z.string()
+        source: zod_1.z.string(),
+        title: zod_1.z.string().min(1, "Title is required"),
     })
 });
 exports.createChallengeJobSchema = zod_1.z.object({

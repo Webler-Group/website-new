@@ -69,7 +69,14 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const following = await UserFollowing.countDocuments({ user: userId });
 
     let codesQuery = Code
-        .find({ user: userId })
+        .find({
+            user: userId,
+            $or: [
+                { challenge: null },
+                { challenge: { $exists: false } }
+            ]
+        })
+        .sort({ updatedAt: "desc" });
 
     if (currentUserId !== userId) {
         codesQuery = codesQuery.where({ isPublic: true })

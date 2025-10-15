@@ -10,7 +10,6 @@ const challengeSchema_1 = require("../validation/challengeSchema");
 const zodUtils_1 = require("../utils/zodUtils");
 const mongoose_1 = __importDefault(require("mongoose"));
 const Code_1 = __importDefault(require("../models/Code"));
-const templates_1 = __importDefault(require("../data/templates"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const ChallengeSubmission_1 = __importDefault(require("../models/ChallengeSubmission"));
 const createChallenge = (0, express_async_handler_1.default)(async (req, res) => {
@@ -139,10 +138,11 @@ const getChallengeCode = (0, express_async_handler_1.default)(async (req, res) =
         };
     }
     else {
-        const template = templates_1.default.find(x => x.language === language);
+        const challenge = await Challenge_1.default.findById(challengeId);
+        const template = challenge?.templates.find(x => x.name === language) || { source: "" };
         data = {
             language,
-            source: template?.source ?? "",
+            source: template.source,
             challengeId
         };
     }
@@ -167,7 +167,7 @@ const getChallengeCode = (0, express_async_handler_1.default)(async (req, res) =
 });
 const saveChallengeCode = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.saveChallengeCodeSchema, req);
-    const { challengeId, language, source } = body;
+    const { challengeId, language, source, title } = body;
     const currentUserId = req.userId;
     let code = await Code_1.default.findOne({ challenge: challengeId, language, user: currentUserId });
     if (code) {
@@ -180,7 +180,7 @@ const saveChallengeCode = (0, express_async_handler_1.default)(async (req, res) 
             language,
             user: currentUserId,
             source,
-            name: "Unnamed"
+            name: `CH: ${title}_${language}`
         });
     }
     res.json({

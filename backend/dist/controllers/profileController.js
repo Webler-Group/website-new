@@ -66,7 +66,14 @@ const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const followers = await UserFollowing_1.default.countDocuments({ following: userId });
     const following = await UserFollowing_1.default.countDocuments({ user: userId });
     let codesQuery = Code_1.default
-        .find({ user: userId });
+        .find({
+        user: userId,
+        $or: [
+            { challenge: null },
+            { challenge: { $exists: false } }
+        ]
+    })
+        .sort({ updatedAt: "desc" });
     if (currentUserId !== userId) {
         codesQuery = codesQuery.where({ isPublic: true });
     }

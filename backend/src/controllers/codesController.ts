@@ -57,7 +57,13 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = Code.find({ hidden: false });
+    let dbQuery = Code.find({
+        hidden: false, 
+        $or: [
+            { challenge: null },
+            { challenge: { $exists: false } }
+        ]
+    });
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -568,10 +574,10 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let stdout = "";
     let stderr = "";
 
-    if(job.result) {
+    if (job.result) {
         stderr += job.result.compileErr ?? "";
 
-        if(job.result.runResults.length > 0) {
+        if (job.result.runResults.length > 0) {
             stdout = job.result.runResults[0].stdout ?? "";
             stderr += job.result.runResults[0].stderr ?? "";
         }
