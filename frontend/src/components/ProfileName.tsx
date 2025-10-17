@@ -8,7 +8,7 @@ interface ProfileNameProps {
 
 const ProfileName = ({ userId, userName , className=""}: ProfileNameProps) => {
     return (
-        <Link to={"/Profile/" + userId} className={"text-nowrap "+className} style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{userName}</Link>
+        <Link to={"/Profile/" + userId} className={"text-nowrap text-white fw-semibold "+className} style={{ fontSize: "0.9rem" }}>{userName}</Link>
     )
 }
 
