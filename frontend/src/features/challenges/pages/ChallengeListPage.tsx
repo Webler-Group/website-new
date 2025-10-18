@@ -77,7 +77,7 @@ const ChallengeList = () => {
             difficulty: searchParams.has("difficulty") ? searchParams.get("difficulty") : null,
             // status: searchParams.has("status") ? searchParams.get("status") : null,
             searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
-            isPublic: isPublic ? 1 : 0,
+            isVisible: isPublic ? 1 : 0,
         });
         if (result && result.challenges) {
             setChallenges(result.challenges);
@@ -136,9 +136,9 @@ const ChallengeList = () => {
                     <div className="mb-2 d-flex justify-content-end">
                         <Form.Check
                             type="checkbox"
-                            label="Public?"
+                            label="Public"
                             checked={isPublic}
-                            className="ml-1 border-secondary"
+                            className="m-1 p-1 border-secondary bg-secondary"
                             onChange={(e) => setIsPublic(e.target.checked)}
                         />
                         

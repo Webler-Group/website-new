@@ -25,7 +25,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [testCases, setTestCases] = useState<ITestCase[]>([]);
     const [templates, setTemplates] = useState<IChallengeTemplate[]>([]);
     const [xp, setXP] = useState(10);
-    const [isPublic, setIsPublic] = useState(true);
+    const [isVisible, setIsVisible] = useState(true);
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -46,7 +46,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setTestCases(result.challenge.testCases);
             setTemplates(result.challenge.templates);
             setXP(result.challenge.xp);
-            setIsPublic(result.challenge.isPublic);
+            setIsVisible(result.challenge.isPublic);
         }
         setLoading(false);
     }
@@ -59,7 +59,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             testCases,
             templates,
             xp,
-            isPublic
+            isVisible: isVisible ? 1 : 0
         });
         if (result && result.challenge) {
             showMessage(`Challenge created Successfully`);
@@ -79,7 +79,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             testCases,
             templates,
             xp,
-            isPublic
+            isVisible: isVisible ? 1 : 0
         });
         if (result && result.data) {
             showMessage(`Challenge updated Successfully`);
@@ -162,8 +162,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                 <Form.Check
                     type="checkbox"
                     label="Public?"
-                    checked={isPublic}
-                    onChange={(e) => setIsPublic(e.target.checked)}
+                    checked={isVisible}
+                    onChange={(e) => setIsVisible(e.target.checked)}
                 />
 
                 <p className="col text-danger">{error}</p>
