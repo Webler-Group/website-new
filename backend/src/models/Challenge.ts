@@ -1,6 +1,8 @@
 import mongoose, { Schema, model, Model, InferSchemaType } from "mongoose";
 import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import ChallengeSubmission from "./ChallengeSubmission";
+import Code from "./Code";
 
 const challengeSchema = new Schema({
   title: {
@@ -70,12 +72,11 @@ const challengeSchema = new Schema({
 
 challengeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IChallenge>) {
   const challengesToDelete = await Challenge.find(filter).select("_id");
+  const challengeIds = challengesToDelete.map(x => x._id);
 
-  for (let i = 0; i < challengesToDelete.length; ++i) {
-    const challege = challengesToDelete[i];
-
-
-  }
+  await ChallengeSubmission.deleteMany({ challenge: { $in: challengeIds } });
+  await Code.deleteMany({ challenge: { $in: challengeIds } });
+  await Challenge.deleteAndCleanup({ _id: challengesToDelete });
 }
 
 declare interface IChallenge extends InferSchemaType<typeof challengeSchema> {

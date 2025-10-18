@@ -53,7 +53,13 @@ const getCodeList = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(codesSchema_1.getCodeListSchema, req);
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
-    let dbQuery = Code_1.default.find({ hidden: false });
+    let dbQuery = Code_1.default.find({
+        hidden: false,
+        $or: [
+            { challenge: null },
+            { challenge: { $exists: false } }
+        ]
+    });
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");

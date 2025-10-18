@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const ChallengeDifficultyEnum_1 = __importDefault(require("../data/ChallengeDifficultyEnum"));
 const CompilerLanguagesEnum_1 = __importDefault(require("../data/CompilerLanguagesEnum"));
+const ChallengeSubmission_1 = __importDefault(require("./ChallengeSubmission"));
+const Code_1 = __importDefault(require("./Code"));
 const challengeSchema = new mongoose_1.Schema({
     title: {
         type: String,
@@ -64,9 +66,10 @@ const challengeSchema = new mongoose_1.Schema({
 }, { timestamps: true });
 challengeSchema.statics.deleteAndCleanup = async function (filter) {
     const challengesToDelete = await Challenge.find(filter).select("_id");
-    for (let i = 0; i < challengesToDelete.length; ++i) {
-        const challege = challengesToDelete[i];
-    }
+    const challengeIds = challengesToDelete.map(x => x._id);
+    await ChallengeSubmission_1.default.deleteMany({ challenge: { $in: challengeIds } });
+    await Code_1.default.deleteMany({ challenge: { $in: challengeIds } });
+    await Challenge.deleteAndCleanup({ _id: challengesToDelete });
 };
 const Challenge = (0, mongoose_1.model)("Challenge", challengeSchema);
 exports.default = Challenge;

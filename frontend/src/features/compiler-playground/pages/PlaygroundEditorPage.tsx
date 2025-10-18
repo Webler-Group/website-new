@@ -63,7 +63,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     PageTitle(pageTitle);
 
     useEffect(() => {
-        if (code) {
+        if (code?.id) {
             setPageTitle(languagesInfo[code.language].displayName + " Playground - " + code.name + " | Webler Codes");
         } else if (language) {
             setPageTitle(languagesInfo[language].displayName + " Playground | Webler Codes");

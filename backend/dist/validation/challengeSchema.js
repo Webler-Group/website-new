@@ -22,7 +22,7 @@ exports.createChallengeSchema = zod_1.z.object({
         title: commonSchema_1.questionTitleSchema,
         description: commonSchema_1.messageSchema,
         difficulty: difficultySchema,
-        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required"),
+        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required").max(50, "At most 50 test cases is allowed"),
         templates: zod_1.z.array(templateSchema)
     })
 });
@@ -60,7 +60,8 @@ exports.saveChallengeCodeSchema = zod_1.z.object({
     body: zod_1.z.object({
         language: commonSchema_1.compilerLanguageSchema,
         challengeId: (0, commonSchema_1.idSchema)("challengeId"),
-        source: zod_1.z.string()
+        source: zod_1.z.string(),
+        title: zod_1.z.string().min(1, "Title is required"),
     })
 });
 exports.createChallengeJobSchema = zod_1.z.object({
