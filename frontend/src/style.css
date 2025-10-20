@@ -25,6 +25,13 @@ ul {
     width: 280px;
     display: block;
     overflow-x: hidden;
+    z-index: 101;
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+    background-color: rgba(255, 255, 255, 0.8);
+    overflow: scroll;
+    transition: all 300ms ease;
+    -webkit-overflow-scrolling: touch;
 }
 
 .wb-menu-box-left {
@@ -33,6 +40,12 @@ ul {
     height: 100%;
     bottom: 0;
     transform: translate3d(-100%, 0, 0);
+}
+
+.wb-menu-active.wb-menu-main {
+    opacity: 1 !important;
+    transition: all 300ms ease;
+    pointer-events: all !important;
 }
 
 .wb-menu-main__header {
@@ -61,6 +74,33 @@ ul {
     font-size: 28px;
 }
 
+.wb-menu-box-left.wb-menu-active {
+    transform: translate3d(0%, 0, 0) !important;
+}
+
+.wb-menu-hider {
+    position: fixed;
+    top: -100px;
+    bottom: -100px;
+    left: 0px;
+    right: 0px;
+    background-color: rgba(0, 0, 0, 0.35);
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transition: all 300ms ease;
+}
+
+.wb-menu-hider.wb-menu-active {
+    transition: all 300ms ease;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.wb-theme-dark .wb-menu-hider {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
 .wb-header {
     -webkit-backdrop-filter: saturate(180%) blur(20px);
     backdrop-filter: saturate(180%) blur(20px);
@@ -80,10 +120,43 @@ ul {
     color: #FFF;
 }
 
+.wb-theme-dark .wb-header-icon,
+.wb-theme-dark .wb-header-title {
+    color: #FFF;
+}
+
+.wb-header-auto-show {
+    opacity: 0;
+    pointer-events: none;
+    transition: all 300ms ease;
+}
+
 .wb-header-active {
     opacity: 1;
     pointer-events: all;
     transition: all 300ms ease;
+}
+
+.wb-header-icon {
+    height: 50px;
+    width: 45px;
+    font-size: 12px;
+    color: #1f1f1f;
+    background-color: rgba(0, 0, 0, 0) !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+}
+
+.wb-header-title {
+    height: 50px;
+    line-height: 49px;
+    font-size: 14px;
+    color: #000;
+    font-weight: 600;
+    z-index: 1;
+    font-family: "Inter", sans-serif;
 }
 
 @media(min-width: 840px) {
@@ -95,6 +168,14 @@ ul {
     .wb-menu-main {
         z-index: 99 !important;
         transform: none !important;
+    }
+
+    .wb-header {
+        margin-left: 280px;
+    }
+
+    .wb-menu-main-toggle {
+        display: none;
     }
 }
 

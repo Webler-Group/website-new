@@ -1,0 +1,312 @@
+:root {
+    --wb-bg: #ffffff;
+    --wb-text: #111827;
+    --wb-muted: #6b7280;
+    --wb-accent: #3b82f6;
+    --wb-surface: #f8fafc;
+}
+
+/* Dark theme when parent contains .dark */
+.dark :root,
+.wb-root.dark :root {
+    --wb-bg: #0b1220;
+    --wb-text: #e6eef8;
+    --wb-muted: #9aa6b2;
+    --wb-accent: #60a5fa;
+    --wb-surface: #071025;
+}
+
+/* Layout container */
+.wb-layout {
+    display: flex;
+    align-items: stretch;
+    min-height: 100vh;
+    background: var(--wb-bg);
+    color: var(--wb-text);
+    max-width: 100%;
+}
+
+/* Sidebar - fixed so it doesn't scroll with main content */
+.wb-sidebar {
+    width: 280px;
+    min-width: 280px;
+    height: 100vh;
+    overflow-y: auto;
+    background: var(--wb-surface);
+    border-right: 1px solid rgba(0, 0, 0, 0.06);
+    position: fixed;
+    /* changed to fixed */
+    left: 0;
+    top: 0;
+    transition: transform 280ms ease, box-shadow 280ms ease;
+    z-index: 40;
+}
+
+/* Make sidebar hidden on small screens by transform */
+@media (max-width: 880px) {
+    .wb-sidebar {
+        transform: translateX(-100%);
+        box-shadow: none;
+    }
+
+    .wb-sidebar.wb-open {
+        transform: translateX(0%);
+        box-shadow: 0 16px 40px rgba(2, 6, 23, 0.6);
+    }
+
+    .wb-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.45);
+        z-index: 35;
+    }
+
+    .wb-close-mobile {
+        display: block;
+    }
+
+    .wb-main {
+        margin-left: 0 !important;
+        transition: margin-left 280ms ease;
+    }
+}
+
+@media (min-width: 881px) {
+    .wb-menu-toggle {
+        display: none;
+    }
+}
+
+/* desktop: hide mobile close btn */
+.wb-close-mobile {
+    display: none;
+    position: absolute;
+    right: 8px;
+    top: 8px;
+    background: transparent;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    z-index: 60;
+}
+
+/* Side top card */
+.wb-side-card {
+    position: relative;
+    padding: 18px;
+    padding-bottom: 12px;
+    box-sizing: border-box;
+}
+
+.wb-side-card-bg {
+    position: absolute;
+    inset: 0;
+    background-image: linear-gradient(120deg, rgba(99, 102, 241, 0.12), rgba(59, 130, 246, 0.08));
+    opacity: 0.8;
+    filter: saturate(0.98);
+    z-index: 0;
+}
+
+.wb-side-card-content {
+    position: relative;
+    z-index: 2;
+}
+
+.wb-side-title {
+    margin: 0 0 8px 0;
+    font-size: 20px;
+}
+
+.wb-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wb-user-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--wb-text);
+}
+
+.wb-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.wb-username {
+    font-weight: 600;
+}
+
+.wb-logout {
+    margin-left: auto;
+    padding: 6px 10px;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.wb-auth-links {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.wb-auth-link {
+    text-decoration: none;
+    padding: 6px 8px;
+    border-radius: 6px;
+    background: transparent;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.wb-auth-link.wb-register {
+    font-weight: 600;
+}
+
+/* navigation */
+.wb-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px 8px 40px 8px;
+}
+
+.wb-nav-item {
+    display: block;
+    padding: 10px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--wb-text);
+}
+
+.wb-nav-item:hover {
+    background: rgba(59, 130, 246, 0.08);
+}
+
+/* Main area */
+.wb-main {
+    flex: 1 1 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin-left: 280px;
+    /* make room for fixed sidebar on desktop */
+}
+
+/* Header sticky */
+.wb-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.4));
+    backdrop-filter: blur(6px);
+    margin-left: 0 !important;
+}
+
+/* dark header background tweak */
+.dark .wb-header,
+.wb-root.dark .wb-header {
+    background: linear-gradient(180deg, rgba(10, 14, 20, 0.6), rgba(8, 12, 18, 0.5));
+}
+
+.wb-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wb-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wb-scroll-top-btn {
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.wb-header-icons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.wb-header-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    text-decoration: none;
+}
+
+.wb-header-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+.wb-menu-toggle {
+    border: none;
+    background: transparent;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 20px;
+}
+
+/* Content */
+.wb-content {
+    padding: 18px;
+}
+
+/* Floating scroll top */
+.wb-floating-scroll {
+    position: fixed;
+    right: 20px;
+    bottom: 28px;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: none;
+    box-shadow: 0 6px 20px rgba(2, 6, 23, 0.18);
+    cursor: pointer;
+    z-index: 80;
+}
+
+/* small tweaks */
+body,
+.wb-root {
+    margin: 0;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+}
+
+/* ensure sidebar content can scroll independently */
+.wb-sidebar::-webkit-scrollbar {
+    width: 8px;
+}
+
+.wb-sidebar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+}
