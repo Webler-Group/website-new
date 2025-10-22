@@ -16,6 +16,10 @@ const challengeSubmissionSchema = new mongoose_1.Schema({
         ref: "User",
         required: true
     },
+    reward: {
+        type: Number,
+        default: 0,
+    },
     language: {
         type: String,
         enum: Object.values(CompilerLanguagesEnum_1.default),

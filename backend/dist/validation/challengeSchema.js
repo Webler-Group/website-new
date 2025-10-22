@@ -22,8 +22,10 @@ exports.createChallengeSchema = zod_1.z.object({
         title: commonSchema_1.questionTitleSchema,
         description: commonSchema_1.messageSchema,
         difficulty: difficultySchema,
-        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required").max(50, "At most 50 test cases is allowed"),
-        templates: zod_1.z.array(templateSchema)
+        testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required"),
+        templates: zod_1.z.array(templateSchema),
+        xp: zod_1.z.number(),
+        isVisible: zod_1.z.number()
     })
 });
 exports.editChallengeSchema = exports.createChallengeSchema.extend({
@@ -33,7 +35,9 @@ exports.editChallengeSchema = exports.createChallengeSchema.extend({
         description: commonSchema_1.messageSchema,
         difficulty: difficultySchema,
         testCases: zod_1.z.array(testCaseSchema).min(1, "At least one test case is required"),
-        templates: zod_1.z.array(templateSchema)
+        templates: zod_1.z.array(templateSchema),
+        xp: zod_1.z.number(),
+        isVisible: zod_1.z.number()
     })
 });
 exports.getChallengeSchema = zod_1.z.object({
@@ -48,6 +52,7 @@ exports.getChallengeListSchema = zod_1.z.object({
         difficulty: difficultySchema.nullish(),
         // status: z.enum(["solved", "unsolved"]).nullish(),
         searchQuery: zod_1.z.string().optional(),
+        isVisible: zod_1.z.number()
     })
 });
 exports.getChallengeCodeSchema = zod_1.z.object({

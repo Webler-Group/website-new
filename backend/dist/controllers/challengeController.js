@@ -12,25 +12,39 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const Code_1 = __importDefault(require("../models/Code"));
 const EvaluationJob_1 = __importDefault(require("../models/EvaluationJob"));
 const ChallengeSubmission_1 = __importDefault(require("../models/ChallengeSubmission"));
+const RolesEnum_1 = __importDefault(require("../data/RolesEnum"));
+const User_1 = __importDefault(require("../models/User"));
 const createChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates } = body;
+    const { title, description, difficulty, testCases, templates, xp, isVisible } = body;
     const challenge = await Challenge_1.default.create({
         title,
         description,
         difficulty,
         testCases,
         templates,
+        xp,
+        isPublic: Number(isVisible) === 1,
         author: req.userId,
     });
     res.json({ success: true, challenge: { id: challenge._id } });
 });
 const getChallengeList = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.getChallengeListSchema, req);
-    const { page, count, difficulty, searchQuery } = body;
+    const { page, count, difficulty, searchQuery, isVisible } = body;
     const currentUserId = req.userId;
     const pipeline = [];
-    const matchStage = { $match: {} };
+    const isPublic = Number(isVisible) === 1;
+    const isAuthorized = req.roles && req.roles.some(i => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR].includes(i));
+    ;
+    if ((!isPublic && !isAuthorized)) {
+        res.status(404).json({ status: false, error: [
+                { message: "Unauthorized User" },
+                { message: "IsPublic should be true" }
+            ] });
+        return;
+    }
+    const matchStage = { $match: { isPublic } };
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
@@ -92,6 +106,15 @@ const getChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.getChallengeSchema, req);
     const { challengeId } = body;
     const challenge = await Challenge_1.default.findById(challengeId);
+    // user cannot view private challenges
+    const isAuthorized = req.roles && req.roles.some(i => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR].includes(i));
+    if (!challenge?.isPublic && !isAuthorized) {
+        res.status(404).json({ success: false, error: [
+                { message: "Unauthorized User cannot view private challenge" },
+                { message: "Challenge not found" },
+            ] });
+        return;
+    }
     if (!challenge) {
         res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
         return;
@@ -209,6 +232,8 @@ const getEditedChallenge = (0, express_async_handler_1.default)(async (req, res)
             description: challenge.description,
             difficulty: challenge.difficulty,
             title: challenge.title,
+            xp: challenge.xp,
+            isPublic: challenge.isPublic,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
@@ -223,7 +248,7 @@ const getEditedChallenge = (0, express_async_handler_1.default)(async (req, res)
 });
 const editChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.editChallengeSchema, req);
-    const { challengeId, title, description, difficulty, testCases, templates } = body;
+    const { challengeId, title, description, difficulty, testCases, templates, xp, isVisible } = body;
     const challenge = await Challenge_1.default.findById(challengeId);
     if (!challenge) {
         res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
@@ -234,6 +259,8 @@ const editChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     challenge.difficulty = difficulty;
     challenge.testCases = testCases;
     challenge.templates = templates;
+    challenge.xp = xp;
+    challenge.isPublic = Number(isVisible) === 1;
     await challenge.save();
     res.json({
         success: true,
@@ -243,7 +270,9 @@ const editChallenge = (0, express_async_handler_1.default)(async (req, res) => {
             description: challenge.description,
             difficulty: challenge.difficulty,
             testCases: challenge.testCases,
-            templates: challenge.templates
+            templates: challenge.templates,
+            xp: challenge.xp,
+            isPublic: challenge.isPublic
         }
     });
 });
@@ -290,6 +319,21 @@ const getChallengeJob = (0, express_async_handler_1.default)(async (req, res) =>
     if (!job) {
         res.status(404).json({ error: [{ message: "Job does not exist" }] });
         return;
+    }
+    if (job.submission && job.submission.passed) {
+        const user = await User_1.default.findById(req.userId);
+        const challenge = await Challenge_1.default.findById(job.challenge);
+        if (user) {
+            const reward = challenge ? challenge.xp : 0;
+            const submission = await ChallengeSubmission_1.default.findOne({ user: req.userId, challenge: job.challenge, language: job.language });
+            // reward user once the first time they passed a challenge for a particular language
+            if (submission && submission.reward != reward) {
+                user.xp += reward;
+                submission.reward = reward;
+                await user.save();
+                await submission.save();
+            }
+        }
     }
     res.json({
         job: {

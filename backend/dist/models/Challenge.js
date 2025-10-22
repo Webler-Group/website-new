@@ -58,6 +58,14 @@ const challengeSchema = new mongoose_1.Schema({
                 required: true
             }
         }],
+    isPublic: {
+        type: Boolean,
+        default: true,
+    },
+    xp: {
+        type: Number,
+        default: 10,
+    },
     author: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "User",
