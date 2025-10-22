@@ -13,6 +13,10 @@ const challengeSubmissionSchema = new Schema(
       ref: "User",
       required: true
     },
+    reward: {
+      type: Number,
+      default: 0,
+    },
     language: {
       type: String,
       enum: Object.values(CompilerLanguagesEnum),

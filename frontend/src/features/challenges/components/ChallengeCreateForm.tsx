@@ -24,6 +24,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [description, setDescription] = useState("");
     const [testCases, setTestCases] = useState<ITestCase[]>([]);
     const [templates, setTemplates] = useState<IChallengeTemplate[]>([]);
+    const [xp, setXP] = useState(10);
+    const [isVisible, setIsVisible] = useState(true);
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -43,6 +45,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setDifficulty(result.challenge.difficulty);
             setTestCases(result.challenge.testCases);
             setTemplates(result.challenge.templates);
+            setXP(result.challenge.xp);
+            setIsVisible(result.challenge.isPublic);
         }
         setLoading(false);
     }
@@ -53,7 +57,9 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             description,
             difficulty,
             testCases,
-            templates
+            templates,
+            xp,
+            isVisible: isVisible ? 1 : 0
         });
         if (result && result.challenge) {
             showMessage(`Challenge created Successfully`);
@@ -71,7 +77,9 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             description,
             difficulty,
             testCases,
-            templates
+            templates,
+            xp,
+            isVisible: isVisible ? 1 : 0
         });
         if (result && result.data) {
             showMessage(`Challenge updated Successfully`);
@@ -141,6 +149,22 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         <option value="hard">Hard</option>
                     </Form.Select>
                 </Form.Group>
+                
+                <Form.Control
+                    type="number"
+                    value={xp}
+                    placeholder="XP"
+                    onChange={(e) =>
+                        setXP(Number(e.target.value))
+                    }
+                />
+
+                <Form.Check
+                    type="checkbox"
+                    label="Public?"
+                    checked={isVisible}
+                    onChange={(e) => setIsVisible(e.target.checked)}
+                />
 
                 <p className="col text-danger">{error}</p>
 

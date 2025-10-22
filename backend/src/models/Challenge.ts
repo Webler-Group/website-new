@@ -54,11 +54,20 @@ const challengeSchema = new Schema({
       required: true
     }
   }],
+  isPublic: {
+    type: Boolean,
+    default: true,
+  },
+  xp: {
+    type: Number,
+    default: 10,
+  },
   author: {
     type: Schema.Types.ObjectId,
     ref: "User",
     required: true
   },
+
 }, { timestamps: true });
 
 challengeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IChallenge>) {
