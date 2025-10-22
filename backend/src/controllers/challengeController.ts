@@ -48,7 +48,14 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         return;
     }
 
-    const matchStage: PipelineStage.Match = { $match: { isPublic } };
+    const matchStage: PipelineStage.Match = {
+        $match: {
+            $or: [
+                { isPublic }, 
+                { isPublic: { $exists: false } }
+            ]
+        }
+    };
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -267,7 +274,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
             difficulty: challenge.difficulty,
             title: challenge.title,
             xp: challenge.xp,
-            isPublic: challenge.isPublic,
+            isPublic: challenge.isPublic ?? true,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source

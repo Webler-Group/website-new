@@ -44,7 +44,14 @@ const getChallengeList = (0, express_async_handler_1.default)(async (req, res) =
             ] });
         return;
     }
-    const matchStage = { $match: { isPublic } };
+    const matchStage = {
+        $match: {
+            $or: [
+                { isPublic },
+                { isPublic: { $exists: false } }
+            ]
+        }
+    };
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
@@ -233,7 +240,7 @@ const getEditedChallenge = (0, express_async_handler_1.default)(async (req, res)
             difficulty: challenge.difficulty,
             title: challenge.title,
             xp: challenge.xp,
-            isPublic: challenge.isPublic,
+            isPublic: challenge.isPublic ?? true,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
