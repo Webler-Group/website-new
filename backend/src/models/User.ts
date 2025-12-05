@@ -128,6 +128,15 @@ userSchema.methods.matchPassword = async function (inputPassword: string) {
     return await bcrypt.compare(inputPassword, this.password);
 }
 
+
+userSchema.methods.getLevel = async function() {
+    const k = 50;
+    const maxLevel = 30;
+    const level = Math.floor(Math.cbrt(this.xp / k));
+    return Math.min(level, maxLevel);
+}
+
+
 userSchema.pre('save', async function (next) {
     if (this.isModified("password")) {
         if (this.password.length < 6) {

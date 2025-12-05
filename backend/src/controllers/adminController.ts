@@ -9,7 +9,8 @@ import {
     getUsersListSchema,
     getUserSchema,
     banUserSchema,
-    updateRolesSchema
+    updateRolesSchema,
+    saveBasicInfoSchema
 } from "../validation/adminSchema";
 import { parseWithZod } from "../utils/zodUtils";
 
@@ -74,12 +75,13 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+
 const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUserSchema, req);
     const { userId } = body;
 
     const user = await User.findById(userId)
-        .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
+        .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio xp");
 
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
@@ -100,6 +102,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
             verified: user.emailVerified,
             active: user.active,
             bio: user.bio,
+            xp: user.xp,
             ban: (!user.active && user.ban)
                 ? {
                     author: user.ban.author,
@@ -110,6 +113,31 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
     });
 });
+
+
+const saveBasicInfo = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(saveBasicInfoSchema, req);
+    const {userId, name, email, isVerified, roles, isActive, xp, bio } = body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+        res.status(404).json({ error: [{ message: "User not found" }] });
+        return;
+    }
+
+    user.name = name;
+    user.email = email;
+    user.emailVerified = isVerified;
+    user.roles = roles;
+    user.active = isActive;
+    user.xp = xp;
+    user.bio = bio;
+
+    await user.save();
+    res.json({ success: true, data: {} });
+
+})
+
 
 const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(banUserSchema, req);
@@ -149,6 +177,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+// possible obsoletes
 const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(updateRolesSchema, req);
     const { userId, roles } = body;
@@ -171,6 +200,7 @@ const controller = {
     getUsersList,
     banUser,
     getUser,
+    saveBasicInfo,
     updateRoles
 };
 

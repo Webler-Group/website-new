@@ -92,6 +92,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         email,
         name,
         password,
+        xp: 100,
         emailVerified: config.nodeEnv == "development",
         lastLoginAt: new Date()
     });

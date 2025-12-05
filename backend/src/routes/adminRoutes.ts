@@ -14,6 +14,7 @@ router.use(protectRoute);
 router.route("/BanUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.banUser);
 router.route("/Users").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getUsersList);
 router.route("/GetUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getUser);
+router.route("/UpdateUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.saveBasicInfo);
 router.route("/UpdateRoles").post(requireRoles([RolesEnum.ADMIN]), adminController.updateRoles);
 
 export default router;
