@@ -1,0 +1,15 @@
+.wb-codes-item {
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    background-color: #ffffff;
+}
+
+.wb-codes-item.selected {
+    background-color: #e3f2fd;
+}
+
+.wb-codes-item:hover {
+    background-color: #f1f3f4;
+}

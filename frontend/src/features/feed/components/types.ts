@@ -1,0 +1,69 @@
+import { ReactionsEnum } from "../../../data/reactions";
+
+export interface User {
+  id: string;
+  name: string;
+  avatarImage: string | null;
+  level: number;
+  roles: string[];
+}
+
+export interface OriginalPost {
+  id: string;
+  message: string;
+  title: string;
+  date: string;
+  userId: string;
+  userName: string;
+  userAvatarImage: string | null;
+  tags: string[];
+}
+
+export interface IFeed {
+  totalReactions: any;
+  topReactions: any[];
+  id: string;
+  type: number;
+  title: string | null;
+  message: string;
+  tags: string[];
+  date: string;
+  updatedAt: string;
+  userId: string;
+  userName: string;
+  userAvatarImage: string | null;
+  level: number;
+  roles: string[];
+  answers: number;
+  votes: number;
+  shares: number;
+  attachments: any[];
+  isUpvoted: boolean;
+  isFollowing: boolean;
+  originalPost: OriginalPost | null;
+  isPinned: boolean;
+  isShared: boolean;
+  reaction: ReactionsEnum | null;
+}
+
+export interface Comment {
+  replyCount: number;
+  id: string;
+  message: string;
+  userName: string;
+  userAvatar: string | null;
+  userId: string;
+  date: string;
+  votes: number;
+  isUpvoted: boolean;
+  replies?: Comment[];
+}
+
+export enum PostType {
+    QUESTION = 1,
+    ANSWER = 2,
+    CODE_COMMENT = 3,
+    FEED = 4,
+    SHARED_FEED = 5,
+    FEED_COMMENT = 6
+}
