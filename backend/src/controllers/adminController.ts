@@ -178,30 +178,30 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 // possible obsoletes
-const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(updateRolesSchema, req);
-    const { userId, roles } = body;
+// const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
+//     const { body } = parseWithZod(updateRolesSchema, req);
+//     const { userId, roles } = body;
 
-    const user = await User.findById(userId);
-    if (!user) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
-    }
+//     const user = await User.findById(userId);
+//     if (!user) {
+//         res.status(404).json({ error: [{ message: "User not found" }] });
+//         return;
+//     }
 
-    user.roles = roles;
-    await user.save();
-    res.json({
-        success: true,
-        data: { roles: user.roles }
-    });
-});
+//     user.roles = roles;
+//     await user.save();
+//     res.json({
+//         success: true,
+//         data: { roles: user.roles }
+//     });
+// });
 
 const controller = {
     getUsersList,
     banUser,
     getUser,
     saveBasicInfo,
-    updateRoles
+    // updateRoles
 };
 
 export default controller;

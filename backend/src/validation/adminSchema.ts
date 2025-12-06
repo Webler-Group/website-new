@@ -28,7 +28,6 @@ export const saveBasicInfoSchema = z.object({
         isVerified: z.boolean().default(false),
         isActive: z.boolean().default(false),
         roles: z.array(z.enum(RolesEnum, "Invalid role")),
-        active: z.boolean("Active must be a boolean"),
         bio: z.string().max(120, "Bio cannot exceed 120 characters"),
         xp: z.number().default(10)
     })
