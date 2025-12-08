@@ -9,6 +9,7 @@ import { v4 as uuid } from "uuid";
 import { isEmail } from "../utils/regexUtils";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
+
 const banSchema = new mongoose.Schema({
     author: {
         type: mongoose.Schema.Types.ObjectId,
@@ -23,7 +24,11 @@ const banSchema = new mongoose.Schema({
     date: {
         type: Date,
         required: true
-    }
+    },
+    to: {
+        type: Date,
+        required: true
+    },
 }, { _id: false });
 
 const userSchema = new mongoose.Schema({
@@ -79,6 +84,10 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 1
     },
+    levelTag: {
+        type: String,
+        default: "Webkiddies"
+    },
     xp: {
         type: Number,
         default: 0
@@ -129,12 +138,20 @@ userSchema.methods.matchPassword = async function (inputPassword: string) {
 }
 
 
-userSchema.methods.getLevel = async function() {
-    const k = 50;
+// how important is a user is
+userSchema.methods.getWeightFromLevel = function() {
+    const minLevel = 16;
     const maxLevel = 30;
-    const level = Math.floor(Math.cbrt(this.xp / k));
-    return Math.min(level, maxLevel);
+    if(this.level < minLevel) return 1;
+    if(this.level >= maxLevel) return 10;
+
+    const minWeight = 2;
+    const maxWeight = 10;
+
+    const ratio = (this.level - minLevel) / (maxLevel - minLevel);
+    return Math.round(minWeight + ratio * (maxWeight - minWeight));
 }
+
 
 
 userSchema.pre('save', async function (next) {
@@ -153,6 +170,26 @@ userSchema.pre('save', async function (next) {
         await Notification.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
     }
 
+    if(this.isModified("xp")) {
+        const k = 50;
+        const maxLevel = 30;
+        const level = Math.floor(Math.cbrt(this.xp / k));
+        this.level =  Math.min(level, maxLevel);
+
+        {
+            if(this.level <= 4)  this.levelTag = "Webkiddies";
+            else if(this.level <= 5)  this.levelTag = "Novice";
+            else if(this.level <= 8)  this.levelTag = "Apprentice";
+            else if(this.level <= 12) this.levelTag =  "Explorer";
+            else if(this.level <= 15) this.levelTag =  "Adept";
+            else if(this.level <= 18) this.levelTag =  "Expert";
+            else if(this.level <= 21) this.levelTag =  "Master";
+            else if(this.level <= 24) this.levelTag =  "Grandmaster";
+            else if(this.level <= 27) this.levelTag =  "Legend";
+            else if (this.level <= 30) this.levelTag = "Weblerian";
+        }
+    }
+
     return next();
 
 
@@ -161,6 +198,7 @@ userSchema.pre('save', async function (next) {
 declare interface IUser extends InferSchemaType<typeof userSchema> {
     roles: RolesEnum[];
     matchPassword(inputPassword: string): Promise<boolean>;
+    getWeightFromLevel(): number;
 }
 
 interface UserModel extends Model<IUser> {

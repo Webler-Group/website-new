@@ -150,19 +150,25 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    if (user.roles.includes(RolesEnum.ADMIN)) {
+    if (user.roles.includes(RolesEnum.ADMIN) || currentUserId === userId) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
     user.active = active;
 
+    const expiredDate = new Date(); 
+    expiredDate.setDate(expiredDate.getDate() + (360 * 5));
+
     if (!user.active) {
         user.ban = {
             author: new mongoose.Types.ObjectId(currentUserId!),
             note,
-            date: new Date()
+            date: new Date(),
+            to: expiredDate
         };
+
+        user.xp -= 300;
     } else {
         user.ban = null as any;
     }

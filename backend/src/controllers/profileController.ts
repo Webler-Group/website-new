@@ -115,6 +115,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             isFollowing,
             registerDate: user.createdAt,
             level: user.level,
+            levelTag: user.levelTag,
             xp: user.xp,
             active: user.active,
             notifications: user.notifications,
