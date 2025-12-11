@@ -6,7 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { Link, useNavigate } from "react-router-dom";
-import { IAdminUser } from "./ModViewPage";
+import { IAdminUser } from "./AdminUserProfilePage";
 
 const rolesOptions = ["All", ...roles];
 

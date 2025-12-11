@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FaTag, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import PageTitle from "../../../layouts/PageTitle";
+import { Breadcrumb } from "react-bootstrap";
+import { Link } from "react-router-dom";
 
 const TagHomePage = () => {
     const [tagJobEntry, setTagJobEntry] = useState<string>("");
@@ -37,6 +39,12 @@ const TagHomePage = () => {
   return (
     <div className="container-fluid p-2 d-flex align-items-center justify-content-center">
         <div className="col-12 col-lg-4 p-2">
+            <Breadcrumb>
+                <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Tools" }}>
+                    Tools
+                </Breadcrumb.Item>
+                <Breadcrumb.Item active>Tags</Breadcrumb.Item>
+            </Breadcrumb>
             <label htmlFor="tagsJob" className="form-label fw-bold">Execute Tag Jobs</label>
             <textarea 
                 rows={10}

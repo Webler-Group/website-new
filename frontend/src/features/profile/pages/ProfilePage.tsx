@@ -2,10 +2,10 @@ import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
+import { Badge, Button, Card, Col, Container, Dropdown, Form, Modal, Row } from "react-bootstrap";
 import ProfileSettings from "../components/ProfileSettings";
 import countries from "../../../data/countries";
-import { FaGear, FaHammer, FaStar } from "react-icons/fa6";
+import { FaDeleteLeft, FaGear, FaHammer, FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "../components/FollowList";
 import CodesSection from "../components/CodesSection";
@@ -18,6 +18,8 @@ import PageTitle from "../../../layouts/PageTitle";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
+import { xpForLevel, xpToNextLevel } from "../../../utils/UserUtils";
+
 
 export interface UserDetails {
     id: string;
@@ -30,6 +32,7 @@ export interface UserDetails {
     following: number;
     isFollowing: boolean;
     level: number;
+    levelTag: string;
     xp: number;
     codes: any[];
     emailVerified: boolean;
@@ -68,7 +71,17 @@ const ProfilePage = () => {
     const [pageTitle, setPageTitle] = useState("Webler Codes");
     const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
+    const [currentLevel, setCurrentLevel] = useState(1);
+    const [showBanModal, setShowBanModal] = useState(false);
+    const [banNote, setBanNote] = useState("");
+    const [isActive, setIsActive] = useState(false);
+    const [criticalActionLoading, setCriticalActionLoading] = useState(false);
+
     const navigate = useNavigate();
+    
+    const levelProgressWidth = 300;
+    const [progressTo30, setProgressTo30] = useState(0);
+
 
     PageTitle(pageTitle);
 
@@ -85,6 +98,9 @@ const ProfilePage = () => {
                     setCodes(data.userDetails.codes.slice(0, 3));
                     setQuestions(data.userDetails.questions.slice(0, 3));
                     setPageTitle(data.userDetails.name);
+                    setCurrentLevel(data.userDetails.level);
+                    setIsActive(data.userDetails.active);
+                    setProgressTo30(data.userDetails.xp / xpForLevel(30) * levelProgressWidth);
                 }
                 else {
                     setUserDetails(null);
@@ -193,6 +209,19 @@ const ProfilePage = () => {
         navigate("/Profile/" + userDetails.id + "?settings=true");
     }
 
+
+    const handleBanUser = async() => {
+        setCriticalActionLoading(true);
+        await sendJsonRequest("/Admin/BanUser", "POST", {
+            userId: userDetails?.id,
+            active: !isActive,
+            note: banNote,
+        });
+        setCriticalActionLoading(false);
+        setIsActive(!isActive);
+        setShowBanModal(false);
+    }
+
     let isCurrentUser = userInfo && userInfo.id === userId;
     let isAdmin = userInfo && userInfo.roles.includes("Admin");
 
@@ -266,9 +295,10 @@ const ProfilePage = () => {
 
     let badge = (() => {
         if (userDetails?.roles.includes("Moderator")) {
-            return <Badge className="wb-p-details__avatar-badge" bg="secondary">Moderator</Badge>
+            return <Badge className="wb-p-details__avatar-badge text-danger" bg="danger-subtle">Moderator</Badge>
         }
 
+        // return <Badge className="wb-p-details__avatar-badge" bg="secondary">{userDetails?.levelTag}</Badge>
         return <></>
     })()
 
@@ -277,6 +307,39 @@ const ProfilePage = () => {
             {
                 userDetails ?
                     <>
+                        <Modal show={showBanModal} onHide={() => setShowBanModal(false)} centered>
+                            <Modal.Header closeButton>
+                                <Modal.Title>Critical Action</Modal.Title>
+                            </Modal.Header>
+                            <Modal.Body>
+                                { isActive && <>
+                                <p>This user will be banned</p>
+                                    <Form.Group className="mt-3">
+                                        <Form.Label>Ban Reason</Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={2}
+                                                value={banNote}
+                                                onChange={(e) => setBanNote(e.target.value) }
+                                            />
+                                    </Form.Group>
+                                </>}
+
+                                {!isActive && <>
+                                This user will be unbanned
+                                </>}
+
+                            </Modal.Body>
+                            <Modal.Footer>
+                                <Button variant="secondary" onClick={() => setShowBanModal(false)}>
+                                    Cancel
+                                </Button>
+                                <Button onClick={() => handleBanUser()} variant="danger" disabled={criticalActionLoading}>
+                                    Continue
+                                </Button>
+                            </Modal.Footer>
+                        </Modal>
+
                         <NotificationToast notification={notification} onClose={() => setNotification(null)} />
                         {
                             codesSectionVisible &&
@@ -292,7 +355,7 @@ const ProfilePage = () => {
                             <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                         }
                         <Container className="p-2">
-                            <Card className="p-2">
+                            <Card className={`p-2 ${!isActive && "bg-danger-subtle text-danger"}`}>
                                 <div className="wb-edit-button">
                                     <Dropdown drop="start">
                                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
@@ -301,16 +364,29 @@ const ProfilePage = () => {
                                                 (isCurrentUser || isAdmin) &&
                                                 <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
                                             }
+
                                             {
                                                 (userInfo &&
-                                                    userInfo.roles.some(role => ["Moderator", "Admin"].includes(role))) &&
+                                                    userInfo.roles.some(role => ["Moderator", "Admin"].includes(role))) && 
+                                                    !isCurrentUser &&
+                                                <>
+                                                    <Dropdown.Item as={Button} onClick={() => setShowBanModal(true)}>
+                                                        <FaDeleteLeft></FaDeleteLeft> {isActive ? "Ban": "Unban"} User
+                                                    </Dropdown.Item>
+                                                </>
+                                            }
+
+                                            {
+                                                (userInfo &&
+                                                    userInfo.roles.some(role => ["Admin"].includes(role))) &&
                                                 <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
-                                                    <FaHammer /> Open in Mod View
+                                                    <FaHammer /> Open in Admin
                                                 </Dropdown.Item>
                                             }
                                         </Dropdown.Menu>
                                     </Dropdown>
                                 </div>
+                                
                                 <div className="d-block d-md-flex gap-3">
                                     <div className="wb-p-details__avatar">
                                         <ProfileAvatar size={96} avatarImage={userDetails.avatarImage} />
@@ -318,7 +394,7 @@ const ProfilePage = () => {
                                     </div>
                                     <div className="d-flex flex-column align-items-center align-items-md-start">
                                         <div className="d-flex wb-p-details__row">
-                                            <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace", textDecoration: userDetails.active ? "none" : "line-through" }}>{userDetails.name}</p>
+                                            <p className="wb-p-details__name text-center" style={{ fontFamily: "monospace", textDecoration: isActive ? "none" : "line-through" }}>{userDetails.name}</p>
                                         </div>
                                         <div>
                                             {
@@ -356,10 +432,21 @@ const ProfilePage = () => {
                                             }
 
                                         </div>
-                                        <p className="wb-p-details__row">
+                                        <div className="wb-p-details__row">
                                             <FaStar style={{ color: "gold" }} />
-                                            <b>{userDetails.xp} XP</b>
-                                        </p>
+                                            <small>{userDetails.xp} XP</small>
+                                            <div className="progress rounded-pill" style={{ height: "12px", width:`${levelProgressWidth}px` }}>
+                                                <div
+                                                    className="progress-bar bg-success"
+                                                    role="progressbar"
+                                                    style={{ width: `${progressTo30}px` }}
+                                                    aria-valuemin={0}
+                                                    />
+                                            </div>
+                                            <small className="text-muted d-block mt-1">
+                                                <b>{xpToNextLevel(userDetails.xp)} xp</b> towards Level <b>{Math.min(30, userDetails.level + 1)}</b>
+                                            </small>
+                                        </div>
                                         <div className="wb-p-details__row">
                                             <p className="text-secondary wb-p-details__bio small">{userDetails.bio}</p>
                                         </div>
@@ -371,7 +458,7 @@ const ProfilePage = () => {
                                                     <span className="mx-2">·</span>
                                                 </>
                                             }
-                                            Lvl {userDetails.level}
+                                            Lvl <b>{userDetails.level}</b>
                                         </div>
                                     </div>
                                 </div>

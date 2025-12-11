@@ -4,7 +4,7 @@ import Header from "../../layouts/Header"
 import RequireAuth from "../auth/components/RequireAuth"
 import AdminHomePage from "./pages/AdminHomePage"
 import AdminUserListPage from "./pages/AdminUserListPage"
-import ModViewPage from "./pages/ModViewPage"
+import ModViewPage from "./pages/AdminUserProfilePage"
 
 const AdminRoutes = () => {
     return (
