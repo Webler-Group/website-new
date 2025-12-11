@@ -10,6 +10,7 @@ import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowing from "../models/UserFollowing";
+import XpEnum from "../data/XpEnum";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -92,7 +93,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         email,
         name,
         password,
-        xp: 100,
+        xp: XpEnum.SIGNUP_AWARD,
         emailVerified: config.nodeEnv == "development",
         lastLoginAt: new Date()
     });

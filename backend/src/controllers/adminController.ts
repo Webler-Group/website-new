@@ -13,6 +13,7 @@ import {
     saveBasicInfoSchema
 } from "../validation/adminSchema";
 import { parseWithZod } from "../utils/zodUtils";
+import XpEnum from "../data/XpEnum";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
@@ -150,7 +151,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    if (user.roles.includes(RolesEnum.ADMIN) || currentUserId === userId) {
+    if (user.roles.includes(RolesEnum.ADMIN)) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -158,7 +159,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     user.active = active;
 
     const expiredDate = new Date(); 
-    expiredDate.setDate(expiredDate.getDate() + (360 * 5));
+    expiredDate.setDate(expiredDate.getDate() + (360 * 5)); // 5y by default: Not implemented yet
 
     if (!user.active) {
         user.ban = {
@@ -168,7 +169,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
             to: expiredDate
         };
 
-        user.xp -= 300;
+        user.xp += XpEnum.BAN;
     } else {
         user.ban = null as any;
     }
@@ -183,31 +184,11 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
-// possible obsoletes
-// const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
-//     const { body } = parseWithZod(updateRolesSchema, req);
-//     const { userId, roles } = body;
-
-//     const user = await User.findById(userId);
-//     if (!user) {
-//         res.status(404).json({ error: [{ message: "User not found" }] });
-//         return;
-//     }
-
-//     user.roles = roles;
-//     await user.save();
-//     res.json({
-//         success: true,
-//         data: { roles: user.roles }
-//     });
-// });
-
 const controller = {
     getUsersList,
     banUser,
     getUser,
-    saveBasicInfo,
-    // updateRoles
+    saveBasicInfo
 };
 
 export default controller;
