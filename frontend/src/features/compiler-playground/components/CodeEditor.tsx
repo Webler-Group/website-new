@@ -1,23 +1,57 @@
-import { LanguageName, loadLanguage } from "@uiw/codemirror-extensions-langs";
-import { vscodeDark } from "@uiw/codemirror-theme-vscode";
-import ReactCodeMirror from "@uiw/react-codemirror";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Tab, Tabs } from "react-bootstrap";
+import AceEditor from "react-ace";
+
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
 import { ICode } from "../../codes/components/Code";
 import CompileOutput from "./CompileOutput";
-import { EditorView, keymap } from "@codemirror/view";
-import {
-    acceptCompletion,
-    completionKeymap,
-    completionStatus,
-} from "@codemirror/autocomplete";
-import { indentWithTab } from "@codemirror/commands";
-import { Prec } from "@codemirror/state";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
 import { IChallenge, IChallengeSubmission } from "../../challenges/types";
+
+import "ace-builds/src-noconflict/theme-tomorrow_night";
+
+import "ace-builds/src-noconflict/mode-html";
+import "ace-builds/src-noconflict/mode-css";
+import "ace-builds/src-noconflict/mode-javascript";
+
+import "ace-builds/src-noconflict/mode-c_cpp";   // C + C++
+import "ace-builds/src-noconflict/mode-python";
+import "ace-builds/src-noconflict/mode-ruby";
+import "ace-builds/src-noconflict/mode-lua";
+import { compilerLanguages } from "../../../data/compilerLanguages";
+
+const compilerLangToAceMode = (lang: compilerLanguages | "html" | "css" | "javascript") => {
+    switch (lang) {
+        case "web":
+        case "html":
+            return "html";
+
+        case "css":
+            return "css";
+
+        case "javascript":
+            return "javascript";
+
+        case "c":
+        case "cpp":
+            return "c_cpp";
+
+        case "python":
+            return "python";
+
+        case "ruby":
+            return "ruby";
+
+        case "lua":
+            return "lua";
+
+        default:
+            return "text";
+    }
+}
+
 
 interface CodeEditorProps {
     code: ICode;
@@ -27,7 +61,7 @@ interface CodeEditorProps {
     setCss: (value: string) => void;
     js: string;
     setJs: (value: string) => void;
-    options: { scale: number };
+    options: { scale: number, lineWrap: boolean };
     tabHeightStyle: string;
     consoleVisible?: boolean;
     hideConsole?: () => void;
@@ -36,6 +70,8 @@ interface CodeEditorProps {
     challenge?: IChallenge;
     submission?: IChallengeSubmission;
 }
+
+
 
 const CodeEditor = ({
     code,
@@ -52,28 +88,30 @@ const CodeEditor = ({
     toggleConsole,
     setLogsCount,
     challenge,
-    submission
+    submission,
 }: CodeEditorProps) => {
-    const [editorTabs, setEditorTabs] = useState<LanguageName[]>([]);
+    const [editorTabs, setEditorTabs] = useState<string[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const editorStates = useMemo(
-        () => [
-            { value: source, setValue: setSource, lang: "html" as LanguageName },
-            { value: css, setValue: setCss, lang: "css" as LanguageName },
-            { value: js, setValue: setJs, lang: "javascript" as LanguageName },
-        ],
-        [source, css, js, setSource, setCss, setJs]
-    );
+    // Prefer mapping by lang (not idx) to avoid bugs with description/output tabs
+    const editorByLang = useMemo(() => {
+        const map = new Map<string, { value: string; setValue: (v: string) => void }>();
+        map.set("html", { value: source, setValue: setSource });
+        map.set("css", { value: css, setValue: setCss });
+        map.set("javascript", { value: js, setValue: setJs });
+        // For non-web single-language codes, reuse `source`
+        // (your current design already uses source for non-web)
+        return map;
+    }, [source, setSource, css, setCss, js, setJs]);
 
     useEffect(() => {
         if (code.language === "web") {
             setEditorTabs(["html", "css", "javascript"]);
             setActiveKey("html");
         } else {
-            setEditorTabs([code.language as LanguageName]);
+            setEditorTabs([code.language]);
             setActiveKey(code.language);
         }
     }, [code.id, code.language]);
@@ -81,13 +119,14 @@ const CodeEditor = ({
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isMac = navigator.userAgent.includes("Mac");
-
             if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
                 const match = /^Digit(\d)$/.exec(e.code);
                 if (match) {
                     e.preventDefault();
                     const index = parseInt(match[1], 10) - 1;
-                    const allTabs = challenge ? ["description", ...editorTabs, "output"] : [...editorTabs, "output"];
+                    const allTabs = challenge
+                        ? ["description", ...editorTabs, "output"]
+                        : [...editorTabs, "output"];
                     const tab = allTabs[index];
                     if (tab) setActiveKey(tab);
                 } else if (e.key === "k") {
@@ -99,88 +138,78 @@ const CodeEditor = ({
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [editorTabs]);
+    }, [editorTabs, toggleConsole, challenge]);
 
     const onTabSelect = (key: string | null) => {
         if (key) setActiveKey(key);
     };
 
-    const getExtensions = useCallback(
-        (lang: LanguageName) => [
-            loadLanguage(lang) as any,
-            EditorView.theme({
-                ".cm-content": {
-                    paddingBottom: "32px",
-                    paddingRight: "32px",
-                },
-            }),
-            EditorView.scrollMargins.of(() => ({ bottom: 64, right: 64 })),
-            Prec.high(
-                keymap.of([
-                    {
-                        key: "Tab",
-                        run: (view) => {
-                            const status = completionStatus(view.state);
-                            if (status === "active" || status === "pending")
-                                return acceptCompletion(view);
-                            return indentWithTab.run ? indentWithTab.run(view) : false;
-                        },
-                    },
-                    {
-                        key: "Enter",
-                        run: (view) => {
-                            const status = completionStatus(view.state);
-                            if (status === "active" || status === "pending")
-                                return acceptCompletion(view);
-                            return false;
-                        },
-                    },
-                ])
-            ),
-            keymap.of(completionKeymap),
-        ],
-        []
+    const renderAce = useCallback(
+        (lang: string) => {
+            const isWeb = code.language === "web";
+            const entry = isWeb
+                ? editorByLang.get(lang)
+                : { value: source, setValue: setSource };
+
+            const value = entry?.value ?? "";
+            const setValue = entry?.setValue ?? (() => { });
+
+            return (
+                <AceEditor
+                    mode={compilerLangToAceMode(lang as any)}
+                    theme="tomorrow_night"
+                    value={value}
+                    onChange={(v) => setValue(v)}
+                    width="100%"
+                    height="100%"
+                    fontSize={options.scale * 16} // mobile-friendly
+                    showGutter
+                    showPrintMargin={false}
+                    wrapEnabled={options.lineWrap}
+                    setOptions={{
+                        useWorker: false, // important for performance/sandboxing
+                        tabSize: 2
+                    }}
+                    editorProps={{ $blockScrolling: true }}
+                    style={{
+                        height: "100%",
+                        overscrollBehavior: "contain",
+                    }}
+                />
+            );
+        },
+        [code.language, editorByLang, options.scale, source, setSource]
     );
 
     return (
         <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
-                    {
-                        challenge != null &&
+                    {challenge != null && (
                         <Tab
                             key={"description"}
                             eventKey={"description"}
                             title={"description"}
                             className="bg-white"
-                            style={{ height: tabHeightStyle }}>
+                            style={{ height: tabHeightStyle }}
+                        >
                             <div className="overflow-y-auto h-100 p-2">
                                 <MarkdownRenderer content={challenge.description} />
                             </div>
                         </Tab>
-                    }
-                    {editorTabs.map((lang, idx) => (
+                    )}
+
+                    {editorTabs.map((lang) => (
                         <Tab
                             key={lang}
                             eventKey={lang}
                             title={lang}
                             style={{ height: tabHeightStyle }}
                         >
-                            <ReactCodeMirror
-                                value={editorStates[idx].value}
-                                onChange={(value) => editorStates[idx].setValue(value)}
-                                width="100%"
-                                height="100%"
-                                style={{
-                                    height: "100%",
-                                    fontSize: `${options.scale * 100}%`,
-                                    overscrollBehavior: "contain",
-                                }}
-                                theme={vscodeDark}
-                                extensions={getExtensions(lang)}
-                            />
+                            {renderAce(lang)}
                         </Tab>
                     ))}
+
                     <Tab
                         onEnter={onTabEnter}
                         onExit={onTabLeave}
@@ -189,22 +218,30 @@ const CodeEditor = ({
                         title={"output"}
                         style={{ height: tabHeightStyle }}
                     >
-                        {code.challengeId != null ?
-                            <ChallengeCodeOutput source={source} language={code.language} challenge={challenge!} submission={submission} />
-                            :
-                            code.language === "web" ?
-                                <WebOutput
-                                    source={source}
-                                    cssSource={css}
-                                    jsSource={js}
-                                    tabOpen={tabOpen}
-                                    consoleVisible={consoleVisible}
-                                    hideConosole={hideConsole}
-                                    setLogsCount={setLogsCount}
-                                />
-                                :
-                                <CompileOutput source={source} language={code.language} tabOpen={tabOpen} />
-                        }
+                        {code.challengeId != null ? (
+                            <ChallengeCodeOutput
+                                source={source}
+                                language={code.language}
+                                challenge={challenge!}
+                                submission={submission}
+                            />
+                        ) : code.language === "web" ? (
+                            <WebOutput
+                                source={source}
+                                cssSource={css}
+                                jsSource={js}
+                                tabOpen={tabOpen}
+                                consoleVisible={consoleVisible}
+                                hideConosole={hideConsole}
+                                setLogsCount={setLogsCount}
+                            />
+                        ) : (
+                            <CompileOutput
+                                source={source}
+                                language={code.language}
+                                tabOpen={tabOpen}
+                            />
+                        )}
                     </Tab>
                 </Tabs>
             )}

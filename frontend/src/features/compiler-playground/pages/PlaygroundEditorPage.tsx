@@ -543,12 +543,18 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                                     }
                                                 </>
                                             }
-                                            <Dropdown.ItemText className="border d-flex justify-content-between">
+                                            <Dropdown.ItemText className="border-top d-flex justify-content-between">
                                                 <div>Font</div>
                                                 <div className="d-flex gap-1">
                                                     <span className="wb-compiler-playground-options__button" onClick={zoomOut}>-</span>
                                                     <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
                                                     <span className="wb-compiler-playground-options__button" onClick={zoomIn}>+</span>
+                                                </div>
+                                            </Dropdown.ItemText>
+                                            <Dropdown.ItemText className="border-bottom d-flex justify-content-between">
+                                                <div>Line Wrap</div>
+                                                <div>
+                                                    <input type="checkbox" checked={editorOptions.lineWrap} onChange={(e) => updateEditorOptions({ ...editorOptions, lineWrap: e.target.checked })} />
                                                 </div>
                                             </Dropdown.ItemText>
                                             {

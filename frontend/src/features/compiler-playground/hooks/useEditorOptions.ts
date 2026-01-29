@@ -2,10 +2,11 @@ import { useEffect, useState } from "react";
 
 interface EditorOptions {
     scale: number;
+    lineWrap: boolean;
 }
 
 const useEditorOptions = () => {
-    const [editorOptions, setEditorOptions] = useState<EditorOptions>({ scale: 1.0 });
+    const [editorOptions, setEditorOptions] = useState<EditorOptions>({ scale: 1.0, lineWrap: false });
 
     useEffect(() => {
         const editorValue = localStorage.getItem("editor");

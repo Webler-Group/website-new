@@ -7,16 +7,14 @@
     "dev": "vite --host",
     "build": "tsc && vite build",
     "lint": "eslint src --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview",
-    "tailwind:init": "tailwindcss init -p"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@uiw/codemirror-extensions-langs": "^4.21.9",
-    "@uiw/codemirror-theme-vscode": "^4.21.9",
-    "@uiw/react-codemirror": "^4.21.9",
+    "ace-builds": "^1.43.6",
     "bootstrap": "^5.3.8",
     "html-react-parser": "^4.2.1",
     "react": "^18.2.0",
+    "react-ace": "^14.0.1",
     "react-bootstrap": "^2.7.4",
     "react-bootstrap-pagination-control": "^1.0.5",
     "react-datepicker": "^8.7.0",
