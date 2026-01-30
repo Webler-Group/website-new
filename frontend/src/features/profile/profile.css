@@ -63,3 +63,12 @@
 .wb-p-details-delete-modal__backdrop {
     z-index: 1059 !important;
 }
+
+.wb-p-details-challenges-summary__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid rgba(0,0,0,.1);
+  border-radius: 10px;
+  background: rgba(0,0,0,.02);
+}

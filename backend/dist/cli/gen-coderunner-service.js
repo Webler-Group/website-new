@@ -34,11 +34,11 @@ if (args.length !== 1) {
 const projectDir = path.resolve(args[0]);
 const backendService = `
 [Unit]
-Description=Weblercodes backend
+Description=Weblercodes coderunner
 After=network.target
 
 [Service]
-ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/server.js")}
+ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/workers/codeRunner.js")}
 Restart=always
 User=root
 Environment=NODE_ENV=production

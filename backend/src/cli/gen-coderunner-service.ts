@@ -5,19 +5,19 @@ import * as path from 'path';
 const args = process.argv.slice(2);
 
 if (args.length !== 1) {
-  console.error('Usage: node gen-backend-service.js <project_directory>');
-  process.exit(1);
+    console.error('Usage: node gen-backend-service.js <project_directory>');
+    process.exit(1);
 }
 
 const projectDir = path.resolve(args[0]);
 
 const backendService = `
 [Unit]
-Description=Weblercodes backend
+Description=Weblercodes coderunner
 After=network.target
 
 [Service]
-ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/server.js")}
+ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/workers/codeRunner.js")}
 Restart=always
 User=root
 Environment=NODE_ENV=production

@@ -9,6 +9,7 @@ import { ChangeEvent, useEffect, useState } from "react";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import LanguageIcons from "../components/LanguageIcons";
+import { FaLock } from "react-icons/fa";
 
 
 const ChallengeList = () => {
@@ -23,12 +24,10 @@ const ChallengeList = () => {
     const [challengeCount, setChallengeCount] = useState(0);
     const [loading, setLoading] = useState(false);
     const [difficulty, setDifficulty] = useState("all");
-    // const [status, setStatus] = useState<string>("all");
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
     const [isPublic, setIsPublic] = useState(true);
-    // const  { showMessage } = useSnackbar();
 
     useEffect(() => {
         getChallenges();
@@ -45,9 +44,6 @@ const ChallengeList = () => {
         if (searchParams.has("difficulty")) {
             setDifficulty(searchParams.get("difficulty")!);
         }
-        // if (searchParams.has("status")) {
-        //     setStatus(searchParams.get("status")!);
-        // }
         if (searchParams.has("query")) {
             setSearchQuery(searchParams.get("query")!);
             setSearchInput(searchParams.get("query")!);
@@ -73,9 +69,10 @@ const ChallengeList = () => {
         setLoading(true);
         const result = await sendJsonRequest(`/Challenge`, "POST", {
             page: searchParams.has("page") ? Number(searchParams.get("page")) : 1,
+            filter: 1,
+            userId: userInfo?.id,
             count: challengesPerPage,
             difficulty: searchParams.has("difficulty") ? searchParams.get("difficulty") : null,
-            // status: searchParams.has("status") ? searchParams.get("status") : null,
             searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
             isVisible: isPublic ? 1 : 0,
         });
@@ -96,17 +93,6 @@ const ChallengeList = () => {
         setSearchParams(searchParams, { replace: true });
         setDifficulty(value);
     }
-
-    // const handleStatusSelect = (e: ChangeEvent) => {
-    //     const value = (e.target as HTMLSelectElement).selectedOptions[0].value
-    //     if (value == "all") {
-    //         searchParams.delete("status");
-    //     } else {
-    //         searchParams.set("status", value);
-    //     }
-    //     setSearchParams(searchParams, { replace: true });
-    //     setStatus(value);
-    // }
 
     return (
         <div>
@@ -141,7 +127,7 @@ const ChallengeList = () => {
                             className="m-1 p-1 border-secondary bg-secondary"
                             onChange={(e) => setIsPublic(e.target.checked)}
                         />
-                        
+
                         <LinkContainer to="/Challenge/Create">
                             <Button size='sm'>Create</Button>
                         </LinkContainer>
@@ -159,17 +145,6 @@ const ChallengeList = () => {
                             <option value="hard">Hard</option>
                         </Form.Select>
                     </Form.Group>
-
-                    {/* <Form.Group>
-                        <Form.Label htmlFor="status" className="visually-hidden">
-                            Status
-                        </Form.Label>
-                        <Form.Select id="status" style={{ width: "120px" }} size='sm' value={status} onChange={handleStatusSelect}>
-                            <option value="all">All</option>
-                            <option value="unsolved">Unsolved</option>
-                            <option value="solved">Solved</option>
-                        </Form.Select>
-                    </Form.Group> */}
                 </div>
             </div>
 
@@ -187,7 +162,7 @@ const ChallengeList = () => {
                                 <div className="shadow-sm border rounded p-2"
                                     onClick={() => navigate(`/Challenge/${challenge.id}`)}
                                     style={{ cursor: "pointer" }}>
-                                    <div className="fw-semibold">{challenge.title}</div>
+                                    <div className="fw-semibold">{challenge.title} {!isPublic && <FaLock />}</div>
                                     <div>
                                         <Badge
                                             className={`${challenge.difficulty === "easy"
@@ -201,7 +176,7 @@ const ChallengeList = () => {
                                         </Badge>
                                     </div>
                                     <div className="mt-2">
-                                        <LanguageIcons  challenge={challenge} />
+                                        <LanguageIcons challenge={challenge} />
                                     </div>
                                 </div>
                             </Col>

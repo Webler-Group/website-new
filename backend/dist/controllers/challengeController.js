@@ -31,83 +31,75 @@ const createChallenge = (0, express_async_handler_1.default)(async (req, res) =>
 });
 const getChallengeList = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.getChallengeListSchema, req);
-    const { page, count, difficulty, searchQuery, isVisible } = body;
-    const currentUserId = req.userId;
-    const pipeline = [];
+    const { page, count, difficulty, searchQuery, isVisible, userId, filter } = body;
     const isPublic = Number(isVisible) === 1;
-    const isAuthorized = req.roles && req.roles.some(i => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR].includes(i));
-    ;
-    if ((!isPublic && !isAuthorized)) {
-        res.status(404).json({ status: false, error: [
-                { message: "Unauthorized User" },
-                { message: "IsPublic should be true" }
-            ] });
+    const isAuthorized = req.roles && req.roles.some(r => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR].includes(r));
+    if (!isPublic && !isAuthorized) {
+        res.status(404).json({
+            status: false,
+            error: [{ message: "Unauthorized User" }, { message: "IsPublic should be true" }]
+        });
         return;
     }
-    const matchStage = {
-        $match: {
-            $or: [
-                { isPublic },
-                { isPublic: { $exists: false } }
-            ]
-        }
+    const challengeQuery = {
+        $or: [{ isPublic }, { isPublic: { $exists: false } }]
     };
-    if (searchQuery && searchQuery.trim().length > 0) {
-        const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
-        const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
-        matchStage.$match.$or = [
-            { title: searchRegex }
-        ];
+    if (difficulty)
+        challengeQuery.difficulty = difficulty;
+    if (searchQuery && searchQuery.trim()) {
+        const safe = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
+        challengeQuery.title = new RegExp(`(^|\\b)${safe}`, "i");
     }
-    if (difficulty) {
-        matchStage.$match.difficulty = difficulty;
-    }
-    if (Object.keys(matchStage.$match).length > 0) {
-        pipeline.push(matchStage);
-    }
-    pipeline.push({
-        $facet: {
-            count: [{ $count: "total" }],
-            data: [
-                { $skip: (page - 1) * count },
-                { $limit: count },
-                {
-                    $lookup: {
-                        from: "challengesubmissions",
-                        let: { ch_id: "$_id" },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ["$challenge", "$$ch_id"] },
-                                            { $eq: ["$user", new mongoose_1.default.Types.ObjectId(currentUserId)] },
-                                            { $eq: ["$passed", true] }
-                                        ]
-                                    }
-                                }
-                            },
-                            { $group: { _id: "$language", passed: { $max: "$passed" } } },
-                            { $project: { language: "$_id", passed: 1, _id: 0 } }
-                        ],
-                        as: "submissions"
-                    }
-                },
-                {
-                    $project: {
-                        id: "$_id",
-                        title: 1,
-                        difficulty: 1,
-                        submissions: 1
-                    }
-                }
-            ]
+    if (filter === 2 || filter === 3) {
+        if (!userId) {
+            res.status(400).json({ error: [{ message: "Invalid request" }] });
+            return;
         }
-    });
-    const result = await Challenge_1.default.aggregate(pipeline);
-    const challengeCount = result[0].count[0]?.total || 0;
-    const data = result[0].data;
-    res.json({ count: challengeCount, challenges: data });
+        const passedIds = await ChallengeSubmission_1.default.distinct("challenge", {
+            user: userId,
+            passed: true
+        });
+        if (filter === 2) {
+            challengeQuery._id = { $in: passedIds };
+        }
+        else {
+            challengeQuery._id = { $nin: passedIds };
+        }
+    }
+    const [total, challenges] = await Promise.all([
+        Challenge_1.default.countDocuments(challengeQuery),
+        Challenge_1.default.find(challengeQuery)
+            .select({ title: 1, difficulty: 1 })
+            .skip((page - 1) * count)
+            .limit(count)
+            .lean()
+    ]);
+    let submissionsMap = new Map();
+    if (userId && challenges.length) {
+        const ids = challenges.map(c => c._id);
+        const subs = await ChallengeSubmission_1.default.find({
+            challenge: { $in: ids },
+            user: userId,
+            passed: true
+        })
+            .select({ challenge: 1, language: 1, passed: 1 })
+            .lean();
+        const tmp = new Map();
+        for (const s of subs) {
+            const k = String(s.challenge);
+            if (!tmp.has(k))
+                tmp.set(k, new Map());
+            tmp.get(k).set(String(s.language), { language: s.language, passed: true });
+        }
+        submissionsMap = new Map(Array.from(tmp.entries()).map(([k, v]) => [k, Array.from(v.values())]));
+    }
+    const data = challenges.map(c => ({
+        id: c._id,
+        title: c.title,
+        difficulty: c.difficulty,
+        submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : []
+    }));
+    res.json({ count: total, challenges: data });
 });
 const getChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(challengeSchema_1.getChallengeSchema, req);
@@ -116,10 +108,12 @@ const getChallenge = (0, express_async_handler_1.default)(async (req, res) => {
     // user cannot view private challenges
     const isAuthorized = req.roles && req.roles.some(i => [RolesEnum_1.default.ADMIN, RolesEnum_1.default.CREATOR].includes(i));
     if (!challenge?.isPublic && !isAuthorized) {
-        res.status(404).json({ success: false, error: [
+        res.status(404).json({
+            success: false, error: [
                 { message: "Unauthorized User cannot view private challenge" },
                 { message: "Challenge not found" },
-            ] });
+            ]
+        });
         return;
     }
     if (!challenge) {
@@ -137,12 +131,15 @@ const getChallenge = (0, express_async_handler_1.default)(async (req, res) => {
             id: challenge._id,
             description: challenge.description,
             difficulty: challenge.difficulty,
+            xp: challenge.xp ?? 0,
             title: challenge.title,
-            testCases: challenge.testCases.map(x => (x.isHidden ?
+            testCases: challenge.testCases.map((x) => (x.isHidden ?
                 {
+                    id: x._id,
                     isHidden: x.isHidden
                 } :
                 {
+                    id: x._id,
                     input: x.input,
                     expectedOutput: x.expectedOutput,
                     isHidden: x.isHidden
@@ -239,13 +236,14 @@ const getEditedChallenge = (0, express_async_handler_1.default)(async (req, res)
             description: challenge.description,
             difficulty: challenge.difficulty,
             title: challenge.title,
-            xp: challenge.xp,
+            xp: challenge.xp ?? 0,
             isPublic: challenge.isPublic ?? true,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
             })),
-            testCases: challenge.testCases.map(x => ({
+            testCases: challenge.testCases.map((x) => ({
+                id: x._id,
                 input: x.input,
                 expectedOutput: x.expectedOutput,
                 isHidden: x.isHidden

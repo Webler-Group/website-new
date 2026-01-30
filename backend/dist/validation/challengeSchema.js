@@ -50,7 +50,8 @@ exports.getChallengeListSchema = zod_1.z.object({
         page: commonSchema_1.pageSchema,
         count: commonSchema_1.countPerPageSchema,
         difficulty: difficultySchema.nullish(),
-        // status: z.enum(["solved", "unsolved"]).nullish(),
+        userId: (0, commonSchema_1.idSchema)("userId").nullish(),
+        filter: (0, commonSchema_1.filterSchema)([1, 2, 3]),
         searchQuery: zod_1.z.string().optional(),
         isVisible: zod_1.z.number()
     })

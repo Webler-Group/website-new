@@ -73,28 +73,8 @@ server {
         expires 1d;  # Cache for 1 day
     }
 
-    # Handle /api routes, proxy to backend
-    location /api {
-        proxy_pass http://localhost:5500;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Handle /uploads routes, proxy to backend
-    location /uploads {
-        proxy_pass http://localhost:5500;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Handle /socket.io routes, proxy to backend
-    location /socket.io {
+    # Handle proxy to backend
+    location ~ ^/(api|uploads|socket\.io) {
         proxy_pass http://localhost:5500;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

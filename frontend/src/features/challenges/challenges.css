@@ -1,3 +1,26 @@
 .wb-challenges-editor__exit-modal__backdrop {
     z-index: 1059;
 }
+
+.wb-challenges-testcase {
+    overflow: hidden;
+    max-height: 1000px;
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+        max-height 280ms ease,
+        opacity 200ms ease,
+        transform 200ms ease,
+        margin 280ms ease,
+        padding 280ms ease;
+}
+
+.wb-challenges-testcase-deleting {
+    max-height: 0;
+    opacity: 0;
+    transform: translateY(-6px);
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
+}

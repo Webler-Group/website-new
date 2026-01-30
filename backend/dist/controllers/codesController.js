@@ -64,9 +64,7 @@ const getCodeList = (0, express_async_handler_1.default)(async (req, res) => {
         const safeQuery = (0, regexUtils_1.escapeRegex)(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
         dbQuery = dbQuery.where({
-            $or: [
-                { name: searchRegex }
-            ]
+            name: searchRegex
         });
     }
     if (language) {

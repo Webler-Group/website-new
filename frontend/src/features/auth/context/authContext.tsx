@@ -1,4 +1,5 @@
 import React, { ReactNode, useContext, useState } from "react";
+import { uuid } from "../../../utils/StringUtils";
 
 export interface UserInfo {
     id: string;
@@ -34,11 +35,7 @@ export const useAuth = () => useContext(AuthContext);
 const getOrCreateDeviceId = (): string => {
     let id = localStorage.getItem("deviceId");
     if (!id) {
-        if (typeof crypto?.randomUUID === "function") {
-            id = crypto.randomUUID();
-        } else {
-            id = Date.now().toString(36) + Math.random().toString(36).substring(2);
-        }
+        id = uuid();
         localStorage.setItem("deviceId", id);
     }
     return id;

@@ -10,7 +10,6 @@ import { useSnackbar } from "../../../context/SnackbarProvider";
 import { LinkContainer } from "react-router-bootstrap";
 import MdEditorField from "../../../components/MdEditorField";
 
-
 interface IChallengeCreateFormProps {
     challengeId?: string;
 }
@@ -136,7 +135,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
 
                 <ChallengeTemplateForm languages={templates} setLanguages={setTemplates} />
 
-                <Form.Group className="mb-3">
+                <Form.Group className="mt-3">
                     <Form.Label>
                         <FaLevelUpAlt className="me-2" /> Difficulty
                     </Form.Label>
@@ -149,22 +148,28 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         <option value="hard">Hard</option>
                     </Form.Select>
                 </Form.Group>
-                
-                <Form.Control
-                    type="number"
-                    value={xp}
-                    placeholder="XP"
-                    onChange={(e) =>
-                        setXP(Number(e.target.value))
-                    }
-                />
 
-                <Form.Check
-                    type="checkbox"
-                    label="Public?"
-                    checked={isVisible}
-                    onChange={(e) => setIsVisible(e.target.checked)}
-                />
+                <Form.Group className="mt-3">
+                    <Form.Label>XP</Form.Label>
+                    <Form.Control
+                        type="number"
+                        min={0}
+                        value={xp}
+                        placeholder="XP"
+                        onChange={(e) =>
+                            setXP(Number(e.target.value))
+                        }
+                    />
+                </Form.Group>
+
+                <Form.Group className="mt-3">
+                    <Form.Check
+                        type="checkbox"
+                        label="Public?"
+                        checked={isVisible}
+                        onChange={(e) => setIsVisible(e.target.checked)}
+                    />
+                </Form.Group>
 
                 <p className="col text-danger">{error}</p>
 

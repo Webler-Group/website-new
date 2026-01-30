@@ -43,6 +43,10 @@ const challengeSubmissionSchema = new Schema(
     passed: {
       type: Boolean,
       default: false
+    },
+    source: {
+        type: String,
+        required: false
     }
   },
   { timestamps: true }

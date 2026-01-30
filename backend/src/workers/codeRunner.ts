@@ -58,6 +58,9 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                 if (submission) {
                     submission.testResults = testResults as any[];
                     submission.passed = passed;
+                    if (passed) {
+                        submission.source = job.source;
+                    }
                     await submission.save();
                 } else {
                     submission = await ChallengeSubmission.create({
@@ -65,7 +68,8 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                         user: job.user,
                         language: job.language,
                         testResults,
-                        passed
+                        passed,
+                        source: passed ? job.source : undefined
                     });
                 }
 

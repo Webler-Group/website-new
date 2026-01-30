@@ -55,6 +55,9 @@ async function processSingleJob(job) {
                 if (submission) {
                     submission.testResults = testResults;
                     submission.passed = passed;
+                    if (passed) {
+                        submission.source = job.source;
+                    }
                     await submission.save();
                 }
                 else {
@@ -63,7 +66,8 @@ async function processSingleJob(job) {
                         user: job.user,
                         language: job.language,
                         testResults,
-                        passed
+                        passed,
+                        source: passed ? job.source : undefined
                     });
                 }
                 job.submission = submission._id;

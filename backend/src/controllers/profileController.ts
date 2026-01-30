@@ -23,6 +23,7 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import MulterFileTypeError from "../exceptions/MulterFileTypeError";
+import ChallengeSubmission from "../models/ChallengeSubmission";
 
 const avatarImageUpload = multer({
     limits: { fileSize: 10 * 1024 * 1024 },
@@ -100,6 +101,45 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .limit(5)
         .select("-message");
 
+    const solvedAgg = await ChallengeSubmission.aggregate([
+        {
+            $match: {
+                user: user._id,
+                passed: true
+            }
+        },
+        {
+            $group: {
+                _id: "$challenge",
+            }
+        },
+        {
+            $lookup: {
+                from: "challenges",
+                localField: "_id",
+                foreignField: "_id",
+                as: "challenge"
+            }
+        },
+        { $unwind: "$challenge" },
+        {
+            $group: {
+                _id: "$challenge.difficulty",
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+
+    const solvedChallenges = {
+        easy: 0,
+        medium: 0,
+        hard: 0
+    } as Record<string, number>;
+
+    for (const row of solvedAgg) {
+        if (row._id) solvedChallenges[row._id] = row.count;
+    }
+
     res.json({
         userDetails: {
             id: user._id,
@@ -142,7 +182,8 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 date: x.createdAt,
                 answers: x.answers,
                 votes: x.votes
-            }))
+            })),
+            solvedChallenges
         }
     });
 

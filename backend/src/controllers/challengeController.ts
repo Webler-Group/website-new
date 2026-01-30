@@ -32,94 +32,93 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeListSchema, req);
-    const { page, count, difficulty, searchQuery, isVisible } = body;
-    const currentUserId = req.userId;
-
-    const pipeline: PipelineStage[] = [];
+    const { page, count, difficulty, searchQuery, isVisible, userId, filter } = body;
 
     const isPublic = Number(isVisible) === 1;
-    const isAuthorized = req.roles && req.roles.some(i => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(i));;
-    if((!isPublic && !isAuthorized)) {
-        res.status(404).json({ status: false, error: [
-            { message: "Unauthorized User" },
-            { message: "IsPublic should be true"}
-        ] });
-        
+    const isAuthorized =
+        req.roles && req.roles.some(r => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(r));
+
+    if (!isPublic && !isAuthorized) {
+        res.status(404).json({
+            status: false,
+            error: [{ message: "Unauthorized User" }, { message: "IsPublic should be true" }]
+        });
         return;
     }
 
-    const matchStage: PipelineStage.Match = {
-        $match: {
-            $or: [
-                { isPublic }, 
-                { isPublic: { $exists: false } }
-            ]
-        }
+    const challengeQuery: any = {
+        $or: [{ isPublic }, { isPublic: { $exists: false } }]
     };
 
-    if (searchQuery && searchQuery.trim().length > 0) {
-        const safeQuery = escapeRegex(searchQuery.trim());
-        const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
-        matchStage.$match.$or = [
-            { title: searchRegex }
-        ];
+    if (difficulty) challengeQuery.difficulty = difficulty;
+
+    if (searchQuery && searchQuery.trim()) {
+        const safe = escapeRegex(searchQuery.trim());
+        challengeQuery.title = new RegExp(`(^|\\b)${safe}`, "i");
     }
 
-    if (difficulty) {
-        matchStage.$match.difficulty = difficulty;
-    }
-
-    if (Object.keys(matchStage.$match).length > 0) {
-        pipeline.push(matchStage);
-    }
-
-    pipeline.push({
-        $facet: {
-            count: [{ $count: "total" }],
-            data: [
-                { $skip: (page - 1) * count },
-                { $limit: count },
-                {
-                    $lookup: {
-                        from: "challengesubmissions",
-                        let: { ch_id: "$_id" },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $expr: {
-                                        $and: [
-                                            { $eq: ["$challenge", "$$ch_id"] },
-                                            { $eq: ["$user", new mongoose.Types.ObjectId(currentUserId)] },
-                                            { $eq: ["$passed", true] }
-                                        ]
-                                    }
-                                }
-                            },
-                            { $group: { _id: "$language", passed: { $max: "$passed" } } },
-                            { $project: { language: "$_id", passed: 1, _id: 0 } }
-                        ],
-                        as: "submissions"
-                    }
-                },
-                {
-                    $project: {
-                        id: "$_id",
-                        title: 1,
-                        difficulty: 1,
-                        submissions: 1
-                    }
-                }
-            ]
+    if (filter === 2 || filter === 3) {
+        if (!userId) {
+            res.status(400).json({ error: [{ message: "Invalid request" }] });
+            return;
         }
-    });
+        const passedIds = await ChallengeSubmission.distinct("challenge", {
+            user: userId,
+            passed: true
+        });
 
-    const result = await Challenge.aggregate(pipeline);
+        if (filter === 2) {
+            challengeQuery._id = { $in: passedIds };
+        } else {
+            challengeQuery._id = { $nin: passedIds };
+        }
+    }
 
-    const challengeCount = result[0].count[0]?.total || 0;
-    const data = result[0].data;
+    const [total, challenges] = await Promise.all([
+        Challenge.countDocuments(challengeQuery),
+        Challenge.find(challengeQuery)
+            .select({ title: 1, difficulty: 1 })
+            .skip((page - 1) * count)
+            .limit(count)
+            .lean()
+    ]);
 
-    res.json({ count: challengeCount, challenges: data });
+    let submissionsMap = new Map<string, any[]>();
+
+    if (userId && challenges.length) {
+        const ids = challenges.map(c => c._id);
+
+        const subs = await ChallengeSubmission.find({
+            challenge: { $in: ids },
+            user: userId,
+            passed: true
+        })
+            .select({ challenge: 1, language: 1, passed: 1 })
+            .lean();
+
+        const tmp = new Map<string, Map<string, any>>();
+
+        for (const s of subs) {
+            const k = String(s.challenge);
+            if (!tmp.has(k)) tmp.set(k, new Map());
+            tmp.get(k)!.set(String(s.language), { language: s.language, passed: true });
+        }
+
+        submissionsMap = new Map(
+            Array.from(tmp.entries()).map(([k, v]) => [k, Array.from(v.values())])
+        );
+    }
+
+    const data = challenges.map(c => ({
+        id: c._id,
+        title: c.title,
+        difficulty: c.difficulty,
+        submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : []
+    }));
+
+    res.json({ count: total, challenges: data });
 });
+
 
 const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeSchema, req);
@@ -129,11 +128,13 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     // user cannot view private challenges
     const isAuthorized = req.roles && req.roles.some(i => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(i));
-    if(!challenge?.isPublic && !isAuthorized) {
-        res.status(404).json({ success: false, error: [
-            { message: "Unauthorized User cannot view private challenge" },
-            { message: "Challenge not found" },
-        ] });
+    if (!challenge?.isPublic && !isAuthorized) {
+        res.status(404).json({
+            success: false, error: [
+                { message: "Unauthorized User cannot view private challenge" },
+                { message: "Challenge not found" },
+            ]
+        });
         return;
     }
 
@@ -154,12 +155,15 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             id: challenge._id,
             description: challenge.description,
             difficulty: challenge.difficulty,
+            xp: challenge.xp ?? 0,
             title: challenge.title,
-            testCases: challenge.testCases.map(x => (x.isHidden ?
+            testCases: challenge.testCases.map((x: any) => (x.isHidden ?
                 {
+                    id: x._id,
                     isHidden: x.isHidden
                 } :
                 {
+                    id: x._id,
                     input: x.input,
                     expectedOutput: x.expectedOutput,
                     isHidden: x.isHidden
@@ -189,7 +193,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
         }
     } else {
         const challenge = await Challenge.findById(challengeId);
-        const template = challenge?.templates.find(x => x.name === language) || {source:""};
+        const template = challenge?.templates.find(x => x.name === language) || { source: "" };
 
         data = {
             language,
@@ -273,13 +277,14 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
             description: challenge.description,
             difficulty: challenge.difficulty,
             title: challenge.title,
-            xp: challenge.xp,
+            xp: challenge.xp ?? 0,
             isPublic: challenge.isPublic ?? true,
             templates: challenge.templates.map(x => ({
                 name: x.name,
                 source: x.source
             })),
-            testCases: challenge.testCases.map(x => ({
+            testCases: challenge.testCases.map((x: any) => ({
+                id: x._id,
                 input: x.input,
                 expectedOutput: x.expectedOutput,
                 isHidden: x.isHidden
@@ -379,14 +384,14 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    if(job.submission && job.submission.passed) {
+    if (job.submission && job.submission.passed) {
         const user = await User.findById(req.userId);
         const challenge = await Challenge.findById(job.challenge);
-        if(user) {
+        if (user) {
             const reward = challenge ? challenge.xp : 0;
             const submission = await ChallengeSubmission.findOne({ user: req.userId, challenge: job.challenge, language: job.language });
             // reward user once the first time they passed a challenge for a particular language
-            if(submission && submission.reward != reward) {
+            if (submission && submission.reward != reward) {
                 user.xp += reward;
                 submission.reward = reward;
                 await user.save();
@@ -394,7 +399,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
             }
         }
     }
- 
+
     res.json({
         job: {
             id: job._id,

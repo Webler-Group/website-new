@@ -46,6 +46,10 @@ const challengeSubmissionSchema = new mongoose_1.Schema({
     passed: {
         type: Boolean,
         default: false
+    },
+    source: {
+        type: String,
+        required: false
     }
 }, { timestamps: true });
 const ChallengeSubmission = (0, mongoose_1.model)("ChallengeSubmission", challengeSubmissionSchema);

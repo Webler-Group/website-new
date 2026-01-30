@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { compilerLanguageSchema, countPerPageSchema, idSchema, messageSchema, pageSchema, questionTitleSchema } from "./commonSchema";
+import { compilerLanguageSchema, countPerPageSchema, filterSchema, idSchema, messageSchema, pageSchema, questionTitleSchema } from "./commonSchema";
 import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 
 const difficultySchema = z.enum(ChallengeDifficultyEnum, "Invalid difficulty");
@@ -51,7 +51,8 @@ export const getChallengeListSchema = z.object({
     page: pageSchema,
     count: countPerPageSchema,
     difficulty: difficultySchema.nullish(),
-    // status: z.enum(["solved", "unsolved"]).nullish(),
+    userId: idSchema("userId").nullish(),
+    filter: filterSchema([1, 2, 3]),
     searchQuery: z.string().optional(),
     isVisible: z.number()
   })

@@ -69,9 +69,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const safeQuery = escapeRegex(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
         dbQuery = dbQuery.where({
-            $or: [
-                { name: searchRegex }
-            ]
+            name: searchRegex
         });
     }
 

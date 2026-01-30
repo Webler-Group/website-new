@@ -26,6 +26,7 @@ const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const zodUtils_1 = require("../utils/zodUtils");
 const profileSchema_1 = require("../validation/profileSchema");
 const MulterFileTypeError_1 = __importDefault(require("../exceptions/MulterFileTypeError"));
+const ChallengeSubmission_1 = __importDefault(require("../models/ChallengeSubmission"));
 const avatarImageUpload = (0, multer_1.default)({
     limits: { fileSize: 10 * 1024 * 1024 },
     fileFilter(_req, file, cb) {
@@ -91,6 +92,43 @@ const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
         .sort({ createdAt: "desc" })
         .limit(5)
         .select("-message");
+    const solvedAgg = await ChallengeSubmission_1.default.aggregate([
+        {
+            $match: {
+                user: user._id,
+                passed: true
+            }
+        },
+        {
+            $group: {
+                _id: "$challenge",
+            }
+        },
+        {
+            $lookup: {
+                from: "challenges",
+                localField: "_id",
+                foreignField: "_id",
+                as: "challenge"
+            }
+        },
+        { $unwind: "$challenge" },
+        {
+            $group: {
+                _id: "$challenge.difficulty",
+                count: { $sum: 1 }
+            }
+        }
+    ]);
+    const solvedChallenges = {
+        easy: 0,
+        medium: 0,
+        hard: 0
+    };
+    for (const row of solvedAgg) {
+        if (row._id)
+            solvedChallenges[row._id] = row.count;
+    }
     res.json({
         userDetails: {
             id: user._id,
@@ -133,7 +171,8 @@ const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
                 date: x.createdAt,
                 answers: x.answers,
                 votes: x.votes
-            }))
+            })),
+            solvedChallenges
         }
     });
 });

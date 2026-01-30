@@ -1,4 +1,5 @@
 export interface ITestCase {
+  id: string;
   input?: string;
   expectedOutput?: string;
   isHidden: boolean,

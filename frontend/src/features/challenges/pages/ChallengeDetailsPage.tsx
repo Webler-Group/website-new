@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { FaPen, FaSearch, FaTrash } from "react-icons/fa";
+import { FaPen, FaSearch } from "react-icons/fa";
 import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
@@ -74,7 +74,7 @@ const ChallengeDetailsPage = () => {
                         </div>
                         {
                             userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) &&
-                            <>
+                            <div>
                                 <FaPen
                                     role="button"
                                     title="Edit Challenge"
@@ -82,15 +82,7 @@ const ChallengeDetailsPage = () => {
                                     className="text-muted"
                                     style={{ cursor: "pointer" }}
                                 />
-
-                                <FaTrash
-                                    role="button"
-                                    title="Delete Challenge"
-                                    onClick={() => alert("Not yet implemented")}
-                                    className="text-muted"
-                                    style={{ cursor: "pointer" }}
-                                />
-                            </>
+                            </div>
                         }
                     </div>
 
