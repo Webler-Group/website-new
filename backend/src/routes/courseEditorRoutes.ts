@@ -32,4 +32,6 @@ router.route("/DeleteLessonNode").delete(courseEditorController.deleteLessonNode
 router.route("/EditLessonNode").put(courseEditorController.editLessonNode);
 router.route("/ChangeLessonNodeIndex").post(courseEditorController.changeLessonNodeIndex);
 
+router.route("/ExportCourseLesson").post(courseEditorController.exportCourseLesson);
+
 export default router;

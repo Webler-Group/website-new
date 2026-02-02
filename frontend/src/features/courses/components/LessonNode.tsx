@@ -19,7 +19,8 @@ interface ILessonNode {
 }
 
 interface LessonNodeProps {
-    nodeId: string;
+    nodeId?: string;
+    nodeData?: ILessonNode;
     mock: boolean;
     onEnter: (id: string) => void;
     onAnswered: (id: string, correct: boolean) => void;
@@ -30,7 +31,7 @@ const allowedUrls = [
     /^https?:\/\/.+/i
 ];
 
-const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
+const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
     const [node, setNode] = useState<ILessonNode | null>(null);
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
     const [textAnswer, setTextAnswer] = useState("");
@@ -45,13 +46,18 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
     }, [nodeId]);
 
     const getNode = async () => {
-        const result = await sendJsonRequest("/Courses/GetLessonNode", "POST", {
-            nodeId,
-            mock
-        });
-        if (result && result.lessonNode) {
-            setNode(result.lessonNode);
-            onEnter(nodeId);
+        if (nodeData) {
+            setNode(nodeData);
+            onEnter(nodeData.id);
+        } else {
+            const result = await sendJsonRequest("/Courses/GetLessonNode", "POST", {
+                nodeId,
+                mock
+            });
+            if (result && result.lessonNode) {
+                setNode(result.lessonNode);
+                onEnter(nodeId!);
+            }
         }
     };
 
@@ -78,7 +84,17 @@ const LessonNode = ({ nodeId, mock, onAnswered, onContinue, onEnter }: LessonNod
     const handleSubmit = async () => {
         if (!node) return;
 
-        let payload: any = { nodeId: node.id, mock };
+        let payload: any = {
+            nodeId: node.id
+        };
+
+        if (nodeData) {
+            payload.mock = {
+                type: nodeData.type,
+                correctAnswer: nodeData.correctAnswer,
+                answers: nodeData.answers
+            };
+        }
 
         if (node.type === 2 || node.type === 3) {
             payload.answers = node.answers.map(a => ({

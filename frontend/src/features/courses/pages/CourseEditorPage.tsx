@@ -5,9 +5,10 @@ import { Link, useParams } from "react-router-dom";
 import Lesson, { ILesson } from "../components/Lesson";
 import LessonEditor from "../components/LessonEditor";
 import { useApi } from "../../../context/apiCommunication";
-import { truncate } from "../../../utils/StringUtils";
+import { sanitizeFilename, truncate } from "../../../utils/StringUtils";
 import NotificationToast from "../../../components/NotificationToast";
 import Loader from "../../../components/Loader";
+import { downloadJsonFile } from "../../../utils/FileUtils";
 
 const CourseEditorPage = () => {
     const { sendJsonRequest } = useApi();
@@ -162,6 +163,23 @@ const CourseEditorPage = () => {
         setDeleteModalVisible(true);
     }
 
+    const onExport = async (id: string, title: string) => {
+        setLoading(true);
+
+        const result = await sendJsonRequest("/CourseEditor/ExportCourseLesson", "POST", { lessonId: id });
+
+        if (result && result.success && result.data) {
+            const fileName = `${sanitizeFilename(title)}.json`;
+            downloadJsonFile(fileName, result.data);
+            setNotification({ type: "success", message: "Lesson exported" });
+        } else {
+            setNotification({ type: "error", message: result?.error?.[0]?.message ?? "Export failed" });
+        }
+
+        setLoading(false);
+    };
+
+
     const closeDeleteModal = () => {
         setDeleteModalVisible(false);
     }
@@ -247,6 +265,7 @@ const CourseEditorPage = () => {
                                                     onDelete={onDelete}
                                                     onEdit={onEdit}
                                                     onChangeIndex={handleChangeLessonIndex}
+                                                    onExport={onExport}
                                                     isFirst={lesson.index === 1}
                                                     isLast={lesson.index === lessons.length}
                                                 />

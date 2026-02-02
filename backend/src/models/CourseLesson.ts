@@ -40,7 +40,7 @@ courseLessonSchema.statics.deleteAndCleanup = async function(filter: mongoose.Fi
     await CourseLesson.deleteMany(filter);
 }
 
-declare interface ICourseLesson extends InferSchemaType<typeof courseLessonSchema> {}
+interface ICourseLesson extends InferSchemaType<typeof courseLessonSchema> {}
 
 interface CourseLessonModel extends Model<ICourseLesson> {
     deleteAndCleanup(filter: mongoose.FilterQuery<ICourseLesson>): Promise<any>

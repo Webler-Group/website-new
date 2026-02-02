@@ -30,7 +30,9 @@ const config = {
     emailPassword: process.env.EMAIL_PASSWORD as string,
     emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined) as boolean,
 
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(";") as string[]
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(";") as string[],
+
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL as string
 };
 
 const required = config.nodeEnv === "development" ? 

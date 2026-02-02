@@ -1,8 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteLessonCommentSchema = exports.editLessonCommentSchema = exports.createLessonCommentSchema = exports.getLessonCommentsSchema = exports.resetCourseProgressSchema = exports.solveSchema = exports.getLessonNodeSchema = exports.getLessonSchema = exports.getCourseSchema = exports.getUserCourseListSchema = exports.getCourseListSchema = void 0;
 const zod_1 = require("zod");
 const commonSchema_1 = require("./commonSchema");
+const LessonNodeTypeEnum_1 = __importDefault(require("../data/LessonNodeTypeEnum"));
 const quizAnswerSchema = zod_1.z.object({
     id: (0, commonSchema_1.idSchema)("answerId"),
     correct: zod_1.z.boolean("Correct must be a boolean")
@@ -43,7 +47,11 @@ exports.solveSchema = zod_1.z.object({
         nodeId: (0, commonSchema_1.idSchema)("nodeId"),
         correctAnswer: zod_1.z.string().optional(),
         answers: zod_1.z.array(quizAnswerSchema).optional(),
-        mock: zod_1.z.boolean().optional()
+        mock: zod_1.z.object({
+            type: zod_1.z.enum(LessonNodeTypeEnum_1.default),
+            correctAnswer: zod_1.z.string().optional(),
+            answers: zod_1.z.array(quizAnswerSchema).optional(),
+        }).optional()
     })
 });
 exports.resetCourseProgressSchema = zod_1.z.object({

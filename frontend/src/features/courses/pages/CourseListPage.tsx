@@ -50,7 +50,7 @@ const CourseListPage = () => {
             courseId: selectedCourseId
         });
         if (result?.success) {
-
+            setMyCourses(courses => courses.map(course => course.id === selectedCourseId ? { ...course, completed: false } : course));
         }
         setResetModalVisible(false);
     }
@@ -95,25 +95,25 @@ const CourseListPage = () => {
                             </div>
                         </>
                     }
-                    <div className="d-flex justify-content-center">
-                        <h2>Explore our courses</h2>
-                    </div>
-                    <div className="my-3">
-                        {
-                            courses.length == 0 ?
-                                <div className="wb-empty-list">
-                                    <h3>Nothing to show</h3>
-                                </div>
-                                :
-                                courses.map(course => {
-                                    return (
-                                        <div className="mt-3" key={course.id}>
-                                            <Course course={course} isEditor={false} />
-                                        </div>
-                                    )
-                                })
-                        }
-                    </div>
+                    {
+                        courses.length > 0 &&
+                        <>
+                            <div className="d-flex justify-content-center">
+                                <h2>Explore our courses</h2>
+                            </div>
+                            <div className="my-3">
+                                {
+                                    courses.map(course => {
+                                        return (
+                                            <div className="mt-3" key={course.id}>
+                                                <Course course={course} isEditor={false} />
+                                            </div>
+                                        )
+                                    })
+                                }
+                            </div>
+                        </>
+                    }
                 </div>
             </Container>
         </>

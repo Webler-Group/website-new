@@ -27,9 +27,15 @@ import {
     deleteLessonNodeSchema,
     editLessonNodeSchema,
     changeLessonIndexSchema,
-    changeLessonNodeIndexSchema
+    changeLessonNodeIndexSchema,
+    exportCourseLessonSchema,
+    generateLessonNodeSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
+import { exportCourseLessonToJson } from "../helpers/courseHelper";
+import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import { trimAtWordBoundary } from "../utils/StringUtils";
+import { shuffle } from "../utils/arrayUtils";
 
 const coverImageUpload = multer({
     limits: { fileSize: 2 * 1024 * 1024 },
@@ -508,6 +514,19 @@ const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Respon
     });
 });
 
+const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(exportCourseLessonSchema, req);
+
+    const { lessonId } = body;
+
+    const data = await exportCourseLessonToJson(lessonId);
+
+    res.json({
+        success: true,
+        data
+    });
+});
+
 const courseEditorController = {
     createCourse,
     getCoursesList,
@@ -526,6 +545,7 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
+    exportCourseLesson,
     coverImageUpload
 };
 

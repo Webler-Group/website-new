@@ -17,6 +17,7 @@ const mongoose_1 = __importDefault(require("mongoose"));
 const MulterFileTypeError_1 = __importDefault(require("../exceptions/MulterFileTypeError"));
 const courseEditorSchema_1 = require("../validation/courseEditorSchema");
 const zodUtils_1 = require("../utils/zodUtils");
+const courseHelper_1 = require("../helpers/courseHelper");
 const coverImageUpload = (0, multer_1.default)({
     limits: { fileSize: 2 * 1024 * 1024 },
     fileFilter(req, file, cb) {
@@ -412,6 +413,15 @@ const changeLessonNodeIndex = (0, express_async_handler_1.default)(async (req, r
         data: { index: newIndex }
     });
 });
+const exportCourseLesson = (0, express_async_handler_1.default)(async (req, res) => {
+    const { body } = (0, zodUtils_1.parseWithZod)(courseEditorSchema_1.exportCourseLessonSchema, req);
+    const { lessonId } = body;
+    const data = await (0, courseHelper_1.exportCourseLessonToJson)(lessonId);
+    res.json({
+        success: true,
+        data
+    });
+});
 const courseEditorController = {
     createCourse,
     getCoursesList,
@@ -430,6 +440,7 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
+    exportCourseLesson,
     coverImageUpload
 };
 exports.default = courseEditorController;

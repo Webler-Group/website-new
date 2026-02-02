@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.changeLessonNodeIndexSchema = exports.changeLessonIndexSchema = exports.editLessonNodeSchema = exports.deleteLessonNodeSchema = exports.createLessonNodeSchema = exports.uploadCourseCoverImageSchema = exports.deleteLessonSchema = exports.editLessonSchema = exports.createLessonSchema = exports.getLessonListSchema = exports.getLessonSchema = exports.editCourseSchema = exports.deleteCourseSchema = exports.getCourseSchema = exports.createCourseSchema = void 0;
+exports.generateLessonNodeSchema = exports.exportCourseLessonSchema = exports.changeLessonNodeIndexSchema = exports.changeLessonIndexSchema = exports.editLessonNodeSchema = exports.deleteLessonNodeSchema = exports.createLessonNodeSchema = exports.uploadCourseCoverImageSchema = exports.deleteLessonSchema = exports.editLessonSchema = exports.createLessonSchema = exports.getLessonListSchema = exports.getLessonSchema = exports.editCourseSchema = exports.deleteCourseSchema = exports.getCourseSchema = exports.createCourseSchema = void 0;
 const zod_1 = require("zod");
 const commonSchema_1 = require("./commonSchema");
 const LessonNodeTypeEnum_1 = __importDefault(require("../data/LessonNodeTypeEnum"));
@@ -104,5 +104,17 @@ exports.changeLessonNodeIndexSchema = zod_1.z.object({
     body: zod_1.z.object({
         nodeId: (0, commonSchema_1.idSchema)("nodeId"),
         newIndex: zod_1.z.number().int().min(1, "New index must be a positive integer")
+    })
+});
+exports.exportCourseLessonSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        lessonId: (0, commonSchema_1.idSchema)("lessonId")
+    })
+});
+exports.generateLessonNodeSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        nodeId: (0, commonSchema_1.idSchema)("nodeId"),
+        type: zod_1.z.enum(LessonNodeTypeEnum_1.default),
+        description: zod_1.z.string().max(256).nullish()
     })
 });

@@ -26,7 +26,8 @@ const config = {
     emailUser: process.env.EMAIL_USER,
     emailPassword: process.env.EMAIL_PASSWORD,
     emailSecure: (process.env.EMAIL_SECURE ? Boolean(process.env.EMAIL_SECURE) : undefined),
-    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(";")
+    allowedOrigins: process.env.ALLOWED_ORIGINS?.split(";"),
+    ollamaBaseUrl: process.env.OLLAMA_BASE_URL
 };
 exports.config = config;
 const required = config.nodeEnv === "development" ?

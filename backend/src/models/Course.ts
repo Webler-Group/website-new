@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import mongoose, { Document, InferSchemaType, Model } from "mongoose";
 import CourseLesson from "./CourseLesson";
 import CourseProgress from "./CourseProgress";
 
@@ -37,18 +37,20 @@ const courseSchema = new mongoose.Schema({
     }
 });
 
-courseSchema.statics.deleteAndCleanup = async function(courseId: mongoose.Types.ObjectId | string) {
+courseSchema.statics.deleteAndCleanup = async function (courseId: mongoose.Types.ObjectId | string) {
     await CourseLesson.deleteAndCleanup({ course: courseId });
     await CourseProgress.deleteMany({ course: courseId });
     await Course.deleteOne({ _id: courseId });
 }
 
-declare interface ICourse extends InferSchemaType<typeof courseSchema> {}
+interface ICourse extends InferSchemaType<typeof courseSchema> { }
 
 interface CourseModel extends Model<ICourse> {
     deleteAndCleanup(id: mongoose.Types.ObjectId | string): Promise<any>;
 }
 
 const Course = mongoose.model<ICourse, CourseModel>("Course", courseSchema);
+
+export type ICourseDocument = ICourse & Document;
 
 export default Course;

@@ -116,3 +116,17 @@ export const changeLessonNodeIndexSchema = z.object({
         newIndex: z.number().int().min(1, "New index must be a positive integer")
     })
 });
+
+export const exportCourseLessonSchema = z.object({
+    body: z.object({
+        lessonId: idSchema("lessonId")
+    })
+});
+
+export const generateLessonNodeSchema = z.object({
+    body: z.object({
+        nodeId: idSchema("nodeId"),
+        type: z.enum(LessonNodeTypeEnum),
+        description: z.string().max(256).nullish()
+    })
+});

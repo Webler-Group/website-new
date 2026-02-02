@@ -1,4 +1,4 @@
-import { FaPencil, FaTrash, FaArrowUp, FaArrowDown } from "react-icons/fa6";
+import { FaPencil, FaTrash, FaArrowUp, FaArrowDown, FaFileExport } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 
 interface ILesson {
@@ -22,12 +22,13 @@ interface LessonProps {
     courseId: string;
     onEdit: (id: string, title: string) => void;
     onDelete: (id: string) => void;
+    onExport: (id: string, title: string) => void;
     onChangeIndex: (id: string, newIndex: number) => void;
     isFirst: boolean;
     isLast: boolean;
 }
 
-const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, isLast }: LessonProps) => {
+const Lesson = ({ lesson, courseId, onEdit, onDelete, onExport, onChangeIndex, isFirst, isLast }: LessonProps) => {
 
     const handleEdit = () => {
         onEdit(lesson.id, lesson.title);
@@ -35,6 +36,10 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, is
 
     const handleDelete = () => {
         onDelete(lesson.id);
+    };
+
+    const handleExport = () => {
+        onExport(lesson.id, lesson.title);
     };
 
     const handleMoveUp = () => {
@@ -74,6 +79,9 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, is
                 </div>
             </div>
             <div className="d-flex gap-2">
+                <span className="wb-comments__options__item" onClick={handleExport}>
+                    <FaFileExport />
+                </span>
                 <span className="wb-comments__options__item" onClick={handleEdit}>
                     <FaPencil />
                 </span>
@@ -85,8 +93,5 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onChangeIndex, isFirst, is
     );
 };
 
-export type {
-    ILesson
-};
-
+export type { ILesson };
 export default Lesson;

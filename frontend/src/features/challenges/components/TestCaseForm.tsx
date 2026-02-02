@@ -2,7 +2,7 @@ import { Dispatch, SetStateAction, ChangeEvent, useRef, useState } from "react";
 import { Button, Form, Alert, Collapse } from "react-bootstrap";
 import { FaTrash, FaPlus, FaFileUpload, FaInfoCircle } from "react-icons/fa";
 import { ITestCase } from "../types";
-import { uuid } from "../../../utils/StringUtils";
+import { genMongooseId } from "../../../utils/StringUtils";
 
 interface ITestCaseFormProps {
   testCases: ITestCase[];
@@ -27,7 +27,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
   const addTestCase = () => {
     setTestCases((prev) => [
       ...prev,
-      { id: uuid(), input: "", expectedOutput: "", isHidden: true },
+      { id: genMongooseId(), input: "", expectedOutput: "", isHidden: true },
     ]);
   };
 
@@ -73,7 +73,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
     const pushCaseIfAny = () => {
       if (currentInput.length > 0 || currentOutput.length > 0) {
         cases.push({
-          id: uuid(),
+          id: genMongooseId(),
           input: currentInput.join("\n"),
           expectedOutput: currentOutput.join("\n"),
           isHidden: true,

@@ -119,6 +119,7 @@ const getCourse = (0, express_async_handler_1.default)(async (req, res) => {
             lessons,
             userProgress: {
                 updatedAt: userProgress.updatedAt,
+                nodesSolved: userProgress.nodesSolved,
                 completed: userProgress.completed
             }
         }
@@ -181,12 +182,13 @@ const getLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
-        const { unlocked, isLast } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
+        const { unlocked, isLastUnlocked } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
         if (!unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
-        if (lessonNode._type === LessonNodeTypeEnum_1.default.TEXT && isLast) {
+        if (lessonNode._type === LessonNodeTypeEnum_1.default.TEXT && isLastUnlocked) {
+            userProgress.$inc("nodesSolved", 1);
             userProgress.lastLessonNodeId = lessonNode._id;
             await userProgress.save();
         }
@@ -219,7 +221,8 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(courseSchema_1.solveSchema, req);
     const { nodeId, correctAnswer, answers, mock } = body;
     const currentUserId = req.userId;
-    const lessonNode = await LessonNode_1.default.findById(nodeId).populate("lessonId");
+    const lessonNode = await LessonNode_1.default.findById(nodeId)
+        .populate("lessonId", "course");
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
@@ -227,17 +230,17 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     let userProgress = null;
     let isLast = false;
     if (!mock) {
-        userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index");
+        userProgress = await CourseProgress_1.default.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
-        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode._id);
+        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode.id);
         if (!nodeInfo.unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
-        isLast = nodeInfo.isLast;
+        isLast = nodeInfo.isLastUnlocked;
     }
     else {
         const user = await User_1.default.findById(currentUserId).select("roles");
@@ -248,23 +251,24 @@ const solve = (0, express_async_handler_1.default)(async (req, res) => {
     }
     const nodeAnswers = await QuizAnswer_1.default.find({ courseLessonNodeId: lessonNode.id }).select("correct");
     let correct = false;
-    switch (lessonNode._type) {
+    switch (mock?.type ? mock.type : lessonNode._type) {
         case LessonNodeTypeEnum_1.default.TEXT:
             correct = true;
             break;
         case LessonNodeTypeEnum_1.default.SINGLECHOICE_QUESTION:
         case LessonNodeTypeEnum_1.default.MULTICHOICE_QUESTION:
-            correct = nodeAnswers.every(x => {
-                const myAnswer = answers?.find((y) => y.id.toString() === x._id.toString());
+            correct = (mock?.answers ? mock.answers : nodeAnswers).every((x) => {
+                const myAnswer = answers?.find((y) => y.id.toString() === x.id);
                 return myAnswer && myAnswer.correct === x.correct;
             });
             break;
         case LessonNodeTypeEnum_1.default.TEXT_QUESTION:
-            correct = correctAnswer === lessonNode.correctAnswer;
+            correct = correctAnswer === (mock?.correctAnswer ? mock.correctAnswer : lessonNode.correctAnswer);
             break;
     }
     if (!mock && isLast && correct) {
         userProgress.lastLessonNodeId = lessonNode.id;
+        userProgress.$inc("nodesSolved", 1);
         await userProgress.save();
     }
     res.json({
@@ -282,6 +286,8 @@ const resetCourseProgress = (0, express_async_handler_1.default)(async (req, res
         return;
     }
     userProgress.lastLessonNodeId = null;
+    userProgress.nodesSolved = 0;
+    userProgress.completed = false;
     await userProgress.save();
     res.json({ success: true });
 });

@@ -18,6 +18,7 @@ interface ICourse {
     lessons: ILesson[];
     userProgress: {
         updatedAt: string;
+        nodesSolved: number;
         completed: boolean;
     };
 }
@@ -88,7 +89,7 @@ const CoursePage = () => {
 
                         <p className="wb-courses-course__description">{course.description}</p>
 
-                        {lastUnlockedLesson && (
+                        {(lastUnlockedLesson && !course.userProgress.completed) && (
                             <Card className="mt-4 shadow-sm">
                                 <Card.Body>
                                     <Card.Title>Continue your progress</Card.Title>

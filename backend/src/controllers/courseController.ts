@@ -1,8 +1,8 @@
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
-import Course from "../models/Course";
-import CourseProgress from "../models/CourseProgress";
+import Course, { ICourseDocument } from "../models/Course";
+import CourseProgress, { ICourseProgressDocument } from "../models/CourseProgress";
 import CourseLesson from "../models/CourseLesson";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
@@ -15,7 +15,7 @@ import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import Upvote from "../models/Upvote";
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import {
     getCourseListSchema,
     getUserCourseListSchema,
@@ -66,7 +66,7 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(getUserCourseListSchema, req);
     const { userId } = body;
 
-    const result = await CourseProgress.find({ userId }).populate<{ course: any }>("course");
+    const result = await CourseProgress.find({ userId }).populate<{ course: ICourseDocument }>("course");
 
     const data = result.map(x => ({
         id: x.course._id,
@@ -144,6 +144,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             lessons,
             userProgress: {
                 updatedAt: userProgress.updatedAt,
+                nodesSolved: userProgress.nodesSolved,
                 completed: userProgress.completed
             }
         }
@@ -218,13 +219,14 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             return;
         }
 
-        const { unlocked, isLast } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
+        const { unlocked, isLastUnlocked } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
         if (!unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
 
-        if (lessonNode._type === LessonNodeTypeEnum.TEXT && isLast) {
+        if (lessonNode._type === LessonNodeTypeEnum.TEXT && isLastUnlocked) {
+            userProgress.$inc("nodesSolved", 1);
             userProgress.lastLessonNodeId = lessonNode._id as any;
             await userProgress.save();
         }
@@ -260,27 +262,28 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId, correctAnswer, answers, mock } = body;
     const currentUserId = req.userId;
 
-    const lessonNode = await LessonNode.findById(nodeId).populate("lessonId") as any;
+    const lessonNode = await LessonNode.findById(nodeId)
+        .populate<{ lessonId: { course: mongoose.Types.ObjectId } }>("lessonId", "course");
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
-    let userProgress = null;
+    let userProgress: ICourseProgressDocument | null = null;
     let isLast = false;
     if (!mock) {
-        userProgress = await CourseProgress.findOne({ course: lessonNode.lessonId.course, userId: currentUserId }).populate("lastLessonNodeId", "index") as any;
+        userProgress = await CourseProgress.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
 
-        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode._id);
+        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode.id);
         if (!nodeInfo.unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
-        isLast = nodeInfo.isLast;
+        isLast = nodeInfo.isLastUnlocked;
     } else {
         const user = await User.findById(currentUserId).select("roles");
         if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
@@ -292,24 +295,25 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const nodeAnswers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id }).select("correct");
 
     let correct = false;
-    switch (lessonNode._type) {
+    switch (mock?.type ? mock.type : lessonNode._type) {
         case LessonNodeTypeEnum.TEXT:
             correct = true;
             break;
         case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:
         case LessonNodeTypeEnum.MULTICHOICE_QUESTION:
-            correct = nodeAnswers.every(x => {
-                const myAnswer = answers?.find((y: any) => y.id.toString() === x._id.toString());
+            correct = ((mock?.answers ? mock.answers : nodeAnswers) as { id: string, correct: boolean }[]).every((x) => {
+                const myAnswer = answers?.find((y: any) => y.id.toString() === x.id);
                 return myAnswer && myAnswer.correct === x.correct;
             });
             break;
         case LessonNodeTypeEnum.TEXT_QUESTION:
-            correct = correctAnswer === lessonNode.correctAnswer;
+            correct = correctAnswer === (mock?.correctAnswer ? mock.correctAnswer : lessonNode.correctAnswer);
             break;
     }
 
     if (!mock && isLast && correct) {
         userProgress!.lastLessonNodeId = lessonNode.id;
+        userProgress!.$inc("nodesSolved", 1);
         await userProgress!.save();
     }
 
@@ -331,6 +335,8 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
     }
 
     userProgress.lastLessonNodeId = null as any;
+    userProgress.nodesSolved = 0;
+    userProgress.completed = false;
     await userProgress.save();
 
     res.json({ success: true });

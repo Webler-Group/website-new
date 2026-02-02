@@ -1,5 +1,6 @@
 import mongoose, { InferSchemaType, Model, Schema, Types, Document } from "mongoose";
 import LessonNode from "./LessonNode";
+import CourseLesson from "./CourseLesson";
 
 const courseProgressSchema = new Schema({
     userId: {
@@ -17,6 +18,10 @@ const courseProgressSchema = new Schema({
         ref: "LessonNode",
         default: null
     },
+    nodesSolved: {
+        type: Number,
+        default: 0
+    },
     completed: {
         type: Boolean,
         default: false
@@ -25,9 +30,21 @@ const courseProgressSchema = new Schema({
     timestamps: true
 });
 
-interface ICourseProgress extends InferSchemaType<typeof courseProgressSchema>, Document {
+courseProgressSchema.pre("save", async function (next) {
+    if (this.isModified("nodesSolved")) {
+        const lessonIds = (await CourseLesson.find({ course: this.course }, "_id")).map(x => x._id);
+        const courseNodes = await LessonNode.count({ lessonId: { $in: lessonIds } });
+
+        if (courseNodes === this.nodesSolved) {
+            this.completed = true;
+        }
+    }
+    return next();
+});
+
+interface ICourseProgress extends InferSchemaType<typeof courseProgressSchema> {
     getLastUnlockedLessonIndex(): Promise<number>;
-    getLessonNodeInfo(lessonNodeId: string): Promise<{ unlocked: boolean; isLast: boolean; }>;
+    getLessonNodeInfo(lessonNodeId: string): Promise<{ unlocked: boolean; isLastUnlocked: boolean; }>;
 }
 
 interface CourseProgressModel extends Model<ICourseProgress> { }
@@ -37,7 +54,7 @@ courseProgressSchema.methods.getLastUnlockedLessonIndex = async function () {
     if (this.lastLessonNodeId) {
         const lastCompletedLessonNode = await LessonNode.findById(this.lastLessonNodeId)
             .select("index")
-            .populate("lessonId", "nodes index") as any;
+            .populate<{ lessonId: { nodes: number, index: number } }>("lessonId", "nodes index");
         if (lastCompletedLessonNode) {
             lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
                 lastCompletedLessonNode.lessonId.index + 1 :
@@ -50,17 +67,22 @@ courseProgressSchema.methods.getLastUnlockedLessonIndex = async function () {
 courseProgressSchema.methods.getLessonNodeInfo = async function (lessonNodeId: string) {
     const lessonNode = await LessonNode.findById(lessonNodeId)
         .select("index")
-        .populate("lessonId", "nodes index") as any;
+        .populate<{ lessonId: { nodes: number, index: number } }>("lessonId", "nodes index");
+
+    const result = {
+        unlocked: false,
+        isLastUnlocked: false
+    };
+
+    if (!lessonNode) return result;
+
     const lessonIndex = lessonNode.lessonId.index;
 
-    let unlocked = false;
-    let isLast = false;
-
     let lastCompletedLessonNode = null;
-    if(this.lastLessonNodeId) {
+    if (this.lastLessonNodeId) {
         lastCompletedLessonNode = await LessonNode.findById(this.lastLessonNodeId)
             .select("index")
-            .populate("lessonId", "nodes index") as any;
+            .populate<{ lessonId: { nodes: number, index: number } }>("lessonId", "nodes index");
     }
     if (lastCompletedLessonNode) {
         const lastUnlockedLessonIndex = lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index ?
@@ -68,31 +90,30 @@ courseProgressSchema.methods.getLessonNodeInfo = async function (lessonNodeId: s
             lastCompletedLessonNode.lessonId.index;
 
         if (lessonIndex < lastUnlockedLessonIndex) {
-            unlocked = true;
+            result.unlocked = true;
         } else if (lessonIndex == lastUnlockedLessonIndex) {
             if (lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index) {
-                unlocked = lessonNode.index == 1;
-                isLast = unlocked;
+                result.unlocked = lessonNode.index == 1;
+                result.isLastUnlocked = result.unlocked;
             } else {
-                unlocked = lessonNode.index <= lastCompletedLessonNode.index + 1;
-                isLast = lessonNode.index == lastCompletedLessonNode.index + 1;
+                result.unlocked = lessonNode.index <= lastCompletedLessonNode.index + 1;
+                result.isLastUnlocked = lessonNode.index == lastCompletedLessonNode.index + 1;
             }
         }
 
     } else {
-        unlocked = lessonNode.index == 1 && lessonIndex == 1;
-        isLast = unlocked;
+        result.unlocked = lessonNode.index == 1 && lessonIndex == 1;
+        result.isLastUnlocked = result.unlocked;
     }
 
-    return {
-        unlocked,
-        isLast
-    };
+    return result;
 };
 
 const CourseProgress = mongoose.model<ICourseProgress, CourseProgressModel>(
     "CourseProgress",
     courseProgressSchema
 );
+
+export type ICourseProgressDocument = ICourseProgress & Document;
 
 export default CourseProgress;

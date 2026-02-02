@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { commentMessageSchema, countPerPageSchema, courseCodeSchema, filterSchema, idSchema, indexSchema } from "./commonSchema";
+import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
 const quizAnswerSchema = z.object({
     id: idSchema("answerId"),
@@ -47,7 +48,11 @@ export const solveSchema = z.object({
         nodeId: idSchema("nodeId"),
         correctAnswer: z.string().optional(),
         answers: z.array(quizAnswerSchema).optional(),
-        mock: z.boolean().optional()
+        mock: z.object({
+            type: z.enum(LessonNodeTypeEnum),
+            correctAnswer: z.string().optional(),
+            answers: z.array(quizAnswerSchema).optional(),
+        }).optional()
     })
 });
 
