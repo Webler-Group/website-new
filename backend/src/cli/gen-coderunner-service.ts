@@ -19,7 +19,8 @@ After=network.target
 [Service]
 ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/workers/codeRunner.js")}
 Restart=always
-User=root
+User=webler
+Group=webler
 Environment=NODE_ENV=production
 WorkingDirectory=${path.join(projectDir, "backend")}
 

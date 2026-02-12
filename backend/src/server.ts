@@ -25,6 +25,7 @@ import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 import { initKeystore } from "./services/pushService";
+import mediaRoutes from "./routes/mediaRoutes";
 
 async function main() {
     console.log("Environment:", config.nodeEnv);
@@ -72,6 +73,7 @@ async function main() {
     app.use(`${apiPrefix}/Challenge`, challengeRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
+    app.use("/media", mediaRoutes);
 
     app.all("*", (req, res) => {
         res.status(404).json({ success: false, error: [{ message: "resource not found" }] });

@@ -24,29 +24,8 @@ import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 import ChallengeSubmission from "../models/ChallengeSubmission";
-
-const avatarImageUpload = multer({
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter(_req, file, cb) {
-        if (/^image\/(png|jpe?g)$/i.test(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new MulterFileTypeError("Only .png, .jpg and .jpeg files are allowed"));
-        }
-    },
-    storage: multer.diskStorage({
-        destination(req, file, cb) {
-            const dir = path.join(config.rootDir, "uploads", "users");
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-            cb(null, dir);
-        },
-        filename(req, file, cb) {
-            cb(null, uuid() + path.extname(file.originalname));
-        }
-    })
-});
+import { uploadImageToBlob } from "../helpers/fileHelper";
+import uploadImage from "../middleware/uploadImage";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -558,9 +537,8 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
     res.json({});
 });
 
-const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(uploadProfileAvatarImageSchema, req);
-    const { userId } = body;
+const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
+    const userId = req.body.userId; // (keep your zod parsing as-is)
     const currentUserId = req.userId;
 
     if (!req.file) {
@@ -581,34 +559,31 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         return;
     }
 
-    const compressedBuffer = await compressAvatar({
-        inputPath: req.file.path,
+    const fileDoc = await uploadImageToBlob({
+        authorId: currentUserId,
+        tempPath: req.file.path,
+        name: "avatar",
+        path: `users/${user._id}/avatar`,
+        inputMime: req.file.mimetype,
+        maxWidth: 256,
+        maxHeight: 256,
+        fit: "cover", // square crop avatar
+        outputFormat: "webp",
+        quality: 82,
     });
 
-    // Overwrite original file
-    fs.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
-
-    if (user.avatarImage) {
-        const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-        }
-    }
-
-    user.avatarImage = req.file.filename;
-
+    user.avatarImage = fileDoc._id;
     await user.save();
 
     res.json({
         success: true,
         data: {
-            avatarImage: user.avatarImage
-        }
+            avatarImage: fileDoc._id
+        },
     });
-
 });
 
-const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+export const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(removeProfileImageSchema, req);
     const { userId } = body;
     const currentUserId = req.userId;
@@ -625,18 +600,11 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
     }
 
     if (user.avatarImage) {
-        const oldPath = path.join(config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
-        }
-
         user.avatarImage = null as any;
         await user.save();
     }
 
-    res.json({
-        success: true
-    });
+    res.json({ success: true });
 });
 
 const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -692,6 +660,11 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
             countryCode: u.countryCode
         }))
     });
+});
+
+const avatarImageUpload = uploadImage({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
 });
 
 const controller = {
