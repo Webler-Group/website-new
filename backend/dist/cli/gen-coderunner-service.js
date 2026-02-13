@@ -42,6 +42,7 @@ ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/workers/code
 Restart=always
 User=webler
 Group=webler
+UMask=0002
 Environment=NODE_ENV=production
 WorkingDirectory=${path.join(projectDir, "backend")}
 
