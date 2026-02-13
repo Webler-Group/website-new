@@ -6,41 +6,15 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_async_handler_1 = __importDefault(require("express-async-handler"));
 const Course_1 = __importDefault(require("../models/Course"));
 const CourseLesson_1 = __importDefault(require("../models/CourseLesson"));
-const multer_1 = __importDefault(require("multer"));
-const confg_1 = require("../confg");
-const path_1 = __importDefault(require("path"));
-const uuid_1 = require("uuid");
 const fs_1 = __importDefault(require("fs"));
 const LessonNode_1 = __importDefault(require("../models/LessonNode"));
 const QuizAnswer_1 = __importDefault(require("../models/QuizAnswer"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const MulterFileTypeError_1 = __importDefault(require("../exceptions/MulterFileTypeError"));
 const courseEditorSchema_1 = require("../validation/courseEditorSchema");
 const zodUtils_1 = require("../utils/zodUtils");
 const courseHelper_1 = require("../helpers/courseHelper");
-const coverImageUpload = (0, multer_1.default)({
-    limits: { fileSize: 2 * 1024 * 1024 },
-    fileFilter(req, file, cb) {
-        if (/^image\/(png)$/i.test(file.mimetype)) {
-            cb(null, true);
-        }
-        else {
-            cb(new MulterFileTypeError_1.default("Only .png files are allowed"));
-        }
-    },
-    storage: multer_1.default.diskStorage({
-        destination(req, file, cb) {
-            const dir = path_1.default.join(confg_1.config.rootDir, "uploads", "courses");
-            if (!fs_1.default.existsSync(dir)) {
-                fs_1.default.mkdirSync(dir, { recursive: true });
-            }
-            cb(null, dir);
-        },
-        filename(req, file, cb) {
-            cb(null, (0, uuid_1.v4)() + path_1.default.extname(file.originalname));
-        }
-    })
-});
+const fileHelper_1 = require("../helpers/fileHelper");
+const uploadImage_1 = __importDefault(require("../middleware/uploadImage"));
 const createCourse = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(courseEditorSchema_1.createCourseSchema, req);
     const { title, description, code } = body;
@@ -244,6 +218,7 @@ const deleteLesson = (0, express_async_handler_1.default)(async (req, res) => {
 const uploadCourseCoverImage = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(courseEditorSchema_1.uploadCourseCoverImageSchema, req);
     const { courseId } = body;
+    const currentUserId = req.userId;
     if (!req.file) {
         res.status(400).json({ error: [{ message: "No file uploaded" }] });
         return;
@@ -254,15 +229,30 @@ const uploadCourseCoverImage = (0, express_async_handler_1.default)(async (req, 
         res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
-    if (course.coverImage) {
-        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "courses", course.coverImage);
-        if (fs_1.default.existsSync(oldPath)) {
-            fs_1.default.unlinkSync(oldPath);
-        }
-    }
-    course.coverImage = req.file.filename;
+    const fileDoc = await (0, fileHelper_1.uploadImageToBlob)({
+        authorId: currentUserId,
+        tempPath: req.file.path,
+        name: "cover",
+        path: `courses/${course._id}/cover`,
+        inputMime: req.file.mimetype,
+        maxWidth: 512,
+        maxHeight: 512,
+        fit: "cover",
+        outputFormat: "webp",
+        quality: 82,
+    });
+    course.coverImage = fileDoc._id;
     await course.save();
-    res.json({ success: true, data: { coverImage: course.coverImage } });
+    res.json({
+        success: true,
+        data: {
+            coverImage: fileDoc._id
+        },
+    });
+});
+const coverImageUploadMiddleware = (0, uploadImage_1.default)({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
 });
 const createLessonNode = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(courseEditorSchema_1.createLessonNodeSchema, req);
@@ -430,6 +420,7 @@ const courseEditorController = {
     deleteCourse,
     editCourse,
     uploadCourseCoverImage,
+    coverImageUploadMiddleware,
     getLessonList,
     editLesson,
     deleteLesson,
@@ -440,7 +431,6 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
-    exportCourseLesson,
-    coverImageUpload
+    exportCourseLesson
 };
 exports.default = courseEditorController;

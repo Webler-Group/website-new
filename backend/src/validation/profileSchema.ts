@@ -25,9 +25,9 @@ export const changeEmailSchema = z.object({
 });
 
 export const verifyEmailChangeSchema = z.object({
-    body: z.object({
-        code: z.string()
-    })
+  body: z.object({
+    code: z.string()
+  })
 });
 
 export const followSchema = z.object({
@@ -101,5 +101,19 @@ export const updateNotificationsSchema = z.object({
 export const searchProfilesSchema = z.object({
   body: z.object({
     searchQuery: searchQuerySchema
+  }),
+});
+
+export const getPostImageListSchema = z.object({
+  body: z.object({
+    page: pageSchema,
+    count: countPerPageSchema,
+    userId: idSchema("userId").nullish(),
+  }),
+});
+
+export const deletePostImageSchema = z.object({
+  body: z.object({
+    fileId: idSchema("fileId"),
   }),
 });

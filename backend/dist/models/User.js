@@ -12,6 +12,7 @@ const Code_1 = __importDefault(require("./Code"));
 const Notification_1 = __importDefault(require("./Notification"));
 const regexUtils_1 = require("../utils/regexUtils");
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
+const levelUtils_1 = require("../utils/levelUtils");
 const banSchema = new mongoose_1.default.Schema({
     author: {
         type: mongoose_1.default.Schema.Types.ObjectId,
@@ -86,8 +87,9 @@ const userSchema = new mongoose_1.default.Schema({
         default: 0
     },
     avatarImage: {
-        type: String,
-        required: false
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "File",
+        default: null
     },
     notifications: {
         [NotificationTypeEnum_1.default.CODE_COMMENT]: { type: Boolean, default: true },
@@ -139,6 +141,9 @@ userSchema.pre('save', async function (next) {
         await Post_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
         await Code_1.default.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
         await Notification_1.default.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
+    }
+    if (this.isModified("xp")) {
+        this.level = (0, levelUtils_1.levelFromXp)(this.xp);
     }
     return next();
 });

@@ -10,13 +10,9 @@ const Notification_1 = __importDefault(require("../models/Notification"));
 const Code_1 = __importDefault(require("../models/Code"));
 const tokenUtils_1 = require("../utils/tokenUtils");
 const email_1 = require("../services/email");
-const multer_1 = __importDefault(require("multer"));
 const confg_1 = require("../confg");
-const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
-const uuid_1 = require("uuid");
 const Post_1 = __importDefault(require("../models/Post"));
-const fileUtils_1 = require("../utils/fileUtils");
 const regexUtils_1 = require("../utils/regexUtils");
 const EmailChangeRecord_1 = __importDefault(require("../models/EmailChangeRecord"));
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -25,31 +21,10 @@ const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationType
 const PostTypeEnum_1 = __importDefault(require("../data/PostTypeEnum"));
 const zodUtils_1 = require("../utils/zodUtils");
 const profileSchema_1 = require("../validation/profileSchema");
-const MulterFileTypeError_1 = __importDefault(require("../exceptions/MulterFileTypeError"));
 const ChallengeSubmission_1 = __importDefault(require("../models/ChallengeSubmission"));
-const avatarImageUpload = (0, multer_1.default)({
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter(_req, file, cb) {
-        if (/^image\/(png|jpe?g)$/i.test(file.mimetype)) {
-            cb(null, true);
-        }
-        else {
-            cb(new MulterFileTypeError_1.default("Only .png, .jpg and .jpeg files are allowed"));
-        }
-    },
-    storage: multer_1.default.diskStorage({
-        destination(req, file, cb) {
-            const dir = path_1.default.join(confg_1.config.rootDir, "uploads", "users");
-            if (!fs_1.default.existsSync(dir)) {
-                fs_1.default.mkdirSync(dir, { recursive: true });
-            }
-            cb(null, dir);
-        },
-        filename(req, file, cb) {
-            cb(null, (0, uuid_1.v4)() + path_1.default.extname(file.originalname));
-        }
-    })
-});
+const fileHelper_1 = require("../helpers/fileHelper");
+const uploadImage_1 = __importDefault(require("../middleware/uploadImage"));
+const File_1 = __importDefault(require("../models/File"));
 const getProfile = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
     const roles = req.roles;
@@ -492,25 +467,30 @@ const uploadProfileAvatarImage = (0, express_async_handler_1.default)(async (req
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
-    const compressedBuffer = await (0, fileUtils_1.compressAvatar)({
-        inputPath: req.file.path,
+    const fileDoc = await (0, fileHelper_1.uploadImageToBlob)({
+        authorId: currentUserId,
+        tempPath: req.file.path,
+        name: "avatar",
+        path: `users/${user._id}/avatar`,
+        inputMime: req.file.mimetype,
+        maxWidth: 256,
+        maxHeight: 256,
+        fit: "cover",
+        outputFormat: "webp",
+        quality: 82,
     });
-    // Overwrite original file
-    fs_1.default.writeFileSync(req.file.path, new Uint8Array(compressedBuffer));
-    if (user.avatarImage) {
-        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs_1.default.existsSync(oldPath)) {
-            fs_1.default.unlinkSync(oldPath);
-        }
-    }
-    user.avatarImage = req.file.filename;
+    user.avatarImage = fileDoc._id;
     await user.save();
     res.json({
         success: true,
         data: {
-            avatarImage: user.avatarImage
-        }
+            avatarImage: fileDoc._id
+        },
     });
+});
+const avatarImageUploadMiddleware = (0, uploadImage_1.default)({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
 });
 const removeProfileAvatarImage = (0, express_async_handler_1.default)(async (req, res) => {
     const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.removeProfileImageSchema, req);
@@ -526,16 +506,11 @@ const removeProfileAvatarImage = (0, express_async_handler_1.default)(async (req
         return;
     }
     if (user.avatarImage) {
-        const oldPath = path_1.default.join(confg_1.config.rootDir, "uploads", "users", user.avatarImage);
-        if (fs_1.default.existsSync(oldPath)) {
-            fs_1.default.unlinkSync(oldPath);
-        }
         user.avatarImage = null;
         await user.save();
+        await (0, fileHelper_1.deleteFile)(user.avatarImage);
     }
-    res.json({
-        success: true
-    });
+    res.json({ success: true });
 });
 const updateNotifications = (0, express_async_handler_1.default)(async (req, res) => {
     const currentUserId = req.userId;
@@ -582,6 +557,106 @@ const searchProfiles = (0, express_async_handler_1.default)(async (req, res) => 
         }))
     });
 });
+const uploadPostImage = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    if (!req.file) {
+        res.status(400).json({ error: [{ message: "No file uploaded" }] });
+        return;
+    }
+    const name = String(req.body?.name ?? "").trim();
+    if (!name) {
+        fs_1.default.unlinkSync(req.file.path);
+        res.status(400).json({ error: [{ message: "Name is required" }] });
+        return;
+    }
+    if (name.length > 80) {
+        fs_1.default.unlinkSync(req.file.path);
+        res.status(400).json({ error: [{ message: "Name too long" }] });
+        return;
+    }
+    const fileDoc = await (0, fileHelper_1.uploadImageToBlob)({
+        authorId: currentUserId,
+        tempPath: req.file.path,
+        inputMime: req.file.mimetype,
+        path: `users/${currentUserId}/post-images`,
+        name,
+        maxWidth: 720,
+        maxHeight: 720,
+        fit: "inside",
+        outputFormat: "webp",
+        quality: 70,
+    });
+    res.json({
+        success: true,
+        data: {
+            fileId: fileDoc._id,
+            url: `/media/files/${fileDoc._id}`,
+            name: fileDoc.name
+        }
+    });
+});
+const postImageUploadMiddleware = (0, uploadImage_1.default)({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+});
+const getPostImageList = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.getPostImageListSchema, req);
+    const { page, count, userId } = body;
+    const targetUserId = userId ?? currentUserId;
+    if (targetUserId !== currentUserId && !req.roles?.includes(RolesEnum_1.default.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+    const skip = (page - 1) * count;
+    const virtualPath = `users/${targetUserId}/post-images`;
+    const [total, items] = await Promise.all([
+        File_1.default.countDocuments({ author: targetUserId, path: virtualPath }),
+        File_1.default.find({ author: targetUserId, path: virtualPath })
+            .select("_id name mimetype size createdAt updatedAt")
+            .sort({ updatedAt: "desc" })
+            .skip(skip)
+            .limit(count)
+            .lean(),
+    ]);
+    res.json({
+        success: true,
+        data: {
+            page,
+            count,
+            total,
+            items: items.map((x) => ({
+                id: x._id,
+                name: x.name,
+                mimetype: x.mimetype,
+                size: x.size,
+                createdAt: x.createdAt,
+                url: `/media/files/${x._id}`,
+            })),
+        },
+    });
+});
+const deletePostImage = (0, express_async_handler_1.default)(async (req, res) => {
+    const currentUserId = req.userId;
+    const { body } = (0, zodUtils_1.parseWithZod)(profileSchema_1.deletePostImageSchema, req);
+    const { fileId } = body;
+    const fileDoc = await File_1.default.findById(fileId).select("author path");
+    if (!fileDoc) {
+        res.status(404).json({ error: [{ message: "File not found" }] });
+        return;
+    }
+    if (fileDoc.author.toString() !== currentUserId && !req.roles?.includes(RolesEnum_1.default.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+    const expectedPath = `users/${fileDoc.author.toString()}/post-images`;
+    if (fileDoc.path !== expectedPath) {
+        res.status(400).json({ error: [{ message: "Not a post image" }] });
+        return;
+    }
+    await (0, fileHelper_1.deleteFile)(fileId);
+    res.json({ success: true });
+});
 const controller = {
     getProfile,
     updateProfile,
@@ -596,9 +671,13 @@ const controller = {
     sendActivationCode,
     uploadProfileAvatarImage,
     removeProfileAvatarImage,
-    avatarImageUpload,
+    avatarImageUploadMiddleware,
     updateNotifications,
     searchProfiles,
-    verifyEmailChange
+    verifyEmailChange,
+    uploadPostImage,
+    postImageUploadMiddleware,
+    getPostImageList,
+    deletePostImage
 };
 exports.default = controller;

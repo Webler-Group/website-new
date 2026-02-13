@@ -1,10 +1,9 @@
 import express from "express";
-import { logEvents, logger } from "./middleware/logger";
+import { logger } from "./middleware/logger";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import corsOptions from "./config/corsOptions";
-import path from "path";
 import connectDB from "./config/dbConn";
 import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -47,7 +46,8 @@ async function main() {
         initCronJobs();
     }
 
-    app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
+    app.use("/media", mediaRoutes);
+
     app.use(logger);
 
     app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
@@ -73,7 +73,6 @@ async function main() {
     app.use(`${apiPrefix}/Challenge`, challengeRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
-    app.use("/media", mediaRoutes);
 
     app.all("*", (req, res) => {
         res.status(404).json({ success: false, error: [{ message: "resource not found" }] });

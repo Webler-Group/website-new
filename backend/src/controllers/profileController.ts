@@ -7,13 +7,9 @@ import Notification from "../models/Notification";
 import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
-import multer from "multer";
 import { config } from "../confg";
-import path from "path";
 import fs from "fs";
-import { v4 as uuid } from "uuid";
 import Post from "../models/Post";
-import { compressAvatar } from "../utils/fileUtils";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";
 import mongoose from "mongoose";
@@ -21,11 +17,11 @@ import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
-import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
-import MulterFileTypeError from "../exceptions/MulterFileTypeError";
+import { changeEmailSchema, deletePostImageSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getPostImageListSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmission from "../models/ChallengeSubmission";
-import { uploadImageToBlob } from "../helpers/fileHelper";
+import { deleteFile, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
+import File from "../models/File";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -538,7 +534,8 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
-    const userId = req.body.userId; // (keep your zod parsing as-is)
+    const { body } = parseWithZod(uploadProfileAvatarImageSchema, req)
+    const { userId } = body;
     const currentUserId = req.userId;
 
     if (!req.file) {
@@ -583,7 +580,12 @@ const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
     });
 });
 
-export const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+const avatarImageUploadMiddleware = uploadImage({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+});
+
+const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(removeProfileImageSchema, req);
     const { userId } = body;
     const currentUserId = req.userId;
@@ -602,6 +604,8 @@ export const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, r
     if (user.avatarImage) {
         user.avatarImage = null as any;
         await user.save();
+
+        await deleteFile(user.avatarImage);
     }
 
     res.json({ success: true });
@@ -662,9 +666,122 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     });
 });
 
-const avatarImageUpload = uploadImage({
+const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+
+    if (!req.file) {
+        res.status(400).json({ error: [{ message: "No file uploaded" }] });
+        return;
+    }
+
+    const name = String(req.body?.name ?? "").trim();
+    if (!name) {
+        fs.unlinkSync(req.file.path);
+        res.status(400).json({ error: [{ message: "Name is required" }] });
+        return;
+    }
+    if (name.length > 80) {
+        fs.unlinkSync(req.file.path);
+        res.status(400).json({ error: [{ message: "Name too long" }] });
+        return;
+    }
+
+    const fileDoc = await uploadImageToBlob({
+        authorId: currentUserId,
+        tempPath: req.file.path,
+        inputMime: req.file.mimetype,
+        path: `users/${currentUserId}/post-images`,
+        name,
+        maxWidth: 720,
+        maxHeight: 720,
+        fit: "inside",
+        outputFormat: "webp",
+        quality: 70,
+    });
+
+    res.json({
+        success: true,
+        data: {
+            fileId: fileDoc._id,
+            url: `/media/files/${fileDoc._id}`,
+            name: fileDoc.name
+        }
+    });
+});
+
+const postImageUploadMiddleware = uploadImage({
     maxFileSizeBytes: 10 * 1024 * 1024,
     allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+});
+
+const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+    const { body } = parseWithZod(getPostImageListSchema, req);
+    const { page, count, userId } = body;
+
+    const targetUserId = userId ?? currentUserId;
+
+    if (targetUserId !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    const skip = (page - 1) * count;
+    const virtualPath = `users/${targetUserId}/post-images`;
+
+    const [total, items] = await Promise.all([
+        File.countDocuments({ author: targetUserId, path: virtualPath }),
+        File.find({ author: targetUserId, path: virtualPath })
+            .select("_id name mimetype size createdAt updatedAt")
+            .sort({ updatedAt: "desc" })
+            .skip(skip)
+            .limit(count)
+            .lean(),
+    ]);
+
+    res.json({
+        success: true,
+        data: {
+            page,
+            count,
+            total,
+            items: items.map((x) => ({
+                id: x._id,
+                name: x.name,
+                mimetype: x.mimetype,
+                size: x.size,
+                createdAt: x.createdAt,
+                url: `/media/files/${x._id}`,
+            })),
+        },
+    });
+});
+
+const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+    const { body } = parseWithZod(deletePostImageSchema, req);
+    const { fileId } = body;
+
+    const fileDoc = await File.findById(fileId).select("author path");
+    if (!fileDoc) {
+        res.status(404).json({ error: [{ message: "File not found" }] });
+        return;
+    }
+
+    if (fileDoc.author.toString() !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    const expectedPath = `users/${fileDoc.author.toString()}/post-images`;
+    if (fileDoc.path !== expectedPath) {
+        res.status(400).json({ error: [{ message: "Not a post image" }] });
+        return;
+    }
+
+    await deleteFile(fileId);
+
+    res.json({ success: true });
 });
 
 const controller = {
@@ -681,10 +798,14 @@ const controller = {
     sendActivationCode,
     uploadProfileAvatarImage,
     removeProfileAvatarImage,
-    avatarImageUpload,
+    avatarImageUploadMiddleware,
     updateNotifications,
     searchProfiles,
-    verifyEmailChange
+    verifyEmailChange,
+    uploadPostImage,
+    postImageUploadMiddleware,
+    getPostImageList,
+    deletePostImage
 };
 
 export default controller;

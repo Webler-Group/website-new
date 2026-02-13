@@ -118,7 +118,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
             <h4 className="error-title">
               {error || 'Feed not found'}
             </h4>
-            <Button onClick={() => navigate('/feed')} variant='primary'>
+            <Button onClick={() => navigate('/Feed')} variant='primary'>
               <FaArrowLeft />
               Back to Feed
             </Button>
@@ -147,7 +147,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
         <div className="wb-feed-main-content">
           {/* Back Button */}
           <button
-            onClick={() => navigate('/feed')}
+            onClick={() => navigate('/Feed')}
             className="wb-feed-back-button"
           >
             <FaArrowLeft size={16} />

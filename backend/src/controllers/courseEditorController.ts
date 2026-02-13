@@ -317,6 +317,11 @@ const uploadCourseCoverImage = asyncHandler(
     }
 );
 
+const coverImageUploadMiddleware = uploadImage({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+});
+
 const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createLessonNodeSchema, req);
     const { lessonId } = body;
@@ -516,11 +521,6 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
     });
 });
 
-const coverImageUpload = uploadImage({
-    maxFileSizeBytes: 10 * 1024 * 1024,
-    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
-});
-
 const courseEditorController = {
     createCourse,
     getCoursesList,
@@ -529,6 +529,7 @@ const courseEditorController = {
     deleteCourse,
     editCourse,
     uploadCourseCoverImage,
+    coverImageUploadMiddleware,
     getLessonList,
     editLesson,
     deleteLesson,
@@ -539,8 +540,7 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
-    exportCourseLesson,
-    coverImageUpload
+    exportCourseLesson
 };
 
 export default courseEditorController;

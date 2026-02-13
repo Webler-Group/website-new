@@ -74,7 +74,7 @@ server {
     }
 
     # Handle proxy to backend
-    location ~ ^/(api|uploads|socket\.io) {
+    location ~ ^/(api|media|socket\.io) {
         proxy_pass http://localhost:5500;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;

@@ -9,7 +9,6 @@ import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
 import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
 import DateUtils from '../../../utils/DateUtils';
-import EditModal from './EditModal';
 import { FaClock, FaComment, FaMapPin, FaShareNodes, FaTrash } from 'react-icons/fa6';
 import { FaEdit } from 'react-icons/fa';
 import DeleteModal from './DeleteModal';
@@ -38,7 +37,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
 
   return (
     <div
-      onClick={() => navigate(`/feed/${originalPost.id}`)}
+      onClick={() => navigate(`/Feed/${originalPost.id}`)}
       className="mt-2 border bg-light p-2 text-dark text-decoration-none mb-2"
       style={{ cursor: "pointer" }}
     >
@@ -70,7 +69,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const { userInfo } = useAuth();
   const currentUserId = userInfo?.id;
 
-  const [showEditModal, setShowEditModal] = useState(false);
+  // const [showEditModal, setShowEditModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -107,22 +106,22 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     }
   }
 
-  const handleEdit = async (updatedContent: string) => {
-    const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
-    if (result && result.success) {
-      onGeneralUpdate?.({ ...feed, message: result.data.message, attachments: result.data.attachments });
-      showNotification("success", "Post updated successfully");
-      setShowEditModal(false);
-    } else {
-      showNotification("error", result?.error[0].message);
-    }
-  }
+  // const handleEdit = async (updatedContent: string) => {
+  //   const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
+  //   if (result && result.success) {
+  //     onGeneralUpdate?.({ ...feed, message: result.data.message, attachments: result.data.attachments });
+  //     showNotification("success", "Post updated successfully");
+  //     setShowEditModal(false);
+  //   } else {
+  //     showNotification("error", result?.error[0].message);
+  //   }
+  // }
 
   const handleDelete = async () => {
     const result = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
     if (result && result.success) {
       onDelete(feed);
-      navigate("/feed")
+      navigate("/Feed")
       showNotification("success", "Post deleted successfully");
     } else {
       showNotification("error", result?.error[0].message);
@@ -200,7 +199,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const handleShare = async (shareMessage: string, tags?: string[]) => {
     const result = await sendJsonRequest("/Feed/ShareFeed", "POST", { feedId: feed.id, message: shareMessage, tags });
     if (result && result.success) {
-      navigate(`/feed/${result.feed.id}`);
+      navigate(`/Feed/${result.feed.id}`);
       setShowShareModal(false);
       showNotification("success", "Post shared successfully");
     } else {
@@ -261,7 +260,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                   <>
                     <Dropdown.Item
                       className="dropdown-item d-flex align-items-center gap-2"
-                      onClick={() => setShowEditModal(true)}
+                      onClick={() => navigate("/Feed/Edit/" + feed.id)}
                     >
                       <FaEdit /> Edit Post
                     </Dropdown.Item>
@@ -386,14 +385,14 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           </span>
         </div>
 
-        {showEditModal &&
+        {/* {showEditModal &&
           <EditModal
             show={showEditModal}
             feed={feed}
             onSave={handleEdit}
             onClose={() => setShowEditModal(false)}
           />
-        }
+        } */}
 
         {showDeleteModal && (
           <DeleteModal

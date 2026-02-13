@@ -278,13 +278,13 @@ const FeedListPage = () => {
                           <FeedItem
                             feed={feed}
                             onGeneralUpdate={onGeneralUpdate}
-                            onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                            onCommentsClick={(feedId) => navigate(`/Feed/${feedId}`, { state: { comments: true } })}
                             commentCount={feed.answers || 0}
                             onShowUserReactions={onShowUserReactions}
                             onDelete={onDelete}
                             onTogglePin={onTogglePin}
                             showFullContent={false}
-                            onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
+                            onShowFullContent={(feedId) => navigate(`/Feed/${feedId}`)}
                           />
                         </div>
                       ))}
@@ -340,13 +340,13 @@ const FeedListPage = () => {
                         <FeedItem
                           feed={feed}
                           onGeneralUpdate={onGeneralUpdate}
-                          onCommentsClick={(feedId) => navigate(`/feed/${feedId}`, { state: { comments: true } })}
+                          onCommentsClick={(feedId) => navigate(`/Feed/${feedId}`, { state: { comments: true } })}
                           commentCount={feed.answers || 0}
                           onShowUserReactions={onShowUserReactions}
                           onDelete={onDelete}
                           onTogglePin={onTogglePin}
                           showFullContent={false}
-                          onShowFullContent={(feedId) => navigate(`/feed/${feedId}`)}
+                          onShowFullContent={(feedId) => navigate(`/Feed/${feedId}`)}
                         />
                       </div>
                     );
@@ -364,7 +364,7 @@ const FeedListPage = () => {
 
         {/* Floating New Post Button */}
         <button
-          onClick={() => navigate('/feed/new')}
+          onClick={() => navigate('/Feed/new')}
           className="wb-feed-new-post-button"
           title="Create new post"
         >

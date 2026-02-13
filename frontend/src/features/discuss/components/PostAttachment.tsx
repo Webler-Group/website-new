@@ -44,7 +44,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
         case 4: // Feed
             title = `${data.feedMessage}`;
             subtitle = `${data.userName}`;
-            to = `/feed/${data.feedId}`;
+            to = `/Feed/${data.feedId}`;
             info = "post";
             break;
 

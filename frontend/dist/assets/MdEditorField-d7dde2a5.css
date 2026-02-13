@@ -1,0 +1,1 @@
+@media (min-width: 576px){.wb-modal__container.user-images{max-height:80vh}}.wb-user-images__body,.wb-user-images__tabcontent{display:flex;flex-direction:column;flex:1 1 auto;min-height:0}.user-images .tab-pane{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;padding-right:4px}.wb-user-images-delete-modal__backdrop{z-index:1059!important}

@@ -5,6 +5,7 @@ import path from "path";
 import sharp from "sharp";
 import File from "../models/File";
 import { config } from "../confg";
+import mongoose from "mongoose";
 
 type ImageFit = "cover" | "inside";
 
@@ -56,7 +57,7 @@ export const deleteBlobIfUnreferenced = async (contenthash: string) => {
 };
 
 
-export const deleteFileDocAndBlob = async (fileId: string) => {
+export const deleteFile = async (fileId: mongoose.Types.ObjectId | string) => {
     const doc = await File.findById(fileId).select("contenthash");
     if (!doc) return;
 
@@ -74,15 +75,6 @@ export const deleteFileByVirtualPath = async (virtualPath: string, name: string)
     await File.deleteOne({ _id: doc._id });
 
     await deleteBlobIfUnreferenced(oldHash);
-};
-
-export const listFilesAtVirtualPath = async (virtualPath: string) => {
-    const files = await File.find({ path: virtualPath })
-        .select("_id name mimetype size contenthash createdAt updatedAt")
-        .sort({ updatedAt: "desc" })
-        .lean();
-
-    return files;
 };
 
 export const uploadImageToBlob = async ({
@@ -114,7 +106,7 @@ export const uploadImageToBlob = async ({
 
         switch (outputFormat) {
             case "webp":
-                pipeline = pipeline.webp({ quality });
+                pipeline = pipeline.webp({ quality, smartSubsample: true });
                 break;
             case "jpeg":
                 pipeline = pipeline.jpeg({ quality, mozjpeg: true });

@@ -2,6 +2,7 @@ import profileController from "../controllers/profileController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import { Router } from "express";
+import requestLimiter from "../middleware/requestLimiter";
 
 const router = Router();
 
@@ -36,13 +37,18 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController.sendActivationCode)
 router.route("/UploadProfileAvatarImage")
-    .post(profileController.avatarImageUpload.single("avatarImage"), profileController.uploadProfileAvatarImage);
+    .post(requestLimiter(3600 * 24, 5, "Too many requests, try again later"), profileController.avatarImageUploadMiddleware.single("avatarImage"), profileController.uploadProfileAvatarImage);
 router.route("/RemoveProfileAvatarImage")
     .post(profileController.removeProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController.updateNotifications);
 router.route("/Search")
     .post(profileController.searchProfiles);
-
+router.route("/UploadPostImage")
+    .post(requestLimiter(3600 * 24, 5, "Too many requests, try again later"), profileController.postImageUploadMiddleware.single("postImage"), profileController.uploadPostImage);
+router.route("/GetPostImages")
+    .post(profileController.getPostImageList);
+router.route("/DeletePostImage")
+    .delete(profileController.deletePostImage);
 
 export default router;
