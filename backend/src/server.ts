@@ -1,10 +1,9 @@
 import express from "express";
-import { logEvents, logger } from "./middleware/logger";
+import { logger } from "./middleware/logger";
 import errorHandler from "./middleware/errorHandler";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import corsOptions from "./config/corsOptions";
-import path from "path";
 import connectDB from "./config/dbConn";
 import profileRoutes from "./routes/profileRoutes";
 import authRoutes from "./routes/authRoutes";
@@ -25,6 +24,7 @@ import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 import { initKeystore } from "./services/pushService";
+import mediaRoutes from "./routes/mediaRoutes";
 
 async function main() {
     console.log("Environment:", config.nodeEnv);
@@ -46,7 +46,8 @@ async function main() {
         initCronJobs();
     }
 
-    app.use("/uploads", express.static(path.join(config.rootDir, "uploads")));
+    app.use("/media", mediaRoutes);
+
     app.use(logger);
 
     app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);

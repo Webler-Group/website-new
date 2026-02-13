@@ -25,8 +25,9 @@ const courseSchema = new mongoose_1.default.Schema({
         maxLength: 120
     },
     coverImage: {
-        type: String,
-        required: false
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: "File",
+        default: null
     },
     description: {
         type: String,

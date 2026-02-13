@@ -28,37 +28,12 @@ import {
     editLessonNodeSchema,
     changeLessonIndexSchema,
     changeLessonNodeIndexSchema,
-    exportCourseLessonSchema,
-    generateLessonNodeSchema
+    exportCourseLessonSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import { exportCourseLessonToJson } from "../helpers/courseHelper";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import { trimAtWordBoundary } from "../utils/StringUtils";
-import { shuffle } from "../utils/arrayUtils";
-
-const coverImageUpload = multer({
-    limits: { fileSize: 2 * 1024 * 1024 },
-    fileFilter(req, file, cb) {
-        if (/^image\/(png)$/i.test(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new MulterFileTypeError("Only .png files are allowed"));
-        }
-    },
-    storage: multer.diskStorage({
-        destination(req, file, cb) {
-            const dir = path.join(config.rootDir, "uploads", "courses");
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
-            }
-            cb(null, dir);
-        },
-        filename(req, file, cb) {
-            cb(null, uuid() + path.extname(file.originalname));
-        }
-    })
-});
+import { uploadImageToBlob } from "../helpers/fileHelper";
+import uploadImage from "../middleware/uploadImage";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -299,33 +274,52 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true });
 });
 
-const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(uploadCourseCoverImageSchema, req);
-    const { courseId } = body;
+const uploadCourseCoverImage = asyncHandler(
+    async (req: IAuthRequest, res: Response) => {
+        const { body } = parseWithZod(uploadCourseCoverImageSchema, req);
+        const { courseId } = body;
+        const currentUserId = req.userId;
 
-    if (!req.file) {
-        res.status(400).json({ error: [{ message: "No file uploaded" }] });
-        return;
-    }
-
-    const course = await Course.findById(courseId);
-    if (!course) {
-        fs.unlinkSync(req.file.path);
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
-    }
-
-    if (course.coverImage) {
-        const oldPath = path.join(config.rootDir, "uploads", "courses", course.coverImage);
-        if (fs.existsSync(oldPath)) {
-            fs.unlinkSync(oldPath);
+        if (!req.file) {
+            res.status(400).json({ error: [{ message: "No file uploaded" }] });
+            return;
         }
+
+        const course = await Course.findById(courseId);
+        if (!course) {
+            fs.unlinkSync(req.file.path);
+            res.status(404).json({ error: [{ message: "Course not found" }] });
+            return;
+        }
+
+        const fileDoc = await uploadImageToBlob({
+            authorId: currentUserId!,
+            tempPath: req.file.path,
+            name: "cover",
+            path: `courses/${course._id}/cover`,
+            inputMime: req.file.mimetype,
+            maxWidth: 512,
+            maxHeight: 512,
+            fit: "cover",
+            outputFormat: "webp",
+            quality: 82,
+        });
+
+        course.coverImage = fileDoc._id;
+        await course.save();
+
+        res.json({
+            success: true,
+            data: {
+                coverImage: fileDoc._id
+            },
+        });
     }
+);
 
-    course.coverImage = req.file.filename;
-
-    await course.save();
-    res.json({ success: true, data: { coverImage: course.coverImage } });
+const coverImageUploadMiddleware = uploadImage({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
 });
 
 const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -535,6 +529,7 @@ const courseEditorController = {
     deleteCourse,
     editCourse,
     uploadCourseCoverImage,
+    coverImageUploadMiddleware,
     getLessonList,
     editLesson,
     deleteLesson,
@@ -545,8 +540,7 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
-    exportCourseLesson,
-    coverImageUpload
+    exportCourseLesson
 };
 
 export default courseEditorController;

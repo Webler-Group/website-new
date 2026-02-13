@@ -7,6 +7,7 @@ const profileController_1 = __importDefault(require("../controllers/profileContr
 const verifyJWT_1 = __importDefault(require("../middleware/verifyJWT"));
 const protectRoute_1 = __importDefault(require("../middleware/protectRoute"));
 const express_1 = require("express");
+const requestLimiter_1 = __importDefault(require("../middleware/requestLimiter"));
 const router = (0, express_1.Router)();
 router.use(verifyJWT_1.default);
 router.route("/GetProfile")
@@ -35,11 +36,17 @@ router.route("/MarkNotificationsClicked")
 router.route("/SendActivationCode")
     .post(profileController_1.default.sendActivationCode);
 router.route("/UploadProfileAvatarImage")
-    .post(profileController_1.default.avatarImageUpload.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
+    .post((0, requestLimiter_1.default)(3600 * 24, 5, "Too many requests, try again later"), profileController_1.default.avatarImageUploadMiddleware.single("avatarImage"), profileController_1.default.uploadProfileAvatarImage);
 router.route("/RemoveProfileAvatarImage")
     .post(profileController_1.default.removeProfileAvatarImage);
 router.route("/UpdateNotifications")
     .post(profileController_1.default.updateNotifications);
 router.route("/Search")
     .post(profileController_1.default.searchProfiles);
+router.route("/UploadPostImage")
+    .post((0, requestLimiter_1.default)(3600 * 24, 5, "Too many requests, try again later"), profileController_1.default.postImageUploadMiddleware.single("postImage"), profileController_1.default.uploadPostImage);
+router.route("/GetPostImages")
+    .post(profileController_1.default.getPostImageList);
+router.route("/DeletePostImage")
+    .delete(profileController_1.default.deletePostImage);
 exports.default = router;

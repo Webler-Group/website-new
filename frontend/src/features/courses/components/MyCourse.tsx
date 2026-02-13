@@ -27,7 +27,6 @@ const MyCourse = ({ course, onRestart }: CourseProps) => {
                         <Dropdown.Menu>
                             <Dropdown.Item
                                 onClick={handleRestart}
-                                disabled={!course.completed}
                             >
                                 Restart
                             </Dropdown.Item>
@@ -41,7 +40,7 @@ const MyCourse = ({ course, onRestart }: CourseProps) => {
                             className="wb-courses-course__cover-image"
                             src={
                                 course.coverImage
-                                    ? "/uploads/courses/" + course.coverImage
+                                    ? "/media/files/" + course.coverImage
                                     : "/resources/images/logoicon.svg"
                             }
                             alt="Cover image"

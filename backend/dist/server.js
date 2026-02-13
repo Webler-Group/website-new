@@ -9,7 +9,6 @@ const errorHandler_1 = __importDefault(require("./middleware/errorHandler"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const cors_1 = __importDefault(require("cors"));
 const corsOptions_1 = __importDefault(require("./config/corsOptions"));
-const path_1 = __importDefault(require("path"));
 const dbConn_1 = __importDefault(require("./config/dbConn"));
 const profileRoutes_1 = __importDefault(require("./routes/profileRoutes"));
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
@@ -30,6 +29,7 @@ const cronJobs_1 = require("./services/cronJobs");
 const socketServer_1 = require("./config/socketServer");
 const channelsController_1 = require("./controllers/channelsController");
 const pushService_1 = require("./services/pushService");
+const mediaRoutes_1 = __importDefault(require("./routes/mediaRoutes"));
 async function main() {
     console.log("Environment:", confg_1.config.nodeEnv);
     const app = (0, express_1.default)();
@@ -43,7 +43,7 @@ async function main() {
     if (confg_1.config.nodeEnv == "production") {
         (0, cronJobs_1.initCronJobs)();
     }
-    app.use("/uploads", express_1.default.static(path_1.default.join(confg_1.config.rootDir, "uploads")));
+    app.use("/media", mediaRoutes_1.default);
     app.use(logger_1.logger);
     app.use(`${apiPrefix}/Sitemap`, sitemapRoutes_1.default);
     if (confg_1.config.nodeEnv == "production") {

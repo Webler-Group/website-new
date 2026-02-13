@@ -5,9 +5,9 @@ import RolesEnum from "../data/RolesEnum";
 import Post from "./Post";
 import Code from "./Code";
 import Notification from "./Notification";
-import { v4 as uuid } from "uuid";
 import { isEmail } from "../utils/regexUtils";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { levelFromXp } from "../utils/levelUtils";
 
 const banSchema = new mongoose.Schema({
     author: {
@@ -84,8 +84,9 @@ const userSchema = new mongoose.Schema({
         default: 0
     },
     avatarImage: {
-        type: String,
-        required: false
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "File",
+        default: null
     },
     notifications: {
         [NotificationTypeEnum.CODE_COMMENT]: { type: Boolean, default: true },
@@ -144,10 +145,12 @@ userSchema.pre('save', async function (next) {
         await Notification.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
     }
 
+    if (this.isModified("xp")) {
+        this.level = levelFromXp(this.xp);
+    }
+
     return next();
-
-
-})
+});
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {
     roles: RolesEnum[];

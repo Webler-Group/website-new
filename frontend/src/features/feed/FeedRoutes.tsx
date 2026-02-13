@@ -7,6 +7,7 @@ import RequireAuth from "../auth/components/RequireAuth"
 import roles from "../../data/roles"
 import FeedCreatePage from "./pages/FeedCreatePage"
 import "./feed.css"
+import FeedEditPage from "./pages/FeedEditPage"
 
 const FeedRoutes = () => {
     return (
@@ -14,7 +15,8 @@ const FeedRoutes = () => {
             <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
                 <Route index element={<FeedLayout MainPage={<FeedListPage />} />} />
                 <Route element={<RequireAuth allowedRoles={roles} />}>
-                    <Route path="New" element={<FeedLayout MainPage={<FeedCreatePage />} />} />
+                    <Route path="New" element={<FeedLayout MainPage={<FeedCreatePage feedId={null} />} />} />
+                    <Route path="Edit/:feedId" element={<FeedLayout MainPage={<FeedEditPage />} />} />
                 </Route>
                 <Route path=":feedId" element={<FeedLayout MainPage={<FeedListPage />} />} />
             </Route>

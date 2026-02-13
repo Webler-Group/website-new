@@ -4,6 +4,7 @@ import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import allowedUrls from "../data/discussAllowedUrls";
+import UserImagesModal from "./UserImages";
 
 export type MDEditorMode = "write" | "preview";
 
@@ -18,17 +19,27 @@ interface MdEditorFieldProps {
     isPost?: boolean;
 }
 
-const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, customPreview, onModeChange, isPost = true }: MdEditorFieldProps) => {
+const MdEditorField = ({
+    row,
+    placeHolder,
+    text,
+    setText,
+    maxCharacters = 4096,
+    customPreview,
+    onModeChange,
+    isPost = true,
+}: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const [showImages, setShowImages] = useState(false);
 
     useEffect(() => {
         onModeChange?.(mode);
     }, [mode]);
 
     const handlePostAttachments = (selected: string[]) => {
-        setText(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
-    }
+        setText((prev) => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
+    };
 
     const handleChange = (value: string) => {
         const limitedValue = value.slice(0, maxCharacters);
@@ -47,10 +58,26 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
         handleChange(newText);
         setTimeout(() => {
             textarea.focus();
-            textarea.setSelectionRange(
-                start + syntaxStart.length,
-                end + syntaxStart.length
-            );
+            textarea.setSelectionRange(start + syntaxStart.length, end + syntaxStart.length);
+        }, 50);
+    };
+
+    const insertImageMarkdownAtCursor = (url: string, altText: string) => {
+        const textarea = textareaRef.current;
+        const md = `![${altText || "image"}](${url})`;
+        if (!textarea) {
+            handleChange(text + (text.endsWith("\n") ? "" : "\n") + md + "\n");
+            return;
+        }
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const before = text.slice(0, start);
+        const after = text.slice(end);
+        const newText = before + md + after;
+        handleChange(newText);
+        setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(start + md.length, start + md.length);
         }, 50);
     };
 
@@ -59,59 +86,34 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
         { icon: "I", title: "Italic", action: () => insertMarkdown("_", "_") },
         { icon: "S", title: "Small", action: () => insertMarkdown("~~", "~~") },
         { icon: "M", title: "Mark", action: () => insertMarkdown("`", "`") },
-        {
-            icon: "H3",
-            title: "Heading",
-            action: () => insertMarkdown("### ", ""),
-        },
-        {
-            icon: "LINK",
-            title: "Link",
-            action: () => insertMarkdown("[text](", ")"),
-        },
-        {
-            icon: "IMG",
-            title: "Image",
-            action: () => insertMarkdown("![alt text](", ")"),
-        },
-        {
-            icon: "-",
-            title: "List",
-            action: () => insertMarkdown("- ", ""),
-        },
-        {
-            icon: "</>",
-            title: "Code Block",
-            action: () => insertMarkdown("```bash\n", "\n```"),
-        },
-        {
-            icon: ">",
-            title: "Quote",
-            action: () => insertMarkdown("> ", ""),
-        },
-        {
-            icon: "1.",
-            title: "Numbered List",
-            action: () => insertMarkdown("1. ", ""),
-        },
-        {
-            icon: "|",
-            title: "Divider",
-            action: () => insertMarkdown("---"),
-        }
+        { icon: "H3", title: "Heading", action: () => insertMarkdown("### ", "") },
+        { icon: "LINK", title: "Link", action: () => insertMarkdown("[text](", ")") },
+        { icon: "IMG", title: "Image", action: () => setShowImages(true) },
+        { icon: "-", title: "List", action: () => insertMarkdown("- ", "") },
+        { icon: "</>", title: "Code Block", action: () => insertMarkdown("```bash\n", "\n```") },
+        { icon: ">", title: "Quote", action: () => insertMarkdown("> ", "") },
+        { icon: "1.", title: "Numbered List", action: () => insertMarkdown("1. ", "") },
+        { icon: "|", title: "Divider", action: () => insertMarkdown("---") },
     ];
 
     return (
         <div>
-            <div
-                className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2"
-            >
+            <UserImagesModal
+                show={showImages}
+                onHide={() => setShowImages(false)}
+                onSelect={(url, alt) => insertImageMarkdownAtCursor(url, alt)}
+            />
+
+            <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
                 {toolbarButtons.map((btn, idx) => (
                     <button
                         key={idx}
                         className="btn btn-sm btn-outline-secondary flex-shrink-0"
                         title={btn.title}
-                        onClick={e => { e.preventDefault();btn.action(); }}
+                        onClick={(e) => {
+                            e.preventDefault();
+                            btn.action();
+                        }}
                         style={{ minWidth: "40px" }}
                     >
                         {btn.icon}
@@ -120,12 +122,7 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
             </div>
 
             <div className="mb-3">
-                <ToggleButtonGroup
-                    type="radio"
-                    name="editorMode"
-                    value={mode}
-                    onChange={(val: any) => setMode(val)}
-                >
+                <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={(val: any) => setMode(val)}>
                     <ToggleButton id="write-btn" value="write" variant="outline-primary">
                         Write
                     </ToggleButton>
@@ -137,59 +134,57 @@ const MdEditorField = ({ row, placeHolder, text, setText, maxCharacters = 4096, 
 
             {mode === "write" && (
                 <FormGroup className="mb-3">
-                    {
-                        isPost ?
-                            <>
-                                <PostTextareaControl
-                                    ref={textareaRef}
-                                    rows={row}
-                                    placeholder={placeHolder}
-                                    value={text}
-                                    setValue={setText}
-                                    required
-                                    maxLength={maxCharacters}
-                                />
+                    {isPost ? (
+                        <>
+                            <PostTextareaControl
+                                ref={textareaRef}
+                                rows={row}
+                                placeholder={placeHolder}
+                                value={text}
+                                setValue={setText}
+                                required
+                                maxLength={maxCharacters}
+                            />
 
-                                <div className="d-flex justify-content-between">
-                                    <div className="mt-2 text-muted small">
-                                        {text.length}/{maxCharacters} characters
-                                    </div>
-                                    <PostAttachmentSelect onSubmit={handlePostAttachments} />
+                            <div className="d-flex justify-content-between">
+                                <div className="mt-2 text-muted small">
+                                    {text.length}/{maxCharacters} characters
                                 </div>
-                            </>
-                            :
-                            <>
-                                <FormControl
-                                    ref={textareaRef}
-                                    as="textarea"
-                                    rows={row}
-                                    placeholder={placeHolder}
-                                    value={text}
-                                    onChange={(e) => setText(e.target.value)}
-                                    required
-                                    maxLength={maxCharacters} />
-                                <div className="d-flex justify-content-between">
-                                    <div className="mt-2 text-muted small">
-                                        {text.length}/{maxCharacters} characters
-                                    </div>
+                                <PostAttachmentSelect onSubmit={handlePostAttachments} />
+                            </div>
+                        </>
+                    ) : (
+                        <>
+                            <FormControl
+                                ref={textareaRef}
+                                as="textarea"
+                                rows={row}
+                                placeholder={placeHolder}
+                                value={text}
+                                onChange={(e) => setText(e.target.value)}
+                                required
+                                maxLength={maxCharacters}
+                            />
+                            <div className="d-flex justify-content-between">
+                                <div className="mt-2 text-muted small">
+                                    {text.length}/{maxCharacters} characters
                                 </div>
-                            </>
-                    }
+                            </div>
+                        </>
+                    )}
                 </FormGroup>
             )}
 
-            {mode === "preview" && (
-                customPreview != null ?
+            {mode === "preview" &&
+                (customPreview != null ? (
                     customPreview
-                    :
+                ) : (
                     <div className="p-2 border rounded bg-light">
                         <MarkdownRenderer content={text} allowedUrls={allowedUrls} />
                     </div>
-            )}
-
+                ))}
         </div>
     );
 };
-
 
 export default MdEditorField;

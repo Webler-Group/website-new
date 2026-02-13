@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.searchProfilesSchema = exports.updateNotificationsSchema = exports.markNotificationsClickedSchema = exports.markNotificationsSeenSchema = exports.getNotificationsSchema = exports.removeProfileImageSchema = exports.uploadProfileAvatarImageSchema = exports.getFollowingSchema = exports.getFollowersSchema = exports.unfollowSchema = exports.followSchema = exports.verifyEmailChangeSchema = exports.changeEmailSchema = exports.updateProfileSchema = exports.getProfileSchema = void 0;
+exports.deletePostImageSchema = exports.getPostImageListSchema = exports.searchProfilesSchema = exports.updateNotificationsSchema = exports.markNotificationsClickedSchema = exports.markNotificationsSeenSchema = exports.getNotificationsSchema = exports.removeProfileImageSchema = exports.uploadProfileAvatarImageSchema = exports.getFollowingSchema = exports.getFollowersSchema = exports.unfollowSchema = exports.followSchema = exports.verifyEmailChangeSchema = exports.changeEmailSchema = exports.updateProfileSchema = exports.getProfileSchema = void 0;
 const zod_1 = require("zod");
 const commonSchema_1 = require("./commonSchema");
 const NotificationTypeEnum_1 = __importDefault(require("../data/NotificationTypeEnum"));
@@ -92,5 +92,17 @@ exports.updateNotificationsSchema = zod_1.z.object({
 exports.searchProfilesSchema = zod_1.z.object({
     body: zod_1.z.object({
         searchQuery: commonSchema_1.searchQuerySchema
+    }),
+});
+exports.getPostImageListSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        page: commonSchema_1.pageSchema,
+        count: commonSchema_1.countPerPageSchema,
+        userId: (0, commonSchema_1.idSchema)("userId").nullish(),
+    }),
+});
+exports.deletePostImageSchema = zod_1.z.object({
+    body: zod_1.z.object({
+        fileId: (0, commonSchema_1.idSchema)("fileId"),
     }),
 });
