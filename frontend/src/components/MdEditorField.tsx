@@ -82,18 +82,16 @@ const MdEditorField = ({
     };
 
     const toolbarButtons = [
-        { icon: "B", title: "Bold", action: () => insertMarkdown("**", "**") },
-        { icon: "I", title: "Italic", action: () => insertMarkdown("_", "_") },
-        { icon: "S", title: "Small", action: () => insertMarkdown("~~", "~~") },
-        { icon: "M", title: "Mark", action: () => insertMarkdown("`", "`") },
-        { icon: "H3", title: "Heading", action: () => insertMarkdown("### ", "") },
-        { icon: "LINK", title: "Link", action: () => insertMarkdown("[text](", ")") },
-        { icon: "IMG", title: "Image", action: () => setShowImages(true) },
-        { icon: "-", title: "List", action: () => insertMarkdown("- ", "") },
-        { icon: "</>", title: "Code Block", action: () => insertMarkdown("```bash\n", "\n```") },
-        { icon: ">", title: "Quote", action: () => insertMarkdown("> ", "") },
-        { icon: "1.", title: "Numbered List", action: () => insertMarkdown("1. ", "") },
-        { icon: "|", title: "Divider", action: () => insertMarkdown("---") },
+        { icon: "b", className: "fw-bold", action: () => insertMarkdown("**", "**") },
+        { icon: "i", className: "fst-italic", action: () => insertMarkdown("_", "_") },
+        { icon: "del", className: "text-decoration-line-through", action: () => insertMarkdown("~~", "~~") },
+        { icon: "mark", action: () => insertMarkdown("`", "`") },
+        { icon: "link", action: () => insertMarkdown("[text](", ")") },
+        { icon: "img", action: () => setShowImages(true) },
+        { icon: "code", action: () => insertMarkdown("```bash\n", "\n```") },
+        { icon: "div", action: () => insertMarkdown("---") },
+        { icon: "quote", action: () => insertMarkdown("> ", "") },
+        { icon: "heading", action: () => insertMarkdown("### ", "") },
     ];
 
     return (
@@ -108,8 +106,7 @@ const MdEditorField = ({
                 {toolbarButtons.map((btn, idx) => (
                     <button
                         key={idx}
-                        className="btn btn-sm btn-outline-secondary flex-shrink-0"
-                        title={btn.title}
+                        className={"btn btn-sm btn-outline-secondary flex-shrink-0" + (btn.className ? " " + btn.className : "")}
                         onClick={(e) => {
                             e.preventDefault();
                             btn.action();
