@@ -24,6 +24,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
+    const [importMessage, setImportMessage] = useState<{ errors?: any[]; message?: string; }>({});
 
     useEffect(() => {
         if (courseId) {
@@ -50,10 +51,33 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         e.preventDefault();
 
         setLoading(true);
-        courseId ?
-            await editCourse() :
-            await createCourse();
+        if (importedLessons) {
+            await importCourseWithData();
+        } else {
+            courseId ?
+                await editCourse() :
+                await createCourse();
+        }
         setLoading(false);
+    }
+
+    const importCourseWithData = async () => {
+        setError(undefined);
+        const payload = {
+            code,
+            title,
+            description,
+            visible,
+            lessons: importedLessons
+        };
+
+        const result = await sendJsonRequest("/Admin/ImportCourse", "POST", payload);
+
+        if (result && result.success) {
+            navigate("/Courses/Editor");
+        } else {
+            setError(result?.error || [{ message: result?.message || "Import failed" }]);
+        }
     }
 
     const createCourse = async () => {
@@ -73,6 +97,12 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
             setEditMessage("Course edited successfully");
+            if (result.data) {
+                setVisible(result.data.visible);
+                setCode(result.data.code ?? code);
+                setTitle(result.data.title ?? title);
+                setDescription(result.data.description ?? description);
+            }
         }
         else {
             setError(result.error);
@@ -119,6 +149,44 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         }
     }
 
+    const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
+
+    const handleImportCourse = async (e: FormEvent) => {
+        e.preventDefault();
+    }
+
+    const handleImportFileChange = (e: ChangeEvent) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files && files[0]) {
+            const file = files[0];
+            setImportedLessons(null);
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target?.result as string;
+                try {
+                    const json = JSON.parse(text);
+
+                    if (json.code) setCode(json.code);
+                    if (json.title) setTitle(json.title);
+                    if (json.description) setDescription(json.description);
+                    if (json.visible !== undefined) setVisible(json.visible);
+
+                    if (json.lessons && Array.isArray(json.lessons)) {
+                        setImportedLessons(json.lessons);
+                        setImportMessage({ message: `Loaded ${json.lessons.length} lessons from file. Review details below and click 'Create/Save' to finish import.` });
+                    } else {
+                        setImportMessage({ errors: [{ message: "JSON invalid: missing 'lessons' array" }] });
+                    }
+
+                } catch (err) {
+                    setImportMessage({ errors: [{ message: "Invalid JSON file" }] });
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
     return (
         <>
             <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -153,6 +221,18 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     </div>
                 }
                 <div className="col-12 col-md-8">
+                    {
+                        !courseId &&
+                        <div className="mb-4 p-3 border rounded bg-light">
+                            <h5>Load Course Data from JSON</h5>
+                            <RequestResultAlert errors={importMessage.errors} message={importMessage.message} />
+                            <FormGroup className="mb-2">
+                                <FormLabel>Select JSON File to Populate</FormLabel>
+                                <FormControl type="file" accept=".json" onChange={handleImportFileChange} />
+                            </FormGroup>
+                        </div>
+                    }
+
                     <Form onSubmit={handleSubmit}>
                         <RequestResultAlert errors={error} message={editMessage} />
                         <FormGroup>

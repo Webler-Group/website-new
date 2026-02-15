@@ -140,19 +140,29 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
+    if (code !== course.code) {
+        const existingCourse = await Course.findOne({ code });
+        if (existingCourse) {
+            res.status(400).json({ error: [{ message: "Course code already exists" }] });
+            return;
+        }
+    }
+
     course.title = title;
     course.description = description;
     course.visible = visible;
     course.code = code;
 
     await course.save();
+
     res.json({
         success: true,
         data: {
             id: course._id,
             title: course.title,
             description: course.description,
-            visible: course.visible
+            visible: course.visible,
+            code: course.code
         }
     });
 });

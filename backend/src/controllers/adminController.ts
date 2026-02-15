@@ -11,7 +11,12 @@ import {
     banUserSchema,
     updateRolesSchema
 } from "../validation/adminSchema";
+import { importCourseSchema } from "../validation/importSchema";
 import { parseWithZod } from "../utils/zodUtils";
+import Course from "../models/Course";
+import CourseLesson from "../models/CourseLesson";
+import LessonNode from "../models/LessonNode";
+import QuizAnswer from "../models/QuizAnswer";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
@@ -167,11 +172,89 @@ const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(importCourseSchema, req);
+    const { code, title, description, visible, lessons } = body;
+
+    let course = await Course.findOne({ code });
+
+    if (course) {
+        course.title = title;
+        course.description = description;
+        if (visible !== undefined) course.visible = visible;
+        await course.save();
+
+        await CourseLesson.deleteAndCleanup({ course: course._id });
+    } else {
+        course = await Course.create({
+            code,
+            title,
+            description,
+            visible: visible ?? false
+        });
+    }
+
+    for (let i = 0; i < lessons.length; i++) {
+        const lessonData = lessons[i];
+        try {
+            const lesson = await CourseLesson.create({
+                course: course._id,
+                title: lessonData.title,
+                index: i + 1,
+                nodes: lessonData.nodes.length
+            });
+
+            const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
+                lessonId: lesson._id,
+                index: nodeIndex + 1,
+                _type: node.type,
+                text: node.text || "",
+                correctAnswer: node.correctAnswer
+            }));
+
+            if (nodeDocs.length > 0) {
+                const createdNodes = await LessonNode.insertMany(nodeDocs);
+                const answerDocs: any[] = [];
+                for (let j = 0; j < createdNodes.length; j++) {
+                    const createdNode = createdNodes[j];
+                    const sourceNode = lessonData.nodes[j];
+
+                    if (sourceNode.type === 2 || sourceNode.type === 3) {
+                        const answers = (sourceNode as any).answers;
+                        if (answers && Array.isArray(answers)) {
+                            answers.forEach((ans: any) => {
+                                answerDocs.push({
+                                    courseLessonNodeId: createdNode._id,
+                                    text: ans.text,
+                                    correct: ans.correct
+                                });
+                            });
+                        }
+                    }
+                }
+
+                if (answerDocs.length > 0) {
+                    await QuizAnswer.insertMany(answerDocs);
+                }
+            }
+        } catch (error) {
+            console.error(`Error importing lesson ${lessonData.title}:`, error);
+        }
+    }
+
+    res.json({
+        success: true,
+        message: "Course imported successfully",
+        courseId: course._id
+    });
+});
+
 const controller = {
     getUsersList,
     banUser,
     getUser,
-    updateRoles
+    updateRoles,
+    importCourse
 };
 
 export default controller;

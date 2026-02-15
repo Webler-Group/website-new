@@ -1,4 +1,4 @@
-import {config} from "../confg";
+import { config } from "../confg";
 import connectDB from "../config/dbConn";
 import tags from "../config/tags";
 import RolesEnum from "../data/RolesEnum";
@@ -14,7 +14,7 @@ async function main() {
     console.log("New tags added successfully.");
 
     let adminUser = await User.findOne({ email: config.adminEmail });
-    if(adminUser) {
+    if (adminUser) {
         console.log("Admin user already exists.");
     } else {
         adminUser = await User.create({
