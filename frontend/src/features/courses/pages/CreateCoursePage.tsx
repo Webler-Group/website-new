@@ -24,6 +24,8 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [coverImage, setCoverImage] = useState<string | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
+    const [importMessage, setImportMessage] = useState<{ errors?: any[]; message?: string; }>({});
+    const [showJsonHelp, setShowJsonHelp] = useState(false);
 
     useEffect(() => {
         if (courseId) {
@@ -50,10 +52,33 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         e.preventDefault();
 
         setLoading(true);
-        courseId ?
-            await editCourse() :
-            await createCourse();
+        if (importedLessons) {
+            await importCourseWithData();
+        } else {
+            courseId ?
+                await editCourse() :
+                await createCourse();
+        }
         setLoading(false);
+    }
+
+    const importCourseWithData = async () => {
+        setError(undefined);
+        const payload = {
+            code,
+            title,
+            description,
+            visible,
+            lessons: importedLessons
+        };
+
+        const result = await sendJsonRequest("/Admin/ImportCourse", "POST", payload);
+
+        if (result && result.success) {
+            navigate("/Courses/Editor");
+        } else {
+            setError(result?.error || [{ message: result?.message || "Import failed" }]);
+        }
     }
 
     const createCourse = async () => {
@@ -73,6 +98,12 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
         if (result && result.success) {
             setEditMessage("Course edited successfully");
+            if (result.data) {
+                setVisible(result.data.visible);
+                setCode(result.data.code ?? code);
+                setTitle(result.data.title ?? title);
+                setDescription(result.data.description ?? description);
+            }
         }
         else {
             setError(result.error);
@@ -119,6 +150,44 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         }
     }
 
+    const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
+
+    const handleImportCourse = async (e: FormEvent) => {
+        e.preventDefault();
+    }
+
+    const handleImportFileChange = (e: ChangeEvent) => {
+        const files = (e.target as HTMLInputElement).files;
+        if (files && files[0]) {
+            const file = files[0];
+            setImportedLessons(null);
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const text = e.target?.result as string;
+                try {
+                    const json = JSON.parse(text);
+
+                    if (json.code) setCode(json.code);
+                    if (json.title) setTitle(json.title);
+                    if (json.description) setDescription(json.description);
+                    if (json.visible !== undefined) setVisible(json.visible);
+
+                    if (json.lessons && Array.isArray(json.lessons)) {
+                        setImportedLessons(json.lessons);
+                        setImportMessage({ message: `Loaded ${json.lessons.length} lessons from file. Review details below and click 'Create/Save' to finish import.` });
+                    } else {
+                        setImportMessage({ errors: [{ message: "JSON invalid: missing 'lessons' array" }] });
+                    }
+
+                } catch (err) {
+                    setImportMessage({ errors: [{ message: "Invalid JSON file" }] });
+                }
+            };
+            reader.readAsText(file);
+        }
+    }
+
     return (
         <>
             <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
@@ -153,6 +222,63 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     </div>
                 }
                 <div className="col-12 col-md-8">
+                    {
+                        !courseId &&
+                        <div className="mb-4 p-3 border rounded bg-light">
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <h5>Load Course Data from JSON</h5>
+                                <Button variant="link" size="sm" onClick={() => setShowJsonHelp(true)}>JSON Format Guide</Button>
+                            </div>
+                            <RequestResultAlert errors={importMessage.errors} message={importMessage.message} />
+                            <FormGroup className="mb-2">
+                                <FormLabel>Select JSON File to Populate</FormLabel>
+                                <FormControl type="file" accept=".json" onChange={handleImportFileChange} />
+                            </FormGroup>
+                        </div>
+                    }
+
+                    <Modal show={showJsonHelp} onHide={() => setShowJsonHelp(false)} size="lg" centered>
+                        <Modal.Header closeButton>
+                            <Modal.Title>Course Import JSON Format</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            <p>To import a course, your JSON file must follow this structure:</p>
+                            <pre className="bg-light p-3 border rounded" style={{ maxHeight: '300px', overflowY: 'auto', fontSize: '0.85rem' }}>
+                                {`{
+  "code": "course-code-unique",
+  "title": "Course Title",
+  "description": "Description...",
+  "visible": false,
+  "lessons": [
+    {
+      "title": "Lesson 1",
+      "nodes": [
+        {
+          "type": 1, // 1=Text, 2=SingleChoice, 3=MultiChoice
+          "text": "Markdown content here...",
+          // For Questions (Type 2 & 3):
+          "answers": [
+            { "text": "Option A", "correct": true },
+            { "text": "Option B", "correct": false }
+          ]
+        }
+      ]
+    }
+  ]
+}`}
+                            </pre>
+                            <h6>Node Types:</h6>
+                            <ul className="small text-muted">
+                                <li><strong>1 (Text):</strong> Standard content node (Markdown supported)</li>
+                                <li><strong>2 (Single Choice):</strong> Question with one correct answer</li>
+                                <li><strong>3 (Multi Choice):</strong> Question with multiple correct answers</li>
+                            </ul>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowJsonHelp(false)}>Close</Button>
+                        </Modal.Footer>
+                    </Modal>
+
                     <Form onSubmit={handleSubmit}>
                         <RequestResultAlert errors={error} message={editMessage} />
                         <FormGroup>

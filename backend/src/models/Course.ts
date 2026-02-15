@@ -11,7 +11,7 @@ const courseSchema = new mongoose.Schema({
         lowercase: true,
         maxLength: 64,
         minLength: 1,
-        validate: [(val: string) => val.match(new RegExp("^([a-z]+-)*[a-z]+$", "i")) !== null, 'Course code can only contain words separated by "-"']
+        validate: [(val: string) => val.match(new RegExp("^([a-z0-9]+-)*[a-z0-9]+$", "i")) !== null, 'Course code can only contain words/numbers separated by "-"']
     },
     title: {
         type: String,
