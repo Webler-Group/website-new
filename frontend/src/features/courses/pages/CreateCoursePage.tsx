@@ -25,6 +25,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
     const [importMessage, setImportMessage] = useState<{ errors?: any[]; message?: string; }>({});
+    const [showJsonHelp, setShowJsonHelp] = useState(false);
 
     useEffect(() => {
         if (courseId) {
@@ -224,7 +225,10 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     {
                         !courseId &&
                         <div className="mb-4 p-3 border rounded bg-light">
-                            <h5>Load Course Data from JSON</h5>
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <h5>Load Course Data from JSON</h5>
+                                <Button variant="link" size="sm" onClick={() => setShowJsonHelp(true)}>JSON Format Guide</Button>
+                            </div>
                             <RequestResultAlert errors={importMessage.errors} message={importMessage.message} />
                             <FormGroup className="mb-2">
                                 <FormLabel>Select JSON File to Populate</FormLabel>
@@ -232,6 +236,48 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                             </FormGroup>
                         </div>
                     }
+
+                    <Modal show={showJsonHelp} onHide={() => setShowJsonHelp(false)} size="lg" centered>
+                        <Modal.Header closeButton>
+                            <Modal.Title>Course Import JSON Format</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            <p>To import a course, your JSON file must follow this structure:</p>
+                            <pre className="bg-light p-3 border rounded" style={{ maxHeight: '300px', overflowY: 'auto', fontSize: '0.85rem' }}>
+                                {`{
+  "code": "course-code-unique",
+  "title": "Course Title",
+  "description": "Description...",
+  "visible": false,
+  "lessons": [
+    {
+      "title": "Lesson 1",
+      "nodes": [
+        {
+          "type": 1, // 1=Text, 2=SingleChoice, 3=MultiChoice
+          "text": "Markdown content here...",
+          // For Questions (Type 2 & 3):
+          "answers": [
+            { "text": "Option A", "correct": true },
+            { "text": "Option B", "correct": false }
+          ]
+        }
+      ]
+    }
+  ]
+}`}
+                            </pre>
+                            <h6>Node Types:</h6>
+                            <ul className="small text-muted">
+                                <li><strong>1 (Text):</strong> Standard content node (Markdown supported)</li>
+                                <li><strong>2 (Single Choice):</strong> Question with one correct answer</li>
+                                <li><strong>3 (Multi Choice):</strong> Question with multiple correct answers</li>
+                            </ul>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowJsonHelp(false)}>Close</Button>
+                        </Modal.Footer>
+                    </Modal>
 
                     <Form onSubmit={handleSubmit}>
                         <RequestResultAlert errors={error} message={editMessage} />
