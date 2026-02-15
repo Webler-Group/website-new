@@ -152,10 +152,6 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
 
     const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
 
-    const handleImportCourse = async (e: FormEvent) => {
-        e.preventDefault();
-    }
-
     const handleImportFileChange = (e: ChangeEvent) => {
         const files = (e.target as HTMLInputElement).files;
         if (files && files[0]) {
