@@ -13,12 +13,11 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   onReactionChange,
   currentState
 }) => {
-  const [selectedReaction, setSelectedReaction] = useState<ReactionsEnum | null>(currentState);
+  const [selectedReaction, setSelectedReaction] =
+    useState<ReactionsEnum | null>(currentState);
   const [showPicker, setShowPicker] = useState(false);
-  const [longPressTimer, setLongPressTimer] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<number | null>(null);
   const { userInfo } = useAuth();
   const navigate = useNavigate();
 
@@ -27,7 +26,7 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   }, [currentState]);
 
   const handleReactionClick = (id: ReactionsEnum.LIKE) => {
-    const value = id == selectedReaction ? null : id;
+    const value = id === selectedReaction ? null : id;
     setSelectedReaction(value);
     onReactionChange(value);
     setShowPicker(false);
@@ -36,50 +35,28 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
   const handleMainClick = () => {
     if (!userInfo?.id) {
       navigate("/Users/Login");
+      return;
     }
-    setShowPicker(!showPicker);
-  };
 
-  const handleTouchStart = () => {
-    if (!userInfo?.id) {
-      navigate("/Users/Login");
-    }
-    const timer = window.setTimeout(() => {
-      setShowPicker(true);
-    }, 500);
-    setLongPressTimer(timer);
-  };
-
-  const handleTouchEnd = () => {
-    if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      setLongPressTimer(null);
-    }
-  };
-
-  const handlePickerMouseEnter = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    setShowPicker(prev => !prev);
   };
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setShowPicker(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('touchstart', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('touchstart', handleClickOutside);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      if (longPressTimer) clearTimeout(longPressTimer);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, [longPressTimer]);
+  }, []);
 
   return (
     <div
@@ -89,17 +66,21 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
       <span
         className="wb-reaction-picker-btn"
         onClick={handleMainClick}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
         style={{
-          color: selectedReaction ? reactionsInfo[selectedReaction].color : '#65676b',
+          color: selectedReaction
+            ? reactionsInfo[selectedReaction].color
+            : "#65676b",
         }}
       >
         <span>
-          {selectedReaction ? reactionsInfo[selectedReaction].emoji : <FaThumbsUp />}
+          {selectedReaction
+            ? reactionsInfo[selectedReaction].emoji
+            : <FaThumbsUp />}
         </span>
         <span>
-          {selectedReaction ? reactionsInfo[selectedReaction].label : reactionsInfo[ReactionsEnum.LIKE].label}
+          {selectedReaction
+            ? reactionsInfo[selectedReaction].label
+            : reactionsInfo[ReactionsEnum.LIKE].label}
         </span>
       </span>
 
@@ -107,31 +88,31 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
         <div
           className="position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
           style={{
-            bottom: '100%',
-            left: '0',
-            marginBottom: '8px',
+            bottom: "100%",
+            left: "0",
+            marginBottom: "8px",
             zIndex: 1000,
-            animation: 'slideUp 0.2s ease-out',
-            whiteSpace: 'nowrap',
-            borderColor: '#dadde1',
+            animation: "slideUp 0.2s ease-out",
+            whiteSpace: "nowrap",
+            borderColor: "#dadde1",
           }}
-          onMouseEnter={handlePickerMouseEnter}
-          onTouchStart={(e) => e.stopPropagation()}
         >
           {Object.entries(reactionsInfo).map(([key, reaction]) => {
             const id = Number(key);
+
             return (
               <button
                 key={id}
                 type="button"
                 className="btn p-1 border-0 d-flex align-items-center justify-content-center"
                 style={{
-                  width: '32px',
-                  height: '32px',
-                  borderRadius: '50%',
-                  backgroundColor: selectedReaction == id
-                    ? `${reaction.color}20`
-                    : 'transparent'
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  backgroundColor:
+                    selectedReaction === id
+                      ? `${reaction.color}20`
+                      : "transparent",
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -141,7 +122,7 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
               >
                 {reaction.emoji}
               </button>
-            )
+            );
           })}
         </div>
       )}
