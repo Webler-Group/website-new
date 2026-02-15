@@ -3,3 +3,4 @@ node_modules
 .allowed-origins
 logs
 uploads
+dist
