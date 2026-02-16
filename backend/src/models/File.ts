@@ -11,8 +11,8 @@ const fileSchema = new Schema(
             type: String,
             required: true,
             trim: true,
-            index: true,
-            maxLength: 200
+            maxLength: 200,
+            index: true
         },
         name: {
             type: String,
@@ -30,9 +30,7 @@ const fileSchema = new Schema(
         },
         contenthash: {
             type: String,
-            required: true,
-            unique: true,
-            index: true
+            required: true
         }
     },
     { timestamps: true }
