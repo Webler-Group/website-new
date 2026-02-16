@@ -1,6 +1,7 @@
 import mongoose, { Document, InferSchemaType, Model } from "mongoose";
 import CourseLesson from "./CourseLesson";
 import CourseProgress from "./CourseProgress";
+import File from "./File";
 
 const courseSchema = new mongoose.Schema({
     code: {
@@ -39,8 +40,20 @@ const courseSchema = new mongoose.Schema({
 });
 
 courseSchema.statics.deleteAndCleanup = async function (courseId: mongoose.Types.ObjectId | string) {
+    const course = await Course
+        .findById(courseId)
+        .select("coverImage")
+        .lean();
+
+    if (!course) return;
+ 
     await CourseLesson.deleteAndCleanup({ course: courseId });
     await CourseProgress.deleteMany({ course: courseId });
+    
+    if (course.coverImage) {
+        await File.deleteOne({ _id: course.coverImage });
+    }
+
     await Course.deleteOne({ _id: courseId });
 }
 
