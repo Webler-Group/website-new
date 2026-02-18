@@ -118,6 +118,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
 
                 <FormGroup>
                     <MdEditorField 
+                        section="Profile"
                         text={message}
                         setText={setMessage}
                         row={10}

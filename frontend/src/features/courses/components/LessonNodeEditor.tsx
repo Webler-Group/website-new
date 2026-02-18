@@ -455,6 +455,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                             <FormGroup>
                                 <FormLabel>Text</FormLabel>
                                 <MdEditorField
+                                    section="CourseEditor"
                                     text={nodeText}
                                     setText={setNodeText}
                                     maxCharacters={2000}

@@ -7,7 +7,8 @@ export function parseWithZod<T extends ZodType<any, any, any>>(schema: T, req: R
     query: req.query,
     params: req.params,
     headers: req.headers,
-    cookies: req.cookies
+    cookies: req.cookies,
+    file: req.file
   });
 
   if (!result.success) {

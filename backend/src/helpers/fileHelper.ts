@@ -11,7 +11,7 @@ type ImageFit = "cover" | "inside";
 
 export type UploadImageParams = {
     authorId: string;
-    tempPath: string;
+    buffer: Buffer;
     inputMime: string;
 
     path: string;
@@ -79,7 +79,7 @@ export const deleteFileByVirtualPath = async (virtualPath: string, name: string)
 
 export const uploadImageToBlob = async ({
     authorId,
-    tempPath,
+    buffer,
     inputMime,
     path: virtualPath,
     name,
@@ -89,20 +89,25 @@ export const uploadImageToBlob = async ({
     outputFormat = "webp",
     quality = 82,
 }: UploadImageParams) => {
+
     if (!/^image\/(png|jpe?g|webp|avif)$/i.test(inputMime)) {
-        await unlinkIfExists(tempPath);
         throw Object.assign(new Error("Unsupported image type"), { status: 415 });
     }
 
-    const prevDoc = await File.findOne({ path: virtualPath, name }).select("contenthash");
+    const prevDoc = await File.findOne({
+        path: virtualPath,
+        name
+    }).select("contenthash");
 
     try {
-        let pipeline = sharp(tempPath).rotate().resize({
-            width: maxWidth,
-            height: maxHeight,
-            fit,
-            withoutEnlargement: true,
-        });
+        let pipeline = sharp(buffer)
+            .rotate()
+            .resize({
+                width: maxWidth,
+                height: maxHeight,
+                fit,
+                withoutEnlargement: true,
+            });
 
         switch (outputFormat) {
             case "webp":
@@ -161,10 +166,10 @@ export const uploadImageToBlob = async ({
             await deleteBlobIfUnreferenced(prevDoc.contenthash);
         }
 
-        await unlinkIfExists(tempPath);
         return fileDoc;
+
     } catch (err) {
-        await unlinkIfExists(tempPath);
         throw err;
     }
 };
+

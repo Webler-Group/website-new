@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { Alert, Button, Card, Col, Form, Modal, Nav, Pagination, Row, Spinner, Tab } from "react-bootstrap";
 import { useApi } from "../context/apiCommunication";
 import { useAuth } from "../features/auth/context/authContext";
-import "./UserImages.css";
+import "./ContentImages.css";
 
-type UserImageItem = {
+type ContentImageItem = {
     id: string;
     name: string;
     mimetype: string;
@@ -19,7 +19,7 @@ type ListResponse = {
         page: number;
         count: number;
         total: number;
-        items: UserImageItem[];
+        items: ContentImageItem[];
     };
 };
 
@@ -32,13 +32,14 @@ type UploadResponse = {
     };
 };
 
-interface UserImagesProps {
+interface ContentImagesProps {
+    section: string;
     show: boolean;
     onHide: () => void;
     onSelect: (markdownImageUrl: string, altText: string) => void;
 }
 
-const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
+const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
 
@@ -49,7 +50,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
 
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [items, setItems] = useState<UserImageItem[]>([]);
+    const [items, setItems] = useState<ContentImageItem[]>([]);
     const [total, setTotal] = useState(0);
 
     const [uploadName, setUploadName] = useState("");
@@ -76,7 +77,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
         setLoading(true);
         setErr(null);
 
-        const result = (await sendJsonRequest("/Profile/GetPostImages", "POST", {
+        const result = (await sendJsonRequest(`/${section}/GetContentImages`, "POST", {
             page: p,
             count,
             userId: userInfo.id,
@@ -135,9 +136,9 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
         setUploading(true);
 
         const result = (await sendJsonRequest(
-            "/Profile/UploadPostImage",
+            `/${section}/UploadContentImage`,
             "POST",
-            { postImage: uploadFile, name },
+            { image: uploadFile, name },
             undefined,
             true
         )) as UploadResponse | null;
@@ -172,7 +173,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
         setDeleteErr(null);
         setDeletingId(confirmDelete.id);
 
-        const result = (await sendJsonRequest("/Profile/DeletePostImage", "DELETE", {
+        const result = (await sendJsonRequest(`/${section}/DeleteContentImage`, "DELETE", {
             fileId: confirmDelete.id,
         })) as { success: boolean } | null;
 
@@ -249,7 +250,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
                                         <Spinner animation="border" />
                                     </div>
                                 ) : items.length === 0 ? (
-                                    <div className="text-muted">No images yet.</div>
+                                    <div className="text-muted text-center py-4">No images yet.</div>
                                 ) : (
                                     <>
                                         <Row className="g-3">
@@ -318,6 +319,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
                                     <Form.Group className="mb-3">
                                         <Form.Label>File</Form.Label>
                                         <Form.Control
+                                            size="sm"
                                             type="file"
                                             accept="image/png,image/jpeg,image/jpg,image/webp,image/avif"
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -330,6 +332,7 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
                                     <Form.Group className="mb-3">
                                         <Form.Label>Name</Form.Label>
                                         <Form.Control
+                                            size="sm"
                                             value={uploadName}
                                             onChange={(e) => setUploadName(e.target.value)}
                                             maxLength={80}
@@ -338,10 +341,10 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
                                     </Form.Group>
 
                                     <div className="d-flex justify-content-end gap-2">
-                                        <Button variant="secondary" onClick={onHide} disabled={uploading}>
+                                        <Button size="sm" variant="secondary" onClick={onHide} disabled={uploading}>
                                             Close
                                         </Button>
-                                        <Button variant="primary" onClick={handleUpload} disabled={uploading}>
+                                        <Button size="sm" variant="primary" onClick={handleUpload} disabled={uploading}>
                                             {uploading ? "Uploading..." : "Upload & Insert"}
                                         </Button>
                                     </div>
@@ -355,4 +358,4 @@ const UserImages = ({ show, onHide, onSelect }: UserImagesProps) => {
     );
 };
 
-export default UserImages;
+export default ContentImages;

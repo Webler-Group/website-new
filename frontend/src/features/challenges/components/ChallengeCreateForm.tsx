@@ -123,6 +123,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         <FaAlignLeft className="me-2" /> Description
                     </Form.Label>
                     <MdEditorField
+                        section="CourseEditor"
                         text={description}
                         setText={setDescription}
                         placeHolder="Describe the challenge..."

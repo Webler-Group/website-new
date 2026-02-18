@@ -28,7 +28,8 @@ interface LessonNodeProps {
 }
 
 const allowedUrls = [
-    /^https?:\/\/.+/i
+    /^https?:\/\/.+/i,
+    /^\/.*/ 
 ];
 
 const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {

@@ -14,8 +14,9 @@
 .wb-user-images__tabcontent {
     display: flex;
     flex-direction: column;
-    flex: 1 1 auto;
+    flex: 1 0 auto;
     min-height: 0;
+    min-width: 300px;
 }
 
 .user-images .tab-pane {
@@ -23,7 +24,10 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 4px;
+}
+
+.tab-pane {
+    padding: 8px;
 }
 
 .wb-user-images-delete-modal__backdrop {
