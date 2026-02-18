@@ -208,6 +208,8 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 lessonId: lesson._id,
                 index: nodeIndex + 1,
                 _type: node.type,
+                mode: node.mode,
+                codeId: (node.codeId && mongoose.isValidObjectId(node.codeId)) ? new mongoose.Types.ObjectId(node.codeId) : null,
                 text: node.text || "",
                 correctAnswer: node.correctAnswer
             }));

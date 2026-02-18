@@ -1,0 +1,79 @@
+{
+    "code": "test-course-comprehensive",
+    "title": "Comprehensive Features Test Course",
+    "description": "A course to verify all node types, modes, and character limits.",
+    "visible": true,
+    "lessons": [
+        {
+            "title": "Lesson 1: Complete Node Type Audit",
+            "nodes": [
+                {
+                    "type": 1,
+                    "mode": 1,
+                    "text": "# 1. Markdown Text Node\nThis node uses **Markdown** (mode 1). It supports up to 8,000 characters."
+                },
+                {
+                    "type": 1,
+                    "mode": 2,
+                    "text": "<div style='background: #1a1a1a; color: #00ff00; padding: 20px; font-family: monospace;'>\n  <h3>2. HTML Text Node</h3>\n  <p>This is rendered as raw HTML (mode 2). Useful for custom layouts or interactive widgets.</p>\n</div>"
+                },
+                {
+                    "type": 1,
+                    "mode": 3,
+                    "codeId": "699598f3713b7afcd40e4f60",
+                    "text": "3. Code Text Node\nThis node renders a Web Code snippet (mode 3). The ID above must exist in the database."
+                },
+                {
+                    "type": 2,
+                    "mode": 1,
+                    "text": "4. Single Choice Question\nWhich of these is the correct way to handle collisions in this engine?",
+                    "answers": [
+                        {
+                            "text": "Separating Axis Theorem",
+                            "correct": true
+                        },
+                        {
+                            "text": "Guessing",
+                            "correct": false
+                        },
+                        {
+                            "text": "Ignoring them",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "type": 3,
+                    "mode": 1,
+                    "text": "5. Multiple Choice Question\nSelect all that apply: Which shapes are supported?",
+                    "answers": [
+                        {
+                            "text": "Circle",
+                            "correct": true
+                        },
+                        {
+                            "text": "Polygon",
+                            "correct": true
+                        },
+                        {
+                            "text": "4th Dimensional Cube",
+                            "correct": false
+                        }
+                    ]
+                },
+                {
+                    "type": 4,
+                    "mode": 1,
+                    "text": "6. Text Input Question\nWhat is the value of PI (to 2 decimal places)?",
+                    "correctAnswer": "3.14"
+                },
+                {
+                    "type": 4,
+                    "mode": 2,
+                    "text": "7. HTML Question\n<p style='color: blue;'>This is an <strong>HTML-formatted</strong> question. Who is this website name (hint: weblercodes.com)?</p>",
+                    "correctAnswer": "weblercodes.com"
+                }
+            ]
+        }
+    ]
+}

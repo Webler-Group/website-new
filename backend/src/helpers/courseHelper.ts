@@ -4,33 +4,16 @@ import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
-export type LessonNodeJson =
-    | {
-        type: LessonNodeTypeEnum.TEXT;
-        index: number;
-        text: string;
-    }
-    | {
-        type: LessonNodeTypeEnum.SINGLECHOICE_QUESTION;
-        index: number;
-        prompt: string;
-        answers: Array<{ text: string; correct: boolean }>;
-        explanation?: string;
-    }
-    | {
-        type: LessonNodeTypeEnum.MULTICHOICE_QUESTION;
-        index: number;
-        prompt: string;
-        answers: Array<{ text: string; correct: boolean }>;
-        explanation?: string;
-    }
-    | {
-        type: LessonNodeTypeEnum.TEXT_QUESTION;
-        index: number;
-        prompt: string;
-        correctAnswer: string;
-        explanation?: string;
-    };
+export type LessonNodeJson = {
+    type: LessonNodeTypeEnum;
+    index: number;
+    mode?: number;
+    codeId?: string;
+    text?: string;
+    prompt?: string;
+    correctAnswer?: string;
+    answers?: Array<{ text: string; correct: boolean }>;
+};
 
 export type CourseLessonJson = {
     version: 1;
@@ -53,18 +36,23 @@ export const exportLessonNodeToJson = async (
     node: any,
     byNodeId?: Map<string, Array<{ text: string; correct: boolean }>>
 ): Promise<LessonNodeJson> => {
+    const base = {
+        type: node._type,
+        index: Number(node.index),
+        mode: node.mode,
+        codeId: node.codeId?.toString()
+    };
+
     if (node._type === LessonNodeTypeEnum.TEXT) {
         return {
-            type: LessonNodeTypeEnum.TEXT,
-            index: Number(node.index),
+            ...base,
             text: String(node.text ?? "")
         };
     }
 
     if (node._type === LessonNodeTypeEnum.TEXT_QUESTION) {
         return {
-            type: LessonNodeTypeEnum.TEXT_QUESTION,
-            index: Number(node.index),
+            ...base,
             prompt: String(node.text ?? ""),
             correctAnswer: String(node.correctAnswer ?? "")
         };
@@ -79,16 +67,14 @@ export const exportLessonNodeToJson = async (
 
     if (node._type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION) {
         return {
-            type: LessonNodeTypeEnum.SINGLECHOICE_QUESTION,
-            index: Number(node.index),
+            ...base,
             prompt: String(node.text ?? ""),
             answers
         };
     }
 
     return {
-        type: LessonNodeTypeEnum.MULTICHOICE_QUESTION,
-        index: Number(node.index),
+        ...base,
         prompt: String(node.text ?? ""),
         answers
     };
@@ -115,16 +101,19 @@ export const importLessonNodeFromJson = async (
                 lessonId,
                 index: nodeJson.index,
                 _type: nodeJson.type,
-                text,
-                correctAnswer
+                mode: nodeJson.mode,
+                codeId: (nodeJson.codeId && mongoose.isValidObjectId(nodeJson.codeId)) ? new mongoose.Types.ObjectId(nodeJson.codeId) : null,
+                text: text || "",
+                correctAnswer: correctAnswer || ""
             }
         ],
         { session }
     );
 
     if (
-        nodeJson.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION ||
-        nodeJson.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION
+        (nodeJson.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION ||
+            nodeJson.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) &&
+        nodeJson.answers
     ) {
         const docs = nodeJson.answers.map(a => ({
             courseLessonNodeId: node._id,
