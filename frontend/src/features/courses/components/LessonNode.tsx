@@ -209,12 +209,11 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
 
                     {(activeNode.type === 2 || activeNode.type === 3) && <div className="p-2">{renderAnswers()}</div>}
                     {activeNode.type === 4 && (
-                        <div className="p-2 d-flex justify-content-start">
+                        <div className="p-2 d-flex justify-content-center">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
-                                style={{ width: "300px", maxWidth: "100%" }}
+                                style={{ width: "120px" }}
                                 value={textAnswer}
-                                placeholder="Type your answer here..."
                                 readOnly={isCorrect !== null}
                                 onChange={(e) => handleTextAnswer(e.target.value)}
                             />

@@ -39,7 +39,7 @@
 }
 
 .wb-courses-lesson-main {
-    max-width: 900px;
+    max-width: 648px;
     margin: 0 auto;
 }
 
@@ -59,7 +59,7 @@
 
 .wb-courses-lesson-node-question {
     width: 100%;
-    max-width: 800px;
+    max-width: 552px;
     margin: 0 auto;
     flex-grow: 1;
 }
