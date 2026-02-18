@@ -4,7 +4,7 @@ import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import allowedUrls from "../data/discussAllowedUrls";
-import UserImagesModal from "./UserImages";
+import UserImagesModal from "./ContentImages";
 
 export type MDEditorMode = "write" | "preview";
 
@@ -17,6 +17,7 @@ interface MdEditorFieldProps {
     customPreview?: ReactNode;
     onModeChange?: (mode: MDEditorMode) => void;
     isPost?: boolean;
+    section: string;
 }
 
 const MdEditorField = ({
@@ -28,6 +29,7 @@ const MdEditorField = ({
     customPreview,
     onModeChange,
     isPost = true,
+    section
 }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -97,6 +99,7 @@ const MdEditorField = ({
     return (
         <div>
             <UserImagesModal
+                section={section}
                 show={showImages}
                 onHide={() => setShowImages(false)}
                 onSelect={(url, alt) => insertImageMarkdownAtCursor(url, alt)}

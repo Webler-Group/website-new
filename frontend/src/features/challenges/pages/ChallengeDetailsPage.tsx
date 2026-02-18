@@ -12,6 +12,11 @@ import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import { IChallenge } from "../types";
 import LanguageIcons from "../components/LanguageIcons";
 
+const allowedUrls = [
+    /^https?:\/\/.+/i,
+    /^\/.*/ 
+];
+
 const ChallengeDetailsPage = () => {
     const { challengeId } = useParams();
     const navigate = useNavigate();
@@ -86,7 +91,7 @@ const ChallengeDetailsPage = () => {
                         }
                     </div>
 
-                    <MarkdownRenderer content={challenge.description} />
+                    <MarkdownRenderer content={challenge.description} allowedUrls={allowedUrls} />
 
                     <div className="mt-2">
                         <LanguageIcons challenge={challenge} />

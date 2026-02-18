@@ -17,7 +17,7 @@ import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
-import { changeEmailSchema, deletePostImageSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getPostImageListSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
+import { changeEmailSchema, deletePostImageSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getPostImageListSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadPostImageSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmission from "../models/ChallengeSubmission";
 import { deleteFile, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
@@ -534,34 +534,27 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
-    const { body } = parseWithZod(uploadProfileAvatarImageSchema, req)
+    const { body, file } = parseWithZod(uploadProfileAvatarImageSchema, req)
     const { userId } = body;
     const currentUserId = req.userId;
 
-    if (!req.file) {
-        res.status(400).json({ error: [{ message: "No file uploaded" }] });
-        return;
-    }
-
     const user = await User.findById(userId);
     if (!user) {
-        fs.unlinkSync(req.file.path);
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        fs.unlinkSync(req.file.path);
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
     const fileDoc = await uploadImageToBlob({
         authorId: currentUserId,
-        tempPath: req.file.path,
+        buffer: file.buffer,
         name: "avatar",
         path: `users/${user._id}/avatar`,
-        inputMime: req.file.mimetype,
+        inputMime: file.mimetype,
         maxWidth: 256,
         maxHeight: 256,
         fit: "cover", // square crop avatar
@@ -667,29 +660,14 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
 });
 
 const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body, file } = parseWithZod(uploadPostImageSchema, req);
+    const { name } = body;
     const currentUserId = req.userId!;
-
-    if (!req.file) {
-        res.status(400).json({ error: [{ message: "No file uploaded" }] });
-        return;
-    }
-
-    const name = String(req.body?.name ?? "").trim();
-    if (!name) {
-        fs.unlinkSync(req.file.path);
-        res.status(400).json({ error: [{ message: "Name is required" }] });
-        return;
-    }
-    if (name.length > 80) {
-        fs.unlinkSync(req.file.path);
-        res.status(400).json({ error: [{ message: "Name too long" }] });
-        return;
-    }
 
     const fileDoc = await uploadImageToBlob({
         authorId: currentUserId,
-        tempPath: req.file.path,
-        inputMime: req.file.mimetype,
+        buffer: file.buffer,
+        inputMime: file.mimetype,
         path: `users/${currentUserId}/post-images`,
         name,
         maxWidth: 720,

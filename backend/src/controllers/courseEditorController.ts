@@ -28,12 +28,16 @@ import {
     editLessonNodeSchema,
     changeLessonIndexSchema,
     changeLessonNodeIndexSchema,
-    exportCourseLessonSchema
+    exportCourseLessonSchema,
+    uploadLessonImageSchema,
+    getLessonImageListSchema,
+    deleteLessonImageSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import { exportCourseLessonToJson } from "../helpers/courseHelper";
-import { uploadImageToBlob } from "../helpers/fileHelper";
+import { deleteFile, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
+import File from "../models/File";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -286,28 +290,22 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const uploadCourseCoverImage = asyncHandler(
     async (req: IAuthRequest, res: Response) => {
-        const { body } = parseWithZod(uploadCourseCoverImageSchema, req);
+        const { body, file } = parseWithZod(uploadCourseCoverImageSchema, req);
         const { courseId } = body;
         const currentUserId = req.userId;
 
-        if (!req.file) {
-            res.status(400).json({ error: [{ message: "No file uploaded" }] });
-            return;
-        }
-
         const course = await Course.findById(courseId);
         if (!course) {
-            fs.unlinkSync(req.file.path);
             res.status(404).json({ error: [{ message: "Course not found" }] });
             return;
         }
 
         const fileDoc = await uploadImageToBlob({
             authorId: currentUserId!,
-            tempPath: req.file.path,
+            buffer: file.buffer,
             name: "cover",
             path: `courses/${course._id}/cover`,
-            inputMime: req.file.mimetype,
+            inputMime: file.mimetype,
             maxWidth: 512,
             maxHeight: 512,
             fit: "cover",
@@ -535,6 +533,95 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
     });
 });
 
+const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body, file } = parseWithZod(uploadLessonImageSchema, req);
+    const { name } = body;
+    const currentUserId = req.userId!;
+
+    const fileDoc = await uploadImageToBlob({
+        authorId: currentUserId,
+        buffer: file.buffer,
+        inputMime: file.mimetype,
+        path: `courses/lesson-images`,
+        name,
+        maxWidth: 720,
+        maxHeight: 720,
+        fit: "inside",
+        outputFormat: "webp",
+        quality: 70,
+    });
+
+    res.json({
+        success: true,
+        data: {
+            fileId: fileDoc._id,
+            url: `/media/files/${fileDoc._id}`,
+            name: fileDoc.name
+        }
+    });
+});
+
+const lessonImageUploadMiddleware = uploadImage({
+    maxFileSizeBytes: 10 * 1024 * 1024,
+    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+});
+
+const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getLessonImageListSchema, req);
+    const { page, count } = body;
+
+    const skip = (page - 1) * count;
+    const virtualPath = `courses/lesson-images`;
+
+    const [total, items] = await Promise.all([
+        File.countDocuments({ path: virtualPath }),
+        File.find({ path: virtualPath })
+            .select("_id name mimetype size createdAt updatedAt")
+            .sort({ updatedAt: "desc" })
+            .skip(skip)
+            .limit(count)
+            .lean(),
+    ]);
+
+    res.json({
+        success: true,
+        data: {
+            page,
+            count,
+            total,
+            items: items.map((x) => ({
+                id: x._id,
+                name: x.name,
+                mimetype: x.mimetype,
+                size: x.size,
+                createdAt: x.createdAt,
+                url: `/media/files/${x._id}`,
+            })),
+        },
+    });
+});
+
+const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteLessonImageSchema, req);
+    const { fileId } = body;
+
+    const fileDoc = await File.findById(fileId).select("author path");
+    if (!fileDoc) {
+        res.status(404).json({ error: [{ message: "File not found" }] });
+        return;
+    }
+
+    const expectedPath = `courses/lesson-images`;
+    if (fileDoc.path !== expectedPath) {
+        res.status(400).json({ error: [{ message: "Not a lesson image" }] });
+        return;
+    }
+
+    await deleteFile(fileId);
+
+    res.json({ success: true });
+});
+
 const courseEditorController = {
     createCourse,
     getCoursesList,
@@ -554,7 +641,11 @@ const courseEditorController = {
     editLessonNode,
     changeLessonNodeIndex,
     changeLessonIndex,
-    exportCourseLesson
+    exportCourseLesson,
+    uploadLessonImage,
+    lessonImageUploadMiddleware,
+    getLessonImageList,
+    deleteLessonImage
 };
 
 export default courseEditorController;
