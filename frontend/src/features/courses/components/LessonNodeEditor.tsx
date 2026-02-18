@@ -534,6 +534,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                             Pick
                                         </Button>
                                     </div>
+                                    <div className="mt-3">
+                                        <FormLabel>Preview</FormLabel>
+                                        {customPreview}
+                                    </div>
                                 </FormGroup>
                             )}
 
