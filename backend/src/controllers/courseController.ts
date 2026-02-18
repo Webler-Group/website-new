@@ -206,14 +206,17 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId, mock } = body;
     const currentUserId = req.userId;
 
-    const lessonNode = await LessonNode.findById(nodeId).populate<{ lessonId: any }>("lessonId");
+    const lessonNode = await LessonNode.findById(nodeId).populate([
+        { path: "lessonId" },
+        { path: "codeId", select: "name source cssSource jsSource language" }
+    ]);
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     if (!mock) {
-        const userProgress = await CourseProgress.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
+        const userProgress = await CourseProgress.findOne({ course: (lessonNode.lessonId as any).course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
@@ -246,6 +249,8 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             id: lessonNode._id,
             index: lessonNode.index,
             type: lessonNode._type,
+            mode: lessonNode.mode,
+            codeId: lessonNode.codeId,
             text: lessonNode.text ?? "",
             correctAnswer: lessonNode.correctAnswer,
             answers: answers.map(x => ({

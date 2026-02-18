@@ -23,6 +23,8 @@ import { useApi } from "../../../context/apiCommunication";
 import LessonNode, { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
 import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
+import CodeList, { ICodesState } from "../../codes/components/CodeList";
+import { ICode } from "../../codes/components/Code";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;
@@ -43,12 +45,29 @@ const nodeTypes = [
     { name: "Text question", value: 4 },
 ];
 
+const nodeModes = [
+    { name: "Markdown", value: 1 },
+    { name: "HTML", value: 2 },
+    { name: "Code", value: 3 },
+];
+
 const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProps>(
     ({ nodeId, nodeCount, onDelete, onChangeIndex, onExit }, ref) => {
         const { sendJsonRequest } = useApi();
         const [node, setNode] = useState<ILessonNode | null>(null);
         const [nodeText, setNodeText] = useState("");
         const [nodeType, setNodeType] = useState(0);
+        const [nodeMode, setNodeMode] = useState(1);
+        const [nodeCodeId, setNodeCodeId] = useState("");
+        const [selectedCode, setSelectedCode] = useState<ICode | null>(null);
+        const [codePickerVisible, setCodePickerVisible] = useState(false);
+        const [codesState, setCodesState] = useState<ICodesState>({
+            page: 1,
+            searchQuery: "",
+            filter: 1,
+            language: null,
+            ready: false,
+        });
         const [questionAnswers, setQuestionsAnswers] = useState<ILessonNodeAnswer[]>([]);
         const [questionCorrectAnswer, setQuestionCorrectAnswer] = useState("");
         const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -93,11 +112,15 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             });
 
             if (result && result.lessonNode) {
-                setNode(result.lessonNode);
-                setNodeType(result.lessonNode.type);
-                setNodeText(result.lessonNode.text ?? "");
-                setQuestionCorrectAnswer(result.lessonNode.correctAnswer ?? "");
-                setQuestionsAnswers(result.lessonNode.answers ?? []);
+                const nodeData = result.lessonNode as any;
+                setNode(nodeData);
+                setNodeType(nodeData.type);
+                setNodeMode(nodeData.mode ?? 1);
+                setNodeCodeId(nodeData.codeId?.id ?? nodeData.codeId?._id ?? "");
+                setSelectedCode(nodeData.codeId ?? null);
+                setNodeText(nodeData.text ?? "");
+                setQuestionCorrectAnswer(nodeData.correctAnswer ?? "");
+                setQuestionsAnswers(nodeData.answers ?? []);
             }
 
             setLoading(false);
@@ -125,8 +148,12 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             const nodeTextTrimmed = nodeText.trim();
             const savedText = (node.text ?? "").trim();
 
+            const nodeAny = node as any;
+
             return (
                 nodeType != node.type ||
+                nodeMode != (node.mode ?? 1) ||
+                nodeCodeId != (nodeAny.codeId?.id ?? nodeAny.codeId?._id ?? "") ||
                 nodeTextTrimmed != savedText ||
                 questionCorrectAnswer != (node.correctAnswer ?? "") ||
                 questionAnswers.length != (node.answers?.length ?? 0) ||
@@ -135,7 +162,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                     return answer && answer.text == x.text && answer.correct == x.correct;
                 })
             );
-        }, [node, nodeType, nodeText, questionCorrectAnswer, questionAnswers]);
+        }, [node, nodeType, nodeMode, nodeText, questionCorrectAnswer, questionAnswers]);
 
         const validateNode = (showMessage: boolean) => {
             if (nodeType == 2 || nodeType == 3) {
@@ -161,6 +188,8 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             const result = await sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
                 nodeId: node.id,
                 type: nodeType,
+                mode: nodeMode,
+                codeId: nodeCodeId || null,
                 text: nodeText,
                 correctAnswer: questionCorrectAnswer,
                 answers: questionAnswers,
@@ -172,6 +201,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                     return {
                         ...prev,
                         type: result.data.type,
+                        mode: result.data.mode,
                         text: result.data.text,
                         correctAnswer: result.data.correctAnswer,
                         answers: result.data.answers,
@@ -288,11 +318,13 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             return {
                 ...node,
                 type: nodeType,
+                mode: nodeMode,
+                codeId: selectedCode as any,
                 text: nodeText,
                 correctAnswer: questionCorrectAnswer,
                 answers: questionAnswers,
             };
-        }, [node, nodeType, nodeText, questionCorrectAnswer, questionAnswers]);
+        }, [node, nodeType, nodeMode, selectedCode, nodeText, questionCorrectAnswer, questionAnswers]);
 
         const customPreview = useMemo(() => {
             if (!previewNodeData) return undefined;
@@ -453,20 +485,86 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                             </FormGroup>
 
                             <FormGroup>
-                                <FormLabel>Text</FormLabel>
-                                <MdEditorField
-                                    text={nodeText}
-                                    setText={setNodeText}
-                                    maxCharacters={2000}
-                                    row={10}
-                                    placeHolder={"Enter Description"}
-                                    onModeChange={onEditorModeChange}
-                                    customPreview={customPreview}
-                                    isPost={false}
-                                />
+                                <FormLabel>Mode</FormLabel>
+                                <FormSelect
+                                    value={nodeMode}
+                                    onChange={(e) => setNodeMode(Number(e.target.value))}
+                                    required
+                                >
+                                    {nodeModes.map((mode) => (
+                                        <option key={mode.value} value={mode.value}>
+                                            {mode.name}
+                                        </option>
+                                    ))}
+                                </FormSelect>
                             </FormGroup>
 
+                            {nodeMode !== 3 && (
+                                <FormGroup>
+                                    <FormLabel>Text</FormLabel>
+                                    <MdEditorField
+                                        text={nodeText}
+                                        setText={setNodeText}
+                                        maxCharacters={8000}
+                                        row={10}
+                                        placeHolder={"Enter Description"}
+                                        onModeChange={onEditorModeChange}
+                                        customPreview={customPreview}
+                                        isPost={false}
+                                    />
+                                </FormGroup>
+                            )}
+
+                            {nodeMode === 3 && (
+                                <FormGroup className="mt-3">
+                                    <FormLabel>Selected Code Snippet</FormLabel>
+                                    <div className="d-flex gap-2 align-items-center">
+                                        <FormControl
+                                            value={selectedCode?.name ?? "No snippet selected"}
+                                            disabled
+                                        />
+                                        <Button
+                                            size="sm"
+                                            onClick={() => {
+                                                setCodePickerVisible(true);
+                                                setCodesState((prev) => ({ ...prev, ready: true }));
+                                            }}
+                                            type="button"
+                                        >
+                                            Pick
+                                        </Button>
+                                    </div>
+                                </FormGroup>
+                            )}
+
                             {formVisible && getEditorFields()}
+
+                            <Modal
+                                show={codePickerVisible}
+                                onHide={() => setCodePickerVisible(false)}
+                                centered
+                                size="lg"
+                            >
+                                <Modal.Header closeButton>
+                                    <Modal.Title>Pick a Code Snippet</Modal.Title>
+                                </Modal.Header>
+                                <Modal.Body style={{ minHeight: "500px" }}>
+                                    <CodeList
+                                        codesState={codesState}
+                                        setCodesState={setCodesState}
+                                        onCodeClick={async (id) => {
+                                            const result = await sendJsonRequest("/Codes/GetCode", "POST", { codeId: id });
+                                            if (result && result.code) {
+                                                setNodeCodeId(id);
+                                                setSelectedCode(result.code);
+                                                setCodePickerVisible(false);
+                                            }
+                                        }}
+                                        isCodeSelected={(id) => nodeCodeId === id}
+                                        showNewCodeBtn={false}
+                                    />
+                                </Modal.Body>
+                            </Modal>
 
                             <div className="d-sm-flex justify-content-between mt-4">
                                 <div className="d-flex gap-2 justify-content-end">

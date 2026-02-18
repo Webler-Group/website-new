@@ -163,23 +163,23 @@ const CourseLessonPage = () => {
                             />
                         </Offcanvas.Body>
                     </Offcanvas>
-                    <div className="d-flex justify-content-between p-2">
+                    <div className="d-flex justify-content-between py-1 px-3 border-bottom align-items-center">
                         <div className="d-flex align-items-center">
-                            <Button variant="link" className="text-secondary" onClick={handleExit}>
-                                <FaTimes />
+                            <Button variant="link" className="text-secondary p-1" onClick={handleExit}>
+                                <FaTimes size={18} />
                             </Button>
-                            <span className="text-secondary" style={{ fontSize: "24px", fontWeight: "bold" }} >{lesson.title}</span>
+                            <span className="text-secondary ms-2" style={{ fontSize: "18px", fontWeight: "bold" }} >{lesson.title}</span>
                         </div>
                         <div className="d-flex align-items-center gap-1">
                             <span className="small text-secondary">{commentCount}</span>
-                            <Button variant="link" className="text-secondary" onClick={openCommentModal}>
-                                <FaComments />
+                            <Button variant="link" className="text-secondary p-1" onClick={openCommentModal}>
+                                <FaComments size={18} />
                             </Button>
                         </div>
                     </div>
 
                     <div className="wb-courses-lesson-main">
-                        <Nav variant="pills" className="flex-row overflow-auto my-3 row-gap-1">
+                        <Nav variant="pills" className="flex-nowrap overflow-auto my-2">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
                                 const icon = node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;

@@ -12,6 +12,14 @@ interface ILessonNodeAnswer {
 interface ILessonNode {
     id: string;
     type: number;
+    mode?: number;
+    codeId?: {
+        name: string;
+        source: string;
+        cssSource: string;
+        jsSource: string;
+        language: string;
+    };
     index: number;
     text: string;
     answers: ILessonNodeAnswer[];
@@ -155,15 +163,49 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 </div>
             ));
 
+        const renderContent = () => {
+            if (node.mode === 2) {
+                return <div dangerouslySetInnerHTML={{ __html: node.text! }} />;
+            } else if (node.mode === 3 && node.codeId) {
+                const genOutput = () => {
+                    const doc = new DOMParser().parseFromString(node.codeId!.source, "text/html");
+                    const head = doc.head || doc.getElementsByTagName("head")[0];
+                    const body = doc.body || doc.getElementsByTagName("body")[0];
+
+                    const style = document.createElement("style");
+                    style.appendChild(document.createTextNode(node.codeId!.cssSource));
+                    head.appendChild(style);
+
+                    const script = document.createElement("script");
+                    script.text = node.codeId!.jsSource;
+                    body.appendChild(script);
+
+                    return "<!DOCTYPE HTML>\n" + doc.documentElement.outerHTML;
+                };
+
+                return (
+                    <div style={{ height: "80vh" }}>
+                        <iframe
+                            title={node.codeId.name}
+                            srcDoc={genOutput()}
+                            style={{ width: "100%", height: "100%", border: "none" }}
+                            sandbox="allow-scripts"
+                        />
+                    </div>
+                );
+            } else {
+                return <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />;
+            }
+        };
+
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className="wb-courses-lesson-node-question p-2 flex-grow-1">
-                    <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (node.mode === 3 ? " wb-code-mode" : " p-2")}>
+                    {renderContent()}
 
-                    {node.type === 2 || node.type === 3 ? (
-                        renderAnswers()
-                    ) : node.type === 4 ? (
-                        <div className="d-flex justify-content-center">
+                    {(node.type === 2 || node.type === 3) && <div className="p-2">{renderAnswers()}</div>}
+                    {node.type === 4 && (
+                        <div className="p-2 d-flex justify-content-center">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "120px" }}
@@ -172,7 +214,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                                 onChange={(e) => handleTextAnswer(e.target.value)}
                             />
                         </div>
-                    ) : null}
+                    )}
                 </div>
 
                 <div className="text-center bg-light p-3">

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { courseCodeSchema, courseDescriptionSchema, idSchema, titleSchema } from "./commonSchema";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 
 const quizAnswerSchema = z.object({
     id: idSchema("answerId").optional(),
@@ -96,9 +97,11 @@ export const deleteLessonNodeSchema = z.object({
 export const editLessonNodeSchema = z.object({
     body: z.object({
         nodeId: idSchema("nodeId"),
-        type: z.enum(LessonNodeTypeEnum),
-        text: z.string().min(1, "Text must not be empty").max(2000, "Text must not exceed 2000 characters"),
-        correctAnswer: z.string().max(60, "Correct answer must not exceed 500 characters").optional(),
+        type: z.nativeEnum(LessonNodeTypeEnum),
+        mode: z.nativeEnum(LessonNodeModeEnum).optional(),
+        codeId: z.string().nullable().optional(),
+        text: z.string().min(1, "Text must not be empty").max(8000, "Text must not exceed 8000 characters"),
+        correctAnswer: z.string().max(8000, "Correct answer must not exceed 8000 characters").nullable().optional(),
         answers: z.array(quizAnswerSchema).optional()
     })
 });

@@ -43,11 +43,33 @@
     margin: 0 auto;
 }
 
+/* Hide scrollbar for Chrome, Safari and Opera */
+.wb-courses-lesson-main .nav::-webkit-scrollbar {
+    display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.wb-courses-lesson-main .nav {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+}
+
+
 .wb-courses-lesson-node-question {
     width: 100%;
     max-width: 552px;
     margin: 0 auto;
     flex-grow: 1;
+}
+
+.wb-courses-lesson-main:has(.wb-code-mode) {
+    max-width: 1200px;
+}
+
+.wb-courses-lesson-node-question.wb-code-mode {
+    max-width: 100%;
 }
 
 .wb-courses-lesson-answer {
@@ -79,24 +101,24 @@
 }
 
 .wb-courses-lesson-arrow-pill {
-    width: 48px;
-    height: 24px;
+    width: 42px;
+    height: 20px;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 0;
+    transition: all 0.2s ease;
+    cursor: pointer;
 
-    /* double arrow tip: left and right both angled forward */
-    clip-path: polygon(0% 0%,
-            /* top-left inward angle */
-            85% 0%,
-            /* top-right inward angle */
-            100% 50%,
-            /* right point */
-            85% 100%,
-            /* bottom-right inward */
-            0% 100%,
-            /* bottom-left inward */
-            15% 50%
-            /* left point */
-        );
+    /* double arrow tip: refined for slicker look */
+    clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%, 10% 50%);
+}
+
+.wb-courses-lesson-arrow-pill:hover {
+    opacity: 0.9;
+    transform: scale(1.05);
+}
+
+.wb-courses-lesson-arrow-pill.bg-warning {
+    box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
 }

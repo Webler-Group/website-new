@@ -365,7 +365,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(deleteLessonNodeSchema, req); // Reusing schema as it matches
     const { nodeId } = body;
 
-    const lessonNode = await LessonNode.findById(nodeId);
+    const lessonNode = await LessonNode.findById(nodeId).populate("codeId", "name source cssSource jsSource language");
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
@@ -379,6 +379,8 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             id: lessonNode._id,
             index: lessonNode.index,
             type: lessonNode._type,
+            mode: lessonNode.mode,
+            codeId: lessonNode.codeId,
             text: lessonNode.text ?? "",
             correctAnswer: lessonNode.correctAnswer ?? "",
             answers: answers.map(x => ({
@@ -413,15 +415,17 @@ const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
 const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editLessonNodeSchema, req);
-    const { nodeId, type, text, correctAnswer, answers } = body;
+    const { nodeId, type, mode, codeId, text, correctAnswer, answers } = body;
 
-    const node = await LessonNode.findById(nodeId);
+    const node = await LessonNode.findById(nodeId) as any;
     if (!node) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     node._type = type;
+    node.mode = mode ?? node.mode;
+    node.codeId = codeId ? new mongoose.Types.ObjectId(codeId) : null;
     node.text = text;
     node.correctAnswer = correctAnswer ?? "";
 
