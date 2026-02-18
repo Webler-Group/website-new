@@ -228,7 +228,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             return;
         }
 
-        if (lessonNode._type === LessonNodeTypeEnum.TEXT && isLastUnlocked) {
+        if ((lessonNode._type === LessonNodeTypeEnum.TEXT || lessonNode._type === LessonNodeTypeEnum.CODE) && isLastUnlocked) {
             userProgress.$inc("nodesSolved", 1);
             userProgress.lastLessonNodeId = lessonNode._id as any;
             await userProgress.save();
@@ -249,7 +249,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             id: lessonNode._id,
             index: lessonNode.index,
             type: lessonNode._type,
-            mode: lessonNode.mode,
+            mode: lessonNode.mode ?? 1,
             codeId: lessonNode.codeId,
             text: lessonNode.text ?? "",
             correctAnswer: lessonNode.correctAnswer,
@@ -302,6 +302,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let correct = false;
     switch (mock?.type ? mock.type : lessonNode._type) {
         case LessonNodeTypeEnum.TEXT:
+        case LessonNodeTypeEnum.CODE:
             correct = true;
             break;
         case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:

@@ -98,8 +98,8 @@ export const deleteLessonNodeSchema = z.object({
 export const editLessonNodeSchema = z.object({
     body: z.object({
         nodeId: idSchema("nodeId"),
-        type: z.nativeEnum(LessonNodeTypeEnum),
-        mode: z.nativeEnum(LessonNodeModeEnum).optional(),
+        type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
+        mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode").optional(),
         codeId: z.string().nullable().optional(),
         text: z.string().min(1, "Text must not be empty").max(8000, "Text must not exceed 8000 characters"),
         correctAnswer: z.string().max(8000, "Correct answer must not exceed 8000 characters").nullable().optional(),

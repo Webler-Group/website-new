@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import HtmlRenderer from "../../../components/HtmlRenderer";
 
 interface ILessonNodeAnswer {
     id?: string;
@@ -30,9 +31,9 @@ interface LessonNodeProps {
     nodeId?: string;
     nodeData?: ILessonNode;
     mock: boolean;
-    onEnter: (id: string) => void;
-    onAnswered: (id: string, correct: boolean) => void;
-    onContinue: (id: string) => void;
+    onEnter?: (id: string) => void;
+    onAnswered?: (id: string, correct: boolean) => void;
+    onContinue?: (id: string) => void;
 }
 
 const allowedUrls = [
@@ -57,7 +58,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     const getNode = async () => {
         if (nodeData) {
             setNode(nodeData);
-            onEnter(nodeData.id);
+            onEnter?.(nodeData.id);
         } else {
             const result = await sendJsonRequest("/Courses/GetLessonNode", "POST", {
                 nodeId,
@@ -65,7 +66,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             });
             if (result && result.lessonNode) {
                 setNode(result.lessonNode);
-                onEnter(nodeId!);
+                onEnter?.(nodeId!);
             }
         }
     };
@@ -117,7 +118,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
         const result = await sendJsonRequest("/Courses/SolveNode", "POST", payload);
         if (result && result.success) {
             setIsCorrect(result.data.correct);
-            onAnswered(node.id, result.data.correct);
+            onAnswered?.(node.id, result.data.correct);
         }
     };
 
@@ -130,7 +131,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
         if (!node) {
             return;
         }
-        onContinue(node.id);
+        onContinue?.(node.id);
     };
 
     const getAnswerClass = (answerId: string) => {
@@ -167,9 +168,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             ));
 
         const renderContent = () => {
-            if (activeNode.mode === 2) {
-                return <div dangerouslySetInnerHTML={{ __html: activeNode.text! }} />;
-            } else if (activeNode.mode === 3 && activeNode.codeId) {
+            if (activeNode.type === 5 && activeNode.codeId) {
                 const genOutput = () => {
                     const doc = new DOMParser().parseFromString(activeNode.codeId!.source, "text/html");
                     const head = doc.head || doc.getElementsByTagName("head")[0];
@@ -197,9 +196,13 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                         />
                     </div>
                 );
-            } else {
-                return <MarkdownRenderer content={activeNode.text!} allowedUrls={allowedUrls} />;
             }
+
+            if (activeNode.mode === 2) {
+                return <HtmlRenderer html={activeNode.text} />
+            }
+
+            return <MarkdownRenderer content={activeNode.text} allowedUrls={allowedUrls} />;
         };
 
         content = (
@@ -222,7 +225,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 </div>
 
                 <div className="text-center bg-light p-3">
-                    {activeNode.type == 1 ?
+                    {(activeNode.type === 1 || activeNode.type === 5) ?
                         <Button variant="success" onClick={handleContinue}>
                             Continue
                         </Button>

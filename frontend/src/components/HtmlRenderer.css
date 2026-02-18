@@ -1,0 +1,35 @@
+.html-renderer {
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: break-word;
+}
+
+/* Media elements */
+.html-renderer img,
+.html-renderer video,
+.html-renderer iframe,
+.html-renderer canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Tables often overflow */
+.html-renderer table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+/* Prevent long words / code blocks from overflowing */
+.html-renderer pre,
+.html-renderer code {
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+/* Safety against inline width styles */
+.html-renderer * {
+    max-width: 100%;
+    box-sizing: border-box;
+}

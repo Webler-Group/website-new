@@ -3,7 +3,6 @@ import QuizAnswer from "./QuizAnswer";
 import CourseLesson from "./CourseLesson";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
-import { maxLength } from "zod";
 
 const lessonNodeSchema = new mongoose.Schema({
 

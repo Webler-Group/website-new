@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button, Nav, Offcanvas } from "react-bootstrap";
-import { FaQuestionCircle, FaTimes } from "react-icons/fa";
+import { FaQuestionCircle, FaTimes, FaCode } from "react-icons/fa";
 import { FaBookOpen, FaComments } from "react-icons/fa6";
 import { ILesson } from "../components/Lesson";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -182,7 +182,7 @@ const CourseLessonPage = () => {
                         <Nav variant="pills" className="flex-nowrap overflow-auto my-2">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
-                                const icon = node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;
+                                const icon = node.type === 5 ? <FaCode /> : node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;
 
                                 return (
                                     <Nav.Item key={node.id}>

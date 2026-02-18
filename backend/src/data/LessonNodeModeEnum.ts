@@ -1,7 +1,6 @@
 export enum LessonNodeModeEnum {
     MARKDOWN = 1,
-    HTML = 2,
-    CODE = 3
+    HTML = 2
 }
 
 export default LessonNodeModeEnum;

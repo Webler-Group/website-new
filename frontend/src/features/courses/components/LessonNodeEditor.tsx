@@ -1,7 +1,6 @@
 import {
     FormEvent,
     forwardRef,
-    useCallback,
     useEffect,
     useImperativeHandle,
     useMemo,
@@ -25,6 +24,7 @@ import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
 import CodeList, { ICodesState } from "../../codes/components/CodeList";
 import { ICode } from "../../codes/components/Code";
+import HtmlEditorField from "../../../components/HtmlEditorField";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;
@@ -43,12 +43,12 @@ const nodeTypes = [
     { name: "Singlechoice question", value: 2 },
     { name: "Multichoice question", value: 3 },
     { name: "Text question", value: 4 },
+    { name: "Code", value: 5 }
 ];
 
 const nodeModes = [
     { name: "Markdown", value: 1 },
-    { name: "HTML", value: 2 },
-    { name: "Code", value: 3 },
+    { name: "HTML", value: 2 }
 ];
 
 const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProps>(
@@ -238,7 +238,13 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             setLoading(true);
             await saveNode(true);
             setLoading(false);
+            scrollTo(0, 0);
         };
+
+        const handleExit = () => {
+            onExit();
+            scrollTo(0, 0);
+        }
 
         const closeDeleteModal = () => {
             setDeleteModalVisible(false);
@@ -311,8 +317,6 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             setFormVisible(mode == "write");
         };
 
-        const noop = useCallback(() => { }, []);
-
         const previewNodeData = useMemo(() => {
             if (!node) return null;
             return {
@@ -335,14 +339,11 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                         <LessonNode
                             nodeData={previewNodeData}
                             mock={true}
-                            onAnswered={noop}
-                            onContinue={noop}
-                            onEnter={noop}
                         />
                     </div>
                 </div>
             );
-        }, [previewNodeData, noop]);
+        }, [previewNodeData]);
 
         const getEditorFields = () => {
             switch (nodeType) {
@@ -484,39 +485,53 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 </FormSelect>
                             </FormGroup>
 
-                            <FormGroup>
-                                <FormLabel>Mode</FormLabel>
-                                <FormSelect
-                                    value={nodeMode}
-                                    onChange={(e) => setNodeMode(Number(e.target.value))}
-                                    required
-                                >
-                                    {nodeModes.map((mode) => (
-                                        <option key={mode.value} value={mode.value}>
-                                            {mode.name}
-                                        </option>
-                                    ))}
-                                </FormSelect>
-                            </FormGroup>
+                            {
+                                nodeType !== 5 &&
+                                <FormGroup>
+                                    <FormLabel>Mode</FormLabel>
+                                    <FormSelect
+                                        value={nodeMode}
+                                        onChange={(e) => setNodeMode(Number(e.target.value))}
+                                        required
+                                    >
+                                        {nodeModes.map((mode) => (
+                                            <option key={mode.value} value={mode.value}>
+                                                {mode.name}
+                                            </option>
+                                        ))}
+                                    </FormSelect>
+                                </FormGroup>
+                            }
 
-                            {nodeMode !== 3 && (
+                            {nodeType !== 5 ? (
                                 <FormGroup>
                                     <FormLabel>Text</FormLabel>
-                                    <MdEditorField
-                                        section="CourseEditor"
-                                        text={nodeText}
-                                        setText={setNodeText}
-                                        maxCharacters={8000}
-                                        row={10}
-                                        placeHolder={"Enter Description"}
-                                        onModeChange={onEditorModeChange}
-                                        customPreview={customPreview}
-                                        isPost={false}
-                                    />
+                                    {
+                                        nodeMode === 1 ?
+                                            <MdEditorField
+                                                section="CourseEditor"
+                                                text={nodeText}
+                                                setText={setNodeText}
+                                                maxCharacters={8000}
+                                                row={10}
+                                                placeHolder={"Enter Description"}
+                                                onModeChange={onEditorModeChange}
+                                                customPreview={customPreview}
+                                                isPost={false}
+                                            />
+                                            :
+                                            <HtmlEditorField
+                                                section="CourseEditor"
+                                                text={nodeText}
+                                                setText={setNodeText}
+                                                maxCharacters={8000}
+                                                rows={20}
+                                                onModeChange={onEditorModeChange}
+                                                customPreview={customPreview}
+                                            />
+                                    }
                                 </FormGroup>
-                            )}
-
-                            {nodeMode === 3 && (
+                            ) : (
                                 <FormGroup className="mt-3">
                                     <FormLabel>Selected Code Snippet</FormLabel>
                                     <div className="d-flex gap-2 align-items-center">
@@ -597,7 +612,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         disabled={loading}
                                         variant="secondary"
                                         type="button"
-                                        onClick={onExit}
+                                        onClick={handleExit}
                                     >
                                         Exit
                                     </Button>
