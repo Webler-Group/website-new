@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { courseCodeSchema, courseDescriptionSchema, idSchema, titleSchema } from "./commonSchema";
+import { countPerPageSchema, courseCodeSchema, courseDescriptionSchema, fileNameSchema, idSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 
@@ -79,7 +79,8 @@ export const deleteLessonSchema = z.object({
 export const uploadCourseCoverImageSchema = z.object({
     body: z.object({
         courseId: idSchema("courseId")
-    })
+    }),
+    file: multerFileSchema
 });
 
 export const createLessonNodeSchema = z.object({
@@ -133,3 +134,23 @@ export const generateLessonNodeSchema = z.object({
         description: z.string().max(256).nullish()
     })
 });
+
+export const uploadLessonImageSchema = z.object({
+    body: z.object({
+        name: fileNameSchema
+    }),
+    file: multerFileSchema
+});
+
+export const getLessonImageListSchema = z.object({
+    body: z.object({
+        page: pageSchema,
+        count: countPerPageSchema
+    }),
+});
+
+export const deleteLessonImageSchema = z.object({
+    body: z.object({
+        fileId: idSchema("fileId")
+    })
+})

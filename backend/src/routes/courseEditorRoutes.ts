@@ -34,4 +34,8 @@ router.route("/ChangeLessonNodeIndex").post(courseEditorController.changeLessonN
 
 router.route("/ExportCourseLesson").post(courseEditorController.exportCourseLesson);
 
+router.route("/UploadContentImage").post(courseEditorController.lessonImageUploadMiddleware.single("image"), courseEditorController.uploadLessonImage);
+router.route("/GetContentImages").post(courseEditorController.getLessonImageList);
+router.route("/DeleteContentImage").delete(courseEditorController.deleteLessonImage);
+
 export default router;

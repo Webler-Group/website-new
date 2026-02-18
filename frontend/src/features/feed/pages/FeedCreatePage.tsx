@@ -83,6 +83,7 @@ const FeedCreatePage = ({ feedId }: FeedCreatePageProps) => {
                 <RequestResultAlert errors={error} />
 
                 <MdEditorField
+                    section="Profile"
                     text={message}
                     setText={setMessage}
                     row={10}

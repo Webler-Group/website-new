@@ -487,6 +487,7 @@ const DiscussPostPage = () => {
                         <FormGroup>
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>
                             <MdEditorField 
+                                section="Profile"
                                 text={formInput}
                                 setText={setFormInput}
                                 row={10}
