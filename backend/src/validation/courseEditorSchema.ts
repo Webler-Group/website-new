@@ -101,8 +101,8 @@ export const editLessonNodeSchema = z.object({
         type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
         mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode").optional(),
         codeId: z.string().nullable().optional(),
-        text: z.string().min(1, "Text must not be empty").max(8000, "Text must not exceed 8000 characters"),
-        correctAnswer: z.string().max(8000, "Correct answer must not exceed 8000 characters").nullable().optional(),
+        text: z.string().max(8000, "Text must not exceed 8000 characters").optional(),
+        correctAnswer: z.string().max(80, "Correct answer must not exceed 80 characters").nullable().optional(),
         answers: z.array(quizAnswerSchema).optional()
     })
 });

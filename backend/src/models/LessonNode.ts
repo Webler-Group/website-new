@@ -22,9 +22,7 @@ const lessonNodeSchema = new mongoose.Schema({
     },
     text: {
         type: String,
-        default: "",
         trim: true,
-        minLength: 0,
         maxLength: 8000
     },
     lessonId: {
@@ -34,7 +32,7 @@ const lessonNodeSchema = new mongoose.Schema({
     },
     correctAnswer: {
         type: String,
-        maxLength: 8000
+        maxLength: 80
     },
     codeId: {
         type: mongoose.Types.ObjectId,
