@@ -37,7 +37,7 @@ interface LessonNodeProps {
 
 const allowedUrls = [
     /^https?:\/\/.+/i,
-    /^\/.*/ 
+    /^\/.*/
 ];
 
 const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
@@ -147,15 +147,17 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
 
     let content = <></>;
 
-    if (node) {
+    const activeNode = nodeData || node;
+
+    if (activeNode) {
         const renderAnswers = () =>
-            node.answers.map((answer, idx) => (
+            activeNode.answers.map((answer, idx) => (
                 <div
                     key={idx}
                     className={`wb-courses-lesson-answer p-2 mt-3 ${getAnswerClass(answer.id!)}`}
                     role="button"
                     onClick={() => {
-                        node.type === 2
+                        activeNode.type === 2
                             ? handleSingleChoice(answer.id!)
                             : handleMultiChoice(answer.id!);
                     }}
@@ -165,20 +167,20 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             ));
 
         const renderContent = () => {
-            if (node.mode === 2) {
-                return <div dangerouslySetInnerHTML={{ __html: node.text! }} />;
-            } else if (node.mode === 3 && node.codeId) {
+            if (activeNode.mode === 2) {
+                return <div dangerouslySetInnerHTML={{ __html: activeNode.text! }} />;
+            } else if (activeNode.mode === 3 && activeNode.codeId) {
                 const genOutput = () => {
-                    const doc = new DOMParser().parseFromString(node.codeId!.source, "text/html");
+                    const doc = new DOMParser().parseFromString(activeNode.codeId!.source, "text/html");
                     const head = doc.head || doc.getElementsByTagName("head")[0];
                     const body = doc.body || doc.getElementsByTagName("body")[0];
 
                     const style = document.createElement("style");
-                    style.appendChild(document.createTextNode(node.codeId!.cssSource));
+                    style.appendChild(document.createTextNode(activeNode.codeId!.cssSource));
                     head.appendChild(style);
 
                     const script = document.createElement("script");
-                    script.text = node.codeId!.jsSource;
+                    script.text = activeNode.codeId!.jsSource;
                     body.appendChild(script);
 
                     return "<!DOCTYPE HTML>\n" + doc.documentElement.outerHTML;
@@ -187,7 +189,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 return (
                     <div style={{ height: "80vh" }}>
                         <iframe
-                            title={node.codeId.name}
+                            key={activeNode.codeId.name + "_" + activeNode.codeId.source.length} // Force reload when snippet changes
+                            title={activeNode.codeId.name}
                             srcDoc={genOutput()}
                             style={{ width: "100%", height: "100%", border: "none" }}
                             sandbox="allow-scripts"
@@ -195,22 +198,23 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                     </div>
                 );
             } else {
-                return <MarkdownRenderer content={node.text!} allowedUrls={allowedUrls} />;
+                return <MarkdownRenderer content={activeNode.text!} allowedUrls={allowedUrls} />;
             }
         };
 
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className={"wb-courses-lesson-node-question flex-grow-1" + (node.mode === 3 ? " wb-code-mode" : " p-2")}>
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.mode === 3 ? " wb-code-mode" : " p-2")}>
                     {renderContent()}
 
-                    {(node.type === 2 || node.type === 3) && <div className="p-2">{renderAnswers()}</div>}
-                    {node.type === 4 && (
-                        <div className="p-2 d-flex justify-content-center">
+                    {(activeNode.type === 2 || activeNode.type === 3) && <div className="p-2">{renderAnswers()}</div>}
+                    {activeNode.type === 4 && (
+                        <div className="p-2 d-flex justify-content-start">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
-                                style={{ width: "120px" }}
+                                style={{ width: "300px", maxWidth: "100%" }}
                                 value={textAnswer}
+                                placeholder="Type your answer here..."
                                 readOnly={isCorrect !== null}
                                 onChange={(e) => handleTextAnswer(e.target.value)}
                             />
@@ -219,7 +223,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 </div>
 
                 <div className="text-center bg-light p-3">
-                    {node.type == 1 ?
+                    {activeNode.type == 1 ?
                         <Button variant="success" onClick={handleContinue}>
                             Continue
                         </Button>
@@ -238,8 +242,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                                     variant="primary"
                                     onClick={handleSubmit}
                                     disabled={
-                                        (node.type === 4 && textAnswer.trim() === "") ||
-                                        ((node.type === 2 || node.type === 3) &&
+                                        (activeNode.type === 4 && textAnswer.trim() === "") ||
+                                        ((activeNode.type === 2 || activeNode.type === 3) &&
                                             selectedAnswers.length === 0)
                                     }
                                 >

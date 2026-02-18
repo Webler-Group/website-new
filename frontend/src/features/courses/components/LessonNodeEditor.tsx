@@ -18,13 +18,17 @@ import {
     FormSelect,
     Modal,
 } from "react-bootstrap";
-import { FaPlus, FaTrash } from "react-icons/fa6";
+import { FaPlus, FaTrash, FaExpand } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNode, { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
 import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
 import CodeList, { ICodesState } from "../../codes/components/CodeList";
 import { ICode } from "../../codes/components/Code";
+import AceEditor from "react-ace";
+
+import "ace-builds/src-noconflict/theme-tomorrow_night";
+import "ace-builds/src-noconflict/mode-html";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;
@@ -74,6 +78,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
         const [message, setMessage] = useState<[string, string]>(["", ""]);
         const [loading, setLoading] = useState(false);
         const [formVisible, setFormVisible] = useState(true);
+        const [htmlFullScreen, setHtmlFullScreen] = useState(false);
 
         useEffect(() => {
             getNode();
@@ -469,7 +474,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
 
                     <div className="mt-2">
                         <Form onSubmit={handleSubmit}>
-                            <FormGroup>
+                            <FormGroup className="mb-3">
                                 <FormLabel>Type</FormLabel>
                                 <FormSelect
                                     value={nodeType}
@@ -484,7 +489,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 </FormSelect>
                             </FormGroup>
 
-                            <FormGroup>
+                            <FormGroup className="mb-3">
                                 <FormLabel>Mode</FormLabel>
                                 <FormSelect
                                     value={nodeMode}
@@ -499,8 +504,8 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 </FormSelect>
                             </FormGroup>
 
-                            {nodeMode !== 3 && (
-                                <FormGroup>
+                            {nodeMode === 1 && (
+                                <FormGroup className="mb-3">
                                     <FormLabel>Text</FormLabel>
                                     <MdEditorField
                                         section="CourseEditor"
@@ -516,8 +521,105 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 </FormGroup>
                             )}
 
+                            {nodeMode === 2 && (
+                                <FormGroup className="mb-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <FormLabel className="mb-0">HTML Content</FormLabel>
+                                        <Button
+                                            size="sm"
+                                            variant="outline-secondary"
+                                            onClick={() => setHtmlFullScreen(true)}
+                                            type="button"
+                                            title="Full Screen"
+                                        >
+                                            <FaExpand className="me-1" /> Full Screen
+                                        </Button>
+                                    </div>
+                                    <div className="border rounded overflow-hidden mb-3" style={{ height: "400px" }}>
+                                        <AceEditor
+                                            mode="html"
+                                            theme="tomorrow_night"
+                                            value={nodeText}
+                                            onChange={(v) => setNodeText(v.slice(0, 8000))}
+                                            width="100%"
+                                            height="100%"
+                                            fontSize={16}
+                                            showGutter
+                                            showPrintMargin={false}
+                                            wrapEnabled={true}
+                                            setOptions={{
+                                                useWorker: false,
+                                                tabSize: 2
+                                            }}
+                                            style={{
+                                                height: "100%",
+                                                overscrollBehavior: "contain",
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="d-flex justify-content-between text-muted small mb-3">
+                                        <span>{nodeText.length}/8000 characters</span>
+                                    </div>
+                                    <FormLabel>Preview</FormLabel>
+                                    <div className="p-2 border rounded bg-light overflow-auto" style={{ minHeight: "200px", maxHeight: "400px" }}>
+                                        {customPreview}
+                                    </div>
+
+                                    <Modal
+                                        show={htmlFullScreen}
+                                        onHide={() => setHtmlFullScreen(false)}
+                                        fullscreen
+                                        centered
+                                    >
+                                        <Modal.Header closeButton>
+                                            <Modal.Title>Edit HTML Content</Modal.Title>
+                                        </Modal.Header>
+                                        <Modal.Body className="p-0 d-flex flex-column bg-dark" style={{ minHeight: "calc(100vh - 120px)" }}>
+                                            <div className="d-flex flex-grow-1 overflow-hidden" style={{ minHeight: 0 }}>
+                                                {/* Left Column: Editor */}
+                                                <div className="flex-grow-1 border-end border-secondary" style={{ width: "50%" }}>
+                                                    <AceEditor
+                                                        mode="html"
+                                                        theme="tomorrow_night"
+                                                        value={nodeText}
+                                                        onChange={(v) => setNodeText(v.slice(0, 8000))}
+                                                        width="100%"
+                                                        height="100%"
+                                                        fontSize={18}
+                                                        showGutter
+                                                        showPrintMargin={false}
+                                                        wrapEnabled={true}
+                                                        setOptions={{
+                                                            useWorker: false,
+                                                            tabSize: 2
+                                                        }}
+                                                        style={{
+                                                            height: "100%",
+                                                            overscrollBehavior: "contain",
+                                                        }}
+                                                    />
+                                                </div>
+                                                {/* Right Column: Preview */}
+                                                <div className="flex-grow-1 bg-white overflow-auto p-4" style={{ width: "50%" }}>
+                                                    <div className="mx-auto" style={{ maxWidth: "800px" }}>
+                                                        <h5 className="text-dark mb-4 border-bottom pb-2">Live Preview</h5>
+                                                        {customPreview}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="bg-light p-2 border-top d-flex justify-content-between align-items-center">
+                                                <span className="text-muted small">{nodeText.length}/8000 characters</span>
+                                                <Button variant="primary" size="sm" onClick={() => setHtmlFullScreen(false)}>
+                                                    Done
+                                                </Button>
+                                            </div>
+                                        </Modal.Body>
+                                    </Modal>
+                                </FormGroup>
+                            )}
+
                             {nodeMode === 3 && (
-                                <FormGroup className="mt-3">
+                                <FormGroup className="mt-3 mb-3">
                                     <FormLabel>Selected Code Snippet</FormLabel>
                                     <div className="d-flex gap-2 align-items-center">
                                         <FormControl
