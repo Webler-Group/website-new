@@ -33,3 +33,9 @@ export const updateRolesSchema = z.object({
         roles: z.array(z.enum(RolesEnum, "Invalid role"))
     })
 });
+
+export const exportCourseSchema = z.object({
+    body: z.object({
+        courseId: idSchema("courseId")
+    })
+});

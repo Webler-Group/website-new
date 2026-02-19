@@ -9,7 +9,8 @@ import {
     getUsersListSchema,
     getUserSchema,
     banUserSchema,
-    updateRolesSchema
+    updateRolesSchema,
+    exportCourseSchema
 } from "../validation/adminSchema";
 import { importCourseSchema } from "../validation/importSchema";
 import { parseWithZod } from "../utils/zodUtils";
@@ -251,12 +252,71 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
+const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(exportCourseSchema, req);
+    const { courseId } = body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+        res.status(404).json({ error: [{ message: "Course not found" }] });
+        return;
+    }
+
+    const lessons = await CourseLesson.find({ course: courseId }).sort({ index: 1 });
+    const exportedLessons = [];
+
+    for (const lesson of lessons) {
+        const nodes = await LessonNode.find({ lessonId: lesson._id }).sort({ index: 1 });
+        const exportedNodes = [];
+
+        for (const node of nodes) {
+            const exportedNode: any = {
+                type: node._type,
+                mode: node.mode,
+                text: node.text,
+                index: node.index,
+                codeId: node.codeId ? node.codeId.toString() : null,
+                correctAnswer: node.correctAnswer
+            };
+
+            if (node._type === 2 || node._type === 3) {
+                const answers = await QuizAnswer.find({ courseLessonNodeId: node._id });
+                exportedNode.answers = answers.map(ans => ({
+                    text: ans.text,
+                    correct: ans.correct
+                }));
+            }
+
+            exportedNodes.push(exportedNode);
+        }
+
+        exportedLessons.push({
+            title: lesson.title,
+            nodes: exportedNodes
+        });
+    }
+
+    const exportData = {
+        code: course.code,
+        title: course.title,
+        description: course.description,
+        visible: course.visible,
+        lessons: exportedLessons
+    };
+
+    res.json({
+        success: true,
+        data: exportData
+    });
+});
+
 const controller = {
     getUsersList,
     banUser,
     getUser,
     updateRoles,
-    importCourse
+    importCourse,
+    exportCourse
 };
 
 export default controller;

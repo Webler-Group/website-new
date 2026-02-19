@@ -15,6 +15,7 @@ router.route("/BanUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR
 router.route("/Users").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getUsersList);
 router.route("/GetUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getUser);
 router.route("/UpdateRoles").post(requireRoles([RolesEnum.ADMIN]), adminController.updateRoles);
-router.route("/ImportCourse").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.importCourse);
+router.route("/ImportCourse").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR, RolesEnum.CREATOR]), adminController.importCourse);
+router.route("/ExportCourse").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR, RolesEnum.CREATOR]), adminController.exportCourse);
 
 export default router;

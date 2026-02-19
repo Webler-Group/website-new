@@ -179,6 +179,24 @@ const CourseEditorPage = () => {
         setLoading(false);
     };
 
+    const handleExportCourse = async () => {
+        setLoading(true);
+        const result = await sendJsonRequest("/Admin/ExportCourse", "POST", { courseId });
+        if (result && result.success && result.data) {
+            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${course?.code || 'course'}-export.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else {
+            setNotification({ type: "error", message: result?.error?.[0]?.message ?? "Export failed" });
+        }
+        setLoading(false);
+    }
 
     const closeDeleteModal = () => {
         setDeleteModalVisible(false);
@@ -251,8 +269,9 @@ const CourseEditorPage = () => {
                         <LessonEditor lessonId={lessonId} />
                         :
                         <>
-                            <div className="d-flex justify-content-end">
-                                <Button className="ms-2 btn btn-primary btn-sm" onClick={() => showLessonForm("", null)}>Create Lesson</Button>
+                            <div className="d-flex justify-content-end gap-2">
+                                <Button variant="primary" size="sm" onClick={handleExportCourse} disabled={loading}>Export Course to JSON</Button>
+                                <Button className="btn btn-primary btn-sm" onClick={() => showLessonForm("", null)}>Create Lesson</Button>
                             </div>
                             <div className="mt-3">
                                 {
