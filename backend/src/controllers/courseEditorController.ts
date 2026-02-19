@@ -31,7 +31,9 @@ import {
     exportCourseLessonSchema,
     uploadLessonImageSchema,
     getLessonImageListSchema,
-    deleteLessonImageSchema
+    deleteLessonImageSchema,
+    importCourseSchema,
+    exportCourseSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import { exportCourseLessonToJson } from "../helpers/courseHelper";
@@ -622,6 +624,143 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
     res.json({ success: true });
 });
 
+const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(importCourseSchema, req);
+    const { code, title, description, visible, lessons } = body;
+
+    let course = await Course.findOne({ code });
+
+    if (course) {
+        course.title = title;
+        course.description = description;
+        if (visible !== undefined) course.visible = visible;
+        await course.save();
+
+        await CourseLesson.deleteAndCleanup({ course: course._id });
+    } else {
+        course = await Course.create({
+            code,
+            title,
+            description,
+            visible: visible ?? false
+        });
+    }
+
+    for (let i = 0; i < lessons.length; i++) {
+        const lessonData = lessons[i];
+        try {
+            const lesson = await CourseLesson.create({
+                course: course._id,
+                title: lessonData.title,
+                index: i + 1,
+                nodes: lessonData.nodes.length
+            });
+
+            const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
+                lessonId: lesson._id,
+                index: nodeIndex + 1,
+                _type: node.type,
+                mode: node.mode,
+                codeId: (node.codeId && mongoose.isValidObjectId(node.codeId)) ? new mongoose.Types.ObjectId(node.codeId) : null,
+                text: node.text || "",
+                correctAnswer: node.correctAnswer
+            }));
+
+            if (nodeDocs.length > 0) {
+                const createdNodes = await LessonNode.insertMany(nodeDocs);
+                const answerDocs: any[] = [];
+                for (let j = 0; j < createdNodes.length; j++) {
+                    const createdNode = createdNodes[j];
+                    const sourceNode = lessonData.nodes[j];
+
+                    if (sourceNode.type === 2 || sourceNode.type === 3) {
+                        const answers = (sourceNode as any).answers;
+                        if (answers && Array.isArray(answers)) {
+                            answers.forEach((ans: any) => {
+                                answerDocs.push({
+                                    courseLessonNodeId: createdNode._id,
+                                    text: ans.text,
+                                    correct: ans.correct
+                                });
+                            });
+                        }
+                    }
+                }
+
+                if (answerDocs.length > 0) {
+                    await QuizAnswer.insertMany(answerDocs);
+                }
+            }
+        } catch (error) {
+            console.error(`Error importing lesson ${lessonData.title}:`, error);
+        }
+    }
+
+    res.json({
+        success: true,
+        message: "Course imported successfully",
+        courseId: course._id
+    });
+});
+
+const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(exportCourseSchema, req);
+    const { courseId } = body;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+        res.status(404).json({ error: [{ message: "Course not found" }] });
+        return;
+    }
+
+    const lessons = await CourseLesson.find({ course: courseId }).sort({ index: 1 });
+    const exportedLessons = [];
+
+    for (const lesson of lessons) {
+        const nodes = await LessonNode.find({ lessonId: lesson._id }).sort({ index: 1 });
+        const exportedNodes = [];
+
+        for (const node of nodes) {
+            const exportedNode: any = {
+                type: node._type,
+                mode: node.mode,
+                text: node.text,
+                index: node.index,
+                codeId: node.codeId ? node.codeId.toString() : null,
+                correctAnswer: node.correctAnswer
+            };
+
+            if (node._type === 2 || node._type === 3) {
+                const answers = await QuizAnswer.find({ courseLessonNodeId: node._id });
+                exportedNode.answers = answers.map(ans => ({
+                    text: ans.text,
+                    correct: ans.correct
+                }));
+            }
+
+            exportedNodes.push(exportedNode);
+        }
+
+        exportedLessons.push({
+            title: lesson.title,
+            nodes: exportedNodes
+        });
+    }
+
+    const exportData = {
+        code: course.code,
+        title: course.title,
+        description: course.description,
+        visible: course.visible,
+        lessons: exportedLessons
+    };
+
+    res.json({
+        success: true,
+        data: exportData
+    });
+});
+
 const courseEditorController = {
     createCourse,
     getCoursesList,
@@ -645,7 +784,9 @@ const courseEditorController = {
     uploadLessonImage,
     lessonImageUploadMiddleware,
     getLessonImageList,
-    deleteLessonImage
+    deleteLessonImage,
+    importCourse,
+    exportCourse
 };
 
 export default courseEditorController;

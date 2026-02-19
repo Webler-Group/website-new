@@ -34,8 +34,3 @@ export const updateRolesSchema = z.object({
     })
 });
 
-export const exportCourseSchema = z.object({
-    body: z.object({
-        courseId: idSchema("courseId")
-    })
-});

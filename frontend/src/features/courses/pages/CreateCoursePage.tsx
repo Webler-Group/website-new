@@ -72,7 +72,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             lessons: importedLessons
         };
 
-        const result = await sendJsonRequest("/Admin/ImportCourse", "POST", payload);
+        const result = await sendJsonRequest("/CourseEditor/ImportCourse", "POST", payload);
 
         if (result && result.success) {
             navigate("/Courses/Editor");
@@ -154,7 +154,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
 
     const handleExport = async () => {
         setLoading(true);
-        const result = await sendJsonRequest("/Admin/ExportCourse", "POST", { courseId });
+        const result = await sendJsonRequest("/CourseEditor/ExportCourse", "POST", { courseId });
         if (result && result.success && result.data) {
             const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);

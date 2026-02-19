@@ -32,6 +32,8 @@ router.route("/DeleteLessonNode").delete(courseEditorController.deleteLessonNode
 router.route("/EditLessonNode").put(courseEditorController.editLessonNode);
 router.route("/ChangeLessonNodeIndex").post(courseEditorController.changeLessonNodeIndex);
 
+router.route("/ExportCourse").post(courseEditorController.exportCourse);
+router.route("/ImportCourse").post(courseEditorController.importCourse);
 router.route("/ExportCourseLesson").post(courseEditorController.exportCourseLesson);
 
 router.route("/UploadContentImage").post(courseEditorController.lessonImageUploadMiddleware.single("image"), courseEditorController.uploadLessonImage);

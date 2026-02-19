@@ -181,7 +181,7 @@ const CourseEditorPage = () => {
 
     const handleExportCourse = async () => {
         setLoading(true);
-        const result = await sendJsonRequest("/Admin/ExportCourse", "POST", { courseId });
+        const result = await sendJsonRequest("/CourseEditor/ExportCourse", "POST", { courseId });
         if (result && result.success && result.data) {
             const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
             const url = URL.createObjectURL(blob);
