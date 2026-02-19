@@ -69,8 +69,9 @@ const CourseLessonPage = () => {
             return;
         }
         if (unlocked) {
-            searchParams.set("slide", index.toString());
-            setSearchParams(searchParams, { replace: true });
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.set("slide", index.toString());
+            setSearchParams(newSearchParams, { replace: true });
         }
     };
 
@@ -81,8 +82,9 @@ const CourseLessonPage = () => {
         const node = lesson.nodes.find(x => x.id == id);
         if (node) {
             if (node.index < lesson.nodeCount) {
-                searchParams.set("slide", (node.index + 1).toString());
-                setSearchParams(searchParams, { replace: true });
+                const newSearchParams = new URLSearchParams(searchParams);
+                newSearchParams.set("slide", (node.index + 1).toString());
+                setSearchParams(newSearchParams, { replace: true });
             } else {
                 handleExit();
             }
@@ -94,15 +96,15 @@ const CourseLessonPage = () => {
             return;
         }
         const node = lesson.nodes.find(x => x.id == id);
-        if (node && node.type == 1) {
+        if (node && (node.type === 1 || node.type === 5)) {
             setLesson(current => {
                 if (!current) return null;
-                const nodes = current.nodes;
-                for (let i = 0; i < nodes.length; ++i) {
-                    if (nodes[i].index == node.index + 1) {
-                        nodes[i].unlocked = true;
+                const nodes = current.nodes.map(n => {
+                    if (n.index === node.index + 1) {
+                        return { ...n, unlocked: true };
                     }
-                }
+                    return n;
+                });
                 return {
                     ...current,
                     nodes
@@ -119,12 +121,12 @@ const CourseLessonPage = () => {
         if (node && correct) {
             setLesson(current => {
                 if (!current) return null;
-                const nodes = current.nodes;
-                for (let i = 0; i < nodes.length; ++i) {
-                    if (nodes[i].index == node.index + 1) {
-                        nodes[i].unlocked = true;
+                const nodes = current.nodes.map(n => {
+                    if (n.index === node.index + 1) {
+                        return { ...n, unlocked: true };
                     }
-                }
+                    return n;
+                });
                 return {
                     ...current,
                     nodes
@@ -132,6 +134,7 @@ const CourseLessonPage = () => {
             });
         }
     }
+
 
     const openCommentModal = () => {
         if (!lessonId) return;
@@ -187,7 +190,7 @@ const CourseLessonPage = () => {
                                 return (
                                     <Nav.Item key={node.id}>
                                         <Nav.Link
-                                            className={"wb-courses-lesson-arrow-pill " + (node.unlocked ? isActive ? "bg-warning text-dark" : "bg-primary text-light" : "bg-secondary text-light")}
+                                            className={"wb-courses-lesson-arrow-pill " + (isActive ? "bg-warning text-dark" : node.unlocked ? "bg-primary text-light" : "bg-secondary text-light")}
                                             onClick={() => handleSelectNode(node.index, node.unlocked)}
                                             disabled={!node.unlocked}
                                         >

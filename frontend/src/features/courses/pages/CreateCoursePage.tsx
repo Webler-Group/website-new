@@ -72,7 +72,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             lessons: importedLessons
         };
 
-        const result = await sendJsonRequest("/Admin/ImportCourse", "POST", payload);
+        const result = await sendJsonRequest("/CourseEditor/ImportCourse", "POST", payload);
 
         if (result && result.success) {
             navigate("/Courses/Editor");
@@ -151,6 +151,25 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     }
 
     const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
+
+    const handleExport = async () => {
+        setLoading(true);
+        const result = await sendJsonRequest("/CourseEditor/ExportCourse", "POST", { courseId });
+        if (result && result.success && result.data) {
+            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${code || 'course'}-export.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else {
+            setError(result?.error || [{ message: "Export failed" }]);
+        }
+        setLoading(false);
+    }
 
     const handleImportFileChange = (e: ChangeEvent) => {
         const files = (e.target as HTMLInputElement).files;
@@ -300,6 +319,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                             {
                                 courseId ?
                                     <>
+                                        <Button size="sm" variant="primary" className="ms-2" type="button" onClick={handleExport} disabled={loading}>Export to JSON</Button>
                                         <Button size="sm" variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
                                         <Button size="sm" variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
                                     </>
