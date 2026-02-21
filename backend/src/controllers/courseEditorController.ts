@@ -558,9 +558,13 @@ const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
     res.json({
         success: true,
         data: {
-            fileId: fileDoc._id,
+            id: fileDoc._id,
+            name: fileDoc.name,
+            mimetype: fileDoc.mimetype,
+            size: fileDoc.size,
+            updatedAt: fileDoc.updatedAt,
             url: `/media/files/${fileDoc._id}`,
-            name: fileDoc.name
+            previewUrl: fileDoc.preview ? `/media/files/${fileDoc._id}/preview` : null
         }
     });
 });
@@ -585,11 +589,14 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
         success: true,
         items: items.map((x) => ({
             id: x._id,
+            authorId: x.author._id,
+            authorName: x.author.name,
+            authorAvatar: x.author.avatarImage,
             type: x._type,
             name: x.name,
             mimetype: x.mimetype,
             size: x.size,
-            createdAt: x.createdAt,
+            updatedAt: x.updatedAt,
             url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
             previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
         }))
@@ -635,7 +642,7 @@ const createLessonImageFolder = asyncHandler(async (req: IAuthRequest, res: Resp
         data: {
             id: folder._id,
             name: folder.name,
-            createdAt: folder.createdAt
+            updatedAt: folder.updatedAt
         }
     });
 });

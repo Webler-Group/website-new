@@ -1,57 +1,78 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, Button, Form, Modal, Nav, Spinner, Tab } from "react-bootstrap";
-import { useApi } from "../context/apiCommunication";
-import "./ContentImages.css";
+import "./FileExplorer.css";
+import { useAuth } from "../../features/auth/context/authContext";
+import DateUtils from "../../utils/DateUtils";
+import ProfileName from "../../components/ProfileName";
+import { useApi } from "../../context/apiCommunication";
 
-type ContentItem = {
+type FileExplorerItem = {
     id: string;
+    authorId: string;
+    authorName: string;
+    authorAvatar: string | null;
     type: number;
     name: string;
     mimetype?: string;
     size?: number;
-    createdAt?: string | number;
+    updatedAt: string;
     url?: string | null;
     previewUrl?: string | null;
 };
 
-type ListResponse = {
+type FileExplorerListResponse = {
     success: boolean;
-    items: ContentItem[];
+    items: FileExplorerItem[];
 };
 
-type UploadResponse = {
+type FileExplorerUploadResponse = {
     success: boolean;
-    data: { fileId: string; url: string; name: string };
+    data: { id: string; url: string; name: string; mimetype: string; size: number; updatedAt: string; previewUrl: string | null };
 };
 
-interface ContextMenuState {
-    item: ContentItem;
+type FileExplorerCreateFolderResponse = {
+    success: boolean;
+    data: { id: string; name: string; updatedAt: string };
+};
+
+interface FileExplorerContextMenuState {
+    item: FileExplorerItem;
     x: number;
     y: number;
 }
 
-interface ContentImagesProps {
+interface FileExplorerProps {
     section: string;
     show: boolean;
     onHide: () => void;
     onSelect: (url: string, altText: string) => void;
+    title?: string;
 }
 
 const FOLDER_ICON = "/resources/images/folder.svg";
 const IMAGE_ICON = "/resources/images/image.svg";
 
-const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) => {
+// Confirm dialogs sit above the main modal (Bootstrap modal z-index: 1055)
+const CONFIRM_MODAL_Z = 1070;
+
+const formatSize = (bytes?: number): string | null => {
+    if (bytes == null) return null;
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: FileExplorerProps) => {
     const { sendJsonRequest } = useApi();
+    const { userInfo } = useAuth();
 
     const [tabKey, setTabKey] = useState<"library" | "upload">("library");
-
-    // Current directory path as segments
     const [subPath, setSubPath] = useState<string[]>([]);
 
     // Library
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [items, setItems] = useState<ContentItem[]>([]);
+    const [items, setItems] = useState<FileExplorerItem[]>([]);
 
     // Upload
     const [uploadName, setUploadName] = useState("");
@@ -60,23 +81,23 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
     const [uploadErr, setUploadErr] = useState<string | null>(null);
 
     // Context menu
-    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+    const [contextMenu, setContextMenu] = useState<FileExplorerContextMenuState | null>(null);
     const contextMenuRef = useRef<HTMLDivElement>(null);
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Delete dialog
-    const [deleteTarget, setDeleteTarget] = useState<ContentItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<FileExplorerItem | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
     // Rename dialog
-    const [renameTarget, setRenameTarget] = useState<ContentItem | null>(null);
+    const [renameTarget, setRenameTarget] = useState<FileExplorerItem | null>(null);
     const [renameName, setRenameName] = useState("");
     const [renaming, setRenaming] = useState(false);
     const [renameErr, setRenameErr] = useState<string | null>(null);
 
     // Move dialog
-    const [moveTarget, setMoveTarget] = useState<ContentItem | null>(null);
+    const [moveTarget, setMoveTarget] = useState<FileExplorerItem | null>(null);
     const [movePath, setMovePath] = useState("");
     const [moving, setMoving] = useState(false);
     const [moveErr, setMoveErr] = useState<string | null>(null);
@@ -90,15 +111,13 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
     // Derived
     const subPathStr = subPath.join("/");
 
-    // ── Fetch ──────────────────────────────────────────────────────────────
-
     const fetchList = useCallback(async (path: string[]) => {
         setLoading(true);
         setErr(null);
 
         const result = (await sendJsonRequest(`/${section}/GetContentImages`, "POST", {
             subPath: path.length > 0 ? path.join("/") : undefined,
-        })) as ListResponse | null;
+        })) as FileExplorerListResponse | null;
 
         if (result?.success) {
             setItems(result.items ?? []);
@@ -109,7 +128,6 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         setLoading(false);
     }, [section, sendJsonRequest]);
 
-    // Reset & load when modal opens
     useEffect(() => {
         if (!show) return;
         setTabKey("library");
@@ -127,7 +145,6 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         fetchList([]);
     }, [show]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Close context menu on outside click
     useEffect(() => {
         if (!contextMenu) return;
         const handler = (e: MouseEvent) => {
@@ -139,8 +156,6 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         return () => document.removeEventListener("mousedown", handler);
     }, [contextMenu]);
 
-    // ── Navigation ─────────────────────────────────────────────────────────
-
     const navigateInto = (segment: string) => {
         const next = [...subPath, segment];
         setSubPath(next);
@@ -148,14 +163,13 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
     };
 
     const navigateTo = (upToIndex: number) => {
+        if (upToIndex === subPath.length) return;
         const next = subPath.slice(0, upToIndex);
         setSubPath(next);
         fetchList(next);
     };
 
-    // ── Item interaction ───────────────────────────────────────────────────
-
-    const handleItemClick = (item: ContentItem) => {
+    const handleItemClick = (item: FileExplorerItem) => {
         if (contextMenu) { setContextMenu(null); return; }
         if (item.type === 2) {
             navigateInto(item.name);
@@ -165,9 +179,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         }
     };
 
-    // ── Context menu ───────────────────────────────────────────────────────
-
-    const openContextMenu = (e: React.MouseEvent | React.TouchEvent, item: ContentItem) => {
+    const openContextMenu = (e: React.MouseEvent | React.TouchEvent, item: FileExplorerItem) => {
         e.preventDefault();
         e.stopPropagation();
         let x: number, y: number;
@@ -185,7 +197,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         setContextMenu({ item, x, y });
     };
 
-    const handleTouchStart = (e: React.TouchEvent, item: ContentItem) => {
+    const handleTouchStart = (e: React.TouchEvent, item: FileExplorerItem) => {
         longPressTimer.current = setTimeout(() => openContextMenu(e, item), 500);
     };
 
@@ -196,9 +208,8 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         }
     };
 
-    // ── Upload ─────────────────────────────────────────────────────────────
-
     const handleUpload = async () => {
+        if (!userInfo) return;
         setUploadErr(null);
         const name = uploadName.trim();
         if (!uploadFile) { setUploadErr("Select a file"); return; }
@@ -213,23 +224,32 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
             { image: uploadFile, name, ...(subPathStr ? { subPath: subPathStr } : {}) },
             undefined,
             true
-        )) as UploadResponse | null;
+        )) as FileExplorerUploadResponse | null;
 
-        if (result?.success) {
+        if (result?.success && result.data) {
+            const newItem: FileExplorerItem = {
+                id: result.data.id,
+                authorId: userInfo.id,
+                authorName: userInfo.name,
+                authorAvatar: userInfo.avatarImage,
+                type: 1,
+                name: result.data.name,
+                url: result.data.url,
+                previewUrl: result.data.previewUrl ?? null,
+                updatedAt: result.data.updatedAt,
+                mimetype: result.data.mimetype,
+                size: result.data.size,
+            };
+            setItems(prev => [...prev, newItem]);
             setUploadName("");
             setUploadFile(null);
             setTabKey("library");
-            await fetchList(subPath);
-            onSelect(result.data.url, result.data.name);
-            onHide();
         } else {
             setUploadErr("Upload failed");
         }
 
         setUploading(false);
     };
-
-    // ── Delete ─────────────────────────────────────────────────────────────
 
     const handleDelete = async () => {
         if (!deleteTarget) return;
@@ -241,15 +261,14 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         })) as { success: boolean } | null;
 
         if (result?.success) {
+            const deletedId = deleteTarget.id;
             setDeleteTarget(null);
-            await fetchList(subPath);
+            setItems(prev => prev.filter(i => i.id !== deletedId));
         } else {
             setDeleteErr("Delete failed");
         }
         setDeleting(false);
     };
-
-    // ── Rename ─────────────────────────────────────────────────────────────
 
     const handleRename = async () => {
         if (!renameTarget) return;
@@ -266,15 +285,14 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         })) as { success: boolean } | null;
 
         if (result?.success) {
+            const renamedId = renameTarget.id;
             setRenameTarget(null);
-            await fetchList(subPath);
+            setItems(prev => prev.map(i => i.id === renamedId ? { ...i, name } : i));
         } else {
             setRenameErr("Rename failed");
         }
         setRenaming(false);
     };
-
-    // ── Move ───────────────────────────────────────────────────────────────
 
     const handleMove = async () => {
         if (!moveTarget) return;
@@ -287,8 +305,9 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         })) as { success: boolean } | null;
 
         if (result?.success) {
+            const movedId = moveTarget.id;
             setMoveTarget(null);
-            await fetchList(subPath);
+            setItems(prev => prev.filter(i => i.id !== movedId));
         } else {
             setMoveErr("Move failed");
         }
@@ -296,6 +315,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
     };
 
     const handleCreateFolder = async () => {
+        if (!userInfo) return;
         const name = folderName.trim();
         if (!name) { setCreateFolderErr("Enter a folder name"); return; }
 
@@ -305,19 +325,28 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         const result = (await sendJsonRequest(`/${section}/CreateContentImageFolder`, "POST", {
             name,
             ...(subPathStr ? { subPath: subPathStr } : {}),
-        })) as { success: boolean } | null;
+        })) as FileExplorerCreateFolderResponse | null;
 
-        if (result?.success) {
+        if (result?.success && result.data) {
+            const newFolder: FileExplorerItem = {
+                id: result.data.id,
+                authorId: userInfo.id,
+                authorName: userInfo.name,
+                authorAvatar: userInfo.avatarImage,
+                type: 2,
+                name: result.data.name,
+                updatedAt: result.data.updatedAt,
+            };
             setCreateFolderOpen(false);
             setFolderName("");
-            await fetchList(subPath);
+            setItems(prev => [newFolder, ...prev]);
         } else {
             setCreateFolderErr("Failed to create folder");
         }
         setCreatingFolder(false);
     };
 
-    const getThumbnail = (item: ContentItem) => {
+    const getThumbnail = (item: FileExplorerItem) => {
         if (item.previewUrl) return item.previewUrl;
         return item.type === 2 ? FOLDER_ICON : IMAGE_ICON;
     };
@@ -328,13 +357,18 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         setCreateFolderOpen(true);
     };
 
-    // ── Render ─────────────────────────────────────────────────────────────
+    const getTypeLabel = (item: FileExplorerItem): string | null => {
+        if (item.type === 2) return "folder";
+        if (!item.mimetype) return null;
+        return item.mimetype.split("/").pop() ?? item.mimetype;
+    };
 
     return (
         <>
             {/* ── Delete confirm ─────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: 1070 }}
+                style={{ zIndex: CONFIRM_MODAL_Z }}
+                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!deleteTarget}
                 onHide={() => { if (!deleting) setDeleteTarget(null); }}
                 centered
@@ -353,9 +387,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>
-                        Cancel
-                    </Button>
+                    <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
                     <Button variant="danger" onClick={handleDelete} disabled={deleting}>
                         {deleting ? "Deleting…" : "Delete"}
                     </Button>
@@ -364,7 +396,8 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
 
             {/* ── Rename ────────────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: 1070 }}
+                style={{ zIndex: CONFIRM_MODAL_Z }}
+                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!renameTarget}
                 onHide={() => { if (!renaming) setRenameTarget(null); }}
                 centered
@@ -386,9 +419,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                     />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setRenameTarget(null)} disabled={renaming}>
-                        Cancel
-                    </Button>
+                    <Button variant="secondary" onClick={() => setRenameTarget(null)} disabled={renaming}>Cancel</Button>
                     <Button variant="primary" onClick={handleRename} disabled={renaming}>
                         {renaming ? "Saving…" : "Rename"}
                     </Button>
@@ -397,7 +428,8 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
 
             {/* ── Move ──────────────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: 1070 }}
+                style={{ zIndex: CONFIRM_MODAL_Z }}
+                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!moveTarget}
                 onHide={() => { if (!moving) setMoveTarget(null); }}
                 centered
@@ -408,9 +440,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                 </Modal.Header>
                 <Modal.Body>
                     {moveErr && <Alert variant="danger" className="mb-2">{moveErr}</Alert>}
-                    <Form.Label className="text-muted small">
-                        Destination path (leave empty for root)
-                    </Form.Label>
+                    <Form.Label className="text-muted small">Destination path (leave empty for root)</Form.Label>
                     <Form.Control
                         size="sm"
                         value={movePath}
@@ -422,9 +452,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                     />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setMoveTarget(null)} disabled={moving}>
-                        Cancel
-                    </Button>
+                    <Button variant="secondary" onClick={() => setMoveTarget(null)} disabled={moving}>Cancel</Button>
                     <Button variant="primary" onClick={handleMove} disabled={moving}>
                         {moving ? "Moving…" : "Move"}
                     </Button>
@@ -433,7 +461,8 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
 
             {/* ── Create folder ─────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: 1070 }}
+                style={{ zIndex: CONFIRM_MODAL_Z }}
+                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={createFolderOpen}
                 onHide={() => { if (!creatingFolder) setCreateFolderOpen(false); }}
                 centered
@@ -456,9 +485,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                     />
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setCreateFolderOpen(false)} disabled={creatingFolder}>
-                        Cancel
-                    </Button>
+                    <Button variant="secondary" onClick={() => setCreateFolderOpen(false)} disabled={creatingFolder}>Cancel</Button>
                     <Button variant="primary" onClick={handleCreateFolder} disabled={creatingFolder}>
                         {creatingFolder ? "Creating…" : "Create"}
                     </Button>
@@ -471,43 +498,43 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                 onHide={onHide}
                 size="lg"
                 fullscreen="sm-down"
-                contentClassName="wb-modal__container user-images"
+                contentClassName="wb-modal__container wb-file-explorer-modal"
             >
                 <Modal.Header closeButton>
-                    <Modal.Title>Images</Modal.Title>
+                    <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
 
-                <Modal.Body className="wb-user-images__body">
+                <Modal.Body className="wb-file-explorer-body">
                     <Tab.Container activeKey={tabKey} onSelect={(k) => setTabKey((k as any) ?? "library")}>
-                        <Nav variant="tabs">
+                        <Nav variant="tabs" className="flex-shrink-0">
                             <Nav.Item>
-                                <Nav.Link eventKey="library">My images</Nav.Link>
+                                <Nav.Link eventKey="library">Library</Nav.Link>
                             </Nav.Item>
                             <Nav.Item>
                                 <Nav.Link eventKey="upload">Upload</Nav.Link>
                             </Nav.Item>
                         </Nav>
 
-                        <Tab.Content className="pt-2 wb-user-images__tabcontent">
+                        <Tab.Content className="wb-file-explorer-tabcontent">
 
                             {/* Library tab */}
-                            <Tab.Pane eventKey="library" className="wb-user-images__library">
+                            <Tab.Pane eventKey="library" className="wb-file-explorer-library-pane">
 
-                                {/* Toolbar: breadcrumb + actions */}
-                                <div className="ci-toolbar">
-                                    <div className="ci-breadcrumb">
+                                {/* Toolbar: breadcrumb + actions — stays fixed, never scrolls */}
+                                <div className="wb-file-explorer-toolbar">
+                                    <div className="wb-file-explorer-breadcrumb">
                                         <button
-                                            className="ci-crumb"
+                                            className="wb-file-explorer-crumb"
                                             onClick={() => navigateTo(0)}
                                             title="Root"
                                         >
                                             root
                                         </button>
                                         {subPath.map((seg, i) => (
-                                            <span key={i} className="ci-crumb-segment">
-                                                <span className="ci-crumb-sep">/</span>
+                                            <span key={i} className="wb-file-explorer-crumb-segment">
+                                                <span className="wb-file-explorer-crumb-sep">/</span>
                                                 <button
-                                                    className="ci-crumb"
+                                                    className="wb-file-explorer-crumb"
                                                     onClick={() => navigateTo(i + 1)}
                                                 >
                                                     {seg}
@@ -515,22 +542,18 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                                             </span>
                                         ))}
                                     </div>
-                                    <div className="ci-toolbar-actions">
+                                    <div className="wb-file-explorer-toolbar-actions">
                                         {subPath.length > 0 && (
                                             <Button
                                                 size="sm"
                                                 variant="outline-secondary"
-                                                className="ci-back-btn"
+                                                className="wb-file-explorer-back-btn"
                                                 onClick={() => navigateTo(subPath.length - 1)}
                                             >
                                                 ← Back
                                             </Button>
                                         )}
-                                        <Button
-                                            size="sm"
-                                            variant="outline-primary"
-                                            onClick={openNewFolder}
-                                        >
+                                        <Button size="sm" variant="outline-primary" onClick={openNewFolder}>
                                             + New Folder
                                         </Button>
                                     </div>
@@ -538,46 +561,75 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
 
                                 {err && <Alert variant="danger">{err}</Alert>}
 
-                                {loading ? (
-                                    <div className="d-flex justify-content-center py-5">
-                                        <Spinner animation="border" />
-                                    </div>
-                                ) : items.length === 0 ? (
-                                    <div className="text-muted text-center py-4">
-                                        {subPath.length > 0 ? "Empty folder." : "No images yet."}
-                                    </div>
-                                ) : (
-                                    <div className="ci-grid">
-                                        {items.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className={`ci-item ci-item--${item.type}`}
-                                                onClick={() => handleItemClick(item)}
-                                                onContextMenu={(e) => openContextMenu(e, item)}
-                                                onTouchStart={(e) => handleTouchStart(e, item)}
-                                                onTouchEnd={cancelLongPress}
-                                                onTouchMove={cancelLongPress}
-                                                title={item.name}
-                                            >
-                                                <div className="ci-thumb-wrapper">
-                                                    <img
-                                                        src={getThumbnail(item)}
-                                                        alt={item.name}
-                                                        className={`ci-thumb ${item.previewUrl
-                                                            ? "ci-thumb--preview"
-                                                            : "ci-thumb--icon"}`}
-                                                        draggable={false}
-                                                    />
-                                                </div>
-                                                <div className="ci-name">{item.name}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                {/* Scrollable list area */}
+                                <div className="wb-file-explorer-scroll">
+                                    {loading ? (
+                                        <div className="d-flex justify-content-center py-5">
+                                            <Spinner animation="border" />
+                                        </div>
+                                    ) : items.length === 0 ? (
+                                        <div className="text-muted text-center py-4">
+                                            {subPath.length > 0 ? "Empty folder." : "No images yet."}
+                                        </div>
+                                    ) : (
+                                        <div className="wb-file-explorer-list">
+                                            {items.map((item) => {
+                                                const typeLabel = getTypeLabel(item);
+                                                const sizeLabel = item.type !== 2 ? formatSize(item.size) : null;
+                                                return (
+                                                    <div
+                                                        key={item.id}
+                                                        className={`wb-file-explorer-item wb-file-explorer-item--${item.type === 2 ? "folder" : "file"}`}
+                                                        onClick={() => handleItemClick(item)}
+                                                        onContextMenu={(e) => openContextMenu(e, item)}
+                                                        onTouchStart={(e) => handleTouchStart(e, item)}
+                                                        onTouchEnd={cancelLongPress}
+                                                        onTouchMove={cancelLongPress}
+                                                        title={item.name}
+                                                    >
+                                                        <div className="wb-file-explorer-thumb-wrapper">
+                                                            <img
+                                                                src={getThumbnail(item)}
+                                                                alt={item.name}
+                                                                className={`wb-file-explorer-thumb ${item.previewUrl
+                                                                    ? "wb-file-explorer-thumb--preview"
+                                                                    : "wb-file-explorer-thumb--icon"}`}
+                                                                draggable={false}
+                                                            />
+                                                        </div>
+                                                        <div className="wb-file-explorer-item-info">
+                                                            <div className="wb-file-explorer-row1">
+                                                                <div className="wb-file-explorer-name">{item.name}</div>
+                                                                <span className="wb-file-explorer-date">
+                                                                    {DateUtils.format(new Date(item.updatedAt))}
+                                                                </span>
+                                                            </div>
+                                                            <div className="wb-file-explorer-row2">
+                                                                <div className="wb-file-explorer-tags">
+                                                                    {typeLabel && (
+                                                                        <span className="wb-file-explorer-tag">{typeLabel}</span>
+                                                                    )}
+                                                                    {sizeLabel && (
+                                                                        <span className="wb-file-explorer-tag">{sizeLabel}</span>
+                                                                    )}
+                                                                </div>
+                                                                <ProfileName
+                                                                    userId={item.authorId}
+                                                                    userName={item.authorName}
+                                                                    className="wb-file-explorer-author"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
                             </Tab.Pane>
 
                             {/* Upload tab */}
-                            <Tab.Pane eventKey="upload">
+                            <Tab.Pane eventKey="upload" className="wb-file-explorer-upload-pane">
                                 {uploadErr && <Alert variant="danger">{uploadErr}</Alert>}
 
                                 <Form>
@@ -616,7 +668,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                                             Close
                                         </Button>
                                         <Button size="sm" variant="primary" onClick={handleUpload} disabled={uploading}>
-                                            {uploading ? "Uploading…" : "Upload & Insert"}
+                                            {uploading ? "Uploading…" : "Upload"}
                                         </Button>
                                     </div>
                                 </Form>
@@ -631,11 +683,11 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
             {contextMenu && (
                 <div
                     ref={contextMenuRef}
-                    className="ci-context-menu"
+                    className="wb-file-explorer-context-menu"
                     style={{ top: contextMenu.y, left: contextMenu.x }}
                 >
                     <button
-                        className="ci-ctx-item"
+                        className="wb-file-explorer-ctx-item"
                         onClick={() => {
                             setMoveTarget(contextMenu.item);
                             setMovePath("");
@@ -646,7 +698,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                         Move
                     </button>
                     <button
-                        className="ci-ctx-item"
+                        className="wb-file-explorer-ctx-item"
                         onClick={() => {
                             setRenameTarget(contextMenu.item);
                             setRenameName(contextMenu.item.name);
@@ -657,7 +709,7 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                         Rename
                     </button>
                     <button
-                        className="ci-ctx-item ci-ctx-item--danger"
+                        className="wb-file-explorer-ctx-item wb-file-explorer-ctx-item--danger"
                         onClick={() => {
                             setDeleteTarget(contextMenu.item);
                             setDeleteErr(null);
@@ -672,4 +724,4 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
     );
 };
 
-export default ContentImages;
+export default FileExplorer;

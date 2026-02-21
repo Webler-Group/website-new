@@ -692,7 +692,6 @@ const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
             name: fileDoc.name,
             mimetype: fileDoc.mimetype,
             size: fileDoc.size,
-            createdAt: fileDoc.createdAt,
             updatedAt: fileDoc.updatedAt,
             url: `/media/files/${fileDoc._id}`,
             previewUrl: fileDoc.preview ? `/media/files/${fileDoc._id}/preview` : null
@@ -728,11 +727,14 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
         success: true,
         items: items.map((x) => ({
             id: x._id,
+            authorId: x.author._id,
+            authorName: x.author.name,
+            authorAvatar: x.author.avatarImage,
             type: x._type,
             name: x.name,
             mimetype: x.mimetype,
             size: x.size,
-            createdAt: x.createdAt,
+            updatedAt: x.updatedAt,
             url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
             previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
         }))
@@ -784,7 +786,7 @@ const createPostImageFolder = asyncHandler(async (req: IAuthRequest, res: Respon
         data: {
             id: folder._id,
             name: folder.name,
-            createdAt: folder.createdAt
+            updatedAt: folder.updatedAt
         }
     });
 });

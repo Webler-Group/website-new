@@ -2,10 +2,11 @@ import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import sharp from "sharp";
-import File from "../models/File";
+import File, { IFileDocument } from "../models/File";
 import { config } from "../confg";
 import FileTypeEnum from "../data/FileTypeEnum";
 import { escapeRegex } from "../utils/regexUtils";
+import { IUserDocument } from "../models/User";
 
 type ImageFit = "cover" | "inside";
 
@@ -56,9 +57,9 @@ export const deleteBlobIfUnreferenced = async (contenthash: string) => {
     await unlinkIfExists(blobPath);
 };
 
-const deleteSingleFile = async (doc: any) => {
+const deleteSingleFile = async (doc: IFileDocument) => {
     const mainHash = doc.contenthash;
-    const previewHash = doc.preview?.contenthash;
+    const previewHash = doc.preview.contenthash;
 
     await File.deleteOne({ _id: doc._id });
 
@@ -78,7 +79,7 @@ export const deleteEntry = async (virtualPath: string, name: string) => {
     const folderFull = virtualPath ? `${virtualPath}/${name}` : name;
     const escaped = escapeRegex(folderFull);
 
-    const children = await File.find({ path: { $regex: `^${escaped}` } });
+    const children = await File.find({ path: { $regex: `^${escaped}(/|$)` } });
 
     for (const child of children) {
         if (child._type === FileTypeEnum.FILE) {
@@ -206,5 +207,5 @@ export const uploadImageToBlob = async ({
 };
 
 export const listDirectory = async (virtualPath: string) => {
-    return File.find({ path: virtualPath }).sort({ type: "desc", updatedAt: "desc" });
+    return File.find({ path: virtualPath }).sort({ type: "desc", updatedAt: "desc" }).populate<{ author: IUserDocument }>("author", "name avatarImage level roles").lean();
 };
