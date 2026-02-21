@@ -26,7 +26,6 @@ export const voteSchema = z.number().int("Vote must be an integer").min(0, "Vote
 export const isoDateTimeSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/, "Invalid ISO 8601 datetime format");
 export const courseCodeSchema = z.string().min(1, "Course code is required").max(64, "Course code must not exceed 64 characters").regex(/^([a-z0-9]+-)*[a-z0-9]+$/i, "Course code can only contain words/numbers separated by \"-\"");
 export const courseDescriptionSchema = z.string().max(1000, "Description must not exceed 1000 characters");
-export const fileNameSchema = z.string().min(1, "Filename is required").max(80, "Filename is too long");
 export const multerFileSchema = z.object({
     fieldname: z.string(),
     originalname: z.string(),

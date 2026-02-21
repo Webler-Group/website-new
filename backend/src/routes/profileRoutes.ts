@@ -54,5 +54,9 @@ router.route("/GetContentImages")
     .post(profileController.getPostImageList);
 router.route("/DeleteContentImage")
     .delete(profileController.deletePostImage);
+router.route("/CreateContentImageFolder")
+    .post(profileController.createPostImageFolder);
+router.route("/MoveContentImage")
+    .post(profileController.movePostImage);
 
 export default router;

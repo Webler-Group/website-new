@@ -1,154 +1,227 @@
-import { useEffect, useMemo, useState } from "react";
-import { Alert, Button, Card, Col, Form, Modal, Nav, Pagination, Row, Spinner, Tab } from "react-bootstrap";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Alert, Button, Form, Modal, Nav, Spinner, Tab } from "react-bootstrap";
 import { useApi } from "../context/apiCommunication";
-import { useAuth } from "../features/auth/context/authContext";
 import "./ContentImages.css";
 
-type ContentImageItem = {
+type ContentItem = {
     id: string;
+    type: number;
     name: string;
-    mimetype: string;
-    size: number;
-    createdAt: string | number;
-    url: string;
+    mimetype?: string;
+    size?: number;
+    createdAt?: string | number;
+    url?: string | null;
+    previewUrl?: string | null;
 };
 
 type ListResponse = {
     success: boolean;
-    data: {
-        page: number;
-        count: number;
-        total: number;
-        items: ContentImageItem[];
-    };
+    items: ContentItem[];
 };
 
 type UploadResponse = {
     success: boolean;
-    data: {
-        fileId: string;
-        url: string;
-        name: string;
-    };
+    data: { fileId: string; url: string; name: string };
 };
+
+interface ContextMenuState {
+    item: ContentItem;
+    x: number;
+    y: number;
+}
 
 interface ContentImagesProps {
     section: string;
     show: boolean;
     onHide: () => void;
-    onSelect: (markdownImageUrl: string, altText: string) => void;
+    onSelect: (url: string, altText: string) => void;
 }
+
+const FOLDER_ICON = "/resources/images/folder.svg";
+const IMAGE_ICON = "/resources/images/image.svg";
 
 const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) => {
     const { sendJsonRequest } = useApi();
-    const { userInfo } = useAuth();
 
     const [tabKey, setTabKey] = useState<"library" | "upload">("library");
 
-    const [page, setPage] = useState(1);
-    const count = 10;
+    // Current directory path as segments
+    const [subPath, setSubPath] = useState<string[]>([]);
 
+    // Library
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [items, setItems] = useState<ContentImageItem[]>([]);
-    const [total, setTotal] = useState(0);
+    const [items, setItems] = useState<ContentItem[]>([]);
 
+    // Upload
     const [uploadName, setUploadName] = useState("");
     const [uploadFile, setUploadFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
     const [uploadErr, setUploadErr] = useState<string | null>(null);
 
-    const [confirmDelete, setConfirmDelete] = useState<{ id: string; name: string } | null>(null);
-    const [deletingId, setDeletingId] = useState<string | null>(null);
+    // Context menu
+    const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+    const contextMenuRef = useRef<HTMLDivElement>(null);
+    const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    // Delete dialog
+    const [deleteTarget, setDeleteTarget] = useState<ContentItem | null>(null);
+    const [deleting, setDeleting] = useState(false);
     const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
-    const totalPages = Math.max(1, Math.ceil(total / count));
+    // Rename dialog
+    const [renameTarget, setRenameTarget] = useState<ContentItem | null>(null);
+    const [renameName, setRenameName] = useState("");
+    const [renaming, setRenaming] = useState(false);
+    const [renameErr, setRenameErr] = useState<string | null>(null);
 
-    const pages = useMemo(() => {
-        const arr: number[] = [];
-        const start = Math.max(1, page - 2);
-        const end = Math.min(totalPages, page + 2);
-        for (let i = start; i <= end; i++) arr.push(i);
-        return arr;
-    }, [page, totalPages]);
+    // Move dialog
+    const [moveTarget, setMoveTarget] = useState<ContentItem | null>(null);
+    const [movePath, setMovePath] = useState("");
+    const [moving, setMoving] = useState(false);
+    const [moveErr, setMoveErr] = useState<string | null>(null);
 
-    const fetchList = async (p = page) => {
-        if (!userInfo?.id) return;
+    // Create folder dialog
+    const [createFolderOpen, setCreateFolderOpen] = useState(false);
+    const [folderName, setFolderName] = useState("");
+    const [creatingFolder, setCreatingFolder] = useState(false);
+    const [createFolderErr, setCreateFolderErr] = useState<string | null>(null);
+
+    // Derived
+    const subPathStr = subPath.join("/");
+
+    // ── Fetch ──────────────────────────────────────────────────────────────
+
+    const fetchList = useCallback(async (path: string[]) => {
         setLoading(true);
         setErr(null);
 
         const result = (await sendJsonRequest(`/${section}/GetContentImages`, "POST", {
-            page: p,
-            count,
-            userId: userInfo.id,
+            subPath: path.length > 0 ? path.join("/") : undefined,
         })) as ListResponse | null;
 
-        if (result && result.success) {
-            setItems(result.data.items ?? []);
-            setTotal(result.data.total ?? 0);
-            setPage(result.data.page ?? p);
+        if (result?.success) {
+            setItems(result.items ?? []);
         } else {
-            setErr("Failed to load images");
+            setErr("Failed to load contents");
         }
 
         setLoading(false);
-    };
+    }, [section, sendJsonRequest]);
 
+    // Reset & load when modal opens
     useEffect(() => {
         if (!show) return;
         setTabKey("library");
-        setPage(1);
+        setSubPath([]);
         setItems([]);
-        setTotal(0);
+        setErr(null);
         setUploadName("");
         setUploadFile(null);
         setUploadErr(null);
-        setDeleteErr(null);
-        setConfirmDelete(null);
-        setDeletingId(null);
-        fetchList(1);
-    }, [show]);
+        setContextMenu(null);
+        setDeleteTarget(null);
+        setRenameTarget(null);
+        setMoveTarget(null);
+        setCreateFolderOpen(false);
+        fetchList([]);
+    }, [show]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    const handleSelect = (url: string, altText: string) => {
-        onSelect(url, altText || "image");
-        onHide();
+    // Close context menu on outside click
+    useEffect(() => {
+        if (!contextMenu) return;
+        const handler = (e: MouseEvent) => {
+            if (contextMenuRef.current && !contextMenuRef.current.contains(e.target as Node)) {
+                setContextMenu(null);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [contextMenu]);
+
+    // ── Navigation ─────────────────────────────────────────────────────────
+
+    const navigateInto = (segment: string) => {
+        const next = [...subPath, segment];
+        setSubPath(next);
+        fetchList(next);
     };
 
+    const navigateTo = (upToIndex: number) => {
+        const next = subPath.slice(0, upToIndex);
+        setSubPath(next);
+        fetchList(next);
+    };
+
+    // ── Item interaction ───────────────────────────────────────────────────
+
+    const handleItemClick = (item: ContentItem) => {
+        if (contextMenu) { setContextMenu(null); return; }
+        if (item.type === 2) {
+            navigateInto(item.name);
+        } else if (item.url) {
+            onSelect(item.url, item.name);
+            onHide();
+        }
+    };
+
+    // ── Context menu ───────────────────────────────────────────────────────
+
+    const openContextMenu = (e: React.MouseEvent | React.TouchEvent, item: ContentItem) => {
+        e.preventDefault();
+        e.stopPropagation();
+        let x: number, y: number;
+        if ("touches" in e && e.touches.length > 0) {
+            x = e.touches[0].clientX;
+            y = e.touches[0].clientY;
+        } else if ("clientX" in e) {
+            x = e.clientX;
+            y = e.clientY;
+        } else {
+            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+            x = rect.left;
+            y = rect.bottom;
+        }
+        setContextMenu({ item, x, y });
+    };
+
+    const handleTouchStart = (e: React.TouchEvent, item: ContentItem) => {
+        longPressTimer.current = setTimeout(() => openContextMenu(e, item), 500);
+    };
+
+    const cancelLongPress = () => {
+        if (longPressTimer.current) {
+            clearTimeout(longPressTimer.current);
+            longPressTimer.current = null;
+        }
+    };
+
+    // ── Upload ─────────────────────────────────────────────────────────────
+
     const handleUpload = async () => {
-        if (!userInfo?.id) return;
-
         setUploadErr(null);
-
         const name = uploadName.trim();
-        if (!uploadFile) {
-            setUploadErr("Select a file");
-            return;
-        }
-        if (!name) {
-            setUploadErr("Enter a name");
-            return;
-        }
-        if (name.length > 80) {
-            setUploadErr("Name is too long");
-            return;
-        }
+        if (!uploadFile) { setUploadErr("Select a file"); return; }
+        if (!name) { setUploadErr("Enter a name"); return; }
+        if (name.length > 80) { setUploadErr("Name is too long"); return; }
 
         setUploading(true);
 
         const result = (await sendJsonRequest(
             `/${section}/UploadContentImage`,
             "POST",
-            { image: uploadFile, name },
+            { image: uploadFile, name, ...(subPathStr ? { subPath: subPathStr } : {}) },
             undefined,
             true
         )) as UploadResponse | null;
 
-        if (result && result.success) {
+        if (result?.success) {
             setUploadName("");
             setUploadFile(null);
             setTabKey("library");
-            await fetchList(1);
-            handleSelect(result.data.url, result.data.name);
+            await fetchList(subPath);
+            onSelect(result.data.url, result.data.name);
+            onHide();
         } else {
             setUploadErr("Upload failed");
         }
@@ -156,74 +229,248 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
         setUploading(false);
     };
 
-    const openDeleteConfirm = (id: string, name: string) => {
-        setDeleteErr(null);
-        setConfirmDelete({ id, name });
-    };
-
-    const closeDeleteModal = () => {
-        if (deletingId) return;
-        setConfirmDelete(null);
-        setDeleteErr(null);
-    };
+    // ── Delete ─────────────────────────────────────────────────────────────
 
     const handleDelete = async () => {
-        if (!confirmDelete) return;
-
+        if (!deleteTarget) return;
+        setDeleting(true);
         setDeleteErr(null);
-        setDeletingId(confirmDelete.id);
 
         const result = (await sendJsonRequest(`/${section}/DeleteContentImage`, "DELETE", {
-            fileId: confirmDelete.id,
+            fileId: deleteTarget.id,
         })) as { success: boolean } | null;
 
-        if (result && result.success) {
-            setConfirmDelete(null);
-            setDeletingId(null);
-            await fetchList(items.length === 1 && page > 1 ? page - 1 : page);
+        if (result?.success) {
+            setDeleteTarget(null);
+            await fetchList(subPath);
         } else {
             setDeleteErr("Delete failed");
-            setDeletingId(null);
         }
+        setDeleting(false);
     };
+
+    // ── Rename ─────────────────────────────────────────────────────────────
+
+    const handleRename = async () => {
+        if (!renameTarget) return;
+        const name = renameName.trim();
+        if (!name) { setRenameErr("Enter a name"); return; }
+
+        setRenaming(true);
+        setRenameErr(null);
+
+        const result = (await sendJsonRequest(`/${section}/MoveContentImage`, "POST", {
+            fileId: renameTarget.id,
+            newName: name,
+            ...(subPathStr ? { newSubPath: subPathStr } : {}),
+        })) as { success: boolean } | null;
+
+        if (result?.success) {
+            setRenameTarget(null);
+            await fetchList(subPath);
+        } else {
+            setRenameErr("Rename failed");
+        }
+        setRenaming(false);
+    };
+
+    // ── Move ───────────────────────────────────────────────────────────────
+
+    const handleMove = async () => {
+        if (!moveTarget) return;
+        setMoving(true);
+        setMoveErr(null);
+
+        const result = (await sendJsonRequest(`/${section}/MoveContentImage`, "POST", {
+            fileId: moveTarget.id,
+            newSubPath: movePath.trim() || undefined,
+        })) as { success: boolean } | null;
+
+        if (result?.success) {
+            setMoveTarget(null);
+            await fetchList(subPath);
+        } else {
+            setMoveErr("Move failed");
+        }
+        setMoving(false);
+    };
+
+    const handleCreateFolder = async () => {
+        const name = folderName.trim();
+        if (!name) { setCreateFolderErr("Enter a folder name"); return; }
+
+        setCreatingFolder(true);
+        setCreateFolderErr(null);
+
+        const result = (await sendJsonRequest(`/${section}/CreateContentImageFolder`, "POST", {
+            name,
+            ...(subPathStr ? { subPath: subPathStr } : {}),
+        })) as { success: boolean } | null;
+
+        if (result?.success) {
+            setCreateFolderOpen(false);
+            setFolderName("");
+            await fetchList(subPath);
+        } else {
+            setCreateFolderErr("Failed to create folder");
+        }
+        setCreatingFolder(false);
+    };
+
+    const getThumbnail = (item: ContentItem) => {
+        if (item.previewUrl) return item.previewUrl;
+        return item.type === 2 ? FOLDER_ICON : IMAGE_ICON;
+    };
+
+    const openNewFolder = () => {
+        setFolderName("");
+        setCreateFolderErr(null);
+        setCreateFolderOpen(true);
+    };
+
+    // ── Render ─────────────────────────────────────────────────────────────
 
     return (
         <>
+            {/* ── Delete confirm ─────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: 1060 }}
-                backdropClassName="wb-user-images-delete-modal__backdrop"
-                size="sm"
-                show={!!confirmDelete}
-                onHide={closeDeleteModal}
+                style={{ zIndex: 1070 }}
+                show={!!deleteTarget}
+                onHide={() => { if (!deleting) setDeleteTarget(null); }}
                 centered
+                size="sm"
             >
                 <Modal.Header closeButton>
-                    <Modal.Title>Are you sure?</Modal.Title>
+                    <Modal.Title>Delete?</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {deleteErr && <Alert variant="danger" className="mb-2">{deleteErr}</Alert>}
-                    {confirmDelete ? (
+                    {deleteTarget && (
                         <div>
-                            Image <span className="fw-semibold">{confirmDelete.name}</span> will be permanently deleted.
+                            Permanently delete{" "}
+                            <span className="fw-semibold">{deleteTarget.name}</span>?
                         </div>
-                    ) : null}
+                    )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={closeDeleteModal} disabled={!!deletingId}>
+                    <Button variant="secondary" onClick={() => setDeleteTarget(null)} disabled={deleting}>
                         Cancel
                     </Button>
-                    <Button variant="danger" onClick={handleDelete} disabled={!!deletingId}>
-                        {deletingId ? "Deleting..." : "Delete"}
+                    <Button variant="danger" onClick={handleDelete} disabled={deleting}>
+                        {deleting ? "Deleting…" : "Delete"}
                     </Button>
                 </Modal.Footer>
             </Modal>
 
+            {/* ── Rename ────────────────────────────────────────────────── */}
+            <Modal
+                style={{ zIndex: 1070 }}
+                show={!!renameTarget}
+                onHide={() => { if (!renaming) setRenameTarget(null); }}
+                centered
+                size="sm"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Rename</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {renameErr && <Alert variant="danger" className="mb-2">{renameErr}</Alert>}
+                    <Form.Control
+                        size="sm"
+                        value={renameName}
+                        onChange={e => setRenameName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleRename()}
+                        disabled={renaming}
+                        maxLength={80}
+                        autoFocus
+                    />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setRenameTarget(null)} disabled={renaming}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleRename} disabled={renaming}>
+                        {renaming ? "Saving…" : "Rename"}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* ── Move ──────────────────────────────────────────────────── */}
+            <Modal
+                style={{ zIndex: 1070 }}
+                show={!!moveTarget}
+                onHide={() => { if (!moving) setMoveTarget(null); }}
+                centered
+                size="sm"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Move to folder</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {moveErr && <Alert variant="danger" className="mb-2">{moveErr}</Alert>}
+                    <Form.Label className="text-muted small">
+                        Destination path (leave empty for root)
+                    </Form.Label>
+                    <Form.Control
+                        size="sm"
+                        value={movePath}
+                        onChange={e => setMovePath(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleMove()}
+                        disabled={moving}
+                        placeholder="e.g. backgrounds/dark"
+                        autoFocus
+                    />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setMoveTarget(null)} disabled={moving}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleMove} disabled={moving}>
+                        {moving ? "Moving…" : "Move"}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* ── Create folder ─────────────────────────────────────────── */}
+            <Modal
+                style={{ zIndex: 1070 }}
+                show={createFolderOpen}
+                onHide={() => { if (!creatingFolder) setCreateFolderOpen(false); }}
+                centered
+                size="sm"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>New Folder</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {createFolderErr && <Alert variant="danger" className="mb-2">{createFolderErr}</Alert>}
+                    <Form.Control
+                        size="sm"
+                        value={folderName}
+                        onChange={e => setFolderName(e.target.value)}
+                        onKeyDown={e => e.key === "Enter" && handleCreateFolder()}
+                        disabled={creatingFolder}
+                        maxLength={80}
+                        autoFocus
+                        placeholder="Folder name"
+                    />
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setCreateFolderOpen(false)} disabled={creatingFolder}>
+                        Cancel
+                    </Button>
+                    <Button variant="primary" onClick={handleCreateFolder} disabled={creatingFolder}>
+                        {creatingFolder ? "Creating…" : "Create"}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* ── Main modal ────────────────────────────────────────────── */}
             <Modal
                 show={show}
                 onHide={onHide}
                 size="lg"
                 fullscreen="sm-down"
-                className="d-flex justify-content-center align-items-center"
                 contentClassName="wb-modal__container user-images"
             >
                 <Modal.Header closeButton>
@@ -241,77 +488,95 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                             </Nav.Item>
                         </Nav>
 
-                        <Tab.Content className="pt-3 wb-user-images__tabcontent">
+                        <Tab.Content className="pt-2 wb-user-images__tabcontent">
+
+                            {/* Library tab */}
                             <Tab.Pane eventKey="library" className="wb-user-images__library">
+
+                                {/* Toolbar: breadcrumb + actions */}
+                                <div className="ci-toolbar">
+                                    <div className="ci-breadcrumb">
+                                        <button
+                                            className="ci-crumb"
+                                            onClick={() => navigateTo(0)}
+                                            title="Root"
+                                        >
+                                            root
+                                        </button>
+                                        {subPath.map((seg, i) => (
+                                            <span key={i} className="ci-crumb-segment">
+                                                <span className="ci-crumb-sep">/</span>
+                                                <button
+                                                    className="ci-crumb"
+                                                    onClick={() => navigateTo(i + 1)}
+                                                >
+                                                    {seg}
+                                                </button>
+                                            </span>
+                                        ))}
+                                    </div>
+                                    <div className="ci-toolbar-actions">
+                                        {subPath.length > 0 && (
+                                            <Button
+                                                size="sm"
+                                                variant="outline-secondary"
+                                                className="ci-back-btn"
+                                                onClick={() => navigateTo(subPath.length - 1)}
+                                            >
+                                                ← Back
+                                            </Button>
+                                        )}
+                                        <Button
+                                            size="sm"
+                                            variant="outline-primary"
+                                            onClick={openNewFolder}
+                                        >
+                                            + New Folder
+                                        </Button>
+                                    </div>
+                                </div>
+
                                 {err && <Alert variant="danger">{err}</Alert>}
 
                                 {loading ? (
-                                    <div className="d-flex justify-content-center py-4">
+                                    <div className="d-flex justify-content-center py-5">
                                         <Spinner animation="border" />
                                     </div>
                                 ) : items.length === 0 ? (
-                                    <div className="text-muted text-center py-4">No images yet.</div>
+                                    <div className="text-muted text-center py-4">
+                                        {subPath.length > 0 ? "Empty folder." : "No images yet."}
+                                    </div>
                                 ) : (
-                                    <>
-                                        <Row className="g-3">
-                                            {items.map((it) => (
-                                                <Col xs={6} md={4} key={it.id}>
-                                                    <Card className="h-100">
-                                                        <div style={{ aspectRatio: "1 / 1", overflow: "hidden" }}>
-                                                            <Card.Img
-                                                                src={it.url}
-                                                                alt={it.name}
-                                                                style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                                            />
-                                                        </div>
-                                                        <Card.Body className="py-2">
-                                                            <div className="fw-semibold text-truncate" title={it.name}>
-                                                                {it.name}
-                                                            </div>
-                                                            <div className="d-flex gap-2 mt-2">
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="primary"
-                                                                    className="w-100"
-                                                                    onClick={() => handleSelect(it.url, it.name)}
-                                                                    disabled={deletingId === it.id}
-                                                                >
-                                                                    Insert
-                                                                </Button>
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="outline-danger"
-                                                                    onClick={() => openDeleteConfirm(it.id, it.name)}
-                                                                    disabled={deletingId === it.id}
-                                                                >
-                                                                    Delete
-                                                                </Button>
-                                                            </div>
-                                                        </Card.Body>
-                                                    </Card>
-                                                </Col>
-                                            ))}
-                                        </Row>
-
-                                        {totalPages > 1 && (
-                                            <div className="d-flex justify-content-center mt-3">
-                                                <Pagination className="mb-0">
-                                                    <Pagination.First disabled={page === 1} onClick={() => fetchList(1)} />
-                                                    <Pagination.Prev disabled={page === 1} onClick={() => fetchList(page - 1)} />
-                                                    {pages.map((p) => (
-                                                        <Pagination.Item key={p} active={p === page} onClick={() => fetchList(p)}>
-                                                            {p}
-                                                        </Pagination.Item>
-                                                    ))}
-                                                    <Pagination.Next disabled={page === totalPages} onClick={() => fetchList(page + 1)} />
-                                                    <Pagination.Last disabled={page === totalPages} onClick={() => fetchList(totalPages)} />
-                                                </Pagination>
+                                    <div className="ci-grid">
+                                        {items.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={`ci-item ci-item--${item.type}`}
+                                                onClick={() => handleItemClick(item)}
+                                                onContextMenu={(e) => openContextMenu(e, item)}
+                                                onTouchStart={(e) => handleTouchStart(e, item)}
+                                                onTouchEnd={cancelLongPress}
+                                                onTouchMove={cancelLongPress}
+                                                title={item.name}
+                                            >
+                                                <div className="ci-thumb-wrapper">
+                                                    <img
+                                                        src={getThumbnail(item)}
+                                                        alt={item.name}
+                                                        className={`ci-thumb ${item.previewUrl
+                                                            ? "ci-thumb--preview"
+                                                            : "ci-thumb--icon"}`}
+                                                        draggable={false}
+                                                    />
+                                                </div>
+                                                <div className="ci-name">{item.name}</div>
                                             </div>
-                                        )}
-                                    </>
+                                        ))}
+                                    </div>
                                 )}
                             </Tab.Pane>
 
+                            {/* Upload tab */}
                             <Tab.Pane eventKey="upload">
                                 {uploadErr && <Alert variant="danger">{uploadErr}</Alert>}
 
@@ -340,20 +605,69 @@ const ContentImages = ({ section, show, onHide, onSelect }: ContentImagesProps) 
                                         />
                                     </Form.Group>
 
+                                    {subPathStr && (
+                                        <div className="text-muted small mb-3">
+                                            Uploading to: <code>{subPathStr}</code>
+                                        </div>
+                                    )}
+
                                     <div className="d-flex justify-content-end gap-2">
                                         <Button size="sm" variant="secondary" onClick={onHide} disabled={uploading}>
                                             Close
                                         </Button>
                                         <Button size="sm" variant="primary" onClick={handleUpload} disabled={uploading}>
-                                            {uploading ? "Uploading..." : "Upload & Insert"}
+                                            {uploading ? "Uploading…" : "Upload & Insert"}
                                         </Button>
                                     </div>
                                 </Form>
                             </Tab.Pane>
+
                         </Tab.Content>
                     </Tab.Container>
                 </Modal.Body>
             </Modal>
+
+            {/* ── Floating context menu ─────────────────────────────────── */}
+            {contextMenu && (
+                <div
+                    ref={contextMenuRef}
+                    className="ci-context-menu"
+                    style={{ top: contextMenu.y, left: contextMenu.x }}
+                >
+                    <button
+                        className="ci-ctx-item"
+                        onClick={() => {
+                            setMoveTarget(contextMenu.item);
+                            setMovePath("");
+                            setMoveErr(null);
+                            setContextMenu(null);
+                        }}
+                    >
+                        Move
+                    </button>
+                    <button
+                        className="ci-ctx-item"
+                        onClick={() => {
+                            setRenameTarget(contextMenu.item);
+                            setRenameName(contextMenu.item.name);
+                            setRenameErr(null);
+                            setContextMenu(null);
+                        }}
+                    >
+                        Rename
+                    </button>
+                    <button
+                        className="ci-ctx-item ci-ctx-item--danger"
+                        onClick={() => {
+                            setDeleteTarget(contextMenu.item);
+                            setDeleteErr(null);
+                            setContextMenu(null);
+                        }}
+                    >
+                        Delete
+                    </button>
+                </div>
+            )}
         </>
     );
 };

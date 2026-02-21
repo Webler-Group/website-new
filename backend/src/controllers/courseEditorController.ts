@@ -29,17 +29,16 @@ import {
     changeLessonIndexSchema,
     changeLessonNodeIndexSchema,
     exportCourseLessonSchema,
-    uploadLessonImageSchema,
-    getLessonImageListSchema,
-    deleteLessonImageSchema,
     importCourseSchema,
     exportCourseSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import { exportCourseLessonToJson } from "../helpers/courseHelper";
-import { deleteFile, uploadImageToBlob } from "../helpers/fileHelper";
+import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
+import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
+import FileTypeEnum from "../data/FileTypeEnum";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -536,21 +535,24 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
 });
 
 const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body, file } = parseWithZod(uploadLessonImageSchema, req);
-    const { name } = body;
+    const { body, file } = parseWithZod(uploadImageSchema, req);
+    const { name, subPath } = body;
+
     const currentUserId = req.userId!;
+
+    const basePath = "courses/lesson-images";
+
+    const finalPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
 
     const fileDoc = await uploadImageToBlob({
         authorId: currentUserId,
         buffer: file.buffer,
         inputMime: file.mimetype,
-        path: `courses/lesson-images`,
+        path: finalPath,
         name,
-        maxWidth: 720,
-        maxHeight: 720,
-        fit: "inside",
-        outputFormat: "webp",
-        quality: 70,
+        storeOriginal: true
     });
 
     res.json({
@@ -569,42 +571,33 @@ const lessonImageUploadMiddleware = uploadImage({
 });
 
 const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(getLessonImageListSchema, req);
-    const { page, count } = body;
+    const { body } = parseWithZod(getImageListSchema, req);
+    const { subPath } = body;
 
-    const skip = (page - 1) * count;
-    const virtualPath = `courses/lesson-images`;
+    const basePath = `courses/lesson-images`;
+    const fullPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
 
-    const [total, items] = await Promise.all([
-        File.countDocuments({ path: virtualPath }),
-        File.find({ path: virtualPath })
-            .select("_id name mimetype size createdAt updatedAt")
-            .sort({ updatedAt: "desc" })
-            .skip(skip)
-            .limit(count)
-            .lean(),
-    ]);
+    const items = await listDirectory(fullPath);
 
     res.json({
         success: true,
-        data: {
-            page,
-            count,
-            total,
-            items: items.map((x) => ({
-                id: x._id,
-                name: x.name,
-                mimetype: x.mimetype,
-                size: x.size,
-                createdAt: x.createdAt,
-                url: `/media/files/${x._id}`,
-            })),
-        },
+        items: items.map((x) => ({
+            id: x._id,
+            type: x._type,
+            name: x.name,
+            mimetype: x.mimetype,
+            size: x.size,
+            createdAt: x.createdAt,
+            url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
+            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
+        }))
     });
 });
 
 const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(deleteLessonImageSchema, req);
+    const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
     const fileDoc = await File.findById(fileId).select("author path");
@@ -614,12 +607,68 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     const expectedPath = `courses/lesson-images`;
-    if (fileDoc.path !== expectedPath) {
+    if (!fileDoc.path.startsWith(expectedPath)) {
         res.status(400).json({ error: [{ message: "Not a lesson image" }] });
         return;
     }
 
-    await deleteFile(fileId);
+    await deleteEntry(fileDoc.path, fileDoc.name);
+
+    res.json({ success: true });
+});
+
+const createLessonImageFolder = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+    const { body } = parseWithZod(createImageFolderSchema, req);
+    const { name, subPath } = body;
+
+    const basePath = `courses/lesson-images`;
+
+    const finalPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
+
+    const folder = await createFolder(currentUserId, finalPath, name);
+
+    res.json({
+        success: true,
+        data: {
+            id: folder._id,
+            name: folder.name,
+            createdAt: folder.createdAt
+        }
+    });
+});
+
+const moveLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(moveImageSchema, req);
+    const { fileId, newName, newSubPath } = body;
+
+    const fileDoc = await File.findById(fileId).select("author path name");
+    if (!fileDoc) {
+        res.status(404).json({ error: [{ message: "File not found" }] });
+        return;
+    }
+
+    const basePath = `courses/lesson-images`;
+
+    if (!fileDoc.path.startsWith(basePath)) {
+        res.status(400).json({ error: [{ message: "Not a lesson image" }] });
+        return;
+    }
+
+    const targetPath = newSubPath
+        ? `${basePath}/${newSubPath}`
+        : basePath;
+
+    const targetName = newName ?? fileDoc.name;
+
+    await moveEntry(
+        fileDoc.path,
+        fileDoc.name,
+        targetPath,
+        targetName
+    );
 
     res.json({ success: true });
 });
@@ -785,6 +834,8 @@ const courseEditorController = {
     lessonImageUploadMiddleware,
     getLessonImageList,
     deleteLessonImage,
+    createLessonImageFolder,
+    moveLessonImage,
     importCourse,
     exportCourse
 };
