@@ -37,7 +37,7 @@ const fileSchema = new Schema(
             type: String,
             required: true,
             trim: true,
-            maxLength: 80
+            maxLength: 40
         },
 
         _type: {

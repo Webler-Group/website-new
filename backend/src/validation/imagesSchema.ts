@@ -1,8 +1,8 @@
 import z from "zod";
 import { idSchema, multerFileSchema } from "./commonSchema";
 
-const pathSchema = z.string().max(200).regex(/^[a-zA-Z0-9._-]+(\/[a-zA-Z0-9._-]+)*$/, "path can contain only alphanumeric characters and _");
-const fileNameSchema = z.string().min(1, "Filename is required").max(80, "Filename is too long").regex(/^[a-zA-Z0-9._-]+$/, "Filename can contain only alphanumeric characters and _");
+const pathSchema = z.string().max(200).regex(/^[a-zA-Z0-9._-]+(\/[a-zA-Z0-9._-]+)*$/, "path can contain only alphanumeric characters and .-_");
+const fileNameSchema = z.string().min(1, "Filename is required").max(40, "Filename cannot exceed 40 characters").regex(/^[a-zA-Z0-9._-]+$/, "Filename can contain only alphanumeric characters and .-_");
 
 export const uploadImageSchema = z.object({
     body: z.object({

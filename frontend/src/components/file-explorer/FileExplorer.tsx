@@ -28,11 +28,13 @@ type FileExplorerListResponse = {
 type FileExplorerUploadResponse = {
     success: boolean;
     data: { id: string; url: string; name: string; mimetype: string; size: number; updatedAt: string; previewUrl: string | null };
+    error?: { message: string }[]
 };
 
 type FileExplorerCreateFolderResponse = {
     success: boolean;
     data: { id: string; name: string; updatedAt: string };
+    error?: { message: string }[]
 };
 
 interface FileExplorerContextMenuState {
@@ -214,7 +216,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
         const name = uploadName.trim();
         if (!uploadFile) { setUploadErr("Select a file"); return; }
         if (!name) { setUploadErr("Enter a name"); return; }
-        if (name.length > 80) { setUploadErr("Name is too long"); return; }
+        if (name.length > 40) { setUploadErr("Name is too long"); return; }
 
         setUploading(true);
 
@@ -245,7 +247,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
             setUploadFile(null);
             setTabKey("library");
         } else {
-            setUploadErr("Upload failed");
+            setUploadErr(result?.error?.[0].message ?? "Upload failed");
         }
 
         setUploading(false);
@@ -341,7 +343,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
             setFolderName("");
             setItems(prev => [newFolder, ...prev]);
         } else {
-            setCreateFolderErr("Failed to create folder");
+            setCreateFolderErr(result?.error?.[0].message ?? "Failed to create folder");
         }
         setCreatingFolder(false);
     };
@@ -414,7 +416,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
                         onChange={e => setRenameName(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && handleRename()}
                         disabled={renaming}
-                        maxLength={80}
+                        maxLength={40}
                         autoFocus
                     />
                 </Modal.Body>
@@ -479,7 +481,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
                         onChange={e => setFolderName(e.target.value)}
                         onKeyDown={e => e.key === "Enter" && handleCreateFolder()}
                         disabled={creatingFolder}
-                        maxLength={80}
+                        maxLength={40}
                         autoFocus
                         placeholder="Folder name"
                     />
@@ -652,7 +654,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
                                             size="sm"
                                             value={uploadName}
                                             onChange={(e) => setUploadName(e.target.value)}
-                                            maxLength={80}
+                                            maxLength={40}
                                             disabled={uploading}
                                         />
                                     </Form.Group>
