@@ -14,6 +14,7 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
 import { parseWithZod } from "../utils/zodUtils";
 import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeCommentSchema, deleteCodeSchema, editCodeCommentSchema, editCodeSchema, getCodeCommentsSchema, getCodeListSchema, getCodeSchema, getJobSchema, getTemplateSchema, voteCodeSchema } from "../validation/codesSchema";
+import { IUserDocument } from "../models/User";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -126,7 +127,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .select("-source -cssSource -jsSource")
-        .populate("user", "name avatarImage level roles") as any[];
+        .populate<{ user: IUserDocument }>("user", "name avatarImage level roles");
 
     const data = result.map(x => ({
         id: x._id,

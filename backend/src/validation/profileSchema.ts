@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { countPerPageSchema, countryCodeSchema, emailSchema, fileNameSchema, idSchema, multerFileSchema, pageSchema, passwordSchema, searchQuerySchema, usernameSchema } from "./commonSchema";
+import { countPerPageSchema, countryCodeSchema, emailSchema, idSchema, multerFileSchema, pageSchema, passwordSchema, searchQuerySchema, usernameSchema } from "./commonSchema";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 export const getProfileSchema = z.object({
@@ -102,26 +102,5 @@ export const updateNotificationsSchema = z.object({
 export const searchProfilesSchema = z.object({
   body: z.object({
     searchQuery: searchQuerySchema
-  }),
-});
-
-export const uploadPostImageSchema = z.object({
-  file: multerFileSchema,
-  body: z.object({
-    name: fileNameSchema
-  })
-});
-
-export const getPostImageListSchema = z.object({
-  body: z.object({
-    page: pageSchema,
-    count: countPerPageSchema,
-    userId: idSchema("userId").nullish(),
-  }),
-});
-
-export const deletePostImageSchema = z.object({
-  body: z.object({
-    fileId: idSchema("fileId"),
   }),
 });

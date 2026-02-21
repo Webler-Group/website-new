@@ -4,7 +4,7 @@ import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import allowedUrls from "../data/discussAllowedUrls";
-import UserImagesModal from "./ContentImages";
+import FileExplorer from "./file-explorer/FileExplorer";
 
 export type MDEditorMode = "write" | "preview";
 
@@ -98,7 +98,8 @@ const MdEditorField = ({
 
     return (
         <div>
-            <UserImagesModal
+            <FileExplorer
+                title="Image Select"
                 section={section}
                 show={showImages}
                 onHide={() => setShowImages(false)}

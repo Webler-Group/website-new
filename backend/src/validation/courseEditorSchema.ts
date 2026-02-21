@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { countPerPageSchema, courseCodeSchema, courseDescriptionSchema, fileNameSchema, idSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
+import { countPerPageSchema, courseCodeSchema, courseDescriptionSchema, idSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 
@@ -135,26 +135,6 @@ export const generateLessonNodeSchema = z.object({
     })
 });
 
-export const uploadLessonImageSchema = z.object({
-    body: z.object({
-        name: fileNameSchema
-    }),
-    file: multerFileSchema
-});
-
-export const getLessonImageListSchema = z.object({
-    body: z.object({
-        page: pageSchema,
-        count: countPerPageSchema
-    }),
-});
-
-export const deleteLessonImageSchema = z.object({
-    body: z.object({
-        fileId: idSchema("fileId")
-    })
-});
-
 export const exportCourseSchema = z.object({
     body: z.object({
         courseId: idSchema("courseId")
@@ -170,8 +150,8 @@ export const importCourseSchema = z.object({
         lessons: z.array(z.object({
             title: z.string().min(1).max(120),
             nodes: z.array(z.object({
-                type: z.nativeEnum(LessonNodeTypeEnum),
-                mode: z.nativeEnum(LessonNodeModeEnum).optional(),
+                type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
+                mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode").optional(),
                 codeId: z.string().nullable().optional(),
                 text: z.string().min(0).max(8000).optional(),
                 correctAnswer: z.string().max(8000).nullable().optional(),

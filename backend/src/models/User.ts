@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model, MongooseError } from "mongoose";
+import mongoose, { Document, InferSchemaType, Model, MongooseError } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import RolesEnum from "../data/RolesEnum";
@@ -162,4 +162,5 @@ interface UserModel extends Model<IUser> {
 
 const User = mongoose.model<IUser, UserModel>('User', userSchema);
 
+export type IUserDocument = IUser & Document;
 export default User;

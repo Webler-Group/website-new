@@ -1,6 +1,6 @@
 import { FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
-import UserImagesModal from "./ContentImages";
+import FileExplorer from "./file-explorer/FileExplorer";
 import HtmlRenderer from "./HtmlRenderer";
 import { MDEditorMode } from "./MdEditorField";
 import AceEditor from "react-ace";
@@ -47,7 +47,8 @@ const HtmlEditorField = ({
 
     return (
         <div>
-            <UserImagesModal
+            <FileExplorer
+                title="Image Select"
                 section={section}
                 show={showImages}
                 onHide={() => setShowImages(false)}

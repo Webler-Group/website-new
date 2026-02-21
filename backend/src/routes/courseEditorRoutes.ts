@@ -39,5 +39,7 @@ router.route("/ExportCourseLesson").post(courseEditorController.exportCourseLess
 router.route("/UploadContentImage").post(courseEditorController.lessonImageUploadMiddleware.single("image"), courseEditorController.uploadLessonImage);
 router.route("/GetContentImages").post(courseEditorController.getLessonImageList);
 router.route("/DeleteContentImage").delete(courseEditorController.deleteLessonImage);
+router.route("/CreateContentImageFolder").post(courseEditorController.createLessonImageFolder);
+router.route("/MoveContentImage").post(courseEditorController.moveLessonImage);
 
 export default router;

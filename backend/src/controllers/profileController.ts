@@ -17,11 +17,13 @@ import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
-import { changeEmailSchema, deletePostImageSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getPostImageListSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadPostImageSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
+import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmission from "../models/ChallengeSubmission";
-import { deleteFile, uploadImageToBlob } from "../helpers/fileHelper";
+import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
+import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
+import FileTypeEnum from "../data/FileTypeEnum";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -598,7 +600,7 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         user.avatarImage = null as any;
         await user.save();
 
-        await deleteFile(user.avatarImage);
+        await deleteEntry(`users/${user._id}/avatar`, "avatar");
     }
 
     res.json({ success: true });
@@ -660,15 +662,21 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
 });
 
 const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body, file } = parseWithZod(uploadPostImageSchema, req);
-    const { name } = body;
+    const { body, file } = parseWithZod(uploadImageSchema, req);
+    const { name, subPath } = body;
+
     const currentUserId = req.userId!;
+    const basePath = `users/${currentUserId}/post-images`;
+
+    const finalPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
 
     const fileDoc = await uploadImageToBlob({
         authorId: currentUserId,
         buffer: file.buffer,
         inputMime: file.mimetype,
-        path: `users/${currentUserId}/post-images`,
+        path: finalPath,
         name,
         maxWidth: 720,
         maxHeight: 720,
@@ -680,9 +688,13 @@ const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     res.json({
         success: true,
         data: {
-            fileId: fileDoc._id,
+            id: fileDoc._id,
+            name: fileDoc.name,
+            mimetype: fileDoc.mimetype,
+            size: fileDoc.size,
+            updatedAt: fileDoc.updatedAt,
             url: `/media/files/${fileDoc._id}`,
-            name: fileDoc.name
+            previewUrl: fileDoc.preview ? `/media/files/${fileDoc._id}/preview` : null
         }
     });
 });
@@ -694,8 +706,8 @@ const postImageUploadMiddleware = uploadImage({
 
 const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId!;
-    const { body } = parseWithZod(getPostImageListSchema, req);
-    const { page, count, userId } = body;
+    const { body } = parseWithZod(getImageListSchema, req);
+    const { userId, subPath } = body;
 
     const targetUserId = userId ?? currentUserId;
 
@@ -704,43 +716,37 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
         return;
     }
 
-    const skip = (page - 1) * count;
-    const virtualPath = `users/${targetUserId}/post-images`;
+    const basePath = `users/${targetUserId}/post-images`;
+    const fullPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
 
-    const [total, items] = await Promise.all([
-        File.countDocuments({ author: targetUserId, path: virtualPath }),
-        File.find({ author: targetUserId, path: virtualPath })
-            .select("_id name mimetype size createdAt updatedAt")
-            .sort({ updatedAt: "desc" })
-            .skip(skip)
-            .limit(count)
-            .lean(),
-    ]);
+    const items = await listDirectory(fullPath);
 
     res.json({
         success: true,
-        data: {
-            page,
-            count,
-            total,
-            items: items.map((x) => ({
-                id: x._id,
-                name: x.name,
-                mimetype: x.mimetype,
-                size: x.size,
-                createdAt: x.createdAt,
-                url: `/media/files/${x._id}`,
-            })),
-        },
+        items: items.map((x) => ({
+            id: x._id,
+            authorId: x.author._id,
+            authorName: x.author.name,
+            authorAvatar: x.author.avatarImage,
+            type: x._type,
+            name: x.name,
+            mimetype: x.mimetype,
+            size: x.size,
+            updatedAt: x.updatedAt,
+            url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
+            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
+        }))
     });
 });
 
 const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId!;
-    const { body } = parseWithZod(deletePostImageSchema, req);
+    const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
-    const fileDoc = await File.findById(fileId).select("author path");
+    const fileDoc = await File.findById(fileId).select("author name path");
     if (!fileDoc) {
         res.status(404).json({ error: [{ message: "File not found" }] });
         return;
@@ -751,13 +757,78 @@ const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const expectedPath = `users/${fileDoc.author.toString()}/post-images`;
-    if (fileDoc.path !== expectedPath) {
+    const basePath = `users/${currentUserId}/post-images`;
+    if (!fileDoc.path.startsWith(basePath)) {
         res.status(400).json({ error: [{ message: "Not a post image" }] });
         return;
     }
 
-    await deleteFile(fileId);
+    await deleteEntry(fileDoc.path, fileDoc.name);
+
+    res.json({ success: true });
+});
+
+const createPostImageFolder = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+    const { body } = parseWithZod(createImageFolderSchema, req);
+    const { name, subPath } = body;
+
+    const basePath = `users/${currentUserId}/post-images`;
+
+    const finalPath = subPath
+        ? `${basePath}/${subPath}`
+        : basePath;
+
+    const folder = await createFolder(currentUserId, finalPath, name);
+
+    res.json({
+        success: true,
+        data: {
+            id: folder._id,
+            name: folder.name,
+            updatedAt: folder.updatedAt
+        }
+    });
+});
+
+const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const currentUserId = req.userId!;
+    const { body } = parseWithZod(moveImageSchema, req);
+    const { fileId, newName, newSubPath } = body;
+
+    const fileDoc = await File.findById(fileId).select("author path name");
+    if (!fileDoc) {
+        res.status(404).json({ error: [{ message: "File not found" }] });
+        return;
+    }
+
+    const isOwner = fileDoc.author.toString() === currentUserId;
+    const isAdmin = req.roles?.includes(RolesEnum.ADMIN);
+
+    if (!isOwner && !isAdmin) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    const basePath = `users/${fileDoc.author.toString()}/post-images`;
+
+    if (!fileDoc.path.startsWith(basePath)) {
+        res.status(400).json({ error: [{ message: "Not a post image" }] });
+        return;
+    }
+
+    const targetPath = newSubPath
+        ? `${basePath}/${newSubPath}`
+        : basePath;
+
+    const targetName = newName ?? fileDoc.name;
+
+    await moveEntry(
+        fileDoc.path,
+        fileDoc.name,
+        targetPath,
+        targetName
+    );
 
     res.json({ success: true });
 });
@@ -783,7 +854,9 @@ const controller = {
     uploadPostImage,
     postImageUploadMiddleware,
     getPostImageList,
-    deletePostImage
+    deletePostImage,
+    createPostImageFolder,
+    movePostImage
 };
 
 export default controller;

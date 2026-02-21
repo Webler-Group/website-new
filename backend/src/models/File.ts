@@ -1,4 +1,22 @@
 import { Document, InferSchemaType, Model, Schema, model } from "mongoose";
+import FileTypeEnum from "../data/FileTypeEnum";
+
+const filePreviewSchema = new Schema(
+    {
+        contenthash: {
+            type: String,
+            required: true
+        },
+        size: {
+            type: Number,
+            required: true
+        },
+        mimetype: {
+            type: String,
+            required: true
+        }
+    },
+{ _id: false });
 
 const fileSchema = new Schema(
     {
@@ -7,33 +25,51 @@ const fileSchema = new Schema(
             ref: "User",
             required: true
         },
+
         path: {
             type: String,
             required: true,
             trim: true,
-            maxLength: 200,
             index: true
         },
+
         name: {
             type: String,
             required: true,
             trim: true,
             maxLength: 80
         },
-        mimetype: {
-            type: String,
-            required: true
-        },
-        size: {
+
+        _type: {
             type: Number,
-            required: true
+            required: true,
+            enum: Object.values(FileTypeEnum).map(Number)
         },
+
+        mimetype: {
+            type: String
+        },
+
+        size: {
+            type: Number
+        },
+
         contenthash: {
             type: String,
-            required: true
+            index: true
+        },
+
+        preview: {
+            type: filePreviewSchema,
+            default: null
         }
     },
     { timestamps: true }
+);
+
+fileSchema.index(
+    { path: 1, name: 1 },
+    { unique: true }
 );
 
 interface IFile extends InferSchemaType<typeof fileSchema> { }
