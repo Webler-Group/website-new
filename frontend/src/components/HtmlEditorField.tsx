@@ -15,6 +15,7 @@ interface HtmlEditorFieldProps {
     customPreview?: ReactNode;
     onModeChange?: (mode: MDEditorMode) => void;
     section: string;
+    rootAlias: string;
     rows?: number;
     height?: number;
 }
@@ -26,6 +27,7 @@ const HtmlEditorField = ({
     customPreview,
     onModeChange,
     section,
+    rootAlias,
     rows = 12,
     height
 }: HtmlEditorFieldProps) => {
@@ -50,6 +52,7 @@ const HtmlEditorField = ({
             <FileExplorer
                 title="Image Select"
                 section={section}
+                rootAlias={rootAlias}
                 show={showImages}
                 onHide={() => setShowImages(false)}
                 onSelect={(url, alt) => {

@@ -45,6 +45,7 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
           <FormLabel className="form-label">Add your thoughts</FormLabel>
           <MdEditorField
             section="Profile"
+            rootAlias="post-images"
             text={shareMessage}
             setText={setShareMessage}
             row={10}

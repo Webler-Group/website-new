@@ -488,6 +488,7 @@ const DiscussPostPage = () => {
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>
                             <MdEditorField 
                                 section="Profile"
+                                rootAlias="post-images"
                                 text={formInput}
                                 setText={setFormInput}
                                 row={10}

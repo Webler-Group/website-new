@@ -5,6 +5,7 @@ import { useAuth } from "../../features/auth/context/authContext";
 import DateUtils from "../../utils/DateUtils";
 import ProfileName from "../../components/ProfileName";
 import { useApi } from "../../context/apiCommunication";
+import { formatSize } from "../../utils/FileUtils";
 
 type FileExplorerItem = {
     id: string;
@@ -49,6 +50,7 @@ interface FileExplorerProps {
     onHide: () => void;
     onSelect: (url: string, altText: string) => void;
     title?: string;
+    rootAlias?: string;
 }
 
 const FOLDER_ICON = "/resources/images/folder.svg";
@@ -57,14 +59,7 @@ const IMAGE_ICON = "/resources/images/image.svg";
 // Confirm dialogs sit above the main modal (Bootstrap modal z-index: 1055)
 const CONFIRM_MODAL_Z = 1070;
 
-const formatSize = (bytes?: number): string | null => {
-    if (bytes == null) return null;
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
-
-const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: FileExplorerProps) => {
+const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootAlias = "root" }: FileExplorerProps) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
 
@@ -528,9 +523,9 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
                                         <button
                                             className="wb-file-explorer-crumb"
                                             onClick={() => navigateTo(0)}
-                                            title="Root"
+                                            title={rootAlias}
                                         >
-                                            root
+                                            {rootAlias}
                                         </button>
                                         {subPath.map((seg, i) => (
                                             <span key={i} className="wb-file-explorer-crumb-segment">
@@ -659,11 +654,9 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images" }: Fil
                                         />
                                     </Form.Group>
 
-                                    {subPathStr && (
-                                        <div className="text-muted small mb-3">
-                                            Uploading to: <code>{subPathStr}</code>
-                                        </div>
-                                    )}
+                                    <div className="text-muted small mb-3">
+                                        Uploading to: <code>{rootAlias + (subPathStr ? "/" + subPathStr : "")}</code>
+                                    </div>
 
                                     <div className="d-flex justify-content-end gap-2">
                                         <Button size="sm" variant="secondary" onClick={onHide} disabled={uploading}>

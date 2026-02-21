@@ -510,6 +510,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         nodeMode === 1 ?
                                             <MdEditorField
                                                 section="CourseEditor"
+                                                rootAlias="lesson-images"
                                                 text={nodeText}
                                                 setText={setNodeText}
                                                 maxCharacters={8000}
@@ -522,6 +523,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                             :
                                             <HtmlEditorField
                                                 section="CourseEditor"
+                                                rootAlias="lesson-images"
                                                 text={nodeText}
                                                 setText={setNodeText}
                                                 maxCharacters={8000}

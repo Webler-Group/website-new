@@ -61,6 +61,7 @@ const fileSchema = new Schema(
 
         preview: {
             type: filePreviewSchema,
+            required: false,
             default: null
         }
     },

@@ -59,7 +59,7 @@ export const deleteBlobIfUnreferenced = async (contenthash: string) => {
 
 const deleteSingleFile = async (doc: IFileDocument) => {
     const mainHash = doc.contenthash;
-    const previewHash = doc.preview.contenthash;
+    const previewHash = doc.preview?.contenthash;
 
     await File.deleteOne({ _id: doc._id });
 

@@ -607,7 +607,7 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
-    const fileDoc = await File.findById(fileId).select("author path");
+    const fileDoc = await File.findById(fileId).select("author name path").lean();
     if (!fileDoc) {
         res.status(404).json({ error: [{ message: "File not found" }] });
         return;

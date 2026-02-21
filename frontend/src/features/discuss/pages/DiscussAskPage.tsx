@@ -119,6 +119,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                 <FormGroup>
                     <MdEditorField 
                         section="Profile"
+                        rootAlias="post-images"
                         text={message}
                         setText={setMessage}
                         row={10}

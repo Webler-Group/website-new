@@ -124,6 +124,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                     </Form.Label>
                     <MdEditorField
                         section="CourseEditor"
+                        rootAlias="lesson-images"
                         text={description}
                         setText={setDescription}
                         placeHolder="Describe the challenge..."

@@ -18,6 +18,7 @@ interface MdEditorFieldProps {
     onModeChange?: (mode: MDEditorMode) => void;
     isPost?: boolean;
     section: string;
+    rootAlias: string;
 }
 
 const MdEditorField = ({
@@ -29,7 +30,8 @@ const MdEditorField = ({
     customPreview,
     onModeChange,
     isPost = true,
-    section
+    section,
+    rootAlias
 }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -101,6 +103,7 @@ const MdEditorField = ({
             <FileExplorer
                 title="Image Select"
                 section={section}
+                rootAlias={rootAlias}
                 show={showImages}
                 onHide={() => setShowImages(false)}
                 onSelect={(url, alt) => insertImageMarkdownAtCursor(url, alt)}
