@@ -207,7 +207,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
 
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.mode === 3 ? " wb-code-mode" : " p-2")}>
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === 5 ? " wb-code-mode" : " p-2")}>
                     {renderContent()}
 
                     {(activeNode.type === 2 || activeNode.type === 3) && <div className="p-2">{renderAnswers()}</div>}
