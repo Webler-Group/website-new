@@ -159,8 +159,8 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const data: any = {
         id: channel._id,
-        title: channel._type === ChannelTypeEnum.GROUP ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
-        coverImageUrl: getImageUrl(channel.DMUser?._id == currentUserId ? channel.createdBy.avatarHash : channel.DMUser?.avatarHash),
+        title: channel._type === ChannelTypeEnum.GROUP ? channel.title : channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.name : channel.DMUser?.name,
+        coverImageUrl: getImageUrl(channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.avatarHash : channel.DMUser?.avatarHash),
         type: channel._type,
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
@@ -247,8 +247,8 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             return {
                 id: x._id,
                 type: x._type,
-                title: x._type === ChannelTypeEnum.GROUP ? x.title : x.DMUser?._id == currentUserId ? x.createdBy.name : x.DMUser?.name,
-                coverImageUrl: getImageUrl(x.DMUser?._id == currentUserId ? x.createdBy.avatarHash : x.DMUser?.avatarHash),
+                title: x._type === ChannelTypeEnum.GROUP ? x.title : x.DMUser?._id.equals(currentUserId) ? x.createdBy.name : x.DMUser?.name,
+                coverImageUrl: getImageUrl(x.DMUser?._id.equals(currentUserId) ? x.createdBy.avatarHash : x.DMUser?.avatarHash),
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
                 unreadCount: participantDataMap[x._id.toString()]?.unreadCount || 0,
@@ -681,7 +681,7 @@ const createMessageWS = async (socket: Socket, payload: any) => {
             if (messages.length === 1) {
                 const exists = await ChannelParticipant.exists({ channel: channel._id, user: channel.DMUser });
                 if (!exists) {
-                    await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser });
+                    await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser ?? undefined });
                 }
             }
         }

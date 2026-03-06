@@ -70,6 +70,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
     const [loading, setLoading] = useState(false);
     const [repliedMessage, setRepliedMessage] = useState<IChannelMessage | null>(null);
+    const nodeRefs = useRef<Map<string, React.RefObject<HTMLDivElement | null>>>(new Map());
 
     useEffect(() => {
         getChannel();
@@ -107,7 +108,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         }
     }, [editedMessage]);
 
-    const messagesIntObserver = useRef<IntersectionObserver>();
+    const messagesIntObserver = useRef<IntersectionObserver>(null);
     const lastMessageRef = useCallback((message: Element | null) => {
         if (messages.isLoading) return;
 
@@ -181,7 +182,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setAllMessagesVisible(false);
     }, [allMessagesVisible]);
 
-    // NEW: Effect to scroll to bottom after channel change and messages load
     useEffect(() => {
         if (justChangedChannel && !messages.isLoading && messages.results.length > 0) {
             scrollToBottom('auto');
@@ -190,8 +190,24 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         }
     }, [justChangedChannel, messages.isLoading, messages.results]);
 
+    useEffect(() => {
+        const currentIds = new Set(messages.results.map(m => m.id));
+        for (const key of nodeRefs.current.keys()) {
+            if (!currentIds.has(key)) {
+                nodeRefs.current.delete(key);
+            }
+        }
+    }, [messages.results]);
+
     const isMobileDevice = () => {
         return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    };
+
+    const getNodeRef = (id: string) => {
+        if (!nodeRefs.current.has(id)) {
+            nodeRefs.current.set(id, { current: null });
+        }
+        return nodeRefs.current.get(id)!;
     };
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
@@ -450,8 +466,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                 key={message.id}
                                                 timeout={300}
                                                 classNames={skipTransition ? "" : "wb-channels-message"}
+                                                nodeRef={getNodeRef(message.id)}
                                             >
-                                                <div className="mt-2">
+                                                <div ref={getNodeRef(message.id)} className="mt-2">
                                                     {i === renderMessages.length - 1 ? (
                                                         <ChannelMessage
                                                             ref={lastMessageRef}

@@ -43,7 +43,7 @@ const fileSchema = new Schema(
         _type: {
             type: Number,
             required: true,
-            enum: Object.values(FileTypeEnum).map(Number)
+            enum: Object.values(FileTypeEnum).filter(v => typeof v === "number").map(Number)
         },
 
         mimetype: {

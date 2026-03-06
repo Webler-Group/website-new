@@ -37,7 +37,6 @@ const FeedListPage = () => {
     }
   }
   const [filter, setFilter] = useState(defaultFilter);
-  const [headerVisible, setHeaderVisible] = useState(true);
   const [searchInput, setSearchInput] = useState(searchQuery);
   const [votesModalVisible, setVotesModalVisible] = useState(false);
   const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
@@ -47,7 +46,7 @@ const FeedListPage = () => {
   const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const intObserver = useRef<IntersectionObserver>();
+  const intObserver = useRef<IntersectionObserver>(null);
   const lastFeedRef = useCallback(
     (node: any) => {
       if (feeds.loading) return;
@@ -65,27 +64,6 @@ const FeedListPage = () => {
     },
     [feeds.loading, feeds.hasNextPage, feeds.results]
   );
-
-  useEffect(() => {
-    let lastY = window.scrollY;
-
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-
-      if (currentY < 60) {
-        setHeaderVisible(true);
-      } else if (currentY > lastY) {
-        setHeaderVisible(false);
-      } else if (currentY < lastY) {
-        setHeaderVisible(true);
-      }
-
-      lastY = currentY;
-    };
-
-    addEventListener("scroll", handleScroll, { passive: true });
-    return () => removeEventListener("scroll", handleScroll);
-  }, []);
 
   useEffect(() => {
     fetchPinnedFeeds();
@@ -203,7 +181,7 @@ const FeedListPage = () => {
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
       <div className="wb-feed-list-container">
         {/* Header */}
-        <div className={`p-2 wb-feed-list-header ${headerVisible ? 'wb-feed-visible' : 'wb-feed-hidden'}`}>
+        <div className="p-2 wb-feed-list-header wb-feed-visible">
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             {/* Search */}

@@ -10,7 +10,7 @@ interface MessageContextMenuProps {
     onDelete: () => void;
     onReply: () => void;
     isOwn: boolean;
-    anchorRef: React.RefObject<HTMLElement>;
+    anchorRef: React.RefObject<HTMLElement | null>;
 }
 
 const MARGIN = 8;

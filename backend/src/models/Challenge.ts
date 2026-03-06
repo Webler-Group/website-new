@@ -70,7 +70,7 @@ const challengeSchema = new Schema({
 
 }, { timestamps: true });
 
-challengeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IChallenge>) {
+challengeSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<IChallenge>) {
   const challengesToDelete = await Challenge.find(filter).select("_id");
   const challengeIds = challengesToDelete.map(x => x._id);
 
@@ -83,7 +83,7 @@ declare interface IChallenge extends InferSchemaType<typeof challengeSchema> {
 }
 
 interface ChallengeModel extends Model<IChallenge> {
-  deleteAndCleanup(filter: mongoose.FilterQuery<IChallenge>): Promise<void>;
+  deleteAndCleanup(filter: mongoose.QueryFilter<IChallenge>): Promise<void>;
 }
 
 const Challenge = model<IChallenge, ChallengeModel>("Challenge", challengeSchema);

@@ -19,7 +19,7 @@ interface SendToUsersParams {
 }
 
 const notificationSchema = new mongoose.Schema({
-    _type: { type: Number, required: true, enum: Object.values(NotificationTypeEnum).map(Number) },
+    _type: { type: Number, required: true, enum: Object.values(NotificationTypeEnum).filter(v => typeof v === "number").map(Number) },
     message: { type: String, required: true },
     user: { type: mongoose.Types.ObjectId, ref: "User", required: true },
     actionUser: { type: mongoose.Types.ObjectId, ref: "User", required: true },
@@ -37,20 +37,18 @@ const notificationSchema = new mongoose.Schema({
 });
 
 // --- SAVE ---
-notificationSchema.post("save", (doc, next) => {
+notificationSchema.post("save", (doc) => {
     const io = getIO();
     if (io) {
         io.to(uidRoom(doc.user.toString())).emit("notification:new", {});
     }
-    return next();
 });
 
 // --- DELETE ONE ---
-notificationSchema.pre("deleteOne", { document: false, query: true }, async function (next) {
+notificationSchema.pre("deleteOne", { document: false, query: true }, async function () {
     const filter = this.getFilter();
     const doc = await this.model.findOne(filter);
     (this as any)._docToDelete = doc;
-    next();
 });
 
 notificationSchema.post("deleteOne", { document: false, query: true }, function () {
@@ -64,11 +62,10 @@ notificationSchema.post("deleteOne", { document: false, query: true }, function 
 });
 
 // --- DELETE MANY ---
-notificationSchema.pre("deleteMany", { document: false, query: true }, async function (next) {
+notificationSchema.pre("deleteMany", { document: false, query: true }, async function () {
     const filter = this.getFilter();
     const docs = await this.model.find(filter);
     (this as any)._docsToDelete = docs;
-    next();
 });
 
 notificationSchema.post("deleteMany", { document: false, query: true }, function () {

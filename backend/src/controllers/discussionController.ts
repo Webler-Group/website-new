@@ -1,7 +1,7 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Post, { IPostDocument } from "../models/Post";
+import Post from "../models/Post";
 import Tag, { ITagDocument } from "../models/Tag";
 import Upvote from "../models/Upvote";
 import PostFollowing from "../models/PostFollowing";
@@ -240,7 +240,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const question = await Post.findById(questionId)
-        .populate<{ user: IUserDocument }>("user", "name avatarImage countryCode level roles")
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles")
         .populate<{ tags: ITagDocument[] }>("tags", "name")
         .lean();
 
@@ -305,7 +305,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const followers = await PostFollowing.find({ following: question._id });
-    await Notification.sendToUsers(followers.filter(x => x.user != currentUserId).map(x => x.user) as Types.ObjectId[], {
+    await Notification.sendToUsers(followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user) as Types.ObjectId[], {
         title: "New answer",
         type: NotificationTypeEnum.QA_ANSWER,
         actionUser: currentUserId!,
@@ -314,7 +314,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         postId: reply._id
     });
 
-    if (question.user != currentUserId) {
+    if (question.user != new mongoose.Types.ObjectId(currentUserId)) {
         await Notification.sendToUsers([question.user as Types.ObjectId], {
             title: "New answer",
             type: NotificationTypeEnum.QA_ANSWER,
@@ -400,7 +400,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate<{ user: IUserDocument }>("user", "name avatarImage countryCode level roles");
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
 
     const data = result.map((x, offset) => ({
         id: x._id,
@@ -445,19 +445,19 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
     const post = await Post.findById(postId);
 
     if (post === null) {
-        res.status(404).json({ error: [{ message: "Post not found" }] })
-        return
+        res.status(404).json({ error: [{ message: "Post not found" }] });
+        return;
     }
 
     const question = await Post.findById(post.parentId);
     if (question === null) {
-        res.status(404).json({ error: [{ message: "Question not found" }] })
-        return
+        res.status(404).json({ error: [{ message: "Question not found" }] });
+        return;
     }
 
-    if (question.user != currentUserId) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] })
-        return
+    if (!question.user.equals(currentUserId)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
     }
 
     if (accepted || post.isAccepted) {
@@ -493,13 +493,13 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const question = await Post.findById(questionId);
 
     if (question === null) {
-        res.status(404).json({ error: [{ message: "Question not found" }] })
-        return
+        res.status(404).json({ error: [{ message: "Question not found" }] });
+        return;
     }
 
-    if (question.user != currentUserId) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] })
-        return
+    if (!question.user.equals(currentUserId)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
     }
 
     const tagIds = (await Tag.getOrCreateTagsByNames(tags)).map(x => x._id);
@@ -537,7 +537,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return
     }
 
-    if (question.user != currentUserId && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
+    if (!question.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] })
         return
     }
@@ -559,7 +559,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (currentUserId != reply.user) {
+    if (!reply.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return
     }
@@ -592,7 +592,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    if (currentUserId != reply.user && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
+    if (!reply.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return
     }

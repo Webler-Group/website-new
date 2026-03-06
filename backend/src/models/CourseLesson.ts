@@ -29,7 +29,7 @@ const courseLessonSchema = new mongoose.Schema({
     }
 });
 
-courseLessonSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<ICourseLesson>, session?: mongoose.mongo.ClientSession) {
+courseLessonSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<ICourseLesson>, session?: mongoose.mongo.ClientSession) {
     const lessonsToDelete = await CourseLesson.find(filter).select("_id");
     for (let i = 0; i < lessonsToDelete.length; ++i) {
         const lesson = lessonsToDelete[i];
@@ -43,7 +43,7 @@ courseLessonSchema.statics.deleteAndCleanup = async function (filter: mongoose.F
 interface ICourseLesson extends InferSchemaType<typeof courseLessonSchema> { }
 
 interface CourseLessonModel extends Model<ICourseLesson> {
-    deleteAndCleanup(filter: mongoose.FilterQuery<ICourseLesson>, session?: mongoose.mongo.ClientSession): Promise<any>
+    deleteAndCleanup(filter: mongoose.QueryFilter<ICourseLesson>, session?: mongoose.mongo.ClientSession): Promise<any>
 }
 
 const CourseLesson = mongoose.model<ICourseLesson, CourseLessonModel>("CourseLesson", courseLessonSchema);

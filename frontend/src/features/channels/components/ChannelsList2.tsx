@@ -30,7 +30,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
     const [invitesFromDate, setInvitesFromDate] = useState<Date | null>(null);
     const invites = useInvites(10, invitesFromDate);
 
-    const channelsIntObserver = useRef<IntersectionObserver>();
+    const channelsIntObserver = useRef<IntersectionObserver>(null);
     const lastChannelRef = useCallback((channel: any) => {
         if (channels.isLoading) return;
 
@@ -46,7 +46,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
         if (channel) channelsIntObserver.current.observe(channel);
     }, [channels.isLoading, channels.hasNextPage, channels.results]);
 
-    const invitesIntObserver = useRef<IntersectionObserver>();
+    const invitesIntObserver = useRef<IntersectionObserver>(null);
     const lastInviteRef = useCallback((invite: any) => {
         if (invites.isLoading) return;
 

@@ -9,12 +9,12 @@ const lessonNodeSchema = new mongoose.Schema({
     _type: {
         type: Number,
         default: LessonNodeTypeEnum.TEXT,
-        enum: Object.values(LessonNodeTypeEnum).map(Number)
+        enum: Object.values(LessonNodeTypeEnum).filter(v => typeof v === "number").map(Number)
     },
     mode: {
         type: Number,
         default: LessonNodeModeEnum.MARKDOWN,
-        enum: Object.values(LessonNodeModeEnum).map(Number)
+        enum: Object.values(LessonNodeModeEnum).filter(v => typeof v === "number").map(Number)
     },
     index: {
         type: Number,
@@ -41,7 +41,7 @@ const lessonNodeSchema = new mongoose.Schema({
     }
 });
 
-lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<ILessonNode>, session?: mongoose.mongo.ClientSession) {
+lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<ILessonNode>, session?: mongoose.mongo.ClientSession) {
     const lessonNodesToDelete = await LessonNode.find(filter).select("_id").session(session ?? null);
     for (let i = 0; i < lessonNodesToDelete.length; ++i) {
         const lessonNode = lessonNodesToDelete[i];
@@ -58,7 +58,7 @@ lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.Fil
 declare interface ILessonNode extends InferSchemaType<typeof lessonNodeSchema> { }
 
 interface LessonNodeModel extends Model<ILessonNode> {
-    deleteAndCleanup(filter: mongoose.FilterQuery<ILessonNode>, session?: mongoose.mongo.ClientSession): Promise<any>
+    deleteAndCleanup(filter: mongoose.QueryFilter<ILessonNode>, session?: mongoose.mongo.ClientSession): Promise<any>
 }
 
 const LessonNode = mongoose.model<ILessonNode, LessonNodeModel>("LessonNode", lessonNodeSchema);

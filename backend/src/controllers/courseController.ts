@@ -319,7 +319,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!mock && isLast && correct) {
-        userProgress!.lastLessonNodeId = lessonNode.id;
+        userProgress!.lastLessonNodeId = lessonNode._id;
         userProgress!.$inc("nodesSolved", 1);
         await userProgress!.save();
     }
@@ -354,7 +354,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { lessonId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: IPostDocument & { user: IUserDocument } | null = null;
+    let parentPost: any = null;
     if (parentId) {
         parentPost = await Post
             .findById(parentId)
@@ -464,7 +464,7 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         user: currentUserId
     });
 
-    if (parentPost && parentPost.user != currentUserId) {
+    if (parentPost && !parentPost.user.equals(currentUserId)) {
         await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
             title: "New reply",
             type: NotificationTypeEnum.LESSON_COMMENT,
@@ -512,7 +512,7 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    if (comment.user != currentUserId) {
+    if (!comment.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -542,7 +542,7 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         return;
     }
 
-    if (comment.user != currentUserId) {
+    if (!comment.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }

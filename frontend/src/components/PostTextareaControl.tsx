@@ -5,6 +5,7 @@ import UserSearch from "./UserSearch";
 import { UserMinimal } from "../features/profile/pages/ProfilePage";
 import React from "react";
 import { Link } from "react-router-dom";
+import { JSX } from "react/jsx-runtime";
 
 interface PostTextareaControlProps {
     value: string;

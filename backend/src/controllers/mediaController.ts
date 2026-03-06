@@ -94,7 +94,7 @@ const getFilePreviewByHash = asyncHandler(
     }
 );
 
-export const getImageUrl = (hash?: string) => hash ? `/media/files/${hash}` : null;
+export const getImageUrl = (hash?: string | null) => hash ? `/media/files/${hash}` : null;
 
 const mediaController = {
     getFileByHash,

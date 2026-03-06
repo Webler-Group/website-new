@@ -18,7 +18,7 @@ const CodesSection = ({ userId, onClose }: CodesSectionProps) => {
         hasNextPage
     } = useCodes(userId, 10, pageNum);
 
-    const intObserver = useRef<IntersectionObserver>()
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastCodeRef = useCallback((code: any) => {
         if (isLoading) return
 

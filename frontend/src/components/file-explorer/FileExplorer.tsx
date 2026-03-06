@@ -140,7 +140,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setMoveTarget(null);
         setCreateFolderOpen(false);
         fetchList([]);
-    }, [show]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [show]);
 
     useEffect(() => {
         if (!contextMenu) return;

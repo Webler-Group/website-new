@@ -64,7 +64,7 @@ codeSchema.add({
 });
 
 // Pre-save hook: only bump updatedAt when *content fields* change
-codeSchema.pre("save", function (next) {
+codeSchema.pre("save", function () {
     if (
         this.isModified("source") ||
         this.isModified("cssSource") ||
@@ -72,7 +72,6 @@ codeSchema.pre("save", function (next) {
     ) {
         this.set("updatedAt", new Date());
     }
-    next();
 });
 
 codeSchema.statics.deleteAndCleanup = async function (codeId: mongoose.Types.ObjectId | string) {

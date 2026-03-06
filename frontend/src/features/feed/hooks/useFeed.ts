@@ -18,7 +18,7 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     const { userInfo } = useAuth();
 
     useEffect(() => {
-        if(state.page == 0) return;
+        if (state.page == 0) return;
         fetchFeeds();
     }, [state]);
 
@@ -27,41 +27,38 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     }, [filter, searchQuery]);
 
     const fetchFeeds = async () => {
-            setError([]);
-            setLoading(true);
+        setError([]);
+        setLoading(true);
 
-            let keepPrev = state.page != 1;
-            if(!keepPrev) {
-                setResults([]);
-            }
+        const keepPrev = state.page !== 1;
 
-            const result = await sendJsonRequest("/Feed", "POST", {
-                page: state.page,
-                count: countPerPage,
-                filter,
-                searchQuery,
-                userId: userInfo?.id
-            });
-            if (result && result.success) {
-                if (keepPrev) {
-                    setResults((prev) => {
-                        // Filter out any posts that already exist in the results array to prevent duplicates
-                        const newPosts = result.feeds.filter(
-                            (newPost: IFeed) => !prev.some((existingPost) => existingPost.id === newPost.id)
-                        );
-                        return [...prev, ...newPosts];
-                    });
-                } else {
-                    setResults(() => result.feeds);
-                }
-                setTotalCount(result.count);
-                setHasNextPage(result.feeds.length === countPerPage);
+        const result = await sendJsonRequest("/Feed", "POST", {
+            page: state.page,
+            count: countPerPage,
+            filter,
+            searchQuery,
+            userId: userInfo?.id
+        });
+
+        if (result && result.success) {
+            if (keepPrev) {
+                setResults((prev) => {
+                    const newPosts = result.feeds.filter(
+                        (newPost: IFeed) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    );
+                    return [...prev, ...newPosts];
+                });
             } else {
-                setError(result.error);
+                setResults(result.feeds);
             }
-
-            setLoading(false);
+            setTotalCount(result.count);
+            setHasNextPage(result.feeds.length === countPerPage);
+        } else {
+            setError(result.error);
         }
+
+        setLoading(false);
+    };
 
     const editPost = (updatedPost: IFeed) => {
         setResults(prev => prev.map(x => x.id == updatedPost.id ? updatedPost : x))

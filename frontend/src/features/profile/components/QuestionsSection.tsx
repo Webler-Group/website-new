@@ -18,7 +18,7 @@ const QuestionsSection = ({ userId, onClose }: QuestionsSectionProps) => {
         hasNextPage
     } = useQuestions(userId, 10, pageNum);
 
-    const intObserver = useRef<IntersectionObserver>()
+    const intObserver = useRef<IntersectionObserver>(null)
     const lastQuestionRef = useCallback((question: any) => {
         if (isLoading) return
 

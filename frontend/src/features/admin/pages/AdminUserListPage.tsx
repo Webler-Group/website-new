@@ -100,7 +100,7 @@ const AdminUserListPage = () => {
                             <Form.Label className="small">Register Date</Form.Label>
                             <DatePicker
                                 selected={date}
-                                onChange={(d) => {
+                                onChange={(d: any) => {
                                     setDate(d);
                                 }}
                                 className="form-control form-control-sm"

@@ -22,7 +22,7 @@ const FollowList = ({ options, visible, title, onClose, setCount }: FollowListPr
         setState
     } = useFollows(options, 10);
 
-    const intObserver = useRef<IntersectionObserver>()
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastProfileRef = useCallback((profile: any) => {
         if (isLoading) return
 

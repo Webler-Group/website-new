@@ -12,7 +12,7 @@ const postSchema = new mongoose.Schema({
     _type: {
         type: Number,
         required: true,
-        enum: Object.values(PostTypeEnum).map(Number)
+        enum: Object.values(PostTypeEnum).filter(v => typeof v === "number").map(Number)
     },
     isAccepted: {
         type: Boolean,
@@ -84,9 +84,8 @@ const postSchema = new mongoose.Schema({
     timestamps: true
 });
 
-postSchema.pre("save", async function (next) {
+postSchema.pre("save", async function () {
     (this as any)._messageWasModified = this.isModified("message");
-    next();
 });
 postSchema.post("save", async function () {
     try {
@@ -98,7 +97,7 @@ postSchema.post("save", async function () {
     }
 });
 
-postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<IPost>, session?: mongoose.mongo.ClientSession) {
+postSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<IPost>, session?: mongoose.mongo.ClientSession) {
     const postsToDelete = await Post.find(filter).select("-message").session(session ?? null);
 
     for (let i = 0; i < postsToDelete.length; ++i) {
@@ -203,7 +202,7 @@ postSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQue
 declare interface IPost extends InferSchemaType<typeof postSchema> { }
 
 interface PostModel extends Model<IPost> {
-    deleteAndCleanup(filter: mongoose.FilterQuery<IPost>, session?: mongoose.mongo.ClientSession): Promise<void>;
+    deleteAndCleanup(filter: mongoose.QueryFilter<IPost>, session?: mongoose.mongo.ClientSession): Promise<void>;
 }
 
 const Post = mongoose.model<IPost, PostModel>("Post", postSchema);

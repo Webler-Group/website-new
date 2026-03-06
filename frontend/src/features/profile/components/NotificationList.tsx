@@ -57,7 +57,7 @@ const NotificationList = () => {
         onMarkAllAsRead();
     }
 
-    const intObserver = useRef<IntersectionObserver>()
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastProfileRef = useCallback((profile: any) => {
         if (isLoading) return
 

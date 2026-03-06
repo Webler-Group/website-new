@@ -30,16 +30,15 @@ const courseProgressSchema = new Schema({
     timestamps: true
 });
 
-courseProgressSchema.pre("save", async function (next) {
+courseProgressSchema.pre("save", async function () {
     if (this.isModified("nodesSolved")) {
         const lessonIds = (await CourseLesson.find({ course: this.course }, "_id")).map(x => x._id);
-        const courseNodes = await LessonNode.count({ lessonId: { $in: lessonIds } });
+        const courseNodes = await LessonNode.countDocuments({ lessonId: { $in: lessonIds } });
 
         if (courseNodes === this.nodesSolved) {
             this.completed = true;
         }
     }
-    return next();
 });
 
 interface ICourseProgress extends InferSchemaType<typeof courseProgressSchema> {

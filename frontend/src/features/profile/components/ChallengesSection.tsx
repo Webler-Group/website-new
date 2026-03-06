@@ -16,7 +16,7 @@ const ChallengesSection = ({ userId, onClose }: ChallengesSectionProps) => {
 
     const { isLoading, error, results, hasNextPage } = useSolvedChallenges(userId, 12, pageNum);
 
-    const intObserver = useRef<IntersectionObserver>();
+    const intObserver = useRef<IntersectionObserver>(null);
 
     const lastItemRef = useCallback(
         (node: any) => {

@@ -25,7 +25,7 @@ const postAttachmentSchema = new mongoose.Schema({
     _type: {
         type: Number,
         required: true,
-        enum: Object.values(PostAttachmentTypeEnum).map(Number)
+        enum: Object.values(PostAttachmentTypeEnum).filter(v => typeof v === "number").map(Number)
     },
     code: { // attached code
         type: mongoose.Types.ObjectId,
@@ -128,16 +128,14 @@ postAttachmentSchema.post("save", async function () {
 });
 
 // --- DELETE MANY ---
-postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function (next) {
+postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function () {
     try {
         const filter = this.getFilter();
         const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
         (this as any)._docsToDelete = docs;
     } catch (err) {
         console.log("Error in postAttachmentSchema.pre(deleteMany):", err);
-    } finally {
-        next();
-    }
+    } 
 });
 
 postAttachmentSchema.post("deleteMany", { document: false, query: true }, async function () {
@@ -257,7 +255,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
         let attachment = null;
         switch (match[2].toLowerCase()) {
             case "compiler-playground": {
-                const codeId = match[3];
+                const codeId = new mongoose.Types.ObjectId(match[3]);
                 const code = await Code.findById(codeId);
                 if (!code) continue;
                 attachment = currentAttachments.find(x => x.code && x.code == codeId);
@@ -273,7 +271,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
                 break;
             }
             case "discuss": {
-                const questionId = match[3];
+                const questionId = new mongoose.Types.ObjectId(match[3]);
                 const question = await Post.findById(questionId);
                 if (!question) continue;
                 attachment = currentAttachments.find(x => x.question && x.question == questionId);
@@ -289,7 +287,7 @@ postAttachmentSchema.statics.updateAttachments = async function (message: string
                 break;
             }
             case "feed": {
-                const postId = match[3];
+                const postId = new mongoose.Types.ObjectId(match[3]);
                 const post = await Post.findById(postId);
                 if (!post || (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED)) continue;
 

@@ -224,7 +224,7 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    if (currentUserId != code.user) {
+    if (!code.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -263,7 +263,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    if (currentUserId != code.user) {
+    if (!code.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -308,7 +308,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: IPostDocument & { user: IUserDocument } | null = null;
+    let parentPost: any = null;
     if (parentId) {
         parentPost = await Post
             .findById(parentId)
@@ -438,7 +438,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         user: currentUserId
     });
 
-    if (parentPost != null && parentPost.user != currentUserId) {
+    if (parentPost != null && !parentPost.user.equals(currentUserId)) {
         await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
             title: "New reply",
             message: `{action_user} replied to your comment on "${code.name}"`,
@@ -448,7 +448,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             postId: reply._id
         });
     }
-    if (code.user != currentUserId && (parentPost == null || code.user.toString() != parentPost.user.toString())) {
+    if (!code.user.equals(currentUserId) && (parentPost == null || code.user.toString() != parentPost.user.toString())) {
         await Notification.sendToUsers([code.user as Types.ObjectId], {
             title: "New comment",
             message: `{action_user} posted comment on your code "${code.name}"`,
@@ -495,7 +495,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    if (currentUserId != comment.user) {
+    if (!comment.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -528,7 +528,7 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    if (currentUserId != comment.user) {
+    if (!comment.user.equals(currentUserId)) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
@@ -552,7 +552,7 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const job = await EvaluationJob.create({
         language,
         source,
-        stdin: [stdin],
+        stdin: [stdin || ""],
         deviceId
     });
 

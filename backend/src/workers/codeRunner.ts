@@ -19,7 +19,7 @@ async function processSingleJob(job: IEvaluationJobDocument) {
         const result = await runInIsolate(job.source, job.language, boxId, job.stdin);
 
         job.status = "done";
-        job.result = result;
+        job.result = result as any;
 
         console.log(`Job ${job._id} is done`);
     } catch (err: any) {
@@ -56,7 +56,7 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                 let submission: IChallengeSubmissionDocument | null = submissions.length > 0 ? submissions[0] : null;
 
                 if (submission) {
-                    submission.testResults = testResults as any[];
+                    submission.testResults = testResults as any;
                     submission.passed = passed;
                     if (passed) {
                         submission.source = job.source;

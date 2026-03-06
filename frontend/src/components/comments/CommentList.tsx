@@ -68,7 +68,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         }
     }, [error]);
 
-    const intObserver = useRef<IntersectionObserver>();
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastCommentNodeRef = useCallback(
         (node: any) => {
             if (commentsLoading) return;

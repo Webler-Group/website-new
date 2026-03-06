@@ -131,10 +131,10 @@ userSchema.methods.matchPassword = async function (inputPassword: string) {
     return await bcrypt.compare(inputPassword, this.password);
 }
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
     if (this.isModified("password")) {
         if (this.password.length < 6) {
-            return next(new Error("Password must contain at least 6 characters"));
+            throw new Error("Password must contain at least 6 characters");
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -150,8 +150,6 @@ userSchema.pre('save', async function (next) {
     if (this.isModified("xp")) {
         this.level = levelFromXp(this.xp);
     }
-
-    return next();
 });
 
 declare interface IUser extends InferSchemaType<typeof userSchema> {

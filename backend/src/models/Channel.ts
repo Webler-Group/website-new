@@ -9,7 +9,7 @@ const channelSchema = new Schema({
     _type: {
         type: Number,
         required: true,
-        enum: Object.values(ChannelTypeEnum).map(Number)
+        enum: Object.values(ChannelTypeEnum).filter(v => typeof v === "number").map(Number)
     },
     title: {
         type: String,

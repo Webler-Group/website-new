@@ -48,7 +48,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const followers = await UserFollowing.find({ following: currentUserId });
 
   await Notification.sendToUsers(
-    followers.filter(x => x.user != currentUserId).map(x => x.user) as Types.ObjectId[],
+    followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user) as Types.ObjectId[],
     {
       title: "New post",
       type: NotificationTypeEnum.FEED_FOLLOWER_POST,
@@ -157,7 +157,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (feed.user != currentUserId) {
+  if (feed.user.equals(currentUserId)) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }
@@ -191,7 +191,7 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (feed.user != currentUserId && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
+  if (!feed.user.equals(currentUserId) && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }
@@ -229,8 +229,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     user: currentUserId
   });
 
-  if (parentComment && parentComment.user != currentUserId) {
-    await Notification.sendToUsers([parentComment.user as Types.ObjectId], {
+  if (parentComment && !parentComment.user.equals(currentUserId)) {
+    await Notification.sendToUsers([parentComment.user], {
       title: "New reply",
       type: NotificationTypeEnum.FEED_COMMENT,
       actionUser: currentUserId!,
@@ -239,8 +239,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
       postId: reply._id
     });
   }
-  if (feed.user != currentUserId && (!parentComment || feed.user.toString() != parentComment.user.toString())) {
-    await Notification.sendToUsers([feed.user as Types.ObjectId], {
+  if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user))) {
+    await Notification.sendToUsers([feed.user], {
       title: "New comment",
       type: NotificationTypeEnum.FEED_COMMENT,
       actionUser: currentUserId!,
@@ -319,7 +319,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (currentUserId != reply.user) {
+  if (!reply.user.equals(currentUserId )) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }
@@ -352,7 +352,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (currentUserId != reply.user) {
+  if (!reply.user.equals(currentUserId)) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }
@@ -391,7 +391,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     originalFeed.$inc("shares", 1);
     await originalFeed.save();
 
-    if (originalFeed.user != currentUserId) {
+    if (!originalFeed.user.equals(currentUserId)) {
       await Notification.sendToUsers([originalFeed.user as Types.ObjectId], {
         title: "Feed share",
         type: NotificationTypeEnum.FEED_SHARE,
@@ -836,7 +836,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  if (currentUserId != feed.user) {
+  if (!feed.user.equals(currentUserId)) {
     if (pinned) {
       await Notification.sendToUsers([feed.user as Types.ObjectId], {
         title: "Feed pin",

@@ -39,7 +39,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
         deleteReply
     } = useReplies(options, repliesVisible, comment.id, defaultReplies, 10);
 
-    const intObserver = useRef<IntersectionObserver>();
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastReplyNodeRef = useCallback(
         (node: any) => {
             if (repliesLoading) return;

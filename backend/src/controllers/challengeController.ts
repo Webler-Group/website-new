@@ -202,7 +202,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
         };
     }
 
-    const submissions: IChallengeSubmissionDocument[] = await ChallengeSubmission.find({ challenge: challengeId, language, user: currentUserId })
+    const submissions = await ChallengeSubmission.find({ challenge: challengeId, language, user: currentUserId })
         .sort({ createdAt: "desc" })
         .limit(1)
         .lean();
@@ -306,8 +306,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.title = title;
     challenge.description = description;
     challenge.difficulty = difficulty;
-    challenge.testCases = testCases;
-    challenge.templates = templates;
+    challenge.testCases = testCases as any;
+    challenge.templates = templates as any;
     challenge.xp = xp;
     challenge.isPublic = Number(isVisible) === 1;
 

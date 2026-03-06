@@ -74,7 +74,7 @@ async function main() {
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
 
-    app.all("*", (req, res) => {
+    app.use((req, res) => {
         res.status(404).json({ success: false, error: [{ message: "resource not found" }] });
     });
 

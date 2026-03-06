@@ -13,7 +13,7 @@ const upvoteSchema = new mongoose.Schema({
     },
     reaction: {
         type: Number,
-        enum: Object.values(ReactionsEnum).map(Number),
+        enum: Object.values(ReactionsEnum).filter(v => typeof v === "number").map(Number),
         required: false
     }
 });

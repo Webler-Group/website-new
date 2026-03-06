@@ -16,7 +16,7 @@ interface ReactionsListProps {
 const ReactionsList = ({ options, visible, onClose, title, showReactions, countPerPage }: ReactionsListProps) => {
     const { results, loading, hasNextPage, error, setState } = useReactions(options, countPerPage);
 
-    const intObserver = useRef<IntersectionObserver>();
+    const intObserver = useRef<IntersectionObserver>(null);
     const lastElemRef = useCallback(
         (elem: HTMLDivElement) => {
             if (loading) return;

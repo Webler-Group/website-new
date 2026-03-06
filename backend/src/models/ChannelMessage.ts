@@ -8,7 +8,6 @@ import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import Notification from "./Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import { truncate } from "../utils/StringUtils";
 import { Document } from "mongoose";
 import { getImageUrl } from "../controllers/mediaController";
 
@@ -16,7 +15,7 @@ const channelMessageSchema = new Schema({
     _type: {
         type: Number,
         required: true,
-        enum: Object.values(ChannelMessageTypeEnum).map(Number)
+        enum: Object.values(ChannelMessageTypeEnum).filter(v => typeof v === "number").map(Number)
     },
     content: {
         type: String,
@@ -46,7 +45,7 @@ const channelMessageSchema = new Schema({
     },
 }, { timestamps: true });
 
-channelMessageSchema.pre("save", async function (next) {
+channelMessageSchema.pre("save", async function () {
     (this as any).wasNew = this.isNew;
 
     try {
@@ -86,8 +85,6 @@ channelMessageSchema.pre("save", async function (next) {
         }
     } catch (err: any) {
         console.log("channelMessageSchema.pre(save) failed:", err.message);
-    } finally {
-        next();
     }
 });
 
