@@ -207,5 +207,5 @@ export const uploadImageToBlob = async ({
 };
 
 export const listDirectory = async (virtualPath: string) => {
-    return File.find({ path: virtualPath }).sort({ type: "desc", updatedAt: "desc" }).populate<{ author: IUserDocument }>("author", "name avatarImage level roles").lean();
+    return File.find({ path: virtualPath }).sort({ type: "desc", updatedAt: "desc" }).populate<{ author: IUserDocument }>("author", "name avatarHash level roles").lean();
 };

@@ -33,7 +33,7 @@ const channelInviteSchema = new Schema({
 channelInviteSchema.post("save", async function () {
     const io = getIO();
     if (io) {
-        const author = await User.findById(this.author, "name avatarImage level roles").lean();
+        const author = await User.findById(this.author, "name avatarHash level roles").lean();
         const channel = await Channel.findById(this.channel, "title _type title");
         if (!author || !channel) return;
 

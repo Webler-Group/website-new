@@ -209,7 +209,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         date: x.createdAt,
         userId: x.user._id,
         userName: x.users.length ? x.users[0].name : undefined,
-        userAvatarUrl: x.users.length ? x.users[0].avatarUrl : undefined,
+        userAvatarUrl: x.users.length ? getImageUrl(x.users[0].avatarHash) : undefined,
         level: x.users.length ? x.users[0].level : undefined,
         roles: x.users.length ? x.users[0].roles : undefined,
         answers: x.answers,
@@ -702,7 +702,7 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const data = result.map(x => ({
         id: x.user._id,
         name: x.user.name,
-        avatar: getImageUrl(x.user.avatarHash),
+        avatarUrl: getImageUrl(x.user.avatarHash),
         countryCode: x.user.countryCode,
         level: x.user.level,
         roles: x.user.roles,

@@ -382,7 +382,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         date: x.createdAt,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: getImageUrl(x.user.avatarHash),
+        userAvatarUrl: getImageUrl(x.user.avatarHash),
         level: x.user.level,
         roles: x.user.roles,
         votes: x.votes,

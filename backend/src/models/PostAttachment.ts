@@ -9,6 +9,7 @@ import { truncate } from "../utils/StringUtils";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import PostAttachmentTypeEnum from "../data/PostAttachmentTypeEnum";
+import { getImageUrl } from "../controllers/mediaController";
 
 const postAttachmentSchema = new mongoose.Schema({
     postId: {
@@ -198,12 +199,12 @@ postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose
         .populate("code", "name language")
         .populate("question", "title")
         .populate("feed")
-        .populate("user", "name avatarImage countryCode level roles") as any[];
+        .populate("user", "name avatarHash countryCode level roles") as any[];
     return result.map((x) => {
         const userDetails = {
             userId: x.user._id,
             userName: x.user.name,
-            userAvatar: x.user.avatarImage,
+            userAvatarUrl: getImageUrl(x.user.avatarHash),
             countryCode: x.user.countryCode,
             level: x.user.level,
             roles: x.user.roles

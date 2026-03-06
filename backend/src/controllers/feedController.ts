@@ -566,7 +566,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         date: x.createdAt,
         userId: x.user,
         userName: x.users.length ? x.users[0].name : "Unknown User",
-        userAvatarUrl: x.users.length ? getImageUrl(x.users[0].avatarImage) || null : null,
+        userAvatarUrl: x.users.length ? getImageUrl(x.users[0].avatarHash) || null : null,
         answers: x.answers || 0,
         votes: x.votes || 0,
         shares: x.shares || 0,
@@ -737,7 +737,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   let parentPost: any = null;
   if (parentId) {
-    parentPost = await Post.findById(parentId).populate("user", "name avatarImage countryCode level roles");
+    parentPost = await Post.findById(parentId).populate("user", "name avatarHash countryCode level roles");
     if (!parentPost) {
       res.status(404).json({ error: [{ message: "Parent post not found" }] });
       return;
@@ -756,7 +756,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     parentPost = reply.parentId
-      ? await Post.findById(reply.parentId).populate("user", "name avatarImage countryCode level roles")
+      ? await Post.findById(reply.parentId).populate("user", "name avatarHash countryCode level roles")
       : null;
 
     dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -789,7 +789,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const result = await dbQuery
     .skip(skipCount)
     .limit(count)
-    .populate("user", "name avatarImage countryCode level roles") as any[];
+    .populate("user", "name avatarHash countryCode level roles") as any[];
 
   const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
     id: x._id,

@@ -113,7 +113,7 @@ channelMessageSchema.post("save", async function () {
                 { $inc: { unreadCount: 1 } }
             );
 
-            const user = await User.findById(this.user, "name avatarImage level roles").lean();
+            const user = await User.findById(this.user, "name avatarHash level roles").lean();
             if (!user) return;
 
             const participants = await ChannelParticipant.find({ channel: this.channel }, "user muted unreadCount").lean();
@@ -145,7 +145,7 @@ channelMessageSchema.post("save", async function () {
 
                 const reply = this.repliedTo ?
                     await ChannelMessage.findById(this.repliedTo)
-                        .populate<{ user: any }>("user", "name avatarImage level roles")
+                        .populate<{ user: any }>("user", "name avatarHash level roles")
                         .lean() : null;
 
                 io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
