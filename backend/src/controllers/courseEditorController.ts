@@ -560,8 +560,8 @@ const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
             mimetype: fileDoc.mimetype,
             size: fileDoc.size,
             updatedAt: fileDoc.updatedAt,
-            url: `/media/files/${fileDoc._id}`,
-            previewUrl: fileDoc.preview ? `/media/files/${fileDoc._id}/preview` : null
+            url: getImageUrl(fileDoc.contenthash),
+            previewUrl: fileDoc.preview ? `/media/files/${fileDoc.contenthash}/preview` : null
         }
     });
 });
@@ -594,8 +594,8 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
             mimetype: x.mimetype,
             size: x.size,
             updatedAt: x.updatedAt,
-            url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
-            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
+            url: getImageUrl(x.contenthash),
+            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
         }))
     });
 });

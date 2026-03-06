@@ -276,10 +276,10 @@ const CourseEditorPage = () => {
                         <>
                             <div className="d-flex justify-content-between">
                                 <div>
-                                    <Button variant="primary" size="sm" onClick={handleEditDetails} disabled={loading}>Edit details</Button>
+                                    <Button variant="primary" size="sm" onClick={handleEditDetails} disabled={loading}>Edit</Button>
                                 </div>
                                 <div className="d-flex justify-content-end gap-2">
-                                    <Button variant="primary" size="sm" onClick={handleExportCourse} disabled={loading}>Export Course to JSON</Button>
+                                    <Button variant="primary" size="sm" onClick={handleExportCourse} disabled={loading}>Export to JSON</Button>
                                     <Button variant="primary" size="sm" onClick={() => showLessonForm("", null)} disabled={loading}>Create Lesson</Button>
                                 </div>
                             </div>
