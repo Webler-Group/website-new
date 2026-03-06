@@ -56,7 +56,7 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
                     onChannelJoin({
                         userId: data.userId,
                         userName: data.userName,
-                        userAvatar: data.userAvatar,
+                        userAvatarUrl: data.userAvatarUrl,
                         role: "Member"
                     });
                 } else if (data.type == 3) {

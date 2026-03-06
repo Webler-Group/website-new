@@ -38,11 +38,7 @@ const MyCourse = ({ course, onRestart }: CourseProps) => {
                     <div className="rounded-circle">
                         <img
                             className="wb-courses-course__cover-image"
-                            src={
-                                course.coverImage
-                                    ? "/media/files/" + course.coverImage
-                                    : "/resources/images/logoicon.svg"
-                            }
+                            src={course.coverImageUrl || "/resources/images/logoicon.svg"}
                             alt="Cover image"
                         />
                     </div>

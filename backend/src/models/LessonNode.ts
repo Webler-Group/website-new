@@ -41,24 +41,24 @@ const lessonNodeSchema = new mongoose.Schema({
     }
 });
 
-lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<ILessonNode>) {
-    const lessonNodesToDelete = await LessonNode.find(filter).select("_id");
+lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.FilterQuery<ILessonNode>, session?: mongoose.mongo.ClientSession) {
+    const lessonNodesToDelete = await LessonNode.find(filter).select("_id").session(session ?? null);
     for (let i = 0; i < lessonNodesToDelete.length; ++i) {
         const lessonNode = lessonNodesToDelete[i];
-        const lesson = await CourseLesson.findById(lessonNode.lessonId);
+        const lesson = await CourseLesson.findById(lessonNode.lessonId).session(session ?? null);
         if (lesson) {
             lesson.$inc("nodes", -1);
-            await lesson.save();
+            await lesson.save({ session });
         }
-        await QuizAnswer.deleteMany({ courseLessonNodeId: lessonNode._id });
+        await QuizAnswer.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
     }
-    await LessonNode.deleteMany(filter);
+    await LessonNode.deleteMany(filter, { session });
 }
 
 declare interface ILessonNode extends InferSchemaType<typeof lessonNodeSchema> { }
 
 interface LessonNodeModel extends Model<ILessonNode> {
-    deleteAndCleanup(filter: mongoose.FilterQuery<ILessonNode>): Promise<any>
+    deleteAndCleanup(filter: mongoose.FilterQuery<ILessonNode>, session?: mongoose.mongo.ClientSession): Promise<any>
 }
 
 const LessonNode = mongoose.model<ILessonNode, LessonNodeModel>("LessonNode", lessonNodeSchema);

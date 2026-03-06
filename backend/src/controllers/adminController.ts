@@ -13,6 +13,7 @@ import {
 } from "../validation/adminSchema";
 
 import { parseWithZod } from "../utils/zodUtils";
+import { getImageUrl } from "./mediaController";
 
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -44,7 +45,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const users = await User.find(filter)
-        .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban")
+        .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban")
         .sort({ createdAt: -1 })
         .skip((page - 1) * count)
         .limit(count);
@@ -58,7 +59,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             email: u.email,
             countryCode: u.countryCode,
             name: u.name,
-            avatarImage: u.avatarImage,
+            avatarUrl: getImageUrl(u.avatarHash),
             roles: u.roles,
             registerDate: u.createdAt,
             level: u.level,
@@ -81,7 +82,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = body;
 
     const user = await User.findById(userId)
-        .select("_id email countryCode name avatarImage roles createdAt level emailVerified active ban bio");
+        .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban bio");
 
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
@@ -95,7 +96,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
             email: user.email,
             countryCode: user.countryCode,
             name: user.name,
-            avatarImage: user.avatarImage,
+            avatarUrl: getImageUrl(user.avatarHash),
             roles: user.roles,
             registerDate: user.createdAt,
             level: user.level,

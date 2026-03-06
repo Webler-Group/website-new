@@ -14,7 +14,7 @@ interface ICourse {
     title: string;
     description: string;
     visible: boolean;
-    coverImage?: string;
+    coverImageUrl?: string | null;
     lessons: ILesson[];
     userProgress: {
         updatedAt: string;

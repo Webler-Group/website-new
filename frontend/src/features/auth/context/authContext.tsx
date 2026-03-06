@@ -5,7 +5,7 @@ export interface UserInfo {
     id: string;
     name: string;
     email: string;
-    avatarImage: string | null;
+    avatarUrl: string | null;
     roles: string[];
     emailVerified: boolean;
     countryCode: string | null;

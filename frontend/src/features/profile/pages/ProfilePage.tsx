@@ -25,7 +25,7 @@ export interface UserDetails {
     name: string;
     email: string;
     bio: string;
-    avatarImage: string | null;
+    avatarUrl?: string | null;
     countryCode: string;
     followers: number;
     following: number;
@@ -50,7 +50,7 @@ export interface UserMinimal {
     id: string;
     name: string;
     countryCode?: string;
-    avatar: string;
+    avatarUrl?: string | null;
     level?: number;
     isFollowing?: boolean;
 }
@@ -344,7 +344,7 @@ const ProfilePage = () => {
 
                             <div className="d-block d-md-flex gap-3">
                                 <div className="wb-p-details__avatar">
-                                    <ProfileAvatar size={96} avatarImage={userDetails.avatarImage} />
+                                    <ProfileAvatar size={96} avatarUrl={userDetails.avatarUrl} />
                                     {badge}
                                 </div>
 

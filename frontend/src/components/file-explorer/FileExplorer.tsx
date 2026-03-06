@@ -11,7 +11,7 @@ type FileExplorerItem = {
     id: string;
     authorId: string;
     authorName: string;
-    authorAvatar: string | null;
+    authorAvatarUrl: string | null;
     type: number;
     name: string;
     mimetype?: string;
@@ -228,7 +228,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 id: result.data.id,
                 authorId: userInfo.id,
                 authorName: userInfo.name,
-                authorAvatar: userInfo.avatarImage,
+                authorAvatarUrl: userInfo.avatarUrl,
                 type: 1,
                 name: result.data.name,
                 url: result.data.url,
@@ -329,7 +329,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 id: result.data.id,
                 authorId: userInfo.id,
                 authorName: userInfo.name,
-                authorAvatar: userInfo.avatarImage,
+                authorAvatarUrl: userInfo.avatarUrl,
                 type: 2,
                 name: result.data.name,
                 updatedAt: result.data.updatedAt,

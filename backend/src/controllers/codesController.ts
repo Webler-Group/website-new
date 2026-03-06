@@ -6,7 +6,7 @@ import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
 import { escapeRegex } from "../utils/regexUtils";
-import Post from "../models/Post";
+import Post, { IPostDocument } from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
 import PostTypeEnum from "../data/PostTypeEnum";
@@ -15,6 +15,7 @@ import { Types } from "mongoose";
 import { parseWithZod } from "../utils/zodUtils";
 import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeCommentSchema, deleteCodeSchema, editCodeCommentSchema, editCodeSchema, getCodeCommentsSchema, getCodeListSchema, getCodeSchema, getJobSchema, getTemplateSchema, voteCodeSchema } from "../validation/codesSchema";
 import { IUserDocument } from "../models/User";
+import { getImageUrl } from "./mediaController";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -127,7 +128,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .select("-source -cssSource -jsSource")
-        .populate<{ user: IUserDocument }>("user", "name avatarImage level roles");
+        .populate<{ user: IUserDocument }>("user", "name avatarHash level roles");
 
     const data = result.map(x => ({
         id: x._id,
@@ -136,7 +137,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         updatedAt: x.updatedAt,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: x.user.avatarImage,
+        userAvatarUrl: getImageUrl(x.user.avatarHash),
         level: x.user.level,
         roles: x.user.roles,
         comments: x.comments,
@@ -167,7 +168,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await Code.findById(codeId)
-        .populate("user", "name avatarImage countryCode level roles") as any;
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
 
     if (code) {
         const isUpvoted = currentUserId ? await Upvote.findOne({ parentId: codeId, user: currentUserId }) : false;
@@ -181,7 +182,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 updatedAt: code.updatedAt,
                 userId: code.user._id,
                 userName: code.user.name,
-                userAvatar: code.user.avatarImage,
+                userAvatarUrl: getImageUrl(code.user.avatarHash),
                 level: code.user.level,
                 roles: code.user.roles,
                 comments: code.comments,
@@ -307,11 +308,11 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: any = null;
+    let parentPost: IPostDocument & { user: IUserDocument } | null = null;
     if (parentId) {
         parentPost = await Post
             .findById(parentId)
-            .populate("user", "name avatarImage countryCode level roles");
+            .populate("user", "name avatarHash countryCode level roles");
     }
 
     let dbQuery = Post.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
@@ -328,7 +329,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
         parentPost = reply.parentId ? await Post
             .findById(reply.parentId)
-            .populate("user", "name avatarImage countryCode level roles")
+            .populate("user", "name avatarHash countryCode level roles")
             : null;
 
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -372,7 +373,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", "name avatarImage countryCode level roles") as any[];
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
 
     const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
         id: x._id,
@@ -381,7 +382,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         date: x.createdAt,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: x.user.avatarImage,
+        userAvatar: getImageUrl(x.user.avatarHash),
         level: x.user.level,
         roles: x.user.roles,
         votes: x.votes,

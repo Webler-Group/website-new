@@ -230,7 +230,7 @@ world`}
       <div className="d-flex justify-content-end align-items-center gap-2 mt-3">
         <Form.Control
           type="file"
-          accept=".txt"
+          accept=".txt, text/plain"
           ref={fileInputRef}
           onChange={handleFileUpload}
           style={{ display: "none" }}

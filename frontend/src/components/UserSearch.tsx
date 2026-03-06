@@ -83,7 +83,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
                             style={{ cursor: "pointer" }}
                             className="d-flex align-items-start gap-2"
                         >
-                            <ProfileAvatar avatarImage={user.avatar} size={32} />
+                            <ProfileAvatar avatarUrl={user.avatarUrl} size={32} />
                             <span>{user.name}</span>
                         </ListGroup.Item>
                     ))}

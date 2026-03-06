@@ -8,6 +8,7 @@ import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import ChannelMessage from "./ChannelMessage";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import { getImageUrl } from "../controllers/mediaController";
 
 const channelInviteSchema = new Schema({
     invitedUser: {
@@ -48,7 +49,7 @@ channelInviteSchema.post("save", async function () {
             id: this._id,
             authorId: author._id,
             authorName: author.name,
-            authorAvatar: author.avatarImage,
+            authorAvatarUrl: getImageUrl(author.avatarHash),
             channelId: channel._id,
             channelType: channel._type,
             channelTitle: channel.title,

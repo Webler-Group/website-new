@@ -16,7 +16,7 @@ interface ICode {
     language: compilerLanguages;
     userName?: string;
     userId?: string;
-    userAvatar?: string;
+    userAvatarUrl?: string;
     createdAt?: string;
     updatedAt?: string;
     comments: number;
@@ -102,7 +102,7 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
                             </div>
                         </div>
                         <div className="ms-2">
-                            <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
+                            <ProfileAvatar size={32} avatarUrl={code.userAvatarUrl!} />
                         </div>
                     </div>
                 </div>

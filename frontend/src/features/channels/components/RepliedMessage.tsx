@@ -33,7 +33,7 @@ const RepliedMessage = ({ message }: RepliedMessageProps) => {
             <div ref={containerRef} className='small'>
                 <div className="d-flex gap-1 align-items-start">
                     <FaReply className="flex-shrink-0" />
-                    <ProfileAvatar size={20} avatarImage={message.userAvatar} />
+                    <ProfileAvatar size={20} avatarUrl={message.userAvatarUrl} />
                     <ProfileName userId={message.userId} userName={"@" + message.userName} />
                     {message.deleted ? (
                         <i className="text-muted">Deleted</i>

@@ -10,7 +10,7 @@ interface IUserReaction {
     id: string;
     userId: string;
     userName: string;
-    userAvatar?: string;
+    userAvatarUrl?: string | null;
     isFollowing: boolean;
     reaction: ReactionsEnum;
 }
@@ -50,7 +50,7 @@ const ReactionListItem = React.forwardRef<HTMLDivElement, ReactionListItemProps>
                 <div className="d-flex align-items-start">
                     {/* Avatar */}
                     <div className="me-2">
-                        <ProfileAvatar size={42} avatarImage={item.userAvatar ?? null} />
+                        <ProfileAvatar size={42} avatarUrl={item.userAvatarUrl} />
                     </div>
 
                     {/* Name and Reaction */}

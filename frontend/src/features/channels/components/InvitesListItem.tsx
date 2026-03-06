@@ -7,13 +7,13 @@ interface IChannelInvite {
     id: string;
     authorId: string;
     authorName: string;
-    authorAvatar: string;
+    authorAvatarUrl: string;
     channelId?: string;
     channelType?: number;
     channelTitle?: string;
     invitedUserId?: string;
     invitedUserName?: string;
-    invitedUserAvatar?: string;
+    invitedUserAvatarUrl?: string;
     createdAt: string;
 }
 
@@ -26,7 +26,7 @@ interface InvitesListItemProps {
 const InvitesListItem = React.forwardRef(({ invite, onAccept, onDecline }: InvitesListItemProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     let body = (<Card className="mb-3">
         <Card.Body className="d-flex align-items-center gap-2">
-            <ProfileAvatar avatarImage={invite.authorAvatar} size={42} />
+            <ProfileAvatar avatarUrl={invite.authorAvatarUrl} size={42} />
             <div className="flex-grow-1">
                 <div><strong>{invite.channelTitle}</strong></div>
                 <div className="text-muted small">

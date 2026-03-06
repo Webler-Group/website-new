@@ -1,4 +1,4 @@
-import mongoose, { Schema, SchemaTypes, Types } from "mongoose";
+import mongoose, { InferSchemaType, Model, Schema, SchemaTypes, Types } from "mongoose";
 import { getIO, uidRoom } from "../config/socketServer";
 import ChannelParticipant from "./ChannelParticipant";
 import User from "./User";
@@ -9,6 +9,8 @@ import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import Notification from "./Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { truncate } from "../utils/StringUtils";
+import { Document } from "mongoose";
+import { getImageUrl } from "../controllers/mediaController";
 
 const channelMessageSchema = new Schema({
     _type: {
@@ -156,7 +158,7 @@ channelMessageSchema.post("save", async function () {
                     updatedAt: this.updatedAt,
                     userId: user._id.toString(),
                     userName: user.name,
-                    userAvatar: user.avatarImage,
+                    userAvatarUrl: getImageUrl(user.avatarHash),
                     viewed: false,
                     deleted: this.deleted,
                     repliedTo: reply ? {
@@ -166,7 +168,7 @@ channelMessageSchema.post("save", async function () {
                         updatedAt: reply.updatedAt,
                         userId: reply.user._id.toString(),
                         userName: reply.user.name,
-                        userAvatar: reply.user.avatarImage,
+                        userAvatarUrl: getImageUrl(reply.user.avatarHash),
                         deleted: reply.deleted
                     } : null,
                     attachments
@@ -182,6 +184,10 @@ channelMessageSchema.post("save", async function () {
     }
 });
 
+declare interface IChannelMessage extends InferSchemaType<typeof channelMessageSchema> {}
+
 const ChannelMessage = mongoose.model("ChannelMessage", channelMessageSchema);
+
+export type IChannelMessageDocument = IChannelMessage & Document;
 
 export default ChannelMessage;

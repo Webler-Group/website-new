@@ -8,14 +8,14 @@ import { truncate } from "../../../utils/StringUtils";
 interface IChannelParticipant {
     userId: string;
     userName: string;
-    userAvatar: string;
+    userAvatarUrl: string;
     role: string;
 }
 
 interface IChannel {
     id: string;
     type: number;
-    coverImage: string;
+    coverImageUrl: string;
     title: string;
     createdAt: string;
     updatedAt: string;
@@ -51,7 +51,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                         height={32}
                     />
                     :
-                    <ProfileAvatar size={32} avatarImage={channel.coverImage} />
+                    <ProfileAvatar size={32} avatarUrl={channel.coverImageUrl} />
             }
             <div className="flex-grow-1">
                 <div className="d-flex justify-content-between align-items-center">

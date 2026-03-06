@@ -30,6 +30,7 @@ import {
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
+import { getImageUrl } from "./mediaController";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -120,7 +121,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
       $project: {
         userId: "$userDetails._id",
         userName: "$userDetails.name",
-        userAvatar: "$userDetails.avatarImage",
+        userHash: "$userDetails.avatarHash",
         level: "$userDetails.level",
         roles: "$userDetails.roles",
         reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
@@ -133,7 +134,14 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
 
   res.json({
     count: totalCount,
-    userReactions: reactions
+    userReactions: reactions.map(x => ({
+      id: x._id,
+      userId: x.userId,
+      userName: x.userName,
+      userAvatarUrl: getImageUrl(x.userHash),
+      isFollowing: x.isFollowing,
+      reaction: x.reaction
+    }))
   });
 });
 
@@ -558,7 +566,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         date: x.createdAt,
         userId: x.user,
         userName: x.users.length ? x.users[0].name : "Unknown User",
-        userAvatarImage: x.users.length ? x.users[0].avatarImage || null : null,
+        userAvatarUrl: x.users.length ? getImageUrl(x.users[0].avatarImage) || null : null,
         answers: x.answers || 0,
         votes: x.votes || 0,
         shares: x.shares || 0,
@@ -584,8 +592,8 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             userName: x.originalPost[0].users.length
               ? x.originalPost[0].users[0].name
               : "Unknown User",
-            userAvatarImage: x.originalPost[0].users.length
-              ? x.originalPost[0].users[0].avatarImage || null
+            userAvatarUrl: x.originalPost[0].users.length
+              ? getImageUrl(x.originalPost[0].users[0].avatarHash) || null
               : null,
             date: x.originalPost[0].createdAt
           }
@@ -684,7 +692,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     date: feed.createdAt,
     userId: feed.user._id,
     userName: feed.user.name,
-    userAvatarImage: feed.user.avatarImage,
+    userAvatarUrl: getImageUrl(feed.user.avatarHash),
     answers: feed.answers,
     votes: feed.votes,
     shares: feed.shares,
@@ -703,8 +711,8 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userName: feed.originalPost[0].users.length
           ? feed.originalPost[0].users[0].name
           : "Unknown User",
-        userAvatarImage: feed.originalPost[0].users.length
-          ? feed.originalPost[0].users[0].avatarImage || null
+        userAvatarUrl: feed.originalPost[0].users.length
+          ? getImageUrl(feed.originalPost[0].users[0].avatarHash) || null
           : null,
         date: feed.originalPost[0].createdAt
       }
@@ -790,7 +798,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     date: x.createdAt,
     userId: x.user._id,
     userName: x.user.name,
-    userAvatar: x.user.avatarImage,
+    userAvatarUrl: getImageUrl(x.user.avatarHash),
     level: x.user.level,
     roles: x.user.roles,
     votes: x.votes,

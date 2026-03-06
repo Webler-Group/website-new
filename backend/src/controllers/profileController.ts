@@ -24,6 +24,7 @@ import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import FileTypeEnum from "../data/FileTypeEnum";
+import { getImageUrl } from "./mediaController";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -123,7 +124,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
             name: user.name,
             email: currentUserId === userId ? user.email : null,
             bio: user.bio,
-            avatarImage: user.avatarImage,
+            avatarUrl: getImageUrl(user.avatarHash),
             roles: user.roles,
             emailVerified: user.emailVerified,
             countryCode: user.countryCode,
@@ -384,14 +385,14 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("user", "name avatarImage countryCode level roles")
+        .populate("user", "name avatarHash countryCode level roles")
         .select("user") as any[];
 
     const promises: Promise<void>[] = [];
     const data = result.map(x => ({
         id: x.user._id,
         name: x.user.name,
-        avatar: x.user.avatarImage,
+        avatarUrl: getImageUrl(x.user.avatarHash),
         countryCode: x.user.countryCode,
         level: x.user.level,
         roles: x.user.roles,
@@ -421,14 +422,14 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("following", "name avatarImage countryCode level roles")
+        .populate("following", "name avatarHash countryCode level roles")
         .select("following") as any[];
 
     const promises: Promise<void>[] = [];
     const data = result.map(x => ({
         id: x.following._id,
         name: x.following.name,
-        avatar: x.following.avatarImage,
+        avatarUrl: getImageUrl(x.following.avatarHash),
         countryCode: x.following.countryCode,
         level: x.following.level,
         roles: x.following.roles,
@@ -469,8 +470,8 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const result = await dbQuery
         .limit(count)
-        .populate<{ user: any }>("user", "name avatarUrl countryCode level roles")
-        .populate<{ actionUser: any }>("actionUser", "name avatarImage countryCode level roles")
+        .populate<{ user: any }>("user", "name avatarHash countryCode level roles")
+        .populate<{ actionUser: any }>("actionUser", "name avatarHash countryCode level roles")
         .populate<{ postId: any }>("postId", "parentId");
 
     const data = result.map(x => ({
@@ -482,7 +483,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
             id: x.user._id,
             name: x.user.name,
             countryCode: x.user.countryCode,
-            avatar: x.user.avatarImage,
+            avatarUrl: getImageUrl(x.user.avatarHash),
             level: x.user.level,
             roles: x.user.roles
         },
@@ -490,7 +491,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
             id: x.actionUser._id,
             name: x.actionUser.name,
             countryCode: x.actionUser.countryCode,
-            avatar: x.actionUser.avatarImage,
+            avatarUrl: getImageUrl(x.actionUser.avatarHash),
             level: x.actionUser.level,
             roles: x.actionUser.roles
         },
@@ -564,13 +565,15 @@ const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
         quality: 82,
     });
 
-    user.avatarImage = fileDoc._id;
+    user.avatarFileId = fileDoc._id;
+    user.avatarHash = fileDoc.contenthash;
     await user.save();
 
     res.json({
         success: true,
         data: {
-            avatarImage: fileDoc._id
+            avatarFileId: fileDoc._id,
+            avatarUrl: getImageUrl(fileDoc.contenthash)
         },
     });
 });
@@ -596,8 +599,9 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
         return;
     }
 
-    if (user.avatarImage) {
-        user.avatarImage = null as any;
+    if (user.avatarFileId) {
+        user.avatarFileId = undefined;
+        user.avatarHash = undefined;
         await user.save();
 
         await deleteEntry(`users/${user._id}/avatar`, "avatar");
@@ -647,13 +651,13 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     const users = await User.find()
         .where(match)
-        .select("name avatarImage level roles countryCode");
+        .select("name avatarHash level roles countryCode");
 
     res.json({
         users: users.map(u => ({
             id: u._id,
             name: u.name,
-            avatar: u.avatarImage,
+            avatarUrl: getImageUrl(u.avatarHash),
             level: u.level,
             roles: u.roles,
             countryCode: u.countryCode
@@ -693,8 +697,8 @@ const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
             mimetype: fileDoc.mimetype,
             size: fileDoc.size,
             updatedAt: fileDoc.updatedAt,
-            url: `/media/files/${fileDoc._id}`,
-            previewUrl: fileDoc.preview ? `/media/files/${fileDoc._id}/preview` : null
+            url: getImageUrl(fileDoc.contenthash),
+            previewUrl: fileDoc.preview ? `/media/files/${fileDoc.contenthash}/preview` : null
         }
     });
 });
@@ -729,14 +733,14 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
-            authorAvatar: x.author.avatarImage,
+            authorUrl: getImageUrl(x.author.avatarHash),
             type: x._type,
             name: x.name,
             mimetype: x.mimetype,
             size: x.size,
             updatedAt: x.updatedAt,
-            url: x._type === FileTypeEnum.FILE ? `/media/files/${x._id}` : null,
-            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x._id}/preview` : null
+            url: getImageUrl(x.contenthash),
+            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
         }))
     });
 });

@@ -469,7 +469,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                         code.id &&
                                         <>
                                             <div className="d-flex align-items-center gap-2">
-                                                <ProfileAvatar size={32} avatarImage={code.userAvatar!} />
+                                                <ProfileAvatar size={32} avatarUrl={code.userAvatarUrl!} />
                                                 <div>
                                                     <div>
                                                         <b>{truncate(code.name!, 10)}</b>

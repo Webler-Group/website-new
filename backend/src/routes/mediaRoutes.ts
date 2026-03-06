@@ -3,7 +3,7 @@ import { Router } from "express";
 import mediaController from "../controllers/mediaController";
 
 const router = Router();
-router.get("/files/:fileId", mediaController.getFileById);
-router.get("/files/:fileId/preview", mediaController.getFilePreviewById);
+router.get("/files/:hash", mediaController.getFileByHash);
+router.get("/files/:hash/preview", mediaController.getFilePreviewByHash);
 
 export default router;

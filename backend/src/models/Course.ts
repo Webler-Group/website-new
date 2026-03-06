@@ -1,7 +1,8 @@
 import mongoose, { Document, InferSchemaType, Model } from "mongoose";
 import CourseLesson from "./CourseLesson";
 import CourseProgress from "./CourseProgress";
-import File from "./File";
+import File, { IFileDocument } from "./File";
+import { deleteEntry, deleteSingleFile } from "../helpers/fileHelper";
 
 const courseSchema = new mongoose.Schema({
     code: {
@@ -21,10 +22,12 @@ const courseSchema = new mongoose.Schema({
         minLength: 1,
         maxLength: 120
     },
-    coverImage: {
+    coverImageFileId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "File",
-        default: null
+        ref: "File"
+    },
+    coverImageHash: {
+        type: String
     },
     description: {
         type: String,
@@ -42,16 +45,16 @@ const courseSchema = new mongoose.Schema({
 courseSchema.statics.deleteAndCleanup = async function (courseId: mongoose.Types.ObjectId | string) {
     const course = await Course
         .findById(courseId)
-        .select("coverImage")
+        .populate<{ coverImageFileId: IFileDocument }>("coverImageFileId")
         .lean();
 
     if (!course) return;
- 
+
     await CourseLesson.deleteAndCleanup({ course: courseId });
     await CourseProgress.deleteMany({ course: courseId });
-    
-    if (course.coverImage) {
-        await File.deleteOne({ _id: course.coverImage });
+
+    if (course.coverImageFileId) {
+        await deleteSingleFile(course.coverImageFileId);
     }
 
     await Course.deleteOne({ _id: courseId });

@@ -42,7 +42,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       style={{ cursor: "pointer" }}
     >
       <div className='d-flex gap-2 align-items-center mb-2'>
-        <ProfileAvatar size={28} avatarImage={originalPost.userAvatarImage} />
+        <ProfileAvatar size={28} avatarUrl={originalPost.userAvatarUrl} />
         <ProfileName userId={originalPost.userId} userName={originalPost.userName} />
         <span>wrote</span>
       </div>
@@ -229,7 +229,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         {/* Header */}
         <div className="d-flex justify-content-between">
           <div className="d-flex align-items-start gap-2 flex-grow-1">
-            <ProfileAvatar size={36} avatarImage={feed.userAvatarImage} />
+            <ProfileAvatar size={36} avatarUrl={feed.userAvatarUrl} />
 
             <div className='d-flex flex-column'>
               <div className='d-flex gap-2'>

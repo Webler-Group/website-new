@@ -98,7 +98,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const body = (
         <div className="d-flex p-2 border-bottom gap-2 align-items-center" onClick={viewNotification} style={{ cursor: "pointer" }}>
             <div>
-                <ProfileAvatar size={32} avatarImage={notification.actionUser.avatar} />
+                <ProfileAvatar size={32} avatarUrl={notification.actionUser.avatarUrl} />
             </div>
             <div className="flex-grow-1">
                 <div style={{ wordBreak: "break-word", fontSize: "14px" }}>

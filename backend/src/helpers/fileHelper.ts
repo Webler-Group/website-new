@@ -57,7 +57,7 @@ export const deleteBlobIfUnreferenced = async (contenthash: string) => {
     await unlinkIfExists(blobPath);
 };
 
-const deleteSingleFile = async (doc: IFileDocument) => {
+export const deleteSingleFile = async (doc: IFileDocument) => {
     const mainHash = doc.contenthash;
     const previewHash = doc.preview?.contenthash;
 

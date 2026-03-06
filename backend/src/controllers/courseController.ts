@@ -6,10 +6,10 @@ import CourseProgress, { ICourseProgressDocument } from "../models/CourseProgres
 import CourseLesson from "../models/CourseLesson";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
-import User from "../models/User";
+import User, { IUserDocument } from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import Post from "../models/Post";
+import Post, { IPostDocument } from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -30,6 +30,7 @@ import {
     deleteLessonCommentSchema
 } from "../validation/courseSchema";
 import { parseWithZod } from "../utils/zodUtils";
+import { getImageUrl } from "./mediaController";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseListSchema, req);
@@ -53,7 +54,7 @@ const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         title: course.title,
         description: course.description,
         visible: course.visible,
-        coverImage: course.coverImage
+        coverImageUrl: getImageUrl(course.coverImageHash)
     }));
 
     res.json({
@@ -74,7 +75,7 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
         title: x.course.title,
         description: x.course.description,
         visible: x.course.visible,
-        coverImage: x.course.coverImage,
+        coverImageUrl: getImageUrl(x.course.coverImageHash),
         completed: x.completed,
         updatedAt: x.updatedAt
     }));
@@ -140,7 +141,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             title: course.title,
             description: course.description,
             visible: course.visible,
-            coverImage: course.coverImage,
+            coverImageUrl: getImageUrl(course.coverImageHash),
             lessons,
             userProgress: {
                 updatedAt: userProgress.updatedAt,
@@ -353,11 +354,11 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { lessonId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: any = null;
+    let parentPost: IPostDocument & { user: IUserDocument } | null = null;
     if (parentId) {
         parentPost = await Post
             .findById(parentId)
-            .populate("user", "name avatarImage countryCode level roles");
+            .populate("user", "name avatarHash countryCode level roles");
     }
 
     let dbQuery = Post.find({ lessonId, _type: PostTypeEnum.LESSON_COMMENT, hidden: false });
@@ -373,7 +374,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
 
         parentPost = reply.parentId ? await Post
             .findById(reply.parentId)
-            .populate("user", "name avatarImage countryCode level roles")
+            .populate("user", "name avatarHash countryCode level roles")
             : null;
 
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -401,7 +402,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", "name avatarImage countryCode level roles") as any[];
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
 
     const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
         id: x._id,
@@ -410,7 +411,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
         date: x.createdAt,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: x.user.avatarImage,
+        userAvatarUrl: getImageUrl(x.user.avatarHash),
         level: x.user.level,
         roles: x.user.roles,
         votes: x.votes,

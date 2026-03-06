@@ -1,11 +1,11 @@
 interface ProfileAvatarProps {
-    avatarImage: string | null;
+    avatarUrl?: string | null;
     size: number;
 }
 
-const ProfileAvatar = ({ avatarImage, size }: ProfileAvatarProps) => {
+const ProfileAvatar = ({ avatarUrl, size }: ProfileAvatarProps) => {
     return (
-        <img className="rounded-circle" width={size} height={size} src={avatarImage ? "/media/files/" + avatarImage : "/resources/images/user.svg"} alt="Avatar" />
+        <img className="rounded-circle" width={size} height={size} src={avatarUrl || "/resources/images/user.svg"} alt="Avatar" />
     );
 }
 

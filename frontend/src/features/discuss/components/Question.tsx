@@ -13,7 +13,7 @@ interface IQuestion {
     title: string;
     tags: string[];
     userName: string;
-    userAvatar: string;
+    userAvatarUrl: string;
     userId: string;
     date: string;
     message: string;
@@ -79,7 +79,7 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
                             </div>
                         </div>
                         <div className="ms-2">
-                            <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                            <ProfileAvatar size={32} avatarUrl={question.userAvatarUrl} />
                         </div>
                     </div>
                 </div>

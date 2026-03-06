@@ -1,8 +1,8 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Post from "../models/Post";
-import Tag from "../models/Tag";
+import Post, { IPostDocument } from "../models/Post";
+import Tag, { ITagDocument } from "../models/Tag";
 import Upvote from "../models/Upvote";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
@@ -16,6 +16,8 @@ import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
 import RolesEnum from "../data/RolesEnum";
 import { isAuthorizedRole } from "../utils/modelUtils";
+import { IUserDocument } from "../models/User";
+import { getImageUrl } from "./mediaController";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -198,16 +200,16 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
     })
 
-    const result = await Post.aggregate(pipeline)
+    const result = await Post.aggregate(pipeline); // ???
 
     const data = result.map(x => ({
         id: x._id,
         title: x.title,
-        tags: x.tags.map((y: any) => y.name),
+        tags: x.tags.map((tag: ITagDocument) => tag.name),
         date: x.createdAt,
         userId: x.user._id,
         userName: x.users.length ? x.users[0].name : undefined,
-        userAvatar: x.users.length ? x.users[0].avatarImage : undefined,
+        userAvatarUrl: x.users.length ? x.users[0].avatarUrl : undefined,
         level: x.users.length ? x.users[0].level : undefined,
         roles: x.users.length ? x.users[0].roles : undefined,
         answers: x.answers,
@@ -238,8 +240,8 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const question = await Post.findById(questionId)
-        .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
-        .populate<{ tags: any[] }>("tags", "name")
+        .populate<{ user: IUserDocument }>("user", "name avatarImage countryCode level roles")
+        .populate<{ tags: ITagDocument[] }>("tags", "name")
         .lean();
 
     if (question) {
@@ -253,13 +255,11 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: question._id,
                 title: question.title,
                 message: question.message,
-                tags: question.tags.map((y: any) => y.name),
+                tags: question.tags.map(tag => tag.name),
                 date: question.createdAt,
                 userId: question.user._id,
                 userName: question.user.name,
-                userAvatar: question.user.avatarImage,
-                level: question.user.level,
-                roles: question.user.roles,
+                userAvatarUrl: getImageUrl(question.user.avatarHash),
                 answers: question.answers,
                 votes: question.votes,
                 isUpvoted,
@@ -400,7 +400,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", "name avatarImage countryCode level roles") as any[];
+        .populate<{ user: IUserDocument }>("user", "name avatarImage countryCode level roles");
 
     const data = result.map((x, offset) => ({
         id: x._id,
@@ -409,7 +409,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         date: x.createdAt,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: x.user.avatarImage,
+        userAvatarUrl: getImageUrl(x.user.avatarHash),
         level: x.user.level,
         roles: x.user.roles,
         votes: x.votes,
@@ -695,14 +695,14 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate<{ user: any }>("user", "name avatarImage countryCode level roles")
+        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles")
         .select("user");
 
     const promises: Promise<void>[] = [];
     const data = result.map(x => ({
         id: x.user._id,
         name: x.user.name,
-        avatar: x.user.avatarImage,
+        avatar: getImageUrl(x.user.avatarHash),
         countryCode: x.user.countryCode,
         level: x.user.level,
         roles: x.user.roles,

@@ -16,7 +16,7 @@ interface IAnswer {
     id: string;
     userName: string;
     userId: string;
-    userAvatar: string;
+    userAvatarUrl: string;
     date: string;
     message: string;
     isAccepted: boolean;
@@ -120,7 +120,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         </div>
                     </div>
                     <div className="ms-2">
-                        <ProfileAvatar size={32} avatarImage={answer.userAvatar} />
+                        <ProfileAvatar size={32} avatarUrl={answer.userAvatarUrl} />
                     </div>
                 </div>
             </div>

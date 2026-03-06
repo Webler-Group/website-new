@@ -206,10 +206,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
         if (result && result.success) {
             if (userDetails.id == userInfo.id) {
-                userInfo.avatarImage = result.data.avatarImage;
+                userInfo.avatarUrl = result.data.avatarUrl;
                 updateUser(userInfo);
             }
-            onUpdate({ avatarImage: result.data.avatarImage });
+            onUpdate({ avatarUrl: result.data.avatarUrl });
             setAvatarMessage({ message: "Avatar image updated successfully" });
         } else {
             setAvatarMessage({ errors: result?.error });
@@ -232,10 +232,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
         if (result && result.success) {
             if (userDetails.id == userInfo.id) {
-                userInfo.avatarImage = null;
+                userInfo.avatarUrl = null;
                 updateUser(userInfo);
             }
-            onUpdate({ avatarImage: null });
+            onUpdate({ avatarUrl: null });
             setAvatarMessage({ message: "Avatar image removed successfully" });
         } else {
             setAvatarMessage({ errors: result?.error });
@@ -402,7 +402,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         </Tab>
                         <Tab eventKey="avatar" title="Avatar">
                             <div className="mb-2 text-center">
-                                <ProfileAvatar avatarImage={userDetails.avatarImage} size={80} />
+                                <ProfileAvatar avatarUrl={userDetails.avatarUrl} size={80} />
                             </div>
                             <Form onSubmit={handleAvatarUpload}>
                                 <RequestResultAlert errors={avatarMessage.errors} message={avatarMessage.message} />
@@ -417,7 +417,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                                 </FormGroup>
                                 <div className="d-flex justify-content-end mt-2">
                                     {
-                                        userDetails.avatarImage != null &&
+                                        userDetails.avatarUrl != null &&
                                         <Button size="sm" variant="secondary" disabled={loading} onClick={() => setDeleteModalVisible(true)}>Remove</Button>
                                     }
                                     <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>

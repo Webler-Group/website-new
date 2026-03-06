@@ -3,17 +3,17 @@ import asyncHandler from "express-async-handler";
 import fs from "fs";
 import File from "../models/File";
 import { parseWithZod } from "../utils/zodUtils";
-import { getFileByIdSchema } from "../validation/mediaSchema";
+import { getFileByHashSchema } from "../validation/mediaSchema";
 import { absBlobPathFromHash } from "../helpers/fileHelper";
 import FileTypeEnum from "../data/FileTypeEnum";
 
-const getFileById = asyncHandler(
+const getFileByHash = asyncHandler(
     async (req: Request, res: Response) => {
-        const { params } = parseWithZod(getFileByIdSchema, req);
-        const { fileId } = params;
+        const { params } = parseWithZod(getFileByHashSchema, req);
+        const { hash } = params;
 
         // Fetch file metadata only
-        const fileDoc = await File.findById(fileId,
+        const fileDoc = await File.findOne({ contenthash: hash },
             "_type mimetype size updatedAt contenthash"
         );
 
@@ -52,13 +52,13 @@ const getFileById = asyncHandler(
     }
 );
 
-const getFilePreviewById = asyncHandler(
+const getFilePreviewByHash = asyncHandler(
     async (req: Request, res: Response) => {
-        const { params } = parseWithZod(getFileByIdSchema, req);
-        const { fileId } = params;
+        const { params } = parseWithZod(getFileByHashSchema, req);
+        const { hash } = params;
 
         try {
-            const fileDoc = await File.findById(fileId, "_type updatedAt preview");
+            const fileDoc = await File.findOne({ contenthash: hash }, "_type updatedAt preview");
 
             if (!fileDoc || fileDoc._type === FileTypeEnum.FOLDER || !fileDoc.preview) {
                 res.status(404).end();
@@ -94,9 +94,11 @@ const getFilePreviewById = asyncHandler(
     }
 );
 
+export const getImageUrl = (hash?: string) => hash ? `/media/files/${hash}` : null;
+
 const mediaController = {
-    getFileById,
-    getFilePreviewById
+    getFileByHash,
+    getFilePreviewByHash
 };
 
 export default mediaController;

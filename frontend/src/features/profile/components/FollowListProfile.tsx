@@ -66,7 +66,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
         <div className="d-flex justify-content-between py-2 border-bottom">
             <div className='d-flex align-items-start gap-2'>
                 <div>
-                    <ProfileAvatar size={42} avatarImage={user.avatar} />
+                    <ProfileAvatar size={42} avatarUrl={user.avatarUrl} />
                 </div>
                 <div className='d-flex flex-column gap-1'>
                     <ProfileName userId={user.id} userName={user.name} />

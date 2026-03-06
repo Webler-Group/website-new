@@ -11,7 +11,7 @@ interface IChannelMessage {
     content: string;
     userId: string;
     userName: string;
-    userAvatar: string;
+    userAvatarUrl: string;
     createdAt: string;
     updatedAt: string;
     channelId: string;
@@ -72,7 +72,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             <div className="d-flex">
                 {showHeader && (
                     <div className="me-2 flex-shrink-0">
-                        <ProfileAvatar avatarImage={message.userAvatar} size={AVATAR_SIZE} />
+                        <ProfileAvatar avatarUrl={message.userAvatarUrl} size={AVATAR_SIZE} />
                     </div>
                 )}
 

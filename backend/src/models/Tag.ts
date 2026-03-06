@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import mongoose, { Document, InferSchemaType, Model } from "mongoose";
 
 const tagSchema = new mongoose.Schema({
     name: {
@@ -41,5 +41,7 @@ interface TagModel extends Model<ITag> {
 }
 
 const Tag = mongoose.model<ITag, TagModel>("Tag", tagSchema);
+
+export type ITagDocument = ITag & Document;
 
 export default Tag;

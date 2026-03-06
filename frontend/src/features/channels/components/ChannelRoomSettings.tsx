@@ -89,7 +89,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                 ...result.invite,
                 authorId: userInfo?.id,
                 authorName: userInfo?.name,
-                authorAvatar: userInfo?.avatarImage
+                authorAvatarUrl: userInfo?.avatarUrl
             });
         } else {
             setInviteMessage({ errors: result?.error });
@@ -282,7 +282,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                                     >
                                                         <div className="d-flex flex-column">
                                                             <div className="d-flex align-items-center gap-2">
-                                                                <ProfileAvatar avatarImage={invite.invitedUserAvatar!} size={36} />
+                                                                <ProfileAvatar avatarUrl={invite.invitedUserAvatarUrl!} size={36} />
                                                                 <ProfileName
                                                                     userId={invite.invitedUserId ?? ""}
                                                                     userName={invite.invitedUserName ?? "Unknown"}
@@ -317,7 +317,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                                 className="d-flex justify-content-between align-items-center"
                                             >
                                                 <div className="d-flex align-items-center gap-2">
-                                                    <ProfileAvatar avatarImage={x.userAvatar} size={32} />
+                                                    <ProfileAvatar avatarUrl={x.userAvatarUrl} size={32} />
                                                     <ProfileName userId={x.userId} userName={x.userName} />
                                                     <Badge bg="secondary">
                                                         {x.role}

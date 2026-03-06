@@ -3,7 +3,7 @@ import { ReactionsEnum } from "../../../data/reactions";
 export interface User {
   id: string;
   name: string;
-  avatarImage: string | null;
+  avatarUrl?: string | null;
   level: number;
   roles: string[];
 }
@@ -15,7 +15,7 @@ export interface OriginalPost {
   date: string;
   userId: string;
   userName: string;
-  userAvatarImage: string | null;
+  userAvatarUrl?: string | null;
   tags: string[];
 }
 
@@ -31,7 +31,7 @@ export interface IFeed {
   updatedAt: string;
   userId: string;
   userName: string;
-  userAvatarImage: string | null;
+  userAvatarUrl?: string | null;
   level: number;
   roles: string[];
   answers: number;
@@ -51,7 +51,7 @@ export interface Comment {
   id: string;
   message: string;
   userName: string;
-  userAvatar: string | null;
+  userAvatarUrl?: string | null;
   userId: string;
   date: string;
   votes: number;

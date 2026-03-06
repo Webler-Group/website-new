@@ -10,6 +10,7 @@ import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowing from "../models/UserFollowing";
+import { getImageUrl } from "./mediaController";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -49,7 +50,7 @@ const login = asyncHandler(async (req, res) => {
             id: user._id,
             name: user.name,
             email: user.email,
-            avatarImage: user.avatarImage,
+            avatarUrl: getImageUrl(user.avatarHash),
             roles: user.roles,
             emailVerified: user.emailVerified,
             countryCode: user.countryCode,
@@ -136,7 +137,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
             id: user._id,
             name: user.name,
             email: user.email,
-            avatarImage: user.avatarImage,
+            avatarUrl: getImageUrl(user.avatarHash),
             roles: user.roles,
             emailVerified: user.emailVerified,
             countryCode: user.countryCode,

@@ -131,7 +131,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
             message: answerFormMessage,
         });
         if (result && result.post) {
-            const newPost = { ...result.post, index: -1, userName: userInfo.name, userAvatar: userInfo.avatarImage };
+            const newPost = { ...result.post, index: -1, userName: userInfo.name, userAvatar: userInfo.avatarUrl };
             if (parentCommentId) {
                 onReplyCallback?.(newPost);
                 editComment(parentCommentId, prev => ({ ...prev, answers: prev.answers + 1 }));

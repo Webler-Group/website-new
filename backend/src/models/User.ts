@@ -83,10 +83,12 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-    avatarImage: {
+    avatarFileId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "File",
-        default: null
+        ref: "File"
+    },
+    avatarHash: {
+        type: String
     },
     notifications: {
         [NotificationTypeEnum.CODE_COMMENT]: { type: Boolean, default: true },

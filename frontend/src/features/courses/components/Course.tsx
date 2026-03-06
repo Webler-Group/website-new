@@ -1,6 +1,4 @@
-import { Dropdown } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
-import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaEyeSlash } from "react-icons/fa6";
 
 interface ICourse {
@@ -9,7 +7,7 @@ interface ICourse {
     title: string;
     description: string;
     visible: boolean;
-    coverImage?: string;
+    coverImageUrl?: string | null;
     completed?: boolean;
     updatedAt?: string;
 }
@@ -23,22 +21,9 @@ const Course = ({ course, isEditor }: CourseProps) => {
     return (
         <LinkContainer to={isEditor ? "/Courses/Editor/" + course.id : "/Courses/" + course.code}>
             <div className="wb-courses-course-card rounded border p-2 bg-white d-sm-flex gap-3 position-relative">
-                {
-                    isEditor &&
-                    <div className="wb-courses-course__edit-button">
-                        <Dropdown drop="start">
-                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                            <Dropdown.Menu>
-                                <LinkContainer to={"/Courses/Editor/Edit/" + course.id}>
-                                    <Dropdown.Item>Edit</Dropdown.Item>
-                                </LinkContainer>
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </div>
-                }
                 <div className="d-flex justify-content-center">
                     <div className="rounded-circle">
-                        <img className="wb-courses-course__cover-image" src={course.coverImage ? "/media/files/" + course.coverImage : "/resources/images/logoicon.svg"} alt="Cover image" />
+                        <img className="wb-courses-course__cover-image" src={course.coverImageUrl || "/resources/images/logoicon.svg"} alt="Cover image" />
                     </div>
                 </div>
                 <div className="d-flex flex-column align-items-sm-start align-items-center">

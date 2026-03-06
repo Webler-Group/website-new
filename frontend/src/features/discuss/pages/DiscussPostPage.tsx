@@ -170,7 +170,7 @@ const DiscussPostPage = () => {
             questionId
         });
         if (result && result.post) {
-            setAnswers(answers => [{ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarImage }, ...answers]);
+            setAnswers(answers => [{ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarUrl }, ...answers]);
             setQuestion(question => {
                 if (question) {
                     return { ...question, answers: question.answers + 1 }
@@ -478,7 +478,7 @@ const DiscussPostPage = () => {
                                 <ProfileName userId={question.userId} userName={question.userName} />
                             </div>
                         </div>
-                        <ProfileAvatar size={32} avatarImage={question.userAvatar} />
+                        <ProfileAvatar size={32} avatarUrl={question.userAvatarUrl} />
                     </div>
                 </div>
                 {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}

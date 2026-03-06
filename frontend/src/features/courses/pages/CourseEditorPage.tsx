@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ICourse } from "../components/Course";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import Lesson, { ILesson } from "../components/Lesson";
 import LessonEditor from "../components/LessonEditor";
 import { useApi } from "../../../context/apiCommunication";
@@ -13,6 +13,7 @@ import { downloadJsonFile } from "../../../utils/FileUtils";
 const CourseEditorPage = () => {
     const { sendJsonRequest } = useApi();
     const { courseId, lessonId } = useParams();
+    const navigate = useNavigate();
 
     const [course, setCourse] = useState<ICourse | null>(null);
     const [lessons, setLessons] = useState<ILesson[]>([]);
@@ -216,6 +217,10 @@ const CourseEditorPage = () => {
         );
     }
 
+    const handleEditDetails = () => {
+        navigate("/Courses/Editor/Edit/" + courseId);
+    }
+
     return (
         course !== null ?
             <>
@@ -269,9 +274,14 @@ const CourseEditorPage = () => {
                         <LessonEditor lessonId={lessonId} />
                         :
                         <>
-                            <div className="d-flex justify-content-end gap-2">
-                                <Button variant="primary" size="sm" onClick={handleExportCourse} disabled={loading}>Export Course to JSON</Button>
-                                <Button className="btn btn-primary btn-sm" onClick={() => showLessonForm("", null)}>Create Lesson</Button>
+                            <div className="d-flex justify-content-between">
+                                <div>
+                                    <Button variant="primary" size="sm" onClick={handleEditDetails} disabled={loading}>Edit details</Button>
+                                </div>
+                                <div className="d-flex justify-content-end gap-2">
+                                    <Button variant="primary" size="sm" onClick={handleExportCourse} disabled={loading}>Export Course to JSON</Button>
+                                    <Button variant="primary" size="sm" onClick={() => showLessonForm("", null)} disabled={loading}>Create Lesson</Button>
+                                </div>
                             </div>
                             <div className="mt-3">
                                 {

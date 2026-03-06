@@ -1,4 +1,4 @@
-import mongoose, { InferSchemaType, Model, Schema, SchemaTypes } from "mongoose";
+import mongoose, { Document, InferSchemaType, Model, Schema, SchemaTypes } from "mongoose";
 import ChannelParticipant from "./ChannelParticipant";
 import ChannelInvite from "./ChannelInvite";
 import ChannelMessage from "./ChannelMessage";
@@ -69,6 +69,10 @@ channelSchema.statics.join = async function (channelId: mongoose.Types.ObjectId,
     }
 }
 
+interface IChannel extends InferSchemaType<typeof channelSchema> { }
+
 const Channel = mongoose.model<IChannel, ChannelModel>("Channel", channelSchema);
+
+export type IChannelDocument = IChannel & Document;
 
 export default Channel;

@@ -11,7 +11,7 @@ interface IAdminUser {
     id: string;
     name: string;
     email: string;
-    avatarImage?: string;
+    avatarUrl?: string | null;
     roles: string[];
     verified: boolean;
     active: boolean;
@@ -154,7 +154,7 @@ const ModViewPage = () => {
 
                 <Card className="mb-3">
                     <Card.Body className="d-flex gap-2">
-                        <ProfileAvatar avatarImage={user.avatarImage!} size={96} />
+                        <ProfileAvatar avatarUrl={user.avatarUrl} size={96} />
                         <div>
                             <Card.Title>{user.name}</Card.Title>
                             <Card.Subtitle className="text-muted">{user.email}</Card.Subtitle>

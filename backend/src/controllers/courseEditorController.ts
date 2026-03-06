@@ -1,17 +1,11 @@
 import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
-import Course from "../models/Course";
+import Course, { ICourseDocument } from "../models/Course";
 import CourseLesson from "../models/CourseLesson";
-import multer from "multer";
-import { config } from "../confg";
-import path from "path";
-import { v4 as uuid } from "uuid";
-import fs from "fs";
 import LessonNode from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import mongoose from "mongoose";
-import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 import {
     createCourseSchema,
     getCourseSchema,
@@ -39,6 +33,7 @@ import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import FileTypeEnum from "../data/FileTypeEnum";
+import { getImageUrl } from "./mediaController";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -71,7 +66,7 @@ const getCoursesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
         title: course.title,
         description: course.description,
         visible: course.visible,
-        coverImage: course.coverImage
+        coverImageUrl: getImageUrl(course.coverImageHash)
     }));
 
     res.json({
@@ -115,7 +110,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             title: course.title,
             description: course.description,
             visible: course.visible,
-            coverImage: course.coverImage,
+            coverImageUrl: getImageUrl(course.coverImageHash),
             lessons
         }
     });
@@ -314,13 +309,15 @@ const uploadCourseCoverImage = asyncHandler(
             quality: 82,
         });
 
-        course.coverImage = fileDoc._id;
+        course.coverImageFileId = fileDoc._id;
+        course.coverImageHash = fileDoc.contenthash;
         await course.save();
 
         res.json({
             success: true,
             data: {
-                coverImage: fileDoc._id
+                coverImageFileId: fileDoc._id,
+                coverImageHash: fileDoc.contenthash
             },
         });
     }
@@ -591,7 +588,7 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
-            authorAvatar: x.author.avatarImage,
+            authorAvatarUrl: getImageUrl(x.author.avatarHash),
             type: x._type,
             name: x.name,
             mimetype: x.mimetype,
@@ -684,79 +681,95 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(importCourseSchema, req);
     const { code, title, description, visible, lessons } = body;
 
-    let course = await Course.findOne({ code });
+    const session = await mongoose.startSession();
 
-    if (course) {
-        course.title = title;
-        course.description = description;
-        if (visible !== undefined) course.visible = visible;
-        await course.save();
+    try {
+        const course = await session.withTransaction(async () => {
+            let course = await Course.findOne({ code }).session(session);
 
-        await CourseLesson.deleteAndCleanup({ course: course._id });
-    } else {
-        course = await Course.create({
-            code,
-            title,
-            description,
-            visible: visible ?? false
-        });
-    }
+            if (course) {
+                course.title = title;
+                course.description = description;
+                if (visible !== undefined) course.visible = visible;
+                await course.save({ session });
 
-    for (let i = 0; i < lessons.length; i++) {
-        const lessonData = lessons[i];
-        try {
-            const lesson = await CourseLesson.create({
-                course: course._id,
-                title: lessonData.title,
-                index: i + 1,
-                nodes: lessonData.nodes.length
-            });
+                await CourseLesson.deleteAndCleanup({ course: course._id }, session);
+            } else {
+                const [newCourse] = await Course.create([{
+                    code,
+                    title,
+                    description,
+                    visible: visible ?? false
+                }], { session });
+                course = newCourse;
+            }
 
-            const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
-                lessonId: lesson._id,
-                index: nodeIndex + 1,
-                _type: node.type,
-                mode: node.mode,
-                codeId: (node.codeId && mongoose.isValidObjectId(node.codeId)) ? new mongoose.Types.ObjectId(node.codeId) : null,
-                text: node.text || "",
-                correctAnswer: node.correctAnswer
-            }));
+            for (let i = 0; i < lessons.length; i++) {
+                const lessonData = lessons[i];
 
-            if (nodeDocs.length > 0) {
-                const createdNodes = await LessonNode.insertMany(nodeDocs);
-                const answerDocs: any[] = [];
-                for (let j = 0; j < createdNodes.length; j++) {
-                    const createdNode = createdNodes[j];
-                    const sourceNode = lessonData.nodes[j];
+                const [lesson] = await CourseLesson.create([{
+                    course: course._id,
+                    title: lessonData.title,
+                    index: i + 1,
+                    nodes: lessonData.nodes.length
+                }], { session });
 
-                    if (sourceNode.type === 2 || sourceNode.type === 3) {
-                        const answers = (sourceNode as any).answers;
-                        if (answers && Array.isArray(answers)) {
-                            answers.forEach((ans: any) => {
-                                answerDocs.push({
-                                    courseLessonNodeId: createdNode._id,
-                                    text: ans.text,
-                                    correct: ans.correct
+                const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
+                    lessonId: lesson._id,
+                    index: nodeIndex + 1,
+                    _type: node.type,
+                    mode: node.mode,
+                    codeId: node.codeId,
+                    text: node.text || "",
+                    correctAnswer: node.correctAnswer
+                }));
+
+                if (nodeDocs.length > 0) {
+                    const createdNodes = await LessonNode.insertMany(nodeDocs, { session });
+                    const answerDocs: any[] = [];
+
+                    for (let j = 0; j < createdNodes.length; j++) {
+                        const createdNode = createdNodes[j];
+                        const sourceNode = lessonData.nodes[j];
+
+                        if (sourceNode.type === 2 || sourceNode.type === 3) {
+                            const answers = (sourceNode as any).answers;
+                            if (answers && Array.isArray(answers)) {
+                                answers.forEach((ans: any) => {
+                                    answerDocs.push({
+                                        courseLessonNodeId: createdNode._id,
+                                        text: ans.text,
+                                        correct: ans.correct
+                                    });
                                 });
-                            });
+                            }
                         }
                     }
-                }
 
-                if (answerDocs.length > 0) {
-                    await QuizAnswer.insertMany(answerDocs);
+                    if (answerDocs.length > 0) {
+                        await QuizAnswer.insertMany(answerDocs, { session });
+                    }
                 }
             }
-        } catch (error) {
-            console.error(`Error importing lesson ${lessonData.title}:`, error);
-        }
-    }
 
-    res.json({
-        success: true,
-        message: "Course imported successfully",
-        courseId: course._id
-    });
+            return course;
+        }) as ICourseDocument;
+
+        res.json({
+            success: true,
+            course: {
+                id: course._id,
+                code: course.code,
+                title: course.title,
+                visible: course.visible
+            }
+        });
+
+    } catch (error) {
+        throw error;
+    } finally {
+        await session.endSession();
+    }
 });
 
 const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {

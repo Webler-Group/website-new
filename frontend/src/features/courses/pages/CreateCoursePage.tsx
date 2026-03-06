@@ -21,7 +21,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [error, setError] = useState<any[] | undefined>();
     const [editMessage, setEditMessage] = useState("");
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
-    const [coverImage, setCoverImage] = useState<string | null>(null);
+    const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
     const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
     const [importMessage, setImportMessage] = useState<{ errors?: any[]; message?: string; }>({});
@@ -43,7 +43,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             setTitle(result.course.title);
             setDescription(result.course.description);
             setVisible(result.course.visible);
-            setCoverImage(result.course.coverImage);
+            setCoverImageUrl(result.course.coverImageUrl);
         }
         setLoading(false);
     }
@@ -75,7 +75,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         const result = await sendJsonRequest("/CourseEditor/ImportCourse", "POST", payload);
 
         if (result && result.success) {
-            navigate("/Courses/Editor");
+            navigate("/Courses/Editor" + result.course.id);
         } else {
             setError(result?.error || [{ message: result?.message || "Import failed" }]);
         }
@@ -85,7 +85,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         setError(undefined);
         const result = await sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
         if (result && result.course) {
-            navigate("/Courses/Editor");
+            navigate("/Courses/Editor/" + result.course.id);
         }
         else {
             setError(result.error);
@@ -119,7 +119,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         const result = await sendJsonRequest("/CourseEditor/DeleteCourse", "DELETE", { courseId });
         if (result && result.success) {
             closeDeleteModal();
-            navigate("/Courses/Editor")
+            navigate("/Courses/Editor");
         }
         else {
             setError(result?.error ? result.error.message : result.message);
@@ -134,7 +134,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         setLoading(true);
         const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
         if (result && result.success) {
-            setCoverImage(result.data.coverImage);
+            setCoverImageUrl(result.data.coverImageUrl);
             setUploadMessage({ message: "Course cover image updated successfully" })
         }
         else {
@@ -151,25 +151,6 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     }
 
     const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
-
-    const handleExport = async () => {
-        setLoading(true);
-        const result = await sendJsonRequest("/CourseEditor/ExportCourse", "POST", { courseId });
-        if (result && result.success && result.data) {
-            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${code || 'course'}-export.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        } else {
-            setError(result?.error || [{ message: "Export failed" }]);
-        }
-        setLoading(false);
-    }
 
     const handleImportFileChange = (e: ChangeEvent) => {
         const files = (e.target as HTMLInputElement).files;
@@ -221,14 +202,14 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     <div className="col-12 col-md-4">
                         <div className="d-flex justify-content-center">
                             <div className="rounded-circle">
-                                <img className="wb-courses-course__cover-image" src={coverImage ? "/media/files/" + coverImage : "/resources/images/logoicon.svg"} alt="Cover image" />
+                                <img className="wb-courses-course__cover-image" src={coverImageUrl || "/resources/images/logoicon.svg"} alt="Cover image" />
                             </div>
                         </div>
                         <Form onSubmit={handleCoverImageUpload}>
                             <RequestResultAlert errors={uploadMessage.errors} message={uploadMessage.message} />
                             <FormGroup>
                                 <FormLabel>Cover image</FormLabel>
-                                <FormControl size="sm" type="file" required onChange={handleCoverImageChange} accept="image/png" />
+                                <FormControl size="sm" type="file" required onChange={handleCoverImageChange} accept="image/png, image/jpeg, image/jpg" />
                             </FormGroup>
                             <div className="d-flex justify-content-end mt-2">
                                 <Button size="sm" className="ms-2" variant="primary" type="submit" disabled={loading}>Upload</Button>
@@ -247,7 +228,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                             <RequestResultAlert errors={importMessage.errors} message={importMessage.message} />
                             <FormGroup className="mb-2">
                                 <FormLabel>Select JSON File to Populate</FormLabel>
-                                <FormControl type="file" accept=".json" onChange={handleImportFileChange} />
+                                <FormControl type="file" accept=".json, application/json" onChange={handleImportFileChange} />
                             </FormGroup>
                         </div>
                     }
@@ -313,13 +294,12 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                             <ToggleSwitch value={visible} onChange={(e) => setVisible((e.target as HTMLInputElement).checked)} />
                         </FormGroup>
                         <div className="d-flex justify-content-end">
-                            <LinkContainer to="/Courses/Editor">
+                            <LinkContainer to={courseId ? "/Courses/Editor/" + courseId : "/Courses/Editor/"}>
                                 <Button size="sm" type="button" variant="secondary" disabled={loading}>Cancel</Button>
                             </LinkContainer>
                             {
                                 courseId ?
                                     <>
-                                        <Button size="sm" variant="primary" className="ms-2" type="button" onClick={handleExport} disabled={loading}>Export to JSON</Button>
                                         <Button size="sm" variant="secondary" className="ms-2" type="button" onClick={() => setDeleteModalVisible(true)} disabled={loading}>Delete</Button>
                                         <Button size="sm" variant="primary" className="ms-2" type="submit" disabled={loading}>Save changes</Button>
                                     </>

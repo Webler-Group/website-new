@@ -1,11 +1,11 @@
 import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
-import Channel from "../models/Channel";
+import Channel, { IChannelDocument } from "../models/Channel";
 import ChannelInvite from "../models/ChannelInvite";
 import ChannelParticipant from "../models/ChannelParticipant";
-import User from "../models/User";
-import ChannelMessage from "../models/ChannelMessage";
+import User, { IUserDocument } from "../models/User";
+import ChannelMessage, { IChannelMessageDocument } from "../models/ChannelMessage";
 import { Socket } from "socket.io";
 import { getIO, uidRoom } from "../config/socketServer";
 import PostAttachment from "../models/PostAttachment";
@@ -13,7 +13,6 @@ import mongoose from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
-import { truncate } from "../utils/StringUtils";
 import {
     createGroupSchema,
     createDirectMessagesSchema,
@@ -38,6 +37,7 @@ import {
 import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
 import RolesEnum from "../data/RolesEnum";
+import { getImageUrl } from "./mediaController";
 
 const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createGroupSchema, req);
@@ -63,7 +63,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
     const { userId } = body;
     const currentUserId = req.userId;
 
-    const DMUser = await User.findById(userId, "name avatarImage level roles");
+    const DMUser = await User.findById(userId, "name avatarHash level roles");
     if (!DMUser || !DMUser.roles.includes(RolesEnum.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -106,7 +106,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const invitedUser = await User.findById(userId, "name avatarImage roles level");
+    const invitedUser = await User.findById(userId, "name avatarHash roles level");
     if (!invitedUser || !invitedUser.roles.includes(RolesEnum.USER)) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -131,7 +131,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
             id: invite._id,
             invitedUserId: invitedUser._id,
             invitedUserName: invitedUser.name,
-            invitedUserAvatar: invitedUser.avatarImage,
+            invitedUserAvatarUrl: getImageUrl(invitedUser.avatarHash),
             createdAt: invite.createdAt
         }
     });
@@ -149,8 +149,8 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const channel = await Channel.findById(channelId)
-        .populate<{ DMUser: any }>("DMUser", "name avatarImage level roles")
-        .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
+        .populate<{ DMUser: IUserDocument }>("DMUser", "name avatarHash level roles")
+        .populate<{ createdBy: IUserDocument }>("createdBy", "name avatarHash level roles")
         .lean();
     if (!channel) {
         res.status(404).json({ error: [{ message: "Channel not found" }] });
@@ -160,7 +160,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const data: any = {
         id: channel._id,
         title: channel._type === ChannelTypeEnum.GROUP ? channel.title : channel.DMUser?._id == currentUserId ? channel.createdBy.name : channel.DMUser?.name,
-        coverImage: channel.DMUser?._id == currentUserId ? channel.createdBy.avatarImage : channel.DMUser?.avatarImage,
+        coverImageUrl: getImageUrl(channel.DMUser?._id == currentUserId ? channel.createdBy.avatarHash : channel.DMUser?.avatarHash),
         type: channel._type,
         createdAt: channel.createdAt,
         updatedAt: channel.updatedAt,
@@ -171,28 +171,28 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (includeInvites) {
         const invites = await ChannelInvite.find({ channel: channelId })
-            .populate<{ author: any }>("author", "name avatarImage level roles")
-            .populate<{ invitedUser: any }>("invitedUser", "name avatarImage level roles")
+            .populate<{ author: IUserDocument }>("author", "name avatarHash level roles")
+            .populate<{ invitedUser: IUserDocument }>("invitedUser", "name avatarHash level roles")
             .lean();
         data.invites = invites.map(x => ({
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
-            authorAvatar: x.author.avatarImage,
+            authorAvatarUrl: getImageUrl(x.author.avatarHash),
             invitedUserId: x.invitedUser._id,
             invitedUserName: x.invitedUser.name,
-            invitedUserAvatar: x.invitedUser.avatarImage
+            invitedUserAvatarUrl: getImageUrl(x.invitedUser.avatarHash)
         }));
     }
 
     if (includeParticipants) {
         const participants = await ChannelParticipant.find({ channel: channelId })
-            .populate<{ user: any }>("user", "name avatarImage level roles")
+            .populate<{ user: IUserDocument }>("user", "name avatarHash level roles")
             .lean();
         data.participants = participants.map((x) => ({
             userId: x.user._id,
             userName: x.user.name,
-            userAvatar: x.user.avatarImage,
+            userAvatarUrl: getImageUrl(x.user.avatarHash),
             role: x.role
         }));
     }
@@ -221,14 +221,14 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const channels = await query
         .sort({ updatedAt: -1 })
         .limit(count)
-        .populate<{ DMUser: any }>("DMUser", "name avatarImage level roles")
-        .populate<{ createdBy: any }>("createdBy", "name avatarImage level roles")
-        .populate<{ lastMessage: any }>({
+        .populate<{ DMUser: IUserDocument }>("DMUser", "name avatarHash level roles")
+        .populate<{ createdBy: IUserDocument }>("createdBy", "name avatarHash level roles")
+        .populate<{ lastMessage: IChannelMessageDocument & { user: IUserDocument } }>({
             path: "lastMessage",
             select: "user content _type createdAt deleted",
             populate: {
                 path: "user",
-                select: "name avatarImage"
+                select: "name avatarHash"
             }
         })
         .lean();
@@ -248,7 +248,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 id: x._id,
                 type: x._type,
                 title: x._type === ChannelTypeEnum.GROUP ? x.title : x.DMUser?._id == currentUserId ? x.createdBy.name : x.DMUser?.name,
-                coverImage: x.DMUser?._id == currentUserId ? x.createdBy.avatarImage : x.DMUser?.avatarImage,
+                coverImageUrl: getImageUrl(x.DMUser?._id == currentUserId ? x.createdBy.avatarHash : x.DMUser?.avatarHash),
                 createdAt: x.createdAt,
                 updatedAt: x.updatedAt,
                 unreadCount: participantDataMap[x._id.toString()]?.unreadCount || 0,
@@ -261,7 +261,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                     createdAt: x.lastMessage.createdAt,
                     userId: x.lastMessage.user._id,
                     userName: x.lastMessage.user.name,
-                    userAvatar: x.lastMessage.user.avatarImage,
+                    userAvatarUrl: getImageUrl(x.lastMessage.user.avatarHash),
                     viewed: lastActiveAt ? lastActiveAt >= x.lastMessage.createdAt : false
                 } : null
             }
@@ -282,8 +282,8 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const invites = await query
         .sort({ createdAt: -1 })
         .limit(count)
-        .populate<{ author: any }>("author", "name avatarImage level roles")
-        .populate<{ channel: any }>("channel", "title _type")
+        .populate<{ author: IUserDocument }>("author", "name avatarHash level roles")
+        .populate<{ channel: IChannelDocument }>("channel", "title _type")
         .lean();
 
     const totalCount = await ChannelInvite.countDocuments({ invitedUser: currentUserId });
@@ -294,7 +294,7 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
-            authorAvatar: x.author.avatarImage,
+            authorAvatarUrl: getImageUrl(x.author.avatarHash),
             channelId: x.channel._id,
             channelType: x.channel._type,
             channelTitle: x.channel.title,
@@ -396,13 +396,13 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const messages = await query
         .sort({ createdAt: -1 })
         .limit(count)
-        .populate<{ user: any }>("user", "name avatarImage level roles")
-        .populate<{ repliedTo: any }>({
+        .populate<{ user: IUserDocument }>("user", "name avatarHash level roles")
+        .populate<{ repliedTo: IChannelMessageDocument & { user: IUserDocument } }>({
             path: "repliedTo",
             select: "content createdAt updatedAt deleted user",
             populate: {
                 path: "user",
-                select: "name avatarImage"
+                select: "name avatarHash"
             }
         })
         .lean();
@@ -412,7 +412,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         type: x._type,
         userId: x.user._id,
         userName: x.user.name,
-        userAvatar: x.user.avatarImage,
+        userAvatarUrl: getImageUrl(x.user.avatarHash),
         createdAt: x.createdAt,
         updatedAt: x.updatedAt,
         content: x.deleted ? "" : x.content,
@@ -424,7 +424,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
             updatedAt: x.repliedTo.updatedAt,
             userId: x.repliedTo.user._id,
             userName: x.repliedTo.user.name,
-            userAvatar: x.repliedTo.user.avatarImage,
+            userAvatarUrl: getImageUrl(x.repliedTo.user.avatarHash),
             deleted: x.repliedTo.deleted
         } : null,
         channelId: x.channel,

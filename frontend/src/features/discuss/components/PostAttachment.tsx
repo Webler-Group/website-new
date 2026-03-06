@@ -6,7 +6,7 @@ interface IPostAttachment {
     type: number;
     userId: string;
     userName: string;
-    userAvatar: string;
+    userAvatarUrl: string;
     codeId: string;
     feedId: string;
     feedMessage: string;

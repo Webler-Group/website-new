@@ -13,7 +13,7 @@ interface IComment {
   parentId: string | null;
   userId: string;
   userName: string;
-  userAvatar?: string;
+  userAvatarUrl?: string | null;
   date: string;
   message: string;
   answers: number;
@@ -82,7 +82,7 @@ const Comment: React.FC<CommentProps> = ({
         </div>
       </div>
       <div>
-        <ProfileAvatar size={32} avatarImage={comment.userAvatar ?? null} />
+        <ProfileAvatar size={32} avatarUrl={comment.userAvatarUrl} />
       </div>
       <div className="flex-grow-1">
         <div className="rounded border p-2 mb-1" style={{ background: isHighlighted ? "beige" : "white" }}>

@@ -1,8 +1,8 @@
 import z from "zod";
 import { idSchema } from "./commonSchema";
 
-export const getFileByIdSchema = z.object({
+export const getFileByHashSchema = z.object({
     params: z.object({
-        fileId: idSchema("fileId")
+        hash: z.string()
     })
 });
