@@ -317,7 +317,7 @@ const uploadCourseCoverImage = asyncHandler(
             success: true,
             data: {
                 coverImageFileId: fileDoc._id,
-                coverImageHash: fileDoc.contenthash
+                coverImageUrl: getImageUrl(fileDoc.contenthash)
             },
         });
     }
