@@ -1,63 +1,57 @@
-import mongoose, { Document, InferSchemaType, Model } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
-const evaluationJobSchema = new mongoose.Schema({
-    language: {
-        type: String,
-        required: true,
-        enum: Object.values(CompilerLanguagesEnum)
-    },
-    source: {
-        type: String,
-        required: true
-    },
-    stdin: {
-        type: [String]
-    },
-    result: {
-        type: {
-            compileErr: { type: String, required: false },
-            runResults: [{
-                stdout: { type: String, default: "" },
-                stderr: { type: String, default: "" },
-                time: { type: Number, reqired: false }
-            }]
-        }
-    },
-    status: {
-        type: String,
-        enum: ["pending", "running", "done", "error"],
-        default: "pending"
-    },
-    deviceId: {
-        type: String,
-        required: true
-    },
-    challenge: {
-        type: mongoose.Types.ObjectId,
-        ref: "Challenge",
-        default: null
-    },
-    submission: {
-        type: mongoose.Types.ObjectId,
-        ref: "ChallengeSubmission",
-        default: null
-    },
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        default: null
-    },
-}, {
-    timestamps: true
-});
+// --- Nested: RunResult ---
+export class RunResult {
+    @prop({ default: "" })
+    stdout!: string;
 
-interface IEvaluationJob extends InferSchemaType<typeof evaluationJobSchema> {}
+    @prop({ default: "" })
+    stderr!: string;
 
-interface EvaluationJobModel extends Model<IEvaluationJob> {}
+    @prop()
+    time?: number;
+}
 
-const EvaluationJob = mongoose.model<IEvaluationJob, EvaluationJobModel>("EvaluationJob", evaluationJobSchema);
+// --- Nested: EvaluationResult ---
+export class EvaluationResult {
+    @prop()
+    compileErr?: string;
 
-export type IEvaluationJobDocument = IEvaluationJob & Document;
+    @prop({ type: () => [RunResult], default: [] })
+    runResults!: RunResult[];
+}
 
-export default EvaluationJob;
+// --- Main: EvaluationJob ---
+@modelOptions({ schemaOptions: { collection: "evaluationjobs", timestamps: true } })
+export class EvaluationJob {
+    @prop({ required: true, enum: Object.values(CompilerLanguagesEnum) })
+    language!: CompilerLanguagesEnum;
+
+    @prop({ required: true })
+    source!: string;
+
+    @prop({ type: () => [String], default: [] })
+    stdin!: string[];
+
+    @prop({ type: () => EvaluationResult })
+    result?: EvaluationResult;
+
+    @prop({ enum: ["pending", "running", "done", "error"], default: "pending" })
+    status!: string;
+
+    @prop({ required: true })
+    deviceId!: string;
+
+    @prop({ ref: "Challenge", default: null })
+    challenge!: Types.ObjectId | null;
+
+    @prop({ ref: "ChallengeSubmission", default: null })
+    submission!: Types.ObjectId | null;
+
+    @prop({ ref: "User", default: null })
+    user!: Types.ObjectId | null;
+}
+
+export default getModelForClass(EvaluationJob);

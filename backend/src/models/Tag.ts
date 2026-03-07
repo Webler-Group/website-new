@@ -1,47 +1,26 @@
-import mongoose, { Document, InferSchemaType, Model } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { ModelType } from "@typegoose/typegoose/lib/types";
 
-const tagSchema = new mongoose.Schema({
-    name: {
-        required: true,
-        type: String,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        maxLength: 64,
-        minLength: 1
+@modelOptions({ schemaOptions: { collection: "tags" } })
+export class Tag {
+    @prop({ required: true, unique: true, trim: true, lowercase: true, maxlength: 64, minlength: 1 })
+    name!: string;
+
+    // --- Static ---
+    static async getOrCreateTagsByNames(
+        this: ModelType<Tag>,
+        tagNames: string[]
+    ): Promise<any[]> {
+        const uniqueNames = [...new Set(tagNames)];
+        const existingTags = await TagModel.find({ name: { $in: uniqueNames } });
+        const existingNames = existingTags.map(tag => tag.name);
+        const missingNames = uniqueNames.filter(name => !existingNames.includes(name));
+        const newTags = missingNames.length > 0
+            ? await TagModel.insertMany(missingNames.map(name => ({ name })))
+            : [];
+        return [...existingTags, ...newTags];
     }
-});
-
-tagSchema.statics.getOrCreateTagsByNames = async function (tagNames: string[]) {
-    // Remove duplicates to avoid unnecessary queries
-    const uniqueNames = [...new Set(tagNames)];
-
-    // Find already existing tags
-    const existingTags = await Tag.find({ name: { $in: uniqueNames } });
-
-    const existingNames = existingTags.map(tag => tag.name);
-
-    // Determine which names are missing
-    const missingNames = uniqueNames.filter(name => !existingNames.includes(name));
-
-    // Create missing tags (if any)
-    const newTags = missingNames.length > 0
-        ? await Tag.insertMany(missingNames.map(name => ({ name })))
-        : [];
-
-    // Return combined array of existing + new tags
-    return [...existingTags, ...newTags];
-};
-
-
-declare interface ITag extends InferSchemaType<typeof tagSchema> { }
-
-interface TagModel extends Model<ITag> {
-    getOrCreateTagsByNames(tagName: string[]): Promise<any[]>
 }
 
-const Tag = mongoose.model<ITag, TagModel>("Tag", tagSchema);
-
-export type ITagDocument = ITag & Document;
-
-export default Tag;
+const TagModel = getModelForClass(Tag);
+export default TagModel;

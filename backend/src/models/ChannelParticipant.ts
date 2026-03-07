@@ -1,38 +1,26 @@
-import mongoose, { InferSchemaType, Schema, SchemaTypes } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 
-const channelParticipantSchema = new Schema({
-    role: {
-        type: String,
-        default: ChannelRolesEnum.MEMBER,
-        enum: Object.values(ChannelRolesEnum)
-    },
-    user: {
-        type: SchemaTypes.ObjectId,
-        ref: "User",
-        required: true
-    },
-    channel: {
-        type: SchemaTypes.ObjectId,
-        ref: "Channel",
-        required: true
-    },
-    lastActiveAt: {
-        type: Date,
-        default: null
-    },
-    muted: {
-        type: Boolean,
-        default: false
-    },
-    unreadCount: {
-        type: Number,
-        default: 0
-    }
-});
+@modelOptions({ schemaOptions: { collection: "channelparticipants" } })
+export class ChannelParticipant {
+    @prop({ default: ChannelRolesEnum.MEMBER, enum: ChannelRolesEnum })
+    role!: ChannelRolesEnum;
 
-declare interface IChannelParticipant extends InferSchemaType<typeof channelParticipantSchema> {}
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
 
-const ChannelParticipant = mongoose.model<IChannelParticipant>("ChannelParticipant", channelParticipantSchema);
+    @prop({ ref: "Channel", required: true })
+    channel!: Types.ObjectId;
 
-export default ChannelParticipant;
+    @prop({ default: null })
+    lastActiveAt!: Date | null;
+
+    @prop({ default: false })
+    muted!: boolean;
+
+    @prop({ default: 0 })
+    unreadCount!: number;
+}
+
+export default getModelForClass(ChannelParticipant);

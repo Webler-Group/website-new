@@ -1,20 +1,17 @@
-import { Schema, model, InferSchemaType } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 
-const notificationKeystoreSchema = new Schema({
-    version: {
-        type: String,
-        enum: ["old", "active", "candidate"],
-        required: true,
-        unique: true
-    },
-    publicKey: { type: String, required: true },
-    privateKey: { type: String, required: true },
-}, {
-    timestamps: true
-});
+// --- NotificationKeystore ---
+@modelOptions({ schemaOptions: { collection: "pushkeystores", timestamps: true } })
+export class NotificationKeystore {
+    @prop({ required: true, unique: true, enum: ["old", "active", "candidate"] })
+    version!: string;
 
-declare interface IPushKeystore extends InferSchemaType<typeof notificationKeystoreSchema> { }
+    @prop({ required: true })
+    publicKey!: string;
 
-const NotificationKeystore = model<IPushKeystore>("PushKeystore", notificationKeystoreSchema);
+    @prop({ required: true })
+    privateKey!: string;
+}
 
-export default NotificationKeystore;
+export const NotificationKeystoreModel = getModelForClass(NotificationKeystore);

@@ -1,18 +1,13 @@
-import mongoose from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 
-const postFollowingSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    following: {
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        required: true
-    }
-});
+@modelOptions({ schemaOptions: { collection: "postfollowings" } })
+export class PostFollowing {
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
 
-const PostFollowing = mongoose.model("PostFollowing", postFollowingSchema);
+    @prop({ ref: "Post", required: true })
+    following!: Types.ObjectId;
+}
 
-export default PostFollowing;
+export default getModelForClass(PostFollowing);

@@ -1,29 +1,16 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 
-const quizAnswerSchema = new mongoose.Schema({
-    text: {
-        type: String,
-        required: true,
-        trim: true,
-        minLength: 1,
-        maxLength: 120
-    },
-    correct: {
-        type: Boolean,
-        default: false
-    },
-    courseLessonNodeId: {
-        type: mongoose.Types.ObjectId,
-        ref: "LessonNode",
-        default: null
-    }
-});
+@modelOptions({ schemaOptions: { collection: "quizanswers" } })
+export class QuizAnswer {
+    @prop({ required: true, trim: true, minlength: 1, maxlength: 120 })
+    text!: string;
 
-declare interface IQuizAnswer extends InferSchemaType<typeof quizAnswerSchema> {}
+    @prop({ default: false })
+    correct!: boolean;
 
-interface QuizAnswerModel extends Model<IQuizAnswer> {
+    @prop({ ref: "LessonNode", default: null })
+    courseLessonNodeId!: Types.ObjectId | null;
 }
 
-const QuizAnswer = mongoose.model<IQuizAnswer, QuizAnswerModel>("QuizAnswer", quizAnswerSchema);
-
-export default QuizAnswer;
+export default getModelForClass(QuizAnswer);

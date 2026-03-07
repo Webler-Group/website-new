@@ -1,66 +1,61 @@
-import mongoose, { InferSchemaType, Model } from "mongoose";
-import QuizAnswer from "./QuizAnswer";
-import CourseLesson from "./CourseLesson";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { DocumentType, ModelType } from "@typegoose/typegoose/lib/types";
+import { Types, mongo } from "mongoose";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 
-const lessonNodeSchema = new mongoose.Schema({
-
-    _type: {
-        type: Number,
+@modelOptions({ schemaOptions: { collection: "lessonnodes" } })
+export class LessonNode {
+    @prop({
         default: LessonNodeTypeEnum.TEXT,
-        enum: Object.values(LessonNodeTypeEnum).filter(v => typeof v === "number").map(Number)
-    },
-    mode: {
-        type: Number,
+        enum: LessonNodeTypeEnum,
+        type: Number
+    })
+    _type!: LessonNodeTypeEnum;
+
+    @prop({
         default: LessonNodeModeEnum.MARKDOWN,
-        enum: Object.values(LessonNodeModeEnum).filter(v => typeof v === "number").map(Number)
-    },
-    index: {
-        type: Number,
-        required: true
-    },
-    text: {
-        type: String,
-        trim: true,
-        maxLength: 8000
-    },
-    lessonId: {
-        type: mongoose.Types.ObjectId,
-        ref: "CourseLesson",
-        required: true
-    },
-    correctAnswer: {
-        type: String,
-        maxLength: 80
-    },
-    codeId: {
-        type: mongoose.Types.ObjectId,
-        ref: "Code",
-        default: null
-    }
-});
+        enum: LessonNodeModeEnum,
+        type: Number
+    })
+    mode!: LessonNodeModeEnum;
 
-lessonNodeSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<ILessonNode>, session?: mongoose.mongo.ClientSession) {
-    const lessonNodesToDelete = await LessonNode.find(filter).select("_id").session(session ?? null);
-    for (let i = 0; i < lessonNodesToDelete.length; ++i) {
-        const lessonNode = lessonNodesToDelete[i];
-        const lesson = await CourseLesson.findById(lessonNode.lessonId).session(session ?? null);
-        if (lesson) {
-            lesson.$inc("nodes", -1);
-            await lesson.save({ session });
+    @prop({ required: true })
+    index!: number;
+
+    @prop({ trim: true, maxlength: 8000 })
+    text?: string;
+
+    @prop({ ref: "CourseLesson", required: true })
+    lessonId!: Types.ObjectId;
+
+    @prop({ maxlength: 80 })
+    correctAnswer?: string;
+
+    @prop({ ref: "Code", default: null })
+    codeId!: Types.ObjectId | null;
+
+    // --- Static ---
+    static async deleteAndCleanup(
+        this: ModelType<LessonNode>,
+        filter: Record<string, any>,
+        session?: mongo.ClientSession
+    ): Promise<void> {
+        const { default: CourseLesson } = await import("./CourseLesson");
+        const { default: QuizAnswer } = await import("./QuizAnswer");
+
+        const lessonNodesToDelete = await LessonNodeModel.find(filter, { _id: 1, lessonId: 1 }).lean<{ _id: Types.ObjectId, lessonId: Types.ObjectId }[]>().session(session ?? null);
+        for (const lessonNode of lessonNodesToDelete) {
+            const lesson = await CourseLesson.findById(lessonNode.lessonId).session(session ?? null);
+            if (lesson) {
+                lesson.$inc("nodes", -1);
+                await lesson.save({ session });
+            }
+            await QuizAnswer.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
         }
-        await QuizAnswer.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
+        await LessonNodeModel.deleteMany(filter, { session });
     }
-    await LessonNode.deleteMany(filter, { session });
 }
 
-declare interface ILessonNode extends InferSchemaType<typeof lessonNodeSchema> { }
-
-interface LessonNodeModel extends Model<ILessonNode> {
-    deleteAndCleanup(filter: mongoose.QueryFilter<ILessonNode>, session?: mongoose.mongo.ClientSession): Promise<any>
-}
-
-const LessonNode = mongoose.model<ILessonNode, LessonNodeModel>("LessonNode", lessonNodeSchema);
-
-export default LessonNode;
+const LessonNodeModel = getModelForClass(LessonNode);
+export default LessonNodeModel;

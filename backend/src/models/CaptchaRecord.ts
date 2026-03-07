@@ -1,14 +1,9 @@
-import mongoose from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 
-const captchaRecordScheme = new mongoose.Schema({
-    encrypted: {
-        type: String,
-        required: true
-    }
-}, {
-    timestamps: true
-});
+@modelOptions({ schemaOptions: { collection: "captcharecords", timestamps: true } })
+export class CaptchaRecord {
+    @prop({ required: true })
+    encrypted!: string;
+}
 
-const CaptchaRecord = mongoose.model("CaptchaRecord", captchaRecordScheme);
-
-export default CaptchaRecord;
+export default getModelForClass(CaptchaRecord);

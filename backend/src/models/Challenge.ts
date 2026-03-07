@@ -1,91 +1,56 @@
-import mongoose, { Schema, model, Model, InferSchemaType } from "mongoose";
+import { prop, getModelForClass, modelOptions, Severity, mongoose } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
-import ChallengeSubmission from "./ChallengeSubmission";
-import Code from "./Code";
 
-const challengeSchema = new Schema({
-  title: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    minLength: 1,
-    maxLength: 120
-  },
-  description: {
-    type: String,
-    required: true,
-    trim: true,
-    maxLength: 4096,
-    minLength: 1
-  },
-  difficulty: {
-    type: String,
-    enum: Object.values(ChallengeDifficultyEnum),
-    default: ChallengeDifficultyEnum.EASY
-  },
-  testCases: [{
-    input: {
-      type: String,
-      required: true,
-      minLength: 1,
-      maxLength: 500
-    },
-    expectedOutput: {
-      type: String,
-      required: true,
-      minLength: 1,
-      maxLength: 500
-    },
-    isHidden: {
-      type: Boolean,
-      default: true
-    }
-  }],
-  templates: [{
-    name: {
-      type: String,
-      required: true,
-      enum: Object.values(CompilerLanguagesEnum)
-    },
-    source: {
-      type: String,
-      required: true
-    }
-  }],
-  isPublic: {
-    type: Boolean,
-    default: true,
-  },
-  xp: {
-    type: Number,
-    default: 10,
-  },
-  author: {
-    type: Schema.Types.ObjectId,
-    ref: "User",
-    required: true
-  },
+// --- Nested: TestCase ---
+export class TestCase {
+    @prop({ required: true, minlength: 1, maxlength: 500 })
+    input!: string;
 
-}, { timestamps: true });
+    @prop({ required: true, minlength: 1, maxlength: 500 })
+    expectedOutput!: string;
 
-challengeSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<IChallenge>) {
-  const challengesToDelete = await Challenge.find(filter).select("_id");
-  const challengeIds = challengesToDelete.map(x => x._id);
-
-  await ChallengeSubmission.deleteMany({ challenge: { $in: challengeIds } });
-  await Code.deleteMany({ challenge: { $in: challengeIds } });
-  await Challenge.deleteAndCleanup({ _id: challengesToDelete });
+    @prop({ default: true })
+    isHidden!: boolean;
 }
 
-declare interface IChallenge extends InferSchemaType<typeof challengeSchema> {
+// --- Nested: Template ---
+export class ChallengeTemplate {
+    @prop({ required: true, enum: Object.values(CompilerLanguagesEnum) })
+    name!: CompilerLanguagesEnum;
+
+    @prop({ required: true })
+    source!: string;
 }
 
-interface ChallengeModel extends Model<IChallenge> {
-  deleteAndCleanup(filter: mongoose.QueryFilter<IChallenge>): Promise<void>;
+// --- Main: Challenge ---
+@modelOptions({ schemaOptions: { collection: "challenges", timestamps: true } })
+export class Challenge {
+    @prop({ required: true, unique: true, trim: true, minlength: 1, maxlength: 120 })
+    title!: string;
+
+    @prop({ required: true, trim: true, minlength: 1, maxlength: 4096 })
+    description!: string;
+
+    @prop({ enum: ChallengeDifficultyEnum, default: ChallengeDifficultyEnum.EASY })
+    difficulty!: ChallengeDifficultyEnum;
+
+    @prop({ type: () => [TestCase], default: [] })
+    testCases!: TestCase[];
+
+    @prop({ type: () => [ChallengeTemplate], default: [] })
+    templates!: ChallengeTemplate[];
+
+    @prop({ default: true })
+    isPublic!: boolean;
+
+    @prop({ default: 10 })
+    xp!: number;
+
+    @prop({ ref: "User", required: true })
+    author!: Types.ObjectId;
 }
 
-const Challenge = model<IChallenge, ChallengeModel>("Challenge", challengeSchema);
-
-export default Challenge;
+const ChallengeModel = getModelForClass(Challenge);
+export default ChallengeModel;

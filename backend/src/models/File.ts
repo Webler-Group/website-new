@@ -1,82 +1,49 @@
-import { Document, InferSchemaType, Model, Schema, model } from "mongoose";
+import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import FileTypeEnum from "../data/FileTypeEnum";
 
-const filePreviewSchema = new Schema(
-    {
-        contenthash: {
-            type: String,
-            required: true
-        },
-        size: {
-            type: Number,
-            required: true
-        },
-        mimetype: {
-            type: String,
-            required: true
-        }
-    },
-{ _id: false });
+@modelOptions({ schemaOptions: { _id: false } })
+export class FilePreview {
+    @prop({ required: true })
+    contenthash!: string;
 
-const fileSchema = new Schema(
-    {
-        author: {
-            type: Schema.Types.ObjectId,
-            ref: "User",
-            required: true
-        },
+    @prop({ required: true })
+    size!: number;
 
-        path: {
-            type: String,
-            required: true,
-            trim: true,
-            index: true
-        },
+    @prop({ required: true })
+    mimetype!: string;
+}
 
-        name: {
-            type: String,
-            required: true,
-            trim: true,
-            maxLength: 40
-        },
+@index({ path: 1, name: 1 }, { unique: true })
+@modelOptions({ schemaOptions: { collection: "files", timestamps: true } })
+export class File {
+    @prop({ ref: "User", required: true })
+    author!: Types.ObjectId;
 
-        _type: {
-            type: Number,
-            required: true,
-            enum: Object.values(FileTypeEnum).filter(v => typeof v === "number").map(Number)
-        },
+    @prop({ required: true, trim: true, index: true })
+    path!: string;
 
-        mimetype: {
-            type: String
-        },
+    @prop({ required: true, trim: true, maxlength: 40 })
+    name!: string;
 
-        size: {
-            type: Number
-        },
+    @prop({
+        required: true,
+        enum: FileTypeEnum,
+        type: Number
+    })
+    _type!: FileTypeEnum;
 
-        contenthash: {
-            type: String,
-            index: true
-        },
+    @prop()
+    mimetype?: string;
 
-        preview: {
-            type: filePreviewSchema,
-            required: false,
-            default: null
-        }
-    },
-    { timestamps: true }
-);
+    @prop()
+    size?: number;
 
-fileSchema.index(
-    { path: 1, name: 1 },
-    { unique: true }
-);
+    @prop({ index: true })
+    contenthash?: string;
 
-interface IFile extends InferSchemaType<typeof fileSchema> { }
-interface FileModel extends Model<IFile> { }
+    @prop({ type: () => FilePreview, default: null, _id: false })
+    preview!: FilePreview | null;
+}
 
-const File = model<IFile, FileModel>("File", fileSchema);
-
-export type IFileDocument = IFile & Document;
-export default File;
+export default getModelForClass(File);

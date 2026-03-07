@@ -1,63 +1,45 @@
-import { Document, InferSchemaType, Model, Schema, model } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
-const challengeSubmissionSchema = new Schema(
-  {
-    challenge: {
-      type: Schema.Types.ObjectId,
-      ref: "Challenge",
-      required: true
-    },
-    user: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true
-    },
-    reward: {
-      type: Number,
-      default: 0,
-    },
-    language: {
-      type: String,
-      enum: Object.values(CompilerLanguagesEnum),
-      required: true
-    },
-    testResults: [{
-      passed: {
-        type: Boolean,
-        required: true
-      },
-      output: {
-        type: String,
-        required: false
-      },
-      stderr: {
-        type: String,
-        required: false
-      },
-      time: {
-        type: Number,
-        required: false
-      }
-    }],
-    passed: {
-      type: Boolean,
-      default: false
-    },
-    source: {
-        type: String,
-        required: false
-    }
-  },
-  { timestamps: true }
-);
+// --- Nested: TestResult ---
+export class TestResult {
+    @prop({ required: true })
+    passed!: boolean;
 
-interface IChallengeSubmission extends InferSchemaType<typeof challengeSubmissionSchema> {}
+    @prop()
+    output?: string;
 
-interface ChallengeSubmissionModel extends Model<IChallengeSubmission> {}
+    @prop()
+    stderr?: string;
 
-const ChallengeSubmission = model<IChallengeSubmission, ChallengeSubmissionModel>("ChallengeSubmission", challengeSubmissionSchema);
+    @prop()
+    time?: number;
+}
 
-export type IChallengeSubmissionDocument = IChallengeSubmission & Document;
+// --- Main: ChallengeSubmission ---
+@modelOptions({ schemaOptions: { collection: "challengesubmissions", timestamps: true } })
+export class ChallengeSubmission {
+    @prop({ ref: "Challenge", required: true })
+    challenge!: Types.ObjectId;
 
-export default ChallengeSubmission;
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
+
+    @prop({ default: 0 })
+    reward!: number;
+
+    @prop({ required: true, enum: CompilerLanguagesEnum })
+    language!: CompilerLanguagesEnum;
+
+    @prop({ type: () => [TestResult], default: [] })
+    testResults!: TestResult[];
+
+    @prop({ default: false })
+    passed!: boolean;
+
+    @prop()
+    source?: string;
+}
+
+export default getModelForClass(ChallengeSubmission);

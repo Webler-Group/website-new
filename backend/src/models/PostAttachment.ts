@@ -1,76 +1,40 @@
-import mongoose, { InferSchemaType, isObjectIdOrHexString, Model, Types } from "mongoose";
-import Post from "./Post";
-import Code from "./Code";
-import { config } from "../confg";
-import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
-import User from "./User";
-import Notification from "./Notification";
+import { prop, getModelForClass, modelOptions, post, pre } from "@typegoose/typegoose";
+import { ModelType } from "@typegoose/typegoose/lib/types";
+import { Types } from "mongoose";
+import { getImageUrl } from "../controllers/mediaController";
 import { truncate } from "../utils/StringUtils";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
+import { config } from "../confg";
 import PostTypeEnum from "../data/PostTypeEnum";
 import PostAttachmentTypeEnum from "../data/PostAttachmentTypeEnum";
-import { getImageUrl } from "../controllers/mediaController";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "./User";
+import { Post } from "./Post";
+import { Code } from "./Code";
 
-const postAttachmentSchema = new mongoose.Schema({
-    postId: {
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        default: null
-    },
-    channelMessageId: {
-        type: mongoose.Types.ObjectId,
-        ref: "ChannelMessage",
-        default: null
-    },
-    _type: {
-        type: Number,
-        required: true,
-        enum: Object.values(PostAttachmentTypeEnum).filter(v => typeof v === "number").map(Number)
-    },
-    code: { // attached code
-        type: mongoose.Types.ObjectId,
-        ref: "Code",
-        default: null
-    },
-    question: { // attached question
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        default: null
-    },
-    feed: {
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        default: null
-    },
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    }
-})
-
-postAttachmentSchema.post("save", async function () {
-    if (this._type == PostAttachmentTypeEnum.MENTION && this.postId) {
+@post<PostAttachment>("save", async function (doc) {
+    if (doc._type == PostAttachmentTypeEnum.MENTION && doc.postId) {
         try {
-            const post = await Post.findById(this.postId, "-message")
+            const { default: Post } = await import("./Post");
+            const { default: Notification } = await import("./Notification");
+
+            const post = await Post.findById(doc.postId, "-message")
                 .populate<{ user: any }>("user", "name")
                 .populate<{ codeId: any }>("codeId", "name")
                 .populate<{ parentId: any }>("parentId", "title")
                 .populate<{ lessonId: any }>({
                     path: "lessonId",
                     select: "course title",
-                    populate: {
-                        path: "course",
-                        select: "code title"
-                    }
+                    populate: { path: "course", select: "code title" }
                 })
                 .populate<{ feedId: any }>("feedId", "message")
                 .lean();
-            if (!post || this.user.toString() == post.user._id.toString()) return;
+
+            if (!post || doc.user.toString() == post.user._id.toString()) return;
 
             switch (post._type) {
                 case PostTypeEnum.QUESTION:
-                    await Notification.sendToUsers([this.user as Types.ObjectId], {
+                    await Notification.sendToUsers([doc.user as Types.ObjectId], {
                         title: "New mention",
                         type: NotificationTypeEnum.QA_QUESTION_MENTION,
                         actionUser: post.user._id,
@@ -79,7 +43,7 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum.ANSWER:
-                    await Notification.sendToUsers([this.user as Types.ObjectId], {
+                    await Notification.sendToUsers([doc.user as Types.ObjectId], {
                         title: "New mention",
                         type: NotificationTypeEnum.QA_ANSWER_MENTION,
                         actionUser: post.user._id,
@@ -89,7 +53,7 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum.CODE_COMMENT:
-                    await Notification.sendToUsers([this.user as Types.ObjectId], {
+                    await Notification.sendToUsers([doc.user as Types.ObjectId], {
                         title: "New mention",
                         type: NotificationTypeEnum.CODE_COMMENT_MENTION,
                         actionUser: post.user._id,
@@ -99,7 +63,7 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum.LESSON_COMMENT:
-                    await Notification.sendToUsers([this.user as Types.ObjectId], {
+                    await Notification.sendToUsers([doc.user as Types.ObjectId], {
                         title: "New mention",
                         type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
                         actionUser: post.user._id,
@@ -110,7 +74,7 @@ postAttachmentSchema.post("save", async function () {
                     });
                     break;
                 case PostTypeEnum.FEED_COMMENT:
-                    await Notification.sendToUsers([this.user as Types.ObjectId], {
+                    await Notification.sendToUsers([doc.user as Types.ObjectId], {
                         title: "New mention",
                         type: NotificationTypeEnum.FEED_COMMENT_MENTION,
                         actionUser: post.user._id,
@@ -121,38 +85,33 @@ postAttachmentSchema.post("save", async function () {
                     break;
             }
         } catch (err: any) {
-            console.log("Error creating notifcations for post attachments:", err);
-
+            console.log("Error creating notifications for post attachments:", err);
         }
     }
-});
-
-// --- DELETE MANY ---
-postAttachmentSchema.pre("deleteMany", { document: false, query: true }, async function () {
+})
+@pre<PostAttachment>("deleteMany", { document: false, query: true }, async function () {
     try {
-        const filter = this.getFilter();
-        const docs = await this.model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
+        const filter = (this as any).getFilter();
+        const docs = await (this as any).model.find(filter).where({ _type: PostAttachmentTypeEnum.MENTION });
         (this as any)._docsToDelete = docs;
     } catch (err) {
-        console.log("Error in postAttachmentSchema.pre(deleteMany):", err);
-    } 
-});
-
-postAttachmentSchema.post("deleteMany", { document: false, query: true }, async function () {
+        console.log("Error in PostAttachment pre(deleteMany):", err);
+    }
+})
+@post<PostAttachment>("deleteMany", { document: false, query: true }, async function () {
     const docs = (this as any)._docsToDelete as any[];
     if (!docs || docs.length === 0) return;
 
-    for (let doc of docs) {
+    const { default: Post } = await import("./Post");
+    const { default: Notification } = await import("./Notification");
+
+    for (const doc of docs) {
         try {
             if (!doc.postId) continue;
-
             const post = await Post.findById(doc.postId, "-message");
             if (!post) continue;
 
-            let filter: any = {
-                user: doc.user,
-                actionUser: post.user,
-            };
+            let filter: any = { user: doc.user, actionUser: post.user };
 
             switch (post._type) {
                 case PostTypeEnum.QUESTION:
@@ -188,163 +147,159 @@ postAttachmentSchema.post("deleteMany", { document: false, query: true }, async 
             console.log("Error deleting notification for PostAttachment:", err);
         }
     }
-});
+})
+@modelOptions({ schemaOptions: { collection: "postattachments" } })
+export class PostAttachment {
+    @prop({ ref: "Post", default: null })
+    postId!: Types.ObjectId | null;
 
+    @prop({ ref: "ChannelMessage", default: null })
+    channelMessageId!: Types.ObjectId | null;
 
-postAttachmentSchema.statics.getByPostId = async function (id: { post?: mongoose.Types.ObjectId | string; channelMessage?: mongoose.Types.ObjectId; }) {
-    const result = await PostAttachment
-        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null, _type: { $ne: PostAttachmentTypeEnum.MENTION } })
-        .populate("code", "name language")
-        .populate("question", "title")
-        .populate("feed")
-        .populate("user", "name avatarHash countryCode level roles") as any[];
-    return result.map((x) => {
-        const userDetails = {
-            userId: x.user._id,
-            userName: x.user.name,
-            userAvatarUrl: getImageUrl(x.user.avatarHash),
-            countryCode: x.user.countryCode,
-            level: x.user.level,
-            roles: x.user.roles
-        }
-        switch (x._type) {
-            case PostAttachmentTypeEnum.CODE:
-                if (!x.code) return null;
-                return {
-                    id: x._id,
-                    type: x._type,
-                    ...userDetails,
-                    codeId: x.code._id,
-                    codeName: truncate(x.code.name, 40),
-                    codeLanguage: x.code.language
-                }
-            case PostAttachmentTypeEnum.QUESTION:
-                if (!x.question) return null;
-                return {
-                    id: x._id,
-                    type: x._type,
-                    ...userDetails,
-                    questionId: x.question._id,
-                    questionTitle: truncate(x.question.title, 40)
-                }
-            case PostAttachmentTypeEnum.FEED:
-                if (!x.feed) return null;
-                return {
-                    id: x._id,
-                    type: x._type,
-                    ...userDetails,
-                    feedId: x.feed._id,
-                    feedMessage: truncate(escapeMarkdown(x.feed.message), 40).replaceAll(/\n+/g, " "),
-                    feedType: x.feed._type
-                }
-
-        }
-        return null
+    @prop({
+        required: true,
+        enum: Object.values(PostAttachmentTypeEnum).filter(v => typeof v === "number").map(Number),
+        type: Number
     })
-        .filter(x => x !== null)
-}
+    _type!: PostAttachmentTypeEnum;
 
-postAttachmentSchema.statics.updateAttachments = async function (message: string, id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }) {
-    const currentAttachments = await PostAttachment
-        .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null });
-    const newAttachmentIds: string[] = [];
-    const pattern = new RegExp("(" + config.allowedOrigins.map(x => escapeRegex(x)).join("|") + ")\/([\\w\-]+)\/([0-9a-fA-F]{24})", "gi")
-    const matches = message.matchAll(pattern);
-    for (let match of matches) {
-        if (match.length < 4 || !isObjectIdOrHexString(match[3])) continue;
-        let attachment = null;
-        switch (match[2].toLowerCase()) {
-            case "compiler-playground": {
-                const codeId = new mongoose.Types.ObjectId(match[3]);
-                const code = await Code.findById(codeId);
-                if (!code) continue;
-                attachment = currentAttachments.find(x => x.code && x.code == codeId);
-                if (!attachment) {
-                    attachment = await PostAttachment.create({
-                        postId: id.post ?? null,
-                        channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.CODE,
-                        code: codeId,
-                        user: code.user
-                    })
-                }
-                break;
-            }
-            case "discuss": {
-                const questionId = new mongoose.Types.ObjectId(match[3]);
-                const question = await Post.findById(questionId);
-                if (!question) continue;
-                attachment = currentAttachments.find(x => x.question && x.question == questionId);
-                if (!attachment) {
-                    attachment = await PostAttachment.create({
-                        postId: id.post ?? null,
-                        channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.QUESTION,
-                        question: questionId,
-                        user: question.user
-                    })
-                }
-                break;
-            }
-            case "feed": {
-                const postId = new mongoose.Types.ObjectId(match[3]);
-                const post = await Post.findById(postId);
-                if (!post || (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED)) continue;
+    @prop({ ref: "Code", default: null })
+    code!: Types.ObjectId | null;
 
-                attachment = currentAttachments.find(x => x.feed && x.feed == postId);
-                if (!attachment) {
-                    attachment = await PostAttachment.create({
-                        postId: id.post ?? null,
-                        channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.FEED,
-                        feed: postId,
-                        user: post.user
-                    });
-                }
-                break;
-            }
+    @prop({ ref: "Post", default: null })
+    question!: Types.ObjectId | null;
 
-        }
-        if (attachment) {
-            newAttachmentIds.push(attachment._id.toString());
-        }
+    @prop({ ref: "Post", default: null })
+    feed!: Types.ObjectId | null;
+
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
+
+    // --- Statics ---
+    static async getByPostId(
+        this: ModelType<PostAttachment>,
+        id: { post?: Types.ObjectId | string; channelMessage?: Types.ObjectId }
+    ): Promise<any[]> {
+        const result = await PostAttachmentModel
+            .find({ postId: id.post ?? null, channelMessageId: id.channelMessage ?? null, _type: { $ne: PostAttachmentTypeEnum.MENTION } })
+            .populate<{ code: Code & { _id: Types.ObjectId } }>("code", { name: 1, language: 1 })
+            .populate<{ question: Post & { _id: Types.ObjectId } }>("question", { title: 1 })
+            .populate<{ feed: Post & { _id: Types.ObjectId } }>("feed", { _type: 1, message: 1 })
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS);
+
+        return result.map(x => {
+            const userDetails = {
+                userId: x.user._id,
+                userName: x.user.name,
+                userAvatarUrl: getImageUrl(x.user.avatarHash),
+                countryCode: x.user.countryCode,
+                level: x.user.level,
+                roles: x.user.roles
+            };
+            switch (x._type) {
+                case PostAttachmentTypeEnum.CODE:
+                    if (!x.code) return null;
+                    return { id: x._id, type: x._type, ...userDetails, codeId: x.code._id, codeName: truncate(x.code.name, 40), codeLanguage: x.code.language };
+                case PostAttachmentTypeEnum.QUESTION:
+                    if (!x.question) return null;
+                    return { id: x._id, type: x._type, ...userDetails, questionId: x.question._id, questionTitle: truncate(x.question.title!, 40) };
+                case PostAttachmentTypeEnum.FEED:
+                    if (!x.feed) return null;
+                    return { id: x._id, type: x._type, ...userDetails, feedId: x.feed._id, feedMessage: truncate(escapeMarkdown(x.feed.message), 40).replaceAll(/\n+/g, " "), feedType: x.feed._type };
+            }
+            return null;
+        }).filter(x => x !== null);
     }
-    const userPattern = /\[user id="([0-9a-fA-F]{24})"\](.+?)\[\/user\]/gi;
-    const userMatches = message.matchAll(userPattern);
-    for (let match of userMatches) {
-        let attachment = null;
-        const userid = match[1];
-        if(!isObjectIdOrHexString(userid)) continue;
-        const mentionedUser = await User.findById(userid);
-        if (!mentionedUser) continue;
-        attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.toString() === userid);
-        if (!attachment) {
-            attachment = await PostAttachment.create({
-                postId: id.post ?? null,
-                channelMessageId: id.channelMessage ?? null,
-                _type: PostAttachmentTypeEnum.MENTION,
-                user: mentionedUser._id
-            });
+
+    static async updateAttachments(
+        this: ModelType<PostAttachment>,
+        message: string,
+        id: { post?: Types.ObjectId; channelMessage?: Types.ObjectId }
+    ): Promise<void> {
+        const { isObjectIdOrHexString } = await import("mongoose");
+        const { default: Code } = await import("./Code");
+        const { default: Post } = await import("./Post");
+        const { default: User } = await import("./User");
+
+        const currentAttachments = await PostAttachmentModel.find({
+            postId: id.post ?? null,
+            channelMessageId: id.channelMessage ?? null
+        });
+
+        const newAttachmentIds: Types.ObjectId[] = [];
+        const pattern = new RegExp(
+            "(" + config.allowedOrigins.map(x => escapeRegex(x)).join("|") + ")\\/([\\w\\-]+)\\/([0-9a-fA-F]{24})",
+            "gi"
+        );
+
+        for (const match of message.matchAll(pattern)) {
+            if (match.length < 4 || !isObjectIdOrHexString(match[3])) continue;
+            let attachment = null;
+
+            switch (match[2].toLowerCase()) {
+                case "compiler-playground": {
+                    const codeId = new Types.ObjectId(match[3]);
+                    const code = await Code.findById(codeId);
+                    if (!code) continue;
+                    attachment = currentAttachments.find(x => x.code && x.code.equals(codeId));
+                    if (!attachment) {
+                        attachment = await PostAttachmentModel.create({
+                            postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.CODE, code: codeId, user: code.user
+                        });
+                    }
+                    break;
+                }
+                case "discuss": {
+                    const questionId = new Types.ObjectId(match[3]);
+                    const question = await Post.findById(questionId);
+                    if (!question) continue;
+                    attachment = currentAttachments.find(x => x.question && x.question.equals(questionId));
+                    if (!attachment) {
+                        attachment = await PostAttachmentModel.create({
+                            postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.QUESTION, question: questionId, user: question.user
+                        });
+                    }
+                    break;
+                }
+                case "feed": {
+                    const postId = new Types.ObjectId(match[3]);
+                    const post = await Post.findById(postId);
+                    if (!post || (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED)) continue;
+                    attachment = currentAttachments.find(x => x.feed && x.feed.toString() === postId.toString());
+                    if (!attachment) {
+                        attachment = await PostAttachmentModel.create({
+                            postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.FEED, feed: postId, user: post.user
+                        });
+                    }
+                    break;
+                }
+            }
+            if (attachment) newAttachmentIds.push(attachment._id);
         }
-        if (attachment) {
-            newAttachmentIds.push(attachment._id.toString());
+
+        const userPattern = /\[user id="([0-9a-fA-F]{24})"\](.+?)\[\/user\]/gi;
+        for (const match of message.matchAll(userPattern)) {
+            const userid = match[1];
+            if (!isObjectIdOrHexString(userid)) continue;
+            const mentionedUser = await User.findById(userid);
+            if (!mentionedUser) continue;
+            let attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.equals(userid));
+            if (!attachment) {
+                attachment = await PostAttachmentModel.create({
+                    postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
+                    _type: PostAttachmentTypeEnum.MENTION, user: mentionedUser._id
+                });
+            }
+            if (attachment) newAttachmentIds.push(attachment._id);
         }
+
+        const idsToDelete = currentAttachments.map(x => x._id).filter(v => !newAttachmentIds.includes(v));
+        await PostAttachmentModel.deleteMany({ _id: { $in: idsToDelete } });
     }
-    const idsToDelete = currentAttachments.map(x => x._id)
-        .filter(v => !newAttachmentIds.includes(v.toString()));
-    await PostAttachment.deleteMany({
-        _id: { $in: idsToDelete }
-    });
 }
 
-declare interface IPostAttachment extends InferSchemaType<typeof postAttachmentSchema> { }
-
-interface PostAttachmentModel extends Model<IPostAttachment> {
-    getByPostId(id: { post?: mongoose.Types.ObjectId | string; channelMessage?: mongoose.Types.ObjectId; }): Promise<any[]>;
-    updateAttachments(message: string, id: { post?: mongoose.Types.ObjectId; channelMessage?: mongoose.Types.ObjectId; }): Promise<void>;
-
-}
-
-const PostAttachment = mongoose.model<IPostAttachment, PostAttachmentModel>("PostAttachment", postAttachmentSchema);
-
-export default PostAttachment;
+const PostAttachmentModel = getModelForClass(PostAttachment);
+export default PostAttachmentModel;

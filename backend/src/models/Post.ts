@@ -1,212 +1,183 @@
-import mongoose, { Document, InferSchemaType, Model } from "mongoose";
-import Upvote from "./Upvote";
-import Code from "./Code";
-import PostFollowing from "./PostFollowing";
-import Notification from "./Notification";
-import PostAttachment from "./PostAttachment";
+import { prop, getModelForClass, modelOptions, pre, post } from "@typegoose/typegoose";
+import { ModelType } from "@typegoose/typegoose/lib/types";
+import { Types, mongo } from "mongoose";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import CourseLesson from "./CourseLesson";
 
-const postSchema = new mongoose.Schema({
-    _type: {
-        type: Number,
-        required: true,
-        enum: Object.values(PostTypeEnum).filter(v => typeof v === "number").map(Number)
-    },
-    isAccepted: {
-        type: Boolean,
-        default: false
-    },
-    isPinned: {
-        type: Boolean,
-        default: false
-    },
-    codeId: {
-        type: mongoose.Types.ObjectId,
-        ref: "Code",
-        default: null
-    },
-    feedId: {
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        default: null
-    },
-    lessonId: {
-        type: mongoose.Types.ObjectId,
-        ref: "CourseLesson",
-        default: null
-    },
-    parentId: {
-        type: mongoose.Types.ObjectId,
-        ref: "Post",
-        default: null
-    },
-    message: {
-        type: String,
-        required: true,
-        trim: true,
-        minLength: 1,
-        maxLength: 4096
-    },
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    votes: {
-        type: Number,
-        default: 0
-    },
-    answers: {
-        type: Number,
-        default: 0
-    },
-    shares: {
-        type: Number,
-        default: 0
-    },
-    title: {
-        type: String,
-        trim: true,
-        minLength: 1,
-        maxLength: 120
-    },
-    tags: {
-        type: [{ type: mongoose.Types.ObjectId, ref: "Tag" }],
-        validate: [(val: mongoose.Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"]
-    },
-    hidden: {
-        type: Boolean,
-        default: false
-    }
-}, {
-    timestamps: true
-});
-
-postSchema.pre("save", async function () {
+@pre<Post>("save", async function () {
     (this as any)._messageWasModified = this.isModified("message");
-});
-postSchema.post("save", async function () {
+})
+@post<Post>("save", async function (doc) {
     try {
-        if ((this as any)._messageWasModified) {
-            await PostAttachment.updateAttachments(this.message, { post: this._id });
+        if ((doc as any)._messageWasModified) {
+            const { default: PostAttachment } = await import("./PostAttachment");
+            await PostAttachment.updateAttachments(doc.message, { post: doc._id });
         }
     } catch (err: any) {
-        console.log("postSchema.pre(save) failed:", err.message);
+        console.log("Post post(save) failed:", err.message);
     }
-});
+})
+@modelOptions({ schemaOptions: { collection: "posts", timestamps: true } })
+export class Post {
+    @prop({
+        required: true,
+        enum: PostTypeEnum,
+        type: Number
+    })
+    _type!: PostTypeEnum;
 
-postSchema.statics.deleteAndCleanup = async function (filter: mongoose.QueryFilter<IPost>, session?: mongoose.mongo.ClientSession) {
-    const postsToDelete = await Post.find(filter).select("-message").session(session ?? null);
+    @prop({ default: false })
+    isAccepted!: boolean;
 
-    for (let i = 0; i < postsToDelete.length; ++i) {
-        const post = postsToDelete[i]
-        switch (post._type) {
-            case PostTypeEnum.QUESTION: {
-                await Post.deleteAndCleanup({ parentId: post._id }, session);
-                await PostFollowing.deleteMany({ following: post._id }, { session });
+    @prop({ default: false })
+    isPinned!: boolean;
 
-                break;
-            }
-            case PostTypeEnum.ANSWER: {
-                const question = await Post.findById(post.parentId).session(session ?? null);
-                if (question) {
-                    question.$inc("answers", -1);
-                    await question.save({ session });
-                    await Notification.deleteMany({
-                        _type: NotificationTypeEnum.QA_ANSWER,
-                        questionId: question._id,
-                        postId: post._id
-                    }, { session });
+    @prop({ ref: "Code", default: null })
+    codeId!: Types.ObjectId | null;
+
+    @prop({ ref: "Post", default: null })
+    feedId!: Types.ObjectId | null;
+
+    @prop({ ref: "CourseLesson", default: null })
+    lessonId!: Types.ObjectId | null;
+
+    @prop({ ref: "Post", default: null })
+    parentId!: Types.ObjectId | null;
+
+    @prop({ required: true, trim: true, minlength: 1, maxlength: 4096 })
+    message!: string;
+
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
+
+    @prop({ default: 0 })
+    votes!: number;
+
+    @prop({ default: 0 })
+    answers!: number;
+
+    @prop({ default: 0 })
+    shares!: number;
+
+    @prop({ trim: true, minlength: 1, maxlength: 120 })
+    title?: string;
+
+    @prop({
+        type: () => [Types.ObjectId],
+        ref: "Tag",
+        validate: [(val: Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"]
+    })
+    tags!: Types.ObjectId[];
+
+    @prop({ default: false })
+    hidden!: boolean;
+
+    // --- Static ---
+    static async deleteAndCleanup(
+        this: ModelType<Post>,
+        filter: Record<string, any>,
+        session?: mongo.ClientSession
+    ): Promise<void> {
+        const { default: Upvote } = await import("./Upvote");
+        const { default: PostAttachment } = await import("./PostAttachment");
+        const { default: PostFollowing } = await import("./PostFollowing");
+        const { default: Code } = await import("./Code");
+        const { default: Notification } = await import("./Notification");
+        const { default: CourseLesson } = await import("./CourseLesson");
+
+        const postsToDelete = await PostModel.find(filter, { message: 0 }).lean().session(session ?? null);
+
+        for (const post of postsToDelete) {
+            switch (post._type) {
+                case PostTypeEnum.QUESTION: {
+                    await PostModel.deleteAndCleanup({ parentId: post._id }, session);
+                    await PostFollowing.deleteMany({ following: post._id }, { session });
+                    break;
                 }
-                break;
-            }
-            case PostTypeEnum.CODE_COMMENT: {
-                const code = await Code.findById(post.codeId).session(session ?? null);
-                if (code) {
-                    code.$inc("comments", -1);
-                    await code.save({ session });
-                    const parentComment = await Post.findById(post.parentId).session(session ?? null);
-                    if (parentComment) {
-                        parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                case PostTypeEnum.ANSWER: {
+                    const question = await PostModel.findById(post.parentId).session(session ?? null);
+                    if (question) {
+                        question.$inc("answers", -1);
+                        await question.save({ session });
+                        await Notification.deleteMany({
+                            _type: NotificationTypeEnum.QA_ANSWER,
+                            questionId: question._id,
+                            postId: post._id
+                        }, { session });
                     }
-                    await Post.deleteAndCleanup({ parentId: post._id }, session);
-                    await Notification.deleteMany({
-                        _type: NotificationTypeEnum.CODE_COMMENT,
-                        codeId: code._id,
-                        postId: post._id
-                    }, { session });
+                    break;
                 }
-
-                break;
-            }
-
-            case PostTypeEnum.FEED: case PostTypeEnum.SHARED_FEED: {
-                await Post.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum.FEED_COMMENT }, session);
-                await Notification.deleteMany({
-                    feedId: post._id
-                }, { session });
-                break;
-            }
-
-            case PostTypeEnum.FEED_COMMENT: {
-                const feed = await Post.findById(post.feedId).session(session ?? null);
-                if (feed) {
-                    feed.$inc("answers", -1);
-                    await feed.save({ session });
-                    const parentComment = await Post.findById(post.parentId).session(session ?? null);
-                    if (parentComment) {
-                        parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                case PostTypeEnum.CODE_COMMENT: {
+                    const code = await Code.findById(post.codeId).session(session ?? null);
+                    if (code) {
+                        code.$inc("comments", -1);
+                        await code.save({ session });
+                        const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
+                        if (parentComment) {
+                            parentComment.$inc("answers", -1);
+                            await parentComment.save({ session });
+                        }
+                        await PostModel.deleteAndCleanup({ parentId: post._id }, session);
+                        await Notification.deleteMany({
+                            _type: NotificationTypeEnum.CODE_COMMENT,
+                            codeId: code._id,
+                            postId: post._id
+                        }, { session });
                     }
-                    await Post.deleteAndCleanup({ parentId: post._id }, session);
-                    await Notification.deleteMany({
-                        _type: NotificationTypeEnum.FEED_COMMENT,
-                        feedId: feed._id,
-                        postId: post._id
-                    }, { session });
+                    break;
                 }
-                break;
-            }
-
-            case PostTypeEnum.LESSON_COMMENT: {
-                const lesson = await CourseLesson.findById(post.lessonId).session(session ?? null);
-                if (lesson) {
-                    lesson.$inc("comments", -1);
-                    await lesson.save({ session });
-                    const parentComment = await Post.findById(post.parentId).session(session ?? null);
-                    if (parentComment) {
-                        parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                case PostTypeEnum.FEED:
+                case PostTypeEnum.SHARED_FEED: {
+                    await PostModel.deleteAndCleanup({ parentId: post._id, _type: PostTypeEnum.FEED_COMMENT }, session);
+                    await Notification.deleteMany({ feedId: post._id }, { session });
+                    break;
+                }
+                case PostTypeEnum.FEED_COMMENT: {
+                    const feed = await PostModel.findById(post.feedId).session(session ?? null);
+                    if (feed) {
+                        feed.$inc("answers", -1);
+                        await feed.save({ session });
+                        const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
+                        if (parentComment) {
+                            parentComment.$inc("answers", -1);
+                            await parentComment.save({ session });
+                        }
+                        await PostModel.deleteAndCleanup({ parentId: post._id }, session);
+                        await Notification.deleteMany({
+                            _type: NotificationTypeEnum.FEED_COMMENT,
+                            feedId: feed._id,
+                            postId: post._id
+                        }, { session });
                     }
-                    await Post.deleteAndCleanup({ parentId: post._id }, session);
-                    await Notification.deleteMany({
-                        _type: NotificationTypeEnum.LESSON_COMMENT,
-                        lessonId: lesson._id,
-                        postId: post._id
-                    }, { session });
+                    break;
                 }
-                break;
+                case PostTypeEnum.LESSON_COMMENT: {
+                    const lesson = await CourseLesson.findById(post.lessonId).session(session ?? null);
+                    if (lesson) {
+                        lesson.$inc("comments", -1);
+                        await lesson.save({ session });
+                        const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
+                        if (parentComment) {
+                            parentComment.$inc("answers", -1);
+                            await parentComment.save({ session });
+                        }
+                        await PostModel.deleteAndCleanup({ parentId: post._id }, session);
+                        await Notification.deleteMany({
+                            _type: NotificationTypeEnum.LESSON_COMMENT,
+                            lessonId: lesson._id,
+                            postId: post._id
+                        }, { session });
+                    }
+                    break;
+                }
             }
-
+            await Upvote.deleteMany({ parentId: post._id }, { session });
+            await PostAttachment.deleteMany({ postId: post._id }, { session });
         }
-        await Upvote.deleteMany({ parentId: post._id }, { session });
-        await PostAttachment.deleteMany({ postId: post._id }, { session });
+
+        await PostModel.deleteMany(filter, { session });
     }
-
-    await Post.deleteMany(filter, { session });
 }
 
-declare interface IPost extends InferSchemaType<typeof postSchema> { }
-
-interface PostModel extends Model<IPost> {
-    deleteAndCleanup(filter: mongoose.QueryFilter<IPost>, session?: mongoose.mongo.ClientSession): Promise<void>;
-}
-
-const Post = mongoose.model<IPost, PostModel>("Post", postSchema);
-
-export type IPostDocument = IPost & Document;
-
-export default Post;
+const PostModel = getModelForClass(Post);
+export default PostModel;

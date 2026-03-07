@@ -1,76 +1,57 @@
-import mongoose, { Document, InferSchemaType, Model, Schema, SchemaTypes, Types } from "mongoose";
-import ChannelParticipant from "./ChannelParticipant";
+import { prop, getModelForClass, modelOptions, post } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import { getIO, uidRoom } from "../config/socketServer";
-import User from "./User";
-import Channel from "./Channel";
-import Notification from "./Notification";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import ChannelMessage from "./ChannelMessage";
-import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
-import { getImageUrl } from "../controllers/mediaController";
+import { formatUserMinimal } from "../helpers/userHelper";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "./User";
 
-const channelInviteSchema = new Schema({
-    invitedUser: {
-        type: SchemaTypes.ObjectId,
-        ref: "User",
-        required: true
-    },
-    channel: {
-        type: SchemaTypes.ObjectId,
-        ref: "Channel",
-        required: true
-    },
-    author: {
-        type: SchemaTypes.ObjectId,
-        ref: "User",
-        required: true
-    }
-}, {
-    timestamps: true
-});
-
-channelInviteSchema.post("save", async function () {
+@post<ChannelInvite>("save", async function (doc) {
     const io = getIO();
-    if (io) {
-        const author = await User.findById(this.author, "name avatarHash level roles").lean();
-        const channel = await Channel.findById(this.channel, "title _type title");
-        if (!author || !channel) return;
+    if (!io) return;
 
-        await Notification.sendToUsers([this.invitedUser as Types.ObjectId], {
-            title: "New invite",
-            message: `${author.name} invited you to ${channel._type == ChannelTypeEnum.DM ? "DM" : "group"}`,
-            type: NotificationTypeEnum.CHANNELS,
-            actionUser: author._id,
-            url: "/Channels"
-        }, true);
+    const { default: User } = await import("./User");
+    const { default: ChannelModel } = await import("./Channel");
+    const { default: Notification } = await import("./Notification");
 
-        io.to(uidRoom(this.invitedUser.toString())).emit("channels:new_invite", {
-            id: this._id,
-            authorId: author._id,
-            authorName: author.name,
-            authorAvatarUrl: getImageUrl(author.avatarHash),
-            channelId: channel._id,
-            channelType: channel._type,
-            channelTitle: channel.title,
-            createdAt: this.createdAt
-        });
-    }
-});
+    const author = await User.findById(doc.author, USER_MINIMAL_FIELDS).lean<UserMinimal & { _id: Types.ObjectId }>();
+    const channel = await ChannelModel.findById(doc.channel, "title _type");
+    if (!author || !channel) return;
 
-channelInviteSchema.methods.accept = async function (accepted: boolean = true) {
-    if (accepted) {
-        await Channel.join(this.channel, this.invitedUser);
-    }
-    await ChannelInvite.deleteMany({ channel: this.channel, invitedUser: this.invitedUser });
+    await Notification.sendToUsers([doc.invitedUser], {
+        title: "New invite",
+        message: `${author.name} invited you to ${channel._type == ChannelTypeEnum.DM ? "DM" : "group"}`,
+        type: NotificationTypeEnum.CHANNELS,
+        actionUser: author._id,
+        url: "/Channels"
+    }, true);
+
+    io.to(uidRoom(doc.invitedUser.toString())).emit("channels:new_invite", {
+        id: doc._id,
+        author: formatUserMinimal(author),
+        channelId: channel._id,
+        channelType: channel._type,
+        channelTitle: channel.title,
+        createdAt: doc.createdAt
+    });
+})
+@modelOptions({ schemaOptions: { collection: "channelinvites", timestamps: true } })
+export class ChannelInvite {
+    @prop({ ref: "User", required: true })
+    invitedUser!: Types.ObjectId;
+
+    @prop({ ref: "Channel", required: true })
+    channel!: Types.ObjectId;
+
+    @prop({ ref: "User", required: true })
+    author!: Types.ObjectId;
+
+    // Timestamps (populated by mongoose)
+    createdAt!: Date;
+    updatedAt!: Date;
 }
 
-declare interface IChannelInvite extends InferSchemaType<typeof channelInviteSchema>, Document {
-    accept(accepted?: boolean): Promise<void>;
-}
+export type ChannelInviteDocument = ChannelInvite & { _id: Types.ObjectId };
 
-interface ChannelInviteModel extends Model<IChannelInvite> { }
-
-const ChannelInvite = mongoose.model<IChannelInvite, ChannelInviteModel>("ChannelInvite", channelInviteSchema);
-
-export default ChannelInvite;
+const ChannelInviteModel = getModelForClass(ChannelInvite);
+export default ChannelInviteModel;

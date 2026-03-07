@@ -1,19 +1,23 @@
-import { Schema, model } from "mongoose";
+import { getModelForClass, modelOptions, prop } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 
-const NotificationSubscriptionSchema = new Schema({
-    user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    endpoint: { type: String, required: true, unique: true },
-    p256dh: { type: String, required: true },
-    auth: { type: String, required: true },
-    vapidVersion: {
-        type: String,
-        enum: ["old", "active", "candidate"],
-        required: true
-    }
-}, {
-    timestamps: true
-});
+// --- NotificationSubscription ---
+@modelOptions({ schemaOptions: { collection: "notificationsubscriptions", timestamps: true } })
+export class NotificationSubscription {
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
 
-const NotificationSubscription = model("NotificationSubscription", NotificationSubscriptionSchema);
+    @prop({ required: true, unique: true })
+    endpoint!: string;
 
-export default NotificationSubscription;
+    @prop({ required: true })
+    p256dh!: string;
+
+    @prop({ required: true })
+    auth!: string;
+
+    @prop({ required: true, enum: ["old", "active", "candidate"] })
+    vapidVersion!: string;
+}
+
+export const NotificationSubscriptionModel = getModelForClass(NotificationSubscription);

@@ -1,23 +1,20 @@
-import mongoose, { InferSchemaType } from "mongoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 import ReactionsEnum from "../data/ReactionsEnum";
 
-const upvoteSchema = new mongoose.Schema({
-    parentId: {
-        type: mongoose.Types.ObjectId,
-        required: true
-    },
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    reaction: {
-        type: Number,
+@modelOptions({ schemaOptions: { collection: "upvotes" } })
+export class Upvote {
+    @prop({ required: true })
+    parentId!: Types.ObjectId;
+
+    @prop({ ref: "User", required: true })
+    user!: Types.ObjectId;
+
+    @prop({
         enum: Object.values(ReactionsEnum).filter(v => typeof v === "number").map(Number),
-        required: false
-    }
-});
+        type: Number
+    })
+    reaction?: ReactionsEnum;
+}
 
-const Upvote = mongoose.model<InferSchemaType<typeof upvoteSchema>>("Upvote", upvoteSchema);
-
-export default Upvote;
+export default getModelForClass(Upvote);
