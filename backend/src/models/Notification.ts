@@ -46,6 +46,8 @@ export class Notification {
 
     @prop({ default: false })
     hidden!: boolean;
+
+    createdAt!: Date;
 }
 
 const NotificationModel = getModelForClass(Notification);

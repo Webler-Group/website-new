@@ -7,7 +7,6 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { isEmail } from "../utils/regexUtils";
 import { levelFromXp } from "../utils/levelUtils";
 
-// --- Nested: Ban (_id: false) ---
 @modelOptions({ schemaOptions: { _id: false } })
 export class Ban {
     @prop({ ref: "User", required: true })
@@ -20,15 +19,12 @@ export class Ban {
     date!: Date;
 }
 
-// --- Nested: FeedSettings (no _id needed) ---
 @modelOptions({ schemaOptions: { _id: false } })
 export class FeedSettings {
     @prop()
     filter?: number;
 }
 
-// --- Nested: NotificationSettings (dynamic keys from enum) ---
-// Typed as a plain record since keys are dynamic numeric enum values
 type NotificationSettings = Partial<Record<NotificationTypeEnum, boolean>>;
 
 function buildNotificationDefaults(): Record<string, any> {
@@ -47,16 +43,6 @@ function buildNotificationDefaults(): Record<string, any> {
         }
         const salt = await bcrypt.genSalt(10);
         this.password = await bcrypt.hash(this.password, salt);
-    }
-
-    if (this.isModified("active")) {
-        const { default: Post } = await import("./Post");
-        const { default: Code } = await import("./Code");
-        const { default: Notification } = await import("./Notification");
-
-        await Post.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
-        await Code.updateMany({ user: this._id }, { $set: { hidden: !this.active } });
-        await Notification.updateMany({ actionUser: this._id }, { $set: { hidden: !this.active } });
     }
 
     if (this.isModified("xp")) {
@@ -127,10 +113,11 @@ export class User {
     @prop({ type: () => FeedSettings, _id: false })
     feed?: FeedSettings;
 
-    // --- Instance method ---
     async matchPassword(this: DocumentType<User>, inputPassword: string): Promise<boolean> {
         return bcrypt.compare(inputPassword, this.password);
     }
+
+    createdAt!: Date;
 }
 
 export const USER_MINIMAL_FIELDS = { name: 1, avatarHash: 1, countryCode: 1, level: 1, roles: 1 } as const;

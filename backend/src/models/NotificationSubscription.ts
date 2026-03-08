@@ -18,6 +18,9 @@ export class NotificationSubscription {
 
     @prop({ required: true, enum: ["old", "active", "candidate"] })
     vapidVersion!: string;
+
+    createdAt!: Date;
 }
 
-export const NotificationSubscriptionModel = getModelForClass(NotificationSubscription);
+const NotificationSubscriptionModel = getModelForClass(NotificationSubscription);
+export default NotificationSubscriptionModel;

@@ -1,15 +1,16 @@
 import connectDB from "../config/dbConn";
-import EvaluationJob, { IEvaluationJobDocument } from "../models/EvaluationJob";
+import EvaluationJobModel, { EvaluationJob } from "../models/EvaluationJob";
 import { BoxIdPool } from "../utils/BoxIdPool";
 import { runInIsolate } from "../utils/isolate";
 import { logEvents } from "../middleware/logger";
 import Challenge from "../models/Challenge";
-import ChallengeSubmission, { IChallengeSubmissionDocument } from "../models/ChallengeSubmission";
+import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
+import { DocumentType } from "@typegoose/typegoose";
 
 const boxIdPool = new BoxIdPool(100, 10000);
 const CONCURRENCY = 4;
 
-async function processSingleJob(job: IEvaluationJobDocument) {
+async function processSingleJob(job: DocumentType<EvaluationJob>) {
     const boxId = await boxIdPool.acquire();
     try {
         job.status = "running";
@@ -19,13 +20,15 @@ async function processSingleJob(job: IEvaluationJobDocument) {
         const result = await runInIsolate(job.source, job.language, boxId, job.stdin);
 
         job.status = "done";
-        job.result = result as any;
+        job.result = result;
 
         console.log(`Job ${job._id} is done`);
-    } catch (err: any) {
+    } catch (err) {
         job.status = "error";
 
-        logEvents(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
+        if (err instanceof Error) {
+            logEvents(`Job ${job._id} failed with error: ${err.message}`, "codeRunnerErrLog.log");
+        }
     } finally {
         boxIdPool.release(boxId);
     }
@@ -45,7 +48,7 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                 }).filter(x => x != null);
                 const passed = testResults.every(x => x!.passed);
 
-                const submissions = await ChallengeSubmission.find({
+                const submissions = await ChallengeSubmissionModel.find({
                     challenge: job.challenge,
                     user: job.user,
                     language: job.language
@@ -53,17 +56,17 @@ async function processSingleJob(job: IEvaluationJobDocument) {
                     .sort({ updatedAt: "desc" })
                     .limit(1);
 
-                let submission: IChallengeSubmissionDocument | null = submissions.length > 0 ? submissions[0] : null;
+                let submission: DocumentType<ChallengeSubmission> | null = submissions.length > 0 ? submissions[0] : null;
 
                 if (submission) {
-                    submission.testResults = testResults as any;
+                    submission.testResults = testResults;
                     submission.passed = passed;
                     if (passed) {
                         submission.source = job.source;
                     }
                     await submission.save();
                 } else {
-                    submission = await ChallengeSubmission.create({
+                    submission = await ChallengeSubmissionModel.create({
                         challenge: job.challenge,
                         user: job.user,
                         language: job.language,
@@ -78,8 +81,10 @@ async function processSingleJob(job: IEvaluationJobDocument) {
         }
 
         await job.save();
-    } catch (err: any) {
-        logEvents(`Job ${job._id} failed to save: ${err.message}`, "codeRunnerErrLog.log");
+    } catch (err) {
+        if (err instanceof Error) {
+            logEvents(`Job ${job._id} failed to save: ${err.message}`, "codeRunnerErrLog.log");
+        }
     }
 }
 
@@ -87,7 +92,7 @@ async function processJobs() {
     await connectDB();
 
     while (true) {
-        const jobs = await EvaluationJob.find({ status: "pending" }).limit(CONCURRENCY);
+        const jobs = await EvaluationJobModel.find({ status: "pending" }).limit(CONCURRENCY);
         if (jobs.length === 0) {
             await new Promise((resolve) => setTimeout(resolve, 1000));
             continue;

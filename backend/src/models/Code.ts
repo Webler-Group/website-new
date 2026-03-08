@@ -1,5 +1,4 @@
 import { prop, getModelForClass, modelOptions, pre } from "@typegoose/typegoose";
-import { ModelType } from "@typegoose/typegoose/lib/types";
 import { Types } from "mongoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
@@ -12,7 +11,7 @@ import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
         this.set("updatedAt", new Date());
     }
 })
-@modelOptions({ schemaOptions: { collection: "codes" } })
+@modelOptions({ schemaOptions: { collection: "codes", timestamps: true } })
 export class Code {
     @prop({ ref: "User", required: true })
     user!: Types.ObjectId;
@@ -47,25 +46,12 @@ export class Code {
     @prop({ ref: "Challenge", default: null })
     challenge!: Types.ObjectId | null;
 
-    @prop({ default: Date.now })
     createdAt!: Date;
-
-    @prop({ default: Date.now })
     updatedAt!: Date;
-
-    // --- Static ---
-    static async deleteAndCleanup(
-        this: ModelType<Code>,
-        codeId: Types.ObjectId | string
-    ): Promise<void> {
-        const { default: Post } = await import("./Post");
-        const { default: Upvote } = await import("./Upvote");
-
-        await Post.deleteAndCleanup({ codeId, parentId: null });
-        await Upvote.deleteMany({ parentId: codeId });
-        await CodeModel.deleteOne({ _id: codeId });
-    }
 }
+
+export const CODE_MINIMAL_FIELDS = { name: 1, language: 1, isPublic: 1, votes: 1, comments: 1, user: 1, createdAt: 1, updatedAt: 1 } as const;
+export type CodeMinimal = Pick<Code, keyof typeof CODE_MINIMAL_FIELDS>;
 
 const CodeModel = getModelForClass(Code);
 export default CodeModel;

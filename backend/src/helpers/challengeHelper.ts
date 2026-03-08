@@ -3,7 +3,7 @@ import ChallengeModel, { Challenge } from "../models/Challenge";
 import ChallengeSubmission from "../models/ChallengeSubmission";
 import Code from "../models/Code";
 
-export const deleteChallenge = async (filter: mongoose.QueryFilter<Challenge>, session?: mongoose.ClientSession) => {
+export const deleteChallengesAndCleanup = async (filter: mongoose.QueryFilter<Challenge>, session?: mongoose.ClientSession) => {
     const challengesToDelete = await ChallengeModel.find(filter, { _id: 1 }).lean<{ _id: Types.ObjectId }[]>().session(session ?? null);
     const challengeIds = challengesToDelete.map(x => x._id);
 

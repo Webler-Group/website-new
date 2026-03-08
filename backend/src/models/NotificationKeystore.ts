@@ -12,6 +12,9 @@ export class NotificationKeystore {
 
     @prop({ required: true })
     privateKey!: string;
+
+    createdAt!: Date;
 }
 
-export const NotificationKeystoreModel = getModelForClass(NotificationKeystore);
+const NotificationKeystoreModel = getModelForClass(NotificationKeystore);
+export default NotificationKeystoreModel;

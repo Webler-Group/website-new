@@ -4,13 +4,14 @@ import asyncHandler from "express-async-handler";
 import Tag from "../models/Tag";
 import { parseWithZod } from "../utils/zodUtils";
 import { executeTagJobsSchema, getTagSchema } from "../validation/tagsSchema";
+import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 
 const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(executeTagJobsSchema, req);
     const { tags, action } = body;
 
     if (action === "create") {
-        await Tag.getOrCreateTagsByNames(tags);
+        await getOrCreateTagsByNames(tags);
     } else if (action === "delete") {
         await Tag.deleteMany({ name: { $in: tags } });
     } else {
@@ -25,7 +26,7 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
 });
 
 const getTagList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const tags = await Tag.find().sort({ name: 1 }).select("name");
+    const tags = await Tag.find().sort({ name: 1 }).lean();
 
     res.json(tags);
 });
@@ -34,7 +35,7 @@ const getTag = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getTagSchema, req);
     const { tagName } = body;
 
-    const tag = await Tag.findOne({ name: tagName }).select("name _id");
+    const tag = await Tag.findOne({ name: tagName }).lean();
 
     if (!tag) {
         res.status(404).json({ error: [{ message: "Tag not found" }] });

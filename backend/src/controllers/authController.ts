@@ -120,13 +120,14 @@ const register = asyncHandler(async (req: Request, res: Response) => {
             user.lastVerificationEmailTimestamp = Date.now();
             await user.save();
         }
-        catch (err: any) {
-            console.log("Activation email error:", err.message);
+        catch (err) {
+            if (err instanceof Error)
+                console.log("Activation email error:", err.message);
         }
     }
 
     const weblercodesUser = await User.exists({ email: config.adminEmail });
-    if(weblercodesUser) {
+    if (weblercodesUser) {
         await UserFollowing.create({ user: user._id, following: weblercodesUser._id });
     }
 
@@ -215,8 +216,10 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
 
         res.json({ success: true })
     }
-    catch (err: any) {
-        console.log("REset email error:", err.message);
+    catch (err) {
+        if (err instanceof Error) {
+            console.log("Reset email error:", err.message);
+        }
         res.status(500).json({ error: [{ message: "Email could not be sent" }] });
 
     }

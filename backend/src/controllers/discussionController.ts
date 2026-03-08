@@ -2,7 +2,7 @@ import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import Post from "../models/Post";
-import Tag, { ITagDocument } from "../models/Tag";
+import TagModel, { Tag } from "../models/Tag";
 import Upvote from "../models/Upvote";
 import PostFollowing from "../models/PostFollowing";
 import Notification from "../models/Notification";
@@ -16,18 +16,22 @@ import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
 import RolesEnum from "../data/RolesEnum";
 import { isAuthorizedRole } from "../utils/modelUtils";
-import { IUserDocument } from "../models/User";
 import { getImageUrl } from "./mediaController";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { formatUserMinimal } from "../helpers/userHelper";
+import { sendNotifications } from "../helpers/notificationHelper";
+import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
     const { title, message, tags } = body;
     const currentUserId = req.userId;
 
-    const tagIds: any[] = [];
+    const tagIds: Types.ObjectId[] = [];
 
     for (let tagName of tags) {
-        const tag = await Tag.findOne({ name: tagName });
+        const tag = await TagModel.findOne({ name: tagName });
         if (tag) {
             tagIds.push(tag._id);
         }
@@ -85,7 +89,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         const safeQuery = escapeRegex(searchQuery.trim());
         const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
 
-        const tagIds = (await Tag.find({ name: searchQuery.trim() }))
+        const tagIds = (await TagModel.find({ name: searchQuery.trim() }))
             .map(x => x._id);
         pipeline.push({
             $match: {
@@ -200,12 +204,12 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
     })
 
-    const result = await Post.aggregate(pipeline); // ???
+    const result = await Post.aggregate(pipeline);
 
     const data = result.map(x => ({
         id: x._id,
         title: x.title,
-        tags: x.tags.map((tag: ITagDocument) => tag.name),
+        tags: x.tags.map((tag: Tag) => tag.name),
         date: x.createdAt,
         userId: x.user._id,
         userName: x.users.length ? x.users[0].name : undefined,
@@ -240,15 +244,15 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const question = await Post.findById(questionId)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles")
-        .populate<{ tags: ITagDocument[] }>("tags", "name")
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ tags: Tag[] }>("tags")
         .lean();
 
     if (question) {
 
         const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
-        const attachments = await PostAttachment.getByPostId({ post: questionId })
+        const attachments = await getAttachmentsByPostId({ post: questionId })
 
         res.json({
             question: {
@@ -257,9 +261,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 message: question.message,
                 tags: question.tags.map(tag => tag.name),
                 date: question.createdAt,
-                userId: question.user._id,
-                userName: question.user.name,
-                userAvatarUrl: getImageUrl(question.user.avatarHash),
+                user: formatUserMinimal(question.user),
                 answers: question.answers,
                 votes: question.votes,
                 isUpvoted,
@@ -305,30 +307,30 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const followers = await PostFollowing.find({ following: question._id });
-    await Notification.sendToUsers(followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user) as Types.ObjectId[], {
+    await sendNotifications({
         title: "New answer",
         type: NotificationTypeEnum.QA_ANSWER,
-        actionUser: currentUserId!,
+        actionUser: new Types.ObjectId(currentUserId),
         message: `{action_user} posted in "${question.title}"`,
         questionId: question._id,
         postId: reply._id
-    });
+    }, followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user));
 
     if (question.user != new mongoose.Types.ObjectId(currentUserId)) {
-        await Notification.sendToUsers([question.user as Types.ObjectId], {
+        await sendNotifications({
             title: "New answer",
             type: NotificationTypeEnum.QA_ANSWER,
-            actionUser: currentUserId!,
+            actionUser: new Types.ObjectId(currentUserId),
             message: `{action_user} answered your question "${question.title}"`,
             questionId: question._id,
             postId: reply._id
-        });
+        }, [question.user]);
     }
 
     question.$inc("answers", 1)
     await question.save();
 
-    const attachments = await PostAttachment.getByPostId({ post: reply._id })
+    const attachments = await getAttachmentsByPostId({ post: reply._id })
 
     res.json({
         post: {
@@ -400,7 +402,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS);
 
     const data = result.map((x, offset) => ({
         id: x._id,
@@ -428,7 +430,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
-        promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+        promises.push(getAttachmentsByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
     await Promise.all(promises);
@@ -502,7 +504,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const tagIds = (await Tag.getOrCreateTagsByNames(tags)).map(x => x._id);
+    const tagIds = (await getOrCreateTagsByNames(tags)).map(x => x._id);
 
     question.title = title;
     question.message = message;
@@ -510,7 +512,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     await question.save();
 
-    const attachments = await PostAttachment.getByPostId({ post: question._id });
+    const attachments = await getAttachmentsByPostId({ post: question._id });
 
     res.json({
         success: true,
@@ -542,7 +544,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return
     }
 
-    await Post.deleteAndCleanup({ _id: questionId });
+    await deletePostsAndCleanup({ _id: questionId });
 
     res.json({ success: true });
 })
@@ -568,7 +570,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     await reply.save();
 
-    const attachments = await PostAttachment.getByPostId({ post: reply._id })
+    const attachments = await getAttachmentsByPostId({ post: reply._id })
 
     res.json({
         success: true,
@@ -603,7 +605,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    await Post.deleteAndCleanup({ _id: replyId });
+    await deletePostsAndCleanup({ _id: replyId });
 
     res.json({ success: true });
 })
@@ -695,7 +697,7 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles")
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
         .select("user");
 
     const promises: Promise<void>[] = [];

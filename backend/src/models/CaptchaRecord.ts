@@ -4,6 +4,9 @@ import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 export class CaptchaRecord {
     @prop({ required: true })
     encrypted!: string;
+
+    createdAt!: Date;
 }
 
-export default getModelForClass(CaptchaRecord);
+const CaptchaRecordModel = getModelForClass(CaptchaRecord);
+export default CaptchaRecordModel;

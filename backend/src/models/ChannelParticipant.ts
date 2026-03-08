@@ -1,8 +1,9 @@
-import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
+import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 
 @modelOptions({ schemaOptions: { collection: "channelparticipants" } })
+@index({ user: 1, channel: 1 }, { unique: true })
 export class ChannelParticipant {
     @prop({ default: ChannelRolesEnum.MEMBER, enum: ChannelRolesEnum })
     role!: ChannelRolesEnum;
@@ -23,4 +24,5 @@ export class ChannelParticipant {
     unreadCount!: number;
 }
 
-export default getModelForClass(ChannelParticipant);
+const ChannelParticipantModel = getModelForClass(ChannelParticipant);
+export default ChannelParticipantModel;

@@ -52,6 +52,9 @@ export class EvaluationJob {
 
     @prop({ ref: "User", default: null })
     user!: Types.ObjectId | null;
+
+    createdAt!: Date;
 }
 
-export default getModelForClass(EvaluationJob);
+const EvaluationJobModel = getModelForClass(EvaluationJob);
+export default EvaluationJobModel;

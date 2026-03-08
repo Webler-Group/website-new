@@ -22,6 +22,9 @@ export class Channel {
 
     @prop({ ref: "ChannelMessage", default: null })
     lastMessage!: Types.ObjectId | null;
+
+    createdAt!: Date;
+    updatedAt!: Date;
 }
 
 const ChannelModel = getModelForClass(Channel);

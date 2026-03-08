@@ -14,6 +14,9 @@ import {
 
 import { parseWithZod } from "../utils/zodUtils";
 import { getImageUrl } from "./mediaController";
+import PostModel from "../models/Post";
+import CodeModel from "../models/Code";
+import NotificationModel from "../models/Notification";
 
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -132,6 +135,12 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     user.active = active;
 
+    if (user.isModified("active")) {
+        await PostModel.updateMany({ user: user._id }, { $set: { hidden: !user.active } });
+        await CodeModel.updateMany({ user: user._id }, { $set: { hidden: !user.active } });
+        await NotificationModel.updateMany({ actionUser: user._id }, { $set: { hidden: !user.active } });
+    }
+
     if (!user.active) {
         user.ban = {
             author: new mongoose.Types.ObjectId(currentUserId!),
@@ -139,7 +148,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
             date: new Date()
         };
     } else {
-        user.ban = null as any;
+        user.ban = null;
     }
 
     await user.save();

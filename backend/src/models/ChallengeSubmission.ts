@@ -40,6 +40,9 @@ export class ChallengeSubmission {
 
     @prop()
     source?: string;
+
+    createdAt!: Date;
 }
 
-export default getModelForClass(ChallengeSubmission);
+const ChallengeSubmissionModel = getModelForClass(ChallengeSubmission);
+export default ChallengeSubmissionModel;

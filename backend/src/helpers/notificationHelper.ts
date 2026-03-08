@@ -4,35 +4,36 @@ import User from "../models/User";
 import { getIO, onlineUsers, uidRoom } from "../config/socketServer";
 import { sendPushToUsers } from "../services/pushService";
 import NotificationModel from "../models/Notification";
+import HttpError from "../exceptions/HttpError";
 
-export interface SendToUsersParams {
+export interface SendNotificationsParams {
     type: NotificationTypeEnum;
     title: string;
     url?: string;
     message: string;
-    actionUser: string | Types.ObjectId;
-    postId?: string | Types.ObjectId;
-    questionId?: string | Types.ObjectId;
-    feedId?: string | Types.ObjectId;
-    lessonId?: string | Types.ObjectId;
-    codeId?: string | Types.ObjectId;
+    actionUser: Types.ObjectId;
+    postId?: Types.ObjectId;
+    questionId?: Types.ObjectId;
+    feedId?: Types.ObjectId;
+    lessonId?: Types.ObjectId;
+    codeId?: Types.ObjectId;
     courseCode?: string;
 }
 
-export const sendToUsers = async (userIds: (string | Types.ObjectId)[], params: SendToUsersParams, onlyPush: boolean = false, session?: mongoose.ClientSession) => {
+export const sendNotifications = async (params: SendNotificationsParams, userIds: Types.ObjectId[], onlyPush: boolean = false, session?: mongoose.ClientSession) => {
     const allowedUserDocs = await User.find({
         _id: { $in: userIds },
         [`notifications.${params.type}`]: true
-    }, { _id: 1 }).lean<{ _id: Types.ObjectId }[]>();
+    }, { _id: 1 }).lean<{ _id: Types.ObjectId }[]>().session(session ?? null);
     const allowedUserIds = allowedUserDocs.map(doc => doc._id);
 
     const allowedOfflineUserIds = allowedUserIds.filter(
         userId => !onlineUsers.has(userId.toString())
     );
 
-    const currentUser = await User.findById(params.actionUser, { name: 1 });
+    const currentUser = await User.findById(params.actionUser, { name: 1 }).lean().session(session ?? null);
     if (!currentUser) {
-        throw { status: 404, error: [{ message: "User not found" }] };
+        throw new HttpError("Action user not found", 404);
     }
 
     await sendPushToUsers(allowedOfflineUserIds, {

@@ -1,15 +1,15 @@
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
-import Course, { ICourseDocument } from "../models/Course";
-import CourseProgress, { ICourseProgressDocument } from "../models/CourseProgress";
-import CourseLesson from "../models/CourseLesson";
-import LessonNode from "../models/LessonNode";
+import CourseModel, { Course } from "../models/Course";
+import CourseProgressModel, { CourseProgress } from "../models/CourseProgress";
+import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
+import LessonNodeModel from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
-import User, { IUserDocument } from "../models/User";
+import User, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import Post, { IPostDocument } from "../models/Post";
+import PostModel, { Post } from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -31,6 +31,12 @@ import {
 } from "../validation/courseSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import { getImageUrl } from "./mediaController";
+import { DocumentType } from "@typegoose/typegoose";
+import { CourseResponse, formatLesson, formatLessonNodeMinimal, getLastUnlockedLessonIndex, getLessonNodeInfo, LessonResponse } from "../helpers/courseHelper";
+import { CODE_MINIMAL_FIELDS } from "../models/Code";
+import { formatUserMinimal } from "../helpers/userHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { sendNotifications } from "../helpers/notificationHelper";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseListSchema, req);
@@ -38,14 +44,14 @@ const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let result;
     if (excludeUserId) {
-        const progresses = await CourseProgress.find({ userId: excludeUserId }).select("course");
+        const progresses = await CourseProgressModel.find({ userId: excludeUserId }, { course: 1 }).lean();
         const startedCourseIds = progresses.map(x => x.course);
-        result = await Course.find({
+        result = await CourseModel.find({
             visible: true,
             _id: { $nin: startedCourseIds }
-        });
+        }).lean();
     } else {
-        result = await Course.find({ visible: true });
+        result = await CourseModel.find({ visible: true }).lean();
     }
 
     const data = result.map(course => ({
@@ -67,7 +73,7 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(getUserCourseListSchema, req);
     const { userId } = body;
 
-    const result = await CourseProgress.find({ userId }).populate<{ course: ICourseDocument }>("course");
+    const result = await CourseProgressModel.find({ userId }).populate<{ course: Course & { _id: Types.ObjectId } }>("course").lean();
 
     const data = result.map(x => ({
         id: x.course._id,
@@ -93,9 +99,9 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let course = null;
     if (courseId) {
-        course = await Course.findById(courseId);
+        course = await CourseModel.findById(courseId).lean();
     } else {
-        course = await Course.findOne({ code: courseCode });
+        course = await CourseModel.findOne({ code: courseCode }).lean();
     }
 
     if (!course) {
@@ -103,52 +109,44 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    let userProgress = await CourseProgress.findOne({ course: course.id, userId: currentUserId });
+    let userProgress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).lean();
     if (!userProgress) {
-        userProgress = await CourseProgress.create({ course: course.id, userId: currentUserId });
+        userProgress = await CourseProgressModel.create({ course: course._id, userId: currentUserId });
     }
 
-    let lessons: any[] = [];
-    if (includeLessons === true) {
-        lessons = await CourseLesson.find({ course: course.id }).sort({ index: "asc" });
+    const courseData: CourseResponse = {
+        id: course._id.toString(),
+        code: course.code,
+        title: course.title,
+        description: course.description,
+        visible: course.visible,
+        coverImageUrl: getImageUrl(course.coverImageHash),
+        userProgress: {
+            updatedAt: userProgress.updatedAt,
+            nodesSolved: userProgress.nodesSolved,
+            completed: userProgress.completed
+        }
+    }
 
-        const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
+    if (includeLessons === true) {
+        const lessons = await CourseLessonModel.find({ course: course._id }).sort({ index: "asc" }).lean();
+
+        const lastUnlockedLessonIndex = await getLastUnlockedLessonIndex(userProgress.lastLessonNodeId);
 
         let lastUnlockedNodeIndex = 1;
         if (userProgress.lastLessonNodeId) {
-            const lastLessonNode = await LessonNode.findById(userProgress.lastLessonNodeId).select("index");
+            const lastLessonNode = await LessonNodeModel.findById(userProgress.lastLessonNodeId, { index: 1 }).lean<{ index: number }>();
             if (lastLessonNode) {
                 lastUnlockedNodeIndex = lastLessonNode.index + 1;
             }
         }
 
-        lessons = lessons.map(lesson => ({
-            id: lesson._id,
-            title: lesson.title,
-            index: lesson.index,
-            nodeCount: lesson.nodes,
-            unlocked: lesson.index <= lastUnlockedLessonIndex,
-            completed: lesson.index < lastUnlockedLessonIndex,
-            lastUnlockedNodexIndex: lesson.index < lastUnlockedLessonIndex ? lesson.nodes : lastUnlockedNodeIndex
-        }));
+        courseData.lessons = lessons.map(lesson => formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }));
     }
 
     res.json({
         success: true,
-        course: {
-            id: course._id,
-            code: course.code,
-            title: course.title,
-            description: course.description,
-            visible: course.visible,
-            coverImageUrl: getImageUrl(course.coverImageHash),
-            lessons,
-            userProgress: {
-                updatedAt: userProgress.updatedAt,
-                nodesSolved: userProgress.nodesSolved,
-                completed: userProgress.completed
-            }
-        }
+        course: courseData
     });
 });
 
@@ -157,26 +155,27 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { lessonId } = body;
     const currentUserId = req.userId;
 
-    const lesson = await CourseLesson.findById(lessonId);
+    const lesson = await CourseLessonModel.findById(lessonId);
     if (!lesson) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
-    const userProgress = await CourseProgress.findOne({ course: lesson.course, userId: currentUserId }).populate("lastLessonNodeId", "index lessonId") as any;
+    const userProgress = await CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId })
+        .populate<{ lastLessonNodeId: { index: number, lessonId: Types.ObjectId, _id: Types.ObjectId } | null }>("lastLessonNodeId", { index: 1, lessonId: 1 });
     if (!userProgress) {
         res.status(404).json({ error: [{ message: "User progress not found" }] });
         return;
     }
 
-    const lastUnlockedLessonIndex = await userProgress.getLastUnlockedLessonIndex();
+    const lastUnlockedLessonIndex = await getLastUnlockedLessonIndex(userProgress.lastLessonNodeId?._id);
     if (lesson.index > lastUnlockedLessonIndex) {
         res.status(400).json({ error: [{ message: "Lesson is not unlocked" }] });
         return;
     }
 
-    const data: any = {
-        id: lesson._id,
+    const lessonData: LessonResponse = {
+        id: lesson._id.toString(),
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,
@@ -184,21 +183,16 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     let lastUnlockedNodeIndex = 1;
-    if (lesson._id.equals(userProgress.lastLessonNodeId?.lessonId)) {
+    if (userProgress.lastLessonNodeId && lesson._id.equals(userProgress.lastLessonNodeId.lessonId)) {
         lastUnlockedNodeIndex = userProgress.lastLessonNodeId.index + 1;
     }
 
-    const nodes = await LessonNode.find({ lessonId: lesson._id }).sort({ index: "asc" }).select("_id _type index");
-    data.nodes = nodes.map(x => ({
-        id: x._id,
-        index: x.index,
-        type: x._type,
-        unlocked: lesson.index < lastUnlockedLessonIndex || x.index <= lastUnlockedNodeIndex
-    }));
+    const nodes = await LessonNodeModel.find({ lessonId: lesson._id }, { _type: 1, index: 1 }).sort({ index: "asc" });
+    lessonData.nodes = nodes.map(x => formatLessonNodeMinimal(x, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }));
 
     res.json({
         success: true,
-        lesson: data
+        lesson: lessonData
     });
 });
 
@@ -207,23 +201,22 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId, mock } = body;
     const currentUserId = req.userId;
 
-    const lessonNode = await LessonNode.findById(nodeId).populate([
-        { path: "lessonId" },
-        { path: "codeId", select: "name source cssSource jsSource language" }
-    ]);
+    const lessonNode = await LessonNodeModel.findById(nodeId)
+        .populate<{ lessonId: CourseLesson }>({ path: "lessonId" })
+        .lean();
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     if (!mock) {
-        const userProgress = await CourseProgress.findOne({ course: (lessonNode.lessonId as any).course, userId: currentUserId });
+        const userProgress = await CourseProgressModel.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
 
-        const { unlocked, isLastUnlocked } = await userProgress.getLessonNodeInfo(lessonNode._id.toString());
+        const { unlocked, isLastUnlocked } = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
         if (!unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
@@ -231,7 +224,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         if ((lessonNode._type === LessonNodeTypeEnum.TEXT || lessonNode._type === LessonNodeTypeEnum.CODE) && isLastUnlocked) {
             userProgress.$inc("nodesSolved", 1);
-            userProgress.lastLessonNodeId = lessonNode._id as any;
+            userProgress.lastLessonNodeId = lessonNode._id;
             await userProgress.save();
         }
     } else {
@@ -268,60 +261,85 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId, correctAnswer, answers, mock } = body;
     const currentUserId = req.userId;
 
-    const lessonNode = await LessonNode.findById(nodeId)
-        .populate<{ lessonId: { course: mongoose.Types.ObjectId } }>("lessonId", "course");
+    const lessonNode = await LessonNodeModel.findById(nodeId)
+        .populate<{ lessonId: { course: mongoose.Types.ObjectId } }>("lessonId", { course: 1 });
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
-    let userProgress: ICourseProgressDocument | null = null;
+    let userProgress: DocumentType<CourseProgress> | null = null;
     let isLast = false;
-    if (!mock) {
-        userProgress = await CourseProgress.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
+    let correct = false;
+
+    if (mock) {
+        const user = await User.findById(currentUserId, { roles: 1 });
+        if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
+            res.status(403).json({ error: [{ message: "Unauthorized" }] });
+            return;
+        }
+
+        switch (mock.type) {
+            case LessonNodeTypeEnum.TEXT:
+            case LessonNodeTypeEnum.CODE:
+                correct = true;
+                break;
+            case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:
+            case LessonNodeTypeEnum.MULTICHOICE_QUESTION:
+                correct = mock.answers!.every(answer => {
+                    const myAnswer = answers?.find(myAnswer => new Types.ObjectId(answer.id).equals(myAnswer.id));
+                    return myAnswer && myAnswer.correct === answer.correct;
+                });
+                break;
+            case LessonNodeTypeEnum.TEXT_QUESTION:
+                correct = correctAnswer === mock.correctAnswer;
+                break;
+        }
+    } else {
+        userProgress = await CourseProgressModel.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
             res.status(404).json({ error: [{ message: "User progress not found" }] });
             return;
         }
 
-        const nodeInfo = await userProgress.getLessonNodeInfo(lessonNode.id);
+        const nodeInfo = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
         if (!nodeInfo.unlocked) {
             res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
             return;
         }
         isLast = nodeInfo.isLastUnlocked;
-    } else {
-        const user = await User.findById(currentUserId).select("roles");
-        if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
-            res.status(403).json({ error: [{ message: "Unauthorized" }] });
-            return;
+
+        const nodeAnswers = await QuizAnswer.find({ courseLessonNodeId: lessonNode._id }, { correct: 1 });
+
+        switch (lessonNode._type) {
+            case LessonNodeTypeEnum.TEXT:
+            case LessonNodeTypeEnum.CODE:
+                correct = true;
+                break;
+            case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:
+            case LessonNodeTypeEnum.MULTICHOICE_QUESTION:
+                correct = nodeAnswers.every(answer => {
+                    const myAnswer = answers?.find(myAnswer => answer._id.equals(myAnswer.id));
+                    return myAnswer && myAnswer.correct === answer.correct;
+                });
+                break;
+            case LessonNodeTypeEnum.TEXT_QUESTION:
+                correct = correctAnswer === lessonNode.correctAnswer;
+                break;
         }
-    }
 
-    const nodeAnswers = await QuizAnswer.find({ courseLessonNodeId: lessonNode.id }).select("correct");
+        if (isLast && correct) {
+            const lessons = await CourseLessonModel.find({ course: userProgress.course }, { nodes: 1 }).lean<{ nodes: number }[]>();
+            const courseNodes = lessons.reduce((count, lesson) => count + lesson.nodes, 0);
 
-    let correct = false;
-    switch (mock?.type ? mock.type : lessonNode._type) {
-        case LessonNodeTypeEnum.TEXT:
-        case LessonNodeTypeEnum.CODE:
-            correct = true;
-            break;
-        case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:
-        case LessonNodeTypeEnum.MULTICHOICE_QUESTION:
-            correct = ((mock?.answers ? mock.answers : nodeAnswers) as { id: string, correct: boolean }[]).every((x) => {
-                const myAnswer = answers?.find((y: any) => y.id.toString() === x.id);
-                return myAnswer && myAnswer.correct === x.correct;
-            });
-            break;
-        case LessonNodeTypeEnum.TEXT_QUESTION:
-            correct = correctAnswer === (mock?.correctAnswer ? mock.correctAnswer : lessonNode.correctAnswer);
-            break;
-    }
+            if (courseNodes === userProgress.nodesSolved) {
+                userProgress.completed = true;
+            }
 
-    if (!mock && isLast && correct) {
-        userProgress!.lastLessonNodeId = lessonNode._id;
-        userProgress!.$inc("nodesSolved", 1);
-        await userProgress!.save();
+            userProgress.lastLessonNodeId = lessonNode._id;
+            userProgress.$inc("nodesSolved", 1);
+            await userProgress.save();
+        }
     }
 
     res.json({
@@ -335,13 +353,13 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
     const { courseId } = body;
     const currentUserId = req.userId;
 
-    const userProgress = await CourseProgress.findOne({ course: courseId, userId: currentUserId });
+    const userProgress = await CourseProgressModel.findOne({ course: courseId, userId: currentUserId });
     if (!userProgress) {
         res.status(404).json({ error: [{ message: "Course progress not found" }] });
         return;
     }
 
-    userProgress.lastLessonNodeId = null as any;
+    userProgress.lastLessonNodeId = null;
     userProgress.nodesSolved = 0;
     userProgress.completed = false;
     await userProgress.save();
@@ -354,27 +372,29 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { lessonId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: any = null;
+    let parentPost: Post & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } } | null = null;
     if (parentId) {
-        parentPost = await Post
+        parentPost = await PostModel
             .findById(parentId)
-            .populate("user", "name avatarHash countryCode level roles");
+            .populate("user", USER_MINIMAL_FIELDS)
+            .lean<Post & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } }>();
     }
 
-    let dbQuery = Post.find({ lessonId, _type: PostTypeEnum.LESSON_COMMENT, hidden: false });
+    let dbQuery = PostModel.find({ lessonId, _type: PostTypeEnum.LESSON_COMMENT, hidden: false });
 
     let skipCount = index;
 
     if (findPostId) {
-        const reply = await Post.findById(findPostId);
+        const reply = await PostModel.findById(findPostId);
         if (!reply) {
             res.status(404).json({ error: [{ message: "Post not found" }] });
             return;
         }
 
-        parentPost = reply.parentId ? await Post
+        parentPost = reply.parentId ? await PostModel
             .findById(reply.parentId)
-            .populate("user", "name avatarHash countryCode level roles")
+            .populate("user", USER_MINIMAL_FIELDS)
+            .lean<Post & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } }>()
             : null;
 
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -402,18 +422,15 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .lean();
 
     const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
         id: x._id,
         parentId: x.parentId,
         message: x.message,
         date: x.createdAt,
-        userId: x.user._id,
-        userName: x.user.name,
-        userAvatarUrl: getImageUrl(x.user.avatarHash),
-        level: x.user.level,
-        roles: x.user.roles,
+        user: formatUserMinimal(x.user),
         votes: x.votes,
         isUpvoted: false,
         answers: x.answers,
@@ -425,7 +442,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
         Upvote.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
             data[i].isUpvoted = !!upvote;
         }),
-        PostAttachment.getByPostId({ post: item.id }).then(attachments => {
+        getAttachmentsByPostId({ post: item.id }).then(attachments => {
             data[i].attachments = attachments;
         })
     ]).flat();
@@ -440,8 +457,8 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     const { lessonId, message, parentId } = body;
     const currentUserId = req.userId;
 
-    const lesson = await CourseLesson.findById(lessonId)
-        .populate<{ course: any }>("course", "code title");
+    const lesson = await CourseLessonModel.findById(lessonId)
+        .populate<{ course: Course }>("course", { title: 1, code: 1 });
     if (!lesson) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
@@ -449,14 +466,14 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
 
     let parentPost = null;
     if (parentId) {
-        parentPost = await Post.findById(parentId);
+        parentPost = await PostModel.findById(parentId);
         if (!parentPost) {
             res.status(404).json({ error: [{ message: "Parent post not found" }] });
             return;
         }
     }
 
-    const reply = await Post.create({
+    const reply = await PostModel.create({
         _type: PostTypeEnum.LESSON_COMMENT,
         message,
         lessonId,
@@ -465,15 +482,15 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     });
 
     if (parentPost && !parentPost.user.equals(currentUserId)) {
-        await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
+        await sendNotifications({
             title: "New reply",
             type: NotificationTypeEnum.LESSON_COMMENT,
-            actionUser: currentUserId!,
+            actionUser: new Types.ObjectId(currentUserId),
             message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
             lessonId: lesson._id,
             postId: reply._id,
             courseCode: lesson.course.code
-        });
+        }, [parentPost.user]);
     }
 
     lesson.$inc("comments", 1);
@@ -484,7 +501,7 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         await parentPost.save();
     }
 
-    const attachments = await PostAttachment.getByPostId({ post: reply._id });
+    const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
         success: true,
@@ -506,7 +523,7 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { id, message } = body;
     const currentUserId = req.userId;
 
-    const comment = await Post.findById(id);
+    const comment = await PostModel.findById(id);
     if (!comment) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
@@ -520,7 +537,7 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     comment.message = message;
 
     await comment.save();
-    const attachments = await PostAttachment.getByPostId({ post: comment._id });
+    const attachments = await getAttachmentsByPostId({ post: comment._id });
     res.json({
         success: true,
         data: {
@@ -536,7 +553,7 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     const { id } = body;
     const currentUserId = req.userId;
 
-    const comment = await Post.findById(id);
+    const comment = await PostModel.findById(id);
     if (!comment) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
@@ -547,13 +564,13 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         return;
     }
 
-    const lesson = await CourseLesson.findById(comment.lessonId);
+    const lesson = await CourseLessonModel.findById(comment.lessonId);
     if (!lesson) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
-    await Post.deleteAndCleanup({ _id: id });
+    await deletePostsAndCleanup({ _id: id });
     res.json({ success: true });
 });
 

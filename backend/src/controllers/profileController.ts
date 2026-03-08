@@ -8,7 +8,6 @@ import Code from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import { config } from "../confg";
-import fs from "fs";
 import Post from "../models/Post";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";

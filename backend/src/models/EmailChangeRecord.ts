@@ -1,5 +1,4 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
-import { ModelType } from "@typegoose/typegoose/lib/types";
 import { Types } from "mongoose";
 import { isEmail } from "../utils/regexUtils";
 
@@ -23,22 +22,7 @@ export class EmailChangeRecord {
     @prop({ default: 0 })
     attempts!: number;
 
-    // --- Static ---
-    static async generate(
-        this: ModelType<EmailChangeRecord>,
-        userId: Types.ObjectId,
-        newEmail: string
-    ): Promise<string | null> {
-        const { default: User } = await import("./User");
-
-        await EmailChangeRecordModel.deleteMany({ userId });
-        const exists = await User.exists({ email: newEmail });
-        if (exists) return null;
-
-        const code = Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
-        await EmailChangeRecordModel.create({ userId, newEmail, code });
-        return code;
-    }
+    createdAt!: Date;
 }
 
 const EmailChangeRecordModel = getModelForClass(EmailChangeRecord);

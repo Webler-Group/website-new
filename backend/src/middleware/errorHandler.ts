@@ -4,6 +4,8 @@ import { Request, Response, NextFunction } from "express";
 import { logEvents } from "./logger";
 import MulterFileTypeError from "../exceptions/MulterFileTypeError";
 import multer from "multer";
+import HttpError from "../exceptions/HttpError";
+
 
 export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
   let errors: { message: string; field?: string; value?: any;[key: string]: any }[] = [];
@@ -15,6 +17,9 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
       field: issue.path.join("."),
     }));
     return res.status(400).json({ error: errors });
+  }
+  else if (err instanceof HttpError) {
+    return res.status(err.status).json({ error: [{ message: err.message }] });
   }
   // Multer errors
   else if (err instanceof multer.MulterError) {

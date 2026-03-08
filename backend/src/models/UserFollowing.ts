@@ -1,22 +1,17 @@
-import mongoose from "mongoose";
+import { getModelForClass, index, modelOptions, prop } from "@typegoose/typegoose";
+import { Types } from "mongoose";
 
-const userFollowingSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    },
-    following: {
-        type: mongoose.Types.ObjectId,
-        ref: "User",
-        required: true
-    }
-}, {
-    timestamps: true
-});
+@modelOptions({ schemaOptions: { collection: "userfollowings", timestamps: true } })
+@index({ user: 1, following: 1 }, { unique: true })
+export class UserFollowing {
 
-userFollowingSchema.index({ user: 1, following: 1 }, { unique: true });
+    @prop({ required: true, ref: "User" })
+    user!: Types.ObjectId;
 
-const UserFollowing = mongoose.model("UserFollowing", userFollowingSchema);
+    @prop({ required: true, ref: "User" })
+    following!: Types.ObjectId;
 
-export default UserFollowing;
+}
+
+const UserFollowingModel = getModelForClass(UserFollowing);
+export default UserFollowingModel;

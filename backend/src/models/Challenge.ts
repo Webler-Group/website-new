@@ -50,6 +50,8 @@ export class Challenge {
 
     @prop({ ref: "User", required: true })
     author!: Types.ObjectId;
+
+    createdAt!: Date;
 }
 
 const ChallengeModel = getModelForClass(Challenge);

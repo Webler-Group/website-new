@@ -1,20 +1,17 @@
 import webpush from "web-push";
 import { config } from "../confg";
-import NotificationKeystore from "../models/NotificationKeystore";
-import NotificationSubscription from "../models/NotificationSubscription";
-import User from "../models/User";
-import { onlineUsers } from "../config/socketServer";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import mongoose from "mongoose";
+import { NotificationKeystoreModel } from "../models/NotificationKeystore";
+import { NotificationSubscriptionModel } from "../models/NotificationSubscription";
 
 export async function initKeystore() {
-    const active = await NotificationKeystore.findOne({ version: "active" });
+    const active = await NotificationKeystoreModel.findOne({ version: "active" });
     if (active) return active;
 
     console.log("No active VAPID keys found, generating new...");
     const vapidKeys = webpush.generateVAPIDKeys();
 
-    const newKeys = await NotificationKeystore.create({
+    const newKeys = await NotificationKeystoreModel.create({
         version: "active",
         publicKey: vapidKeys.publicKey,
         privateKey: vapidKeys.privateKey,
@@ -28,10 +25,10 @@ export async function sendPushToUsers(
     userIds: mongoose.Types.ObjectId[],
     payload: { title: string; body: string; url?: string }
 ) {
-    const subs = await NotificationSubscription.find({ user: { $in: userIds } });
+    const subs = await NotificationSubscriptionModel.find({ user: { $in: userIds } });
     if (subs.length === 0) return;
 
-    const keys = await NotificationKeystore.findOne({ version: "active" });
+    const keys = await NotificationKeystoreModel.findOne({ version: "active" });
     if (!keys) {
         console.log("Error: No VAPID keys available");
         return;
@@ -57,12 +54,14 @@ export async function sendPushToUsers(
                 },
                 stringifiedPayload
             );
-        } catch (err: any) {
-            if (err.statusCode === 410 || err.statusCode === 404) {
-                console.log("Deleting expired subscription:", sub.endpoint);
-                await NotificationSubscription.deleteOne({ _id: sub._id });
-            } else {
-                console.log("Push error:", err);
+        } catch (err) {
+            if (err instanceof webpush.WebPushError) {
+                if (err.statusCode === 410 || err.statusCode === 404) {
+                    console.log("Deleting expired subscription:", sub.endpoint);
+                    await NotificationSubscriptionModel.deleteOne({ _id: sub._id });
+                } else {
+                    console.log("Push error:", err);
+                }
             }
         }
     }

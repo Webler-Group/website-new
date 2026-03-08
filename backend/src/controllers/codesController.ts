@@ -1,12 +1,12 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Code from "../models/Code";
+import Code, { CODE_MINIMAL_FIELDS, CodeMinimal } from "../models/Code";
 import Upvote from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJob from "../models/EvaluationJob";
 import { escapeRegex } from "../utils/regexUtils";
-import Post, { IPostDocument } from "../models/Post";
+import PostModel, { Post } from "../models/Post";
 import PostAttachment from "../models/PostAttachment";
 import Notification from "../models/Notification";
 import PostTypeEnum from "../data/PostTypeEnum";
@@ -14,8 +14,13 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
 import { parseWithZod } from "../utils/zodUtils";
 import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeCommentSchema, deleteCodeSchema, editCodeCommentSchema, editCodeSchema, getCodeCommentsSchema, getCodeListSchema, getCodeSchema, getJobSchema, getTemplateSchema, voteCodeSchema } from "../validation/codesSchema";
-import { IUserDocument } from "../models/User";
+import { User, USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { getImageUrl } from "./mediaController";
+import { formatUserMinimal } from "../helpers/userHelper";
+import { deleteCodeAndCleanup, formatCodeMinimal } from "../helpers/codesHelper";
+import PostAttachmentModel from "../models/PostAttachment";
+import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { sendNotifications } from "../helpers/notificationHelper";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -60,7 +65,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     let dbQuery = Code.find({
-        hidden: false, 
+        hidden: false,
         $or: [
             { challenge: null },
             { challenge: { $exists: false } }
@@ -127,25 +132,11 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip((page - 1) * count)
         .limit(count)
-        .select("-source -cssSource -jsSource")
-        .populate<{ user: IUserDocument }>("user", "name avatarHash level roles");
+        .select(CODE_MINIMAL_FIELDS)
+        .populate("user", USER_MINIMAL_FIELDS)
+        .lean<(CodeMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>();
 
-    const data = result.map(x => ({
-        id: x._id,
-        name: x.name,
-        createdAt: x.createdAt,
-        updatedAt: x.updatedAt,
-        userId: x.user._id,
-        userName: x.user.name,
-        userAvatarUrl: getImageUrl(x.user.avatarHash),
-        level: x.user.level,
-        roles: x.user.roles,
-        comments: x.comments,
-        votes: x.votes,
-        isUpvoted: false,
-        isPublic: x.isPublic,
-        language: x.language
-    }));
+    const data = result.map(x => formatCodeMinimal(x, x.user));
 
     let promises = [];
 
@@ -168,10 +159,11 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await Code.findById(codeId)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .lean();
 
     if (code) {
-        const isUpvoted = currentUserId ? await Upvote.findOne({ parentId: codeId, user: currentUserId }) : false;
+        const isUpvoted = currentUserId ? await Upvote.exists({ parentId: codeId, user: currentUserId }) : false;
 
         res.json({
             code: {
@@ -180,11 +172,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 language: code.language,
                 createdAt: code.createdAt,
                 updatedAt: code.updatedAt,
-                userId: code.user._id,
-                userName: code.user.name,
-                userAvatarUrl: getImageUrl(code.user.avatarHash),
-                level: code.user.level,
-                roles: code.user.roles,
+                user: formatUserMinimal(code.user),
                 comments: code.comments,
                 votes: code.votes,
                 isUpvoted,
@@ -256,7 +244,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId);
+    const code = await Code.findById(codeId).lean();
 
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
@@ -268,7 +256,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await Code.deleteAndCleanup(codeId);
+    await deleteCodeAndCleanup(code._id);
 
     res.json({ success: true });
 });
@@ -308,28 +296,30 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: any = null;
+    let parentPost: (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null = null;
     if (parentId) {
-        parentPost = await Post
+        parentPost = await PostModel
             .findById(parentId)
-            .populate("user", "name avatarHash countryCode level roles");
+            .populate("user", USER_MINIMAL_FIELDS)
+            .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>();
     }
 
-    let dbQuery = Post.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
+    let dbQuery = PostModel.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
 
     let skipCount = index;
 
     if (findPostId) {
-        const reply = await Post.findById(findPostId);
+        const reply = await PostModel.findById(findPostId);
 
         if (reply === null) {
             res.status(404).json({ error: [{ message: "Post not found" }] });
             return;
         }
 
-        parentPost = reply.parentId ? await Post
+        parentPost = reply.parentId ? await PostModel
             .findById(reply.parentId)
-            .populate("user", "name avatarHash countryCode level roles")
+            .populate("user", USER_MINIMAL_FIELDS)
+            .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>()
             : null;
 
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -373,18 +363,15 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate<{ user: IUserDocument }>("user", "name avatarHash countryCode level roles");
+        .populate("user", USER_MINIMAL_FIELDS)
+        .lean<(Post & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>();
 
     const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
         id: x._id,
         parentId: x.parentId,
         message: x.message,
         date: x.createdAt,
-        userId: x.user._id,
-        userName: x.user.name,
-        userAvatarUrl: getImageUrl(x.user.avatarHash),
-        level: x.user.level,
-        roles: x.user.roles,
+        user: formatUserMinimal(x.user),
         votes: x.votes,
         isUpvoted: false,
         answers: x.answers,
@@ -402,7 +389,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
-        promises.push(PostAttachment.getByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
+        promises.push(getAttachmentsByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
     }
 
     await Promise.all(promises);
@@ -423,14 +410,14 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     let parentPost = null;
     if (parentId !== null) {
-        parentPost = await Post.findById(parentId);
+        parentPost = await PostModel.findById(parentId);
         if (parentPost === null) {
             res.status(404).json({ error: [{ message: "Parent post not found" }] });
             return;
         }
     }
 
-    const reply = await Post.create({
+    const reply = await PostModel.create({
         _type: PostTypeEnum.CODE_COMMENT,
         message,
         codeId,
@@ -439,24 +426,24 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     });
 
     if (parentPost != null && !parentPost.user.equals(currentUserId)) {
-        await Notification.sendToUsers([parentPost.user as Types.ObjectId], {
+        await sendNotifications({
             title: "New reply",
             message: `{action_user} replied to your comment on "${code.name}"`,
             type: NotificationTypeEnum.CODE_COMMENT,
-            actionUser: currentUserId!,
+            actionUser: new Types.ObjectId(currentUserId),
             codeId: code._id,
             postId: reply._id
-        });
+        }, [parentPost.user]);
     }
-    if (!code.user.equals(currentUserId) && (parentPost == null || code.user.toString() != parentPost.user.toString())) {
-        await Notification.sendToUsers([code.user as Types.ObjectId], {
+    if (!code.user.equals(currentUserId) && (parentPost == null || !code.user.equals(parentPost.user))) {
+        await sendNotifications({
             title: "New comment",
             message: `{action_user} posted comment on your code "${code.name}"`,
             type: NotificationTypeEnum.CODE_COMMENT,
-            actionUser: currentUserId!,
+            actionUser: new Types.ObjectId(currentUserId),
             codeId: code._id,
             postId: reply._id
-        });
+        }, [code.user]);
     }
 
     code.$inc("comments", 1);
@@ -467,7 +454,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         await parentPost.save();
     }
 
-    const attachments = await PostAttachment.getByPostId({ post: reply._id });
+    const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
         post: {
@@ -488,7 +475,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { id, message } = body;
     const currentUserId = req.userId;
 
-    const comment = await Post.findById(id);
+    const comment = await PostModel.findById(id);
 
     if (comment === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
@@ -504,7 +491,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     await comment.save();
 
-    const attachments = await PostAttachment.getByPostId({ post: comment._id });
+    const attachments = await getAttachmentsByPostId({ post: comment._id });
 
     res.json({
         success: true,
@@ -521,7 +508,7 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { id } = body;
     const currentUserId = req.userId;
 
-    const comment = await Post.findById(id);
+    const comment = await PostModel.findById(id);
 
     if (comment === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
@@ -539,7 +526,7 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    await Post.deleteAndCleanup({ _id: id });
+    await deletePostsAndCleanup({ _id: id });
 
     res.json({ success: true });
 });
@@ -565,7 +552,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJob.findById(jobId).select("-source");
+    const job = await EvaluationJob.findById(jobId, { source: 0 });
     if (!job) {
         res.status(404).json({ error: [{ message: "Job does not exist" }] });
         return;

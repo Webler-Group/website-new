@@ -44,6 +44,10 @@ export class File {
 
     @prop({ type: () => FilePreview, default: null, _id: false })
     preview!: FilePreview | null;
+
+    createdAt!: Date;
+    updatedAt!: Date;
 }
 
-export default getModelForClass(File);
+const FileModel = getModelForClass(File);
+export default FileModel;
