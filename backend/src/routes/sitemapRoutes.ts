@@ -25,7 +25,7 @@ router.get("/sitemap.xml", async (req, res) => {
         res.send(sitemapXml.toString());
 
     } catch (err) {
-        console.error("Sitemap generation error:", err);
+        console.log("Sitemap generation error:", err);
         res.status(500).end();
     }
 });

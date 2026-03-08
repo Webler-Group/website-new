@@ -18,6 +18,7 @@ import { deleteCodeAndCleanup, formatCodeMinimal } from "../helpers/codesHelper"
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -25,8 +26,7 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     if (await CodeModel.countDocuments({ user: currentUserId }) >= 500) {
-        res.status(403).json({ error: [{ message: "You already have max count of codes" }] });
-        return;
+        throw new HttpError("You already have max count of codes", 403);
     }
 
     const code = await CodeModel.create({
@@ -39,19 +39,22 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 
     res.json({
-        code: {
-            id: code._id,
-            name: code.name,
-            language: code.language,
-            createdAt: code.createdAt,
-            updatedAt: code.createdAt,
-            userId: code.user,
-            votes: code.votes,
-            comments: code.comments,
-            source: code.source,
-            cssSource: code.cssSource,
-            jsSource: code.jsSource,
-            isPublic: code.isPublic
+        success: true,
+        data: {
+            code: {
+                id: code._id,
+                name: code.name,
+                language: code.language,
+                createdAt: code.createdAt,
+                updatedAt: code.createdAt,
+                userId: code.user,
+                votes: code.votes,
+                comments: code.comments,
+                source: code.source,
+                cssSource: code.cssSource,
+                jsSource: code.jsSource,
+                isPublic: code.isPublic
+            }
         }
     });
 });
@@ -87,8 +90,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             break;
         case 3:
             if (!userId) {
-                res.status(400).json({ error: [{ message: "Invalid request" }] });
-                return;
+                throw new HttpError("Invalid request", 400);
             }
             if (userId !== currentUserId) {
                 dbQuery = dbQuery.where({ isPublic: true });
@@ -100,8 +102,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             dbQuery = dbQuery.where({ createdAt: { $gt: dayAgo }, isPublic: true }).sort({ votes: "desc" });
             break;
         default:
-            res.status(400).json({ error: [{ message: "Unknown filter" }] });
-            return;
+            throw new HttpError("Unknown filter", 400);
     }
 
     const [codeCount, result] = await Promise.all([
@@ -125,7 +126,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         ));
     }
 
-    res.status(200).json({ count: codeCount, codes: data });
+    res.json({ success: true, data: { count: codeCount, codes: data } });
 });
 
 const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -138,8 +139,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean();
 
     if (!code) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
+        throw new HttpError("Code not found", 404);
     }
 
     const isUpvoted = currentUserId
@@ -147,20 +147,23 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         : false;
 
     res.json({
-        code: {
-            id: code._id,
-            name: code.name,
-            language: code.language,
-            createdAt: code.createdAt,
-            updatedAt: code.updatedAt,
-            user: formatUserMinimal(code.user),
-            comments: code.comments,
-            votes: code.votes,
-            isUpvoted,
-            source: code.source,
-            cssSource: code.cssSource,
-            jsSource: code.jsSource,
-            isPublic: code.isPublic
+        success: true,
+        data: {
+            code: {
+                id: code._id,
+                name: code.name,
+                language: code.language,
+                createdAt: code.createdAt,
+                updatedAt: code.updatedAt,
+                user: formatUserMinimal(code.user),
+                comments: code.comments,
+                votes: code.votes,
+                isUpvoted,
+                source: code.source,
+                cssSource: code.cssSource,
+                jsSource: code.jsSource,
+                isPublic: code.isPublic
+            }
         }
     });
 });
@@ -170,9 +173,9 @@ const getTemplate = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const template = templates.find(x => x.language === params.language);
     if (template) {
-        res.json({ template });
+        res.json({ success: true, data: { template } });
     } else {
-        res.status(404).json({ error: [{ message: "Template not found" }] });
+        throw new HttpError("Template not found", 404);
     }
 });
 
@@ -183,13 +186,11 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const code = await CodeModel.findById(codeId);
     if (!code) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
+        throw new HttpError("Code not found", 404);
     }
 
     if (!code.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     code.name = name;
@@ -221,13 +222,11 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const code = await CodeModel.findById(codeId).lean();
     if (!code) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
+        throw new HttpError("Code not found", 404);
     }
 
     if (!code.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     await withTransaction(async (session) => {
@@ -244,7 +243,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const upvote = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
-        if (!code) return null;
+        if (!code) throw new HttpError("Code not found", 404);
 
         let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId }).session(session);
 
@@ -266,12 +265,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return upvote;
     });
 
-    if (upvote === null && upvote !== undefined) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
-    }
-
-    res.json({ vote: upvote ? 1 : 0 });
+    res.json({ success: true, data: { vote: upvote ? 1 : 0 } });
 });
 
 const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -294,8 +288,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     if (findPostId) {
         const reply = await PostModel.findById(findPostId).lean();
         if (!reply) {
-            res.status(404).json({ error: [{ message: "Post not found" }] });
-            return;
+            throw new HttpError("Post not found", 404);
         }
 
         parentPost = reply.parentId
@@ -314,8 +307,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
             case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
             case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
             default:
-                res.status(400).json({ error: [{ message: "Unknown filter" }] });
-                return;
+                throw new HttpError("Unknown filter", 400);
         }
     }
 
@@ -345,7 +337,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
     ])));
 
-    res.status(200).json({ posts: data });
+    res.json({ success: true, data: { posts: data } });
 });
 
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -355,12 +347,12 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const reply = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
-        if (!code) return null;
+        if (!code) throw new HttpError("Code not found", 404);
 
         let parentPost = null;
         if (parentId) {
             parentPost = await PostModel.findById(parentId).session(session);
-            if (!parentPost) return null;
+            if (!parentPost) throw new HttpError("Parent post not found", 404);
         }
 
         const reply = new PostModel({
@@ -405,23 +397,21 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return reply;
     });
 
-    if (!reply) {
-        res.status(404).json({ error: [{ message: "Code or parent post not found" }] });
-        return;
-    }
-
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
-        post: {
-            id: reply._id,
-            message: reply.message,
-            date: reply.createdAt,
-            userId: reply.user,
-            parentId: reply.parentId,
-            votes: reply.votes,
-            answers: reply.answers,
-            attachments
+        success: true,
+        data: {
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                parentId: reply.parentId,
+                votes: reply.votes,
+                answers: reply.answers,
+                attachments
+            }
         }
     });
 });
@@ -433,13 +423,11 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const comment = await PostModel.findById(id);
     if (!comment) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!comment.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     comment.message = message;
@@ -462,19 +450,16 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const comment = await PostModel.findById(id).lean();
     if (!comment) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!comment.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const code = await CodeModel.findById(comment.codeId).lean();
     if (!code) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
+        throw new HttpError("Code not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -496,7 +481,7 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         deviceId
     });
 
-    res.json({ jobId: job._id });
+    res.json({ success: true, data: { jobId: job._id } });
 });
 
 const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -505,8 +490,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const job = await EvaluationJobModel.findById(jobId, { source: 0 }).lean();
     if (!job) {
-        res.status(404).json({ error: [{ message: "Job does not exist" }] });
-        return;
+        throw new HttpError("Job does not exist", 404);
     }
 
     let stdout = "";
@@ -521,14 +505,17 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     res.json({
-        job: {
-            id: job._id,
-            deviceId: job.deviceId,
-            status: job.status,
-            language: job.language,
-            stdin: job.stdin,
-            stdout,
-            stderr
+        success: true,
+        data: {
+            job: {
+                id: job._id,
+                deviceId: job.deviceId,
+                status: job.status,
+                language: job.language,
+                stdin: job.stdin,
+                stdout,
+                stderr
+            }
         }
     });
 });

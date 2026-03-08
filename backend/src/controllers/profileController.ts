@@ -28,6 +28,7 @@ import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHel
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { Tag } from "../models/Tag";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -39,8 +40,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const user = await UserModel.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
-        res.status(404).json({ error: [{ message: "Profile not found" }] });
-        return
+        throw new HttpError("Profile not found", 404);
     }
 
     const isFollowing = currentUserId ?
@@ -118,42 +118,45 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     res.json({
-        userDetails: {
-            id: user._id,
-            name: user.name,
-            email: currentUserId === userId ? user.email : null,
-            bio: user.bio,
-            avatarUrl: getImageUrl(user.avatarHash),
-            roles: user.roles,
-            emailVerified: user.emailVerified,
-            countryCode: user.countryCode,
-            followers,
-            following,
-            isFollowing,
-            registerDate: user.createdAt,
-            level: user.level,
-            xp: user.xp,
-            active: user.active,
-            notifications: user.notifications,
-            codes: codes.map(x => ({
-                id: x._id,
-                name: x.name,
-                createdAt: x.createdAt,
-                updatedAt: x.updatedAt,
-                comments: x.comments,
-                votes: x.votes,
-                isPublic: x.isPublic,
-                language: x.language
-            })),
-            questions: questions.map(x => ({
-                id: x._id,
-                title: x.title,
-                date: x.createdAt,
-                answers: x.answers,
-                votes: x.votes,
-                tags: x.tags.map(x => x.name)
-            })),
-            solvedChallenges
+        success: true,
+        data: {
+            userDetails: {
+                id: user._id,
+                name: user.name,
+                email: currentUserId === userId ? user.email : null,
+                bio: user.bio,
+                avatarUrl: getImageUrl(user.avatarHash),
+                roles: user.roles,
+                emailVerified: user.emailVerified,
+                countryCode: user.countryCode,
+                followers,
+                following,
+                isFollowing,
+                registerDate: user.createdAt,
+                level: user.level,
+                xp: user.xp,
+                active: user.active,
+                notifications: user.notifications,
+                codes: codes.map(x => ({
+                    id: x._id,
+                    name: x.name,
+                    createdAt: x.createdAt,
+                    updatedAt: x.updatedAt,
+                    comments: x.comments,
+                    votes: x.votes,
+                    isPublic: x.isPublic,
+                    language: x.language
+                })),
+                questions: questions.map(x => ({
+                    id: x._id,
+                    title: x.title,
+                    date: x.createdAt,
+                    answers: x.answers,
+                    votes: x.votes,
+                    tags: x.tags.map(x => x.name)
+                })),
+                solvedChallenges
+            }
         }
     });
 
@@ -165,20 +168,17 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, name, bio, countryCode } = body;
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const user = await UserModel.findById(userId);
 
     if (!user) {
-        res.status(404).json({ error: [{ message: "Profile not found" }] });
-        return;
+        throw new HttpError("Profile not found", 404);
     }
 
     if (user.name != name && await UserModel.exists({ name })) {
-        res.status(404).json({ error: [{ message: "Username is already taken" }] });
-        return;
+        throw new HttpError("Username is already taken", 409);
     }
 
     user.name = name;
@@ -206,25 +206,21 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const user = await UserModel.findById(currentUserId);
 
     if (!user) {
-        res.status(404).json({ error: [{ message: "Profile not found" }] });
-        return;
+        throw new HttpError("Profile not found", 404);
     }
 
     const matchPassword = await user.matchPassword(password);
     if (!matchPassword) {
-        res.status(403).json({ error: [{ message: "Incorrect information" }] });
-        return;
+        throw new HttpError("Incorrect information", 403);
     }
 
     if (user.email == email) {
-        res.json({ error: [{ message: "Emails cannot be same" }] });
-        return;
+        throw new HttpError("Emails cannot be same", 400);
     }
 
     const code = await generateEmailChangeRecord(new mongoose.Types.ObjectId(currentUserId), email);
     if (!code) {
-        res.status(401).json({ error: [{ message: "Email is already used" }] });
-        return;
+        throw new HttpError("Email is already used", 409);
     }
     await sendEmailChangeVerification(user.name, user.email, email, code);
 
@@ -241,25 +237,23 @@ const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const record = await EmailChangeRecord.findOne({ userId: currentUserId, code }).lean();
     if (!record) {
-        res.status(400).json({ error: [{ message: "Invalid or expired code" }] });
-        return;
+        throw new HttpError("Invalid or expired code", 400);
     }
 
     const now = Date.now();
     if (now - record.createdAt.getTime() > 15 * 60 * 1000) {
         await EmailChangeRecord.deleteOne({ _id: record._id });
-        res.status(403).json({ error: [{ message: "Code has expired" }] });
-        return;
+        throw new HttpError("Code has expired", 403);
     }
 
     const result = await withTransaction(async (session) => {
         await EmailChangeRecord.deleteOne({ _id: record._id }, { session });
 
         const user = await UserModel.findById(currentUserId).session(session);
-        if (!user) return null;
+        if (!user) throw new HttpError("User not found", 404);
 
         if (await UserModel.exists({ email: record.newEmail }).session(session)) {
-            return { emailTaken: true } as const;
+            throw new HttpError("Email is already taken", 409);
         }
 
         user.email = record.newEmail;
@@ -268,16 +262,6 @@ const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) 
 
         return { email: user.email };
     });
-
-    if (!result) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
-    }
-
-    if ("emailTaken" in result) {
-        res.status(401).json({ error: [{ message: "Email is already taken" }] });
-        return;
-    }
 
     res.json({ success: true, data: { email: result.email } });
 });
@@ -288,8 +272,7 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const user = await UserModel.findById(currentUserId);
     if (user === null) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
+        throw new HttpError("User not found", 404);
     }
 
     const { emailToken } = signEmailToken({
@@ -307,7 +290,7 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
         res.json({ success: true });
     }
     catch {
-        res.status(500).json({ message: "Activation email could not be sent" });
+        throw new HttpError("Activation email could not be sent", 500);
     }
 })
 
@@ -317,19 +300,17 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = body;
 
     if (userId === currentUserId) {
-        res.status(400).json({ error: [{ message: "Fields 'user' and 'following' cannot be same" }] });
-        return;
+        throw new HttpError("Fields 'user' and 'following' cannot be same", 400);
     }
 
     const userExists = await UserModel.exists({ _id: userId });
     if (!userExists) {
-        res.status(404).json({ error: [{ message: "Profile not found" }] });
-        return;
+        throw new HttpError("Profile not found", 404);
     }
 
     const exists = await UserFollowingModel.exists({ user: currentUserId, following: userId });
     if (exists) {
-        res.status(204).json({ success: true });
+        res.json({ success: true });
         return;
     }
 
@@ -352,13 +333,12 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = body;
 
     if (userId === currentUserId) {
-        res.status(400).json({ error: [{ message: "Fields 'user' and 'following' cannot be same" }] });
-        return;
+        throw new HttpError("Fields 'user' and 'following' cannot be same", 400);
     }
 
     const userFollowing = await UserFollowingModel.findOne({ user: currentUserId, following: userId });
     if (!userFollowing) {
-        res.status(204).json({ success: true });
+        res.json({ success: true });
         return;
     }
 
@@ -479,7 +459,10 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     }));
 
     res.json({
-        notifications: data
+        success: true,
+        data: {
+            notifications: data
+        }
     });
 })
 
@@ -488,7 +471,7 @@ const getUnseenNotificationCount = asyncHandler(async (req: IAuthRequest, res: R
 
     const count = await NotificationModel.countDocuments({ user: currentUserId, isClicked: false, hidden: false })
 
-    res.json({ count });
+    res.json({ success: true, data: { count } });
 });
 
 const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -503,7 +486,7 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
         await NotificationModel.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } })
     }
 
-    res.json({});
+    res.json({ success: true });
 });
 
 const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res) => {
@@ -513,13 +496,11 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res) => 
 
     const user = await UserModel.findById(userId);
     if (!user) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
+        throw new HttpError("User not found", 404);
     }
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const fileDoc = await uploadImageToBlob({
@@ -560,13 +541,11 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
 
     const user = await UserModel.findById(userId);
     if (!user) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
+        throw new HttpError("User not found", 404);
     }
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     if (user.avatarFileId) {
@@ -587,8 +566,7 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
 
     const user = await UserModel.findById(currentUserId);
     if (!user) {
-        res.status(404).json({ error: [{ message: "Profile not found" }] });
-        return;
+        throw new HttpError("Profile not found", 404);
     }
 
     if (user.notifications) {
@@ -621,7 +599,10 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const users = await UserModel.find(match, USER_MINIMAL_FIELDS).lean<(UserMinimal & { _id: Types.ObjectId })[]>();
 
     res.json({
-        users: users.map(u => formatUserMinimal(u))
+        success: true,
+        data: {
+            users: users.map(u => formatUserMinimal(u))
+        }
     });
 });
 
@@ -676,8 +657,7 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
     const targetUserId = userId ?? currentUserId;
 
     if (targetUserId !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const basePath = `users/${targetUserId}/post-images`;
@@ -689,17 +669,19 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     res.json({
         success: true,
-        items: items.map((x) => ({
-            id: x._id,
-            author: formatUserMinimal(x.author),
-            type: x._type,
-            name: x.name,
-            mimetype: x.mimetype,
-            size: x.size,
-            updatedAt: x.updatedAt,
-            url: getImageUrl(x.contenthash),
-            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
-        }))
+        data: {
+            items: items.map((x) => ({
+                id: x._id,
+                author: formatUserMinimal(x.author),
+                type: x._type,
+                name: x.name,
+                mimetype: x.mimetype,
+                size: x.size,
+                updatedAt: x.updatedAt,
+                url: getImageUrl(x.contenthash),
+                previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
+            }))
+        }
     });
 });
 
@@ -710,19 +692,16 @@ const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const fileDoc = await FileModel.findById(fileId).select("author name path").lean();
     if (!fileDoc) {
-        res.status(404).json({ error: [{ message: "File not found" }] });
-        return;
+        throw new HttpError("File not found", 404);
     }
 
     if (fileDoc.author.toString() !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const basePath = `users/${currentUserId}/post-images`;
     if (!fileDoc.path.startsWith(basePath)) {
-        res.status(400).json({ error: [{ message: "Not a post image" }] });
-        return;
+        throw new HttpError("Not a post image", 400);
     }
 
     await deleteEntry(fileDoc.path, fileDoc.name);
@@ -760,23 +739,20 @@ const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const fileDoc = await FileModel.findById(fileId).select("author path name");
     if (!fileDoc) {
-        res.status(404).json({ error: [{ message: "File not found" }] });
-        return;
+        throw new HttpError("File not found", 404);
     }
 
     const isOwner = fileDoc.author.toString() === currentUserId;
     const isAdmin = req.roles?.includes(RolesEnum.ADMIN);
 
     if (!isOwner && !isAdmin) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const basePath = `users/${fileDoc.author.toString()}/post-images`;
 
     if (!fileDoc.path.startsWith(basePath)) {
-        res.status(400).json({ error: [{ message: "Not a post image" }] });
-        return;
+        throw new HttpError("Not a post image", 400);
     }
 
     const targetPath = newSubPath

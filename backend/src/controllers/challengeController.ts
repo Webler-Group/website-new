@@ -1,5 +1,5 @@
 import { Response } from "express";
-import ChallengeModel, { Challenge } from "../models/Challenge";
+import ChallengeModel, { Challenge, TestCase } from "../models/Challenge";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import asyncHandler from "express-async-handler";
 import { escapeRegex } from "../utils/regexUtils";
@@ -13,6 +13,7 @@ import RolesEnum from "../data/RolesEnum";
 import UserModel from "../models/User";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -31,7 +32,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         author: req.userId,
     });
 
-    res.json({ success: true, challenge: { id: challenge._id } });
+    res.json({ success: true, data: { challenge: { id: challenge._id } } });
 });
 
 const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -43,11 +44,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         req.roles && req.roles.some(r => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(r));
 
     if (!isPublic && !isAuthorized) {
-        res.status(404).json({
-            status: false,
-            error: [{ message: "Unauthorized User" }, { message: "IsPublic should be true" }]
-        });
-        return;
+        throw new HttpError("Unauthorized User", 404);
     }
 
     const challengeQuery: mongoose.QueryFilter<Challenge> = {
@@ -63,8 +60,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     if (filter === 2 || filter === 3) {
         if (!userId) {
-            res.status(400).json({ error: [{ message: "Invalid request" }] });
-            return;
+            throw new HttpError("Invalid request", 400);
         }
         const passedIds = await ChallengeSubmissionModel.distinct("challenge", {
             user: userId,
@@ -120,29 +116,28 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : []
     }));
 
-    res.json({ count: total, challenges: data });
+    res.json({
+        success: true,
+        data: {
+            count: total,
+            challenges: data
+        }
+    });
 });
 
 const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeSchema, req);
     const { challengeId } = body;
 
-    const challenge = await ChallengeModel.findById(challengeId);
+    const challenge = await ChallengeModel.findById(challengeId).lean();
 
     const isAuthorized = req.roles && req.roles.some(i => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(i));
     if (!challenge?.isPublic && !isAuthorized) {
-        res.status(404).json({
-            success: false, error: [
-                { message: "Unauthorized User cannot view private challenge" },
-                { message: "Challenge not found" },
-            ]
-        });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     if (!challenge) {
-        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     const submissions = await ChallengeSubmissionModel.aggregate([
@@ -153,24 +148,26 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        challenge: {
-            id: challenge._id,
-            description: challenge.description,
-            difficulty: challenge.difficulty,
-            xp: challenge.xp ?? 0,
-            title: challenge.title,
-            testCases: challenge.testCases.map(x => (x.isHidden ?
-                {
-                    id: (x as unknown as { _id: mongoose.Types.ObjectId })._id,
-                    isHidden: x.isHidden
-                } :
-                {
-                    id: (x as unknown as { _id: mongoose.Types.ObjectId })._id,
-                    input: x.input,
-                    expectedOutput: x.expectedOutput,
-                    isHidden: x.isHidden
-                })),
-            submissions
+        data: {
+            challenge: {
+                id: challenge._id,
+                description: challenge.description,
+                difficulty: challenge.difficulty,
+                xp: challenge.xp ?? 0,
+                title: challenge.title,
+                testCases: (challenge.testCases as (TestCase & { _id: Types.ObjectId })[]).map((x) => (x.isHidden ?
+                    {
+                        id: x._id,
+                        isHidden: x.isHidden
+                    } :
+                    {
+                        id: x._id,
+                        input: x.input,
+                        expectedOutput: x.expectedOutput,
+                        isHidden: x.isHidden
+                    })),
+                submissions
+            }
         }
     });
 });
@@ -188,7 +185,7 @@ interface ChallengeCodeResponse {
     };
 };
 
-const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response<{ code: ChallengeCodeResponse }>) => {
+const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeCodeSchema, req);
     const { challengeId, language } = body;
     const currentUserId = req.userId;
@@ -234,7 +231,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response<{ 
         };
     }
 
-    res.json({ code: data });
+    res.json({ success: true, data: { code: data } });
 });
 
 const saveChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -258,6 +255,7 @@ const saveChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     res.json({
+        success: true,
         data: {
             id: code._id,
             language: code.language,
@@ -276,29 +274,30 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
     const challenge = await ChallengeModel.findById(challengeId).lean();
 
     if (!challenge) {
-        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     res.json({
         success: true,
-        challenge: {
-            id: challenge._id,
-            description: challenge.description,
-            difficulty: challenge.difficulty,
-            title: challenge.title,
-            xp: challenge.xp ?? 0,
-            isPublic: challenge.isPublic ?? true,
-            templates: challenge.templates.map(x => ({
-                name: x.name,
-                source: x.source
-            })),
-            testCases: challenge.testCases.map(x => ({
-                id: (x as unknown as { _id: mongoose.Types.ObjectId })._id,
-                input: x.input,
-                expectedOutput: x.expectedOutput,
-                isHidden: x.isHidden
-            }))
+        data: {
+            challenge: {
+                id: challenge._id,
+                description: challenge.description,
+                difficulty: challenge.difficulty,
+                title: challenge.title,
+                xp: challenge.xp ?? 0,
+                isPublic: challenge.isPublic ?? true,
+                templates: challenge.templates.map(x => ({
+                    name: x.name,
+                    source: x.source
+                })),
+                testCases: (challenge.testCases as (TestCase & { _id: mongoose.Types.ObjectId })[]).map(x => ({
+                    id: x._id,
+                    input: x.input,
+                    expectedOutput: x.expectedOutput,
+                    isHidden: x.isHidden
+                }))
+            }
         }
     });
 });
@@ -309,8 +308,7 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const challenge = await ChallengeModel.findById(challengeId);
 
     if (!challenge) {
-        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     challenge.title = title;
@@ -344,8 +342,7 @@ const deleteChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const challenge = await ChallengeModel.findById(challengeId).lean();
 
     if (!challenge) {
-        res.status(404).json({ success: false, error: [{ message: "Challenge not found" }] });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -363,8 +360,7 @@ const createChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const challenge = await ChallengeModel.findById(challengeId, "testCases").lean();
     if (!challenge) {
-        res.status(404).json({ error: [{ message: "Challenge not found" }] });
-        return;
+        throw new HttpError("Challenge not found", 404);
     }
 
     const job = await EvaluationJobModel.create({
@@ -376,7 +372,7 @@ const createChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response)
         deviceId
     });
 
-    res.json({ jobId: job._id });
+    res.json({ success: true, data: { jobId: job._id } });
 });
 
 const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -388,51 +384,27 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
         .lean();
 
     if (!job) {
-        res.status(404).json({ error: [{ message: "Job does not exist" }] });
-        return;
-    }
-
-    if (job.submission?.passed) {
-        await withTransaction(async (session) => {
-            const [user, challenge] = await Promise.all([
-                UserModel.findById(req.userId).session(session),
-                ChallengeModel.findById(job.challenge, { xp: 1 }).lean().session(session)
-            ]);
-
-            if (!user) return;
-
-            const reward = challenge?.xp ?? 0;
-
-            const submission = await ChallengeSubmissionModel.findOne({
-                user: req.userId,
-                challenge: job.challenge,
-                language: job.language
-            }).session(session);
-
-            if (submission && submission.reward !== reward) {
-                user.$inc("xp", reward);
-                submission.reward = reward;
-                await user.save({ session });
-                await submission.save({ session });
-            }
-        });
+        throw new HttpError("Job does not exist", 404);
     }
 
     res.json({
-        job: {
-            id: job._id,
-            deviceId: job.deviceId,
-            status: job.status,
-            language: job.language,
-            submission: job.submission ? {
-                testResults: job.submission.testResults.map(x => ({
-                    output: x.output,
-                    stderr: x.stderr,
-                    passed: x.passed,
-                    time: x.time
-                })),
-                passed: job.submission.passed
-            } : null
+        success: true,
+        data: {
+            job: {
+                id: job._id,
+                deviceId: job.deviceId,
+                status: job.status,
+                language: job.language,
+                submission: job.submission ? {
+                    testResults: job.submission.testResults.map(x => ({
+                        output: x.output,
+                        stderr: x.stderr,
+                        passed: x.passed,
+                        time: x.time
+                    })),
+                    passed: job.submission.passed
+                } : null
+            }
         }
     });
 });

@@ -21,6 +21,7 @@ import { formatUserMinimal } from "../helpers/userHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -49,16 +50,19 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     });
 
     res.json({
-        question: {
-            id: question._id,
-            title: question.title,
-            message: question.message,
-            tags: question.tags,
-            date: question.createdAt,
-            userId: question.user,
-            isAccepted: question.isAccepted,
-            votes: question.votes,
-            answers: question.answers
+        success: true,
+        data: {
+            question: {
+                id: question._id,
+                title: question.title,
+                message: question.message,
+                tags: question.tags,
+                date: question.createdAt,
+                userId: question.user,
+                isAccepted: question.isAccepted,
+                votes: question.votes,
+                answers: question.answers
+            }
         }
     });
 });
@@ -93,16 +97,14 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         }
         case 3: {
             if (!userId) {
-                res.status(400).json({ error: [{ message: "Invalid request" }] });
-                return;
+                throw new HttpError("Invalid request", 400);
             }
             dbQuery = dbQuery.where({ user: userId }).sort({ createdAt: "desc" });
             break;
         }
         case 4: {
             if (!userId) {
-                res.status(400).json({ error: [{ message: "Invalid request" }] });
-                return;
+                throw new HttpError("Invalid request", 400);
             }
             const replies = await PostModel.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId").lean();
             const questionIds = [...new Set(replies.map(x => x.parentId))];
@@ -119,8 +121,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             break;
         }
         default:
-            res.status(400).json({ error: [{ message: "Unknown filter" }] });
-            return;
+            throw new HttpError("Unknown filter", 400);
     }
 
     const [questionCount, questions] = await Promise.all([
@@ -155,7 +156,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         ));
     }
 
-    res.status(200).json({ count: questionCount, questions: data });
+    res.json({ success: true, data: { count: questionCount, questions: data } });
 });
 
 const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -169,8 +170,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean();
 
     if (!question) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     const [isUpvoted, isFollowed, attachments] = await Promise.all([
@@ -180,19 +180,22 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     ]);
 
     res.json({
-        question: {
-            id: question._id,
-            title: question.title,
-            message: question.message,
-            tags: question.tags.map(tag => tag.name),
-            date: question.createdAt,
-            user: formatUserMinimal(question.user),
-            answers: question.answers,
-            votes: question.votes,
-            isUpvoted,
-            isAccepted: question.isAccepted,
-            isFollowed,
-            attachments
+        success: true,
+        data: {
+            question: {
+                id: question._id,
+                title: question.title,
+                message: question.message,
+                tags: question.tags.map(tag => tag.name),
+                date: question.createdAt,
+                user: formatUserMinimal(question.user),
+                answers: question.answers,
+                votes: question.votes,
+                isUpvoted,
+                isAccepted: question.isAccepted,
+                isFollowed,
+                attachments
+            }
         }
     });
 });
@@ -204,7 +207,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await withTransaction(async (session) => {
         const question = await PostModel.findById(questionId).session(session);
-        if (!question) return null;
+        if (!question) throw new HttpError("Question not found", 404);
 
         const reply = new PostModel({
             _type: PostTypeEnum.ANSWER,
@@ -246,24 +249,22 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return reply;
     });
 
-    if (!reply) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
-    }
-
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
-        post: {
-            id: reply._id,
-            message: reply.message,
-            date: reply.createdAt,
-            userId: reply.user,
-            parentId: reply.parentId,
-            isAccepted: reply.isAccepted,
-            votes: reply.votes,
-            answers: reply.answers,
-            attachments
+        success: true,
+        data: {
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                parentId: reply.parentId,
+                isAccepted: reply.isAccepted,
+                votes: reply.votes,
+                answers: reply.answers,
+                attachments
+            }
         }
     });
 });
@@ -279,8 +280,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (findPostId) {
         const reply = await PostModel.findById(findPostId).lean();
         if (!reply) {
-            res.status(404).json({ error: [{ message: "Post not found" }] });
-            return;
+            throw new HttpError("Post not found", 404);
         }
         skipCount = Math.floor((await dbQuery
             .clone()
@@ -293,8 +293,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
             case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
             default:
-                res.status(400).json({ error: [{ message: "Unknown filter" }] });
-                return;
+                throw new HttpError("Unknown filter", 400);
         }
     }
 
@@ -325,7 +324,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
     ])));
 
-    res.status(200).json({ posts: data });
+    res.json({ success: true, data: { posts: data } });
 });
 
 const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -335,12 +334,12 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
 
     const result = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
-        if (!post) return null;
+        if (!post) throw new HttpError("Post not found", 404);
 
         const question = await PostModel.findById(post.parentId).session(session);
-        if (!question) return { noQuestion: true } as const;
+        if (!question) throw new HttpError("Question not found", 404);
 
-        if (!question.user.equals(currentUserId)) return { unauthorized: true } as const;
+        if (!question.user.equals(currentUserId)) throw new HttpError("Unauthorized", 401);
 
         if (accepted || post.isAccepted) {
             question.isAccepted = accepted;
@@ -366,22 +365,7 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
         return { accepted };
     });
 
-    if (!result) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
-    }
-
-    if ("noQuestion" in result) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
-    }
-
-    if ("unauthorized" in result) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
-    }
-
-    res.json({ success: true, accepted: result.accepted });
+    res.json({ success: true, data: { accepted: result.accepted } });
 });
 
 const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -391,13 +375,11 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const question = await PostModel.findById(questionId);
     if (!question) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     if (!question.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const tagIds = (await getOrCreateTagsByNames(tags)).map(x => x._id);
@@ -431,13 +413,11 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     const question = await PostModel.findById(questionId).lean();
     if (!question) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     if (!question.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     await withTransaction(async (session) => {
@@ -454,13 +434,11 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await PostModel.findById(replyId);
     if (!reply) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!reply.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     reply.message = message;
@@ -487,19 +465,16 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await PostModel.findById(replyId).lean();
     if (!reply) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!reply.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const question = await PostModel.findById(reply.parentId).lean();
     if (!question) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -516,7 +491,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const upvote = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
-        if (!post) return null;
+        if (!post) throw new HttpError("Post not found", 404);
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 
@@ -535,15 +510,10 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
             }
         }
 
-        return { upvote, found: true };
+        return upvote;
     });
 
-    if (!upvote) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
-    }
-
-    res.json({ success: true, vote: upvote.upvote ? 1 : 0 });
+    res.json({ success: true, data: { vote: upvote ? 1 : 0 } });
 });
 
 const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -553,13 +523,12 @@ const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     const postExists = await PostModel.exists({ _id: postId, _type: PostTypeEnum.QUESTION });
     if (!postExists) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     const exists = await PostFollowing.exists({ user: currentUserId, following: postId });
     if (exists) {
-        res.status(204).json({ success: true });
+        res.json({ success: true });
         return;
     }
 
@@ -575,13 +544,12 @@ const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const postExists = await PostModel.exists({ _id: postId, _type: PostTypeEnum.QUESTION });
     if (!postExists) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
+        throw new HttpError("Question not found", 404);
     }
 
     const postFollowing = await PostFollowing.exists({ user: currentUserId, following: postId });
     if (!postFollowing) {
-        res.status(204).json({ success: true });
+        res.json({ success: true });
         return;
     }
 

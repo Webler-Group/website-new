@@ -5,12 +5,12 @@ import bcrypt from "bcrypt";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 
-interface RefreshTokenPayload {
+export interface RefreshTokenPayload {
     userId: string;
     tokenVersion: number;
 }
 
-interface AccessTokenPayload {
+export interface AccessTokenPayload {
     userInfo: {
         userId: string;
         roles: RolesEnum[];
@@ -19,13 +19,13 @@ interface AccessTokenPayload {
     tokenVersion: number;
 }
 
-interface EmailTokenPayload {
+export interface EmailTokenPayload {
     userId: string;
     email: string;
     action: string;
 }
 
-const generateRefreshToken = async (res: Response, payload: { userId: string }) => {
+export const generateRefreshToken = async (res: Response, payload: { userId: string }) => {
     const user = await User.findById(payload.userId, "tokenVersion");
     if (!user) throw new Error("User not found");
 
@@ -47,11 +47,11 @@ const generateRefreshToken = async (res: Response, payload: { userId: string }) 
     });
 }
 
-const clearRefreshToken = (res: Response) => {
+export const clearRefreshToken = (res: Response) => {
     res.clearCookie("refreshToken");
 }
 
-const signAccessToken = async (userInfo: { userId: string; roles: RolesEnum[]; }, deviceId: string) => {
+export const signAccessToken = async (userInfo: { userId: string; roles: RolesEnum[]; }, deviceId: string) => {
     const user = await User.findById(userInfo.userId).select('tokenVersion');
     if (!user) throw new Error('User not found');
 
@@ -61,7 +61,7 @@ const signAccessToken = async (userInfo: { userId: string; roles: RolesEnum[]; }
     const payload: AccessTokenPayload = {
         userInfo,
         fingerprint,
-        tokenVersion: user.tokenVersion  // Include current version
+        tokenVersion: user.tokenVersion
     };
 
     const accessToken = jwt.sign(
@@ -78,7 +78,7 @@ const signAccessToken = async (userInfo: { userId: string; roles: RolesEnum[]; }
     };
 }
 
-const signEmailToken = (payload: EmailTokenPayload) => {
+export const signEmailToken = (payload: EmailTokenPayload) => {
 
     const emailToken = jwt.sign(
         payload,
@@ -93,12 +93,3 @@ const signEmailToken = (payload: EmailTokenPayload) => {
         data
     };
 }
-
-export {
-    AccessTokenPayload,
-    RefreshTokenPayload,
-    generateRefreshToken,
-    signAccessToken,
-    clearRefreshToken,
-    signEmailToken
-};

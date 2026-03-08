@@ -3,7 +3,7 @@ import EvaluationJobModel, { EvaluationJob } from "../models/EvaluationJob";
 import { BoxIdPool } from "../utils/BoxIdPool";
 import { runInIsolate } from "../utils/isolate";
 import { logEvents } from "../middleware/logger";
-import Challenge from "../models/Challenge";
+import ChallengeModel from "../models/Challenge";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
 import { DocumentType } from "@typegoose/typegoose";
 
@@ -35,7 +35,7 @@ async function processSingleJob(job: DocumentType<EvaluationJob>) {
 
     try {
         if ((job.status == "done" || job.status == "error") && job.challenge != null && job.user != null) {
-            const challenge = await Challenge.findById(job.challenge, "-description");
+            const challenge = await ChallengeModel.findById(job.challenge, { description: 0 });
             if (challenge) {
                 let testResults = challenge.testCases.map((x, i) => {
                     const runResult = job.result ? job.result.runResults[i] : null;

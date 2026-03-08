@@ -36,6 +36,7 @@ import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -45,11 +46,13 @@ const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        course: {
-            id: course._id,
-            code: course.code,
-            title: course.title,
-            visible: course.visible
+        data: {
+            course: {
+                id: course._id,
+                code: course.code,
+                title: course.title,
+                visible: course.visible
+            }
         }
     });
 });
@@ -59,14 +62,16 @@ const getCoursesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     res.json({
         success: true,
-        courses: result.map(course => ({
-            id: course._id,
-            code: course.code,
-            title: course.title,
-            description: course.description,
-            visible: course.visible,
-            coverImageUrl: getImageUrl(course.coverImageHash)
-        }))
+        data: {
+            courses: result.map(course => ({
+                id: course._id,
+                code: course.code,
+                title: course.title,
+                description: course.description,
+                visible: course.visible,
+                coverImageUrl: getImageUrl(course.coverImageHash)
+            }))
+        }
     });
 });
 
@@ -79,8 +84,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         : await CourseModel.findOne({ code: courseCode }).lean();
 
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     const courseData: CourseResponse = {
@@ -97,7 +101,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         courseData.lessons = lessons.map(lesson => formatLesson(lesson));
     }
 
-    res.json({ success: true, course: courseData });
+    res.json({ success: true, data: { course: courseData } });
 });
 
 const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -106,8 +110,7 @@ const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const course = await CourseModel.findById(courseId).lean();
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -123,15 +126,13 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const course = await CourseModel.findById(courseId);
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     if (code !== course.code) {
         const existingCourse = await CourseModel.exists({ code });
         if (existingCourse) {
-            res.status(400).json({ error: [{ message: "Course code already exists" }] });
-            return;
+            throw new HttpError("Course code already exists", 400);
         }
     }
 
@@ -163,22 +164,23 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     ]);
 
     if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
+        throw new HttpError("Lesson not found", 404);
     }
 
     res.json({
         success: true,
-        lesson: {
-            id: lesson._id,
-            title: lesson.title,
-            index: lesson.index,
-            nodeCount: lesson.nodes,
-            nodes: lessonNodes.map(x => ({
-                id: x._id,
-                index: x.index,
-                type: x._type
-            }))
+        data: {
+            lesson: {
+                id: lesson._id,
+                title: lesson.title,
+                index: lesson.index,
+                nodeCount: lesson.nodes,
+                nodes: lessonNodes.map(x => ({
+                    id: x._id,
+                    index: x.index,
+                    type: x._type
+                }))
+            }
         }
     });
 });
@@ -191,12 +193,14 @@ const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        lessons: lessons.map(lesson => ({
-            id: lesson._id,
-            title: lesson.title,
-            index: lesson.index,
-            nodeCount: lesson.nodes
-        }))
+        data: {
+            lessons: lessons.map(lesson => ({
+                id: lesson._id,
+                title: lesson.title,
+                index: lesson.index,
+                nodeCount: lesson.nodes
+            }))
+        }
     });
 });
 
@@ -206,8 +210,7 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const course = await CourseModel.findById(courseId).lean();
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     const lastLessonIndex = await CourseLessonModel.countDocuments({ course: courseId });
@@ -216,10 +219,12 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        lesson: {
-            id: lesson._id,
-            title: lesson.title,
-            index: lesson.index
+        data: {
+            lesson: {
+                id: lesson._id,
+                title: lesson.title,
+                index: lesson.index
+            }
         }
     });
 });
@@ -230,8 +235,7 @@ const editLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lesson = await CourseLessonModel.findById(lessonId);
     if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
+        throw new HttpError("Lesson not found", 404);
     }
 
     lesson.title = title;
@@ -253,8 +257,7 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lesson = await CourseLessonModel.findById(lessonId).lean();
     if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
+        throw new HttpError("Lesson not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -276,8 +279,7 @@ const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Respo
 
     const course = await CourseModel.findById(courseId);
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     const fileDoc = await uploadImageToBlob({
@@ -317,7 +319,7 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const lessonNode = await withTransaction(async (session) => {
         const lesson = await CourseLessonModel.findById(lessonId).session(session);
-        if (!lesson) return null;
+        if (!lesson) throw new HttpError("Lesson not found", 404);
 
         const lessonNode = await LessonNodeModel.create([{ lessonId, index: lesson.nodes + 1 }], { session });
         lesson.$inc("nodes", 1);
@@ -326,17 +328,14 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
         return lessonNode[0];
     });
 
-    if (!lessonNode) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
-    }
-
     res.json({
         success: true,
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type
+        data: {
+            lessonNode: {
+                id: lessonNode._id,
+                index: lessonNode.index,
+                type: lessonNode._type
+            }
         }
     });
 });
@@ -353,25 +352,26 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     ]);
 
     if (!lessonNode) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
+        throw new HttpError("Lesson node not found", 404);
     }
 
     res.json({
         success: true,
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type,
-            mode: lessonNode.mode,
-            codeId: lessonNode.codeId,
-            text: lessonNode.text ?? "",
-            correctAnswer: lessonNode.correctAnswer ?? "",
-            answers: answers.map(x => ({
-                id: x._id,
-                text: x.text,
-                correct: x.correct
-            }))
+        data: {
+            lessonNode: {
+                id: lessonNode._id,
+                index: lessonNode.index,
+                type: lessonNode._type,
+                mode: lessonNode.mode,
+                codeId: lessonNode.codeId,
+                text: lessonNode.text ?? "",
+                correctAnswer: lessonNode.correctAnswer ?? "",
+                answers: answers.map(x => ({
+                    id: x._id,
+                    text: x.text,
+                    correct: x.correct
+                }))
+            }
         }
     });
 });
@@ -382,8 +382,7 @@ const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const node = await LessonNodeModel.findById(nodeId).lean();
     if (!node) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
+        throw new HttpError("Lesson node not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -409,7 +408,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     const data = await withTransaction(async (session) => {
         const node = await LessonNodeModel.findById(nodeId).session(session);
-        if (!node) return null;
+        if (!node) throw new HttpError("Lesson node not found", 404);
 
         node._type = type;
         node.mode = mode ?? node.mode;
@@ -463,11 +462,6 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return result;
     });
 
-    if (!data) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
-    }
-
     res.json({ success: true, data });
 });
 
@@ -475,12 +469,12 @@ const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(changeLessonIndexSchema, req);
     const { lessonId, newIndex } = body;
 
-    await withTransaction(async (session) => {
+    const result = await withTransaction(async (session) => {
         const lesson = await CourseLessonModel.findById(lessonId).session(session);
-        if (!lesson) return null;
+        if (!lesson) throw new HttpError("Lesson not found", 404);
 
         const otherLesson = await CourseLessonModel.findOne({ course: lesson.course, index: newIndex }).session(session);
-        if (!otherLesson) return { invalidIndex: true } as const;
+        if (!otherLesson) throw new HttpError("Invalid lesson index", 400);
 
         otherLesson.index = lesson.index;
         lesson.index = newIndex;
@@ -490,19 +484,19 @@ const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) 
         return { index: newIndex };
     });
 
-    res.json({ success: true, data: { index: newIndex } });
+    res.json({ success: true, data: result });
 });
 
 const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(changeLessonNodeIndexSchema, req);
     const { nodeId, newIndex } = body;
 
-    await withTransaction(async (session) => {
+    const result = await withTransaction(async (session) => {
         const node = await LessonNodeModel.findById(nodeId).session(session);
-        if (!node) return null;
+        if (!node) throw new HttpError("Lesson node not found", 404);
 
         const otherNode = await LessonNodeModel.findOne({ lessonId: node.lessonId, index: newIndex }).session(session);
-        if (!otherNode) return { invalidIndex: true } as const;
+        if (!otherNode) throw new HttpError("Invalid lesson node index", 400);
 
         otherNode.index = node.index;
         node.index = newIndex;
@@ -512,7 +506,7 @@ const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Respon
         return { index: newIndex };
     });
 
-    res.json({ success: true, data: { index: newIndex } });
+    res.json({ success: true, data: result });
 });
 
 const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -571,19 +565,21 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
 
     res.json({
         success: true,
-        items: items.map(x => ({
-            id: x._id,
-            authorId: x.author._id,
-            authorName: x.author.name,
-            authorAvatarUrl: getImageUrl(x.author.avatarHash),
-            type: x._type,
-            name: x.name,
-            mimetype: x.mimetype,
-            size: x.size,
-            updatedAt: x.updatedAt,
-            url: getImageUrl(x.contenthash),
-            previewUrl: x._type === FileTypeEnum.FILE && x.preview ? `/media/files/${x.contenthash}/preview` : null
-        }))
+        data: {
+            items: items.map(x => ({
+                id: x._id,
+                authorId: x.author._id,
+                authorName: x.author.name,
+                authorAvatarUrl: getImageUrl(x.author.avatarHash),
+                type: x._type,
+                name: x.name,
+                mimetype: x.mimetype,
+                size: x.size,
+                updatedAt: x.updatedAt,
+                url: getImageUrl(x.contenthash),
+                previewUrl: x._type === FileTypeEnum.FILE && x.preview ? `/media/files/${x.contenthash}/preview` : null
+            }))
+        }
     });
 });
 
@@ -593,13 +589,11 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const fileDoc = await File.findById(fileId).select("author name path").lean();
     if (!fileDoc) {
-        res.status(404).json({ error: [{ message: "File not found" }] });
-        return;
+        throw new HttpError("File not found", 404);
     }
 
     if (!fileDoc.path.startsWith("courses/lesson-images")) {
-        res.status(400).json({ error: [{ message: "Not a lesson image" }] });
-        return;
+        throw new HttpError("Not a lesson image", 400);
     }
 
     await deleteEntry(fileDoc.path, fileDoc.name);
@@ -632,14 +626,12 @@ const moveLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const fileDoc = await File.findById(fileId).select("author path name").lean();
     if (!fileDoc) {
-        res.status(404).json({ error: [{ message: "File not found" }] });
-        return;
+        throw new HttpError("File not found", 404);
     }
 
     const basePath = "courses/lesson-images";
     if (!fileDoc.path.startsWith(basePath)) {
-        res.status(400).json({ error: [{ message: "Not a lesson image" }] });
-        return;
+        throw new HttpError("Not a lesson image", 400);
     }
 
     const targetPath = newSubPath ? `${basePath}/${newSubPath}` : basePath;
@@ -723,11 +715,13 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        course: {
-            id: course._id,
-            code: course.code,
-            title: course.title,
-            visible: course.visible
+        data: {
+            course: {
+                id: course._id,
+                code: course.code,
+                title: course.title,
+                visible: course.visible
+            }
         }
     });
 });
@@ -738,8 +732,7 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const course = await CourseModel.findById(courseId).lean();
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     const lessons = await CourseLessonModel.find({ course: courseId }).sort({ index: 1 }).lean();

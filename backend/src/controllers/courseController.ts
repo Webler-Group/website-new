@@ -35,6 +35,7 @@ import { formatUserMinimal } from "../helpers/userHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
 
@@ -53,14 +54,16 @@ const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        courses: result.map(course => ({
-            id: course._id,
-            code: course.code,
-            title: course.title,
-            description: course.description,
-            visible: course.visible,
-            coverImageUrl: getImageUrl(course.coverImageHash)
-        }))
+        data: {
+            courses: result.map(course => ({
+                id: course._id,
+                code: course.code,
+                title: course.title,
+                description: course.description,
+                visible: course.visible,
+                coverImageUrl: getImageUrl(course.coverImageHash)
+            }))
+        }
     });
 });
 
@@ -74,16 +77,18 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     res.json({
         success: true,
-        courses: result.map(x => ({
-            id: x.course._id,
-            code: x.course.code,
-            title: x.course.title,
-            description: x.course.description,
-            visible: x.course.visible,
-            coverImageUrl: getImageUrl(x.course.coverImageHash),
-            completed: x.completed,
-            updatedAt: x.updatedAt
-        }))
+        data: {
+            courses: result.map(x => ({
+                id: x.course._id,
+                code: x.course.code,
+                title: x.course.title,
+                description: x.course.description,
+                visible: x.course.visible,
+                coverImageUrl: getImageUrl(x.course.coverImageHash),
+                completed: x.completed,
+                updatedAt: x.updatedAt
+            }))
+        }
     });
 });
 
@@ -97,8 +102,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         : await CourseModel.findOne({ code: courseCode }).lean();
 
     if (!course) {
-        res.status(404).json({ error: [{ message: "Course not found" }] });
-        return;
+        throw new HttpError("Course not found", 404);
     }
 
     let userProgress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).lean();
@@ -133,7 +137,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         courseData.lessons = lessons.map(lesson => formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }));
     }
 
-    res.json({ success: true, course: courseData });
+    res.json({ success: true, data: { course: courseData } });
 });
 
 const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -143,8 +147,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lesson = await CourseLessonModel.findById(lessonId).lean();
     if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
+        throw new HttpError("Lesson not found", 404);
     }
 
     const userProgress = await CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId })
@@ -152,14 +155,12 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean();
 
     if (!userProgress) {
-        res.status(404).json({ error: [{ message: "User progress not found" }] });
-        return;
+        throw new HttpError("User progress not found", 404);
     }
 
     const lastUnlockedLessonIndex = await getLastUnlockedLessonIndex(userProgress.lastLessonNodeId?._id);
     if (lesson.index > lastUnlockedLessonIndex) {
-        res.status(400).json({ error: [{ message: "Lesson is not unlocked" }] });
-        return;
+        throw new HttpError("Lesson is not unlocked", 400);
     }
 
     let lastUnlockedNodeIndex = 1;
@@ -178,7 +179,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         nodes: nodes.map(x => formatLessonNodeMinimal(x, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }))
     };
 
-    res.json({ success: true, lesson: lessonData });
+    res.json({ success: true, data: { lesson: lessonData } });
 });
 
 const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -190,21 +191,18 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .populate<{ lessonId: CourseLesson }>({ path: "lessonId" })
         .lean();
     if (!lessonNode) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
+        throw new HttpError("Lesson node not found", 404);
     }
 
     if (!mock) {
         const userProgress = await CourseProgressModel.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
-            res.status(404).json({ error: [{ message: "User progress not found" }] });
-            return;
+            throw new HttpError("User progress not found", 404);
         }
 
         const { unlocked, isLastUnlocked } = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
         if (!unlocked) {
-            res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
-            return;
+            throw new HttpError("Node is not unlocked", 400);
         }
 
         if ((lessonNode._type === LessonNodeTypeEnum.TEXT || lessonNode._type === LessonNodeTypeEnum.CODE) && isLastUnlocked) {
@@ -215,8 +213,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     } else {
         const user = await User.findById(currentUserId).select("roles").lean();
         if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
-            res.status(403).json({ error: [{ message: "Unauthorized" }] });
-            return;
+            throw new HttpError("Unauthorized", 403);
         }
     }
 
@@ -224,19 +221,21 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        lessonNode: {
-            id: lessonNode._id,
-            index: lessonNode.index,
-            type: lessonNode._type,
-            mode: lessonNode.mode ?? 1,
-            codeId: lessonNode.codeId,
-            text: lessonNode.text ?? "",
-            correctAnswer: lessonNode.correctAnswer,
-            answers: answers.map(x => ({
-                id: x._id,
-                text: x.text,
-                correct: x.correct
-            }))
+        data: {
+            lessonNode: {
+                id: lessonNode._id,
+                index: lessonNode.index,
+                type: lessonNode._type,
+                mode: lessonNode.mode ?? 1,
+                codeId: lessonNode.codeId,
+                text: lessonNode.text ?? "",
+                correctAnswer: lessonNode.correctAnswer,
+                answers: answers.map(x => ({
+                    id: x._id,
+                    text: x.text,
+                    correct: x.correct
+                }))
+            }
         }
     });
 });
@@ -249,8 +248,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const lessonNode = await LessonNodeModel.findById(nodeId)
         .populate<{ lessonId: { course: mongoose.Types.ObjectId } }>("lessonId", { course: 1 });
     if (!lessonNode) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
+        throw new HttpError("Lesson node not found", 404);
     }
 
     let userProgress: DocumentType<CourseProgress> | null = null;
@@ -260,8 +258,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (mock) {
         const user = await User.findById(currentUserId, { roles: 1 }).lean();
         if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
-            res.status(403).json({ error: [{ message: "Unauthorized" }] });
-            return;
+            throw new HttpError("Unauthorized", 403);
         }
 
         switch (mock.type) {
@@ -283,14 +280,12 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
     } else {
         userProgress = await CourseProgressModel.findOne({ course: lessonNode.lessonId.course, userId: currentUserId });
         if (!userProgress) {
-            res.status(404).json({ error: [{ message: "User progress not found" }] });
-            return;
+            throw new HttpError("User progress not found", 404);
         }
 
         const nodeInfo = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
         if (!nodeInfo.unlocked) {
-            res.status(400).json({ error: [{ message: "Node is not unlocked" }] });
-            return;
+            throw new HttpError("Node is not unlocked", 400);
         }
         isLast = nodeInfo.isLastUnlocked;
 
@@ -337,8 +332,7 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
 
     const userProgress = await CourseProgressModel.findOne({ course: courseId, userId: currentUserId });
     if (!userProgress) {
-        res.status(404).json({ error: [{ message: "Course progress not found" }] });
-        return;
+        throw new HttpError("Course progress not found", 404);
     }
 
     userProgress.lastLessonNodeId = null;
@@ -367,8 +361,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     if (findPostId) {
         const reply = await PostModel.findById(findPostId).lean();
         if (!reply) {
-            res.status(404).json({ error: [{ message: "Post not found" }] });
-            return;
+            throw new HttpError("Post not found", 404);
         }
 
         parentPost = reply.parentId
@@ -387,8 +380,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
             case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
             case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
             default:
-                res.status(400).json({ error: [{ message: "Unknown filter" }] });
-                return;
+                throw new HttpError("Unknown filter", 400);
         }
     }
 
@@ -418,7 +410,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
         getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
     ])));
 
-    res.json({ success: true, posts: data });
+    res.json({ success: true, data: { posts: data } });
 });
 
 const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -430,12 +422,12 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         const lesson = await CourseLessonModel.findById(lessonId)
             .populate<{ course: Course & { _id: Types.ObjectId; code: string; title: string } }>("course", { title: 1, code: 1 })
             .session(session);
-        if (!lesson) return null;
+        if (!lesson) throw new HttpError("Lesson not found", 404);
 
         let parentPost = null;
         if (parentId) {
             parentPost = await PostModel.findById(parentId).session(session);
-            if (!parentPost) return null;
+            if (!parentPost) throw new HttpError("Parent post not found", 404);
         }
 
         const reply = new PostModel({
@@ -470,24 +462,21 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         return reply;
     });
 
-    if (!reply) {
-        res.status(404).json({ error: [{ message: "Lesson or parent post not found" }] });
-        return;
-    }
-
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
         success: true,
-        post: {
-            id: reply._id,
-            message: reply.message,
-            date: reply.createdAt,
-            userId: reply.user,
-            parentId: reply.parentId,
-            votes: reply.votes,
-            answers: reply.answers,
-            attachments
+        data: {
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                parentId: reply.parentId,
+                votes: reply.votes,
+                answers: reply.answers,
+                attachments
+            }
         }
     });
 });
@@ -499,13 +488,11 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const comment = await PostModel.findById(id);
     if (!comment) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!comment.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     comment.message = message;
@@ -528,19 +515,16 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
 
     const comment = await PostModel.findById(id).lean();
     if (!comment) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!comment.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const lesson = await CourseLessonModel.findById(comment.lessonId).lean();
     if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
+        throw new HttpError("Lesson not found", 404);
     }
 
     await withTransaction(async (session) => {

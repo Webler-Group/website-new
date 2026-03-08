@@ -33,6 +33,7 @@ import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../help
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 type ReactionAgg = { _id: ReactionsEnum; count: number };
 
@@ -79,16 +80,18 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        feed: {
-            type: feed._type,
-            id: feed._id,
-            title: feed.title,
-            message: feed.message,
-            date: feed.createdAt,
-            userId: feed.user,
-            isAccepted: feed.isAccepted,
-            votes: feed.votes,
-            answers: feed.answers
+        data: {
+            feed: {
+                type: feed._type,
+                id: feed._id,
+                title: feed.title,
+                message: feed.message,
+                date: feed.createdAt,
+                userId: feed.user,
+                isAccepted: feed.isAccepted,
+                votes: feed.votes,
+                answers: feed.answers
+            }
         }
     });
 });
@@ -163,15 +166,18 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     ]);
 
     res.json({
-        count: totalCount,
-        userReactions: reactions.map(x => ({
-            id: x._id,
-            userId: x.userId,
-            userName: x.userName,
-            userAvatarUrl: getImageUrl(x.userHash),
-            isFollowing: x.isFollowing,
-            reaction: x.reaction
-        }))
+        success: true,
+        data: {
+            count: totalCount,
+            userReactions: reactions.map(x => ({
+                id: x._id,
+                userId: x.userId,
+                userName: x.userName,
+                userAvatarUrl: getImageUrl(x.userHash),
+                isFollowing: x.isFollowing,
+                reaction: x.reaction
+            }))
+        }
     });
 });
 
@@ -182,13 +188,11 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const feed = await PostModel.findById(feedId);
     if (!feed) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
+        throw new HttpError("Feed not found", 404);
     }
 
     if (!feed.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     feed.message = message;
@@ -216,13 +220,11 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const feed = await PostModel.findById(feedId).lean();
     if (!feed) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
+        throw new HttpError("Feed not found", 404);
     }
 
     if (!feed.user.equals(currentUserId) && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     await withTransaction(async (session) => {
@@ -239,12 +241,12 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await withTransaction(async (session) => {
         const feed = await PostModel.findById(feedId).session(session);
-        if (!feed) return null;
+        if (!feed) throw new HttpError("Feed not found", 404);
 
         let parentComment = null;
         if (parentId) {
             parentComment = await PostModel.findById(parentId).session(session);
-            if (!parentComment) return null;
+            if (!parentComment) throw new HttpError("Parent comment not found", 404);
         }
 
         const reply = new PostModel({
@@ -289,23 +291,21 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return reply;
     });
 
-    if (!reply) {
-        res.status(404).json({ error: [{ message: "Feed or parent comment not found" }] });
-        return;
-    }
-
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
     res.json({
-        post: {
-            id: reply._id,
-            message: reply.message,
-            date: reply.createdAt,
-            userId: reply.user,
-            parentId: reply.parentId,
-            votes: reply.votes,
-            answers: reply.answers ?? 0,
-            attachments
+        success: true,
+        data: {
+            post: {
+                id: reply._id,
+                message: reply.message,
+                date: reply.createdAt,
+                userId: reply.user,
+                parentId: reply.parentId,
+                votes: reply.votes,
+                answers: reply.answers ?? 0,
+                attachments
+            }
         }
     });
 });
@@ -317,7 +317,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const result = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
-        if (!post) return null;
+        if (!post) throw new HttpError("Post not found", 404);
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 
@@ -342,15 +342,10 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
             }
         }
 
-        return { upvote, found: true };
+        return upvote;
     });
 
-    if (!result) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
-    }
-
-    res.json({ success: true, vote: result.upvote ? 1 : 0 });
+    res.json({ success: true, data: { vote: result ? 1 : 0 } });
 });
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -360,13 +355,11 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await PostModel.findById(id);
     if (!reply) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!reply.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     reply.message = message;
@@ -389,19 +382,16 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const reply = await PostModel.findById(id).lean();
     if (!reply) {
-        res.status(404).json({ error: [{ message: "Post not found" }] });
-        return;
+        throw new HttpError("Post not found", 404);
     }
 
     if (!reply.user.equals(currentUserId)) {
-        res.status(401).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 401);
     }
 
     const feed = await PostModel.findById(reply.feedId).lean();
     if (!feed) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
+        throw new HttpError("Feed not found", 404);
     }
 
     await withTransaction(async (session) => {
@@ -418,7 +408,7 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const feed = await withTransaction(async (session) => {
         const originalFeed = await PostModel.findById(feedId).session(session);
-        if (!originalFeed) return null;
+        if (!originalFeed) throw new HttpError("Feed not found", 404);
 
         const feed = new PostModel({
             _type: PostTypeEnum.SHARED_FEED,
@@ -445,22 +435,19 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return feed;
     });
 
-    if (!feed) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
-    }
-
     res.json({
         success: true,
-        feed: {
-            id: feed._id,
-            title: feed.title,
-            message: feed.message,
-            date: feed.createdAt,
-            userId: feed.user,
-            votes: feed.votes,
-            answers: feed.answers,
-            parentId: feedId
+        data: {
+            feed: {
+                id: feed._id,
+                title: feed.title,
+                message: feed.message,
+                date: feed.createdAt,
+                userId: feed.user,
+                votes: feed.votes,
+                answers: feed.answers,
+                parentId: feedId
+            }
         }
     });
 });
@@ -489,20 +476,18 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             break;
         case 2:
             if (!userId) {
-                res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
-                return;
+                throw new HttpError("Invalid request - userId required", 400);
             }
             dbQuery = dbQuery.where({ user: userId }).sort({ createdAt: "desc" });
             break;
         case 3:
             if (!userId) {
-                res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
-                return;
+                throw new HttpError("Invalid request - userId required", 400);
             }
             const followingUsers = await UserFollowingModel.find({ user: userId }).select("following").lean();
             const followingUserIds = followingUsers.map(f => f.following);
             if (!followingUserIds.length) {
-                res.status(200).json({ count: 0, feeds: [], success: true });
+                res.json({ success: true, data: { count: 0, feeds: [] } });
                 return;
             }
             dbQuery = dbQuery.where({ user: { $in: followingUserIds } }).sort({ createdAt: "desc" });
@@ -521,8 +506,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             dbQuery = dbQuery.where({ isPinned: true }).sort({ createdAt: "desc" });
             break;
         default:
-            res.status(400).json({ error: [{ message: "Unknown filter" }] });
-            return;
+            throw new HttpError("Unknown filter", 400);
     }
 
     const [feedCount, feeds] = await Promise.all([
@@ -575,7 +559,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         };
     }));
 
-    res.status(200).json({ count: feedCount, feeds: data, success: true });
+    res.json({ success: true, data: { count: feedCount, feeds: data } });
 });
 
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -592,8 +576,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean();
 
     if (!feed) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
+        throw new HttpError("Feed not found", 404);
     }
 
     const [{ totalReactions, topReactions }, attachments, upvote] = await Promise.all([
@@ -606,29 +589,31 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        feed: {
-            id: feed._id,
-            type: feed._type,
-            title: feed.title ?? null,
-            message: feed.message,
-            date: feed.createdAt,
-            user: formatUserMinimal(feed.user),
-            answers: feed.answers,
-            votes: feed.votes,
-            shares: feed.shares,
-            isPinned: feed.isPinned,
-            attachments,
-            isUpvoted: !!upvote,
-            reaction: upvote?.reaction ?? "",
-            originalPost: originalPost ? {
-                id: originalPost._id,
-                title: originalPost.title ?? null,
-                message: truncate(escapeMarkdown(originalPost.message), 40),
-                user: formatUserMinimal(originalPost.user),
-                date: originalPost.createdAt
-            } : null,
-            totalReactions,
-            topReactions
+        data: {
+            feed: {
+                id: feed._id,
+                type: feed._type,
+                title: feed.title ?? null,
+                message: feed.message,
+                date: feed.createdAt,
+                user: formatUserMinimal(feed.user),
+                answers: feed.answers,
+                votes: feed.votes,
+                shares: feed.shares,
+                isPinned: feed.isPinned,
+                attachments,
+                isUpvoted: !!upvote,
+                reaction: upvote?.reaction ?? "",
+                originalPost: originalPost ? {
+                    id: originalPost._id,
+                    title: originalPost.title ?? null,
+                    message: truncate(escapeMarkdown(originalPost.message), 40),
+                    user: formatUserMinimal(originalPost.user),
+                    date: originalPost.createdAt
+                } : null,
+                totalReactions,
+                topReactions
+            }
         }
     });
 });
@@ -646,8 +631,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
             .lean<PopulatedPost>();
         if (!parentPost) {
-            res.status(404).json({ error: [{ message: "Parent post not found" }] });
-            return;
+            throw new HttpError("Parent post not found", 404);
         }
     }
 
@@ -657,8 +641,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (findPostId) {
         const reply = await PostModel.findById(findPostId).lean();
         if (!reply) {
-            res.status(404).json({ error: [{ message: "Post not found" }] });
-            return;
+            throw new HttpError("Post not found", 404);
         }
 
         parentPost = reply.parentId
@@ -677,8 +660,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
             case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
             case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
             default:
-                res.status(400).json({ error: [{ message: "Unknown filter" }] });
-                return;
+                throw new HttpError("Unknown filter", 400);
         }
     }
 
@@ -708,7 +690,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
     ])));
 
-    res.json({ posts: data });
+    res.json({ success: true, data: { posts: data } });
 });
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -718,7 +700,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const result = await withTransaction(async (session) => {
         const feed = await PostModel.findById(feedId).session(session);
-        if (!feed) return null;
+        if (!feed) throw new HttpError("Feed not found", 404);
 
         if (!feed.user.equals(currentUserId)) {
             if (pinned) {
@@ -744,11 +726,6 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         return { isPinned: feed.isPinned };
     });
-
-    if (!result) {
-        res.status(404).json({ error: [{ message: "Feed not found" }] });
-        return;
-    }
 
     res.json({ success: true, data: { isPinned: result.isPinned } });
 });

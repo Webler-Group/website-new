@@ -1,4 +1,3 @@
-// routes/mediaRoutes.ts
 import { Router } from "express";
 import mediaController from "../controllers/mediaController";
 

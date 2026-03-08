@@ -41,6 +41,7 @@ import { deleteChannelAndCleanup, joinChannel, processChannelInvite, saveChannel
 import { getAttachmentsByPostId } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
+import HttpError from "../exceptions/HttpError";
 
 interface ChannelResponse {
     id: Types.ObjectId;
@@ -82,11 +83,13 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        channel: {
-            id: channel._id,
-            type: channel._type,
-            title: channel.title,
-            updatedAt: channel.updatedAt
+        data: {
+            channel: {
+                id: channel._id,
+                type: channel._type,
+                title: channel.title,
+                updatedAt: channel.updatedAt
+            }
         }
     });
 });
@@ -98,15 +101,14 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 
     const DMUser = await UserModel.findById(userId, USER_MINIMAL_FIELDS).lean();
     if (!DMUser || !DMUser.roles.includes(RolesEnum.USER)) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
+        throw new HttpError("User not found", 404);
     }
 
-    let channel = await ChannelModel.where({
+    let channel = await ChannelModel.findOne().where({
         _type: ChannelTypeEnum.DM,
         createdBy: { $in: [userId, currentUserId] },
         DMUser: { $in: [userId, currentUserId] }
-    }).findOne().lean();
+    }).lean();
 
     if (!channel) {
         channel = await withTransaction(async (session) => {
@@ -129,7 +131,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
         }
     }
 
-    res.json({ success: true, channel: { id: channel._id } });
+    res.json({ success: true, data: { channel: { id: channel._id } } });
 });
 
 const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -139,14 +141,12 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     const invitedUser = await UserModel.findById(userId, USER_MINIMAL_FIELDS).lean();
     if (!invitedUser || !invitedUser.roles.includes(RolesEnum.USER)) {
-        res.status(404).json({ error: [{ message: "User not found" }] });
-        return;
+        throw new HttpError("User not found", 404);
     }
 
     const [alreadyParticipant, existingInvite] = await Promise.all([
@@ -155,24 +155,24 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
     ]);
 
     if (alreadyParticipant) {
-        res.status(400).json({ error: [{ message: "Invited user is already a participant" }] });
-        return;
+        throw new HttpError("Invited user is already a participant", 400);
     }
     if (existingInvite) {
-        res.status(400).json({ error: [{ message: "Invite already exists" }] });
-        return;
+        throw new HttpError("Invite already exists", 400);
     }
 
     const invite = await ChannelInviteModel.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
 
     res.json({
         success: true,
-        invite: {
-            id: invite._id,
-            invitedUserId: invitedUser._id,
-            invitedUserName: invitedUser.name,
-            invitedUserAvatarUrl: getImageUrl(invitedUser.avatarHash),
-            createdAt: invite.createdAt
+        data: {
+            invite: {
+                id: invite._id,
+                invitedUserId: invitedUser._id,
+                invitedUserName: invitedUser.name,
+                invitedUserAvatarUrl: getImageUrl(invitedUser.avatarHash),
+                createdAt: invite.createdAt
+            }
         }
     });
 });
@@ -191,12 +191,10 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     ]);
 
     if (!participant) {
-        res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
-        return;
+        throw new HttpError("Not a member of this channel", 403);
     }
     if (!channel) {
-        res.status(404).json({ error: [{ message: "Channel not found" }] });
-        return;
+        throw new HttpError("Channel not found", 404);
     }
 
     const data: ChannelResponse = {
@@ -245,7 +243,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
     }
 
-    res.json({ success: true, channel: data });
+    res.json({ success: true, data: { channel: data } });
 });
 
 const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -277,34 +275,36 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     res.json({
         success: true,
-        channels: channels.map(x => {
-            const participant = participantChannels.find(y => y.channel.equals(x._id));
-            return {
-                id: x._id,
-                type: x._type,
-                title: x._type === ChannelTypeEnum.GROUP
-                    ? x.title
-                    : x.DMUser?._id.equals(currentUserId) ? x.createdBy.name : x.DMUser?.name,
-                coverImageUrl: getImageUrl(
-                    x.DMUser?._id.equals(currentUserId) ? x.createdBy.avatarHash : x.DMUser?.avatarHash
-                ),
-                createdAt: x.createdAt,
-                updatedAt: x.updatedAt,
-                unreadCount: participant?.unreadCount ?? 0,
-                muted: participant?.muted ?? false,
-                lastMessage: x.lastMessage ? {
-                    type: x.lastMessage._type,
-                    id: x.lastMessage._id,
-                    deleted: x.lastMessage.deleted,
-                    content: x.lastMessage.deleted ? "" : x.lastMessage.content,
-                    createdAt: x.lastMessage.createdAt,
-                    userId: x.lastMessage.user._id,
-                    userName: x.lastMessage.user.name,
-                    userAvatarUrl: getImageUrl(x.lastMessage.user.avatarHash),
-                    viewed: participant?.lastActiveAt ? participant.lastActiveAt >= x.lastMessage.createdAt! : false
-                } : null
-            };
-        })
+        data: {
+            channels: channels.map(x => {
+                const participant = participantChannels.find(y => y.channel.equals(x._id));
+                return {
+                    id: x._id,
+                    type: x._type,
+                    title: x._type === ChannelTypeEnum.GROUP
+                        ? x.title
+                        : x.DMUser?._id.equals(currentUserId) ? x.createdBy.name : x.DMUser?.name,
+                    coverImageUrl: getImageUrl(
+                        x.DMUser?._id.equals(currentUserId) ? x.createdBy.avatarHash : x.DMUser?.avatarHash
+                    ),
+                    createdAt: x.createdAt,
+                    updatedAt: x.updatedAt,
+                    unreadCount: participant?.unreadCount ?? 0,
+                    muted: participant?.muted ?? false,
+                    lastMessage: x.lastMessage ? {
+                        type: x.lastMessage._type,
+                        id: x.lastMessage._id,
+                        deleted: x.lastMessage.deleted,
+                        content: x.lastMessage.deleted ? "" : x.lastMessage.content,
+                        createdAt: x.lastMessage.createdAt,
+                        userId: x.lastMessage.user._id,
+                        userName: x.lastMessage.user.name,
+                        userAvatarUrl: getImageUrl(x.lastMessage.user.avatarHash),
+                        viewed: participant?.lastActiveAt ? participant.lastActiveAt >= x.lastMessage.createdAt! : false
+                    } : null
+                };
+            })
+        }
     });
 });
 
@@ -330,15 +330,17 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     res.json({
         success: true,
-        invites: invites.map(x => ({
-            id: x._id,
-            author: formatUserMinimal(x.author),
-            channelId: x.channel._id,
-            channelType: x.channel._type,
-            channelTitle: x.channel.title,
-            createdAt: x.createdAt
-        })),
-        count: totalCount
+        data: {
+            invites: invites.map(x => ({
+                id: x._id,
+                author: formatUserMinimal(x.author),
+                channelId: x.channel._id,
+                channelType: x.channel._type,
+                channelTitle: x.channel.title,
+                createdAt: x.createdAt
+            })),
+            count: totalCount
+        }
     });
 });
 
@@ -349,13 +351,11 @@ const acceptInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const invite = await ChannelInviteModel.findById(inviteId).lean();
     if (!invite) {
-        res.status(404).json({ error: [{ message: "Invite not found" }] });
-        return;
+        throw new HttpError("Invite not found", 404);
     }
 
     if (!invite.invitedUser.equals(currentUserId!)) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     await processChannelInvite(invite, accepted);
@@ -370,14 +370,12 @@ const groupRemoveUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId }).lean();
     if (!targetParticipant || targetParticipant.role === ChannelRolesEnum.OWNER || participant.role === targetParticipant.role) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     await withTransaction(async (session) => {
@@ -402,8 +400,7 @@ const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant) {
-        res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
-        return;
+        throw new HttpError("Not a member of this channel", 403);
     }
 
     await withTransaction(async (session) => {
@@ -428,8 +425,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant) {
-        res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
-        return;
+        throw new HttpError("Not a member of this channel", 403);
     }
 
     let query = ChannelMessageModel.find({ channel: channelId });
@@ -474,7 +470,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
             : getAttachmentsByPostId({ channelMessage: item.id }).then(attachments => { data[i].attachments = attachments; })
     ));
 
-    res.json({ success: true, messages: data });
+    res.json({ success: true, data: { messages: data } });
 });
 
 const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -484,14 +480,12 @@ const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const invite = await ChannelInviteModel.findById(inviteId).lean();
     if (!invite) {
-        res.status(404).json({ error: [{ message: "Invite not found" }] });
-        return;
+        throw new HttpError("Invite not found", 404);
     }
 
     const participant = await ChannelParticipantModel.findOne({ channel: invite.channel, user: currentUserId }).lean();
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     await ChannelInviteModel.deleteOne({ _id: invite._id });
@@ -508,8 +502,7 @@ const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant || participant.role !== ChannelRolesEnum.OWNER) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     await withTransaction(async (session) => {
@@ -534,18 +527,16 @@ const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     const currentParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!currentParticipant || currentParticipant.role !== ChannelRolesEnum.OWNER) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     if (userId === currentUserId) {
-        res.status(400).json({ error: [{ message: "You cannot change your own role" }] });
-        return;
+        throw new HttpError("You cannot change your own role", 400);
     }
 
     const result = await withTransaction(async (session) => {
         const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId }).session(session);
-        if (!targetParticipant) return null;
+        if (!targetParticipant) throw new HttpError("Target user is not a participant", 404);
 
         if (role === ChannelRolesEnum.OWNER) {
             await ChannelParticipantModel.updateOne(
@@ -561,11 +552,6 @@ const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return { userId, role };
     });
 
-    if (!result) {
-        res.status(404).json({ error: [{ message: "Target user is not a participant" }] });
-        return;
-    }
-
     res.json({ success: true, data: result });
 });
 
@@ -580,16 +566,13 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     ]);
 
     if (!channel) {
-        res.status(404).json({ error: [{ message: "Channel not found" }] });
-        return;
+        throw new HttpError("Channel not found", 404);
     }
     if (!participant) {
-        res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
-        return;
+        throw new HttpError("Not a member of this channel", 403);
     }
     if (channel._type !== ChannelTypeEnum.DM && participant.role !== ChannelRolesEnum.OWNER) {
-        res.status(403).json({ error: [{ message: "Unauthorized" }] });
-        return;
+        throw new HttpError("Unauthorized", 403);
     }
 
     const participants = await ChannelParticipantModel.find({ channel: channelId }).lean();
@@ -608,7 +591,7 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
 
     const user = await UserModel.findById(currentUserId, { emailVerified: 1 }).lean();
     if (user?.emailVerified === false) {
-        res.json({ success: true, count: 0 });
+        res.json({ success: true, data: { count: 0 } });
         return;
     }
 
@@ -623,7 +606,7 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
     ]);
 
     const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
-    res.json({ success: true, count: unseenMessagesCount + invitesCount });
+    res.json({ success: true, data: { count: unseenMessagesCount + invitesCount } });
 });
 
 const muteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -633,8 +616,7 @@ const muteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
-        res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
-        return;
+        throw new HttpError("Not a member of this channel", 403);
     }
 
     participant.muted = muted;

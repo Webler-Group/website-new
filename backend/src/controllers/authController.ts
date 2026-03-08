@@ -1,6 +1,6 @@
-import jwt, { JwtPayload, VerifyErrors } from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import UserModel from "../models/User";
-import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
+import { EmailTokenPayload, RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { sendActivationEmail, sendPasswordResetEmail } from "../services/email";
@@ -11,6 +11,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowingModel from "../models/UserFollowing";
 import { formatAuthUser } from "../helpers/userHelper";
+import HttpError from "../exceptions/HttpError";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -22,13 +23,11 @@ const login = asyncHandler(async (req, res) => {
     const user = await UserModel.findOne({ email });
 
     if (!user || !(await user.matchPassword(password))) {
-        res.status(401).json({ error: [{ message: "Invalid email or password" }] });
-        return;
+        throw new HttpError("Invalid email or password", 401);
     }
 
     if (!user.active) {
-        res.status(401).json({ error: [{ message: "Account is deactivated" }] });
-        return;
+        throw new HttpError("Account is deactivated", 401);
     }
 
     user.lastLoginAt = new Date();
@@ -44,12 +43,15 @@ const login = asyncHandler(async (req, res) => {
     await generateRefreshToken(res, { userId: user._id.toString() });
 
     res.json({
-        accessToken,
-        expiresIn,
-        user: formatAuthUser(user)
-    })
+        success: true,
+        data: {
+            accessToken,
+            expiresIn,
+            user: formatAuthUser(user)
+        }
+    });
 
-})
+});
 
 const register = asyncHandler(async (req: Request, res: Response) => {
     const { body, headers } = parseWithZod(registerSchema, req);
@@ -58,24 +60,17 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const record = await CaptchaRecordModel.findById(captchaId).lean();
 
     if (record === null || !verifyCaptcha(solution, record.encrypted)) {
-        res.status(403).json({ error: [{ message: "Captcha verification failed" }] });
-        return;
+        throw new HttpError("Captcha verification failed", 403);
     }
 
     await CaptchaRecordModel.deleteOne({ _id: captchaId });
 
     const emailExists = await UserModel.exists({ email });
     const usernameExists = await UserModel.exists({ name });
-    if (emailExists || usernameExists) {
-        let errors: { message: string; }[] = [];
-        if (emailExists) {
-            errors.push({ message: "Email is already registered" });
-        }
-        if (usernameExists) {
-            errors.push({ message: "Username is already used" });
-        }
-        res.status(400).json({ error: errors });
-        return;
+    if (emailExists) {
+        throw new HttpError("Email is already registered", 400);
+    } else if (usernameExists) {
+        throw new HttpError("Username is already used", 400);
     }
 
     const user = await UserModel.create({
@@ -121,9 +116,12 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     }
 
     res.json({
-        accessToken,
-        expiresIn,
-        user: formatAuthUser(user)
+        success: true,
+        data: {
+            accessToken,
+            expiresIn,
+            user: formatAuthUser(user)
+        }
     });
 });
 
@@ -133,44 +131,40 @@ const logout = asyncHandler(async (req: Request, res: Response) => {
     if (cookies?.refreshToken) {
         clearRefreshToken(res);
     }
-    res.json({});
-})
+    res.json({ success: true });
+});
 
 const refresh = asyncHandler(async (req: Request, res: Response) => {
     const { headers, cookies } = parseWithZod(refreshSchema, req);
+    let decoded: RefreshTokenPayload;
+    try {
+        decoded = jwt.verify(cookies.refreshToken, config.refreshTokenSecret) as RefreshTokenPayload;
+    } catch {
+        throw new HttpError("Please Login First", 403);
+    }
 
-    jwt.verify(
-        cookies.refreshToken,
-        config.refreshTokenSecret,
-        async (err: VerifyErrors | null, decoded: any) => {
-            if (err) {
-                res.status(403).json({ error: [{ message: "Please Login First" }] });
-                return;
-            }
+    const user = await UserModel.findById(decoded.userId, { roles: 1, active: 1, tokenVersion: 1 });
 
-            const payload = decoded as RefreshTokenPayload;
-            const user = await UserModel.findById(payload.userId, { roles: 1, active: 1, tokenVersion: 1 });
+    if (!user || !user.active || decoded.tokenVersion !== user.tokenVersion) {
+        throw new HttpError("Unauthorized", 401);
+    }
 
-            if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) {
-                res.status(401).json({ error: [{ message: "Unauthorized" }] });
-                return;
-            }
+    const { accessToken, data: tokenInfo } = await signAccessToken({
+        userId: user._id.toString(),
+        roles: user.roles
+    }, headers["x-device-id"]);
 
-            const { accessToken, data: tokenInfo } = await signAccessToken({
-                userId: user._id.toString(),
-                roles: user.roles
-            }, headers["x-device-id"]);
+    const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
+        (tokenInfo as JwtPayload).exp! * 1000 : 0;
 
-            const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
-                (tokenInfo as JwtPayload).exp! * 1000 : 0;
-
-            res.json({
-                accessToken,
-                expiresIn
-            })
+    res.json({
+        success: true,
+        data: {
+            accessToken,
+            expiresIn
         }
-    );
-})
+    });
+});
 
 const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) => {
     const { body } = parseWithZod(sendPasswordResetCodeSchema, req);
@@ -179,8 +173,7 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
     const user = await UserModel.findOne({ email }).lean();
 
     if (user === null) {
-        res.status(404).json({ error: [{ message: "Email is not registered" }] });
-        return
+        throw new HttpError("Email is not registered", 404);
     }
 
     const { emailToken } = signEmailToken({
@@ -192,61 +185,52 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
     try {
         await sendPasswordResetEmail(user.name, user.email, user._id.toString(), emailToken);
 
-        res.json({ success: true })
+        res.json({ success: true });
     }
     catch (err) {
         if (err instanceof Error) {
             console.log("Reset email error:", err.message);
         }
-        res.status(500).json({ error: [{ message: "Email could not be sent" }] });
-
+        throw new HttpError("Email could not be sent", 500);
     }
 
-})
+});
 
 const resetPassword = asyncHandler(async (req: Request, res: Response) => {
     const { body } = parseWithZod(resetPasswordSchema, req);
     const { token, password, resetId } = body;
+    let decoded: EmailTokenPayload;
+    try {
+        decoded = jwt.verify(token, config.emailTokenSecret) as EmailTokenPayload;
+    } catch {
+        throw new HttpError("Invalid token", 401);
+    }
 
-    jwt.verify(
-        token,
-        config.emailTokenSecret,
-        async (err: VerifyErrors | null, decoded: any) => {
-            if (!err) {
-                const userId = decoded.userId;
+    const userId = decoded.userId;
 
-                if (userId !== resetId || decoded.action != "reset-password") {
-                    res.json({ error: [{ message: "Unauthorized" }] });
-                    return;
-                }
+    if (userId !== resetId || decoded.action != "reset-password") {
+        throw new HttpError("Unauthorized", 401);
+    }
 
-                const user = await UserModel.findById(resetId);
+    const user = await UserModel.findById(resetId);
 
-                if (user === null) {
-                    res.status(404).json({ error: [{ message: "User not found" }] })
-                    return;
-                }
+    if (user === null) {
+        throw new HttpError("User not found", 404);
+    }
 
-                user.password = password;
-                user.tokenVersion = (user.tokenVersion || 0) + 1;
+    user.password = password;
+    user.tokenVersion = (user.tokenVersion || 0) + 1;
 
-                await user.save();
+    await user.save();
 
-                const cookies = req.cookies;
+    const cookies = req.cookies;
 
-                if (cookies?.refreshToken) {
-                    clearRefreshToken(res);
-                }
+    if (cookies?.refreshToken) {
+        clearRefreshToken(res);
+    }
 
-                res.json({ success: true });
-            }
-            else {
-                res.json({ error: [{ message: "Invalid token" }] });
-            }
-        }
-    )
-
-})
+    res.json({ success: true });
+});
 
 const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
     const { base64ImageDataURI, encrypted } = await getCaptcha();
@@ -257,53 +241,47 @@ const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
     await CaptchaRecordModel.deleteMany({ createdAt: { $lt: date } });
 
     res.json({
-        captchaId: record._id,
-        imageData: base64ImageDataURI,
+        success: true,
+        data: {
+            captchaId: record._id,
+            imageData: base64ImageDataURI
+        }
     });
-})
+});
 
 const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
     const { body } = parseWithZod(verifyEmailSchema, req);
     const { token, userId } = body;
+    let decoded: EmailTokenPayload;
+    try {
+        decoded = jwt.verify(token, config.emailTokenSecret) as EmailTokenPayload;
+    } catch {
+        throw new HttpError("Invalid token", 401);
+    }
 
-    jwt.verify(
-        token,
-        config.emailTokenSecret,
-        async (err: VerifyErrors | null, decoded: any) => {
-            if (!err) {
-                const userId2 = decoded.userId as string;
-                const email = decoded.email as string;
+    const userId2 = decoded.userId;
+    const email = decoded.email;
 
-                if (userId2 !== userId || decoded.action != "verify-email") {
-                    res.json({ error: [{ message: "Unauthorized" }] });
-                    return;
-                }
+    if (userId2 !== userId || decoded.action != "verify-email") {
+        throw new HttpError("Unauthorized", 401);
+    }
 
-                const user = await UserModel.findById(userId);
+    const user = await UserModel.findById(userId);
 
-                if (user === null) {
-                    res.status(404).json({ error: [{ message: "User not found" }] })
-                    return;
-                }
+    if (user === null) {
+        throw new HttpError("User not found", 404);
+    }
 
-                if (user.email !== email) {
-                    res.json({ error: [{ message: "Unauthorized" }] });
-                    return;
-                }
+    if (user.email !== email) {
+        throw new HttpError("Unauthorized", 401);
+    }
 
-                user.emailVerified = true;
+    user.emailVerified = true;
 
-                await user.save();
+    await user.save();
 
-                res.json({ success: true });
-            }
-            else {
-                res.json({ error: [{ message: "Invalid token" }] });
-            }
-        }
-    )
-
-})
+    res.json({ success: true });
+});
 
 const controller = {
     login,
