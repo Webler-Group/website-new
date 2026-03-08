@@ -2,8 +2,14 @@ import React, { ReactNode, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
 
+export interface JsonResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: { message: string }[];
+}
+
 interface ApiState {
-    sendJsonRequest(path: string, method: string, body?: any, options?: any, isMultipart?: boolean): Promise<any>;
+    sendJsonRequest<T>(path: string, method: string, body?: any, options?: any, isMultipart?: boolean): Promise<JsonResponse<T>>;
 }
 
 type QueryOptions = { method: string; headers?: any; body?: any; signal?: AbortSignal; accessToken?: string; deviceId?: string; };

@@ -16,20 +16,20 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
       message: issue.message,
       field: issue.path.join("."),
     }));
-    return res.status(400).json({ error: errors });
+    return res.status(400).json({ success: false, error: errors });
   }
   else if (err instanceof HttpError) {
-    return res.status(err.status).json({ error: [{ message: err.message }] });
+    return res.status(err.status).json({ success: false, error: [{ message: err.message }] });
   }
   // Multer errors
   else if (err instanceof multer.MulterError) {
     errors.push({ message: err.field ? err.field + ": " + err.message : err.message });
-    return res.status(400).json({ error: errors });
+    return res.status(400).json({ success: false, error: errors });
   }
   // Custom Multer file type error
   else if (err instanceof MulterFileTypeError) {
     errors.push({ message: err.message });
-    return res.status(400).json({ error: errors });
+    return res.status(400).json({ success: false, error: errors });
   }
   // Mongoose schema validation
   else if (err.name === "ValidationError") {
@@ -68,7 +68,7 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
   }
   console.log(err);
 
-  res.status(500).json({ error: [{ message: "Something went wrong" }] });
+  res.status(500).json({ success: false, error: [{ message: "Something went wrong" }] });
 };
 
 export default errorHandler;

@@ -10,7 +10,6 @@ import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowingModel from "../models/UserFollowing";
-import { getImageUrl } from "./mediaController";
 import { formatAuthUser } from "../helpers/userHelper";
 
 const login = asyncHandler(async (req, res) => {

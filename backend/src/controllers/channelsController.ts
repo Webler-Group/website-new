@@ -40,6 +40,7 @@ import { getImageUrl } from "./mediaController";
 import { deleteChannelAndCleanup, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
 import { getAttachmentsByPostId } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
+import { withTransaction } from "../utils/transaction";
 
 interface ChannelResponse {
     id: Types.ObjectId;
@@ -67,8 +68,17 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { title } = body;
     const currentUserId = req.userId;
 
-    const channel = await ChannelModel.create({ _type: ChannelTypeEnum.GROUP, createdBy: currentUserId, title });
-    await ChannelParticipantModel.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER });
+    const channel = await withTransaction(async (session) => {
+        const [channel] = await ChannelModel.create(
+            [{ _type: ChannelTypeEnum.GROUP, createdBy: currentUserId, title }],
+            { session }
+        );
+        await ChannelParticipantModel.create(
+            [{ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER }],
+            { session }
+        );
+        return channel;
+    });
 
     res.json({
         success: true,
@@ -99,8 +109,17 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
     }).findOne().lean();
 
     if (!channel) {
-        channel = await ChannelModel.create({ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId });
-        await ChannelParticipantModel.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
+        channel = await withTransaction(async (session) => {
+            const [newChannel] = await ChannelModel.create(
+                [{ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId }],
+                { session }
+            );
+            await ChannelParticipantModel.create(
+                [{ channel: newChannel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER }],
+                { session }
+            );
+            return newChannel;
+        });
     } else {
         const myInvite = await ChannelInviteModel.findOne({ channel: channel._id, invitedUser: currentUserId }).lean();
         if (myInvite) {
@@ -355,21 +374,23 @@ const groupRemoveUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId });
+    const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId }).lean();
     if (!targetParticipant || targetParticipant.role === ChannelRolesEnum.OWNER || participant.role === targetParticipant.role) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    await targetParticipant.deleteOne();
+    await withTransaction(async (session) => {
+        await ChannelParticipantModel.deleteOne({ _id: targetParticipant._id }, { session });
 
-    const leaveMessage = new ChannelMessageModel({
-        _type: ChannelMessageTypeEnum.USER_LEFT,
-        content: "{action_user} was removed",
-        channel: channelId,
-        user: userId
+        const leaveMessage = new ChannelMessageModel({
+            _type: ChannelMessageTypeEnum.USER_LEFT,
+            content: "{action_user} was removed",
+            channel: channelId,
+            user: userId
+        });
+        await saveChannelMessage(leaveMessage, session);
     });
-    await saveChannelMessage(leaveMessage);
 
     res.json({ success: true });
 });
@@ -385,16 +406,17 @@ const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const result = await ChannelParticipantModel.deleteOne({ user: currentUserId, channel: channelId });
-    if (result.deletedCount === 1) {
+    await withTransaction(async (session) => {
+        await ChannelParticipantModel.deleteOne({ _id: participant._id }, { session });
+
         const leaveMessage = new ChannelMessageModel({
             _type: ChannelMessageTypeEnum.USER_LEFT,
             content: "{action_user} left",
             channel: channelId,
             user: currentUserId
         });
-        await saveChannelMessage(leaveMessage);
-    }
+        await saveChannelMessage(leaveMessage, session);
+    });
 
     res.json({ success: true });
 });
@@ -490,15 +512,17 @@ const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await ChannelModel.updateOne({ _id: channelId }, { title });
+    await withTransaction(async (session) => {
+        await ChannelModel.updateOne({ _id: channelId }, { title }, { session });
 
-    const titleChangeMessage = new ChannelMessageModel({
-        _type: ChannelMessageTypeEnum.TITLE_CHANGED,
-        content: "{action_user} renamed the group to " + title,
-        channel: channelId,
-        user: currentUserId
+        const titleChangeMessage = new ChannelMessageModel({
+            _type: ChannelMessageTypeEnum.TITLE_CHANGED,
+            content: "{action_user} renamed the group to " + title,
+            channel: channelId,
+            user: currentUserId
+        });
+        await saveChannelMessage(titleChangeMessage, session);
     });
-    await saveChannelMessage(titleChangeMessage);
 
     res.json({ success: true, data: { title } });
 });
@@ -519,23 +543,30 @@ const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId });
-    if (!targetParticipant) {
+    const result = await withTransaction(async (session) => {
+        const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId }).session(session);
+        if (!targetParticipant) return null;
+
+        if (role === ChannelRolesEnum.OWNER) {
+            await ChannelParticipantModel.updateOne(
+                { channel: channelId, user: currentUserId },
+                { role: ChannelRolesEnum.ADMIN },
+                { session }
+            );
+        }
+
+        targetParticipant.role = role;
+        await targetParticipant.save({ session });
+
+        return { userId, role };
+    });
+
+    if (!result) {
         res.status(404).json({ error: [{ message: "Target user is not a participant" }] });
         return;
     }
 
-    if (role === ChannelRolesEnum.OWNER) {
-        await ChannelParticipantModel.updateOne(
-            { channel: channelId, user: currentUserId },
-            { role: ChannelRolesEnum.ADMIN }
-        );
-    }
-
-    targetParticipant.role = role;
-    await targetParticipant.save();
-
-    res.json({ success: true, data: { userId, role } });
+    res.json({ success: true, data: result });
 });
 
 const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -563,9 +594,11 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const participants = await ChannelParticipantModel.find({ channel: channelId }).lean();
 
-    getIO()?.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", { channelId });
+    await withTransaction(async (session) => {
+        await deleteChannelAndCleanup(channel._id, session);
+    });
 
-    await deleteChannelAndCleanup(channel._id);
+    getIO()?.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", { channelId });
 
     res.json({ success: true });
 });
