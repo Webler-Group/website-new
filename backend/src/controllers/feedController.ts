@@ -3,8 +3,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { Post } from "../models/Post";
 import UpvoteModel from "../models/Upvote";
-import NotificationModel from "../models/Notification";
-import mongoose, { PipelineStage, Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import UserFollowingModel from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
@@ -12,19 +11,19 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import ReactionsEnum from "../data/ReactionsEnum";
 import {
-  createFeedSchema,
-  editFeedSchema,
-  deleteFeedSchema,
-  createReplySchema,
-  editReplySchema,
-  deleteReplySchema,
-  shareFeedSchema,
-  getFeedListSchema,
-  getFeedSchema,
-  getRepliesSchema,
-  togglePinFeedSchema,
-  votePostSchema,
-  getUserReactionsSchema
+    createFeedSchema,
+    editFeedSchema,
+    deleteFeedSchema,
+    createReplySchema,
+    editReplySchema,
+    deleteReplySchema,
+    shareFeedSchema,
+    getFeedListSchema,
+    getFeedSchema,
+    getRepliesSchema,
+    togglePinFeedSchema,
+    votePostSchema,
+    getUserReactionsSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
@@ -34,850 +33,700 @@ import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsH
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 
+type ReactionAgg = { _id: ReactionsEnum; count: number };
+
+const getReactionsForPost = async (postId: Types.ObjectId) => {
+    const reactionsAgg = await UpvoteModel.aggregate<ReactionAgg>([
+        { $match: { parentId: postId } },
+        { $group: { _id: "$reaction", count: { $sum: 1 } } },
+        { $sort: { count: -1 } }
+    ]);
+    return {
+        totalReactions: reactionsAgg.reduce((sum, r) => sum + r.count, 0),
+        topReactions: reactionsAgg.slice(0, 3).map(r => ({ reaction: r._id, count: r.count }))
+    };
+};
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(createFeedSchema, req);
-  const { message } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(createFeedSchema, req);
+    const { message } = body;
+    const currentUserId = req.userId;
 
-  const feed = await PostModel.create({
-    _type: PostTypeEnum.FEED,
-    title: "Untitled",
-    message,
-    user: currentUserId
-  });
+    const feed = await PostModel.create({
+        _type: PostTypeEnum.FEED,
+        title: "Untitled",
+        message,
+        user: currentUserId
+    });
 
-  const followers = await UserFollowingModel.find({ following: currentUserId });
+    const followers = await UserFollowingModel.find({ following: currentUserId }).lean();
 
-  await sendNotifications(
-    {
-      title: "New post",
-      type: NotificationTypeEnum.FEED_FOLLOWER_POST,
-      actionUser: new Types.ObjectId(currentUserId),
-      message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
-      feedId: feed._id
-    },
-    followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user)
-  );
+    await sendNotifications(
+        {
+            title: "New post",
+            type: NotificationTypeEnum.FEED_FOLLOWER_POST,
+            actionUser: new Types.ObjectId(currentUserId),
+            message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
+            feedId: feed._id
+        },
+        followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user)
+    );
 
-  res.json({
-    success: true,
-    feed: {
-      type: feed._type,
-      id: feed._id,
-      title: feed.title,
-      message: feed.message,
-      date: feed.createdAt,
-      userId: feed.user,
-      isAccepted: feed.isAccepted,
-      votes: feed.votes,
-      answers: feed.answers
-    }
-  });
+    res.json({
+        success: true,
+        feed: {
+            type: feed._type,
+            id: feed._id,
+            title: feed.title,
+            message: feed.message,
+            date: feed.createdAt,
+            userId: feed.user,
+            isAccepted: feed.isAccepted,
+            votes: feed.votes,
+            answers: feed.answers
+        }
+    });
 });
 
 const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(getUserReactionsSchema, req);
-  const { parentId, page, count } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(getUserReactionsSchema, req);
+    const { parentId, page, count } = body;
+    const currentUserId = req.userId;
 
-  const skip = (page - 1) * count;
+    const skip = (page - 1) * count;
+    const parentObjectId = new mongoose.Types.ObjectId(parentId);
+    const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-  const parentObjectId = new mongoose.Types.ObjectId(parentId);
-  const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
+    type UserReactionAgg = {
+        _id: Types.ObjectId;
+        userId: Types.ObjectId;
+        userName: string;
+        userHash: string;
+        level: number;
+        roles: string[];
+        reaction: ReactionsEnum;
+        isFollowing: boolean;
+    };
 
-  const reactions = await UpvoteModel.aggregate([
-    { $match: { parentId: parentObjectId } },
-    { $sort: { _id: -1 } },
-    { $skip: skip },
-    { $limit: count },
-    {
-      $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "userDetails"
-      }
-    },
-    { $unwind: "$userDetails" },
-    {
-      $lookup: {
-        from: "userfollowings",
-        let: { targetUserId: "$user" },
-        pipeline: [
-          {
-            $match: {
-              $expr: {
-                $and: [
-                  { $eq: ["$user", currentUserObjectId] },
-                  { $eq: ["$following", "$$targetUserId"] }
-                ]
-              }
+    const [reactions, totalCount] = await Promise.all([
+        UpvoteModel.aggregate<UserReactionAgg>([
+            { $match: { parentId: parentObjectId } },
+            { $sort: { _id: -1 } },
+            { $skip: skip },
+            { $limit: count },
+            {
+                $lookup: {
+                    from: "users",
+                    localField: "user",
+                    foreignField: "_id",
+                    as: "userDetails"
+                }
+            },
+            { $unwind: "$userDetails" },
+            {
+                $lookup: {
+                    from: "userfollowings",
+                    let: { targetUserId: "$user" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$user", currentUserObjectId] },
+                                        { $eq: ["$following", "$$targetUserId"] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: "isFollowing"
+                }
+            },
+            {
+                $project: {
+                    userId: "$userDetails._id",
+                    userName: "$userDetails.name",
+                    userHash: "$userDetails.avatarHash",
+                    level: "$userDetails.level",
+                    roles: "$userDetails.roles",
+                    reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
+                    isFollowing: { $gt: [{ $size: "$isFollowing" }, 0] }
+                }
             }
-          }
-        ],
-        as: "isFollowing"
-      }
-    },
-    {
-      $project: {
-        userId: "$userDetails._id",
-        userName: "$userDetails.name",
-        userHash: "$userDetails.avatarHash",
-        level: "$userDetails.level",
-        roles: "$userDetails.roles",
-        reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
-        isFollowing: { $gt: [{ $size: "$isFollowing" }, 0] }
-      }
-    }
-  ]);
+        ]),
+        UpvoteModel.countDocuments({ parentId })
+    ]);
 
-  const totalCount = await UpvoteModel.countDocuments({ parentId });
-
-  res.json({
-    count: totalCount,
-    userReactions: reactions.map(x => ({
-      id: x._id,
-      userId: x.userId,
-      userName: x.userName,
-      userAvatarUrl: getImageUrl(x.userHash),
-      isFollowing: x.isFollowing,
-      reaction: x.reaction
-    }))
-  });
+    res.json({
+        count: totalCount,
+        userReactions: reactions.map(x => ({
+            id: x._id,
+            userId: x.userId,
+            userName: x.userName,
+            userAvatarUrl: getImageUrl(x.userHash),
+            isFollowing: x.isFollowing,
+            reaction: x.reaction
+        }))
+    });
 });
 
 const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(editFeedSchema, req);
-  const { feedId, message } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(editFeedSchema, req);
+    const { feedId, message } = body;
+    const currentUserId = req.userId;
 
-  const feed = await PostModel.findById(feedId);
-
-  if (!feed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
-
-  if (feed.user.equals(currentUserId)) {
-    res.status(401).json({ error: [{ message: "Unauthorized" }] });
-    return;
-  }
-
-  feed.message = message;
-
-  await feed.save();
-
-  const attachments = await getAttachmentsByPostId({ post: feed._id });
-
-  res.json({
-    success: true,
-    data: {
-      id: feed._id,
-      title: feed.title,
-      message: feed.message,
-      attachments
+    const feed = await PostModel.findById(feedId);
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
     }
-  });
+
+    if (!feed.user.equals(currentUserId)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    feed.message = message;
+    await feed.save();
+
+    const attachments = await getAttachmentsByPostId({ post: feed._id });
+
+    res.json({
+        success: true,
+        data: {
+            id: feed._id,
+            title: feed.title,
+            message: feed.message,
+            attachments
+        }
+    });
 });
 
 const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(deleteFeedSchema, req);
-  const { feedId } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(deleteFeedSchema, req);
+    const { feedId } = body;
+    const currentUserId = req.userId;
 
-  const feed = await PostModel.findById(feedId);
+    const feed = await PostModel.findById(feedId).lean();
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
+    }
 
-  if (!feed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
+    if (!feed.user.equals(currentUserId) && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
 
-  if (!feed.user.equals(currentUserId) && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
-    res.status(401).json({ error: [{ message: "Unauthorized" }] });
-    return;
-  }
+    await deletePostsAndCleanup({ _id: feedId });
 
-  await deletePostsAndCleanup({ _id: feedId });
-
-  res.json({ success: true });
+    res.json({ success: true });
 });
 
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(createReplySchema, req);
-  const { message, feedId, parentId } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(createReplySchema, req);
+    const { message, feedId, parentId } = body;
+    const currentUserId = req.userId;
 
-  const feed = await PostModel.findById(feedId);
-  if (!feed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
-
-  let parentComment = null;
-  if (parentId) {
-    parentComment = await PostModel.findById(parentId);
-    if (!parentComment) {
-      res.status(404).json({ error: [{ message: "Parent comment not found" }] });
-      return;
+    const feed = await PostModel.findById(feedId);
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
     }
-  }
 
-  const reply = await PostModel.create({
-    _type: PostTypeEnum.FEED_COMMENT,
-    message,
-    feedId,
-    parentId,
-    user: currentUserId
-  });
-
-  if (parentComment && !parentComment.user.equals(currentUserId)) {
-    await sendNotifications({
-      title: "New reply",
-      type: NotificationTypeEnum.FEED_COMMENT,
-      actionUser: new Types.ObjectId(currentUserId),
-      message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
-      feedId: feed._id,
-      postId: reply._id
-    }, [parentComment.user]);
-  }
-  if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user))) {
-    await sendNotifications({
-      title: "New comment",
-      type: NotificationTypeEnum.FEED_COMMENT,
-      actionUser: new Types.ObjectId(currentUserId),
-      message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
-      feedId: feed._id,
-      postId: reply._id
-    }, [feed.user]);
-  }
-
-  feed.$inc("answers", 1);
-  await feed.save();
-
-  if (parentComment) {
-    parentComment.$inc("answers", 1);
-    await parentComment.save();
-  }
-
-  const attachments = await getAttachmentsByPostId({ post: reply._id });
-
-  res.json({
-    post: {
-      id: reply._id,
-      message: reply.message,
-      date: reply.createdAt,
-      userId: reply.user,
-      parentId: reply.parentId,
-      votes: reply.votes,
-      answers: reply.answers ?? 0,
-      attachments
+    let parentComment = null;
+    if (parentId) {
+        parentComment = await PostModel.findById(parentId);
+        if (!parentComment) {
+            res.status(404).json({ error: [{ message: "Parent comment not found" }] });
+            return;
+        }
     }
-  });
+
+    const reply = await PostModel.create({
+        _type: PostTypeEnum.FEED_COMMENT,
+        message,
+        feedId,
+        parentId,
+        user: currentUserId
+    });
+
+    if (parentComment && !parentComment.user.equals(currentUserId)) {
+        await sendNotifications({
+            title: "New reply",
+            type: NotificationTypeEnum.FEED_COMMENT,
+            actionUser: new Types.ObjectId(currentUserId),
+            message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
+            feedId: feed._id,
+            postId: reply._id
+        }, [parentComment.user]);
+    }
+
+    if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user))) {
+        await sendNotifications({
+            title: "New comment",
+            type: NotificationTypeEnum.FEED_COMMENT,
+            actionUser: new Types.ObjectId(currentUserId),
+            message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
+            feedId: feed._id,
+            postId: reply._id
+        }, [feed.user]);
+    }
+
+    feed.$inc("answers", 1);
+    await feed.save();
+
+    if (parentComment) {
+        parentComment.$inc("answers", 1);
+        await parentComment.save();
+    }
+
+    const attachments = await getAttachmentsByPostId({ post: reply._id });
+
+    res.json({
+        post: {
+            id: reply._id,
+            message: reply.message,
+            date: reply.createdAt,
+            userId: reply.user,
+            parentId: reply.parentId,
+            votes: reply.votes,
+            answers: reply.answers ?? 0,
+            attachments
+        }
+    });
 });
 
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(votePostSchema, req);
-  const { postId, vote, reaction } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(votePostSchema, req);
+    const { postId, vote, reaction } = body;
+    const currentUserId = req.userId;
 
-  const post = await PostModel.findById(postId);
-  if (!post) {
-    res.status(404).json({ error: [{ message: "Post not found" }] });
-    return;
-  }
-
-  let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId });
-  if (vote) {
-    if (!upvote) {
-      upvote = await UpvoteModel.create({ user: currentUserId, parentId: postId, reaction: reaction || ReactionsEnum.LIKE });
-      post.$inc("votes", 1);
-      await post.save();
-    } else if (reaction) {
-      upvote.reaction = reaction || ReactionsEnum.LIKE;
-      await upvote.save();
+    const post = await PostModel.findById(postId);
+    if (!post) {
+        res.status(404).json({ error: [{ message: "Post not found" }] });
+        return;
     }
-  } else {
-    if (upvote) {
-      await UpvoteModel.deleteOne({ _id: upvote._id });
-      upvote = null;
-      post.$inc("votes", -1);
-      await post.save();
-    }
-  }
 
-  res.json({ success: true, vote: upvote ? 1 : 0 });
+    let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId });
+    if (vote) {
+        if (!upvote) {
+            upvote = await UpvoteModel.create({ user: currentUserId, parentId: postId, reaction: reaction || ReactionsEnum.LIKE });
+            post.$inc("votes", 1);
+            await post.save();
+        } else if (reaction) {
+            upvote.reaction = reaction || ReactionsEnum.LIKE;
+            await upvote.save();
+        }
+    } else {
+        if (upvote) {
+            await UpvoteModel.deleteOne({ _id: upvote._id });
+            upvote = null;
+            post.$inc("votes", -1);
+            await post.save();
+        }
+    }
+
+    res.json({ success: true, vote: upvote ? 1 : 0 });
 });
 
 const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(editReplySchema, req);
-  const { id, message } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(editReplySchema, req);
+    const { id, message } = body;
+    const currentUserId = req.userId;
 
-  const reply = await PostModel.findById(id);
-
-  if (!reply) {
-    res.status(404).json({ error: [{ message: "Post not found" }] });
-    return;
-  }
-
-  if (!reply.user.equals(currentUserId)) {
-    res.status(401).json({ error: [{ message: "Unauthorized" }] });
-    return;
-  }
-
-  reply.message = message;
-
-  await reply.save();
-
-  const attachments = await getAttachmentsByPostId({ post: reply._id });
-
-  res.json({
-    success: true,
-    data: {
-      id: reply._id,
-      message: reply.message,
-      attachments
+    const reply = await PostModel.findById(id);
+    if (!reply) {
+        res.status(404).json({ error: [{ message: "Post not found" }] });
+        return;
     }
-  });
+
+    if (!reply.user.equals(currentUserId)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
+
+    reply.message = message;
+    await reply.save();
+
+    const attachments = await getAttachmentsByPostId({ post: reply._id });
+
+    res.json({
+        success: true,
+        data: { id: reply._id, message: reply.message, attachments }
+    });
 });
 
 const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(deleteReplySchema, req);
-  const { id } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(deleteReplySchema, req);
+    const { id } = body;
+    const currentUserId = req.userId;
 
-  const reply = await PostModel.findById(id);
+    const reply = await PostModel.findById(id).lean();
+    if (!reply) {
+        res.status(404).json({ error: [{ message: "Post not found" }] });
+        return;
+    }
 
-  if (!reply) {
-    res.status(404).json({ error: [{ message: "Post not found" }] });
-    return;
-  }
+    if (!reply.user.equals(currentUserId)) {
+        res.status(401).json({ error: [{ message: "Unauthorized" }] });
+        return;
+    }
 
-  if (!reply.user.equals(currentUserId)) {
-    res.status(401).json({ error: [{ message: "Unauthorized" }] });
-    return;
-  }
+    const feed = await PostModel.findById(reply.feedId).lean();
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
+    }
 
-  const feed = await PostModel.findById(reply.feedId);
-  if (!feed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
+    await deletePostsAndCleanup({ _id: id });
 
-  await deletePostsAndCleanup({ _id: id });
-
-  res.json({ success: true });
+    res.json({ success: true });
 });
 
 const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(shareFeedSchema, req);
-  const { feedId, message } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(shareFeedSchema, req);
+    const { feedId, message } = body;
+    const currentUserId = req.userId;
 
-  const originalFeed = await PostModel.findById(feedId);
-  if (!originalFeed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
+    const originalFeed = await PostModel.findById(feedId);
+    if (!originalFeed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
+    }
 
-  const feed = await PostModel.create({
-    _type: PostTypeEnum.SHARED_FEED,
-    title: "Untitled",
-    message,
-    user: currentUserId,
-    parentId: feedId
-  });
+    const feed = await PostModel.create({
+        _type: PostTypeEnum.SHARED_FEED,
+        title: "Untitled",
+        message,
+        user: currentUserId,
+        parentId: feedId
+    });
 
-  if (feed) {
     originalFeed.$inc("shares", 1);
     await originalFeed.save();
 
     if (!originalFeed.user.equals(currentUserId)) {
-      await sendNotifications({
-        title: "Feed share",
-        type: NotificationTypeEnum.FEED_SHARE,
-        actionUser: new Types.ObjectId(currentUserId),
-        message: `{action_user} shared your Post "${truncate(escapeMarkdown(originalFeed.message), 20).replaceAll(/\n+/g, " ")}"`,
-        feedId: feed._id
-      }, [originalFeed.user]);
+        await sendNotifications({
+            title: "Feed share",
+            type: NotificationTypeEnum.FEED_SHARE,
+            actionUser: new Types.ObjectId(currentUserId),
+            message: `{action_user} shared your Post "${truncate(escapeMarkdown(originalFeed.message), 20).replaceAll(/\n+/g, " ")}"`,
+            feedId: feed._id
+        }, [originalFeed.user]);
     }
 
     res.json({
-      success: true,
-      feed: {
-        id: feed._id,
-        title: feed.title,
-        message: feed.message,
-        date: feed.createdAt,
-        userId: feed.user,
-        votes: feed.votes,
-        answers: feed.answers,
-        parentId: feedId
-      }
+        success: true,
+        feed: {
+            id: feed._id,
+            title: feed.title,
+            message: feed.message,
+            date: feed.createdAt,
+            userId: feed.user,
+            votes: feed.votes,
+            answers: feed.answers,
+            parentId: feedId
+        }
     });
-  } else {
-    res.status(500).json({ error: [{ message: "Error creating shared feed" }] });
-  }
 });
 
 const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(getFeedListSchema, req);
-  const { page, count, filter, searchQuery, userId } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(getFeedListSchema, req);
+    const { page, count, filter, searchQuery, userId } = body;
+    const currentUserId = req.userId;
 
-  let pipeline: PipelineStage[] = [
-    {
-      $match: {
+    const baseMatch: mongoose.QueryFilter<Post> = {
         _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] },
         hidden: false,
         ...(filter !== 7 && { isPinned: false })
-      }
-    },
-    {
-      $set: {
-        score: { $add: ["$votes", "$shares", "$answers"] }
-      }
+    };
+
+    if (searchQuery && searchQuery.trim().length > 0) {
+        const safeQuery = escapeRegex(searchQuery.trim());
+        baseMatch.message = new RegExp(`(^|\\b)${safeQuery}`, "i");
     }
-  ];
 
-  if (searchQuery && searchQuery.trim().length > 0) {
-    const safeQuery = escapeRegex(searchQuery.trim());
-    const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
-    pipeline.push({
-      $match: { message: searchRegex }
-    });
-  }
+    let dbQuery = PostModel.find(baseMatch);
 
-  switch (filter) {
-    case 1: // Recent
-      pipeline.push({ $sort: { createdAt: -1 } });
-      break;
-    case 2: // My Posts
-      if (!userId) {
-        res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
-        return;
-      }
-      pipeline.push(
-        { $match: { user: new mongoose.Types.ObjectId(userId) } },
-        { $sort: { createdAt: -1 } }
-      );
-      break;
-    case 3: // Following
-      if (!userId) {
-        res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
-        return;
-      }
-      const followingUsers = await UserFollowingModel.find({ user: userId }).select("following");
-      const followingUserIds = followingUsers.map(f => f.following);
-      if (followingUserIds.length === 0) {
-        res.status(200).json({ count: 0, feeds: [], success: true });
-        return;
-      }
-      pipeline.push({ $match: { user: { $in: followingUserIds } } }, { $sort: { createdAt: -1 } });
-      break;
-    case 4: // Hot Today
-      const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      pipeline.push({ $match: { createdAt: { $gt: dayAgo } } }, { $sort: { score: -1 } });
-      break;
-    case 5: // Trending
-      pipeline.push({ $sort: { score: -1 } });
-      break;
-    case 6: // Most Shared
-      pipeline.push({ $sort: { shares: -1 } });
-      break;
-    case 7: // Pinned
-      pipeline.push({ $match: { isPinned: true } }, { $sort: { createdAt: -1 } });
-      break;
-    default:
-      res.status(400).json({ error: [{ message: "Unknown filter" }] });
-      return;
-  }
-
-  const countPipeline = [...pipeline];
-  countPipeline.push({ $count: "total" });
-  const countResult = await PostModel.aggregate(countPipeline);
-  const feedCount = countResult.length > 0 ? countResult[0].total : 0;
-
-  pipeline.push(
-    { $skip: (page - 1) * count },
-    { $limit: count },
-    {
-      $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "users"
-      }
-    },
-    {
-      $lookup: {
-        from: "postattachments",
-        localField: "_id",
-        foreignField: "postId",
-        as: "attachments"
-      }
-    },
-    {
-      $lookup: {
-        from: "posts",
-        localField: "parentId",
-        foreignField: "_id",
-        as: "originalPost",
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "user",
-              foreignField: "_id",
-              as: "users"
+    switch (filter) {
+        case 1:
+            dbQuery = dbQuery.sort({ createdAt: "desc" });
+            break;
+        case 2:
+            if (!userId) {
+                res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
+                return;
             }
-          },
-          { $limit: 1 }
-        ]
-      }
+            dbQuery = dbQuery.where({ user: userId }).sort({ createdAt: "desc" });
+            break;
+        case 3:
+            if (!userId) {
+                res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
+                return;
+            }
+            const followingUsers = await UserFollowingModel.find({ user: userId }).select("following").lean();
+            const followingUserIds = followingUsers.map(f => f.following);
+            if (!followingUserIds.length) {
+                res.status(200).json({ count: 0, feeds: [], success: true });
+                return;
+            }
+            dbQuery = dbQuery.where({ user: { $in: followingUserIds } }).sort({ createdAt: "desc" });
+            break;
+        case 4:
+            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            dbQuery = dbQuery.where({ createdAt: { $gt: dayAgo } }).sort({ votes: "desc" });
+            break;
+        case 5:
+            dbQuery = dbQuery.sort({ votes: "desc" });
+            break;
+        case 6:
+            dbQuery = dbQuery.sort({ shares: "desc" });
+            break;
+        case 7:
+            dbQuery = dbQuery.where({ isPinned: true }).sort({ createdAt: "desc" });
+            break;
+        default:
+            res.status(400).json({ error: [{ message: "Unknown filter" }] });
+            return;
     }
-  );
 
-  const result = await PostModel.aggregate(pipeline);
+    const [feedCount, feeds] = await Promise.all([
+        dbQuery.clone().countDocuments(),
+        dbQuery
+            .clone()
+            .skip((page - 1) * count)
+            .limit(count)
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .populate<{ parentId: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } }>({
+                path: "parentId",
+                populate: { path: "user", select: USER_MINIMAL_FIELDS }
+            })
+            .lean()
+    ]);
 
-  const data = await Promise.all(
-    result.map(async x => {
-      const reactionsAgg = await UpvoteModel.aggregate([
-        { $match: { parentId: x._id } },
-        {
-          $group: {
-            _id: "$reaction",
-            count: { $sum: 1 }
-          }
-        },
-        { $sort: { count: -1 } }
-      ]);
+    const data = await Promise.all(feeds.map(async x => {
+        const [{ totalReactions, topReactions }, attachments, upvote] = await Promise.all([
+            getReactionsForPost(x._id),
+            getAttachmentsByPostId({ post: x._id }),
+            currentUserId ? UpvoteModel.findOne({ parentId: x._id, user: currentUserId }).lean() : null
+        ]);
 
-      const totalReactions = reactionsAgg.reduce((sum, r) => sum + r.count, 0);
-      const topReactions = reactionsAgg.slice(0, 3).map(r => ({
-        reaction: r._id,
-        count: r.count
-      }));
+        const originalPost = x.parentId as (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null;
 
-      const feed: any = {
-        id: x._id,
-        type: x._type,
-        title: x.title || null,
-        message: x.message,
-        date: x.createdAt,
-        userId: x.user,
-        userName: x.users.length ? x.users[0].name : "Unknown User",
-        userAvatarUrl: x.users.length ? getImageUrl(x.users[0].avatarHash) || null : null,
-        answers: x.answers || 0,
-        votes: x.votes || 0,
-        shares: x.shares || 0,
-        level: x.users[0].level,
-        roles: x.users[0].roles,
-        isUpvoted: false,
-        reaction: "",
-        score: x.score || 0,
-        isPinned: x.isPinned,
-        attachments:
-          x.attachments?.map((a: any) => ({
-            id: a._id,
-            type: a.type,
-            url: a.url,
-            meta: a.meta || null
-          })) || [],
-        originalPost: x.originalPost.length
-          ? {
-            id: x.originalPost[0]._id,
-            title: x.originalPost[0].title || null,
-            message: truncate(escapeMarkdown(x.originalPost[0].message), 40),
-            userId: x.originalPost[0].user,
-            userName: x.originalPost[0].users.length
-              ? x.originalPost[0].users[0].name
-              : "Unknown User",
-            userAvatarUrl: x.originalPost[0].users.length
-              ? getImageUrl(x.originalPost[0].users[0].avatarHash) || null
-              : null,
-            date: x.originalPost[0].createdAt
-          }
-          : null,
-        totalReactions,
-        topReactions
-      };
+        return {
+            id: x._id,
+            type: x._type,
+            title: x.title ?? null,
+            message: x.message,
+            date: x.createdAt,
+            user: formatUserMinimal(x.user),
+            answers: x.answers ?? 0,
+            votes: x.votes ?? 0,
+            shares: x.shares ?? 0,
+            isUpvoted: !!upvote,
+            reaction: upvote?.reaction ?? "",
+            score: (x.votes ?? 0) + (x.shares ?? 0) + (x.answers ?? 0),
+            isPinned: x.isPinned,
+            attachments,
+            originalPost: originalPost ? {
+                id: originalPost._id,
+                title: originalPost.title ?? null,
+                message: truncate(escapeMarkdown(originalPost.message), 40),
+                user: formatUserMinimal(originalPost.user),
+                date: originalPost.createdAt
+            } : null,
+            totalReactions,
+            topReactions
+        };
+    }));
 
-      if (currentUserId) {
-        const upvote = await UpvoteModel.findOne({ parentId: feed.id, user: currentUserId });
-        feed.isUpvoted = !!upvote;
-        feed.reaction = upvote?.reaction ?? "";
-
-        feed.attachments = await getAttachmentsByPostId({ post: feed.id });
-      }
-
-      return feed;
-    })
-  );
-
-  res.status(200).json({
-    count: feedCount,
-    feeds: data,
-    success: true
-  });
+    res.status(200).json({ count: feedCount, feeds: data, success: true });
 });
 
 const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(getFeedSchema, req);
-  const { feedId } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(getFeedSchema, req);
+    const { feedId } = body;
+    const currentUserId = req.userId;
 
-  const feedAgg = await PostModel.aggregate([
-    { $match: { _id: new mongoose.Types.ObjectId(feedId) } },
-    {
-      $lookup: {
-        from: "users",
-        localField: "user",
-        foreignField: "_id",
-        as: "user"
-      }
-    },
-    { $unwind: "$user" },
-    {
-      $lookup: {
-        from: "posts",
-        localField: "parentId",
-        foreignField: "_id",
-        as: "originalPost",
-        pipeline: [
-          {
-            $lookup: {
-              from: "users",
-              localField: "user",
-              foreignField: "_id",
-              as: "users"
-            }
-          },
-          { $limit: 1 }
-        ]
-      }
+    const feed = await PostModel.findById(feedId)
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ parentId: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } }>({
+            path: "parentId",
+            populate: { path: "user", select: USER_MINIMAL_FIELDS }
+        })
+        .lean();
+
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
     }
-  ]);
 
-  if (!feedAgg.length) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
+    const [{ totalReactions, topReactions }, attachments, upvote] = await Promise.all([
+        getReactionsForPost(feed._id),
+        getAttachmentsByPostId({ post: feed._id }),
+        currentUserId ? UpvoteModel.findOne({ parentId: feed._id, user: currentUserId }).lean() : null
+    ]);
 
-  const feed = feedAgg[0];
+    const originalPost = feed.parentId as (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null;
 
-  const reactionsAgg = await UpvoteModel.aggregate([
-    { $match: { parentId: new mongoose.Types.ObjectId(feedId) } },
-    {
-      $group: {
-        _id: "$reaction",
-        count: { $sum: 1 }
-      }
-    },
-    { $sort: { count: -1 } }
-  ]);
-
-  const totalReactions = reactionsAgg.reduce((sum, r) => sum + r.count, 0);
-  const topReactions = reactionsAgg.slice(0, 3).map(r => ({
-    reaction: r._id,
-    count: r.count
-  }));
-
-  const attachments = await getAttachmentsByPostId({ post: feedId });
-
-  const data: any = {
-    id: feed._id,
-    type: feed._type,
-    title: feed.title || null,
-    message: feed.message,
-    date: feed.createdAt,
-    userId: feed.user._id,
-    userName: feed.user.name,
-    userAvatarUrl: getImageUrl(feed.user.avatarHash),
-    answers: feed.answers,
-    votes: feed.votes,
-    shares: feed.shares,
-    level: feed.user.level,
-    roles: feed.user.roles,
-    isPinned: feed.isPinned,
-    attachments,
-    reaction: "",
-    isUpvoted: false,
-    originalPost: feed.originalPost.length
-      ? {
-        id: feed.originalPost[0]._id,
-        title: feed.originalPost[0].title || null,
-        message: truncate(escapeMarkdown(feed.originalPost[0].message), 40),
-        userId: feed.originalPost[0].user,
-        userName: feed.originalPost[0].users.length
-          ? feed.originalPost[0].users[0].name
-          : "Unknown User",
-        userAvatarUrl: feed.originalPost[0].users.length
-          ? getImageUrl(feed.originalPost[0].users[0].avatarHash) || null
-          : null,
-        date: feed.originalPost[0].createdAt
-      }
-      : null,
-    totalReactions,
-    topReactions
-  };
-
-  if (currentUserId) {
-    const upvote = await UpvoteModel.findOne({ parentId: data.id, user: currentUserId });
-    data.isUpvoted = !!upvote;
-    data.reaction = upvote?.reaction ?? "";
-  }
-
-  res.json({ feed: data, success: true });
+    res.json({
+        success: true,
+        feed: {
+            id: feed._id,
+            type: feed._type,
+            title: feed.title ?? null,
+            message: feed.message,
+            date: feed.createdAt,
+            user: formatUserMinimal(feed.user),
+            answers: feed.answers,
+            votes: feed.votes,
+            shares: feed.shares,
+            isPinned: feed.isPinned,
+            attachments,
+            isUpvoted: !!upvote,
+            reaction: upvote?.reaction ?? "",
+            originalPost: originalPost ? {
+                id: originalPost._id,
+                title: originalPost.title ?? null,
+                message: truncate(escapeMarkdown(originalPost.message), 40),
+                user: formatUserMinimal(originalPost.user),
+                date: originalPost.createdAt
+            } : null,
+            totalReactions,
+            topReactions
+        }
+    });
 });
 
 const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(getRepliesSchema, req);
-  const { feedId, parentId, index, count, filter, findPostId } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(getRepliesSchema, req);
+    const { feedId, parentId, index, count, filter, findPostId } = body;
+    const currentUserId = req.userId;
 
-  let parentPost: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } | null = null;
-  if (parentId) {
-    parentPost = await PostModel.findById(parentId)
-      .populate("user", USER_MINIMAL_FIELDS)
-      .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>();
-    if (!parentPost) {
-      res.status(404).json({ error: [{ message: "Parent post not found" }] });
-      return;
-    }
-  }
+    type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
 
-  let dbQuery = PostModel.find({ feedId, _type: PostTypeEnum.FEED_COMMENT, hidden: false });
-
-  let skipCount = index;
-
-  if (findPostId) {
-    const reply = await PostModel.findById(findPostId);
-    if (!reply) {
-      res.status(404).json({ error: [{ message: "Post not found" }] });
-      return;
+    let parentPost: PopulatedPost | null = null;
+    if (parentId) {
+        parentPost = await PostModel.findById(parentId)
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .lean<PopulatedPost>();
+        if (!parentPost) {
+            res.status(404).json({ error: [{ message: "Parent post not found" }] });
+            return;
+        }
     }
 
-    parentPost = reply.parentId
-      ? await PostModel.findById(reply.parentId)
-        .populate("user", USER_MINIMAL_FIELDS)
-        .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>()
-      : null;
+    let dbQuery = PostModel.find({ feedId, _type: PostTypeEnum.FEED_COMMENT, hidden: false });
+    let skipCount = index;
 
-    dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
+    if (findPostId) {
+        const reply = await PostModel.findById(findPostId).lean();
+        if (!reply) {
+            res.status(404).json({ error: [{ message: "Post not found" }] });
+            return;
+        }
 
-    skipCount = Math.max(
-      0,
-      await dbQuery.clone().where({ createdAt: { $lt: reply.createdAt } }).countDocuments()
-    );
+        parentPost = reply.parentId
+            ? await PostModel.findById(reply.parentId)
+                .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                .lean<PopulatedPost>()
+            : null;
 
-    dbQuery = dbQuery.sort({ createdAt: "asc" });
-  } else {
-    dbQuery = dbQuery.where({ parentId });
-
-    switch (filter) {
-      case 1: // Most popular
-        dbQuery = dbQuery.sort({ votes: "desc", createdAt: "desc" });
-        break;
-      case 2: // Oldest first
+        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
+        skipCount = Math.max(0, await dbQuery.clone().where({ createdAt: { $lt: reply.createdAt } }).countDocuments());
         dbQuery = dbQuery.sort({ createdAt: "asc" });
-        break;
-      case 3: // Newest first
-        dbQuery = dbQuery.sort({ createdAt: "desc" });
-        break;
-      default:
-        res.status(400).json({ error: [{ message: "Unknown filter" }] });
-        return;
+    } else {
+        dbQuery = dbQuery.where({ parentId });
+        switch (filter) {
+            case 1: dbQuery = dbQuery.sort({ votes: "desc", createdAt: "desc" }); break;
+            case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
+            case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
+            default:
+                res.status(400).json({ error: [{ message: "Unknown filter" }] });
+                return;
+        }
     }
-  }
 
-  const result = await dbQuery
-    .skip(skipCount)
-    .limit(count)
-    .populate("user", USER_MINIMAL_FIELDS)
-    .lean<(Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } })[]>();
+    const result = await dbQuery
+        .skip(skipCount)
+        .limit(count)
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .lean<PopulatedPost[]>();
 
-  const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
-    id: x._id,
-    parentId: x.parentId,
-    message: x.message,
-    date: x.createdAt,
-    user: formatUserMinimal(x.user),
-    votes: x.votes,
-    isUpvoted: false,
-    answers: x.answers,
-    index: findPostId && parentPost ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
-    attachments: new Array()
-  }));
+    const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
+        id: x._id,
+        parentId: x.parentId,
+        message: x.message,
+        date: x.createdAt,
+        user: formatUserMinimal(x.user),
+        votes: x.votes,
+        isUpvoted: false,
+        answers: x.answers,
+        index: findPostId && parentPost ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
+        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
+    }));
 
-  const promises = data.map((item, i) => [
-    currentUserId
-      ? UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
-        data[i].isUpvoted = !!upvote;
-      })
-      : Promise.resolve(),
-    getAttachmentsByPostId({ post: item.id }).then(attachments => {
-      data[i].attachments = attachments;
-    })
-  ]).flat();
+    await Promise.all(data.map((item, i) => Promise.all([
+        currentUserId
+            ? UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).lean().then(upvote => { data[i].isUpvoted = !!upvote; })
+            : Promise.resolve(),
+        getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
+    ])));
 
-  await Promise.all(promises);
-
-  res.json({ posts: data });
+    res.json({ posts: data });
 });
 
 const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
-  const { body } = parseWithZod(togglePinFeedSchema, req);
-  const { feedId, pinned } = body;
-  const currentUserId = req.userId;
+    const { body } = parseWithZod(togglePinFeedSchema, req);
+    const { feedId, pinned } = body;
+    const currentUserId = req.userId;
 
-  const feed = await PostModel.findById(feedId);
-
-  if (!feed) {
-    res.status(404).json({ error: [{ message: "Feed not found" }] });
-    return;
-  }
-
-  if (!feed.user.equals(currentUserId)) {
-    if (pinned) {
-      await sendNotifications({
-        title: "Feed pin",
-        type: NotificationTypeEnum.FEED_PIN,
-        actionUser: new Types.ObjectId(currentUserId),
-        message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
-        feedId: feed._id
-      }, [feed.user]);
-    } else {
-      await deleteNotifications({
-        _type: NotificationTypeEnum.FEED_PIN,
-        user: feed.user,
-        actionUser: currentUserId,
-        feedId: feed._id
-      });
+    const feed = await PostModel.findById(feedId);
+    if (!feed) {
+        res.status(404).json({ error: [{ message: "Feed not found" }] });
+        return;
     }
-  }
 
-  feed.isPinned = pinned;
-  await feed.save();
+    if (!feed.user.equals(currentUserId)) {
+        if (pinned) {
+            await sendNotifications({
+                title: "Feed pin",
+                type: NotificationTypeEnum.FEED_PIN,
+                actionUser: new Types.ObjectId(currentUserId),
+                message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
+                feedId: feed._id
+            }, [feed.user]);
+        } else {
+            await deleteNotifications({
+                _type: NotificationTypeEnum.FEED_PIN,
+                user: feed.user,
+                actionUser: currentUserId,
+                feedId: feed._id
+            });
+        }
+    }
 
-  res.json({ success: true, data: { isPinned: feed.isPinned } });
+    feed.isPinned = pinned;
+    await feed.save();
+
+    res.json({ success: true, data: { isPinned: feed.isPinned } });
 });
 
 const feedController = {
-  createFeed,
-  editFeed,
-  deleteFeed,
-  createReply,
-  editReply,
-  deleteReply,
-  shareFeed,
-  getFeedList,
-  getFeed,
-  getReplies,
-  togglePinFeed,
-  votePost,
-  getUserReactions
-}
+    createFeed,
+    editFeed,
+    deleteFeed,
+    createReply,
+    editReply,
+    deleteReply,
+    shareFeed,
+    getFeedList,
+    getFeed,
+    getReplies,
+    togglePinFeed,
+    votePost,
+    getUserReactions
+};
 
 export default feedController;

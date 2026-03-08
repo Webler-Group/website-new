@@ -40,12 +40,7 @@ const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
     const { title, description, code } = body;
 
-    const course = await CourseModel.create({
-        title,
-        description,
-        code,
-        visible: false
-    });
+    const course = await CourseModel.create({ title, description, code, visible: false });
 
     res.json({
         success: true,
@@ -59,20 +54,18 @@ const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 const getCoursesList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const result = await CourseModel.find();
-
-    const data = result.map(course => ({
-        id: course._id,
-        code: course.code,
-        title: course.title,
-        description: course.description,
-        visible: course.visible,
-        coverImageUrl: getImageUrl(course.coverImageHash)
-    }));
+    const result = await CourseModel.find().lean();
 
     res.json({
         success: true,
-        courses: data
+        courses: result.map(course => ({
+            id: course._id,
+            code: course.code,
+            title: course.title,
+            description: course.description,
+            visible: course.visible,
+            coverImageUrl: getImageUrl(course.coverImageHash)
+        }))
     });
 });
 
@@ -80,12 +73,9 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseSchema, req);
     const { courseId, courseCode, includeLessons } = body;
 
-    let course = null;
-    if (courseId) {
-        course = await CourseModel.findById(courseId);
-    } else {
-        course = await CourseModel.findOne({ code: courseCode });
-    }
+    const course = courseId
+        ? await CourseModel.findById(courseId).lean()
+        : await CourseModel.findOne({ code: courseCode }).lean();
 
     if (!course) {
         res.status(404).json({ error: [{ message: "Course not found" }] });
@@ -102,21 +92,18 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     if (includeLessons === true) {
-        const lessons = await CourseLessonModel.find({ course: course.id }).sort({ index: "asc" }).lean();
+        const lessons = await CourseLessonModel.find({ course: course._id }).sort({ index: "asc" }).lean();
         courseData.lessons = lessons.map(lesson => formatLesson(lesson));
     }
 
-    res.json({
-        success: true,
-        course: courseData
-    });
+    res.json({ success: true, course: courseData });
 });
 
 const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(deleteCourseSchema, req);
     const { courseId } = body;
 
-    const course = await CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId).lean();
     if (!course) {
         res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
@@ -137,7 +124,7 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (code !== course.code) {
-        const existingCourse = await CourseModel.findOne({ code });
+        const existingCourse = await CourseModel.exists({ code });
         if (existingCourse) {
             res.status(400).json({ error: [{ message: "Course code already exists" }] });
             return;
@@ -148,7 +135,6 @@ const editCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     course.description = description;
     course.visible = visible;
     course.code = code;
-
     await course.save();
 
     res.json({
@@ -167,29 +153,29 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getLessonSchema, req);
     const { lessonId } = body;
 
-    const lesson = await CourseLessonModel.findById(lessonId).lean();
+    const [lesson, lessonNodes] = await Promise.all([
+        CourseLessonModel.findById(lessonId).lean(),
+        LessonNodeModel.find({ lessonId }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean()
+    ]);
+
     if (!lesson) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
 
-    const lessonNodes = await LessonNodeModel.find({ lessonId: lesson._id }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean();
-
-    const data = {
-        id: lesson._id,
-        title: lesson.title,
-        index: lesson.index,
-        nodeCount: lesson.nodes,
-        nodes: lessonNodes.map(x => ({
-            id: x._id,
-            index: x.index,
-            type: x._type
-        }))
-    };
-
     res.json({
         success: true,
-        lesson: data
+        lesson: {
+            id: lesson._id,
+            title: lesson.title,
+            index: lesson.index,
+            nodeCount: lesson.nodes,
+            nodes: lessonNodes.map(x => ({
+                id: x._id,
+                index: x.index,
+                type: x._type
+            }))
+        }
     });
 });
 
@@ -214,7 +200,7 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createLessonSchema, req);
     const { title, courseId } = body;
 
-    const course = await CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId).lean();
     if (!course) {
         res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
@@ -222,11 +208,7 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lastLessonIndex = await CourseLessonModel.countDocuments({ course: courseId });
 
-    const lesson = await CourseLessonModel.create({
-        title,
-        course: courseId,
-        index: lastLessonIndex + 1
-    });
+    const lesson = await CourseLessonModel.create({ title, course: courseId, index: lastLessonIndex + 1 });
 
     res.json({
         success: true,
@@ -249,8 +231,8 @@ const editLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     lesson.title = title;
-
     await lesson.save();
+
     res.json({
         success: true,
         data: {
@@ -265,7 +247,7 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(deleteLessonSchema, req);
     const { lessonId } = body;
 
-    const lesson = await CourseLessonModel.findById(lessonId);
+    const lesson = await CourseLessonModel.findById(lessonId).lean();
     if (!lesson) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
@@ -276,47 +258,46 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         { course: lesson.course, index: { $gt: lesson.index } },
         { $inc: { index: -1 } }
     );
+
     res.json({ success: true });
 });
 
-const uploadCourseCoverImage = asyncHandler(
-    async (req: IAuthRequest, res: Response) => {
-        const { body, file } = parseWithZod(uploadCourseCoverImageSchema, req);
-        const { courseId } = body;
-        const currentUserId = req.userId;
+const uploadCourseCoverImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body, file } = parseWithZod(uploadCourseCoverImageSchema, req);
+    const { courseId } = body;
+    const currentUserId = req.userId;
 
-        const course = await CourseModel.findById(courseId);
-        if (!course) {
-            res.status(404).json({ error: [{ message: "Course not found" }] });
-            return;
-        }
-
-        const fileDoc = await uploadImageToBlob({
-            authorId: currentUserId!,
-            buffer: file.buffer,
-            name: "cover",
-            path: `courses/${course._id}/cover`,
-            inputMime: file.mimetype,
-            maxWidth: 512,
-            maxHeight: 512,
-            fit: "cover",
-            outputFormat: "webp",
-            quality: 82,
-        });
-
-        course.coverImageFileId = fileDoc._id;
-        course.coverImageHash = fileDoc.contenthash;
-        await course.save();
-
-        res.json({
-            success: true,
-            data: {
-                coverImageFileId: fileDoc._id,
-                coverImageUrl: getImageUrl(fileDoc.contenthash)
-            },
-        });
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+        res.status(404).json({ error: [{ message: "Course not found" }] });
+        return;
     }
-);
+
+    const fileDoc = await uploadImageToBlob({
+        authorId: currentUserId!,
+        buffer: file.buffer,
+        name: "cover",
+        path: `courses/${course._id}/cover`,
+        inputMime: file.mimetype,
+        maxWidth: 512,
+        maxHeight: 512,
+        fit: "cover",
+        outputFormat: "webp",
+        quality: 82
+    });
+
+    course.coverImageFileId = fileDoc._id;
+    course.coverImageHash = fileDoc.contenthash;
+    await course.save();
+
+    res.json({
+        success: true,
+        data: {
+            coverImageFileId: fileDoc._id,
+            coverImageUrl: getImageUrl(fileDoc.contenthash)
+        }
+    });
+});
 
 const coverImageUploadMiddleware = uploadImage({
     maxFileSizeBytes: 10 * 1024 * 1024,
@@ -335,11 +316,7 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     lesson.$inc("nodes", 1);
 
-    const lessonNode = await LessonNodeModel.create({
-        lessonId,
-        index: lesson.nodes
-    });
-
+    const lessonNode = await LessonNodeModel.create({ lessonId, index: lesson.nodes });
     await lesson.save();
 
     res.json({
@@ -356,13 +333,17 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(deleteLessonNodeSchema, req); // Reusing schema as it matches
     const { nodeId } = body;
 
-    const lessonNode = await LessonNodeModel.findById(nodeId).populate("codeId", "name source cssSource jsSource language").lean();
+    const [lessonNode, answers] = await Promise.all([
+        LessonNodeModel.findById(nodeId)
+            .populate("codeId", "name source cssSource jsSource language")
+            .lean(),
+        QuizAnswerModel.find({ courseLessonNodeId: nodeId }).lean()
+    ]);
+
     if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
-
-    const answers = await QuizAnswerModel.find({ courseLessonNodeId: lessonNode._id });
 
     res.json({
         success: true,
@@ -387,20 +368,18 @@ const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
     const { body } = parseWithZod(deleteLessonNodeSchema, req);
     const { nodeId } = body;
 
-    const node = await LessonNodeModel.findById(nodeId);
+    const node = await LessonNodeModel.findById(nodeId).lean();
     if (!node) {
         res.status(404).json({ error: [{ message: "Lesson node not found" }] });
         return;
     }
 
     await deleteLessonNodeAndCleanup({ _id: nodeId });
-    await CourseLessonModel.updateOne({ _id: node.lessonId }, {
-        $inc: { nodes: -1 }
-    });
-    await LessonNodeModel.updateMany(
-        { lessonId: node.lessonId, index: { $gt: node.index } },
-        { $inc: { index: -1 } }
-    );
+    await Promise.all([
+        CourseLessonModel.updateOne({ _id: node.lessonId }, { $inc: { nodes: -1 } }),
+        LessonNodeModel.updateMany({ lessonId: node.lessonId, index: { $gt: node.index } }, { $inc: { index: -1 } })
+    ]);
+
     res.json({ success: true });
 });
 
@@ -419,7 +398,6 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
     node.codeId = codeId ? new mongoose.Types.ObjectId(codeId) : null;
     node.text = text;
     node.correctAnswer = correctAnswer ?? "";
-
     await node.save();
 
     const data: LessonNodeResponse = {
@@ -431,47 +409,35 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
     };
 
     if (answers) {
-        const currentAnswers = await QuizAnswerModel.find({ courseLessonNodeId: node.id }, { _id: 1 });
-        const currentAnswersIds = currentAnswers.map(answer => answer._id);
+        const currentAnswers = await QuizAnswerModel.find({ courseLessonNodeId: node.id }, { _id: 1 }).lean();
+        const currentAnswerIds = currentAnswers.map(a => a._id);
 
-        const answerIdsToDelete = currentAnswersIds.filter(id => !answers.some(newAnswer => newAnswer.id && id.equals(newAnswer.id)));
+        const idsToDelete = currentAnswerIds.filter(id => !answers.some(a => a.id && id.equals(a.id)));
+        await QuizAnswerModel.deleteMany({ _id: { $in: idsToDelete } });
 
-        await QuizAnswerModel.deleteMany({ _id: { $in: answerIdsToDelete } });
-
-        const newAnswers = [];
+        const newAnswers: { id: string; text: string; correct: boolean }[] = [];
 
         for (const newAnswer of answers) {
-            if (newAnswer.id && currentAnswersIds.some(id => id.equals(newAnswer.id))) {
+            if (newAnswer.id && currentAnswerIds.some(id => id.equals(newAnswer.id))) {
                 await QuizAnswerModel.updateOne(
                     { _id: newAnswer.id },
                     { text: newAnswer.text, correct: newAnswer.correct }
                 );
-                newAnswers.push({
-                    id: newAnswer.id,
-                    text: newAnswer.text,
-                    correct: newAnswer.correct
-                });
+                newAnswers.push({ id: newAnswer.id, text: newAnswer.text, correct: newAnswer.correct });
             } else {
                 const result = await QuizAnswerModel.create({
                     text: newAnswer.text,
                     correct: newAnswer.correct,
                     courseLessonNodeId: node.id
                 });
-                newAnswers.push({
-                    id: result._id.toString(),
-                    text: newAnswer.text,
-                    correct: newAnswer.correct
-                });
+                newAnswers.push({ id: result._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
             }
         }
 
         data.answers = newAnswers;
     }
 
-    res.json({
-        success: true,
-        data
-    });
+    res.json({ success: true, data });
 });
 
 const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -492,12 +458,9 @@ const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     otherLesson.index = lesson.index;
     lesson.index = newIndex;
-    await lesson.save();
-    await otherLesson.save();
-    res.json({
-        success: true,
-        data: { index: newIndex }
-    });
+    await Promise.all([lesson.save(), otherLesson.save()]);
+
+    res.json({ success: true, data: { index: newIndex } });
 });
 
 const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -518,12 +481,9 @@ const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Respon
 
     otherNode.index = node.index;
     node.index = newIndex;
-    await node.save();
-    await otherNode.save();
-    res.json({
-        success: true,
-        data: { index: newIndex }
-    });
+    await Promise.all([node.save(), otherNode.save()]);
+
+    res.json({ success: true, data: { index: newIndex } });
 });
 
 const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -532,23 +492,16 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const data = await exportCourseLessonToJson(new Types.ObjectId(lessonId));
 
-    res.json({
-        success: true,
-        data
-    });
+    res.json({ success: true, data });
 });
 
 const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body, file } = parseWithZod(uploadImageSchema, req);
     const { name, subPath } = body;
-
     const currentUserId = req.userId!;
 
     const basePath = "courses/lesson-images";
-
-    const finalPath = subPath
-        ? `${basePath}/${subPath}`
-        : basePath;
+    const finalPath = subPath ? `${basePath}/${subPath}` : basePath;
 
     const fileDoc = await uploadImageToBlob({
         authorId: currentUserId,
@@ -582,16 +535,14 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
     const { body } = parseWithZod(getImageListSchema, req);
     const { subPath } = body;
 
-    const basePath = `courses/lesson-images`;
-    const fullPath = subPath
-        ? `${basePath}/${subPath}`
-        : basePath;
+    const basePath = "courses/lesson-images";
+    const fullPath = subPath ? `${basePath}/${subPath}` : basePath;
 
     const items = await listDirectory(fullPath);
 
     res.json({
         success: true,
-        items: items.map((x) => ({
+        items: items.map(x => ({
             id: x._id,
             authorId: x.author._id,
             authorName: x.author.name,
@@ -602,7 +553,7 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
             size: x.size,
             updatedAt: x.updatedAt,
             url: getImageUrl(x.contenthash),
-            previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
+            previewUrl: x._type === FileTypeEnum.FILE && x.preview ? `/media/files/${x.contenthash}/preview` : null
         }))
     });
 });
@@ -617,14 +568,12 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    const expectedPath = `courses/lesson-images`;
-    if (!fileDoc.path.startsWith(expectedPath)) {
+    if (!fileDoc.path.startsWith("courses/lesson-images")) {
         res.status(400).json({ error: [{ message: "Not a lesson image" }] });
         return;
     }
 
     await deleteEntry(fileDoc.path, fileDoc.name);
-
     res.json({ success: true });
 });
 
@@ -633,11 +582,8 @@ const createLessonImageFolder = asyncHandler(async (req: IAuthRequest, res: Resp
     const { body } = parseWithZod(createImageFolderSchema, req);
     const { name, subPath } = body;
 
-    const basePath = `courses/lesson-images`;
-
-    const finalPath = subPath
-        ? `${basePath}/${subPath}`
-        : basePath;
+    const basePath = "courses/lesson-images";
+    const finalPath = subPath ? `${basePath}/${subPath}` : basePath;
 
     const folder = await createFolder(currentUserId, finalPath, name);
 
@@ -655,31 +601,20 @@ const moveLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { body } = parseWithZod(moveImageSchema, req);
     const { fileId, newName, newSubPath } = body;
 
-    const fileDoc = await File.findById(fileId).select("author path name");
+    const fileDoc = await File.findById(fileId).select("author path name").lean();
     if (!fileDoc) {
         res.status(404).json({ error: [{ message: "File not found" }] });
         return;
     }
 
-    const basePath = `courses/lesson-images`;
-
+    const basePath = "courses/lesson-images";
     if (!fileDoc.path.startsWith(basePath)) {
         res.status(400).json({ error: [{ message: "Not a lesson image" }] });
         return;
     }
 
-    const targetPath = newSubPath
-        ? `${basePath}/${newSubPath}`
-        : basePath;
-
-    const targetName = newName ?? fileDoc.name;
-
-    await moveEntry(
-        fileDoc.path,
-        fileDoc.name,
-        targetPath,
-        targetName
-    );
+    const targetPath = newSubPath ? `${basePath}/${newSubPath}` : basePath;
+    await moveEntry(fileDoc.path, fileDoc.name, targetPath, newName ?? fileDoc.name);
 
     res.json({ success: true });
 });
@@ -690,114 +625,111 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const session = await mongoose.startSession();
 
-    try {
-        const course = await session.withTransaction(async () => {
-            let course = await CourseModel.findOne({ code }).session(session);
+    const course = await session.withTransaction(async () => {
+        let course = await CourseModel.findOne({ code }).session(session);
 
-            if (course) {
-                course.title = title;
-                course.description = description;
-                if (visible !== undefined) course.visible = visible;
-                await course.save({ session });
+        if (course) {
+            course.title = title;
+            course.description = description;
+            if (visible !== undefined) course.visible = visible;
+            await course.save({ session });
+            await deleteCourseLessonAndCleanup({ course: course._id }, session);
+        } else {
+            const [newCourse] = await CourseModel.create([{ code, title, description, visible: visible ?? false }], { session });
+            course = newCourse;
+        }
 
-                await deleteCourseLessonAndCleanup({ course: course._id }, session);
-            } else {
-                const [newCourse] = await CourseModel.create([{
-                    code,
-                    title,
-                    description,
-                    visible: visible ?? false
-                }], { session });
-                course = newCourse;
-            }
+        for (let i = 0; i < lessons.length; i++) {
+            const lessonData = lessons[i];
 
-            for (let i = 0; i < lessons.length; i++) {
-                const lessonData = lessons[i];
+            const [lesson] = await CourseLessonModel.create([{
+                course: course._id,
+                title: lessonData.title,
+                index: i + 1,
+                nodes: lessonData.nodes.length
+            }], { session });
 
-                const [lesson] = await CourseLessonModel.create([{
-                    course: course._id,
-                    title: lessonData.title,
-                    index: i + 1,
-                    nodes: lessonData.nodes.length
-                }], { session });
+            const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
+                lessonId: lesson._id,
+                index: nodeIndex + 1,
+                _type: node.type,
+                mode: node.mode,
+                codeId: node.codeId,
+                text: node.text || "",
+                correctAnswer: node.correctAnswer
+            }));
 
-                const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
-                    lessonId: lesson._id,
-                    index: nodeIndex + 1,
-                    _type: node.type,
-                    mode: node.mode,
-                    codeId: node.codeId,
-                    text: node.text || "",
-                    correctAnswer: node.correctAnswer
-                }));
+            if (nodeDocs.length > 0) {
+                const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
+                const answerDocs: Omit<QuizAnswer, "_id">[] = [];
 
-                if (nodeDocs.length > 0) {
-                    const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
-                    const answerDocs: QuizAnswer[] = [];
+                for (let j = 0; j < createdNodes.length; j++) {
+                    const createdNode = createdNodes[j];
+                    const sourceNode = lessonData.nodes[j];
 
-                    for (let j = 0; j < createdNodes.length; j++) {
-                        const createdNode = createdNodes[j];
-                        const sourceNode = lessonData.nodes[j];
-
-                        if (sourceNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION || sourceNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION) {
-                            const answers = sourceNode.answers;
-                            if (answers) {
-                                answers.forEach(ans => {
-                                    answerDocs.push({
-                                        courseLessonNodeId: createdNode._id,
-                                        text: ans.text,
-                                        correct: ans.correct
-                                    });
-                                });
-                            }
-                        }
-                    }
-
-                    if (answerDocs.length > 0) {
-                        await QuizAnswerModel.insertMany(answerDocs, { session });
+                    if (
+                        sourceNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
+                        sourceNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
+                    ) {
+                        sourceNode.answers?.forEach(ans => {
+                            answerDocs.push({
+                                courseLessonNodeId: createdNode._id,
+                                text: ans.text,
+                                correct: ans.correct
+                            });
+                        });
                     }
                 }
+
+                if (answerDocs.length > 0) {
+                    await QuizAnswerModel.insertMany(answerDocs, { session });
+                }
             }
+        }
 
-            return course;
-        });
+        return course;
+    });
 
-        res.json({
-            success: true,
-            course: {
-                id: course._id,
-                code: course.code,
-                title: course.title,
-                visible: course.visible
-            }
-        });
+    await session.endSession();
 
-    } catch (error) {
-        throw error;
-    } finally {
-        await session.endSession();
-    }
+    res.json({
+        success: true,
+        course: {
+            id: course._id,
+            code: course.code,
+            title: course.title,
+            visible: course.visible
+        }
+    });
 });
 
 const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(exportCourseSchema, req);
     const { courseId } = body;
 
-    const course = await CourseModel.findById(courseId);
+    const course = await CourseModel.findById(courseId).lean();
     if (!course) {
         res.status(404).json({ error: [{ message: "Course not found" }] });
         return;
     }
 
-    const lessons = await CourseLessonModel.find({ course: courseId }).sort({ index: 1 });
-    const exportedLessons = [];
+    const lessons = await CourseLessonModel.find({ course: courseId }).sort({ index: 1 }).lean();
 
-    for (const lesson of lessons) {
-        const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: 1 });
-        const exportedNodes = [];
+    const exportedLessons = await Promise.all(lessons.map(async lesson => {
+        const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: 1 }).lean();
 
-        for (const node of nodes) {
-            const exportedNode: any = {
+        const exportedNodes = await Promise.all(nodes.map(async node => {
+            type ExportedNode = {
+                type: LessonNodeTypeEnum;
+                mode: number | undefined;
+                text: string | undefined;
+                index: number;
+                codeId: string | null;
+                correctAnswer: string | undefined;
+                answers?: { text: string; correct: boolean }[];
+            };
+
+            const exportedNode: ExportedNode = {
                 type: node._type,
                 mode: node.mode,
                 text: node.text,
@@ -806,34 +738,29 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 correctAnswer: node.correctAnswer
             };
 
-            if (node._type === 2 || node._type === 3) {
-                const answers = await QuizAnswerModel.find({ courseLessonNodeId: node._id });
-                exportedNode.answers = answers.map(ans => ({
-                    text: ans.text,
-                    correct: ans.correct
-                }));
+            if (
+                node._type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
+                node._type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
+            ) {
+                const answers = await QuizAnswerModel.find({ courseLessonNodeId: node._id }).lean();
+                exportedNode.answers = answers.map(ans => ({ text: ans.text, correct: ans.correct }));
             }
 
-            exportedNodes.push(exportedNode);
-        }
+            return exportedNode;
+        }));
 
-        exportedLessons.push({
-            title: lesson.title,
-            nodes: exportedNodes
-        });
-    }
-
-    const exportData = {
-        code: course.code,
-        title: course.title,
-        description: course.description,
-        visible: course.visible,
-        lessons: exportedLessons
-    };
+        return { title: lesson.title, nodes: exportedNodes };
+    }));
 
     res.json({
         success: true,
-        data: exportData
+        data: {
+            code: course.code,
+            title: course.title,
+            description: course.description,
+            visible: course.visible,
+            lessons: exportedLessons
+        }
     });
 });
 

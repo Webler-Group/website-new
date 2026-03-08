@@ -70,10 +70,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
-        const searchRegex = new RegExp(`(^|\\b)${safeQuery}`, "i");
-        dbQuery = dbQuery.where({
-            name: searchRegex
-        });
+        dbQuery = dbQuery.where({ name: new RegExp(`(^|\\b)${safeQuery}`, "i") });
     }
 
     if (language) {
@@ -81,70 +78,51 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     switch (filter) {
-        // Most Recent
-        case 1: {
-            dbQuery = dbQuery
-                .where({ isPublic: true })
-                .sort({ createdAt: "desc" });
+        case 1:
+            dbQuery = dbQuery.where({ isPublic: true }).sort({ createdAt: "desc" });
             break;
-        }
-        // Most popular
-        case 2: {
-            dbQuery = dbQuery
-                .where({ isPublic: true })
-                .sort({ votes: "desc" });
+        case 2:
+            dbQuery = dbQuery.where({ isPublic: true }).sort({ votes: "desc" });
             break;
-        }
-        // My Codes
-        case 3: {
-            if (userId === null) {
+        case 3:
+            if (!userId) {
                 res.status(400).json({ error: [{ message: "Invalid request" }] });
                 return;
             }
             if (userId !== currentUserId) {
                 dbQuery = dbQuery.where({ isPublic: true });
             }
-            dbQuery = dbQuery
-                .where({ user: userId })
-                .sort({ updatedAt: "desc" });
+            dbQuery = dbQuery.where({ user: userId }).sort({ updatedAt: "desc" });
             break;
-        }
-        // Hot Today
-        case 5: {
-            let dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-            dbQuery = dbQuery
-                .where({ createdAt: { $gt: dayAgo }, isPublic: true })
-                .sort({ votes: "desc" });
+        case 5:
+            const dayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+            dbQuery = dbQuery.where({ createdAt: { $gt: dayAgo }, isPublic: true }).sort({ votes: "desc" });
             break;
-        }
-        default: {
+        default:
             res.status(400).json({ error: [{ message: "Unknown filter" }] });
             return;
-        }
     }
 
-    const codeCount = await dbQuery.clone().countDocuments();
-
-    const result = await dbQuery
-        .skip((page - 1) * count)
-        .limit(count)
-        .select(CODE_MINIMAL_FIELDS)
-        .populate("user", USER_MINIMAL_FIELDS)
-        .lean<(CodeMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>();
+    const [codeCount, result] = await Promise.all([
+        dbQuery.clone().countDocuments(),
+        dbQuery
+            .clone()
+            .skip((page - 1) * count)
+            .limit(count)
+            .select(CODE_MINIMAL_FIELDS)
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .lean<(CodeMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>()
+    ]);
 
     const data = result.map(x => formatCodeMinimal(x, x.user));
 
-    let promises = [];
-
-    for (let i = 0; i < data.length; ++i) {
-        if (currentUserId) {
-            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                data[i].isUpvoted = !(upvote === null);
-            }));
-        }
+    if (currentUserId) {
+        await Promise.all(data.map((item, i) =>
+            UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).lean().then(upvote => {
+                data[i].isUpvoted = upvote !== null;
+            })
+        ));
     }
-
-    await Promise.all(promises);
 
     res.status(200).json({ count: codeCount, codes: data });
 });
@@ -158,29 +136,32 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
         .lean();
 
-    if (code) {
-        const isUpvoted = currentUserId ? await UpvoteModel.exists({ parentId: codeId, user: currentUserId }) : false;
-
-        res.json({
-            code: {
-                id: code._id,
-                name: code.name,
-                language: code.language,
-                createdAt: code.createdAt,
-                updatedAt: code.updatedAt,
-                user: formatUserMinimal(code.user),
-                comments: code.comments,
-                votes: code.votes,
-                isUpvoted,
-                source: code.source,
-                cssSource: code.cssSource,
-                jsSource: code.jsSource,
-                isPublic: code.isPublic
-            }
-        });
-    } else {
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
+        return;
     }
+
+    const isUpvoted = currentUserId
+        ? await UpvoteModel.exists({ parentId: codeId, user: currentUserId }).then(r => r !== null)
+        : false;
+
+    res.json({
+        code: {
+            id: code._id,
+            name: code.name,
+            language: code.language,
+            createdAt: code.createdAt,
+            updatedAt: code.updatedAt,
+            user: formatUserMinimal(code.user),
+            comments: code.comments,
+            votes: code.votes,
+            isUpvoted,
+            source: code.source,
+            cssSource: code.cssSource,
+            jsSource: code.jsSource,
+            isPublic: code.isPublic
+        }
+    });
 });
 
 const getTemplate = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -188,9 +169,7 @@ const getTemplate = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const template = templates.find(x => x.language === params.language);
     if (template) {
-        res.json({
-            template
-        });
+        res.json({ template });
     } else {
         res.status(404).json({ error: [{ message: "Template not found" }] });
     }
@@ -202,8 +181,7 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await CodeModel.findById(codeId);
-
-    if (code === null) {
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
@@ -241,8 +219,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await CodeModel.findById(codeId).lean();
-
-    if (code === null) {
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
@@ -263,7 +240,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await CodeModel.findById(codeId);
-    if (code === null) {
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
@@ -292,75 +269,51 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let parentPost: (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null = null;
+    type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
+
+    let parentPost: PopulatedPost | null = null;
     if (parentId) {
-        parentPost = await PostModel
-            .findById(parentId)
-            .populate("user", USER_MINIMAL_FIELDS)
-            .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>();
+        parentPost = await PostModel.findById(parentId)
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .lean<PopulatedPost>();
     }
 
     let dbQuery = PostModel.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
-
     let skipCount = index;
 
     if (findPostId) {
-        const reply = await PostModel.findById(findPostId);
-
-        if (reply === null) {
+        const reply = await PostModel.findById(findPostId).lean();
+        if (!reply) {
             res.status(404).json({ error: [{ message: "Post not found" }] });
             return;
         }
 
-        parentPost = reply.parentId ? await PostModel
-            .findById(reply.parentId)
-            .populate("user", USER_MINIMAL_FIELDS)
-            .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>()
+        parentPost = reply.parentId
+            ? await PostModel.findById(reply.parentId)
+                .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                .lean<PopulatedPost>()
             : null;
 
         dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
-
-        skipCount = Math.max(0, (await dbQuery
-            .clone()
-            .where({ createdAt: { $lt: reply.createdAt } })
-            .countDocuments()));
-
-        dbQuery = dbQuery
-            .sort({ createdAt: "asc" });
+        skipCount = Math.max(0, await dbQuery.clone().where({ createdAt: { $lt: reply.createdAt } }).countDocuments());
+        dbQuery = dbQuery.sort({ createdAt: "asc" });
     } else {
         dbQuery = dbQuery.where({ parentId });
-
         switch (filter) {
-            // Most popular
-            case 1: {
-                dbQuery = dbQuery
-                    .sort({ votes: "desc", createdAt: "desc" });
-                break;
-            }
-            // Oldest first
-            case 2: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "asc" });
-                break;
-            }
-            // Newest first
-            case 3: {
-                dbQuery = dbQuery
-                    .sort({ createdAt: "desc" });
-                break;
-            }
-            default: {
+            case 1: dbQuery = dbQuery.sort({ votes: "desc", createdAt: "desc" }); break;
+            case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
+            case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
+            default:
                 res.status(400).json({ error: [{ message: "Unknown filter" }] });
                 return;
-            }
         }
     }
 
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate("user", USER_MINIMAL_FIELDS)
-        .lean<(Post & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>();
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .lean<PopulatedPost[]>();
 
     const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
         id: x._id,
@@ -371,24 +324,16 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
         votes: x.votes,
         isUpvoted: false,
         answers: x.answers,
-        index: (findPostId && parentPost) ?
-            offset === 0 ? -1 : skipCount + offset - 1 :
-            skipCount + offset,
-        attachments: new Array()
+        index: findPostId && parentPost ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
+        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
     }));
 
-    let promises = [];
-
-    for (let i = 0; i < data.length; ++i) {
-        if (currentUserId) {
-            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
-                data[i].isUpvoted = !(upvote === null);
-            }));
-        }
-        promises.push(getAttachmentsByPostId({ post: data[i].id }).then(attachments => data[i].attachments = attachments));
-    }
-
-    await Promise.all(promises);
+    await Promise.all(data.map((item, i) => Promise.all([
+        currentUserId
+            ? UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).lean().then(upvote => { data[i].isUpvoted = upvote !== null; })
+            : Promise.resolve(),
+        getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
+    ])));
 
     res.status(200).json({ posts: data });
 });
@@ -399,15 +344,15 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const currentUserId = req.userId;
 
     const code = await CodeModel.findById(codeId);
-    if (code === null) {
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
 
     let parentPost = null;
-    if (parentId !== null) {
+    if (parentId) {
         parentPost = await PostModel.findById(parentId);
-        if (parentPost === null) {
+        if (!parentPost) {
             res.status(404).json({ error: [{ message: "Parent post not found" }] });
             return;
         }
@@ -421,7 +366,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         user: currentUserId
     });
 
-    if (parentPost != null && !parentPost.user.equals(currentUserId)) {
+    if (parentPost && !parentPost.user.equals(currentUserId)) {
         await sendNotifications({
             title: "New reply",
             message: `{action_user} replied to your comment on "${code.name}"`,
@@ -431,7 +376,8 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             postId: reply._id
         }, [parentPost.user]);
     }
-    if (!code.user.equals(currentUserId) && (parentPost == null || !code.user.equals(parentPost.user))) {
+
+    if (!code.user.equals(currentUserId) && (!parentPost || !code.user.equals(parentPost.user))) {
         await sendNotifications({
             title: "New comment",
             message: `{action_user} posted comment on your code "${code.name}"`,
@@ -472,8 +418,7 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const currentUserId = req.userId;
 
     const comment = await PostModel.findById(id);
-
-    if (comment === null) {
+    if (!comment) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
@@ -484,18 +429,13 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     comment.message = message;
-
     await comment.save();
 
     const attachments = await getAttachmentsByPostId({ post: comment._id });
 
     res.json({
         success: true,
-        data: {
-            id: comment._id,
-            message: comment.message,
-            attachments
-        }
+        data: { id: comment._id, message: comment.message, attachments }
     });
 });
 
@@ -504,9 +444,8 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { id } = body;
     const currentUserId = req.userId;
 
-    const comment = await PostModel.findById(id);
-
-    if (comment === null) {
+    const comment = await PostModel.findById(id).lean();
+    if (!comment) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
@@ -516,8 +455,8 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    const code = await CodeModel.findById(comment.codeId);
-    if (code === null) {
+    const code = await CodeModel.findById(comment.codeId).lean();
+    if (!code) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
@@ -539,16 +478,14 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         deviceId
     });
 
-    res.json({
-        jobId: job._id
-    });
+    res.json({ jobId: job._id });
 });
 
 const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJobModel.findById(jobId, { source: 0 });
+    const job = await EvaluationJobModel.findById(jobId, { source: 0 }).lean();
     if (!job) {
         res.status(404).json({ error: [{ message: "Job does not exist" }] });
         return;
@@ -559,7 +496,6 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (job.result) {
         stderr += job.result.compileErr ?? "";
-
         if (job.result.runResults.length > 0) {
             stdout = job.result.runResults[0].stdout ?? "";
             stderr += job.result.runResults[0].stderr ?? "";
@@ -593,6 +529,6 @@ const codesController = {
     createCodeComment,
     editCodeComment,
     deleteCodeComment
-}
+};
 
-export default codesController
+export default codesController;

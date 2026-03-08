@@ -12,7 +12,6 @@ import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/Challen
 import RolesEnum from "../data/RolesEnum";
 import UserModel from "../models/User";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
-import { DocumentType } from "@typegoose/typegoose";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -381,9 +380,8 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { body } = parseWithZod(getChallengeJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJobModel.findById(jobId)
-        .select("-source")
-        .populate<{ submission: DocumentType<ChallengeSubmission> }>("submission")
+    const job = await EvaluationJobModel.findById(jobId, { source: 0 })
+        .populate<{ submission: ChallengeSubmission }>("submission")
         .lean();
 
     if (!job) {

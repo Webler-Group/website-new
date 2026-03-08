@@ -1,8 +1,8 @@
 import webpush from "web-push";
 import { config } from "../confg";
 import mongoose from "mongoose";
-import { NotificationKeystoreModel } from "../models/NotificationKeystore";
-import { NotificationSubscriptionModel } from "../models/NotificationSubscription";
+import NotificationKeystoreModel from "../models/NotificationKeystore";
+import NotificationSubscriptionModel from "../models/NotificationSubscription";
 
 export async function initKeystore() {
     const active = await NotificationKeystoreModel.findOne({ version: "active" });
