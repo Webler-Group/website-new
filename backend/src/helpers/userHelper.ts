@@ -10,7 +10,8 @@ export const formatUserMinimal = (user: UserMinimal & { _id: Types.ObjectId }) =
         avatarUrl: getImageUrl(user.avatarHash),
         countryCode: user.countryCode,
         level: user.level,
-        roles: user.roles
+        roles: user.roles,
+        isFollowing: false
     };
 }
 

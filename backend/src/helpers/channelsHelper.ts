@@ -49,7 +49,6 @@ export const inviteToChannel = async (params: InviteToChannelParams, session?: m
     }], { session });
 
     const io = getIO();
-    if (!io) return;
 
     const author = await User.findById(doc.author, USER_MINIMAL_FIELDS).lean<UserMinimal & { _id: Types.ObjectId }>().session(session ?? null);
     if (!author) {
@@ -68,7 +67,7 @@ export const inviteToChannel = async (params: InviteToChannelParams, session?: m
         url: "/Channels"
     }, [doc.invitedUser], true, session);
 
-    io.to(uidRoom(doc.invitedUser.toString())).emit("channels:new_invite", {
+    io?.to(uidRoom(doc.invitedUser.toString())).emit("channels:new_invite", {
         id: doc._id,
         author: formatUserMinimal(author),
         channelId: channel._id,
@@ -86,32 +85,29 @@ export const processChannelInvite = async (invite: ChannelInvite & { _id: Types.
 }
 
 export const updateChannelMessage = async (message: DocumentType<ChannelMessage>, session?: mongoose.ClientSession) => {
+    await message.save({ session });
 
     const participants = await ChannelParticipantModel.find({ channel: message.channel }, { user: 1 }).lean<{ user: Types.ObjectId }[]>().session(session ?? null);
     const participantsIds = participants.map(x => x.user);
 
     const io = getIO();
-    if (io) {
-        if (message.isModified("content")) {
-            await updatePostAttachments(message.content, { channelMessage: message._id });
-            const attachments = await getAttachmentsByPostId({ channelMessage: message._id });
-            io.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_edited", {
-                messageId: message._id.toString(),
-                channelId: message.channel.toString(),
-                content: message.content,
-                attachments,
-                updatedAt: new Date()
-            });
-        }
-        if (message.isModified("deleted") && message.deleted === true) {
-            io.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_deleted", {
-                messageId: message._id.toString(),
-                channelId: message.channel.toString()
-            });
-        }
+    if (message.isModified("content")) {
+        await updatePostAttachments(message.content, { channelMessage: message._id });
+        const attachments = await getAttachmentsByPostId({ channelMessage: message._id });
+        io?.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_edited", {
+            messageId: message._id.toString(),
+            channelId: message.channel.toString(),
+            content: message.content,
+            attachments,
+            updatedAt: new Date()
+        });
     }
-
-    await message.save({ session });
+    if (message.isModified("deleted") && message.deleted === true) {
+        io?.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_deleted", {
+            messageId: message._id.toString(),
+            channelId: message.channel.toString()
+        });
+    }
 }
 
 interface SendChannelMessageParams {
@@ -179,50 +175,50 @@ export const sendChannelMessage = async (params: SendChannelMessageParams, sessi
     );
 
     const io = getIO();
-    if (io) {
-        await updatePostAttachments(doc.content, { channelMessage: doc._id });
-        const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
-        let channelTitle = "";
-        const userIds = participants.map(user => user.user);
-        const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
 
-        if (doc._type == ChannelMessageTypeEnum.USER_LEFT) {
-            userIds.push(user._id);
-        } else if (doc._type == ChannelMessageTypeEnum.TITLE_CHANGED) {
-            channelTitle = channel.title!;
-        }
+    await updatePostAttachments(doc.content, { channelMessage: doc._id });
+    const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
 
-        const reply = doc.repliedTo
-            ? await ChannelMessageModel.findById(doc.repliedTo)
-                .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-                .lean()
-                .session(session ?? null)
-            : null;
+    let channelTitle = "";
+    const userIds = participants.map(user => user.user);
+    const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
 
-        io.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
-            id: doc._id,
-            type: doc._type,
-            channelId: doc.channel.toString(),
-            channelTitle,
-            content: doc.content,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            viewed: false,
-            deleted: doc.deleted,
-            user: formatUserMinimal(user),
-            repliedTo: reply ? {
-                id: reply._id,
-                content: reply.content,
-                createdAt: reply.createdAt,
-                updatedAt: reply.updatedAt,
-                user: formatUserMinimal(reply.user),
-                deleted: reply.deleted
-            } : null,
-            attachments
-        });
-
-        io.to(userIdsNotMuted.map(x => uidRoom(x.toString()))).emit("channels:new_message_info", {});
+    if (doc._type == ChannelMessageTypeEnum.USER_LEFT) {
+        userIds.push(user._id);
+    } else if (doc._type == ChannelMessageTypeEnum.TITLE_CHANGED) {
+        channelTitle = channel.title!;
     }
+
+    const reply = doc.repliedTo
+        ? await ChannelMessageModel.findById(doc.repliedTo)
+            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .lean()
+            .session(session ?? null)
+        : null;
+
+    io?.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
+        id: doc._id,
+        type: doc._type,
+        channelId: doc.channel.toString(),
+        channelTitle,
+        content: doc.content,
+        createdAt: doc.createdAt,
+        updatedAt: doc.updatedAt,
+        viewed: false,
+        deleted: doc.deleted,
+        user: formatUserMinimal(user),
+        repliedTo: reply ? {
+            id: reply._id,
+            content: reply.content,
+            createdAt: reply.createdAt,
+            updatedAt: reply.updatedAt,
+            user: formatUserMinimal(reply.user),
+            deleted: reply.deleted
+        } : null,
+        attachments
+    });
+
+    io?.to(userIdsNotMuted.map(x => uidRoom(x.toString()))).emit("channels:new_message_info", {});
 
     return doc;
 }

@@ -1,15 +1,15 @@
 import jwt, { JwtPayload, VerifyErrors } from "jsonwebtoken";
-import User from "../models/User";
+import UserModel from "../models/User";
 import { RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import { sendActivationEmail, sendPasswordResetEmail } from "../services/email";
 import { getCaptcha, verifyCaptcha } from "../utils/captcha";
-import CaptchaRecord from "../models/CaptchaRecord";
+import CaptchaRecordModel from "../models/CaptchaRecord";
 import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
-import UserFollowing from "../models/UserFollowing";
+import UserFollowingModel from "../models/UserFollowing";
 import { getImageUrl } from "./mediaController";
 
 const login = asyncHandler(async (req, res) => {
@@ -19,7 +19,7 @@ const login = asyncHandler(async (req, res) => {
     } = parseWithZod(loginSchema, req);
     const { email, password } = body;
 
-    const user = await User.findOne({ email });
+    const user = await UserModel.findOne({ email });
 
     if (!user || !(await user.matchPassword(password))) {
         res.status(401).json({ error: [{ message: "Invalid email or password" }] });
@@ -66,17 +66,17 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const { body, headers } = parseWithZod(registerSchema, req);
     const { email, name, password, solution, captchaId } = body;
 
-    const record = await CaptchaRecord.findById(captchaId).lean();
+    const record = await CaptchaRecordModel.findById(captchaId).lean();
 
     if (record === null || !verifyCaptcha(solution, record.encrypted)) {
         res.status(403).json({ error: [{ message: "Captcha verification failed" }] });
         return;
     }
 
-    await CaptchaRecord.deleteOne({ _id: captchaId });
+    await CaptchaRecordModel.deleteOne({ _id: captchaId });
 
-    const emailExists = await User.exists({ email });
-    const usernameExists = await User.exists({ name });
+    const emailExists = await UserModel.exists({ email });
+    const usernameExists = await UserModel.exists({ name });
     if (emailExists || usernameExists) {
         let errors: { message: string; }[] = [];
         if (emailExists) {
@@ -89,7 +89,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         return;
     }
 
-    const user = await User.create({
+    const user = await UserModel.create({
         email,
         name,
         password,
@@ -126,9 +126,9 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         }
     }
 
-    const weblercodesUser = await User.exists({ email: config.adminEmail });
+    const weblercodesUser = await UserModel.exists({ email: config.adminEmail });
     if (weblercodesUser) {
-        await UserFollowing.create({ user: user._id, following: weblercodesUser._id });
+        await UserFollowingModel.create({ user: user._id, following: weblercodesUser._id });
     }
 
     res.json({
@@ -171,7 +171,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
             }
 
             const payload = decoded as RefreshTokenPayload;
-            const user = await User.findById(payload.userId).select('roles active tokenVersion');
+            const user = await UserModel.findById(payload.userId).select('roles active tokenVersion');
 
             if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) {  // NEW: Check version
                 res.status(401).json({ error: [{ message: "Unauthorized" }] });
@@ -198,7 +198,7 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
     const { body } = parseWithZod(sendPasswordResetCodeSchema, req);
     const { email } = body;
 
-    const user = await User.findOne({ email }).lean();
+    const user = await UserModel.findOne({ email }).lean();
 
     if (user === null) {
         res.status(404).json({ error: [{ message: "Email is not registered" }] });
@@ -242,7 +242,7 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
                     return
                 }
 
-                const user = await User.findById(resetId);
+                const user = await UserModel.findById(resetId);
 
                 if (user === null) {
                     res.status(404).json({ error: [{ message: "User not found" }] })
@@ -273,10 +273,10 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
 const generateCaptcha = asyncHandler(async (req: Request, res: Response) => {
     const { base64ImageDataURI, encrypted } = await getCaptcha();
 
-    const record = await CaptchaRecord.create({ encrypted });
+    const record = await CaptchaRecordModel.create({ encrypted });
 
     const date = new Date(Date.now() - 15 * 60 * 1000);
-    await CaptchaRecord.deleteMany({ createdAt: { $lt: date } });
+    await CaptchaRecordModel.deleteMany({ createdAt: { $lt: date } });
 
     res.json({
         captchaId: record._id,
@@ -301,7 +301,7 @@ const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
                     return;
                 }
 
-                const user = await User.findById(userId);
+                const user = await UserModel.findById(userId);
 
                 if (user === null) {
                     res.status(404).json({ error: [{ message: "User not found" }] })

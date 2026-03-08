@@ -10,11 +10,9 @@ import User, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import PostModel, { Post } from "../models/Post";
-import PostAttachment from "../models/PostAttachment";
-import Notification from "../models/Notification";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
-import Upvote from "../models/Upvote";
+import UpvoteModel from "../models/Upvote";
 import mongoose, { Types } from "mongoose";
 import {
     getCourseListSchema,
@@ -33,7 +31,6 @@ import { parseWithZod } from "../utils/zodUtils";
 import { getImageUrl } from "./mediaController";
 import { DocumentType } from "@typegoose/typegoose";
 import { CourseResponse, formatLesson, formatLessonNodeMinimal, getLastUnlockedLessonIndex, getLessonNodeInfo, LessonResponse } from "../helpers/courseHelper";
-import { CODE_MINIMAL_FIELDS } from "../models/Code";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
@@ -439,7 +436,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
     }));
 
     const promises = data.map((item, i) => [
-        Upvote.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
+        UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
             data[i].isUpvoted = !!upvote;
         }),
         getAttachmentsByPostId({ post: item.id }).then(attachments => {

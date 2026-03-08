@@ -5,7 +5,7 @@ import { config } from "../confg";
 
 // Map<userId, Set<socketId>>
 const onlineUsers = new Map<string, Set<string>>();
-let io: Server;
+let io: Server | null = null;
 
 const init = (
     server: http.Server,

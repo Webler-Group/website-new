@@ -2,13 +2,12 @@ import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import ChannelModel, { Channel } from "../models/Channel";
-import ChannelInvite from "../models/ChannelInvite";
-import ChannelParticipant from "../models/ChannelParticipant";
-import UserModel, { User, USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import ChannelInviteModel from "../models/ChannelInvite";
+import ChannelParticipantModel from "../models/ChannelParticipant";
+import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import ChannelMessageModel, { ChannelMessage } from "../models/ChannelMessage";
 import { Socket } from "socket.io";
 import { getIO, uidRoom } from "../config/socketServer";
-import PostAttachment from "../models/PostAttachment";
 import mongoose, { Types } from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
@@ -38,7 +37,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
-import { joinChannel, processChannelInvite, sendChannelMessage } from "../helpers/channelsHelper";
+import { deleteChannelAndCleanup, joinChannel, processChannelInvite, sendChannelMessage, updateChannelMessage } from "../helpers/channelsHelper";
 import { getAttachmentsByPostId } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 
@@ -48,7 +47,7 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const channel = await ChannelModel.create({ _type: ChannelTypeEnum.GROUP, createdBy: currentUserId, title });
-    await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER });
+    await ChannelParticipantModel.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.OWNER });
 
     res.json({
         success: true,
@@ -80,9 +79,9 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 
     if (!channel) {
         channel = await ChannelModel.create({ _type: ChannelTypeEnum.DM, createdBy: currentUserId, DMUser: userId });
-        await ChannelParticipant.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
+        await ChannelParticipantModel.create({ channel: channel._id, user: currentUserId, role: ChannelRolesEnum.MEMBER });
     } else {
-        const myInvite = await ChannelInvite.findOne({ channel: channel._id, invitedUser: currentUserId });
+        const myInvite = await ChannelInviteModel.findOne({ channel: channel._id, invitedUser: currentUserId });
         if (myInvite) {
             await processChannelInvite(myInvite, true);
         } else {
@@ -103,7 +102,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { channelId, userId } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
@@ -115,18 +114,18 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    if (await ChannelParticipant.findOne({ channel: channelId, user: invitedUser._id }, "_id")) {
+    if (await ChannelParticipantModel.findOne({ channel: channelId, user: invitedUser._id }, "_id")) {
         res.status(400).json({ error: [{ message: "Invited user is already a participant" }] });
         return;
     }
 
-    const existingInvite = await ChannelInvite.findOne({ invitedUser: invitedUser._id, channel: channelId });
+    const existingInvite = await ChannelInviteModel.findOne({ invitedUser: invitedUser._id, channel: channelId });
     if (existingInvite) {
         res.status(400).json({ error: [{ message: "Invite already exists" }] });
         return;
     }
 
-    const invite = await ChannelInvite.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
+    const invite = await ChannelInviteModel.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
 
     res.json({
         success: true,
@@ -166,7 +165,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, includeParticipants, includeInvites } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
         return;
@@ -194,7 +193,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     if (includeInvites) {
-        const invites = await ChannelInvite.find({ channel: channelId })
+        const invites = await ChannelInviteModel.find({ channel: channelId })
             .populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS)
             .populate<{ invitedUser: UserMinimal & { _id: Types.ObjectId } }>("invitedUser", USER_MINIMAL_FIELDS)
             .lean();
@@ -206,7 +205,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (includeParticipants) {
-        const participants = await ChannelParticipant.find({ channel: channelId })
+        const participants = await ChannelParticipantModel.find({ channel: channelId })
             .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
             .lean();
         data.participants = participants.map((x) => ({
@@ -226,7 +225,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { fromDate, count } = body;
     const currentUserId = req.userId;
 
-    const participantChannels = await ChannelParticipant.find({ user: currentUserId })
+    const participantChannels = await ChannelParticipantModel.find({ user: currentUserId })
         .select('channel lastActiveAt muted unreadCount');
 
     const channelIds = participantChannels.map(p => p.channel);
@@ -291,7 +290,7 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { fromDate, count } = body;
     const currentUserId = req.userId;
 
-    let query = ChannelInvite.find({ invitedUser: currentUserId });
+    let query = ChannelInviteModel.find({ invitedUser: currentUserId });
     if (fromDate) {
         query = query.where({ createdAt: { $lt: new Date(fromDate) } });
     }
@@ -303,7 +302,7 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
         .populate<{ channel: Channel & { _id: Types.ObjectId } }>("channel")
         .lean();
 
-    const totalCount = await ChannelInvite.countDocuments({ invitedUser: currentUserId });
+    const totalCount = await ChannelInviteModel.countDocuments({ invitedUser: currentUserId });
 
     res.json({
         success: true,
@@ -326,7 +325,7 @@ const acceptInvite = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { inviteId, accepted } = body;
     const currentUserId = req.userId;
 
-    const invite = await ChannelInvite.findById(inviteId).lean();
+    const invite = await ChannelInviteModel.findById(inviteId).lean();
     if (!invite) {
         res.status(404).json({ error: [{ message: "Invite not found" }] });
         return;
@@ -347,13 +346,13 @@ const groupRemoveUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { channelId, userId } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    const targetParticipant = await ChannelParticipant.findOne({ channel: channelId, user: userId });
+    const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId });
     if (!targetParticipant || targetParticipant.role === ChannelRolesEnum.OWNER || participant.role === targetParticipant.role) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
@@ -376,13 +375,13 @@ const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
         return;
     }
 
-    const result = await ChannelParticipant.deleteOne({ user: currentUserId, channel: channelId });
+    const result = await ChannelParticipantModel.deleteOne({ user: currentUserId, channel: channelId });
     if (result.deletedCount === 1) {
         await sendChannelMessage({
             type: ChannelMessageTypeEnum.USER_LEFT,
@@ -399,7 +398,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, count, fromDate } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
         return;
@@ -468,13 +467,13 @@ const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { inviteId } = body;
     const currentUserId = req.userId;
 
-    const invite = await ChannelInvite.findById(inviteId);
+    const invite = await ChannelInviteModel.findById(inviteId);
     if (!invite) {
         res.status(404).json({ error: [{ message: "Invite not found" }] });
         return;
     }
 
-    const participant = await ChannelParticipant.findOne({ channel: invite.channel, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: invite.channel, user: currentUserId });
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
@@ -483,11 +482,9 @@ const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
     await invite.deleteOne();
 
     const io = getIO();
-    if (io) {
-        io.to(uidRoom(invite.invitedUser.toString())).emit("channels:invite_canceled", {
-            inviteId
-        });
-    }
+    io?.to(uidRoom(invite.invitedUser.toString())).emit("channels:invite_canceled", {
+        inviteId
+    });
 
     res.json({ success: true });
 });
@@ -497,7 +494,7 @@ const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, title } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant || participant.role !== ChannelRolesEnum.OWNER) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
@@ -523,13 +520,13 @@ const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { userId, channelId, role } = body;
     const currentUserId = req.userId;
 
-    const currentParticipant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const currentParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!currentParticipant || currentParticipant.role !== ChannelRolesEnum.OWNER) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    const targetParticipant = await ChannelParticipant.findOne({ channel: channelId, user: userId });
+    const targetParticipant = await ChannelParticipantModel.findOne({ channel: channelId, user: userId });
     if (!targetParticipant) {
         res.status(404).json({ error: [{ message: "Target user is not a participant" }] });
         return;
@@ -541,7 +538,7 @@ const groupChangeRole = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     if (role === ChannelRolesEnum.OWNER) {
-        await ChannelParticipant.updateOne(
+        await ChannelParticipantModel.updateOne(
             { channel: channelId, user: currentUserId },
             { role: ChannelRolesEnum.ADMIN }
         );
@@ -564,7 +561,7 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
         return;
@@ -575,16 +572,14 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const participants = await ChannelParticipant.find({ channel: channelId });
-
-    await channel.deleteOne();
+    const participants = await ChannelParticipantModel.find({ channel: channelId });
 
     const io = getIO();
-    if (io) {
-        io.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", {
-            channelId
-        });
-    }
+    io?.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", {
+        channelId
+    });
+
+    await deleteChannelAndCleanup(channel._id);
 
     res.json({ success: true });
 });
@@ -598,7 +593,7 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
         return;
     }
 
-    const results = await ChannelParticipant.aggregate([
+    const results = await ChannelParticipantModel.aggregate([
         {
             $match: {
                 user: new mongoose.Types.ObjectId(currentUserId),
@@ -614,7 +609,7 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
     ]);
 
     const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
-    const invitesCount = await ChannelInvite.countDocuments({ invitedUser: currentUserId });
+    const invitesCount = await ChannelInviteModel.countDocuments({ invitedUser: currentUserId });
     const totalCount = unseenMessagesCount + invitesCount;
 
     res.json({ success: true, count: totalCount });
@@ -625,7 +620,7 @@ const muteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { channelId, muted } = body;
     const currentUserId = req.userId;
 
-    const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+    const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
     if (!participant) {
         res.status(403).json({ error: [{ message: "Not a member of this channel" }] });
         return;
@@ -647,7 +642,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: any) => {
         const { channelId } = markMessagesSeenWSSchema.parse(payload);
         const currentUserId = socket.data.userId;
 
-        const participant = await ChannelParticipant.findOne({ user: currentUserId, channel: channelId });
+        const participant = await ChannelParticipantModel.findOne({ user: currentUserId, channel: channelId });
         if (!participant) {
             socket.emit("channels:error", { error: [{ message: "Not a member of this channel" }] });
             return;
@@ -676,7 +671,7 @@ const createMessageWS = async (socket: Socket, payload: any) => {
         const { channelId, content, repliedTo } = createMessageWSSchema.parse(payload);
         const currentUserId = socket.data.userId;
 
-        const participant = await ChannelParticipant.findOne({ channel: channelId, user: currentUserId });
+        const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId });
         if (!participant) {
             socket.emit("channels:error", { error: [{ message: "Not a member of this channel" }] });
             return;
@@ -695,9 +690,9 @@ const createMessageWS = async (socket: Socket, payload: any) => {
         if (channel && channel._type === ChannelTypeEnum.DM) {
             const messages = await ChannelMessageModel.find({ channel: channel._id }).limit(2).lean();
             if (messages.length === 1) {
-                const exists = await ChannelParticipant.exists({ channel: channel._id, user: channel.DMUser });
+                const exists = await ChannelParticipantModel.exists({ channel: channel._id, user: channel.DMUser });
                 if (!exists) {
-                    await ChannelInvite.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser ?? undefined });
+                    await ChannelInviteModel.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser ?? undefined });
                 }
             }
         }
@@ -722,7 +717,8 @@ const deleteMessageWS = async (socket: Socket, payload: any) => {
         }
 
         message.deleted = true;
-        await message.save();
+        await updateChannelMessage(message);
+
     } catch (err) {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
@@ -744,7 +740,8 @@ const editMessageWS = async (socket: Socket, payload: any) => {
         }
 
         message.content = content;
-        await message.save();
+        await updateChannelMessage(message);
+
     } catch (err) {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });

@@ -217,5 +217,9 @@ export const uploadImageToBlob = async ({
 };
 
 export const listDirectory = async (virtualPath: string, session?: mongoose.ClientSession) => {
-    return FileModel.find({ path: virtualPath }).session(session ?? null).sort({ type: "desc", updatedAt: "desc" }).populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS).lean();
+    return FileModel.find({ path: virtualPath })
+        .session(session ?? null)
+        .sort({ type: "desc", updatedAt: "desc" })
+        .populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS)
+        .lean();
 };

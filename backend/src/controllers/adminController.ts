@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { IAuthRequest } from "../middleware/verifyJWT";
-import User from "../models/User";
+import UserModel from "../models/User";
 import asyncHandler from "express-async-handler";
 import mongoose from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
@@ -47,13 +47,13 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         filter.active = active;
     }
 
-    const users = await User.find(filter)
+    const users = await UserModel.find(filter)
         .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban")
         .sort({ createdAt: -1 })
         .skip((page - 1) * count)
         .limit(count);
 
-    const total = await User.countDocuments(filter);
+    const total = await UserModel.countDocuments(filter);
 
     res.json({
         success: true,
@@ -84,7 +84,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUserSchema, req);
     const { userId } = body;
 
-    const user = await User.findById(userId)
+    const user = await UserModel.findById(userId)
         .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban bio");
 
     if (!user) {
@@ -122,7 +122,7 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, active, note } = body;
     const currentUserId = req.userId;
 
-    const user = await User.findById(userId);
+    const user = await UserModel.findById(userId);
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -165,7 +165,7 @@ const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(updateRolesSchema, req);
     const { userId, roles } = body;
 
-    const user = await User.findById(userId);
+    const user = await UserModel.findById(userId);
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;

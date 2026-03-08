@@ -1,5 +1,5 @@
-import mongoose, { isObjectIdOrHexString, Types } from "mongoose";
-import Upvote from "../models/Upvote";
+import mongoose, { Types } from "mongoose";
+import UpvoteModel from "../models/Upvote";
 import CodeModel, { CodeMinimal } from "../models/Code";
 import { deletePostsAndCleanup } from "./postsHelper";
 import { UserMinimal } from "../models/User";
@@ -22,6 +22,6 @@ export const formatCodeMinimal = (code: CodeMinimal & { _id: Types.ObjectId }, u
 
 export const deleteCodeAndCleanup = async (codeId: Types.ObjectId, session?: mongoose.ClientSession) => {
     await deletePostsAndCleanup({ codeId, parentId: null }, session);
-    await Upvote.deleteMany({ parentId: codeId }, { session });
+    await UpvoteModel.deleteMany({ parentId: codeId }, { session });
     await CodeModel.deleteOne({ _id: codeId }, { session });
 }

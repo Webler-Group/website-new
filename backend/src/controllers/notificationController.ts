@@ -1,12 +1,12 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import mongoose from "mongoose";
-import NotificationKeystore from "../models/NotificationKeystore";
-import NotificationSubscription from "../models/NotificationSubscription";
+import NotificationKeystoreModel from "../models/NotificationKeystore";
+import NotificationSubscriptionModel from "../models/NotificationSubscription";
 
 const getPublicKey = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const keys = await NotificationKeystore.findOne({ version: "active" });
+    const keys = await NotificationKeystoreModel.findOne({ version: "active" });
     if (!keys) {
         res.status(404).json({ message: "Keys not found" });
         return;
@@ -24,7 +24,7 @@ const subscribe = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    let savedSub = await NotificationSubscription.findOne({ endpoint: subscription.endpoint });
+    let savedSub = await NotificationSubscriptionModel.findOne({ endpoint: subscription.endpoint });
     if (savedSub) {
         savedSub.p256dh = subscription.keys.p256dh;
         savedSub.auth = subscription.keys.auth;
@@ -32,7 +32,7 @@ const subscribe = asyncHandler(async (req: IAuthRequest, res: Response) => {
         savedSub.vapidVersion = "active";
         await savedSub.save();
     } else {
-        savedSub = await NotificationSubscription.create({
+        savedSub = await NotificationSubscriptionModel.create({
             user: currentUserId,
             endpoint: subscription.endpoint,
             p256dh: subscription.keys.p256dh,
@@ -59,7 +59,7 @@ const unsubscribe = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await NotificationSubscription.deleteOne({ endpoint });
+    await NotificationSubscriptionModel.deleteOne({ endpoint });
     res.json({ success: true, message: "Unsubscribed successfully" });
 });
 

@@ -1,29 +1,32 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
-import User from "../models/User";
+import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import UserFollowing from "../models/UserFollowing";
-import Notification from "../models/Notification";
-import Code from "../models/Code";
+import UserFollowingModel from "../models/UserFollowing";
+import NotificationModel from "../models/Notification";
+import CodeModel, { CODE_MINIMAL_FIELDS } from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import { config } from "../confg";
-import Post from "../models/Post";
+import PostModel from "../models/Post";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
-import ChallengeSubmission from "../models/ChallengeSubmission";
+import ChallengeSubmissionModel from "../models/ChallengeSubmission";
 import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
-import File from "../models/File";
+import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
+import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
+import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
+import { Tag } from "../models/Tag";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -33,20 +36,20 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const isModerator = roles && roles.some(role => [RolesEnum.MODERATOR, RolesEnum.ADMIN].includes(role));
 
-    const user = await User.findById(userId).lean();
+    const user = await UserModel.findById(userId).lean();
     if (!user || (!user.active && !isModerator)) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
         return
     }
 
     const isFollowing = currentUserId ?
-        await UserFollowing.findOne({ user: currentUserId, following: userId }) !== null :
+        await UserFollowingModel.findOne({ user: currentUserId, following: userId }) !== null :
         false;
 
-    const followers = await UserFollowing.countDocuments({ following: userId });
-    const following = await UserFollowing.countDocuments({ user: userId });
+    const followers = await UserFollowingModel.countDocuments({ following: userId });
+    const following = await UserFollowingModel.countDocuments({ user: userId });
 
-    let codesQuery = Code
+    let codesQuery = CodeModel
         .find({
             user: userId,
             $or: [
@@ -65,20 +68,16 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const codes = await codesQuery
         .limit(5)
-        .select("-source -cssSource -jsSource");
+        .select(CODE_MINIMAL_FIELDS)
+        .lean();
 
-    const questions = await Post.find({ user: userId, _type: PostTypeEnum.QUESTION })
+    const questions = await PostModel.find({ user: userId, _type: PostTypeEnum.QUESTION }, { message: 0 })
         .sort({ createdAt: "desc" })
         .limit(5)
-        .populate<{ tags: any[] }>("tags", "name")
-        .select("-message");
+        .populate<{ tags: Tag[] }>("tags")
+        .lean()
 
-    const answers = await Post.find({ user: userId, _type: PostTypeEnum.ANSWER })
-        .sort({ createdAt: "desc" })
-        .limit(5)
-        .select("-message");
-
-    const solvedAgg = await ChallengeSubmission.aggregate([
+    const solvedAgg = await ChallengeSubmissionModel.aggregate([
         {
             $match: {
                 user: user._id,
@@ -153,13 +152,6 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 votes: x.votes,
                 tags: x.tags.map(x => x.name)
             })),
-            answers: answers.map(x => ({
-                id: x._id,
-                title: x.title,
-                date: x.createdAt,
-                answers: x.answers,
-                votes: x.votes
-            })),
             solvedChallenges
         }
     });
@@ -176,14 +168,14 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const user = await User.findById(userId);
+    const user = await UserModel.findById(userId);
 
     if (!user) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
         return;
     }
 
-    if (user.name != name && await User.exists({ name })) {
+    if (user.name != name && await UserModel.exists({ name })) {
         res.status(404).json({ error: [{ message: "Username is already taken" }] });
         return;
     }
@@ -210,7 +202,7 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(changeEmailSchema, req);
     const { email, password } = body;
 
-    const user = await User.findById(currentUserId);
+    const user = await UserModel.findById(currentUserId);
 
     if (!user) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
@@ -228,7 +220,7 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const code = await EmailChangeRecord.generate(new mongoose.Types.ObjectId(currentUserId), email);
+    const code = await generateEmailChangeRecord(new mongoose.Types.ObjectId(currentUserId), email);
     if (!code) {
         res.status(401).json({ error: [{ message: "Email is already used" }] });
         return;
@@ -262,13 +254,13 @@ const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    const user = await User.findById(currentUserId);
+    const user = await UserModel.findById(currentUserId);
     if (!user) {
         res.status(404).json({ message: "User not found" });
         return;
     }
 
-    if (await User.exists({ email: record.newEmail })) {
+    if (await UserModel.exists({ email: record.newEmail })) {
         res.status(401).json({ error: [{ message: "Email is already taken" }] });
         return;
     }
@@ -284,7 +276,7 @@ const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) 
 const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
-    const user = await User.findById(currentUserId);
+    const user = await UserModel.findById(currentUserId);
     if (user === null) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -319,29 +311,29 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const userExists = await User.exists({ _id: userId });
+    const userExists = await UserModel.exists({ _id: userId });
     if (!userExists) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
         return;
     }
 
-    const exists = await UserFollowing.exists({ user: currentUserId, following: userId });
+    const exists = await UserFollowingModel.exists({ user: currentUserId, following: userId });
     if (exists) {
         res.status(204).json({ success: true });
         return;
     }
 
-    await UserFollowing.create({
+    await UserFollowingModel.create({
         user: currentUserId,
         following: userId
     });
 
-    await Notification.sendToUsers([userId], {
+    await sendNotifications({
         title: "New follower",
-        actionUser: currentUserId!,
+        actionUser: new Types.ObjectId(currentUserId),
         type: NotificationTypeEnum.PROFILE_FOLLOW,
         message: "{action_user} followed you"
-    });
+    }, [new Types.ObjectId(userId)]);
 
     res.json({ success: true });
 });
@@ -356,16 +348,16 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    const userFollowing = await UserFollowing.findOne({ user: currentUserId, following: userId });
+    const userFollowing = await UserFollowingModel.findOne({ user: currentUserId, following: userId });
     if (userFollowing === null) {
         res.status(204).json({ success: true });
         return;
     }
 
-    const result = await UserFollowing.deleteOne({ user: currentUserId, following: userId })
+    const result = await UserFollowingModel.deleteOne({ user: currentUserId, following: userId })
     if (result.deletedCount == 1) {
 
-        await Notification.deleteOne({
+        await deleteNotifications({
             user: userId,
             actionUser: currentUserId,
             _type: NotificationTypeEnum.PROFILE_FOLLOW
@@ -380,28 +372,21 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, page, count } = body;
     const currentUserId = req.userId;
 
-    const result = await UserFollowing.find({ following: userId })
+    const result = await UserFollowingModel.find({ following: userId })
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("user", "name avatarHash countryCode level roles")
-        .select("user") as any[];
+        .populate("user", USER_MINIMAL_FIELDS)
+        .select("user")
+        .lean<{ user: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
-    const data = result.map(x => ({
-        id: x.user._id,
-        name: x.user.name,
-        avatarUrl: getImageUrl(x.user.avatarHash),
-        countryCode: x.user.countryCode,
-        level: x.user.level,
-        roles: x.user.roles,
-        isFollowing: false
-    }));
+    const data = result.map(x => formatUserMinimal(x.user));
 
 
     for (let i = 0; i < data.length; ++i) {
         const user = data[i];
-        promises.push(UserFollowing.findOne({ user: currentUserId, following: user.id })
+        promises.push(UserFollowingModel.findOne({ user: currentUserId, following: user.id })
             .then(exists => {
                 data[i].isFollowing = exists !== null;
             }));
@@ -417,28 +402,21 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, page, count } = body;
     const currentUserId = req.userId;
 
-    const result = await UserFollowing.find({ user: userId })
+    const result = await UserFollowingModel.find({ user: userId })
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate("following", "name avatarHash countryCode level roles")
-        .select("following") as any[];
+        .populate("following", USER_MINIMAL_FIELDS)
+        .select("following")
+        .lean<{ following: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
-    const data = result.map(x => ({
-        id: x.following._id,
-        name: x.following.name,
-        avatarUrl: getImageUrl(x.following.avatarHash),
-        countryCode: x.following.countryCode,
-        level: x.following.level,
-        roles: x.following.roles,
-        isFollowing: false
-    }));
+    const data = result.map(x => formatUserMinimal(x.following));
 
 
     for (let i = 0; i < data.length; ++i) {
         const user = data[i];
-        promises.push(UserFollowing.findOne({ user: currentUserId, following: user.id })
+        promises.push(UserFollowingModel.findOne({ user: currentUserId, following: user.id })
             .then(exists => {
                 data[i].isFollowing = exists !== null;
             }));
@@ -454,12 +432,12 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     const { count, fromId } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = Notification
+    let dbQuery = NotificationModel
         .find({ user: currentUserId, hidden: false })
         .sort({ createdAt: "desc" });
 
     if (fromId) {
-        const prevNotification = await Notification.findById(fromId);
+        const prevNotification = await NotificationModel.findById(fromId);
 
         if (prevNotification !== null) {
             dbQuery = dbQuery
@@ -469,31 +447,17 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const result = await dbQuery
         .limit(count)
-        .populate<{ user: any }>("user", "name avatarHash countryCode level roles")
-        .populate<{ actionUser: any }>("actionUser", "name avatarHash countryCode level roles")
-        .populate<{ postId: any }>("postId", "parentId");
+        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ actionUser: UserMinimal & { _id: Types.ObjectId } }>("actionUser", USER_MINIMAL_FIELDS)
+        .populate<{ postId: { _id: Types.ObjectId, parentId: Types.ObjectId } }>("postId", { parentId: 1 });
 
     const data = result.map(x => ({
         id: x._id,
         type: x._type,
         message: x.message,
         date: x.createdAt,
-        user: {
-            id: x.user._id,
-            name: x.user.name,
-            countryCode: x.user.countryCode,
-            avatarUrl: getImageUrl(x.user.avatarHash),
-            level: x.user.level,
-            roles: x.user.roles
-        },
-        actionUser: {
-            id: x.actionUser._id,
-            name: x.actionUser.name,
-            countryCode: x.actionUser.countryCode,
-            avatarUrl: getImageUrl(x.actionUser.avatarHash),
-            level: x.actionUser.level,
-            roles: x.actionUser.roles
-        },
+        user: formatUserMinimal(x.user),
+        actionUser: formatUserMinimal(x.actionUser),
         isSeen: x.isSeen,
         isClicked: x.isClicked,
         codeId: x.codeId,
@@ -515,7 +479,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
 const getUnseenNotificationCount = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
-    const count = await Notification.countDocuments({ user: currentUserId, isClicked: false, hidden: false })
+    const count = await NotificationModel.countDocuments({ user: currentUserId, isClicked: false, hidden: false })
 
     res.json({ count });
 });
@@ -526,21 +490,21 @@ const markNotificationsClicked = asyncHandler(async (req: IAuthRequest, res: Res
     const { ids } = body;
 
     if (ids) {
-        await Notification.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } })
+        await NotificationModel.updateMany({ _id: { $in: ids } }, { $set: { isClicked: true } })
     }
     else {
-        await Notification.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } })
+        await NotificationModel.updateMany({ user: currentUserId, isClicked: false, hidden: false }, { $set: { isClicked: true } })
     }
 
     res.json({});
 });
 
-const uploadProfileAvatarImage = asyncHandler(async (req: any, res) => {
+const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res) => {
     const { body, file } = parseWithZod(uploadProfileAvatarImageSchema, req)
     const { userId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
-    const user = await User.findById(userId);
+    const user = await UserModel.findById(userId);
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -587,7 +551,7 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
     const { userId } = body;
     const currentUserId = req.userId;
 
-    const user = await User.findById(userId);
+    const user = await UserModel.findById(userId);
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
@@ -614,7 +578,7 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
     const { body } = parseWithZod(updateNotificationsSchema, req);
     const { notifications } = body;
 
-    const user = await User.findById(currentUserId);
+    const user = await UserModel.findById(currentUserId);
     if (!user) {
         res.status(404).json({ error: [{ message: "Profile not found" }] });
         return;
@@ -648,19 +612,10 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
         match.name = searchRegex;
     }
 
-    const users = await User.find()
-        .where(match)
-        .select("name avatarHash level roles countryCode");
+    const users = await UserModel.find(match, USER_MINIMAL_FIELDS);
 
     res.json({
-        users: users.map(u => ({
-            id: u._id,
-            name: u.name,
-            avatarUrl: getImageUrl(u.avatarHash),
-            level: u.level,
-            roles: u.roles,
-            countryCode: u.countryCode
-        }))
+        users: users.map(u => formatUserMinimal(u))
     });
 });
 
@@ -730,9 +685,7 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
         success: true,
         items: items.map((x) => ({
             id: x._id,
-            authorId: x.author._id,
-            authorName: x.author.name,
-            authorUrl: getImageUrl(x.author.avatarHash),
+            author: formatUserMinimal(x.author),
             type: x._type,
             name: x.name,
             mimetype: x.mimetype,
@@ -749,7 +702,7 @@ const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
-    const fileDoc = await File.findById(fileId).select("author name path").lean();
+    const fileDoc = await FileModel.findById(fileId).select("author name path").lean();
     if (!fileDoc) {
         res.status(404).json({ error: [{ message: "File not found" }] });
         return;
@@ -799,7 +752,7 @@ const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(moveImageSchema, req);
     const { fileId, newName, newSubPath } = body;
 
-    const fileDoc = await File.findById(fileId).select("author path name");
+    const fileDoc = await FileModel.findById(fileId).select("author path name");
     if (!fileDoc) {
         res.status(404).json({ error: [{ message: "File not found" }] });
         return;

@@ -13,4 +13,5 @@ export class QuizAnswer {
     courseLessonNodeId!: Types.ObjectId | null;
 }
 
-export default getModelForClass(QuizAnswer);
+const QuizAnswerModel = getModelForClass(QuizAnswer);
+export default QuizAnswerModel;

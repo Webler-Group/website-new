@@ -6,11 +6,11 @@ import { escapeRegex } from "../utils/regexUtils";
 import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, getChallengeCodeSchema, getChallengeJobSchema, getChallengeListSchema, getChallengeSchema, saveChallengeCodeSchema } from "../validation/challengeSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
-import CodeModel, { Code } from "../models/Code";
-import EvaluationJobModel, { EvaluationJob } from "../models/EvaluationJob";
+import CodeModel from "../models/Code";
+import EvaluationJobModel from "../models/EvaluationJob";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
 import RolesEnum from "../data/RolesEnum";
-import User from "../models/User";
+import UserModel from "../models/User";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { DocumentType } from "@typegoose/typegoose";
 
@@ -393,7 +393,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     if (job.submission && job.submission.passed) {
         const [user, challenge] = await Promise.all([
-            User.findById(req.userId),
+            UserModel.findById(req.userId),
             ChallengeModel.findById(job.challenge).lean()
         ]);
 

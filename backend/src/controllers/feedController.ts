@@ -1,14 +1,12 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Post from "../models/Post";
-import Tag from "../models/Tag";
-import Upvote from "../models/Upvote";
-import Notification from "../models/Notification";
+import PostModel, { Post } from "../models/Post";
+import UpvoteModel from "../models/Upvote";
+import NotificationModel from "../models/Notification";
 import mongoose, { PipelineStage, Types } from "mongoose";
-import PostAttachment from "../models/PostAttachment";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
-import UserFollowing from "../models/UserFollowing";
+import UserFollowingModel from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -31,6 +29,10 @@ import {
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
+import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import { formatUserMinimal } from "../helpers/userHelper";
 
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -38,24 +40,24 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { message } = body;
   const currentUserId = req.userId;
 
-  const feed = await Post.create({
+  const feed = await PostModel.create({
     _type: PostTypeEnum.FEED,
     title: "Untitled",
     message,
     user: currentUserId
   });
 
-  const followers = await UserFollowing.find({ following: currentUserId });
+  const followers = await UserFollowingModel.find({ following: currentUserId });
 
-  await Notification.sendToUsers(
-    followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user) as Types.ObjectId[],
+  await sendNotifications(
     {
       title: "New post",
       type: NotificationTypeEnum.FEED_FOLLOWER_POST,
-      actionUser: currentUserId!,
+      actionUser: new Types.ObjectId(currentUserId),
       message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
       feedId: feed._id
-    }
+    },
+    followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user)
   );
 
   res.json({
@@ -84,7 +86,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
   const parentObjectId = new mongoose.Types.ObjectId(parentId);
   const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-  const reactions = await Upvote.aggregate([
+  const reactions = await UpvoteModel.aggregate([
     { $match: { parentId: parentObjectId } },
     { $sort: { _id: -1 } },
     { $skip: skip },
@@ -130,7 +132,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     }
   ]);
 
-  const totalCount = await Upvote.countDocuments({ parentId });
+  const totalCount = await UpvoteModel.countDocuments({ parentId });
 
   res.json({
     count: totalCount,
@@ -150,7 +152,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId, message } = body;
   const currentUserId = req.userId;
 
-  const feed = await Post.findById(feedId);
+  const feed = await PostModel.findById(feedId);
 
   if (!feed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
@@ -166,7 +168,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   await feed.save();
 
-  const attachments = await PostAttachment.getByPostId({ post: feed._id });
+  const attachments = await getAttachmentsByPostId({ post: feed._id });
 
   res.json({
     success: true,
@@ -184,7 +186,7 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId } = body;
   const currentUserId = req.userId;
 
-  const feed = await Post.findById(feedId);
+  const feed = await PostModel.findById(feedId);
 
   if (!feed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
@@ -196,7 +198,7 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  await Post.deleteAndCleanup({ _id: feedId });
+  await deletePostsAndCleanup({ _id: feedId });
 
   res.json({ success: true });
 });
@@ -206,7 +208,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { message, feedId, parentId } = body;
   const currentUserId = req.userId;
 
-  const feed = await Post.findById(feedId);
+  const feed = await PostModel.findById(feedId);
   if (!feed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
     return;
@@ -214,14 +216,14 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   let parentComment = null;
   if (parentId) {
-    parentComment = await Post.findById(parentId);
+    parentComment = await PostModel.findById(parentId);
     if (!parentComment) {
       res.status(404).json({ error: [{ message: "Parent comment not found" }] });
       return;
     }
   }
 
-  const reply = await Post.create({
+  const reply = await PostModel.create({
     _type: PostTypeEnum.FEED_COMMENT,
     message,
     feedId,
@@ -230,24 +232,24 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   });
 
   if (parentComment && !parentComment.user.equals(currentUserId)) {
-    await Notification.sendToUsers([parentComment.user], {
+    await sendNotifications({
       title: "New reply",
       type: NotificationTypeEnum.FEED_COMMENT,
-      actionUser: currentUserId!,
+      actionUser: new Types.ObjectId(currentUserId),
       message: `{action_user} replied to your comment on post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
       feedId: feed._id,
       postId: reply._id
-    });
+    }, [parentComment.user]);
   }
   if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user))) {
-    await Notification.sendToUsers([feed.user], {
+    await sendNotifications({
       title: "New comment",
       type: NotificationTypeEnum.FEED_COMMENT,
-      actionUser: currentUserId!,
+      actionUser: new Types.ObjectId(currentUserId),
       message: `{action_user} commented on your post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
       feedId: feed._id,
       postId: reply._id
-    });
+    }, [feed.user]);
   }
 
   feed.$inc("answers", 1);
@@ -258,7 +260,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     await parentComment.save();
   }
 
-  const attachments = await PostAttachment.getByPostId({ post: reply._id });
+  const attachments = await getAttachmentsByPostId({ post: reply._id });
 
   res.json({
     post: {
@@ -279,16 +281,16 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { postId, vote, reaction } = body;
   const currentUserId = req.userId;
 
-  const post = await Post.findById(postId);
+  const post = await PostModel.findById(postId);
   if (!post) {
     res.status(404).json({ error: [{ message: "Post not found" }] });
     return;
   }
 
-  let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
+  let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId });
   if (vote) {
     if (!upvote) {
-      upvote = await Upvote.create({ user: currentUserId, parentId: postId, reaction: reaction || ReactionsEnum.LIKE });
+      upvote = await UpvoteModel.create({ user: currentUserId, parentId: postId, reaction: reaction || ReactionsEnum.LIKE });
       post.$inc("votes", 1);
       await post.save();
     } else if (reaction) {
@@ -297,7 +299,7 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
   } else {
     if (upvote) {
-      await Upvote.deleteOne({ _id: upvote._id });
+      await UpvoteModel.deleteOne({ _id: upvote._id });
       upvote = null;
       post.$inc("votes", -1);
       await post.save();
@@ -312,14 +314,14 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { id, message } = body;
   const currentUserId = req.userId;
 
-  const reply = await Post.findById(id);
+  const reply = await PostModel.findById(id);
 
   if (!reply) {
     res.status(404).json({ error: [{ message: "Post not found" }] });
     return;
   }
 
-  if (!reply.user.equals(currentUserId )) {
+  if (!reply.user.equals(currentUserId)) {
     res.status(401).json({ error: [{ message: "Unauthorized" }] });
     return;
   }
@@ -328,7 +330,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   await reply.save();
 
-  const attachments = await PostAttachment.getByPostId({ post: reply._id });
+  const attachments = await getAttachmentsByPostId({ post: reply._id });
 
   res.json({
     success: true,
@@ -345,7 +347,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { id } = body;
   const currentUserId = req.userId;
 
-  const reply = await Post.findById(id);
+  const reply = await PostModel.findById(id);
 
   if (!reply) {
     res.status(404).json({ error: [{ message: "Post not found" }] });
@@ -357,13 +359,13 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     return;
   }
 
-  const feed = await Post.findById(reply.feedId);
+  const feed = await PostModel.findById(reply.feedId);
   if (!feed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
     return;
   }
 
-  await Post.deleteAndCleanup({ _id: id });
+  await deletePostsAndCleanup({ _id: id });
 
   res.json({ success: true });
 });
@@ -373,13 +375,13 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId, message } = body;
   const currentUserId = req.userId;
 
-  const originalFeed = await Post.findById(feedId);
+  const originalFeed = await PostModel.findById(feedId);
   if (!originalFeed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
     return;
   }
 
-  const feed = await Post.create({
+  const feed = await PostModel.create({
     _type: PostTypeEnum.SHARED_FEED,
     title: "Untitled",
     message,
@@ -392,13 +394,13 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     await originalFeed.save();
 
     if (!originalFeed.user.equals(currentUserId)) {
-      await Notification.sendToUsers([originalFeed.user as Types.ObjectId], {
+      await sendNotifications({
         title: "Feed share",
         type: NotificationTypeEnum.FEED_SHARE,
-        actionUser: currentUserId!,
+        actionUser: new Types.ObjectId(currentUserId),
         message: `{action_user} shared your Post "${truncate(escapeMarkdown(originalFeed.message), 20).replaceAll(/\n+/g, " ")}"`,
         feedId: feed._id
-      });
+      }, [originalFeed.user]);
     }
 
     res.json({
@@ -466,7 +468,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         res.status(400).json({ error: [{ message: "Invalid request - userId required" }] });
         return;
       }
-      const followingUsers = await UserFollowing.find({ user: userId }).select("following");
+      const followingUsers = await UserFollowingModel.find({ user: userId }).select("following");
       const followingUserIds = followingUsers.map(f => f.following);
       if (followingUserIds.length === 0) {
         res.status(200).json({ count: 0, feeds: [], success: true });
@@ -494,7 +496,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   const countPipeline = [...pipeline];
   countPipeline.push({ $count: "total" });
-  const countResult = await Post.aggregate(countPipeline);
+  const countResult = await PostModel.aggregate(countPipeline);
   const feedCount = countResult.length > 0 ? countResult[0].total : 0;
 
   pipeline.push(
@@ -537,11 +539,11 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
   );
 
-  const result = await Post.aggregate(pipeline);
+  const result = await PostModel.aggregate(pipeline);
 
   const data = await Promise.all(
     result.map(async x => {
-      const reactionsAgg = await Upvote.aggregate([
+      const reactionsAgg = await UpvoteModel.aggregate([
         { $match: { parentId: x._id } },
         {
           $group: {
@@ -603,11 +605,11 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
       };
 
       if (currentUserId) {
-        const upvote = await Upvote.findOne({ parentId: feed.id, user: currentUserId });
+        const upvote = await UpvoteModel.findOne({ parentId: feed.id, user: currentUserId });
         feed.isUpvoted = !!upvote;
         feed.reaction = upvote?.reaction ?? "";
 
-        feed.attachments = await PostAttachment.getByPostId({ post: feed.id });
+        feed.attachments = await getAttachmentsByPostId({ post: feed.id });
       }
 
       return feed;
@@ -626,7 +628,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId } = body;
   const currentUserId = req.userId;
 
-  const feedAgg = await Post.aggregate([
+  const feedAgg = await PostModel.aggregate([
     { $match: { _id: new mongoose.Types.ObjectId(feedId) } },
     {
       $lookup: {
@@ -665,7 +667,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   const feed = feedAgg[0];
 
-  const reactionsAgg = await Upvote.aggregate([
+  const reactionsAgg = await UpvoteModel.aggregate([
     { $match: { parentId: new mongoose.Types.ObjectId(feedId) } },
     {
       $group: {
@@ -682,7 +684,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     count: r.count
   }));
 
-  const attachments = await PostAttachment.getByPostId({ post: feedId });
+  const attachments = await getAttachmentsByPostId({ post: feedId });
 
   const data: any = {
     id: feed._id,
@@ -722,7 +724,7 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   };
 
   if (currentUserId) {
-    const upvote = await Upvote.findOne({ parentId: data.id, user: currentUserId });
+    const upvote = await UpvoteModel.findOne({ parentId: data.id, user: currentUserId });
     data.isUpvoted = !!upvote;
     data.reaction = upvote?.reaction ?? "";
   }
@@ -735,28 +737,32 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId, parentId, index, count, filter, findPostId } = body;
   const currentUserId = req.userId;
 
-  let parentPost: any = null;
+  let parentPost: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } | null = null;
   if (parentId) {
-    parentPost = await Post.findById(parentId).populate("user", "name avatarHash countryCode level roles");
+    parentPost = await PostModel.findById(parentId)
+      .populate("user", USER_MINIMAL_FIELDS)
+      .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>();
     if (!parentPost) {
       res.status(404).json({ error: [{ message: "Parent post not found" }] });
       return;
     }
   }
 
-  let dbQuery = Post.find({ feedId, _type: PostTypeEnum.FEED_COMMENT, hidden: false });
+  let dbQuery = PostModel.find({ feedId, _type: PostTypeEnum.FEED_COMMENT, hidden: false });
 
   let skipCount = index;
 
   if (findPostId) {
-    const reply = await Post.findById(findPostId);
+    const reply = await PostModel.findById(findPostId);
     if (!reply) {
       res.status(404).json({ error: [{ message: "Post not found" }] });
       return;
     }
 
     parentPost = reply.parentId
-      ? await Post.findById(reply.parentId).populate("user", "name avatarHash countryCode level roles")
+      ? await PostModel.findById(reply.parentId)
+        .populate("user", USER_MINIMAL_FIELDS)
+        .lean<Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }>()
       : null;
 
     dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
@@ -789,18 +795,15 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const result = await dbQuery
     .skip(skipCount)
     .limit(count)
-    .populate("user", "name avatarHash countryCode level roles") as any[];
+    .populate("user", USER_MINIMAL_FIELDS)
+    .lean<(Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } })[]>();
 
   const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
     id: x._id,
     parentId: x.parentId,
     message: x.message,
     date: x.createdAt,
-    userId: x.user._id,
-    userName: x.user.name,
-    userAvatarUrl: getImageUrl(x.user.avatarHash),
-    level: x.user.level,
-    roles: x.user.roles,
+    user: formatUserMinimal(x.user),
     votes: x.votes,
     isUpvoted: false,
     answers: x.answers,
@@ -810,11 +813,11 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   const promises = data.map((item, i) => [
     currentUserId
-      ? Upvote.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
+      ? UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).then(upvote => {
         data[i].isUpvoted = !!upvote;
       })
       : Promise.resolve(),
-    PostAttachment.getByPostId({ post: item.id }).then(attachments => {
+    getAttachmentsByPostId({ post: item.id }).then(attachments => {
       data[i].attachments = attachments;
     })
   ]).flat();
@@ -829,7 +832,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
   const { feedId, pinned } = body;
   const currentUserId = req.userId;
 
-  const feed = await Post.findById(feedId);
+  const feed = await PostModel.findById(feedId);
 
   if (!feed) {
     res.status(404).json({ error: [{ message: "Feed not found" }] });
@@ -838,15 +841,15 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
   if (!feed.user.equals(currentUserId)) {
     if (pinned) {
-      await Notification.sendToUsers([feed.user as Types.ObjectId], {
+      await sendNotifications({
         title: "Feed pin",
         type: NotificationTypeEnum.FEED_PIN,
-        actionUser: currentUserId!,
+        actionUser: new Types.ObjectId(currentUserId),
         message: `{action_user} pinned your Post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
         feedId: feed._id
-      });
+      }, [feed.user]);
     } else {
-      await Notification.deleteOne({
+      await deleteNotifications({
         _type: NotificationTypeEnum.FEED_PIN,
         user: feed.user,
         actionUser: currentUserId,

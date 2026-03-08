@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
 import fs from "fs";
-import File from "../models/File";
+import FileModel from "../models/File";
 import { parseWithZod } from "../utils/zodUtils";
 import { getFileByHashSchema } from "../validation/mediaSchema";
 import { absBlobPathFromHash } from "../helpers/fileHelper";
@@ -13,7 +13,7 @@ const getFileByHash = asyncHandler(
         const { hash } = params;
 
         // Fetch file metadata only
-        const fileDoc = await File.findOne({ contenthash: hash },
+        const fileDoc = await FileModel.findOne({ contenthash: hash },
             "_type mimetype size updatedAt contenthash"
         );
 
@@ -58,7 +58,7 @@ const getFilePreviewByHash = asyncHandler(
         const { hash } = params;
 
         try {
-            const fileDoc = await File.findOne({ contenthash: hash }, "_type updatedAt preview");
+            const fileDoc = await FileModel.findOne({ contenthash: hash }, "_type updatedAt preview");
 
             if (!fileDoc || fileDoc._type === FileTypeEnum.FOLDER || !fileDoc.preview) {
                 res.status(404).end();

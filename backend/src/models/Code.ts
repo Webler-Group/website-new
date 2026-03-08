@@ -11,7 +11,7 @@ import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
         this.set("updatedAt", new Date());
     }
 })
-@modelOptions({ schemaOptions: { collection: "codes", timestamps: true } })
+@modelOptions({ schemaOptions: { collection: "codes" } })
 export class Code {
     @prop({ ref: "User", required: true })
     user!: Types.ObjectId;
@@ -46,7 +46,10 @@ export class Code {
     @prop({ ref: "Challenge", default: null })
     challenge!: Types.ObjectId | null;
 
+    @prop({ default: Date.now() })
     createdAt!: Date;
+    
+    @prop({ default: Date.now() })
     updatedAt!: Date;
 }
 

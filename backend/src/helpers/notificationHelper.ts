@@ -1,6 +1,6 @@
 import mongoose, { Types } from "mongoose";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import User from "../models/User";
+import UserModel from "../models/User";
 import { getIO, onlineUsers, uidRoom } from "../config/socketServer";
 import { sendPushToUsers } from "../services/pushService";
 import NotificationModel from "../models/Notification";
@@ -21,7 +21,7 @@ export interface SendNotificationsParams {
 }
 
 export const sendNotifications = async (params: SendNotificationsParams, userIds: Types.ObjectId[], onlyPush: boolean = false, session?: mongoose.ClientSession) => {
-    const allowedUserDocs = await User.find({
+    const allowedUserDocs = await UserModel.find({
         _id: { $in: userIds },
         [`notifications.${params.type}`]: true
     }, { _id: 1 }).lean<{ _id: Types.ObjectId }[]>().session(session ?? null);
@@ -31,7 +31,7 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
         userId => !onlineUsers.has(userId.toString())
     );
 
-    const currentUser = await User.findById(params.actionUser, { name: 1 }).lean().session(session ?? null);
+    const currentUser = await UserModel.findById(params.actionUser, { name: 1 }).lean().session(session ?? null);
     if (!currentUser) {
         throw new HttpError("Action user not found", 404);
     }
@@ -58,11 +58,9 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
     })), { session });
 
     const io = getIO();
-    if (io) {
-        for (const userId of allowedUserIds) {
-            io.to(uidRoom(userId.toString()))
-                .emit("notification:new", {});
-        }
+    for (const userId of allowedUserIds) {
+        io?.to(uidRoom(userId.toString()))
+            .emit("notification:new", {});
     }
 }
 
@@ -70,9 +68,7 @@ export const deleteNotifications = async (filter: mongoose.QueryFilter<Notificat
     const notificationsToDelete = await NotificationModel.find(filter).session(session ?? null);
     await NotificationModel.deleteMany(filter, { session });
     const io = getIO();
-    if (io) {
-        io.to(notificationsToDelete.filter(doc => !doc.isClicked)
-            .map(doc => uidRoom(doc.user.toString())))
-            .emit("notification:deleted", {});
-    }
+    io?.to(notificationsToDelete.filter(doc => !doc.isClicked)
+        .map(doc => uidRoom(doc.user.toString())))
+        .emit("notification:deleted", {});
 }

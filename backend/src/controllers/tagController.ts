@@ -1,7 +1,7 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Tag from "../models/Tag";
+import TagModel from "../models/Tag";
 import { parseWithZod } from "../utils/zodUtils";
 import { executeTagJobsSchema, getTagSchema } from "../validation/tagsSchema";
 import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
@@ -13,7 +13,7 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
     if (action === "create") {
         await getOrCreateTagsByNames(tags);
     } else if (action === "delete") {
-        await Tag.deleteMany({ name: { $in: tags } });
+        await TagModel.deleteMany({ name: { $in: tags } });
     } else {
         res.status(400).json({ success: false, message: "Invalid action" });
         return;
@@ -26,7 +26,7 @@ const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => 
 });
 
 const getTagList = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const tags = await Tag.find().sort({ name: 1 }).lean();
+    const tags = await TagModel.find().sort({ name: 1 }).lean();
 
     res.json(tags);
 });
@@ -35,7 +35,7 @@ const getTag = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getTagSchema, req);
     const { tagName } = body;
 
-    const tag = await Tag.findOne({ name: tagName }).lean();
+    const tag = await TagModel.findOne({ name: tagName }).lean();
 
     if (!tag) {
         res.status(404).json({ error: [{ message: "Tag not found" }] });

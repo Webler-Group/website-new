@@ -11,4 +11,5 @@ export class PostFollowing {
     following!: Types.ObjectId;
 }
 
-export default getModelForClass(PostFollowing);
+const PostFollowingModel = getModelForClass(PostFollowing);
+export default PostFollowingModel;

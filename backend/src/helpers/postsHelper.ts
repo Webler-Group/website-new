@@ -2,7 +2,7 @@ import mongoose, { isObjectIdOrHexString, Types, TypesAreEqual } from "mongoose"
 import PostModel, { Post } from "../models/Post";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { deleteNotifications, sendNotifications } from "./notificationHelper";
-import PostFollowing from "../models/PostFollowing";
+import PostFollowingModel from "../models/PostFollowing";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import CodeModel, { Code } from "../models/Code";
 import CourseLessonModel from "../models/CourseLesson";
@@ -22,7 +22,7 @@ export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, 
         switch (post._type) {
             case PostTypeEnum.QUESTION: {
                 await deletePostsAndCleanup({ parentId: post._id }, session);
-                await PostFollowing.deleteMany({ following: post._id }, { session });
+                await PostFollowingModel.deleteMany({ following: post._id }, { session });
                 break;
             }
             case PostTypeEnum.ANSWER: {

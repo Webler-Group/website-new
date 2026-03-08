@@ -18,4 +18,5 @@ export class Upvote {
     reaction?: ReactionsEnum;
 }
 
-export default getModelForClass(Upvote);
+const UpvoteModel = getModelForClass(Upvote);
+export default UpvoteModel;

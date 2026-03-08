@@ -1,24 +1,20 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Code, { CODE_MINIMAL_FIELDS, CodeMinimal } from "../models/Code";
-import Upvote from "../models/Upvote";
+import CodeModel, { CODE_MINIMAL_FIELDS, CodeMinimal } from "../models/Code";
+import UpvoteModel from "../models/Upvote";
 import templates from "../data/templates";
-import EvaluationJob from "../models/EvaluationJob";
+import EvaluationJobModel from "../models/EvaluationJob";
 import { escapeRegex } from "../utils/regexUtils";
 import PostModel, { Post } from "../models/Post";
-import PostAttachment from "../models/PostAttachment";
-import Notification from "../models/Notification";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
 import { parseWithZod } from "../utils/zodUtils";
 import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeCommentSchema, deleteCodeSchema, editCodeCommentSchema, editCodeSchema, getCodeCommentsSchema, getCodeListSchema, getCodeSchema, getJobSchema, getTemplateSchema, voteCodeSchema } from "../validation/codesSchema";
-import { User, USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { getImageUrl } from "./mediaController";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { deleteCodeAndCleanup, formatCodeMinimal } from "../helpers/codesHelper";
-import PostAttachmentModel from "../models/PostAttachment";
 import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 
@@ -27,12 +23,12 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { name, language, source, cssSource, jsSource } = body;
     const currentUserId = req.userId;
 
-    if (await Code.countDocuments({ user: currentUserId }) >= 500) {
+    if (await CodeModel.countDocuments({ user: currentUserId }) >= 500) {
         res.status(403).json({ error: [{ message: "You already have max count of codes" }] });
         return;
     }
 
-    const code = await Code.create({
+    const code = await CodeModel.create({
         name,
         language,
         user: currentUserId,
@@ -64,7 +60,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = Code.find({
+    let dbQuery = CodeModel.find({
         hidden: false,
         $or: [
             { challenge: null },
@@ -142,7 +138,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     for (let i = 0; i < data.length; ++i) {
         if (currentUserId) {
-            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
@@ -158,12 +154,12 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId)
+    const code = await CodeModel.findById(codeId)
         .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
         .lean();
 
     if (code) {
-        const isUpvoted = currentUserId ? await Upvote.exists({ parentId: codeId, user: currentUserId }) : false;
+        const isUpvoted = currentUserId ? await UpvoteModel.exists({ parentId: codeId, user: currentUserId }) : false;
 
         res.json({
             code: {
@@ -205,7 +201,7 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId, name, isPublic, source, cssSource, jsSource } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId);
+    const code = await CodeModel.findById(codeId);
 
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
@@ -244,7 +240,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId).lean();
+    const code = await CodeModel.findById(codeId).lean();
 
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
@@ -266,22 +262,22 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId, vote } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId);
+    const code = await CodeModel.findById(codeId);
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
     }
 
-    let upvote = await Upvote.findOne({ parentId: codeId, user: currentUserId });
+    let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
-            upvote = await Upvote.create({ user: currentUserId, parentId: codeId });
+            upvote = await UpvoteModel.create({ user: currentUserId, parentId: codeId });
             code.$inc("votes", 1);
             await code.save();
         }
     } else if (vote === 0) {
         if (upvote) {
-            await Upvote.deleteOne({ _id: upvote._id });
+            await UpvoteModel.deleteOne({ _id: upvote._id });
             upvote = null;
             code.$inc("votes", -1);
             await code.save();
@@ -385,7 +381,7 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     for (let i = 0; i < data.length; ++i) {
         if (currentUserId) {
-            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
@@ -402,7 +398,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { codeId, message, parentId } = body;
     const currentUserId = req.userId;
 
-    const code = await Code.findById(codeId);
+    const code = await CodeModel.findById(codeId);
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
@@ -520,7 +516,7 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    const code = await Code.findById(comment.codeId);
+    const code = await CodeModel.findById(comment.codeId);
     if (code === null) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
@@ -536,7 +532,7 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { language, source, stdin } = body;
     const deviceId = req.deviceId;
 
-    const job = await EvaluationJob.create({
+    const job = await EvaluationJobModel.create({
         language,
         source,
         stdin: [stdin || ""],
@@ -552,7 +548,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJob.findById(jobId, { source: 0 });
+    const job = await EvaluationJobModel.findById(jobId, { source: 0 });
     if (!job) {
         res.status(404).json({ error: [{ message: "Job does not exist" }] });
         return;

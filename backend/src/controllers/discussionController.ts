@@ -1,13 +1,11 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import Post from "../models/Post";
+import PostModel from "../models/Post";
 import TagModel, { Tag } from "../models/Tag";
-import Upvote from "../models/Upvote";
+import UpvoteModel from "../models/Upvote";
 import PostFollowing from "../models/PostFollowing";
-import Notification from "../models/Notification";
 import mongoose, { PipelineStage, Types } from "mongoose";
-import PostAttachment from "../models/PostAttachment";
 import { escapeRegex } from "../utils/regexUtils";
 import UserFollowing from "../models/UserFollowing";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -37,7 +35,7 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         }
     }
 
-    const question = await Post.create({
+    const question = await PostModel.create({
         _type: PostTypeEnum.QUESTION,
         title,
         message,
@@ -79,7 +77,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         }
     ]
 
-    let dbQuery = Post
+    let dbQuery = PostModel
         .find({
             _type: PostTypeEnum.QUESTION,
             hidden: false
@@ -151,7 +149,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 res.status(400).json({ error: [{ message: "Invalid request" }] });
                 return
             }
-            const replies = await Post.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId");
+            const replies = await PostModel.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId");
             const questionIds = [...new Set(replies.map(x => x.parentId))];
             pipeline.push({
                 $match: { _id: { $in: questionIds } }
@@ -204,7 +202,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
         $lookup: { from: "tags", localField: "tags", foreignField: "_id", as: "tags" }
     })
 
-    const result = await Post.aggregate(pipeline);
+    const result = await PostModel.aggregate(pipeline);
 
     const data = result.map(x => ({
         id: x._id,
@@ -227,7 +225,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     for (let i = 0; i < data.length; ++i) {
         if (currentUserId) {
-            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
@@ -243,14 +241,14 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { questionId } = body;
     const currentUserId = req.userId;
 
-    const question = await Post.findById(questionId)
+    const question = await PostModel.findById(questionId)
         .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
         .populate<{ tags: Tag[] }>("tags")
         .lean();
 
     if (question) {
 
-        const isUpvoted = currentUserId ? (await Upvote.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
+        const isUpvoted = currentUserId ? (await UpvoteModel.findOne({ parentId: questionId, user: currentUserId })) !== null : false;
         const isFollowed = currentUserId ? (await PostFollowing.findOne({ user: currentUserId, following: questionId })) !== null : false;
         const attachments = await getAttachmentsByPostId({ post: questionId })
 
@@ -281,13 +279,13 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { message, questionId } = body;
     const currentUserId = req.userId;
 
-    const question = await Post.findById(questionId);
+    const question = await PostModel.findById(questionId);
     if (question === null) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return
     }
 
-    const reply = await Post.create({
+    const reply = await PostModel.create({
         _type: PostTypeEnum.ANSWER,
         message,
         parentId: questionId,
@@ -352,13 +350,13 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { questionId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = Post.find({ parentId: questionId, _type: PostTypeEnum.ANSWER, hidden: false });
+    let dbQuery = PostModel.find({ parentId: questionId, _type: PostTypeEnum.ANSWER, hidden: false });
 
     let skipCount = index;
 
     if (findPostId) {
 
-        const reply = await Post.findById(findPostId);
+        const reply = await PostModel.findById(findPostId);
 
         if (reply === null) {
             res.status(404).json({ error: [{ message: "Post not found" }] })
@@ -426,7 +424,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     for (let i = 0; i < data.length; ++i) {
         if (currentUserId) {
-            promises.push(Upvote.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
+            promises.push(UpvoteModel.findOne({ parentId: data[i].id, user: currentUserId }).then(upvote => {
                 data[i].isUpvoted = !(upvote === null);
             }));
         }
@@ -444,14 +442,14 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
     const { accepted, postId } = body;
     const currentUserId = req.userId;
 
-    const post = await Post.findById(postId);
+    const post = await PostModel.findById(postId);
 
     if (post === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
 
-    const question = await Post.findById(post.parentId);
+    const question = await PostModel.findById(post.parentId);
     if (question === null) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return;
@@ -472,7 +470,7 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
     await post.save();
 
     if (accepted) {
-        const currentAcceptedPost = await Post.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
+        const currentAcceptedPost = await PostModel.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
         if (currentAcceptedPost) {
             currentAcceptedPost.isAccepted = false;
 
@@ -492,7 +490,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { questionId, title, message, tags } = body;
     const currentUserId = req.userId;
 
-    const question = await Post.findById(questionId);
+    const question = await PostModel.findById(questionId);
 
     if (question === null) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
@@ -532,7 +530,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { questionId } = body;
     const currentUserId = req.userId;
 
-    const question = await Post.findById(questionId);
+    const question = await PostModel.findById(questionId);
 
     if (question === null) {
         res.status(404).json({ error: [{ message: "Question not found" }] })
@@ -554,7 +552,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { replyId, message } = body;
     const currentUserId = req.userId;
 
-    const reply = await Post.findById(replyId);
+    const reply = await PostModel.findById(replyId);
 
     if (reply === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] })
@@ -587,7 +585,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { replyId } = body;
     const currentUserId = req.userId;
 
-    const reply = await Post.findById(replyId);
+    const reply = await PostModel.findById(replyId);
 
     if (reply === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] })
@@ -599,7 +597,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return
     }
 
-    const question = await Post.findById(reply.parentId);
+    const question = await PostModel.findById(reply.parentId);
     if (question === null) {
         res.status(404).json({ error: [{ message: "Question not found" }] })
         return
@@ -615,23 +613,23 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { postId, vote } = body;
     const currentUserId = req.userId;
 
-    const post = await Post.findById(postId);
+    const post = await PostModel.findById(postId);
     if (post === null) {
         res.status(404).json({ error: [{ message: "Post not found" }] })
         return
     }
 
-    let upvote = await Upvote.findOne({ parentId: postId, user: currentUserId });
+    let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId });
     if (vote === 1) {
         if (!upvote) {
-            upvote = await Upvote.create({ user: currentUserId, parentId: postId });
+            upvote = await UpvoteModel.create({ user: currentUserId, parentId: postId });
             post.$inc("votes", 1);
             await post.save();
         }
     }
     else if (vote === 0) {
         if (upvote) {
-            await Upvote.deleteOne({ _id: upvote._id });
+            await UpvoteModel.deleteOne({ _id: upvote._id });
             upvote = null;
             post.$inc("votes", -1);
             await post.save();
@@ -647,7 +645,7 @@ const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { postId } = body;
     const currentUserId = req.userId;
 
-    const postExists = await Post.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
+    const postExists = await PostModel.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return
@@ -672,7 +670,7 @@ const unfollowQuestion = asyncHandler(async (req: IAuthRequest, res: Response) =
     const { postId } = body;
     const currentUserId = req.userId;
 
-    const postExists = await Post.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
+    const postExists = await PostModel.exists({ _id: postId, _type: PostTypeEnum.QUESTION })
     if (!postExists) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return;
@@ -693,7 +691,7 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { parentId, page, count } = body;
     const currentUserId = req.userId;
 
-    const result = await Upvote.find({ parentId })
+    const result = await UpvoteModel.find({ parentId })
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
