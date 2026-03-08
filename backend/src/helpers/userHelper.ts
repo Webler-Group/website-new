@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import UserModel, { UserMinimal } from "../models/User";
+import UserModel, { User, UserAdmin, UserMinimal } from "../models/User";
 import { getImageUrl } from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
 
@@ -14,6 +14,37 @@ export const formatUserMinimal = (user: UserMinimal & { _id: Types.ObjectId }) =
         isFollowing: false
     };
 }
+
+export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
+    return {
+        id: user._id,
+        email: user.email,
+        countryCode: user.countryCode,
+        name: user.name,
+        avatarUrl: getImageUrl(user.avatarHash),
+        roles: user.roles,
+        registerDate: user.createdAt,
+        level: user.level,
+        verified: user.emailVerified,
+        active: user.active,
+        ban: user.ban
+            ? { author: user.ban.author, note: user.ban.note, date: user.ban.date }
+            : null
+    };
+};
+
+export const formatAuthUser = (user: User & { _id: Types.ObjectId }) => ({
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    avatarUrl: getImageUrl(user.avatarHash),
+    roles: user.roles,
+    emailVerified: user.emailVerified,
+    countryCode: user.countryCode,
+    registerDate: user.createdAt,
+    level: user.level,
+    xp: user.xp
+});
 
 export const generateEmailChangeRecord = async (userId: Types.ObjectId, newEmail: string) => {
     await EmailChangeRecordModel.deleteMany({ userId });

@@ -32,8 +32,9 @@ import { getImageUrl } from "./mediaController";
 import { DocumentType } from "@typegoose/typegoose";
 import { CourseResponse, formatLesson, formatLessonNodeMinimal, getLastUnlockedLessonIndex, getLessonNodeInfo, LessonResponse } from "../helpers/courseHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
-import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
+import { withTransaction } from "../utils/transaction";
 
 type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
 
@@ -425,48 +426,53 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
     const { lessonId, message, parentId } = body;
     const currentUserId = req.userId;
 
-    const lesson = await CourseLessonModel.findById(lessonId)
-        .populate<{ course: Course & { _id: Types.ObjectId; code: string; title: string } }>("course", { title: 1, code: 1 });
-    if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
-    }
+    const reply = await withTransaction(async (session) => {
+        const lesson = await CourseLessonModel.findById(lessonId)
+            .populate<{ course: Course & { _id: Types.ObjectId; code: string; title: string } }>("course", { title: 1, code: 1 })
+            .session(session);
+        if (!lesson) return null;
 
-    let parentPost = null;
-    if (parentId) {
-        parentPost = await PostModel.findById(parentId);
-        if (!parentPost) {
-            res.status(404).json({ error: [{ message: "Parent post not found" }] });
-            return;
+        let parentPost = null;
+        if (parentId) {
+            parentPost = await PostModel.findById(parentId).session(session);
+            if (!parentPost) return null;
         }
-    }
 
-    const reply = await PostModel.create({
-        _type: PostTypeEnum.LESSON_COMMENT,
-        message,
-        lessonId,
-        parentId,
-        user: currentUserId
+        const reply = new PostModel({
+            _type: PostTypeEnum.LESSON_COMMENT,
+            message,
+            lessonId,
+            parentId,
+            user: currentUserId
+        });
+        await savePost(reply, session);
+
+        if (parentPost && !parentPost.user.equals(currentUserId)) {
+            await sendNotifications({
+                title: "New reply",
+                type: NotificationTypeEnum.LESSON_COMMENT,
+                actionUser: new Types.ObjectId(currentUserId),
+                message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
+                lessonId: lesson._id,
+                postId: reply._id,
+                courseCode: lesson.course.code
+            }, [parentPost.user]);
+        }
+
+        lesson.$inc("comments", 1);
+        await lesson.save({ session });
+
+        if (parentPost) {
+            parentPost.$inc("answers", 1);
+            await parentPost.save({ session });
+        }
+
+        return reply;
     });
 
-    if (parentPost && !parentPost.user.equals(currentUserId)) {
-        await sendNotifications({
-            title: "New reply",
-            type: NotificationTypeEnum.LESSON_COMMENT,
-            actionUser: new Types.ObjectId(currentUserId),
-            message: `{action_user} replied to your comment on lesson "${lesson.title}" to ${lesson.course.title}`,
-            lessonId: lesson._id,
-            postId: reply._id,
-            courseCode: lesson.course.code
-        }, [parentPost.user]);
-    }
-
-    lesson.$inc("comments", 1);
-    await lesson.save();
-
-    if (parentPost) {
-        parentPost.$inc("answers", 1);
-        await parentPost.save();
+    if (!reply) {
+        res.status(404).json({ error: [{ message: "Lesson or parent post not found" }] });
+        return;
     }
 
     const attachments = await getAttachmentsByPostId({ post: reply._id });
@@ -503,7 +509,9 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     }
 
     comment.message = message;
-    await comment.save();
+    await withTransaction(async (session) => {
+        await savePost(comment, session);
+    });
 
     const attachments = await getAttachmentsByPostId({ post: comment._id });
 
@@ -535,7 +543,9 @@ const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
         return;
     }
 
-    await deletePostsAndCleanup({ _id: id });
+    await withTransaction(async (session) => {
+        await deletePostsAndCleanup({ _id: id }, session);
+    });
 
     res.json({ success: true });
 });

@@ -35,6 +35,7 @@ import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveIma
 import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import { withTransaction } from "../utils/transaction";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -109,7 +110,10 @@ const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await deleteCourseAndCleanup(new Types.ObjectId(courseId));
+    await withTransaction(async (session) => {
+        await deleteCourseAndCleanup(new Types.ObjectId(courseId), session);
+    });
+
     res.json({ success: true });
 });
 
@@ -253,11 +257,14 @@ const deleteLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await deleteCourseLessonAndCleanup({ _id: lessonId });
-    await CourseLessonModel.updateMany(
-        { course: lesson.course, index: { $gt: lesson.index } },
-        { $inc: { index: -1 } }
-    );
+    await withTransaction(async (session) => {
+        await deleteCourseLessonAndCleanup({ _id: lessonId }, session);
+        await CourseLessonModel.updateMany(
+            { course: lesson.course, index: { $gt: lesson.index } },
+            { $inc: { index: -1 } },
+            { session }
+        );
+    });
 
     res.json({ success: true });
 });
@@ -308,16 +315,21 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
     const { body } = parseWithZod(createLessonNodeSchema, req);
     const { lessonId } = body;
 
-    const lesson = await CourseLessonModel.findById(lessonId);
-    if (!lesson) {
+    const lessonNode = await withTransaction(async (session) => {
+        const lesson = await CourseLessonModel.findById(lessonId).session(session);
+        if (!lesson) return null;
+
+        const lessonNode = await LessonNodeModel.create([{ lessonId, index: lesson.nodes + 1 }], { session });
+        lesson.$inc("nodes", 1);
+        await lesson.save({ session });
+
+        return lessonNode[0];
+    });
+
+    if (!lessonNode) {
         res.status(404).json({ error: [{ message: "Lesson not found" }] });
         return;
     }
-
-    lesson.$inc("nodes", 1);
-
-    const lessonNode = await LessonNodeModel.create({ lessonId, index: lesson.nodes });
-    await lesson.save();
 
     res.json({
         success: true,
@@ -374,11 +386,19 @@ const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
         return;
     }
 
-    await deleteLessonNodeAndCleanup({ _id: nodeId });
-    await Promise.all([
-        CourseLessonModel.updateOne({ _id: node.lessonId }, { $inc: { nodes: -1 } }),
-        LessonNodeModel.updateMany({ lessonId: node.lessonId, index: { $gt: node.index } }, { $inc: { index: -1 } })
-    ]);
+    await withTransaction(async (session) => {
+        await deleteLessonNodeAndCleanup({ _id: nodeId }, session);
+        await CourseLessonModel.updateOne(
+            { _id: node.lessonId },
+            { $inc: { nodes: -1 } },
+            { session }
+        );
+        await LessonNodeModel.updateMany(
+            { lessonId: node.lessonId, index: { $gt: node.index } },
+            { $inc: { index: -1 } },
+            { session }
+        );
+    });
 
     res.json({ success: true });
 });
@@ -387,54 +407,65 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { body } = parseWithZod(editLessonNodeSchema, req);
     const { nodeId, type, mode, codeId, text, correctAnswer, answers } = body;
 
-    const node = await LessonNodeModel.findById(nodeId);
-    if (!node) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
-    }
+    const data = await withTransaction(async (session) => {
+        const node = await LessonNodeModel.findById(nodeId).session(session);
+        if (!node) return null;
 
-    node._type = type;
-    node.mode = mode ?? node.mode;
-    node.codeId = codeId ? new mongoose.Types.ObjectId(codeId) : null;
-    node.text = text;
-    node.correctAnswer = correctAnswer ?? "";
-    await node.save();
+        node._type = type;
+        node.mode = mode ?? node.mode;
+        node.codeId = codeId ? new mongoose.Types.ObjectId(codeId) : null;
+        node.text = text;
+        node.correctAnswer = correctAnswer ?? "";
+        await node.save({ session });
 
-    const data: LessonNodeResponse = {
-        id: node._id.toString(),
-        type: node._type,
-        text: node.text || "",
-        index: node.index,
-        correctAnswer: node.correctAnswer
-    };
+        const result: LessonNodeResponse = {
+            id: node._id.toString(),
+            type: node._type,
+            text: node.text || "",
+            index: node.index,
+            correctAnswer: node.correctAnswer
+        };
 
-    if (answers) {
-        const currentAnswers = await QuizAnswerModel.find({ courseLessonNodeId: node.id }, { _id: 1 }).lean();
-        const currentAnswerIds = currentAnswers.map(a => a._id);
+        if (answers) {
+            const currentAnswers = await QuizAnswerModel.find(
+                { courseLessonNodeId: node.id },
+                { _id: 1 }
+            ).lean().session(session);
 
-        const idsToDelete = currentAnswerIds.filter(id => !answers.some(a => a.id && id.equals(a.id)));
-        await QuizAnswerModel.deleteMany({ _id: { $in: idsToDelete } });
+            const currentAnswerIds = currentAnswers.map(a => a._id);
+            const idsToDelete = currentAnswerIds.filter(id => !answers.some(a => a.id && id.equals(a.id)));
 
-        const newAnswers: { id: string; text: string; correct: boolean }[] = [];
+            await QuizAnswerModel.deleteMany({ _id: { $in: idsToDelete } }, { session });
 
-        for (const newAnswer of answers) {
-            if (newAnswer.id && currentAnswerIds.some(id => id.equals(newAnswer.id))) {
-                await QuizAnswerModel.updateOne(
-                    { _id: newAnswer.id },
-                    { text: newAnswer.text, correct: newAnswer.correct }
-                );
-                newAnswers.push({ id: newAnswer.id, text: newAnswer.text, correct: newAnswer.correct });
-            } else {
-                const result = await QuizAnswerModel.create({
-                    text: newAnswer.text,
-                    correct: newAnswer.correct,
-                    courseLessonNodeId: node.id
-                });
-                newAnswers.push({ id: result._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
+            const newAnswers: { id: string; text: string; correct: boolean }[] = [];
+
+            for (const newAnswer of answers) {
+                if (newAnswer.id && currentAnswerIds.some(id => id.equals(newAnswer.id))) {
+                    await QuizAnswerModel.updateOne(
+                        { _id: newAnswer.id },
+                        { text: newAnswer.text, correct: newAnswer.correct },
+                        { session }
+                    );
+                    newAnswers.push({ id: newAnswer.id, text: newAnswer.text, correct: newAnswer.correct });
+                } else {
+                    const [created] = await QuizAnswerModel.create([{
+                        text: newAnswer.text,
+                        correct: newAnswer.correct,
+                        courseLessonNodeId: node.id
+                    }], { session });
+                    newAnswers.push({ id: created._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
+                }
             }
+
+            result.answers = newAnswers;
         }
 
-        data.answers = newAnswers;
+        return result;
+    });
+
+    if (!data) {
+        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
+        return;
     }
 
     res.json({ success: true, data });
@@ -444,21 +475,20 @@ const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(changeLessonIndexSchema, req);
     const { lessonId, newIndex } = body;
 
-    const lesson = await CourseLessonModel.findById(lessonId);
-    if (!lesson) {
-        res.status(404).json({ error: [{ message: "Lesson not found" }] });
-        return;
-    }
+    await withTransaction(async (session) => {
+        const lesson = await CourseLessonModel.findById(lessonId).session(session);
+        if (!lesson) return null;
 
-    const otherLesson = await CourseLessonModel.findOne({ course: lesson.course, index: newIndex });
-    if (!otherLesson) {
-        res.status(400).json({ error: [{ message: "New index is not valid" }] });
-        return;
-    }
+        const otherLesson = await CourseLessonModel.findOne({ course: lesson.course, index: newIndex }).session(session);
+        if (!otherLesson) return { invalidIndex: true } as const;
 
-    otherLesson.index = lesson.index;
-    lesson.index = newIndex;
-    await Promise.all([lesson.save(), otherLesson.save()]);
+        otherLesson.index = lesson.index;
+        lesson.index = newIndex;
+        await lesson.save({ session });
+        await otherLesson.save({ session });
+
+        return { index: newIndex };
+    });
 
     res.json({ success: true, data: { index: newIndex } });
 });
@@ -467,21 +497,20 @@ const changeLessonNodeIndex = asyncHandler(async (req: IAuthRequest, res: Respon
     const { body } = parseWithZod(changeLessonNodeIndexSchema, req);
     const { nodeId, newIndex } = body;
 
-    const node = await LessonNodeModel.findById(nodeId);
-    if (!node) {
-        res.status(404).json({ error: [{ message: "Lesson node not found" }] });
-        return;
-    }
+    await withTransaction(async (session) => {
+        const node = await LessonNodeModel.findById(nodeId).session(session);
+        if (!node) return null;
 
-    const otherNode = await LessonNodeModel.findOne({ lessonId: node.lessonId, index: newIndex });
-    if (!otherNode) {
-        res.status(400).json({ error: [{ message: "New index is not valid" }] });
-        return;
-    }
+        const otherNode = await LessonNodeModel.findOne({ lessonId: node.lessonId, index: newIndex }).session(session);
+        if (!otherNode) return { invalidIndex: true } as const;
 
-    otherNode.index = node.index;
-    node.index = newIndex;
-    await Promise.all([node.save(), otherNode.save()]);
+        otherNode.index = node.index;
+        node.index = newIndex;
+        await node.save({ session });
+        await otherNode.save({ session });
+
+        return { index: newIndex };
+    });
 
     res.json({ success: true, data: { index: newIndex } });
 });
@@ -623,9 +652,7 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(importCourseSchema, req);
     const { code, title, description, visible, lessons } = body;
 
-    const session = await mongoose.startSession();
-
-    const course = await session.withTransaction(async () => {
+    const course = await withTransaction(async (session) => {
         let course = await CourseModel.findOne({ code }).session(session);
 
         if (course) {
@@ -639,33 +666,37 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             course = newCourse;
         }
 
-        for (let i = 0; i < lessons.length; i++) {
-            const lessonData = lessons[i];
-
-            const [lesson] = await CourseLessonModel.create([{
+        const createdLessons = await CourseLessonModel.insertMany(
+            lessons.map((lessonData, i) => ({
                 course: course._id,
                 title: lessonData.title,
                 index: i + 1,
                 nodes: lessonData.nodes.length
-            }], { session });
+            })),
+            { session }
+        );
 
-            const nodeDocs = lessonData.nodes.map((node, nodeIndex) => ({
-                lessonId: lesson._id,
+        const nodeDocs = lessons.flatMap((lessonData, i) =>
+            lessonData.nodes.map((node, nodeIndex) => ({
+                lessonId: createdLessons[i]._id,
                 index: nodeIndex + 1,
                 _type: node.type,
                 mode: node.mode,
                 codeId: node.codeId,
                 text: node.text || "",
                 correctAnswer: node.correctAnswer
-            }));
+            }))
+        );
 
-            if (nodeDocs.length > 0) {
-                const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
-                const answerDocs: Omit<QuizAnswer, "_id">[] = [];
+        if (nodeDocs.length > 0) {
+            const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
 
-                for (let j = 0; j < createdNodes.length; j++) {
-                    const createdNode = createdNodes[j];
-                    const sourceNode = lessonData.nodes[j];
+            const answerDocs: Omit<QuizAnswer, "_id">[] = [];
+            let nodeOffset = 0;
+
+            for (const lessonData of lessons) {
+                for (const sourceNode of lessonData.nodes) {
+                    const createdNode = createdNodes[nodeOffset++];
 
                     if (
                         sourceNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
@@ -680,17 +711,15 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
                         });
                     }
                 }
+            }
 
-                if (answerDocs.length > 0) {
-                    await QuizAnswerModel.insertMany(answerDocs, { session });
-                }
+            if (answerDocs.length > 0) {
+                await QuizAnswerModel.insertMany(answerDocs, { session });
             }
         }
 
         return course;
     });
-
-    await session.endSession();
 
     res.json({
         success: true,

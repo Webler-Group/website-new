@@ -15,8 +15,9 @@ import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeC
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { deleteCodeAndCleanup, formatCodeMinimal } from "../helpers/codesHelper";
-import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
+import { withTransaction } from "../utils/transaction";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -229,7 +230,9 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await deleteCodeAndCleanup(code._id);
+    await withTransaction(async (session) => {
+        await deleteCodeAndCleanup(code._id, session);
+    });
 
     res.json({ success: true });
 });
@@ -239,26 +242,33 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { codeId, vote } = body;
     const currentUserId = req.userId;
 
-    const code = await CodeModel.findById(codeId);
-    if (!code) {
+    const upvote = await withTransaction(async (session) => {
+        const code = await CodeModel.findById(codeId).session(session);
+        if (!code) return null;
+
+        let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId }).session(session);
+
+        if (vote === 1) {
+            if (!upvote) {
+                [upvote] = await UpvoteModel.create([{ user: currentUserId, parentId: codeId }], { session });
+                code.$inc("votes", 1);
+                await code.save({ session });
+            }
+        } else if (vote === 0) {
+            if (upvote) {
+                await UpvoteModel.deleteOne({ _id: upvote._id }, { session });
+                upvote = null;
+                code.$inc("votes", -1);
+                await code.save({ session });
+            }
+        }
+
+        return upvote;
+    });
+
+    if (upvote === null && upvote !== undefined) {
         res.status(404).json({ error: [{ message: "Code not found" }] });
         return;
-    }
-
-    let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId });
-    if (vote === 1) {
-        if (!upvote) {
-            upvote = await UpvoteModel.create({ user: currentUserId, parentId: codeId });
-            code.$inc("votes", 1);
-            await code.save();
-        }
-    } else if (vote === 0) {
-        if (upvote) {
-            await UpvoteModel.deleteOne({ _id: upvote._id });
-            upvote = null;
-            code.$inc("votes", -1);
-            await code.save();
-        }
     }
 
     res.json({ vote: upvote ? 1 : 0 });
@@ -343,57 +353,61 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { codeId, message, parentId } = body;
     const currentUserId = req.userId;
 
-    const code = await CodeModel.findById(codeId);
-    if (!code) {
-        res.status(404).json({ error: [{ message: "Code not found" }] });
-        return;
-    }
+    const reply = await withTransaction(async (session) => {
+        const code = await CodeModel.findById(codeId).session(session);
+        if (!code) return null;
 
-    let parentPost = null;
-    if (parentId) {
-        parentPost = await PostModel.findById(parentId);
-        if (!parentPost) {
-            res.status(404).json({ error: [{ message: "Parent post not found" }] });
-            return;
+        let parentPost = null;
+        if (parentId) {
+            parentPost = await PostModel.findById(parentId).session(session);
+            if (!parentPost) return null;
         }
-    }
 
-    const reply = await PostModel.create({
-        _type: PostTypeEnum.CODE_COMMENT,
-        message,
-        codeId,
-        parentId,
-        user: currentUserId
+        const reply = new PostModel({
+            _type: PostTypeEnum.CODE_COMMENT,
+            message,
+            codeId,
+            parentId,
+            user: currentUserId
+        });
+        await savePost(reply, session);
+
+        if (parentPost && !parentPost.user.equals(currentUserId)) {
+            await sendNotifications({
+                title: "New reply",
+                message: `{action_user} replied to your comment on "${code.name}"`,
+                type: NotificationTypeEnum.CODE_COMMENT,
+                actionUser: new Types.ObjectId(currentUserId),
+                codeId: code._id,
+                postId: reply._id
+            }, [parentPost.user]);
+        }
+
+        if (!code.user.equals(currentUserId) && (!parentPost || !code.user.equals(parentPost.user))) {
+            await sendNotifications({
+                title: "New comment",
+                message: `{action_user} posted comment on your code "${code.name}"`,
+                type: NotificationTypeEnum.CODE_COMMENT,
+                actionUser: new Types.ObjectId(currentUserId),
+                codeId: code._id,
+                postId: reply._id
+            }, [code.user]);
+        }
+
+        code.$inc("comments", 1);
+        await code.save({ session });
+
+        if (parentPost) {
+            parentPost.$inc("answers", 1);
+            await parentPost.save({ session });
+        }
+
+        return reply;
     });
 
-    if (parentPost && !parentPost.user.equals(currentUserId)) {
-        await sendNotifications({
-            title: "New reply",
-            message: `{action_user} replied to your comment on "${code.name}"`,
-            type: NotificationTypeEnum.CODE_COMMENT,
-            actionUser: new Types.ObjectId(currentUserId),
-            codeId: code._id,
-            postId: reply._id
-        }, [parentPost.user]);
-    }
-
-    if (!code.user.equals(currentUserId) && (!parentPost || !code.user.equals(parentPost.user))) {
-        await sendNotifications({
-            title: "New comment",
-            message: `{action_user} posted comment on your code "${code.name}"`,
-            type: NotificationTypeEnum.CODE_COMMENT,
-            actionUser: new Types.ObjectId(currentUserId),
-            codeId: code._id,
-            postId: reply._id
-        }, [code.user]);
-    }
-
-    code.$inc("comments", 1);
-    await code.save();
-
-    if (parentPost) {
-        parentPost.$inc("answers", 1);
-        await parentPost.save();
+    if (!reply) {
+        res.status(404).json({ error: [{ message: "Code or parent post not found" }] });
+        return;
     }
 
     const attachments = await getAttachmentsByPostId({ post: reply._id });
@@ -429,7 +443,9 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     comment.message = message;
-    await comment.save();
+    await withTransaction(async (session) => {
+        await savePost(comment, session);
+    });
 
     const attachments = await getAttachmentsByPostId({ post: comment._id });
 
@@ -461,7 +477,9 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         return;
     }
 
-    await deletePostsAndCleanup({ _id: id });
+    await withTransaction(async (session) => {
+        await deletePostsAndCleanup({ _id: id }, session);
+    });
 
     res.json({ success: true });
 });

@@ -11,6 +11,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowingModel from "../models/UserFollowing";
 import { getImageUrl } from "./mediaController";
+import { formatAuthUser } from "../helpers/userHelper";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -46,18 +47,7 @@ const login = asyncHandler(async (req, res) => {
     res.json({
         accessToken,
         expiresIn,
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            avatarUrl: getImageUrl(user.avatarHash),
-            roles: user.roles,
-            emailVerified: user.emailVerified,
-            countryCode: user.countryCode,
-            registerDate: user.createdAt,
-            level: user.level,
-            xp: user.xp
-        }
+        user: formatAuthUser(user)
     })
 
 })
@@ -134,18 +124,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     res.json({
         accessToken,
         expiresIn,
-        user: {
-            id: user._id,
-            name: user.name,
-            email: user.email,
-            avatarUrl: getImageUrl(user.avatarHash),
-            roles: user.roles,
-            emailVerified: user.emailVerified,
-            countryCode: user.countryCode,
-            registerDate: user.createdAt,
-            level: user.level,
-            xp: user.xp
-        }
+        user: formatAuthUser(user)
     });
 });
 
@@ -167,15 +146,15 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
         async (err: VerifyErrors | null, decoded: any) => {
             if (err) {
                 res.status(403).json({ error: [{ message: "Please Login First" }] });
-                return
+                return;
             }
 
             const payload = decoded as RefreshTokenPayload;
-            const user = await UserModel.findById(payload.userId).select('roles active tokenVersion');
+            const user = await UserModel.findById(payload.userId, { roles: 1, active: 1, tokenVersion: 1 });
 
-            if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) {  // NEW: Check version
+            if (!user || !user.active || payload.tokenVersion !== user.tokenVersion) {
                 res.status(401).json({ error: [{ message: "Unauthorized" }] });
-                return
+                return;
             }
 
             const { accessToken, data: tokenInfo } = await signAccessToken({
@@ -235,18 +214,18 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
         config.emailTokenSecret,
         async (err: VerifyErrors | null, decoded: any) => {
             if (!err) {
-                const userId = decoded.userId as string;
+                const userId = decoded.userId;
 
                 if (userId !== resetId || decoded.action != "reset-password") {
                     res.json({ error: [{ message: "Unauthorized" }] });
-                    return
+                    return;
                 }
 
                 const user = await UserModel.findById(resetId);
 
                 if (user === null) {
                     res.status(404).json({ error: [{ message: "User not found" }] })
-                    return
+                    return;
                 }
 
                 user.password = password;

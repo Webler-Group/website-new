@@ -26,12 +26,13 @@ export const joinChannel = async (channelId: Types.ObjectId, userId: Types.Objec
     if (exists == null) {
         await ChannelParticipantModel.create([{ channel: channelId, user: userId }], { session });
 
-        await sendChannelMessage({
-            type: ChannelMessageTypeEnum.USER_JOINED,
+        const joinMessage = new ChannelMessageModel({
+            _type: ChannelMessageTypeEnum.USER_JOINED,
             content: "{action_user} joined",
-            channelId: channelId,
-            userId: userId
-        }, session);
+            channel: channelId,
+            user: userId
+        });
+        await saveChannelMessage(joinMessage, session);
     }
 }
 
@@ -84,141 +85,137 @@ export const processChannelInvite = async (invite: ChannelInvite & { _id: Types.
     await ChannelInviteModel.deleteOne({ _id: invite._id }, { session });
 }
 
-export const updateChannelMessage = async (message: DocumentType<ChannelMessage>, session?: mongoose.ClientSession) => {
-    await message.save({ session });
+export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, session?: mongoose.ClientSession) => {
+    const isNew = doc.isNew;
+    const contentModified = isNew || doc.isModified("content");
+    const isDeleted = doc.isModified("deleted") && doc.deleted === true;
 
-    const participants = await ChannelParticipantModel.find({ channel: message.channel }, { user: 1 }).lean<{ user: Types.ObjectId }[]>().session(session ?? null);
-    const participantsIds = participants.map(x => x.user);
+    await doc.save({ session });
 
-    const io = getIO();
-    if (message.isModified("content")) {
-        await updatePostAttachments(message.content, { channelMessage: message._id });
-        const attachments = await getAttachmentsByPostId({ channelMessage: message._id });
-        io?.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_edited", {
-            messageId: message._id.toString(),
-            channelId: message.channel.toString(),
-            content: message.content,
-            attachments,
-            updatedAt: new Date()
-        });
-    }
-    if (message.isModified("deleted") && message.deleted === true) {
-        io?.to(participantsIds.map(userId => uidRoom(userId.toString()))).emit("channels:message_deleted", {
-            messageId: message._id.toString(),
-            channelId: message.channel.toString()
-        });
-    }
-}
-
-interface SendChannelMessageParams {
-    type: ChannelMessageTypeEnum,
-    userId: Types.ObjectId,
-    channelId: Types.ObjectId,
-    content: string,
-    repliedTo?: Types.ObjectId | null
-}
-
-export const sendChannelMessage = async (params: SendChannelMessageParams, session?: mongoose.ClientSession) => {
-    const [doc] = await ChannelMessageModel.create([{
-        _type: params.type,
-        content: params.content,
-        channel: params.channelId,
-        user: params.userId,
-        repliedTo: params.repliedTo
-    }], { session });
-
-    const channel = await ChannelModel.findById(doc.channel).session(session ?? null);
-    if (!channel) {
-        throw new HttpError("Channel not found", 404);
+    if (contentModified) {
+        await updatePostAttachments(doc.content, { channelMessage: doc._id }, session);
     }
 
-    channel.lastMessage = doc._id;
-    await channel.save({ session });
-
-    await ChannelParticipantModel.updateMany(
-        {
-            channel: doc.channel,
-            user: { $ne: doc.user },
-            $or: [
-                { lastActiveAt: null },
-                { lastActiveAt: { $lt: doc.createdAt } }
-            ]
-        },
-        { $inc: { unreadCount: 1 } },
-        { session }
-    );
-
-    const user = await User.findById(doc.user, USER_MINIMAL_FIELDS).lean<UserMinimal & { _id: Types.ObjectId }>().session(session ?? null);
-    if (!user) {
-        throw new HttpError("User not found", 404);
-    }
-
-    const participants = await ChannelParticipantModel.find({ channel: doc.channel }, { user: 1, muted: 1, unreadCount: 1 }).lean().session(session ?? null);
-
-    const userIdsToNotify = participants
-        .filter(p => !p.user.equals(user._id) && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
-        .map(p => p.user);
-
-    await sendNotifications(
-        {
-            title: "New message",
-            type: NotificationTypeEnum.CHANNELS,
-            actionUser: user._id,
-            message: channel._type == ChannelTypeEnum.DM
-                ? user.name + " sent you message"
-                : "New messages in group " + channel.title,
-            url: "/Channels/" + channel._id
-        },
-        userIdsToNotify,
-        true,
-        session
-    );
-
-    const io = getIO();
-
-    await updatePostAttachments(doc.content, { channelMessage: doc._id });
-    const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
-
-    let channelTitle = "";
-    const userIds = participants.map(user => user.user);
-    const userIdsNotMuted = participants.filter(x => !x.muted).map(x => x.user);
-
-    if (doc._type == ChannelMessageTypeEnum.USER_LEFT) {
-        userIds.push(user._id);
-    } else if (doc._type == ChannelMessageTypeEnum.TITLE_CHANGED) {
-        channelTitle = channel.title!;
-    }
-
-    const reply = doc.repliedTo
-        ? await ChannelMessageModel.findById(doc.repliedTo)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+    const [participants, user] = await Promise.all([
+        ChannelParticipantModel
+            .find({ channel: doc.channel }, { user: 1, muted: 1, unreadCount: 1 })
             .lean()
+            .session(session ?? null),
+        User
+            .findById(doc.user, USER_MINIMAL_FIELDS)
+            .lean<UserMinimal & { _id: Types.ObjectId }>()
             .session(session ?? null)
-        : null;
+    ]);
 
-    io?.to(userIds.map(x => uidRoom(x.toString()))).emit("channels:new_message", {
-        id: doc._id,
-        type: doc._type,
-        channelId: doc.channel.toString(),
-        channelTitle,
-        content: doc.content,
-        createdAt: doc.createdAt,
-        updatedAt: doc.updatedAt,
-        viewed: false,
-        deleted: doc.deleted,
-        user: formatUserMinimal(user),
-        repliedTo: reply ? {
-            id: reply._id,
-            content: reply.content,
-            createdAt: reply.createdAt,
-            updatedAt: reply.updatedAt,
-            user: formatUserMinimal(reply.user),
-            deleted: reply.deleted
-        } : null,
-        attachments
-    });
+    if (!user) throw new HttpError("User not found", 404);
 
-    io?.to(userIdsNotMuted.map(x => uidRoom(x.toString()))).emit("channels:new_message_info", {});
+    const io = getIO();
 
-    return doc;
-}
+    const allParticipantRooms = participants.map(p => uidRoom(p.user.toString()));
+
+    const unmutedParticipantRooms = participants
+        .filter(p => !p.user.equals(user._id) && !p.muted)
+        .map(p => uidRoom(p.user.toString()));
+
+    if (isNew) {
+        const channel = await ChannelModel.findById(doc.channel).session(session ?? null);
+        if (!channel) throw new HttpError("Channel not found", 404);
+
+        channel.lastMessage = doc._id;
+        await channel.save({ session });
+
+        await ChannelParticipantModel.updateMany(
+            {
+                channel: doc.channel,
+                user: { $ne: doc.user },
+                $or: [
+                    { lastActiveAt: null },
+                    { lastActiveAt: { $lt: doc.createdAt } }
+                ]
+            },
+            { $inc: { unreadCount: 1 } },
+            { session }
+        );
+
+        const pushNotificationUserIds = participants
+            .filter(p => !p.user.equals(user._id) && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
+            .map(p => p.user);
+
+        await sendNotifications(
+            {
+                title: "New message",
+                type: NotificationTypeEnum.CHANNELS,
+                actionUser: user._id,
+                message: channel._type === ChannelTypeEnum.DM
+                    ? `${user.name} sent you a message`
+                    : `New messages in group ${channel.title}`,
+                url: "/Channels/" + channel._id
+            },
+            pushNotificationUserIds,
+            true,
+            session
+        );
+
+        const [attachments, reply] = await Promise.all([
+            getAttachmentsByPostId({ channelMessage: doc._id }),
+            doc.repliedTo
+                ? ChannelMessageModel
+                    .findById(doc.repliedTo)
+                    .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                    .lean()
+                    .session(session ?? null)
+                : Promise.resolve(null)
+        ]);
+
+        const socketRooms = doc._type === ChannelMessageTypeEnum.USER_LEFT
+            ? [...allParticipantRooms, uidRoom(user._id.toString())]
+            : allParticipantRooms;
+
+        const channelTitle = doc._type === ChannelMessageTypeEnum.TITLE_CHANGED
+            ? channel.title!
+            : "";
+
+        io?.to(socketRooms).emit("channels:new_message", {
+            id: doc._id,
+            type: doc._type,
+            channelId: doc.channel.toString(),
+            channelTitle,
+            content: doc.content,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            viewed: false,
+            deleted: doc.deleted,
+            user: formatUserMinimal(user),
+            repliedTo: reply ? {
+                id: reply._id,
+                content: reply.content,
+                createdAt: reply.createdAt,
+                updatedAt: reply.updatedAt,
+                user: formatUserMinimal(reply.user),
+                deleted: reply.deleted
+            } : null,
+            attachments
+        });
+
+        io?.to(unmutedParticipantRooms).emit("channels:new_message_info", {});
+
+    } else {
+        if (contentModified) {
+            const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
+            io?.to(allParticipantRooms).emit("channels:message_edited", {
+                messageId: doc._id.toString(),
+                channelId: doc.channel.toString(),
+                content: doc.content,
+                attachments,
+                updatedAt: new Date()
+            });
+        }
+
+        if (isDeleted) {
+            io?.to(allParticipantRooms).emit("channels:message_deleted", {
+                messageId: doc._id.toString(),
+                channelId: doc.channel.toString()
+            });
+        }
+    }
+};

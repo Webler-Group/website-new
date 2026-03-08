@@ -14,7 +14,7 @@ export class ChannelParticipant {
     @prop({ ref: "Channel", required: true })
     channel!: Types.ObjectId;
 
-    @prop({ default: null })
+    @prop({ type: Date, default: null })
     lastActiveAt!: Date | null;
 
     @prop({ default: false })

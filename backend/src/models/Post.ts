@@ -1,16 +1,7 @@
-import { prop, getModelForClass, modelOptions, pre, post } from "@typegoose/typegoose";
+import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import PostTypeEnum from "../data/PostTypeEnum";
 
-@pre<Post>("save", function () {
-    this.$locals.messageModified = this.isModified("message");
-})
-@post<Post>("save", async function (doc) {
-    if (doc.$locals.messageModified) {
-        const { updatePostAttachments } = await import("../helpers/postsHelper");
-        await updatePostAttachments(doc.message, { post: doc._id });
-    }
-})
 @modelOptions({ schemaOptions: { collection: "posts", timestamps: true } })
 export class Post {
     @prop({

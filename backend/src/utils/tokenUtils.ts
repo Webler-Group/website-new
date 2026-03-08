@@ -1,8 +1,7 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import jwt from "jsonwebtoken";
 import { config } from "../confg";
 import bcrypt from "bcrypt";
-import { v4 as uuid } from "uuid";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 

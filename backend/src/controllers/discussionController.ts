@@ -16,36 +16,36 @@ import RolesEnum from "../data/RolesEnum";
 import { isAuthorizedRole } from "../utils/modelUtils";
 import { getImageUrl } from "./mediaController";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { deletePostsAndCleanup, getAttachmentsByPostId } from "../helpers/postsHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
+import { withTransaction } from "../utils/transaction";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
     const { title, message, tags } = body;
     const currentUserId = req.userId;
 
-    const tagIds: Types.ObjectId[] = [];
-
-    for (const tagName of tags) {
-        const tag = await TagModel.findOne({ name: tagName }).lean();
-        if (tag) {
-            tagIds.push(tag._id);
+    const question = await withTransaction(async (session) => {
+        const tagIds: Types.ObjectId[] = [];
+        for (const tagName of tags) {
+            const tag = await TagModel.findOne({ name: tagName }).lean().session(session);
+            if (tag) tagIds.push(tag._id);
         }
-    }
 
-    const question = await PostModel.create({
-        _type: PostTypeEnum.QUESTION,
-        title,
-        message,
-        tags: tagIds,
-        user: currentUserId
-    });
+        const question = new PostModel({
+            _type: PostTypeEnum.QUESTION,
+            title,
+            message,
+            tags: tagIds,
+            user: currentUserId
+        });
+        await savePost(question, session);
 
-    await PostFollowing.create({
-        user: currentUserId,
-        following: question._id
+        await PostFollowing.create([{ user: currentUserId, following: question._id }], { session });
+
+        return question;
     });
 
     res.json({
@@ -202,47 +202,54 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { message, questionId } = body;
     const currentUserId = req.userId;
 
-    const question = await PostModel.findById(questionId);
-    if (!question) {
-        res.status(404).json({ error: [{ message: "Question not found" }] });
-        return;
-    }
+    const reply = await withTransaction(async (session) => {
+        const question = await PostModel.findById(questionId).session(session);
+        if (!question) return null;
 
-    const reply = await PostModel.create({
-        _type: PostTypeEnum.ANSWER,
-        message,
-        parentId: questionId,
-        user: currentUserId
-    });
+        const reply = new PostModel({
+            _type: PostTypeEnum.ANSWER,
+            message,
+            parentId: questionId,
+            user: currentUserId
+        });
+        await savePost(reply, session);
 
-    const questionFollowed = await PostFollowing.exists({ user: currentUserId, following: question._id });
-    if (!questionFollowed) {
-        await PostFollowing.create({ user: currentUserId, following: question._id });
-    }
+        const questionFollowed = await PostFollowing.exists({ user: currentUserId, following: question._id }).session(session);
+        if (!questionFollowed) {
+            await PostFollowing.create([{ user: currentUserId, following: question._id }], { session });
+        }
 
-    const followers = await PostFollowing.find({ following: question._id }).lean();
-    await sendNotifications({
-        title: "New answer",
-        type: NotificationTypeEnum.QA_ANSWER,
-        actionUser: new Types.ObjectId(currentUserId),
-        message: `{action_user} posted in "${question.title}"`,
-        questionId: question._id,
-        postId: reply._id
-    }, followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user));
-
-    if (!question.user.equals(currentUserId)) {
+        const followers = await PostFollowing.find({ following: question._id }).lean().session(session);
         await sendNotifications({
             title: "New answer",
             type: NotificationTypeEnum.QA_ANSWER,
             actionUser: new Types.ObjectId(currentUserId),
-            message: `{action_user} answered your question "${question.title}"`,
+            message: `{action_user} posted in "${question.title}"`,
             questionId: question._id,
             postId: reply._id
-        }, [question.user]);
-    }
+        }, followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user));
 
-    question.$inc("answers", 1);
-    await question.save();
+        if (!question.user.equals(currentUserId)) {
+            await sendNotifications({
+                title: "New answer",
+                type: NotificationTypeEnum.QA_ANSWER,
+                actionUser: new Types.ObjectId(currentUserId),
+                message: `{action_user} answered your question "${question.title}"`,
+                questionId: question._id,
+                postId: reply._id
+            }, [question.user]);
+        }
+
+        question.$inc("answers", 1);
+        await question.save({ session });
+
+        return reply;
+    });
+
+    if (!reply) {
+        res.status(404).json({ error: [{ message: "Question not found" }] });
+        return;
+    }
 
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
@@ -326,40 +333,55 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
     const { accepted, postId } = body;
     const currentUserId = req.userId;
 
-    const post = await PostModel.findById(postId);
-    if (!post) {
+    const result = await withTransaction(async (session) => {
+        const post = await PostModel.findById(postId).session(session);
+        if (!post) return null;
+
+        const question = await PostModel.findById(post.parentId).session(session);
+        if (!question) return { noQuestion: true } as const;
+
+        if (!question.user.equals(currentUserId)) return { unauthorized: true } as const;
+
+        if (accepted || post.isAccepted) {
+            question.isAccepted = accepted;
+            await question.save({ session });
+        }
+
+        post.isAccepted = accepted;
+        await post.save({ session });
+
+        if (accepted) {
+            const currentAcceptedPost = await PostModel.findOne({
+                parentId: post.parentId,
+                isAccepted: true,
+                _id: { $ne: postId }
+            }).session(session);
+
+            if (currentAcceptedPost) {
+                currentAcceptedPost.isAccepted = false;
+                await currentAcceptedPost.save({ session });
+            }
+        }
+
+        return { accepted };
+    });
+
+    if (!result) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
 
-    const question = await PostModel.findById(post.parentId);
-    if (!question) {
+    if ("noQuestion" in result) {
         res.status(404).json({ error: [{ message: "Question not found" }] });
         return;
     }
 
-    if (!question.user.equals(currentUserId)) {
+    if ("unauthorized" in result) {
         res.status(401).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    if (accepted || post.isAccepted) {
-        question.isAccepted = accepted;
-        await question.save();
-    }
-
-    post.isAccepted = accepted;
-    await post.save();
-
-    if (accepted) {
-        const currentAcceptedPost = await PostModel.findOne({ parentId: post.parentId, isAccepted: true, _id: { $ne: postId } });
-        if (currentAcceptedPost) {
-            currentAcceptedPost.isAccepted = false;
-            await currentAcceptedPost.save();
-        }
-    }
-
-    res.json({ success: true, accepted });
+    res.json({ success: true, accepted: result.accepted });
 });
 
 const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -384,7 +406,9 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     question.message = message;
     question.tags = tagIds;
 
-    await question.save();
+    await withTransaction(async (session) => {
+        await savePost(question, session);
+    });
 
     const attachments = await getAttachmentsByPostId({ post: question._id });
 
@@ -416,7 +440,9 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return;
     }
 
-    await deletePostsAndCleanup({ _id: questionId });
+    await withTransaction(async (session) => {
+        await deletePostsAndCleanup({ _id: questionId }, session);
+    });
 
     res.json({ success: true });
 });
@@ -438,7 +464,9 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     reply.message = message;
-    await reply.save();
+    await withTransaction(async (session) => {
+        await savePost(reply, session);
+    });
 
     const attachments = await getAttachmentsByPostId({ post: reply._id });
 
@@ -474,7 +502,9 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await deletePostsAndCleanup({ _id: replyId });
+    await withTransaction(async (session) => {
+        await deletePostsAndCleanup({ _id: replyId }, session);
+    });
 
     res.json({ success: true });
 });
@@ -484,29 +514,36 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { postId, vote } = body;
     const currentUserId = req.userId;
 
-    const post = await PostModel.findById(postId);
-    if (!post) {
+    const upvote = await withTransaction(async (session) => {
+        const post = await PostModel.findById(postId).session(session);
+        if (!post) return null;
+
+        let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
+
+        if (vote === 1) {
+            if (!upvote) {
+                [upvote] = await UpvoteModel.create([{ user: currentUserId, parentId: postId }], { session });
+                post.$inc("votes", 1);
+                await post.save({ session });
+            }
+        } else if (vote === 0) {
+            if (upvote) {
+                await UpvoteModel.deleteOne({ _id: upvote._id }, { session });
+                upvote = null;
+                post.$inc("votes", -1);
+                await post.save({ session });
+            }
+        }
+
+        return { upvote, found: true };
+    });
+
+    if (!upvote) {
         res.status(404).json({ error: [{ message: "Post not found" }] });
         return;
     }
 
-    let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId });
-    if (vote === 1) {
-        if (!upvote) {
-            upvote = await UpvoteModel.create({ user: currentUserId, parentId: postId });
-            post.$inc("votes", 1);
-            await post.save();
-        }
-    } else if (vote === 0) {
-        if (upvote) {
-            await UpvoteModel.deleteOne({ _id: upvote._id });
-            upvote = null;
-            post.$inc("votes", -1);
-            await post.save();
-        }
-    }
-
-    res.json({ success: true, vote: upvote ? 1 : 0 });
+    res.json({ success: true, vote: upvote.upvote ? 1 : 0 });
 });
 
 const followQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {

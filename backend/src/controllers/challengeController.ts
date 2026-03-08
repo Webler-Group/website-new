@@ -12,6 +12,7 @@ import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/Challen
 import RolesEnum from "../data/RolesEnum";
 import UserModel from "../models/User";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
+import { withTransaction } from "../utils/transaction";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -347,7 +348,9 @@ const deleteChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    await deleteChallengesAndCleanup({ _id: challengeId });
+    await withTransaction(async (session) => {
+        await deleteChallengesAndCleanup({ _id: challengeId }, session);
+    });
 
     res.json({ success: true });
 });
@@ -389,21 +392,30 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
         return;
     }
 
-    if (job.submission && job.submission.passed) {
-        const [user, challenge] = await Promise.all([
-            UserModel.findById(req.userId),
-            ChallengeModel.findById(job.challenge).lean()
-        ]);
+    if (job.submission?.passed) {
+        await withTransaction(async (session) => {
+            const [user, challenge] = await Promise.all([
+                UserModel.findById(req.userId).session(session),
+                ChallengeModel.findById(job.challenge, { xp: 1 }).lean().session(session)
+            ]);
 
-        if (user) {
+            if (!user) return;
+
             const reward = challenge?.xp ?? 0;
-            const submission = await ChallengeSubmissionModel.findOne({ user: req.userId, challenge: job.challenge, language: job.language });
+
+            const submission = await ChallengeSubmissionModel.findOne({
+                user: req.userId,
+                challenge: job.challenge,
+                language: job.language
+            }).session(session);
+
             if (submission && submission.reward !== reward) {
-                user.xp += reward;
+                user.$inc("xp", reward);
                 submission.reward = reward;
-                await Promise.all([user.save(), submission.save()]);
+                await user.save({ session });
+                await submission.save({ session });
             }
-        }
+        });
     }
 
     res.json({

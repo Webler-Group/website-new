@@ -1,8 +1,8 @@
 import { Response } from "express";
 import { IAuthRequest } from "../middleware/verifyJWT";
-import UserModel from "../models/User";
+import UserModel, { USER_ADMIN_FIELDS, UserAdmin } from "../models/User";
 import asyncHandler from "express-async-handler";
-import mongoose from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
 import RolesEnum from "../data/RolesEnum";
 import {
@@ -11,23 +11,22 @@ import {
     banUserSchema,
     updateRolesSchema
 } from "../validation/adminSchema";
-
 import { parseWithZod } from "../utils/zodUtils";
 import { getImageUrl } from "./mediaController";
 import PostModel from "../models/Post";
 import CodeModel from "../models/Code";
 import NotificationModel from "../models/Notification";
-
+import { withTransaction } from "../utils/transaction";
+import { formatUserAdmin } from "../helpers/userHelper";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
     const { search, count, page, date, role, active } = body;
 
-    const filter: any = {};
+    const filter: mongoose.QueryFilter<typeof UserModel> = {};
 
     if (search && search.trim().length > 0) {
-        const safeQuery = escapeRegex(search.trim());
-        filter.name = new RegExp(safeQuery, "i");
+        filter.name = new RegExp(escapeRegex(search.trim()), "i");
     }
 
     if (date) {
@@ -47,35 +46,17 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         filter.active = active;
     }
 
-    const users = await UserModel.find(filter)
-        .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban")
+    const users = await UserModel.find(filter, { ...USER_ADMIN_FIELDS, bio: 0 })
         .sort({ createdAt: -1 })
         .skip((page - 1) * count)
-        .limit(count);
+        .limit(count)
+        .lean<(UserAdmin & { _id: Types.ObjectId })[]>();
 
     const total = await UserModel.countDocuments(filter);
 
     res.json({
         success: true,
-        users: users.map(u => ({
-            id: u._id,
-            email: u.email,
-            countryCode: u.countryCode,
-            name: u.name,
-            avatarUrl: getImageUrl(u.avatarHash),
-            roles: u.roles,
-            registerDate: u.createdAt,
-            level: u.level,
-            verified: u.emailVerified,
-            active: u.active,
-            ban: u.ban
-                ? {
-                    author: u.ban.author,
-                    note: u.ban.note,
-                    date: u.ban.date
-                }
-                : null
-        })),
+        users: users.map(u => formatUserAdmin(u)),
         count: total
     });
 });
@@ -84,8 +65,8 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUserSchema, req);
     const { userId } = body;
 
-    const user = await UserModel.findById(userId)
-        .select("_id email countryCode name avatarHash roles createdAt level emailVerified active ban bio");
+    const user = await UserModel.findById(userId, USER_ADMIN_FIELDS)
+        .lean<UserAdmin & { _id: Types.ObjectId }>();;
 
     if (!user) {
         res.status(404).json({ error: [{ message: "User not found" }] });
@@ -94,26 +75,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        user: {
-            id: user._id,
-            email: user.email,
-            countryCode: user.countryCode,
-            name: user.name,
-            avatarUrl: getImageUrl(user.avatarHash),
-            roles: user.roles,
-            registerDate: user.createdAt,
-            level: user.level,
-            verified: user.emailVerified,
-            active: user.active,
-            bio: user.bio,
-            ban: (!user.active && user.ban)
-                ? {
-                    author: user.ban.author,
-                    note: user.ban.note,
-                    date: user.ban.date
-                }
-                : null
-        }
+        user: formatUserAdmin(user)
     });
 });
 
@@ -122,43 +84,41 @@ const banUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, active, note } = body;
     const currentUserId = req.userId;
 
-    const user = await UserModel.findById(userId);
-    if (!user) {
+    const result = await withTransaction(async (session) => {
+        const user = await UserModel.findById(userId).session(session);
+        if (!user) return null;
+
+        if (user.roles.includes(RolesEnum.ADMIN)) return { unauthorized: true } as const;
+
+        const activeChanged = user.active !== active;
+        user.active = active;
+
+        if (activeChanged) {
+            await PostModel.updateMany({ user: user._id }, { $set: { hidden: !active } }, { session });
+            await CodeModel.updateMany({ user: user._id }, { $set: { hidden: !active } }, { session });
+            await NotificationModel.updateMany({ actionUser: user._id }, { $set: { hidden: !active } }, { session });
+        }
+
+        user.ban = !active
+            ? { author: new mongoose.Types.ObjectId(currentUserId!), note, date: new Date() }
+            : null;
+
+        await user.save({ session });
+
+        return { active: user.active, ban: user.active ? null : user.ban };
+    });
+
+    if (!result) {
         res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
 
-    if (user.roles.includes(RolesEnum.ADMIN)) {
+    if ("unauthorized" in result) {
         res.status(403).json({ error: [{ message: "Unauthorized" }] });
         return;
     }
 
-    user.active = active;
-
-    if (user.isModified("active")) {
-        await PostModel.updateMany({ user: user._id }, { $set: { hidden: !user.active } });
-        await CodeModel.updateMany({ user: user._id }, { $set: { hidden: !user.active } });
-        await NotificationModel.updateMany({ actionUser: user._id }, { $set: { hidden: !user.active } });
-    }
-
-    if (!user.active) {
-        user.ban = {
-            author: new mongoose.Types.ObjectId(currentUserId!),
-            note,
-            date: new Date()
-        };
-    } else {
-        user.ban = null;
-    }
-
-    await user.save();
-    res.json({
-        success: true,
-        data: {
-            active: user.active,
-            ban: user.active ? null : user.ban
-        }
-    });
+    res.json({ success: true, data: result });
 });
 
 const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -173,13 +133,9 @@ const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     user.roles = roles;
     await user.save();
-    res.json({
-        success: true,
-        data: { roles: user.roles }
-    });
+
+    res.json({ success: true, data: { roles: user.roles } });
 });
-
-
 
 const controller = {
     getUsersList,

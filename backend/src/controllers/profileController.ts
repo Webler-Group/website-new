@@ -27,6 +27,7 @@ import { getImageUrl } from "./mediaController";
 import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { Tag } from "../models/Tag";
+import { withTransaction } from "../utils/transaction";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -239,37 +240,46 @@ const verifyEmailChange = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { code } = body;
 
     const record = await EmailChangeRecord.findOne({ userId: currentUserId, code }).lean();
-
     if (!record) {
         res.status(400).json({ error: [{ message: "Invalid or expired code" }] });
         return;
     }
 
-    await EmailChangeRecord.deleteOne({ _id: record._id });
-
-    // Check expiration (15 minutes = 900000 ms)
     const now = Date.now();
     if (now - record.createdAt.getTime() > 15 * 60 * 1000) {
+        await EmailChangeRecord.deleteOne({ _id: record._id });
         res.status(403).json({ error: [{ message: "Code has expired" }] });
         return;
     }
 
-    const user = await UserModel.findById(currentUserId);
-    if (!user) {
-        res.status(404).json({ message: "User not found" });
+    const result = await withTransaction(async (session) => {
+        await EmailChangeRecord.deleteOne({ _id: record._id }, { session });
+
+        const user = await UserModel.findById(currentUserId).session(session);
+        if (!user) return null;
+
+        if (await UserModel.exists({ email: record.newEmail }).session(session)) {
+            return { emailTaken: true } as const;
+        }
+
+        user.email = record.newEmail;
+        user.emailVerified = config.nodeEnv === "development";
+        await user.save({ session });
+
+        return { email: user.email };
+    });
+
+    if (!result) {
+        res.status(404).json({ error: [{ message: "User not found" }] });
         return;
     }
 
-    if (await UserModel.exists({ email: record.newEmail })) {
+    if ("emailTaken" in result) {
         res.status(401).json({ error: [{ message: "Email is already taken" }] });
         return;
     }
 
-    user.email = record.newEmail;
-    user.emailVerified = config.nodeEnv == "development";
-    await user.save();
-
-    res.json({ success: true, data: { email: user.email } });
+    res.json({ success: true, data: { email: result.email } });
 });
 
 
@@ -323,17 +333,15 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return;
     }
 
-    await UserFollowingModel.create({
-        user: currentUserId,
-        following: userId
+    await withTransaction(async (session) => {
+        await UserFollowingModel.create([{ user: currentUserId, following: userId }], { session });
+        await sendNotifications({
+            title: "New follower",
+            actionUser: new Types.ObjectId(currentUserId),
+            type: NotificationTypeEnum.PROFILE_FOLLOW,
+            message: "{action_user} followed you"
+        }, [new Types.ObjectId(userId)]);
     });
-
-    await sendNotifications({
-        title: "New follower",
-        actionUser: new Types.ObjectId(currentUserId),
-        type: NotificationTypeEnum.PROFILE_FOLLOW,
-        message: "{action_user} followed you"
-    }, [new Types.ObjectId(userId)]);
 
     res.json({ success: true });
 });
@@ -349,20 +357,19 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const userFollowing = await UserFollowingModel.findOne({ user: currentUserId, following: userId });
-    if (userFollowing === null) {
+    if (!userFollowing) {
         res.status(204).json({ success: true });
         return;
     }
 
-    const result = await UserFollowingModel.deleteOne({ user: currentUserId, following: userId })
-    if (result.deletedCount == 1) {
-
+    await withTransaction(async (session) => {
+        await UserFollowingModel.deleteOne({ _id: userFollowing._id }, { session });
         await deleteNotifications({
             user: userId,
             actionUser: currentUserId,
             _type: NotificationTypeEnum.PROFILE_FOLLOW
-        })
-    }
+        }, session);
+    });
 
     res.json({ success: true });
 });
@@ -604,15 +611,14 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { body } = parseWithZod(searchProfilesSchema, req);
     const { searchQuery } = body;
 
-    const match: any = { active: true, roles: RolesEnum.USER };
+    const match: mongoose.QueryFilter<typeof UserModel> = { active: true, roles: RolesEnum.USER };
 
     if (searchQuery && searchQuery.trim() !== "") {
         const safeQuery = escapeRegex(searchQuery.trim());
-        const searchRegex = new RegExp(`^${safeQuery}`, "i");
-        match.name = searchRegex;
+        match.name = new RegExp(`^${safeQuery}`, "i");
     }
 
-    const users = await UserModel.find(match, USER_MINIMAL_FIELDS);
+    const users = await UserModel.find(match, USER_MINIMAL_FIELDS).lean<(UserMinimal & { _id: Types.ObjectId })[]>();
 
     res.json({
         users: users.map(u => formatUserMinimal(u))

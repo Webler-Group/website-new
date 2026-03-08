@@ -37,7 +37,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
-import { deleteChannelAndCleanup, joinChannel, processChannelInvite, sendChannelMessage, updateChannelMessage } from "../helpers/channelsHelper";
+import { deleteChannelAndCleanup, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
 import { getAttachmentsByPostId } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 
@@ -363,12 +363,13 @@ const groupRemoveUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
     await targetParticipant.deleteOne();
 
-    await sendChannelMessage({
-        type: ChannelMessageTypeEnum.USER_LEFT,
+    const leaveMessage = new ChannelMessageModel({
+        _type: ChannelMessageTypeEnum.USER_LEFT,
         content: "{action_user} was removed",
-        channelId: new Types.ObjectId(channelId),
-        userId: new Types.ObjectId(userId)
+        channel: channelId,
+        user: userId
     });
+    await saveChannelMessage(leaveMessage);
 
     res.json({ success: true });
 });
@@ -386,12 +387,13 @@ const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const result = await ChannelParticipantModel.deleteOne({ user: currentUserId, channel: channelId });
     if (result.deletedCount === 1) {
-        await sendChannelMessage({
-            type: ChannelMessageTypeEnum.USER_LEFT,
+        const leaveMessage = new ChannelMessageModel({
+            _type: ChannelMessageTypeEnum.USER_LEFT,
             content: "{action_user} left",
-            channelId: new Types.ObjectId(channelId),
-            userId: new Types.ObjectId(currentUserId)
+            channel: channelId,
+            user: currentUserId
         });
+        await saveChannelMessage(leaveMessage);
     }
 
     res.json({ success: true });
@@ -490,12 +492,13 @@ const groupRename = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     await ChannelModel.updateOne({ _id: channelId }, { title });
 
-    await sendChannelMessage({
-        type: ChannelMessageTypeEnum.TITLE_CHANGED,
+    const titleChangeMessage = new ChannelMessageModel({
+        _type: ChannelMessageTypeEnum.TITLE_CHANGED,
         content: "{action_user} renamed the group to " + title,
-        channelId: new Types.ObjectId(channelId),
-        userId: new Types.ObjectId(currentUserId)
+        channel: channelId,
+        user: currentUserId
     });
+    await saveChannelMessage(titleChangeMessage);
 
     res.json({ success: true, data: { title } });
 });
@@ -647,13 +650,14 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
             return;
         }
 
-        const newMessage = await sendChannelMessage({
-            type: ChannelMessageTypeEnum.MESSAGE,
+        const newMessage = new ChannelMessageModel({
+            _type: ChannelMessageTypeEnum.MESSAGE,
             content,
-            channelId: new Types.ObjectId(channelId),
-            repliedTo: repliedTo ? new Types.ObjectId(repliedTo) : null,
-            userId: new Types.ObjectId(currentUserId)
+            channel: channelId,
+            repliedTo: repliedTo,
+            user: currentUserId
         });
+        await saveChannelMessage(newMessage);
 
         const channel = await ChannelModel.findById(newMessage.channel).lean();
         if (channel && channel._type === ChannelTypeEnum.DM) {
@@ -686,7 +690,7 @@ const deleteMessageWS = async (socket: Socket, payload: unknown) => {
         }
 
         message.deleted = true;
-        await updateChannelMessage(message);
+        await saveChannelMessage(message);
     } catch (err) {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
@@ -708,7 +712,7 @@ const editMessageWS = async (socket: Socket, payload: unknown) => {
         }
 
         message.content = content;
-        await updateChannelMessage(message);
+        await saveChannelMessage(message);
     } catch (err) {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });

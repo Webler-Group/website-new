@@ -14,6 +14,7 @@ import { formatUserMinimal } from "./userHelper";
 import { truncate } from "../utils/StringUtils";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import { config } from "../confg";
+import { DocumentType } from "@typegoose/typegoose";
 
 export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, session?: mongoose.ClientSession) => {
     const postsToDelete = await PostModel.find(filter, { message: 0 }).lean().session(session ?? null);
@@ -321,3 +322,13 @@ export const deletePostAttachments = async (filter: mongoose.QueryFilter<PostAtt
         await deleteNotifications(notficationFilter, session);
     }
 }
+
+export const savePost = async (post: DocumentType<Post>,session?: mongoose.ClientSession) => {
+    const messageModified = post.isNew || post.isModified("message");
+
+    await post.save({ session });
+
+    if (messageModified) {
+        await updatePostAttachments(post.message, { post: post._id }, session);
+    }
+};
