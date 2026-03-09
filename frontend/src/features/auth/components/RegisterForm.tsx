@@ -41,7 +41,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
 
         const result = await sendJsonRequest<Captcha>("/Auth/GenerateCaptcha", "POST");
 
-        if (result?.data) {
+        if (result.data) {
             setImageSrc(result.data.imageData);
             setCaptchaId(result.data.captchaId);
         }
@@ -50,13 +50,13 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const registerUser = async () => {
         setError([]);
         const result = await sendJsonRequest<RegisterData>("/Auth/Register", "POST", { email, name, password, captchaId, solution, deviceId });
-        if (result?.data) {
+        if (result.data) {
             authenticate(result.data.accessToken, result.data.expiresIn);
             updateUser(result.data.user);
             onRegister();
         }
         else {
-            setError(result?.error);
+            setError(result.error);
             await generateCaptcha();
         }
     }

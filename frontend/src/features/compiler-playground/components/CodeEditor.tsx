@@ -4,11 +4,9 @@ import AceEditor from "react-ace";
 
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
-import { ICode } from "../../codes/components/Code";
 import CompileOutput from "./CompileOutput";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
-import { IChallenge, IChallengeSubmission } from "../../challenges/types";
 
 import "ace-builds/src-noconflict/theme-tomorrow_night";
 
@@ -21,6 +19,8 @@ import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-ruby";
 import "ace-builds/src-noconflict/mode-lua";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import { CodeDetails } from "../../codes/types";
+import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
 
 const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "javascript") => {
     switch (lang) {
@@ -54,7 +54,7 @@ const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "j
 
 
 interface CodeEditorProps {
-    code: ICode;
+    code: CodeDetails<any>;
     source: string;
     setSource: (value: string) => void;
     css: string;
@@ -67,8 +67,8 @@ interface CodeEditorProps {
     hideConsole?: () => void;
     toggleConsole?: () => void;
     setLogsCount?: (setter: (prev: number) => number) => void;
-    challenge?: IChallenge;
-    submission?: IChallengeSubmission;
+    challenge?: ChallengeDetails;
+    submission?: ChallengeSubmissionDetails;
 }
 
 
@@ -218,7 +218,7 @@ const CodeEditor = ({
                         title={"output"}
                         style={{ height: tabHeightStyle }}
                     >
-                        {code.challengeId != null ? (
+                        {!!code.challenge ? (
                             <ChallengeCodeOutput
                                 source={source}
                                 language={code.language}

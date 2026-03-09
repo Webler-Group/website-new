@@ -33,13 +33,13 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
     const loginUser = async () => {
         setError([]);
         const result = await sendJsonRequest<LoginData>("/Auth/Login", "POST", { email, password, deviceId });
-        if (result?.data) {
+        if (result.data) {
             authenticate(result.data.accessToken, result.data.expiresIn);
             updateUser(result.data.user);
             onLogin();
         }
         else {
-            setError(result?.error);
+            setError(result.error);
         }
     }
 

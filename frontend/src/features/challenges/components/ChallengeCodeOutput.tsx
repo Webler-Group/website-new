@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { IChallenge, IChallengeSubmission } from "../types";
 import { Button, Spinner } from "react-bootstrap";
 import { FaCheck, FaTimes } from "react-icons/fa";
+import { ChallengeDetails, ChallengeSubmissionDetails, CreateChallengeJobData, GetChallengeJobData } from "../types";
 
 interface ChallengeCodeOutputProps {
     source: string;
     language: string;
-    challenge: IChallenge;
-    submission?: IChallengeSubmission;
+    challenge: ChallengeDetails;
+    submission?: ChallengeSubmissionDetails;
 }
 
 const ChallengeCodeOutput = ({ source, language, challenge, submission }: ChallengeCodeOutputProps) => {
@@ -24,13 +24,13 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
     const handleRunTests = async () => {
         setLoading(true);
         setError("");
-        const createJobResult = await sendJsonRequest("/Challenge/CreateChallengeJob", "POST", {
+        const createJobResult = await sendJsonRequest<CreateChallengeJobData>("/Challenge/CreateChallengeJob", "POST", {
             source,
             language,
             challengeId: challenge.id
         });
 
-        if (createJobResult && createJobResult.jobId) {
+        if (createJobResult.data) {
             let getJobResult = null;
             let status = "pending";
             let attempt = 0;
@@ -40,22 +40,22 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                 ++attempt;
                 if (attempt > challenge.testCases.length + 4) break;
 
-                getJobResult = await sendJsonRequest("/Challenge/GetChallengeJob", "POST", { jobId: createJobResult.jobId });
-                if (getJobResult && getJobResult.job) {
-                    status = getJobResult.job.status;
+                getJobResult = await sendJsonRequest<GetChallengeJobData>("/Challenge/GetChallengeJob", "POST", { jobId: createJobResult.data.jobId });
+                if (getJobResult.data) {
+                    status = getJobResult.data.job.status;
                 }
             }
 
             if (status === "error") {
                 setError("Something went wrong");
             } else if (status === "done") {
-                setLastSubmission(getJobResult.job.submission);
+                setLastSubmission(getJobResult?.data?.job.submission ?? null);
             } else {
                 setError("Timeout");
                 setLastSubmission(null);
             }
         } else {
-            setError(createJobResult?.error?.[0]?.message ?? "Something went wrong");
+            setError(createJobResult.error?.[0].message ?? "Something went wrong");
             setLastSubmission(null);
         }
         setLoading(false);
@@ -113,10 +113,10 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                             <div
                                 key={index}
                                 className={`p-2 mb-2 rounded border ${result
-                                        ? passed
-                                            ? "border-success"
-                                            : "border-danger"
-                                        : "border-warning"
+                                    ? passed
+                                        ? "border-success"
+                                        : "border-danger"
+                                    : "border-warning"
                                     }`}
                             >
                                 <h5

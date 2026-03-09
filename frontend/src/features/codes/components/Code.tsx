@@ -7,29 +7,12 @@ import ProfileAvatar from '../../../components/ProfileAvatar';
 import { languagesInfo } from '../../../data/compilerLanguages';
 import { useNavigate } from 'react-router-dom';
 import "./Code.css";
-import { IChallengeSubmission } from '../../challenges/types';
-import CompilerLanguagesEnum from '../../../data/CompilerLanguagesEnum';
+import { CodeMinimal } from '../types';
+import { UserMinimal } from '../../profile/types';
 
-interface ICode {
-    id?: string;
-    name?: string;
-    challengeId?: string;
-    language: CompilerLanguagesEnum;
-    userName?: string;
-    userId?: string;
-    userAvatarUrl?: string;
-    createdAt?: string;
-    updatedAt?: string;
-    comments: number;
-    votes: number;
-    isUpvoted: boolean;
-    isPublic: boolean;
-    lastSubmission?: IChallengeSubmission;
-    source?: string;
-}
 
 interface CodeProps {
-    code: ICode;
+    code: CodeMinimal<UserMinimal>;
     searchQuery: string;
     showUserProfile: boolean;
     onClick?: () => void;
@@ -78,7 +61,7 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
                         {
                             showUserProfile === false &&
                             <div>
-                                <span className="text-secondary">{DateUtils.format2(new Date(code.updatedAt!))}</span>
+                                <span className="text-secondary">{DateUtils.format2(new Date(code.updatedAt))}</span>
                             </div>
                         }
                         {
@@ -99,11 +82,11 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
                                 <small className="text-secondary">{DateUtils.format(new Date(code.createdAt!))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
-                                <ProfileName userId={code.userId!} userName={code.userName!} />
+                                <ProfileName userId={code.user.id} userName={code.user.name} />
                             </div>
                         </div>
                         <div className="ms-2">
-                            <ProfileAvatar size={32} avatarUrl={code.userAvatarUrl!} />
+                            <ProfileAvatar size={32} avatarUrl={code.user.avatarUrl} />
                         </div>
                     </div>
                 </div>
@@ -115,9 +98,7 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
         <div ref={ref}>{body}</div>
         :
         <div>{body}</div>
-    return content
-})
+    return content;
+});
 
-export type { ICode }
-
-export default Code
+export default Code;

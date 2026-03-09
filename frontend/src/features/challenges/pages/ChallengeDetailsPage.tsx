@@ -9,9 +9,9 @@ import Loader from "../../../components/Loader";
 import { useAuth } from "../../auth/context/authContext";
 import { Button, Container, FormLabel, FormSelect, InputGroup } from "react-bootstrap";
 import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
-import { IChallenge } from "../types";
 import LanguageIcons from "../components/LanguageIcons";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import { ChallengeDetails, GetChallengeData } from "../types";
 
 const allowedUrls = [
     /^https?:\/\/.+/i,
@@ -25,7 +25,7 @@ const ChallengeDetailsPage = () => {
     const { sendJsonRequest } = useApi();
 
     const [loading, setLoading] = useState(false);
-    const [challenge, setChallenge] = useState<IChallenge | null>(null);
+    const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
     const [languageChoice, setLanguageChoice] = useState("");
     const [selectedLanguage, setSelectedLanguage] = useState<CompilerLanguagesEnum | null>(null);
 
@@ -36,11 +36,11 @@ const ChallengeDetailsPage = () => {
     const getChallenge = async () => {
         if (!challengeId) return;
         setLoading(true);
-        const result = await sendJsonRequest("/Challenge/GetChallenge", "POST", {
+        const result = await sendJsonRequest<GetChallengeData>("/Challenge/GetChallenge", "POST", {
             challengeId,
         });
-        if (result && result.challenge) {
-            setChallenge(result.challenge);
+        if (result.data) {
+            setChallenge(result.data.challenge);
         }
         setLoading(false);
     };

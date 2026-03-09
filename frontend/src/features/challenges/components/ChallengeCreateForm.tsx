@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import { Form, Button } from "react-bootstrap";
 import { FaPlus, FaAlignLeft, FaLevelUpAlt } from "react-icons/fa";
 import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
-import { IChallengeTemplate, ITestCase } from "../types";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { LinkContainer } from "react-router-bootstrap";
 import MdEditorField from "../../../components/MdEditorField";
+import { ChallengeTemplate, ChallengeTestCase, CreateChallengeData, EditChallengeData, GetEditedChallengeData } from "../types";
 
 interface IChallengeCreateFormProps {
     challengeId?: string;
@@ -21,8 +21,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [title, setTitle] = useState("");
     const [difficulty, setDifficulty] = useState("easy");
     const [description, setDescription] = useState("");
-    const [testCases, setTestCases] = useState<ITestCase[]>([]);
-    const [templates, setTemplates] = useState<IChallengeTemplate[]>([]);
+    const [testCases, setTestCases] = useState<ChallengeTestCase[]>([]);
+    const [templates, setTemplates] = useState<ChallengeTemplate[]>([]);
     const [xp, setXP] = useState(10);
     const [isVisible, setIsVisible] = useState(true);
     const [error, setError] = useState("");
@@ -37,21 +37,21 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
 
     const getChallenge = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Challenge/GetUpdatedChallenge`, "POST", { challengeId });
-        if (result && result.challenge) {
-            setTitle(result.challenge.title);
-            setDescription(result.challenge.description);
-            setDifficulty(result.challenge.difficulty);
-            setTestCases(result.challenge.testCases);
-            setTemplates(result.challenge.templates);
-            setXP(result.challenge.xp);
-            setIsVisible(result.challenge.isPublic);
+        const result = await sendJsonRequest<GetEditedChallengeData>(`/Challenge/GetUpdatedChallenge`, "POST", { challengeId });
+        if (result.data) {
+            setTitle(result.data.challenge.title);
+            setDescription(result.data.challenge.description);
+            setDifficulty(result.data.challenge.difficulty);
+            setTestCases(result.data.challenge.testCases);
+            setTemplates(result.data.challenge.templates);
+            setXP(result.data.challenge.xp);
+            setIsVisible(result.data.challenge.isPublic);
         }
         setLoading(false);
     }
 
     const handleCreateChallenge = async () => {
-        const result = await sendJsonRequest(`/Challenge/Create`, "POST", {
+        const result = await sendJsonRequest<CreateChallengeData>(`/Challenge/Create`, "POST", {
             title,
             description,
             difficulty,
@@ -60,17 +60,17 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             xp,
             isVisible: isVisible ? 1 : 0
         });
-        if (result && result.challenge) {
+        if (result.data) {
             showMessage(`Challenge created Successfully`);
 
-            navigate("/Challenge/" + result.challenge.id);
+            navigate("/Challenge/" + result.data.challege.id);
         } else {
-            setError(result?.error[0].message ?? "Something went wrong");
+            setError(result.error?.[0].message ?? "Something went wrong");
         }
     }
 
     const handleUpdateChallenge = async () => {
-        const result = await sendJsonRequest(`/Challenge/Update`, "POST", {
+        const result = await sendJsonRequest<EditChallengeData>(`/Challenge/Update`, "POST", {
             challengeId,
             title,
             description,
@@ -80,17 +80,17 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             xp,
             isVisible: isVisible ? 1 : 0
         });
-        if (result && result.data) {
+        if (result.data) {
             showMessage(`Challenge updated Successfully`);
 
             navigate("/Challenge/" + result.data.id);
         } else {
-            setError(result?.error[0].message ?? "Something went wrong");
+            setError(result.error?.[0].message ?? "Something went wrong");
         }
     }
 
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setError("");

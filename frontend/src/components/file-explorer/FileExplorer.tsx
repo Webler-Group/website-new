@@ -87,7 +87,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
             subPath: path.length > 0 ? path.join("/") : undefined,
         }));
 
-        if (result?.data) {
+        if (result.data) {
             setItems(result.data.items);
         } else {
             setErr("Failed to load contents");
@@ -194,7 +194,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
             true
         ));
 
-        if (result?.data) {
+        if (result.data) {
             const newItem: FileEntry = {
                 id: result.data.id,
                 author: { ...userInfo },
@@ -211,7 +211,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
             setUploadFile(null);
             setTabKey("library");
         } else {
-            setUploadErr(result?.error?.[0].message ?? "Upload failed");
+            setUploadErr(result.error?.[0].message ?? "Upload failed");
         }
 
         setUploading(false);
@@ -293,7 +293,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
             ...(subPathStr ? { subPath: subPathStr } : {}),
         }));
 
-        if (result?.data) {
+        if (result.data) {
             const newFolder: FileEntry = {
                 id: result.data.id,
                 author: { ...userInfo },
@@ -305,7 +305,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
             setFolderName("");
             setItems(prev => [newFolder, ...prev]);
         } else {
-            setCreateFolderErr(result?.error?.[0].message ?? "Failed to create folder");
+            setCreateFolderErr(result.error?.[0].message ?? "Failed to create folder");
         }
         setCreatingFolder(false);
     };

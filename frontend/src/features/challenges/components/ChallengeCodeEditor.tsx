@@ -1,8 +1,6 @@
 import { Button, Dropdown, Modal } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
-import { IChallenge } from "../types";
 import { useEffect, useState } from "react";
-import { ICode } from "../../codes/components/Code";
 import { useApi } from "../../../context/apiCommunication";
 import CodeEditor from "../../compiler-playground/components/CodeEditor";
 import useEditorOptions from "../../compiler-playground/hooks/useEditorOptions";
@@ -10,16 +8,17 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import Loader from "../../../components/Loader";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import { ChallengeCodeDetails, ChallengeDetails, GetChallengeCodeData, SaveChallengeCodeData } from "../types";
 
 interface ChallengeCodeEditorProps {
-    challenge: IChallenge;
+    challenge: ChallengeDetails;
     language: CompilerLanguagesEnum | null;
     onExit: () => void;
 }
 
 const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEditorProps) => {
     const { sendJsonRequest } = useApi();
-    const [code, setCode] = useState<ICode | null>(null);
+    const [code, setCode] = useState<ChallengeCodeDetails| null>(null);
     const [source, setSource] = useState("");
     const [js, setJs] = useState("");
     const [css, setCss] = useState("");
@@ -55,13 +54,13 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const getCode = async () => {
         setLoading(true);
 
-        const result = await sendJsonRequest("/Challenge/GetChallengeCode", "POST", {
+        const result = await sendJsonRequest<GetChallengeCodeData>("/Challenge/GetChallengeCode", "POST", {
             challengeId: challenge.id,
             language
         });
-        if (result && result.code) {
-            setCode(result.code);
-            setSource(result.code.source);
+        if (result.data) {
+            setCode(result.data.code);
+            setSource(result.data.code.source);
         }
 
         setLoading(false);
@@ -70,14 +69,14 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const handleSave = async () => {
         setLoading(true);
 
-        const result = await sendJsonRequest("/Challenge/SaveChallengeCode", "POST", {
+        const result = await sendJsonRequest<SaveChallengeCodeData>("/Challenge/SaveChallengeCode", "POST", {
             challengeId: challenge.id,
             language,
             source,
             title
         });
         if (result && result.data) {
-            setCode(prev => ({ ...prev, ...result.data }));
+            setCode(prev => prev ? { ...prev, ...result.data } : null);
             setSource(result.data.source);
 
             showMessage("Code saved successfully");
@@ -162,7 +161,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                                     options={editorOptions}
                                     tabHeightStyle="calc(100dvh - 85px)"
                                     challenge={challenge}
-                                    submission={code.lastSubmission}
+                                    submission={code.challenge.lastSubmission}
                                 />
                                 :
                                 loading ?

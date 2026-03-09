@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
-import codeRequiresInput from "../InputReg";
+import codeRequiresInput from "../../../utils/InputReg";
 
 interface CompileOutputProps {
     source: string;

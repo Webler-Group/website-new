@@ -1,12 +1,12 @@
 import { Dispatch, SetStateAction, ChangeEvent, useRef, useState } from "react";
 import { Button, Form, Alert, Collapse } from "react-bootstrap";
 import { FaTrash, FaPlus, FaFileUpload, FaInfoCircle } from "react-icons/fa";
-import { ITestCase } from "../types";
 import { genMongooseId } from "../../../utils/StringUtils";
+import { ChallengeTestCase } from "../types";
 
 interface ITestCaseFormProps {
-  testCases: ITestCase[];
-  setTestCases: Dispatch<SetStateAction<ITestCase[]>>;
+  testCases: ChallengeTestCase[];
+  setTestCases: Dispatch<SetStateAction<ChallengeTestCase[]>>;
 }
 
 const DELETE_MS = 300;
@@ -18,7 +18,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
   // Only one test case can be deleting at a time (kept outside ITestCase)
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const handleChange = (id: string, field: keyof ITestCase, value: any) => {
+  const handleChange = (id: string, field: keyof ChallengeTestCase, value: any) => {
     setTestCases((prev) =>
       prev.map((tc) => (tc.id === id ? { ...tc, [field]: value } : tc))
     );
@@ -62,9 +62,9 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
     e.target.value = "";
   };
 
-  const parseTestCases = (text: string): ITestCase[] => {
+  const parseTestCases = (text: string): ChallengeTestCase[] => {
     const lines = text.split(/\r?\n/);
-    const cases: ITestCase[] = [];
+    const cases: ChallengeTestCase[] = [];
 
     let currentInput: string[] = [];
     let currentOutput: string[] = [];

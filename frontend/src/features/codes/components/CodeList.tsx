@@ -7,6 +7,8 @@ import QuestionPlaceholder from "../../discuss/components/QuestionPlaceholder";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAuth } from "../../auth/context/authContext";
 import { useApi } from "../../../context/apiCommunication";
+import { CodeMinimal, CodesListData } from "../types";
+import { UserMinimal } from "../../profile/types";
 
 interface ICodesState {
     page: number;
@@ -27,7 +29,7 @@ interface CodeListProps {
 const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, showNewCodeBtn }: CodeListProps) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
-    const [codes, setCodes] = useState<any[]>([]);
+    const [codes, setCodes] = useState<CodeMinimal<UserMinimal>[]>([]);
     const codesPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
     const [codesCount, setCodesCount] = useState(0);
@@ -67,7 +69,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
 
     const getCodes = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Codes`, "POST", {
+        const result = await sendJsonRequest<CodesListData>(`/Codes`, "POST", {
             page: codesState.page,
             count: codesPerPage,
             filter: codesState.filter,
@@ -75,9 +77,9 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
             language: codesState.language,
             userId: userInfo ? userInfo.id : null
         });
-        if (result && result.codes) {
-            setCodes(result.codes);
-            setCodesCount(result.count);
+        if (result.data) {
+            setCodes(result.data.codes);
+            setCodesCount(result.data.count);
         }
         setLoading(false);
     }

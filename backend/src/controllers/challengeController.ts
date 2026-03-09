@@ -10,16 +10,31 @@ import CodeModel from "../models/Code";
 import EvaluationJobModel from "../models/EvaluationJob";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
 import RolesEnum from "../data/RolesEnum";
-import UserModel from "../models/User";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
+interface ChallengeCode {
+    id?: Types.ObjectId;
+    language: string;
+    source: string;
+    createdAt?: Date;
+    updatedAt?: Date;
+    challenge: {
+        id: string;
+        lastSubmission?: {
+            passed: boolean;
+            testResults: { output?: string; stderr?: string; passed: boolean; time?: number }[];
+        };
+    }
+};
+
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
     const { title, description, difficulty, testCases, templates, xp, isVisible } = body;
+    const currentUserId = req.userId;
 
     const challenge = await ChallengeModel.create({
         title,
@@ -29,7 +44,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         templates,
         xp,
         isPublic: Number(isVisible) === 1,
-        author: req.userId,
+        author: currentUserId,
     });
 
     res.json({ success: true, data: { challenge: { id: challenge._id } } });
@@ -113,7 +128,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         id: c._id,
         title: c.title,
         difficulty: c.difficulty,
-        submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : []
+        submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : undefined
     }));
 
     res.json({
@@ -140,7 +155,7 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Challenge not found", 404);
     }
 
-    const submissions = await ChallengeSubmissionModel.aggregate([
+    const submissions = await ChallengeSubmissionModel.aggregate<SubmissionEntry>([
         { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(req.userId), passed: true } },
         { $group: { _id: "$language", passed: { $max: "$passed" } } },
         { $project: { language: "$_id", passed: 1, _id: 0 } }
@@ -172,19 +187,6 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     });
 });
 
-interface ChallengeCodeResponse {
-    id?: Types.ObjectId;
-    language: string;
-    source: string;
-    challengeId: string;
-    createdAt?: Date;
-    updatedAt?: Date;
-    lastSubmission?: {
-        passed: boolean;
-        testResults: { output?: string; stderr?: string; passed: boolean; time?: number }[];
-    };
-};
-
 const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeCodeSchema, req);
     const { challengeId, language } = body;
@@ -192,7 +194,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const code = await CodeModel.findOne({ challenge: challengeId, language, user: currentUserId }).lean();
 
-    let data: ChallengeCodeResponse;
+    let data: ChallengeCode;
 
     if (code) {
         data = {
@@ -201,7 +203,9 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
             createdAt: code.createdAt,
             updatedAt: code.updatedAt,
             source: code.source,
-            challengeId
+            challenge: {
+                id: challengeId
+            }
         };
     } else {
         const challenge = await ChallengeModel.findById(challengeId).lean();
@@ -210,7 +214,9 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
         data = {
             language,
             source: template.source,
-            challengeId
+            challenge: {
+                id: challengeId
+            }
         };
     }
 
@@ -220,7 +226,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
         .lean();
 
     if (submissions.length > 0) {
-        data.lastSubmission = {
+        data.challenge.lastSubmission = {
             passed: submissions[0].passed,
             testResults: submissions[0].testResults.map(x => ({
                 output: x.output,

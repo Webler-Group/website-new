@@ -1,7 +1,6 @@
 import { Button, Form, FormControl, Row, Col, Badge } from "react-bootstrap";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { PaginationControl } from "react-bootstrap-pagination-control";
-import { IChallenge } from "../types";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
@@ -10,6 +9,7 @@ import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import LanguageIcons from "../components/LanguageIcons";
 import { FaLock } from "react-icons/fa";
+import { ChallengeListData, ChallengeMinimal } from "../types";
 
 
 const ChallengeList = () => {
@@ -18,7 +18,7 @@ const ChallengeList = () => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const [challenges, setChallenges] = useState<any[]>([]);
+    const [challenges, setChallenges] = useState<ChallengeMinimal[]>([]);
     const challengesPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
     const [challengeCount, setChallengeCount] = useState(0);
@@ -67,7 +67,7 @@ const ChallengeList = () => {
 
     const getChallenges = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Challenge`, "POST", {
+        const result = await sendJsonRequest<ChallengeListData>(`/Challenge`, "POST", {
             page: searchParams.has("page") ? Number(searchParams.get("page")) : 1,
             filter: 1,
             userId: userInfo?.id,
@@ -76,9 +76,9 @@ const ChallengeList = () => {
             searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
             isVisible: isPublic ? 1 : 0,
         });
-        if (result && result.challenges) {
-            setChallenges(result.challenges);
-            setChallengeCount(result.count);
+        if (result.data) {
+            setChallenges(result.data.challenges);
+            setChallengeCount(result.data.count);
         }
         setLoading(false);
     }
@@ -157,7 +157,7 @@ const ChallengeList = () => {
                     </div>
                 ) : (
                     <Row className="g-2">
-                        {challenges.map((challenge: IChallenge, idx) => (
+                        {challenges.map((challenge, idx) => (
                             <Col key={idx} xs={12} sm={6} lg={4}>
                                 <div className="shadow-sm border rounded p-2"
                                     onClick={() => navigate(`/Challenge/${challenge.id}`)}

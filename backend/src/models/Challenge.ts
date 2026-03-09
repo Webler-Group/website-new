@@ -3,7 +3,6 @@ import { Types } from "mongoose";
 import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
-// --- Nested: TestCase ---
 export class TestCase {
     @prop({ required: true, minlength: 1, maxlength: 500 })
     input!: string;
@@ -15,7 +14,6 @@ export class TestCase {
     isHidden!: boolean;
 }
 
-// --- Nested: Template ---
 export class ChallengeTemplate {
     @prop({ required: true, enum: Object.values(CompilerLanguagesEnum) })
     name!: CompilerLanguagesEnum;
@@ -24,7 +22,6 @@ export class ChallengeTemplate {
     source!: string;
 }
 
-// --- Main: Challenge ---
 @modelOptions({ schemaOptions: { collection: "challenges", timestamps: true } })
 export class Challenge {
     @prop({ required: true, unique: true, trim: true, minlength: 1, maxlength: 120 })

@@ -1,8 +1,10 @@
 import { Container } from "react-bootstrap";
 import { ReactNode, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import Code, { ICode } from "../components/Code";
+import Code from "../components/Code";
 import { Helmet } from "react-helmet-async";
+import { CodeMinimal, CodesListData } from "../types";
+import { UserMinimal } from "../../profile/types";
 
 interface CodesLayoutProps {
     MainPage: ReactNode
@@ -11,22 +13,22 @@ interface CodesLayoutProps {
 const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
 
     const { sendJsonRequest } = useApi();
-    const [codes, setCodes] = useState<ICode[]>([]);
+    const [codes, setCodes] = useState<CodeMinimal<UserMinimal>[]>([]);
 
     useEffect(() => {
         getCodes();
     }, []);
 
     const getCodes = async () => {
-        const result = await sendJsonRequest(`/Codes`, "POST", {
+        const result = await sendJsonRequest<CodesListData>(`/Codes`, "POST", {
             page: 1,
             count: 10,
             filter: 5,
             searchQuery: "",
             userId: null
         });
-        if (result && result.codes) {
-            setCodes(result.codes);
+        if (result.data) {
+            setCodes(result.data.codes);
         }
     }
 
