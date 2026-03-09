@@ -1,17 +1,16 @@
 import { ChangeEvent, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
-import { IQuestion } from "../components/Question";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { Alert, Button, Dropdown, Form, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
-import Answer, { IAnswer } from "../components/Answer";
+import Answer from "../components/Answer";
 import { LinkContainer } from "react-router-bootstrap";
 import { FaSearch, FaThumbsUp } from "react-icons/fa";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
-import PostAttachment from "../components/PostAttachment";
+import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
@@ -22,6 +21,7 @@ import ReactionsList from "../../../components/reactions/ReactionsList";
 import QuestionPlaceholder from "../components/QuestionPlaceholder";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import MdEditorField from "../../../components/MdEditorField";
+import { AnswerDetails, CreateReplyData, EditReplyData, GetQuestionData, QuestionDetails, RepliesListData, VotePostData } from "../types";
 
 const DiscussPostPage = () => {
     const { sendJsonRequest } = useApi();
@@ -29,13 +29,13 @@ const DiscussPostPage = () => {
 
     const navigate = useNavigate();
     const { userInfo } = useAuth();
-    const [question, setQuestion] = useState<IQuestion | null>(null);
+    const [question, setQuestion] = useState<QuestionDetails | null>(null);
     const [message, setMessage] = useState(["", ""]);
     const [loading, setLoading] = useState(false);
     const [answersLoading, setAnswersLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const answersPerPage = 10;
-    const [answers, setAnswers] = useState<IAnswer[]>([]);
+    const [answers, setAnswers] = useState<AnswerDetails[]>([]);
     const form = useRef<HTMLFormElement>(null);
     const [formVisible, setFormVisible] = useState(false);
     const [formInput, setFormInput] = useState("");
@@ -116,11 +116,11 @@ const DiscussPostPage = () => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", {
+        const result = await sendJsonRequest<GetQuestionData>(`/Discussion/GetQuestion`, "POST", {
             questionId
         });
-        if (result && result.question) {
-            setQuestion(result.question)
+        if (result.data) {
+            setQuestion(result.data.question)
         }
         setLoading(false);
     }
@@ -129,17 +129,17 @@ const DiscussPostPage = () => {
         setAnswersLoading(true);
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
-        const result = await sendJsonRequest(`/Discussion/GetQuestionReplies`, "POST", {
+        const result = await sendJsonRequest<RepliesListData>(`/Discussion/GetQuestionReplies`, "POST", {
             questionId,
             index: (page - 1) * answersPerPage,
             count: answersPerPage,
             filter,
             findPostId: postId
         });
-        if (result && result.posts) {
-            setAnswers(result.posts);
+        if (result.data) {
+            setAnswers(result.data.posts);
             if (postId) {
-                setCurrentPage(result.posts.length > 0 ? Math.floor(result.posts[0].index / answersPerPage) + 1 : 1);
+                setCurrentPage(result.data.posts.length > 0 ? Math.floor(result.data.posts[0].index / answersPerPage) + 1 : 1);
                 setTimeout(() => {
                     if (findPostRef.current) {
                         findPostRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -147,9 +147,9 @@ const DiscussPostPage = () => {
                 });
             }
             let accepted = null;
-            for (let i = 0; i < result.posts.length; ++i) {
-                if (result.posts[i].isAccepted) {
-                    accepted = result.posts[i].id;
+            for (let i = 0; i < result.data.posts.length; ++i) {
+                if (result.data.posts[i].isAccepted) {
+                    accepted = result.data.posts[i].id;
                     break;
                 }
             }
@@ -165,12 +165,13 @@ const DiscussPostPage = () => {
             return
         }
         setLoading(true);
-        const result = await sendJsonRequest(`/Discussion/CreateReply`, "POST", {
+        const result = await sendJsonRequest<CreateReplyData>(`/Discussion/CreateReply`, "POST", {
             message: formInput,
             questionId
         });
-        if (result && result.post) {
-            setAnswers(answers => [{ ...result.post, userName: userInfo.name, userAvatar: userInfo.avatarUrl }, ...answers]);
+        if (result.data) {
+            const newAnswer: AnswerDetails = { ...result.data.post, user: { ...userInfo }, index: -1 };
+            setAnswers(answers => [newAnswer, ...answers]);
             setQuestion(question => {
                 if (question) {
                     return { ...question, answers: question.answers + 1 }
@@ -181,7 +182,7 @@ const DiscussPostPage = () => {
             setMessage(["success", "Your answer was posted successfully"])
         }
         else {
-            setMessage(["danger", result?.error ? result.error.message : result.message]);
+            setMessage(["danger", result.error ? result.error[0].message : "Failed to post answer"]);
         }
         setLoading(false);
     }
@@ -192,26 +193,17 @@ const DiscussPostPage = () => {
             return
         }
         setLoading(true);
-        const result = await sendJsonRequest(`/Discussion/EditReply`, "PUT", {
+        const result = await sendJsonRequest<EditReplyData>(`/Discussion/EditReply`, "PUT", {
             message: formInput,
             replyId: editedAnswer
         });
-        if (result && result.success) {
-            setAnswers(answers => {
-                const currentAnswers = [...answers];
-                for (let i = 0; i < currentAnswers.length; ++i) {
-                    if (currentAnswers[i].id === editedAnswer) {
-                        currentAnswers[i].message = result.data.message;
-                        currentAnswers[i].attachments = result.data.attachments;
-                    }
-                }
-                return currentAnswers;
-            });
+        if (result.data) {
+            setAnswers(answers => answers.map(x => x.id === editedAnswer ? { ...x, ...result.data } : x));
             hideAnswerForm();
             setMessage(["success", "Your answer was updated successfully"]);
         }
         else {
-            setMessage(["danger", result?.error ? result.error.message : result.message]);
+            setMessage(["danger", result.error ? result.error[0].message : "Failed to edit answer"]);
         }
         setLoading(false);
     }
@@ -246,7 +238,7 @@ const DiscussPostPage = () => {
             postId,
             accepted: !(postId === acceptedAnswer)
         });
-        if (result && result.success) {
+        if (result.success) {
             setAcceptedAnswer(postId === acceptedAnswer ? null : postId);
         }
     }
@@ -288,7 +280,7 @@ const DiscussPostPage = () => {
             })
         }
         else {
-            setMessage(["danger", result?.error ? result.error._message : result.message]);
+            setMessage(["danger", result.error ? result.error[0].message : "Failed to delete answer"]);
         }
         setLoading(false);
     }
@@ -297,12 +289,12 @@ const DiscussPostPage = () => {
     const handleDeletePost = async () => {
         setLoading(true);
         const result = await sendJsonRequest("/Discussion/DeleteQuestion", "DELETE", { questionId: questionId });
-        if (result && result.success) {
+        if (result.success) {
             closeDeleteModal();
             navigate("/Discuss");
         }
         else {
-            setMessage(["danger", result?.error ? result.error._message : result.message]);
+            setMessage(["danger", result.error ? result.error[0].message : "Failed to delete question"]);
         }
         setLoading(false);
     }
@@ -310,7 +302,7 @@ const DiscussPostPage = () => {
 
     const handleDeleteContent = async () => {
         shouldDeletePost ? handleDeletePost() :
-        handleDeleteReply();
+            handleDeleteReply();
     }
 
     const voteQuestion = async () => {
@@ -322,8 +314,8 @@ const DiscussPostPage = () => {
             return;
         }
         const vote = question.isUpvoted ? 0 : 1;
-        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: questionId, vote });
-        if (result.vote === vote) {
+        const result = await sendJsonRequest<VotePostData>("/Discussion/VotePost", "POST", { postId: questionId, vote });
+        if (result.data && result.data.vote === vote) {
             setQuestion(question => {
                 if (question) {
                     return { ...question, votes: question.votes + (vote ? 1 : -1), isUpvoted: vote === 1 }
@@ -343,7 +335,7 @@ const DiscussPostPage = () => {
         }
         const isFollowed = question.isFollowed;
         const result = await sendJsonRequest(isFollowed ? "/Discussion/UnfollowQuestion" : "/Discussion/FollowQuestion", "POST", { postId: questionId });
-        if (result && result.success) {
+        if (result.success) {
             setQuestion(question => {
                 if (question) {
                     return { ...question, isFollowed: !isFollowed }
@@ -376,7 +368,7 @@ const DiscussPostPage = () => {
                     <Modal.Header closeButton>
                         <Modal.Title>Are you sure?</Modal.Title>
                     </Modal.Header>
-                    <Modal.Body>Your { shouldDeletePost ? "Question":"Answer" } will be permanently deleted.</Modal.Body>
+                    <Modal.Body>Your {shouldDeletePost ? "Question" : "Answer"} will be permanently deleted.</Modal.Body>
                     <Modal.Footer>
                         <Button variant="secondary" onClick={closeDeleteModal}>Cancel</Button>
                         <Button variant="danger" onClick={handleDeleteContent}>Confirm</Button>
@@ -397,7 +389,7 @@ const DiscussPostPage = () => {
                                     userInfo &&
                                     <>
                                         {
-                                            (question && question.userId === userInfo.id) &&
+                                            (question && question.user.id === userInfo.id) &&
                                             <LinkContainer to={"/Discuss/Edit/" + questionId}>
                                                 <Dropdown.Item>Edit</Dropdown.Item>
                                             </LinkContainer>
@@ -420,8 +412,8 @@ const DiscussPostPage = () => {
                                     Share
                                 </Dropdown.Item>
                                 {
-                                    userInfo && (isPriviledged || (question && question.userId === userInfo.id)) && 
-                                        <Dropdown.Item onClick={() => openDeleteModal(true) }>Delete</Dropdown.Item>
+                                    userInfo && (isPriviledged || (question && question.user.id === userInfo.id)) &&
+                                    <Dropdown.Item onClick={() => openDeleteModal(true)}>Delete</Dropdown.Item>
                                 }
                             </Dropdown.Menu>
                         </Dropdown>
@@ -475,10 +467,10 @@ const DiscussPostPage = () => {
                                 <small>{DateUtils.format(new Date(question.date))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
-                                <ProfileName userId={question.userId} userName={question.userName} />
+                                <ProfileName userId={question.user.id} userName={question.user.name} />
                             </div>
                         </div>
-                        <ProfileAvatar size={32} avatarUrl={question.userAvatarUrl} />
+                        <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
                     </div>
                 </div>
                 {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
@@ -486,7 +478,7 @@ const DiscussPostPage = () => {
                     <Form ref={form}>
                         <FormGroup>
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>
-                            <MdEditorField 
+                            <MdEditorField
                                 section="Profile"
                                 rootAlias="post-images"
                                 text={formInput}
@@ -504,7 +496,7 @@ const DiscussPostPage = () => {
                                     </>
                                     :
                                     <>
-                                        <Button size="sm" variant="secondary" className="ms-2" onClick={() => openDeleteModal(false) } disabled={loading}>Delete</Button>
+                                        <Button size="sm" variant="secondary" className="ms-2" onClick={() => openDeleteModal(false)} disabled={loading}>Delete</Button>
                                         <Button size="sm" variant="primary" className="ms-2" onClick={handleEditAnswer} disabled={loading || formInput.length === 0}>Save</Button>
                                     </>
                             }
@@ -533,7 +525,7 @@ const DiscussPostPage = () => {
                                         answer={answer}
                                         acceptedAnswer={acceptedAnswer}
                                         toggleAcceptedAnswer={toggleAcceptedAnswer}
-                                        isQuestionOwner={userInfo?.id === question.userId}
+                                        isQuestionOwner={userInfo?.id === question.user.id}
                                         key={answer.id}
                                         showEditAnswer={showEditAnswer}
                                         newlyCreatedAnswer={postId}
@@ -543,7 +535,7 @@ const DiscussPostPage = () => {
                                     answer={answer}
                                     acceptedAnswer={acceptedAnswer}
                                     toggleAcceptedAnswer={toggleAcceptedAnswer}
-                                    isQuestionOwner={userInfo?.id === question!.userId}
+                                    isQuestionOwner={userInfo?.id === question!.user.id}
                                     key={answer.id}
                                     showEditAnswer={showEditAnswer}
                                     newlyCreatedAnswer={postId}

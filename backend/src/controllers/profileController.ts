@@ -8,7 +8,7 @@ import CodeModel, { CODE_MINIMAL_FIELDS } from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import { config } from "../confg";
-import PostModel from "../models/Post";
+import PostModel, { QUESTION_MINIMAL_FIELDS, QuestionMinimal } from "../models/Post";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";
 import mongoose, { Types } from "mongoose";
@@ -29,6 +29,9 @@ import { deleteNotifications, sendNotifications } from "../helpers/notificationH
 import { Tag } from "../models/Tag";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import { formatCodeMinimal } from "../helpers/codesHelper";
+import { formatQuestionMinimal } from "../helpers/discussionHelper";
+import EmailDeliveryError from "../exceptions/EmailDeliveryError";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -73,10 +76,11 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean();
 
     const questions = await PostModel.find({ user: userId, _type: PostTypeEnum.QUESTION }, { message: 0 })
+        .select(QUESTION_MINIMAL_FIELDS)
         .sort({ createdAt: "desc" })
         .limit(5)
-        .populate<{ tags: Tag[] }>("tags")
-        .lean()
+        .populate("tags")
+        .lean<(QuestionMinimal & { _id: Types.ObjectId })[]>();
 
     const solvedAgg = await ChallengeSubmissionModel.aggregate([
         {
@@ -111,10 +115,10 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         easy: 0,
         medium: 0,
         hard: 0
-    } as Record<string, number>;
+    };
 
     for (const row of solvedAgg) {
-        if (row._id) solvedChallenges[row._id] = row.count;
+        if (row._id) (solvedChallenges as Record<string, number>)[row._id] = row.count;
     }
 
     res.json({
@@ -137,24 +141,8 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 xp: user.xp,
                 active: user.active,
                 notifications: user.notifications,
-                codes: codes.map(x => ({
-                    id: x._id,
-                    name: x.name,
-                    createdAt: x.createdAt,
-                    updatedAt: x.updatedAt,
-                    comments: x.comments,
-                    votes: x.votes,
-                    isPublic: x.isPublic,
-                    language: x.language
-                })),
-                questions: questions.map(x => ({
-                    id: x._id,
-                    title: x.title,
-                    date: x.createdAt,
-                    answers: x.answers,
-                    votes: x.votes,
-                    tags: x.tags.map(x => x.name)
-                })),
+                codes: codes.map(x => formatCodeMinimal(x)),
+                questions: questions.map(x => formatQuestionMinimal(x)),
                 solvedChallenges
             }
         }
@@ -222,7 +210,15 @@ const changeEmail = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (!code) {
         throw new HttpError("Email is already used", 409);
     }
-    await sendEmailChangeVerification(user.name, user.email, email, code);
+
+    try {
+        await sendEmailChangeVerification(user.name, user.email, email, code);
+    } catch (err) {
+        if (err instanceof EmailDeliveryError) {
+            throw new HttpError("Failed to send verification email. Please try again later.", 502);
+        }
+        throw err;
+    }
 
     res.json({
         success: true
@@ -283,15 +279,17 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
 
     try {
         await sendActivationEmail(user.name, user.email, user._id.toString(), emailToken);
-
-        user.lastVerificationEmailTimestamp = Date.now();
-        await user.save();
-
-        res.json({ success: true });
+    } catch (err) {
+        if (err instanceof EmailDeliveryError) {
+            throw new HttpError("Failed to send activation email. Please try again later.", 502);
+        }
+        throw err;
     }
-    catch {
-        throw new HttpError("Activation email could not be sent", 500);
-    }
+
+    user.lastVerificationEmailTimestamp = Date.now();
+    await user.save();
+
+    res.json({ success: true });
 })
 
 const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -368,20 +366,20 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean<{ user: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
-    const data = result.map(x => formatUserMinimal(x.user));
+    const users = result.map(x => formatUserMinimal(x.user));
 
 
-    for (let i = 0; i < data.length; ++i) {
-        const user = data[i];
+    for (let i = 0; i < users.length; ++i) {
+        const user = users[i];
         promises.push(UserFollowingModel.findOne({ user: currentUserId, following: user.id })
             .then(exists => {
-                data[i].isFollowing = exists !== null;
+                users[i].isFollowing = exists !== null;
             }));
     }
 
     await Promise.all(promises);
 
-    res.json({ success: true, data })
+    res.json({ success: true, data: { users } })
 });
 
 const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -398,20 +396,20 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .lean<{ following: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
-    const data = result.map(x => formatUserMinimal(x.following));
+    const users = result.map(x => formatUserMinimal(x.following));
 
 
-    for (let i = 0; i < data.length; ++i) {
-        const user = data[i];
+    for (let i = 0; i < users.length; ++i) {
+        const user = users[i];
         promises.push(UserFollowingModel.findOne({ user: currentUserId, following: user.id })
             .then(exists => {
-                data[i].isFollowing = exists !== null;
+                users[i].isFollowing = exists !== null;
             }));
     }
 
     await Promise.all(promises);
 
-    res.json({ success: true, data })
+    res.json({ success: true, data: { users } })
 });
 
 const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -438,7 +436,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
         .populate<{ actionUser: UserMinimal & { _id: Types.ObjectId } }>("actionUser", USER_MINIMAL_FIELDS)
         .populate<{ postId: { _id: Types.ObjectId, parentId: Types.ObjectId } }>("postId", { parentId: 1 });
 
-    const data = result.map(x => ({
+    const notifications = result.map(x => ({
         id: x._id,
         type: x._type,
         message: x.message,
@@ -450,10 +448,8 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
         codeId: x.codeId,
         courseCode: x.courseCode,
         lessonId: x.lessonId,
-        postId: x.postId ? x.postId._id : null,
-        post: {
-            parentId: x.postId ? x.postId.parentId : null
-        },
+        postId: x.postId ? x.postId._id : undefined,
+        postParentId: x.postId ? x.postId.parentId : undefined,
         questionId: x.questionId,
         feedId: x.feedId
     }));
@@ -461,7 +457,7 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
     res.json({
         success: true,
         data: {
-            notifications: data
+            notifications
         }
     });
 })

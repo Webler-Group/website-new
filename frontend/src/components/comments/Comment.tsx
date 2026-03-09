@@ -1,6 +1,6 @@
 import { FaPencil, FaThumbsUp, FaTrash } from "react-icons/fa6";
 import { useAuth } from "../../features/auth/context/authContext";
-import PostAttachment, { IPostAttachment } from "../../features/discuss/components/PostAttachment";
+import PostAttachment, { IPostAttachment } from "../post-attachment-select/PostAttachment";
 import DateUtils from "../../utils/DateUtils";
 import { parseMessage } from "../PostTextareaControl";
 import ProfileAvatar from "../ProfileAvatar";

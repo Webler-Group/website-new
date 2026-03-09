@@ -4,16 +4,17 @@ import { FaCheck, FaThumbsUp } from "react-icons/fa";
 import React, { MouseEvent } from 'react';
 import { FaComment, FaLock } from 'react-icons/fa6';
 import ProfileAvatar from '../../../components/ProfileAvatar';
-import { compilerLanguages, languagesInfo } from '../../../data/compilerLanguages';
+import { languagesInfo } from '../../../data/compilerLanguages';
 import { useNavigate } from 'react-router-dom';
 import "./Code.css";
 import { IChallengeSubmission } from '../../challenges/types';
+import CompilerLanguagesEnum from '../../../data/CompilerLanguagesEnum';
 
 interface ICode {
     id?: string;
     name?: string;
     challengeId?: string;
-    language: compilerLanguages;
+    language: CompilerLanguagesEnum;
     userName?: string;
     userId?: string;
     userAvatarUrl?: string;

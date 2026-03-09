@@ -1,7 +1,7 @@
 import { FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
 import PostTextareaControl from "./PostTextareaControl";
-import PostAttachmentSelect from "./PostAttachmentSelect";
+import PostAttachmentSelect from "./post-attachment-select/PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import allowedUrls from "../data/discussAllowedUrls";
 import FileExplorer from "./file-explorer/FileExplorer";

@@ -2,7 +2,7 @@ import React, { useRef } from "react";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import PostAttachment, { IPostAttachment } from "../../discuss/components/PostAttachment";
+import PostAttachment, { IPostAttachment } from "../../../components/post-attachment-select/PostAttachment";
 import RepliedMessage from "./RepliedMessage";
 
 interface IChannelMessage {

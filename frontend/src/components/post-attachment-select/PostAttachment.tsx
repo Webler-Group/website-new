@@ -1,23 +1,8 @@
-import { compilerLanguages } from "../../../data/compilerLanguages";
 import { LinkContainer } from "react-router-bootstrap";
-
-interface IPostAttachment {
-    id: string;
-    type: number;
-    userId: string;
-    userName: string;
-    userAvatarUrl: string;
-    codeId: string;
-    feedId: string;
-    feedMessage: string;
-    codeName: string;
-    codeLanguage: compilerLanguages;
-    questionId: string;
-    questionTitle: string;
-}
+import { PostAttachmentDetails } from "./types";
 
 interface PostAttachmentProps {
-    data: IPostAttachment;
+    data: PostAttachmentDetails;
 }
 
 const PostAttachment = ({ data }: PostAttachmentProps) => {
@@ -29,21 +14,21 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     switch (data.type) {
         case 1: // Code
             title = data.codeName || "Untitled Code";
-            subtitle = `${data.codeLanguage} • ${data.userName}`;
+            subtitle = `${data.codeLanguage} • ${data.user.name}`;
             to = `/Compiler-Playground/${data.codeId}`;
             info = "code";
             break;
 
         case 2: // Question / Discussion
             title = data.questionTitle || "Question";
-            subtitle = `${data.userName}`;
+            subtitle = `${data.user.name}`;
             to = `/Discuss/${data.questionId}`;
             info = "question";
             break;
 
         case 4: // Feed
             title = `${data.feedMessage}`;
-            subtitle = `${data.userName}`;
+            subtitle = `${data.user.name}`;
             to = `/Feed/${data.feedId}`;
             info = "post";
             break;
@@ -63,10 +48,6 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
             </div>
         </LinkContainer>
     );
-}
-
-export type {
-    IPostAttachment
 }
 
 export default PostAttachment

@@ -6,14 +6,14 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { Link, useNavigate } from "react-router-dom";
-import { IAdminUser } from "./ModViewPage";
+import { AdminUser, AdminUserListData } from "../types";
 
 const rolesOptions = ["All", ...roles];
 
 const AdminUserListPage = () => {
     const { sendJsonRequest } = useApi();
 
-    const [users, setUsers] = useState<IAdminUser[]>([]);
+    const [users, setUsers] = useState<AdminUser[]>([]);
     const [search, setSearch] = useState("");
     const [date, setDate] = useState<Date | null>(null);
     const [activeFilter, setActiveFilter] = useState<"all" | "true" | "false">("all");
@@ -25,7 +25,7 @@ const AdminUserListPage = () => {
     const pageSize = 50;
 
     const fetchUsers = async () => {
-        const result = await sendJsonRequest("/Admin/Users", "POST", {
+        const result = await sendJsonRequest<AdminUserListData>("/Admin/Users", "POST", {
             search: search.trim() || undefined,
             date: date ? date.toISOString() : undefined,
             active: activeFilter === "all" ? undefined : activeFilter === "true",
@@ -34,9 +34,9 @@ const AdminUserListPage = () => {
             page
         });
 
-        if (result && result.users) {
-            setUsers(result.users);
-            setTotalCount(result.count);
+        if (result.data) {
+            setUsers(result.data.users);
+            setTotalCount(result.data.count);
         }
     };
 

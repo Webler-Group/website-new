@@ -2,6 +2,7 @@ import nodemailer from 'nodemailer';
 import { config } from '../confg';
 import { logEvents } from '../middleware/logger';
 import { escapeHtml } from '../utils/regexUtils';
+import EmailDeliveryError from '../exceptions/EmailDeliveryError';
 
 const mailTransport = nodemailer.createTransport({
     host: config.emailHost,
@@ -16,11 +17,8 @@ const mailTransport = nodemailer.createTransport({
 });
 
 /**
- * Sends email to given recipients from system address
- * 
- * @param to Array of email recipients
- * @param subject Email subject
- * @param html Email content in HTML format
+ * Sends email to given recipients from system address.
+ * Throws EmailDeliveryError if sending fails.
  */
 const sendMail = async (to: string[] | string, subject: string, html: string): Promise<void> => {
     const mailOptions = {
@@ -29,19 +27,26 @@ const sendMail = async (to: string[] | string, subject: string, html: string): P
         subject,
         html
     };
-    
+
     try {
         await mailTransport.sendMail(mailOptions);
-    } catch(error: any) {
-        logEvents(error.stack, "emailLog.log");
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown email error";
+        logEvents(message, "emailLog.log");
+        throw new EmailDeliveryError(`Failed to send email to ${to}: ${message}`, err);
     }
-}
+};
 
 const footer = `<small>&copy; ${(new Date).getFullYear()} Webler Codes. All rights reserved.</small>`;
 
-const sendPasswordResetEmail = async (userName: string, userEmail: string, userId: string, emailToken: string) => {
+const sendPasswordResetEmail = async (
+    userName: string,
+    userEmail: string,
+    userId: string,
+    emailToken: string
+): Promise<void> => {
     const resetLink = `${config.allowedOrigins[0]}/Users/Reset-Password?id=${userId}&token=${emailToken}`;
-    
+
     const html = `
         <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
@@ -57,10 +62,15 @@ const sendPasswordResetEmail = async (userName: string, userEmail: string, userI
         </html>
     `;
 
-    return await sendMail(userEmail, "Password Reset", html);
-}
+    await sendMail(userEmail, "Password Reset", html);
+};
 
-const sendActivationEmail = async (userName: string, userEmail: string, userId: string, emailToken: string) => {
+const sendActivationEmail = async (
+    userName: string,
+    userEmail: string,
+    userId: string,
+    emailToken: string
+): Promise<void> => {
     const activationLink = `${config.allowedOrigins[0]}/Users/Activate?id=${userId}&token=${emailToken}`;
 
     const html = `
@@ -78,10 +88,15 @@ const sendActivationEmail = async (userName: string, userEmail: string, userId: 
         </html>
     `;
 
-    return await sendMail(userEmail, `${userName}, activate your Webler Codes account!`, html);
-}
+    await sendMail(userEmail, `${userName}, activate your Webler Codes account!`, html);
+};
 
-const sendEmailChangeVerification = async (userName: string, userEmail: string, newEmail: string, verificationCode: string) => {
+const sendEmailChangeVerification = async (
+    userName: string,
+    userEmail: string,
+    newEmail: string,
+    verificationCode: string
+): Promise<void> => {
     const html = `
         <html>
             <body style="font-family: Arial, sans-serif; color: #333;">
@@ -99,12 +114,12 @@ const sendEmailChangeVerification = async (userName: string, userEmail: string, 
         </html>
     `;
 
-    return await sendMail(userEmail, "Verify Your Email Change", html);
-}
+    await sendMail(userEmail, "Verify Your Email Change", html);
+};
 
 export {
     sendMail,
     sendPasswordResetEmail,
     sendActivationEmail,
     sendEmailChangeVerification
-}
+};

@@ -12,7 +12,7 @@ import DateUtils from '../../../utils/DateUtils';
 import { FaClock, FaComment, FaMapPin, FaShareNodes, FaTrash } from 'react-icons/fa6';
 import { FaEdit } from 'react-icons/fa';
 import DeleteModal from './DeleteModal';
-import PostAttachment from '../../discuss/components/PostAttachment';
+import PostAttachment from '../../../components/post-attachment-select/PostAttachment';
 import { Dropdown } from 'react-bootstrap';
 import EllipsisDropdownToggle from '../../../components/EllipsisDropdownToggle';
 import ProfileName from '../../../components/ProfileName';

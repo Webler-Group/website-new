@@ -1,8 +1,10 @@
 import { Container } from "react-bootstrap";
 import { ReactNode, useEffect, useState } from "react";
-import Question, { IQuestion } from "../components/Question";
+import Question from "../components/Question";
 import { useApi } from "../../../context/apiCommunication";
 import { Helmet } from "react-helmet-async";
+import { QuestionListData, QuestionMinimal } from "../types";
+import { UserMinimal } from "../../profile/types";
 
 interface DiscussLayoutProps {
     MainPage: ReactNode
@@ -10,22 +12,22 @@ interface DiscussLayoutProps {
 
 const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
     const { sendJsonRequest } = useApi();
-    const [questions, setQuestions] = useState<IQuestion[]>([]);
+    const [questions, setQuestions] = useState<QuestionMinimal<UserMinimal>[]>([]);
 
     useEffect(() => {
         getQuestions();
     }, []);
 
     const getQuestions = async () => {
-        const result = await sendJsonRequest(`/Discussion`, "POST", {
+        const result = await sendJsonRequest<QuestionListData>(`/Discussion`, "POST", {
             page: 1,
             count: 10,
             searchQuery: "",
             filter: 5,
             userId: null
         });
-        if (result && result.questions) {
-            setQuestions(result.questions);
+        if (result.data) {
+            setQuestions(result.data.questions);
         }
     }
 

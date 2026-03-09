@@ -1,5 +1,3 @@
-export type compilerLanguages = "web" | "c" | "cpp" | "python" | "ruby" | "lua";
-
 export const languagesInfo = {
     web: { color: "rgb(221, 72, 36)", displayName: "Web", shortName: "Web" },
     c: { color: "rgb(49, 124, 226)", displayName: "C", shortName: "C" },

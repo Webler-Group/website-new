@@ -1,6 +1,8 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import PostTypeEnum from "../data/PostTypeEnum";
+import { keyof } from "zod";
+import { Tag } from "./Tag";
 
 @modelOptions({ schemaOptions: { collection: "posts", timestamps: true } })
 export class Post {
@@ -59,6 +61,9 @@ export class Post {
 
     createdAt!: Date;
 }
+
+export const QUESTION_MINIMAL_FIELDS = { title: 1, answers: 1, votes: 1, user: 1, createdAt: 1, tags: 1, isAccepted: 1 } as const;
+export type QuestionMinimal = { tags: Tag[] } & Pick<Post, keyof typeof QUESTION_MINIMAL_FIELDS>;
 
 const PostModel = getModelForClass(Post);
 export default PostModel;

@@ -36,10 +36,10 @@ router.route("/ExportCourse").post(courseEditorController.exportCourse);
 router.route("/ImportCourse").post(courseEditorController.importCourse);
 router.route("/ExportCourseLesson").post(courseEditorController.exportCourseLesson);
 
-router.route("/UploadContentImage").post(courseEditorController.lessonImageUploadMiddleware.single("image"), courseEditorController.uploadLessonImage);
-router.route("/GetContentImages").post(courseEditorController.getLessonImageList);
-router.route("/DeleteContentImage").delete(courseEditorController.deleteLessonImage);
-router.route("/CreateContentImageFolder").post(courseEditorController.createLessonImageFolder);
-router.route("/MoveContentImage").post(courseEditorController.moveLessonImage);
+router.route("/UploadImageFile").post(courseEditorController.lessonImageUploadMiddleware.single("image"), courseEditorController.uploadLessonImage);
+router.route("/GetFileEntryList").post(courseEditorController.getLessonImageList);
+router.route("/DeleteFileEntry").delete(courseEditorController.deleteLessonImage);
+router.route("/CreateFolder").post(courseEditorController.createLessonImageFolder);
+router.route("/MoveFileEntry").post(courseEditorController.moveLessonImage);
 
 export default router;

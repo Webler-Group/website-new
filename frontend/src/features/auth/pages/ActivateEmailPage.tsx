@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Container } from "react-bootstrap"
 import { useNavigate, useSearchParams } from "react-router-dom";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 
 const ActivateEmailPage = () => {
     const [searchParams, _] = useSearchParams();
@@ -17,9 +17,7 @@ const ActivateEmailPage = () => {
         const userId = searchParams.get("id");
         const token = searchParams.get("token");
         const result = await sendJsonRequest("/Auth/Activate", "POST", { userId, token });
-        if (result) {
-            setSubmitState(result.success ? 1 : 2);
-        }
+        setSubmitState(result?.success ? 1 : 2);
     }
 
     return (

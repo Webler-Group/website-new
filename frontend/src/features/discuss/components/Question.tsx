@@ -3,29 +3,14 @@ import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import { Link } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
-import { IPostAttachment } from "./PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
 import React from "react";
-
-interface IQuestion {
-    id: string;
-    title: string;
-    tags: string[];
-    userName: string;
-    userAvatarUrl: string;
-    userId: string;
-    date: string;
-    message: string;
-    answers: number;
-    votes: number;
-    isUpvoted: boolean;
-    isFollowed: boolean;
-    attachments: IPostAttachment[];
-}
+import { QuestionMinimal } from "../types";
+import { UserMinimal } from "../../profile/types";
 
 interface QuestionProps {
-    question: IQuestion;
+    question: QuestionMinimal<UserMinimal>;
     searchQuery: string;
     showUserProfile: boolean;
 }
@@ -75,11 +60,11 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
                                 <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
                             </div>
                             <div className="d-flex justify-content-end">
-                                <ProfileName userId={question.userId} userName={question.userName} />
+                                <ProfileName userId={question.user.id} userName={question.user.name} />
                             </div>
                         </div>
                         <div className="ms-2">
-                            <ProfileAvatar size={32} avatarUrl={question.userAvatarUrl} />
+                            <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
                         </div>
                     </div>
                 </div>
@@ -94,6 +79,4 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
     return content;
 });
 
-export type { IQuestion }
-
-export default Question
+export default Question;

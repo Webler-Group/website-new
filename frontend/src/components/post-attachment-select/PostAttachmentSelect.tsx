@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 import { Button, Modal } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
-import CodeList, { ICodesState } from "../features/codes/components/CodeList";
+import CodeList, { ICodesState } from "../../features/codes/components/CodeList";
 import "./PostAttachmentSelect.css";
 
 interface PostAttachmentSelectProps {

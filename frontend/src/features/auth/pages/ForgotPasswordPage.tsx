@@ -1,18 +1,18 @@
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import { Button, Container, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate } from "react-router-dom";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 
 const ForgotPasswordPage = () => {
     const { sendJsonRequest } = useApi();
     const [email, setEmail] = useState("");
-    const [error, setError] = useState<any[]>([]);
+    const [error, setError] = useState<{ message: string }[] | undefined>([]);
     const [loading, setLoading] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setLoading(true);
@@ -25,11 +25,11 @@ const ForgotPasswordPage = () => {
     const sendPasswordResetCode = async () => {
         setError([]);
         const result = await sendJsonRequest("/Auth/SendPasswordResetCode", "POST", { email });
-        if (result && result.success) {
+        if (result?.success) {
             setIsSubmitted(true);
         }
         else {
-            setError(result.error);
+            setError(result?.error);
         }
     }
 

@@ -6,36 +6,21 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-
-interface IAdminUser {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl?: string | null;
-    roles: string[];
-    verified: boolean;
-    active: boolean;
-    registerDate: string;
-    bio?: string;
-    ban: {
-        author: string;
-        note?: string;
-        date: string;
-    } | null;
-}
+import { AdminUser, BanUserData, GetAdminUserData, UpdateRolesData } from "../types";
+import RolesEnum from "../../../data/RolesEnum";
 
 const ModViewPage = () => {
     const { userId } = useParams();
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
-    const [user, setUser] = useState<IAdminUser | null>(null);
+    const [user, setUser] = useState<AdminUser | null>(null);
     const [loading, setLoading] = useState(true);
 
     const [showModal, setShowModal] = useState(false);
     const [banNote, setBanNote] = useState("");
 
     const [rolesInput, setRolesInput] = useState("");
-    const [rolesAlert, setRolesAlert] = useState<{ errors?: any[]; message?: string; }>({});
+    const [rolesAlert, setRolesAlert] = useState<{ errors?: { message: string }[]; message?: string; }>({});
 
     // Load user
     useEffect(() => {
@@ -43,11 +28,11 @@ const ModViewPage = () => {
 
         const fetchUser = async () => {
             setLoading(true);
-            const result = await sendJsonRequest("/Admin/GetUser", "POST", { userId });
-            if (result && result.user) {
-                setUser(result.user);
-                setRolesInput(result.user.roles.join(", "));
-            }   
+            const result = await sendJsonRequest<GetAdminUserData>("/Admin/GetUser", "POST", { userId });
+            if (result.data) {
+                setUser(result.data.user);
+                setRolesInput(result.data.user.roles.join(", "));
+            }
             setLoading(false);
         };
 
@@ -56,17 +41,14 @@ const ModViewPage = () => {
 
     const handleBanToggle = async () => {
         if (!user) return;
-        const result = await sendJsonRequest("/Admin/BanUser", "POST", {
+        const result = await sendJsonRequest<BanUserData>("/Admin/BanUser", "POST", {
             userId: user.id,
             active: !user.active,
             note: banNote,
         });
 
-        if (result.success) {
-            setUser(prev => {
-                if (!prev) return null;
-                return { ...prev, active: result.data.active, ban: result.data.ban };
-            })
+        if (result.data) {
+            setUser(prev => prev ? { ...prev, ...result.data } : null);
         }
         setShowModal(false);
         setBanNote("");
@@ -78,17 +60,17 @@ const ModViewPage = () => {
         if (newRoles.length === 0) return;
 
         setLoading(true);
-        const result = await sendJsonRequest("/Admin/UpdateRoles", "POST", {
+        const result = await sendJsonRequest<UpdateRolesData>("/Admin/UpdateRoles", "POST", {
             userId: user.id,
             roles: newRoles
         });
 
-        if (result.success) {
-            setUser(prev => prev ? { ...prev, roles: result.data.roles } : null);
+        if (result.data) {
+            setUser(prev => prev ? { ...prev, ...result.data } : null);
             setRolesAlert({ message: "Roles updated successfully." });
             setRolesInput(result.data.roles.join(", "));
         } else {
-            setRolesAlert({ errors: result?.error });
+            setRolesAlert({ errors: result.error });
         }
 
         setLoading(false);
@@ -102,7 +84,7 @@ const ModViewPage = () => {
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
     if (!user) return <Alert variant="warning">No user found</Alert>;
 
-    const isAdmin = user.roles.includes("Admin");
+    const isAdmin = user.roles.includes(RolesEnum.ADMIN);
 
     return (
         <>
@@ -208,7 +190,7 @@ const ModViewPage = () => {
                     </Button>
                 )}
 
-                {userInfo?.roles.includes("Admin") && (
+                {userInfo?.roles.includes(RolesEnum.ADMIN) && (
                     <Card className="mt-3">
                         <Card.Body>
                             <RequestResultAlert message={rolesAlert.message} errors={rolesAlert.errors} />
@@ -240,7 +222,5 @@ const ModViewPage = () => {
         </>
     );
 };
-
-export type { IAdminUser };
 
 export default ModViewPage;

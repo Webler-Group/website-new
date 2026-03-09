@@ -23,6 +23,7 @@ export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
         name: user.name,
         avatarUrl: getImageUrl(user.avatarHash),
         roles: user.roles,
+        bio: user.bio,
         registerDate: user.createdAt,
         level: user.level,
         verified: user.emailVerified,

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import { FaPen, FaSearch } from "react-icons/fa";
-import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
+import { languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import Loader from "../../../components/Loader";
@@ -11,6 +11,7 @@ import { Button, Container, FormLabel, FormSelect, InputGroup } from "react-boot
 import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import { IChallenge } from "../types";
 import LanguageIcons from "../components/LanguageIcons";
+import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 
 const allowedUrls = [
     /^https?:\/\/.+/i,
@@ -26,7 +27,7 @@ const ChallengeDetailsPage = () => {
     const [loading, setLoading] = useState(false);
     const [challenge, setChallenge] = useState<IChallenge | null>(null);
     const [languageChoice, setLanguageChoice] = useState("");
-    const [selectedLanguage, setSelectedLanguage] = useState<compilerLanguages | null>(null);
+    const [selectedLanguage, setSelectedLanguage] = useState<CompilerLanguagesEnum | null>(null);
 
     useEffect(() => {
         getChallenge();
@@ -48,7 +49,7 @@ const ChallengeDetailsPage = () => {
         setSelectedLanguage(null);
     }
 
-    const handleLanguageSelect = (key: compilerLanguages) => {
+    const handleLanguageSelect = (key: CompilerLanguagesEnum) => {
         setSelectedLanguage(key);
     }
 
@@ -114,7 +115,7 @@ const ChallengeDetailsPage = () => {
                             <Button
                                 variant="primary"
                                 disabled={!languageChoice}
-                                onClick={() => handleLanguageSelect(languageChoice as compilerLanguages)}
+                                onClick={() => handleLanguageSelect(languageChoice as CompilerLanguagesEnum)}
                             >
                                 Open Editor
                             </Button>

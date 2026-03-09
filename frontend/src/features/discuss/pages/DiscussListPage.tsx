@@ -8,6 +8,7 @@ import { PaginationControl } from 'react-bootstrap-pagination-control';
 import QuestionPlaceholder from '../components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 import { TagSearch } from '../../../components/InputTags';
+import { QuestionListData } from '../types';
 
 const DiscussListPage = () => {
     const { sendJsonRequest } = useApi();
@@ -61,16 +62,16 @@ const DiscussListPage = () => {
         const page = searchParams.has("page") ? Number(searchParams.get("page")) : 1;
         const filter = searchParams.has("filter") ? Number(searchParams.get("filter")) : 1;
         const searchQuery = searchParams.has("query") ? searchParams.get("query")! : "";
-        const result = await sendJsonRequest(`/Discussion`, "POST", {
+        const result = await sendJsonRequest<QuestionListData>(`/Discussion`, "POST", {
             page,
             count: questionsPerPage,
             filter,
             searchQuery,
             userId: userInfo ? userInfo.id : null
         });
-        if (result && result.questions) {
-            setQuestions(result.questions);
-            setQuestionCount(result.count);
+        if (result.data) {
+            setQuestions(result.data.questions);
+            setQuestionCount(result.data.count);
         }
         setLoading(false);
     }

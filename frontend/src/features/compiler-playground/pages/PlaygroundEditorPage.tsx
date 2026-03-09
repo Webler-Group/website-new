@@ -15,17 +15,18 @@ import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
-import { compilerLanguages, languagesInfo } from "../../../data/compilerLanguages";
+import { languagesInfo } from "../../../data/compilerLanguages";
 import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import { FaSearch } from "react-icons/fa";
 import CodeEditor from "../components/CodeEditor";
 import useEditorOptions from "../hooks/useEditorOptions";
+import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 
 const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
 
 interface PlaygroundEditorPageProps {
-    language: compilerLanguages | null;
+    language: CompilerLanguagesEnum | null;
 }
 
 const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {

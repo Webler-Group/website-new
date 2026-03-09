@@ -7,27 +7,14 @@ import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import React from "react";
-import PostAttachment, { IPostAttachment } from "./PostAttachment";
+import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import allowedUrls from "../../../data/discussAllowedUrls";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
-
-interface IAnswer {
-    id: string;
-    userName: string;
-    userId: string;
-    userAvatarUrl: string;
-    date: string;
-    message: string;
-    isAccepted: boolean;
-    parentId: string;
-    votes: number;
-    isUpvoted: boolean;
-    attachments: IPostAttachment[];
-}
+import { AnswerDetails, VotePostData } from "../types";
 
 interface AnswerProps {
-    answer: IAnswer;
+    answer: AnswerDetails;
     acceptedAnswer: string | null;
     toggleAcceptedAnswer: (postId: string) => void;
     isQuestionOwner: boolean;
@@ -41,7 +28,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
     const { userInfo } = useAuth();
     const [upvoted, setUpvoted] = useState(answer.isUpvoted);
     const [votes, setVotes] = useState(answer.votes);
-    const isOwner = userInfo?.id === answer.userId;
+    const isOwner = userInfo?.id === answer.user.id;
     const navigate = useNavigate();
 
     const voteAnswer = async () => {
@@ -50,8 +37,8 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
             return;
         }
         const vote = upvoted ? 0 : 1;
-        const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: answer.id, vote });
-        if (result.vote === vote) {
+        const result = await sendJsonRequest<VotePostData>("/Discussion/VotePost", "POST", { postId: answer.id, vote });
+        if (result.data && result.data.vote === vote) {
             setUpvoted(vote === 1);
             setVotes(votes + (vote ? 1 : -1));
         }
@@ -116,11 +103,11 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                             <small className="text-secondary">{DateUtils.format(new Date(answer.date))}</small>
                         </div>
                         <div className="d-flex justify-content-end">
-                            <ProfileName userId={answer.userId} userName={answer.userName} />
+                            <ProfileName userId={answer.user.id} userName={answer.user.name} />
                         </div>
                     </div>
                     <div className="ms-2">
-                        <ProfileAvatar size={32} avatarUrl={answer.userAvatarUrl} />
+                        <ProfileAvatar size={32} avatarUrl={answer.user.avatarUrl} />
                     </div>
                 </div>
             </div>
@@ -132,11 +119,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
         :
         <div>{body}</div>
 
-    return content
-})
+    return content;
+});
 
-export type {
-    IAnswer
-}
-
-export default Answer
+export default Answer;

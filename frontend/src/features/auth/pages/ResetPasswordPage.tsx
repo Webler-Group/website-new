@@ -1,7 +1,7 @@
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import { Button, Container, Form, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import {useApi} from "../../../context/apiCommunication";
+import { useApi } from "../../../context/apiCommunication";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import { useAuth } from "../context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
@@ -11,12 +11,12 @@ const ForgotPasswordPage = () => {
     const { sendJsonRequest } = useApi();
     const { logout } = useAuth();
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<any[] | undefined>();
+    const [error, setError] = useState<{ message: string }[] | undefined>();
     const [loading, setLoading] = useState(false);
     const [submitState, setSubmitState] = useState(0);
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setLoading(true);
@@ -31,14 +31,12 @@ const ForgotPasswordPage = () => {
         const resetId = searchParams.get("id");
         const token = searchParams.get("token");
         const result = await sendJsonRequest("/Auth/ResetPassword", "POST", { password, resetId, token });
-        if (result && typeof result.success === "boolean") {
-            if (result.success) {
-                logout();
-            }
-            setSubmitState(result.success ? 1 : 2);
+        setSubmitState(result.success ? 1 : 2);
+        if (result?.success) {
+            logout();
         }
         else {
-            setError(result.error);
+            setError(result?.error);
         }
     }
 

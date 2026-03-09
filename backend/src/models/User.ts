@@ -66,8 +66,8 @@ export class User {
     @prop({ required: true, trim: true, minlength: 3, maxlength: 20, unique: true })
     name!: string;
 
-    @prop({ enum: countryCodesEnum, default: "" })
-    countryCode!: string;
+    @prop({ enum: countryCodesEnum })
+    countryCode?: string;
 
     @prop({ trim: true, maxlength: 120, default: "" })
     bio!: string;

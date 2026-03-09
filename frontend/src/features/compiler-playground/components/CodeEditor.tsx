@@ -20,9 +20,9 @@ import "ace-builds/src-noconflict/mode-c_cpp";   // C + C++
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-ruby";
 import "ace-builds/src-noconflict/mode-lua";
-import { compilerLanguages } from "../../../data/compilerLanguages";
+import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 
-const compilerLangToAceMode = (lang: compilerLanguages | "html" | "css" | "javascript") => {
+const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "javascript") => {
     switch (lang) {
         case "web":
         case "html":

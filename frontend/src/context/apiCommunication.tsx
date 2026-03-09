@@ -93,7 +93,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
         return null;
     }
 
-    const sendJsonRequest = async (path: string, method: string, body: any = {}, options: any = {}, isMultipart: boolean = false) => {
+    const sendJsonRequest = async function <T>(path: string, method: string, body: any = {}, options: any = {}, isMultipart: boolean = false): Promise<JsonResponse<T>> {
         try {
             const response = await fetchQueryWithReauthentication(path, {
                 method,
@@ -103,11 +103,12 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
                 ...options
             }, isMultipart);
 
-            const data = await response.json();
+            const json: JsonResponse<T> = await response.json();
 
-            return data;
-        } catch {
-            return null;
+            return json;
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "An unexpected error occurred";
+            return { success: false, error: [{ message }] };
         }
     }
 

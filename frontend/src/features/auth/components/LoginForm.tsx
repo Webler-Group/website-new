@@ -2,9 +2,10 @@ import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { LoginData } from "../types";
 
 interface LoginFormProps {
     onToggleClick: () => void;
@@ -16,10 +17,10 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
     const { authenticate, updateUser, deviceId } = useAuth();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<any[]>([]);
+    const [error, setError] = useState<{ message: string }[] | undefined>([]);
     const [loading, setLoading] = useState(false);
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setLoading(true);
@@ -31,14 +32,14 @@ const LoginForm = ({ onToggleClick, onLogin }: LoginFormProps) => {
 
     const loginUser = async () => {
         setError([]);
-        const result = await sendJsonRequest("/Auth/Login", "POST", { email, password, deviceId });
-        if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
-            updateUser(result.user);
+        const result = await sendJsonRequest<LoginData>("/Auth/Login", "POST", { email, password, deviceId });
+        if (result?.data) {
+            authenticate(result.data.accessToken, result.data.expiresIn);
+            updateUser(result.data.user);
             onLogin();
         }
         else {
-            setError(result.error);
+            setError(result?.error);
         }
     }
 

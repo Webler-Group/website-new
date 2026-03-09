@@ -1,18 +1,8 @@
 import React, { ReactNode, useContext, useState } from "react";
 import { uuid } from "../../../utils/StringUtils";
+import { AuthUser } from "../types";
 
-export interface UserInfo {
-    id: string;
-    name: string;
-    email: string;
-    avatarUrl: string | null;
-    roles: string[];
-    emailVerified: boolean;
-    countryCode: string | null;
-    registerDate: number;
-    level: number;
-    xp: number;
-}
+export type UserInfo = AuthUser;
 
 interface AuthState {
     userInfo: UserInfo | null;

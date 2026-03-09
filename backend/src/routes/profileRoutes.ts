@@ -46,17 +46,17 @@ router.route("/UpdateNotifications")
     .post(profileController.updateNotifications);
 router.route("/Search")
     .post(profileController.searchProfiles);
-router.route("/UploadContentImage")
+router.route("/UploadImageFile")
     .post(requestLimiter(3600 * 24, 5, "Too many requests, try again later"),
         profileController.postImageUploadMiddleware.single("image"),
         profileController.uploadPostImage);
-router.route("/GetContentImages")
+router.route("/GetFileEntryList")
     .post(profileController.getPostImageList);
-router.route("/DeleteContentImage")
+router.route("/DeleteFileEntry")
     .delete(profileController.deletePostImage);
-router.route("/CreateContentImageFolder")
+router.route("/CreateFolder")
     .post(profileController.createPostImageFolder);
-router.route("/MoveContentImage")
+router.route("/MoveFileEntry")
     .post(profileController.movePostImage);
 
 export default router;

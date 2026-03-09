@@ -10,7 +10,7 @@ import { useApi } from "../../context/apiCommunication";
 import ReactionsList from "../reactions/ReactionsList";
 import { useNavigate } from "react-router-dom";
 import "./CommentList.css"
-import PostAttachmentSelect from "../PostAttachmentSelect";
+import PostAttachmentSelect from "../post-attachment-select/PostAttachmentSelect";
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;

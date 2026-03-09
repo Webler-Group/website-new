@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import RequestResultAlert from '../../../components/RequestResultAlert';
 import MdEditorField from '../../../components/MdEditorField';
+import { CreateQuestionData, GetQuestionData } from '../types';
 
 interface DiscussAskPageProps {
     questionId: string | null;
@@ -18,7 +19,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
     const [message, setMessage] = useState("");
     const [tags, setTags] = useState<string[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<any[] | undefined>();
+    const [error, setError] = useState<{ message: string }[] | undefined>();
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
 
     useEffect(() => {
@@ -29,11 +30,11 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
 
     const getQuestion = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Discussion/GetQuestion`, "POST", { questionId });
-        if (result && result.question) {
-            setTitle(result.question.title);
-            setMessage(result.question.message);
-            setTags(result.question.tags);
+        const result = await sendJsonRequest<GetQuestionData>(`/Discussion/GetQuestion`, "POST", { questionId });
+        if (result.data) {
+            setTitle(result.data.question.title);
+            setMessage(result.data.question.message);
+            setTags(result.data.question.tags);
         }
         setLoading(false);
     }
@@ -52,9 +53,9 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
     }
 
     const createQuestion = async () => {
-        const result = await sendJsonRequest("/Discussion/CreateQuestion", "POST", { title, message, tags });
-        if (result && result.question) {
-            navigate("/Discuss/" + result.question.id);
+        const result = await sendJsonRequest<CreateQuestionData>("/Discussion/CreateQuestion", "POST", { title, message, tags });
+        if (result.data) {
+            navigate("/Discuss/" + result.data.question.id);
         } else {
             setError(result.error);
         }
@@ -80,7 +81,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
             closeDeleteModal();
             navigate("/Discuss?filter=3");
         } else {
-            setError(result?.error ? result.error.message : result.message);
+            setError(result.error);
         }
         setLoading(false);
     }
@@ -117,7 +118,7 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                 </FormGroup>
 
                 <FormGroup>
-                    <MdEditorField 
+                    <MdEditorField
                         section="Profile"
                         rootAlias="post-images"
                         text={message}

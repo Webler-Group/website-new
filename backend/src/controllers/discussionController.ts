@@ -1,11 +1,11 @@
 import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
-import PostModel, { Post } from "../models/Post";
+import PostModel, { QUESTION_MINIMAL_FIELDS, QuestionMinimal } from "../models/Post";
 import TagModel, { Tag } from "../models/Tag";
 import UpvoteModel from "../models/Upvote";
 import PostFollowing from "../models/PostFollowing";
-import mongoose, { Types } from "mongoose";
+import { Types } from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
 import UserFollowing from "../models/UserFollowing";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -22,6 +22,7 @@ import { sendNotifications } from "../helpers/notificationHelper";
 import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import { formatQuestionMinimal } from "../helpers/discussionHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -58,7 +59,6 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
                 message: question.message,
                 tags: question.tags,
                 date: question.createdAt,
-                userId: question.user,
                 isAccepted: question.isAccepted,
                 votes: question.votes,
                 answers: question.answers
@@ -130,23 +130,13 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             .clone()
             .skip((page - 1) * count)
             .limit(count)
-            .select({ message: 0 })
+            .select(QUESTION_MINIMAL_FIELDS)
             .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
             .populate<{ tags: Tag[] }>("tags")
-            .lean()
+            .lean<(QuestionMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>()
     ]);
 
-    const data = questions.map(x => ({
-        id: x._id,
-        title: x.title,
-        tags: x.tags.map((tag: Tag) => tag.name),
-        date: x.createdAt,
-        user: formatUserMinimal(x.user),
-        answers: x.answers,
-        votes: x.votes,
-        isUpvoted: false,
-        isAccepted: x.isAccepted,
-    }));
+    const data = questions.map(x => formatQuestionMinimal(x, x.user));
 
     if (currentUserId) {
         await Promise.all(data.map((item, i) =>
@@ -244,7 +234,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
 
         question.$inc("answers", 1);
-        await question.save({ session });
+        await savePost(question, session);
 
         return reply;
     });
@@ -258,7 +248,6 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: reply._id,
                 message: reply.message,
                 date: reply.createdAt,
-                userId: reply.user,
                 parentId: reply.parentId,
                 isAccepted: reply.isAccepted,
                 votes: reply.votes,
@@ -570,7 +559,7 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .select("user")
         .lean();
 
-    const data = result.map(x => ({
+    const users = result.map(x => ({
         id: x.user._id,
         name: x.user.name,
         avatarUrl: getImageUrl(x.user.avatarHash),
@@ -580,13 +569,13 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         isFollowing: false
     }));
 
-    await Promise.all(data.map((user, i) =>
+    await Promise.all(users.map((user, i) =>
         UserFollowing.exists({ user: currentUserId, following: user.id }).then(exists => {
-            data[i].isFollowing = exists !== null;
+            users[i].isFollowing = exists !== null;
         })
     ));
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: { users } });
 });
 
 const discussController = {

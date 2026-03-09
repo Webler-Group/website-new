@@ -6,40 +6,11 @@ import DateUtils from "../../utils/DateUtils";
 import ProfileName from "../../components/ProfileName";
 import { useApi } from "../../context/apiCommunication";
 import { formatSize } from "../../utils/FileUtils";
-
-type FileExplorerItem = {
-    id: string;
-    authorId: string;
-    authorName: string;
-    authorAvatarUrl: string | null;
-    type: number;
-    name: string;
-    mimetype?: string;
-    size?: number;
-    updatedAt: string;
-    url?: string | null;
-    previewUrl?: string | null;
-};
-
-type FileExplorerListResponse = {
-    success: boolean;
-    items: FileExplorerItem[];
-};
-
-type FileExplorerUploadResponse = {
-    success: boolean;
-    data: { id: string; url: string; name: string; mimetype: string; size: number; updatedAt: string; previewUrl: string | null };
-    error?: { message: string }[]
-};
-
-type FileExplorerCreateFolderResponse = {
-    success: boolean;
-    data: { id: string; name: string; updatedAt: string };
-    error?: { message: string }[]
-};
+import { CreateFolderData, FileEntriesData, FileEntry, UploadImageFileData } from "./types";
+import FileTypeEnum from "../../data/FileTypeEnum";
 
 interface FileExplorerContextMenuState {
-    item: FileExplorerItem;
+    item: FileEntry;
     x: number;
     y: number;
 }
@@ -69,7 +40,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
     // Library
     const [loading, setLoading] = useState(false);
     const [err, setErr] = useState<string | null>(null);
-    const [items, setItems] = useState<FileExplorerItem[]>([]);
+    const [items, setItems] = useState<FileEntry[]>([]);
 
     // Upload
     const [uploadName, setUploadName] = useState("");
@@ -83,18 +54,18 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
     const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Delete dialog
-    const [deleteTarget, setDeleteTarget] = useState<FileExplorerItem | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<FileEntry | null>(null);
     const [deleting, setDeleting] = useState(false);
     const [deleteErr, setDeleteErr] = useState<string | null>(null);
 
     // Rename dialog
-    const [renameTarget, setRenameTarget] = useState<FileExplorerItem | null>(null);
+    const [renameTarget, setRenameTarget] = useState<FileEntry | null>(null);
     const [renameName, setRenameName] = useState("");
     const [renaming, setRenaming] = useState(false);
     const [renameErr, setRenameErr] = useState<string | null>(null);
 
     // Move dialog
-    const [moveTarget, setMoveTarget] = useState<FileExplorerItem | null>(null);
+    const [moveTarget, setMoveTarget] = useState<FileEntry | null>(null);
     const [movePath, setMovePath] = useState("");
     const [moving, setMoving] = useState(false);
     const [moveErr, setMoveErr] = useState<string | null>(null);
@@ -112,18 +83,18 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setLoading(true);
         setErr(null);
 
-        const result = (await sendJsonRequest(`/${section}/GetContentImages`, "POST", {
+        const result = (await sendJsonRequest<FileEntriesData>(`/${section}/GetFileEntryList`, "POST", {
             subPath: path.length > 0 ? path.join("/") : undefined,
-        })) as FileExplorerListResponse | null;
+        }));
 
-        if (result?.success) {
-            setItems(result.items ?? []);
+        if (result?.data) {
+            setItems(result.data.items);
         } else {
             setErr("Failed to load contents");
         }
 
         setLoading(false);
-    }, [section, sendJsonRequest]);
+    }, [section]);
 
     useEffect(() => {
         if (!show) return;
@@ -166,7 +137,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         fetchList(next);
     };
 
-    const handleItemClick = (item: FileExplorerItem) => {
+    const handleItemClick = (item: FileEntry) => {
         if (contextMenu) { setContextMenu(null); return; }
         if (item.type === 2) {
             navigateInto(item.name);
@@ -176,7 +147,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         }
     };
 
-    const openContextMenu = (e: React.MouseEvent | React.TouchEvent, item: FileExplorerItem) => {
+    const openContextMenu = (e: React.MouseEvent | React.TouchEvent, item: FileEntry) => {
         e.preventDefault();
         e.stopPropagation();
         let x: number, y: number;
@@ -194,7 +165,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setContextMenu({ item, x, y });
     };
 
-    const handleTouchStart = (e: React.TouchEvent, item: FileExplorerItem) => {
+    const handleTouchStart = (e: React.TouchEvent, item: FileEntry) => {
         longPressTimer.current = setTimeout(() => openContextMenu(e, item), 500);
     };
 
@@ -215,20 +186,18 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
         setUploading(true);
 
-        const result = (await sendJsonRequest(
-            `/${section}/UploadContentImage`,
+        const result = (await sendJsonRequest<UploadImageFileData>(
+            `/${section}/UploadImageFile`,
             "POST",
             { image: uploadFile, name, ...(subPathStr ? { subPath: subPathStr } : {}) },
             undefined,
             true
-        )) as FileExplorerUploadResponse | null;
+        ));
 
-        if (result?.success && result.data) {
-            const newItem: FileExplorerItem = {
+        if (result?.data) {
+            const newItem: FileEntry = {
                 id: result.data.id,
-                authorId: userInfo.id,
-                authorName: userInfo.name,
-                authorAvatarUrl: userInfo.avatarUrl,
+                author: { ...userInfo },
                 type: 1,
                 name: result.data.name,
                 url: result.data.url,
@@ -253,7 +222,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setDeleting(true);
         setDeleteErr(null);
 
-        const result = (await sendJsonRequest(`/${section}/DeleteContentImage`, "DELETE", {
+        const result = (await sendJsonRequest(`/${section}/DeleteFileEntry`, "DELETE", {
             fileId: deleteTarget.id,
         })) as { success: boolean } | null;
 
@@ -275,7 +244,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setRenaming(true);
         setRenameErr(null);
 
-        const result = (await sendJsonRequest(`/${section}/MoveContentImage`, "POST", {
+        const result = (await sendJsonRequest(`/${section}/MoveFileEntry`, "POST", {
             fileId: renameTarget.id,
             newName: name,
             ...(subPathStr ? { newSubPath: subPathStr } : {}),
@@ -296,7 +265,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setMoving(true);
         setMoveErr(null);
 
-        const result = (await sendJsonRequest(`/${section}/MoveContentImage`, "POST", {
+        const result = (await sendJsonRequest(`/${section}/MoveFileEntry`, "POST", {
             fileId: moveTarget.id,
             newSubPath: movePath.trim() || undefined,
         })) as { success: boolean } | null;
@@ -319,18 +288,16 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setCreatingFolder(true);
         setCreateFolderErr(null);
 
-        const result = (await sendJsonRequest(`/${section}/CreateContentImageFolder`, "POST", {
+        const result = (await sendJsonRequest<CreateFolderData>(`/${section}/CreateFolder`, "POST", {
             name,
             ...(subPathStr ? { subPath: subPathStr } : {}),
-        })) as FileExplorerCreateFolderResponse | null;
+        }));
 
-        if (result?.success && result.data) {
-            const newFolder: FileExplorerItem = {
+        if (result?.data) {
+            const newFolder: FileEntry = {
                 id: result.data.id,
-                authorId: userInfo.id,
-                authorName: userInfo.name,
-                authorAvatarUrl: userInfo.avatarUrl,
-                type: 2,
+                author: { ...userInfo },
+                type: FileTypeEnum.FOLDER,
                 name: result.data.name,
                 updatedAt: result.data.updatedAt,
             };
@@ -343,7 +310,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setCreatingFolder(false);
     };
 
-    const getThumbnail = (item: FileExplorerItem) => {
+    const getThumbnail = (item: FileEntry) => {
         if (item.previewUrl) return item.previewUrl;
         return item.type === 2 ? FOLDER_ICON : IMAGE_ICON;
     };
@@ -354,7 +321,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setCreateFolderOpen(true);
     };
 
-    const getTypeLabel = (item: FileExplorerItem): string | null => {
+    const getTypeLabel = (item: FileEntry): string | null => {
         if (item.type === 2) return "folder";
         if (!item.mimetype) return null;
         return item.mimetype.split("/").pop() ?? item.mimetype;
@@ -362,7 +329,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
     return (
         <>
-            {/* ── Delete confirm ─────────────────────────────────────────── */}
             <Modal
                 style={{ zIndex: CONFIRM_MODAL_Z }}
                 backdropClassName="wb-file-explorer-confirm-backdrop"
@@ -390,8 +356,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                     </Button>
                 </Modal.Footer>
             </Modal>
-
-            {/* ── Rename ────────────────────────────────────────────────── */}
             <Modal
                 style={{ zIndex: CONFIRM_MODAL_Z }}
                 backdropClassName="wb-file-explorer-confirm-backdrop"
@@ -422,8 +386,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                     </Button>
                 </Modal.Footer>
             </Modal>
-
-            {/* ── Move ──────────────────────────────────────────────────── */}
             <Modal
                 style={{ zIndex: CONFIRM_MODAL_Z }}
                 backdropClassName="wb-file-explorer-confirm-backdrop"
@@ -488,8 +450,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                     </Button>
                 </Modal.Footer>
             </Modal>
-
-            {/* ── Main modal ────────────────────────────────────────────── */}
             <Modal
                 show={show}
                 onHide={onHide}
@@ -514,10 +474,8 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
                         <Tab.Content className="wb-file-explorer-tabcontent">
 
-                            {/* Library tab */}
                             <Tab.Pane eventKey="library" className="wb-file-explorer-library-pane">
 
-                                {/* Toolbar: breadcrumb + actions — stays fixed, never scrolls */}
                                 <div className="wb-file-explorer-toolbar">
                                     <div className="wb-file-explorer-breadcrumb">
                                         <button
@@ -558,7 +516,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
                                 {err && <Alert variant="danger">{err}</Alert>}
 
-                                {/* Scrollable list area */}
                                 <div className="wb-file-explorer-scroll">
                                     {loading ? (
                                         <div className="d-flex justify-content-center py-5">
@@ -611,8 +568,8 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                                                     )}
                                                                 </div>
                                                                 <ProfileName
-                                                                    userId={item.authorId}
-                                                                    userName={item.authorName}
+                                                                    userId={item.author.id}
+                                                                    userName={item.author.name}
                                                                     className="wb-file-explorer-author"
                                                                 />
                                                             </div>
@@ -625,7 +582,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                 </div>
                             </Tab.Pane>
 
-                            {/* Upload tab */}
                             <Tab.Pane eventKey="upload" className="wb-file-explorer-upload-pane">
                                 {uploadErr && <Alert variant="danger">{uploadErr}</Alert>}
 
@@ -674,7 +630,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 </Modal.Body>
             </Modal>
 
-            {/* ── Floating context menu ─────────────────────────────────── */}
             {contextMenu && (
                 <div
                     ref={contextMenuRef}

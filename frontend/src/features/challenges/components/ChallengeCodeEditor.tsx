@@ -1,7 +1,6 @@
 import { Button, Dropdown, Modal } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
 import { IChallenge } from "../types";
-import { compilerLanguages } from "../../../data/compilerLanguages";
 import { useEffect, useState } from "react";
 import { ICode } from "../../codes/components/Code";
 import { useApi } from "../../../context/apiCommunication";
@@ -10,10 +9,11 @@ import useEditorOptions from "../../compiler-playground/hooks/useEditorOptions";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import Loader from "../../../components/Loader";
 import { useSnackbar } from "../../../context/SnackbarProvider";
+import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 
 interface ChallengeCodeEditorProps {
     challenge: IChallenge;
-    language: compilerLanguages | null;
+    language: CompilerLanguagesEnum | null;
     onExit: () => void;
 }
 

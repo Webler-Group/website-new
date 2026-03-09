@@ -5,12 +5,13 @@ import RequireAuth from "../auth/components/RequireAuth"
 import AdminHomePage from "./pages/AdminHomePage"
 import AdminUserListPage from "./pages/AdminUserListPage"
 import ModViewPage from "./pages/ModViewPage"
+import RolesEnum from "../../data/RolesEnum"
 
 const AdminRoutes = () => {
     return (
         <Routes>
             <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
-                <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+                <Route element={<RequireAuth allowedRoles={[RolesEnum.ADMIN, RolesEnum.MODERATOR]} />}>
                     <Route index element={<AdminHomePage />} />
                     <Route path="UserSearch">
                         <Route index element={<AdminUserListPage />} />

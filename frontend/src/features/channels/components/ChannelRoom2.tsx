@@ -14,7 +14,7 @@ import { IChannelMessage } from "./ChannelMessage";
 import MessageContextMenu from "./MessageContextMenu";
 import RepliedMessage from "./RepliedMessage";
 import Loader from "../../../components/Loader";
-import PostAttachmentSelect from "../../../components/PostAttachmentSelect";
+import PostAttachmentSelect from "../../../components/post-attachment-select/PostAttachmentSelect";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;

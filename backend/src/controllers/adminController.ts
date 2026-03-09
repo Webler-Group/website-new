@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { IAuthRequest } from "../middleware/verifyJWT";
-import UserModel, { USER_ADMIN_FIELDS, UserAdmin } from "../models/User";
+import UserModel, { User, USER_ADMIN_FIELDS, UserAdmin } from "../models/User";
 import asyncHandler from "express-async-handler";
 import mongoose, { Types } from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
@@ -23,7 +23,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
     const { search, count, page, date, role, active } = body;
 
-    const filter: mongoose.QueryFilter<typeof UserModel> = {};
+    const filter: mongoose.QueryFilter<User> = {};
 
     if (search && search.trim().length > 0) {
         filter.name = new RegExp(escapeRegex(search.trim()), "i");
@@ -68,7 +68,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = body;
 
     const user = await UserModel.findById(userId, USER_ADMIN_FIELDS)
-        .lean<UserAdmin & { _id: Types.ObjectId }>();;
+        .lean<UserAdmin & { _id: Types.ObjectId }>();
 
     if (!user) {
         throw new HttpError("User not found", 404);
@@ -76,7 +76,9 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     res.json({
         success: true,
-        user: formatUserAdmin(user)
+        data: {
+            user: formatUserAdmin(user)
+        }
     });
 });
 

@@ -2,9 +2,10 @@ import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
 import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
-import { FormEvent, useEffect, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { Captcha, RegisterData } from "../types";
 
 interface RegisterFormProps {
     onToggleClick: () => void;
@@ -17,7 +18,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const [email, setEmail] = useState("");
     const [name, setName] = useState("");
     const [password, setPassword] = useState("");
-    const [error, setError] = useState<any[]>([]);
+    const [error, setError] = useState<{ message: string }[] | undefined>([]);
     const [loading, setLoading] = useState(false);
     const [imageSrc, setImageSrc] = useState<string | null>(null);
     const [captchaId, setCaptchaId] = useState<string | null>(null);
@@ -27,7 +28,7 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
         generateCaptcha();
     }, []);
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setLoading(true);
@@ -38,24 +39,24 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
     const generateCaptcha = async () => {
         setCaptchaId(null);
 
-        const result = await sendJsonRequest("/Auth/GenerateCaptcha", "POST");
+        const result = await sendJsonRequest<Captcha>("/Auth/GenerateCaptcha", "POST");
 
-        if (result) {
-            setImageSrc(result.imageData);
-            setCaptchaId(result.captchaId);
+        if (result?.data) {
+            setImageSrc(result.data.imageData);
+            setCaptchaId(result.data.captchaId);
         }
     }
 
     const registerUser = async () => {
         setError([]);
-        const result = await sendJsonRequest("/Auth/Register", "POST", { email, name, password, captchaId, solution, deviceId });
-        if (result && result.accessToken && result.user && result.expiresIn) {
-            authenticate(result.accessToken, result.expiresIn);
-            updateUser(result.user);
+        const result = await sendJsonRequest<RegisterData>("/Auth/Register", "POST", { email, name, password, captchaId, solution, deviceId });
+        if (result?.data) {
+            authenticate(result.data.accessToken, result.data.expiresIn);
+            updateUser(result.data.user);
             onRegister();
         }
         else {
-            setError(result.error);
+            setError(result?.error);
             await generateCaptcha();
         }
     }
