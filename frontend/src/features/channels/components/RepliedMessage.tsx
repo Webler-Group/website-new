@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import ProfileAvatar from '../../../components/ProfileAvatar';
-import { IChannelMessage } from './ChannelMessage';
 import ProfileName from '../../../components/ProfileName';
 import { FaReply } from 'react-icons/fa6';
+import { ChannelMessageMinimal } from '../types';
 
 interface RepliedMessageProps {
-    message: IChannelMessage;
+    message: ChannelMessageMinimal;
 }
 
 const RepliedMessage = ({ message }: RepliedMessageProps) => {
@@ -33,8 +33,8 @@ const RepliedMessage = ({ message }: RepliedMessageProps) => {
             <div ref={containerRef} className='small'>
                 <div className="d-flex gap-1 align-items-start">
                     <FaReply className="flex-shrink-0" />
-                    <ProfileAvatar size={20} avatarUrl={message.userAvatarUrl} />
-                    <ProfileName userId={message.userId} userName={"@" + message.userName} />
+                    <ProfileAvatar size={20} avatarUrl={message.user.avatarUrl} />
+                    <ProfileName userId={message.user.id} userName={"@" + message.user.name} />
                     {message.deleted ? (
                         <i className="text-muted">Deleted</i>
                     ) : (

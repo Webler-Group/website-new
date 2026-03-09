@@ -1,20 +1,19 @@
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
 import { TransitionGroup, CSSTransition } from "react-transition-group";
-import { IChannel, IChannelParticipant } from "./ChannelListItem";
 import ChannelMessage from "./ChannelMessage";
 import { Button, Form, Badge, Modal } from "react-bootstrap";
 import { FaArrowCircleDown, FaCog, FaTimes } from "react-icons/fa";
 import ChannelRoomSettings from "./ChannelRoomSettings";
 import { useApi } from "../../../context/apiCommunication";
-import { IChannelInvite } from "./InvitesListItem";
 import useMessages from "../hooks/useMessages";
 import { useAuth } from "../../auth/context/authContext";
 import { FaArrowLeft, FaCheck, FaPaperPlane, FaPen } from "react-icons/fa6";
-import { IChannelMessage } from "./ChannelMessage";
 import MessageContextMenu from "./MessageContextMenu";
 import RepliedMessage from "./RepliedMessage";
 import Loader from "../../../components/Loader";
 import PostAttachmentSelect from "../../../components/post-attachment-select/PostAttachmentSelect";
+import { ChannelDetails, ChannelMessageDetails, ChannelParticipantDetails, GetChannelData, InviteDetails } from "../types";
+import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
@@ -23,16 +22,16 @@ interface ChannelRoomProps {
 const MAX_ROWS = 5;
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
-    const [channel, setChannel] = useState<IChannel | null>(null);
+    const [channel, setChannel] = useState<ChannelDetails | null>(null);
     const [messagesFromDate, setMessagesFromDate] = useState<Date | null>(null);
     const { userInfo } = useAuth();
-    const onChannelJoin = (newParticipant: IChannelParticipant) => {
+    const onChannelJoin = (newParticipant: ChannelParticipantDetails) => {
         setChannel(prev => {
             if (!prev) return null;
             return {
                 ...prev,
-                participants: [...prev.participants!, newParticipant],
-                invites: prev.invites!.filter(x => x.invitedUserId != newParticipant.userId)
+                participants: [...prev.participants, newParticipant],
+                invites: prev.invites.filter(invite => invite.invitedUser.id != newParticipant.user.id)
             }
         });
     }
@@ -41,7 +40,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             if (!prev) return null;
             return {
                 ...prev,
-                participants: prev.participants!.filter(x => x.userId != userId)
+                participants: prev.participants!.filter(participant => participant.user.id != userId)
             }
         });
     }
@@ -63,13 +62,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const isAtBottomRef = useRef(true);
     const prevLatest = useRef<Date | null>(null);
-    const [selectedMessage, setSelectedMessage] = useState<IChannelMessage | null>(null);
-    const [editedMessage, setEditedMessage] = useState<IChannelMessage | null>(null);
+    const [selectedMessage, setSelectedMessage] = useState<ChannelMessageDetails | null>(null);
+    const [editedMessage, setEditedMessage] = useState<ChannelMessageDetails | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
     const [loading, setLoading] = useState(false);
-    const [repliedMessage, setRepliedMessage] = useState<IChannelMessage | null>(null);
+    const [repliedMessage, setRepliedMessage] = useState<ChannelMessageDetails | null>(null);
     const nodeRefs = useRef<Map<string, React.RefObject<HTMLDivElement | null>>>(new Map());
 
     useEffect(() => {
@@ -170,7 +169,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }, [messages.results.length]);
 
     useEffect(() => {
-        if (messages.results.length > 0 && messages.results[0].userId == userInfo?.id) {
+        if (messages.results.length > 0 && messages.results[0].user.id == userInfo?.id) {
             setAllMessagesVisible(channel?.lastActiveAt != null && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt));
         }
     }, [messages.results.length, channel?.id, userInfo]);
@@ -222,13 +221,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const getChannel = async () => {
         setLoading(true);
-        const result = await sendJsonRequest("/Channels/GetChannel", "POST", {
+        const result = await sendJsonRequest<GetChannelData>("/Channels/GetChannel", "POST", {
             channelId,
             includeParticipants: true,
             includeInvites: true
         });
-        if (result && result.channel) {
-            setChannel(result.channel);
+        if (result.data) {
+            setChannel(result.data.channel);
         }
         setLoading(false);
     }
@@ -263,17 +262,17 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             if (!prev) return null;
             return {
                 ...prev,
-                participants: prev.participants!.filter(x => x.userId != userId)
+                participants: prev.participants.filter(participant => participant.user.id != userId)
             }
         });
     }
 
-    const onUserInvite = (invite: IChannelInvite) => {
+    const onUserInvite = (invite: InviteDetails) => {
         setChannel(prev => {
             if (!prev) return null;
             return {
                 ...prev,
-                invites: [...prev.invites!, invite]
+                invites: [...prev.invites, invite]
             }
         });
     }
@@ -295,18 +294,18 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         });
     }
 
-    const onRoleChange = (userId: string, role: string) => {
+    const onRoleChange = (userId: string, role: ChannelRolesEnum) => {
         setChannel(prev => {
             if (!prev) return null;
             return {
                 ...prev,
-                participants: prev.participants!.map(x => {
-                    if (x.userId == userId) {
-                        return { ...x, role };
-                    } else if (x.userId == userInfo?.id && role === "Owner") {
-                        return { ...x, role: "Admin" }
+                participants: prev.participants!.map(participant => {
+                    if (participant.user.id == userId) {
+                        return { ...participant, role };
+                    } else if (participant.user.id == userInfo?.id && role === ChannelRolesEnum.OWNER) {
+                        return { ...participant, role: ChannelRolesEnum.ADMIN }
                     }
-                    return x;
+                    return participant;
                 })
             }
         });
@@ -319,7 +318,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         })
     }
 
-    const onContextMenu = (message: IChannelMessage, target: HTMLElement | null) => {
+    const onContextMenu = (message: ChannelMessageDetails, target: HTMLElement | null) => {
         if (!target || message.type !== 1 || message.deleted) return;
         setSelectedMessage(message);
         anchorRef.current = target;
@@ -442,7 +441,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         if (!nextMessage) {
                                             // No next message = always show header
                                             isLastFromUser = true;
-                                        } else if (nextMessage.userId !== message.userId || nextMessage.type !== 1) {
+                                        } else if (nextMessage.user.id !== message.user.id || nextMessage.type !== 1) {
                                             // Different user = show header
                                             isLastFromUser = true;
                                             const nextTime = new Date(nextMessage.createdAt).getTime();
@@ -578,7 +577,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 onEdit={onContextEdit}
                 onDelete={onContextDelete}
                 onReply={onMessageReply}
-                isOwn={selectedMessage?.userId === userInfo?.id}
+                isOwn={selectedMessage?.user.id === userInfo?.id}
                 anchorRef={anchorRef}
             />
         </div>

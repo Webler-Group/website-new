@@ -1,40 +1,42 @@
 import { useEffect, useState } from "react"
 import { useApi } from "../../../context/apiCommunication"
-import { ICode } from "../../codes/components/Code";
+import { CodeMinimal, CodesListData } from "../../codes/types";
+import { UserMinimal } from "../types";
 
 const useCodes = (userId: string, count: number, pageNum: number) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<ICode[]>([])
-    const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState("")
-    const [hasNextPage, setHasNextPage] = useState(false)
+    const [results, setResults] = useState<CodeMinimal<UserMinimal>[]>([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [hasNextPage, setHasNextPage] = useState(false);
 
     useEffect(() => {
 
         const fetchData = async () => {
-            setIsLoading(true)
-            setError("")
+            setIsLoading(true);
+            setError("");
 
-            const result = await sendJsonRequest(`/Codes`, "POST", {
+            const result = await sendJsonRequest<CodesListData>(`/Codes`, "POST", {
                 page: pageNum,
                 count,
                 filter: 3,
                 userId
             });
 
-            if (result && result.codes) {
-                setResults(prev => [...prev, ...result.codes])
-                setHasNextPage(result.codes.length === count)
+            if (result.data) {
+                const codes = result.data.codes;
+                setResults(prev => [...prev, ...codes]);
+                setHasNextPage(codes.length === count);
             } else {
-                setError(result?.error[0].message ?? "Something went wrong");
+                setError(result.error?.[0].message ?? "Something went wrong");
             }
-            setIsLoading(false)
+            setIsLoading(false);
         };
 
         fetchData();
-    }, [pageNum])
+    }, [pageNum]);
 
-    return { isLoading, error, results, hasNextPage }
+    return { isLoading, error, results, hasNextPage };
 }
 
 export default useCodes;

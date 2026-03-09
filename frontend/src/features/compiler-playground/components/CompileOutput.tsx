@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
 import codeRequiresInput from "../../../utils/InputReg";
+import { CreateJobData, GetJobData } from "../../codes/types";
 
 interface CompileOutputProps {
     source: string;
@@ -47,13 +48,13 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         setStderr(null);
         setError(null);
 
-        const createJobResult = await sendJsonRequest("/Codes/CreateJob", "POST", {
+        const createJobResult = await sendJsonRequest<CreateJobData>("/Codes/CreateJob", "POST", {
             source,
             language,
             stdin: stdinValue
         });
 
-        if (createJobResult && createJobResult.jobId) {
+        if (createJobResult.data) {
             let getJobResult = null;
             let status = "pending";
             let attempt = 0;
@@ -65,20 +66,20 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 if (attempt > 5) {
                     break;
                 }
-                getJobResult = await sendJsonRequest("/Codes/GetJob", "POST", { jobId: createJobResult.jobId });
-                if (getJobResult && getJobResult.job) {
-                    status = getJobResult.job.status;
+                getJobResult = await sendJsonRequest<GetJobData>("/Codes/GetJob", "POST", { jobId: createJobResult.data.jobId });
+                if (getJobResult.data) {
+                    status = getJobResult.data.job.status;
                 }
             }
 
             if (status === "done") {
-                setStdout(getJobResult.job.stdout || "");
-                setStderr(getJobResult.job.stderr || "");
+                setStdout(getJobResult!.data!.job.stdout || "");
+                setStderr(getJobResult!.data!.job.stderr || "");
             } else {
                 setError("Something went wrong.");
             }
         } else {
-            setError(createJobResult?.error[0].message ?? "Something went wrong");
+            setError(createJobResult.error?.[0].message ?? "Something went wrong");
             setLoading(false);
         }
         setLoading(false);

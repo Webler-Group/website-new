@@ -1,11 +1,11 @@
 import React, { MouseEvent, useEffect, useState } from "react";
-import { UserMinimal } from "../pages/ProfilePage";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileName from "../../../components/ProfileName";
 import { FaCircle } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { UserMinimal } from "../types";
 
 interface INotification {
     feedId: string;

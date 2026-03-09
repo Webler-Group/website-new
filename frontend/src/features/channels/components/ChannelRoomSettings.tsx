@@ -1,4 +1,3 @@
-import { IChannel } from "./ChannelListItem";
 import { useEffect, useState } from "react";
 import {
     Button,
@@ -16,19 +15,20 @@ import { useAuth } from "../../auth/context/authContext";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import { useApi } from "../../../context/apiCommunication";
-import { IChannelInvite } from "./InvitesListItem";
 import { FaPen } from "react-icons/fa6";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import UserSearch from "../../../components/UserSearch";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { ChannelDetails, GroupChangeRoleData, GroupInviteUserData, GroupRenameData, InviteDetails, MuteChannelData } from "../types";
+import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
 
 interface ChannelRoomSettingsProps {
-    channel: IChannel;
+    channel: ChannelDetails;
     onUserRemove: (userId: string) => void;
-    onUserInvite: (invite: IChannelInvite) => void;
+    onUserInvite: (invite: InviteDetails) => void;
     onCancelInvite: (inviteId: string) => void;
     onTitleChange: (title: string) => void;
-    onRoleChange: (userId: string, role: string) => void;
+    onRoleChange: (userId: string, role: ChannelRolesEnum) => void;
     onToggleNotifications: (enabled: boolean) => void;
 }
 
@@ -40,7 +40,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     const { userInfo } = useAuth();
     const { sendJsonRequest } = useApi();
     const [inviteMessage, setInviteMessage] = useState<{ message?: string; errors?: any[] }>({});
-    const [changeTitleMessage, setChangeTitleMessage] = useState<{ message?: string; errors?: any[] }>({});
+    const [changeTitleMessage, setChangeTitleMessage] = useState<{ message?: string; errors?: { message: string }[] }>({});
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [leaveModalVisible, setLeaveModalVisible] = useState(false);
     const [editedParticipantId, setEditedParticipantId] = useState<string | null>(null);
@@ -59,10 +59,10 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
         }
     }, [activeTab]);
 
-    const currentUser = channel.participants?.find(x => x.userId == userInfo?.id);
+    const currentUser = channel.participants.find(participant => participant.user.id == userInfo?.id);
 
-    const isOwner = currentUser?.role === "Owner";
-    const isAdmin = isOwner || currentUser?.role === "Admin";
+    const isOwner = currentUser?.role === ChannelRolesEnum.OWNER;
+    const isAdmin = isOwner || currentUser?.role === ChannelRolesEnum.ADMIN;
 
     const closeDeleteModal = () => {
         setDeleteModalVisible(false);
@@ -78,21 +78,22 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     }
 
     const handleInvite = async (userId: string) => {
-        const result = await sendJsonRequest("/Channels/GroupInviteUser", "POST", {
+        if (!userInfo) return;
+
+        const result = await sendJsonRequest<GroupInviteUserData>("/Channels/GroupInviteUser", "POST", {
             channelId: channel.id,
             userId: userId
         });
 
-        if (result && result.invite) {
+        if (result.data) {
             setInviteMessage({ message: "Invite created successfully" });
             onUserInvite({
-                ...result.invite,
-                authorId: userInfo?.id,
-                authorName: userInfo?.name,
-                authorAvatarUrl: userInfo?.avatarUrl
+                ...result.data.invite,
+                channel: undefined,
+                author: { ...userInfo }
             });
         } else {
-            setInviteMessage({ errors: result?.error });
+            setInviteMessage({ errors: result.error });
         }
         setInviteUsername("");
     }
@@ -103,7 +104,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             channelId: channel.id,
             userId: editedParticipantId
         });
-        if (result && result.success) {
+        if (result.success) {
             onUserRemove(editedParticipantId);
             closeParticipantModal();
         }
@@ -111,12 +112,12 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
 
     const handleRoleSave = async () => {
         if (editedParticipantId && editedParticipantRole) {
-            const result = await sendJsonRequest("/Channels/GroupChangeRole", "POST", {
+            const result = await sendJsonRequest<GroupChangeRoleData>("/Channels/GroupChangeRole", "POST", {
                 channelId: channel.id,
                 userId: editedParticipantId,
                 role: editedParticipantRole
             });
-            if (result && result.success) {
+            if (result.data) {
                 onRoleChange(result.data.userId, result.data.role);
                 closeParticipantModal();
             }
@@ -125,15 +126,15 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
 
     const handleTitleChange = async () => {
         if (channel.title == newTitle.trim()) return;
-        const result = await sendJsonRequest("/Channels/GroupRename", "POST", {
+        const result = await sendJsonRequest<GroupRenameData>("/Channels/GroupRename", "POST", {
             channelId: channel.id,
             title: newTitle.trim()
         });
-        if (result && result.success) {
+        if (result.data) {
             setChangeTitleMessage({ message: "Title changed successfully" });
             onTitleChange(result.data.title);
         } else {
-            setChangeTitleMessage({ errors: result?.error });
+            setChangeTitleMessage({ errors: result.error });
         }
     };
 
@@ -159,11 +160,11 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     }
 
     const toggleNotifications = async (enabled: boolean) => {
-        const result = await sendJsonRequest("/Channels/MuteChannel", "POST", {
+        const result = await sendJsonRequest<MuteChannelData>("/Channels/MuteChannel", "POST", {
             channelId: channel.id,
             muted: !enabled
         });
-        if (result && result.success) {
+        if (result.data) {
             onToggleNotifications(enabled);
             setNotificationsEnabled(!result.data.muted);
         }
@@ -172,7 +173,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
         }
     }
 
-    const selectedParticipant = channel.participants?.find(x => x.userId == editedParticipantId);
+    const selectedParticipant = channel.participants.find(x => x.user.id == editedParticipantId);
 
     return (
         <>
@@ -203,7 +204,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             {/* Edit Participant Modal */}
             <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={editedParticipantId !== null} onHide={closeParticipantModal} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>{selectedParticipant?.userName}</Modal.Title>
+                    <Modal.Title>{selectedParticipant?.user.name}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {selectedParticipant && (
@@ -282,14 +283,14 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                                     >
                                                         <div className="d-flex flex-column">
                                                             <div className="d-flex align-items-center gap-2">
-                                                                <ProfileAvatar avatarUrl={invite.invitedUserAvatarUrl!} size={36} />
+                                                                <ProfileAvatar avatarUrl={invite.invitedUser.avatarUrl} size={36} />
                                                                 <ProfileName
-                                                                    userId={invite.invitedUserId ?? ""}
-                                                                    userName={invite.invitedUserName ?? "Unknown"}
+                                                                    userId={invite.invitedUser.id}
+                                                                    userName={invite.invitedUser.name}
                                                                 />
                                                             </div>
                                                             <small className="text-muted ms-5">
-                                                                Invited by {invite.authorName}
+                                                                Invited by {invite.author.name}
                                                             </small>
                                                         </div>
 
@@ -313,24 +314,24 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                     <ListGroup>
                                         {channel.participants?.map((x) => (
                                             <ListGroup.Item
-                                                key={x.userId}
+                                                key={x.user.id}
                                                 className="d-flex justify-content-between align-items-center"
                                             >
                                                 <div className="d-flex align-items-center gap-2">
-                                                    <ProfileAvatar avatarUrl={x.userAvatarUrl} size={32} />
-                                                    <ProfileName userId={x.userId} userName={x.userName} />
+                                                    <ProfileAvatar avatarUrl={x.user.avatarUrl} size={32} />
+                                                    <ProfileName userId={x.user.id} userName={x.user.name} />
                                                     <Badge bg="secondary">
                                                         {x.role}
                                                     </Badge>
                                                 </div>
 
-                                                {isAdmin && x.role != "Owner" && x.userId !== userInfo?.id && (
+                                                {isAdmin && x.role != "Owner" && x.user.id !== userInfo?.id && (
                                                     <div className="d-flex align-items-center gap-2">
                                                         <Button
                                                             variant="outline-primary"
                                                             size="sm"
                                                             onClick={() => {
-                                                                setEditedParticipantId(x.userId);
+                                                                setEditedParticipantId(x.user.id);
                                                                 setEditedParticipantRole(x.role);
                                                             }}
                                                         >

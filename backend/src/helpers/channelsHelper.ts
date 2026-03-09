@@ -2,7 +2,7 @@ import mongoose, { Types } from "mongoose";
 import ChannelParticipantModel from "../models/ChannelParticipant";
 import ChannelInviteModel, { ChannelInvite } from "../models/ChannelInvite";
 import ChannelMessageModel, { ChannelMessage } from "../models/ChannelMessage";
-import ChannelModel from "../models/Channel";
+import ChannelModel, { Channel } from "../models/Channel";
 import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
 import { getIO, uidRoom } from "../config/socketServer";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
@@ -13,6 +13,7 @@ import { formatUserMinimal } from "./userHelper";
 import { DocumentType } from "@typegoose/typegoose";
 import { getAttachmentsByPostId, updatePostAttachments } from "./postsHelper";
 import HttpError from "../exceptions/HttpError";
+import { getImageUrl } from "../controllers/mediaController";
 
 export const deleteChannelAndCleanup = async (channelId: Types.ObjectId, session?: mongoose.ClientSession) => {
     await ChannelParticipantModel.deleteMany({ channel: channelId }, { session });
@@ -171,30 +172,28 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             ? [...allParticipantRooms, uidRoom(user._id.toString())]
             : allParticipantRooms;
 
-        const channelTitle = doc._type === ChannelMessageTypeEnum.TITLE_CHANGED
-            ? channel.title!
-            : "";
-
         io?.to(socketRooms).emit("channels:new_message", {
-            id: doc._id,
-            type: doc._type,
-            channelId: doc.channel.toString(),
-            channelTitle,
-            content: doc.content,
-            createdAt: doc.createdAt,
-            updatedAt: doc.updatedAt,
-            viewed: false,
-            deleted: doc.deleted,
-            user: formatUserMinimal(user),
-            repliedTo: reply ? {
-                id: reply._id,
-                content: reply.content,
-                createdAt: reply.createdAt,
-                updatedAt: reply.updatedAt,
-                user: formatUserMinimal(reply.user),
-                deleted: reply.deleted
-            } : null,
-            attachments
+            message: {
+                id: doc._id,
+                type: doc._type,
+                channelId: doc.channel.toString(),
+                channelTitle: channel.title,
+                content: doc.content,
+                createdAt: doc.createdAt,
+                updatedAt: doc.updatedAt,
+                viewed: false,
+                deleted: doc.deleted,
+                user: formatUserMinimal(user),
+                repliedTo: reply ? {
+                    id: reply._id,
+                    content: reply.content,
+                    createdAt: reply.createdAt,
+                    updatedAt: reply.updatedAt,
+                    user: formatUserMinimal(reply.user),
+                    deleted: reply.deleted
+                } : null,
+                attachments
+            }
         });
 
         io?.to(unmutedParticipantRooms).emit("channels:new_message_info", {});

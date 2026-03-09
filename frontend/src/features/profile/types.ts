@@ -41,6 +41,10 @@ export interface UserMinimal {
     countryCode: string | null;
 }
 
+export interface GetProfileData {
+    userDetails: UserDetails;
+}
+
 export interface UpdateProfileData {
     id: string;
     name: string;
@@ -93,4 +97,12 @@ export interface UpdateNotificationsData {
 
 export interface SearchProfilesData {
     users: UserMinimal[];
+}
+
+export const isUser = (user: UserMinimal | string): user is UserMinimal => {
+    return typeof user !== "string";
+};
+
+export interface PublicKeyData {
+    publicKey: string;
 }

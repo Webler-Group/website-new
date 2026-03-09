@@ -7,10 +7,10 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
 import React from "react";
 import { QuestionMinimal } from "../types";
-import { UserMinimal } from "../../profile/types";
+import { isUser, UserMinimal } from "../../profile/types";
 
 interface QuestionProps {
-    question: QuestionMinimal<UserMinimal>;
+    question: QuestionMinimal<UserMinimal | string>;
     searchQuery: string;
     showUserProfile: boolean;
 }
@@ -52,7 +52,7 @@ const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps,
                 </div>
             </div>
             {
-                showUserProfile &&
+                showUserProfile && isUser(question.user) &&
                 <div className="d-flex justify-content-end align-items-end mt-2">
                     <div className="d-flex align-items-center">
                         <div>

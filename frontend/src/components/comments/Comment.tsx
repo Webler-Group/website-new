@@ -1,30 +1,17 @@
 import { FaPencil, FaThumbsUp, FaTrash } from "react-icons/fa6";
 import { useAuth } from "../../features/auth/context/authContext";
-import PostAttachment, { IPostAttachment } from "../post-attachment-select/PostAttachment";
+import PostAttachment from "../post-attachment-select/PostAttachment";
 import DateUtils from "../../utils/DateUtils";
 import { parseMessage } from "../PostTextareaControl";
 import ProfileAvatar from "../ProfileAvatar";
 import ProfileName from "../ProfileName";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../context/apiCommunication";
-
-interface IComment {
-  id: string;
-  parentId: string | null;
-  userId: string;
-  userName: string;
-  userAvatarUrl?: string | null;
-  date: string;
-  message: string;
-  answers: number;
-  votes: number;
-  isUpvoted: boolean;
-  index: number;
-  attachments: IPostAttachment[];
-}
+import { VotePostData } from "../../features/discuss/types";
+import { CommmentDetails } from "./types";
 
 interface CommentProps {
-  comment: IComment;
+  comment: CommmentDetails;
   repliesVisible?: boolean;
   isHighlighted: boolean;
   handleToggleReplies?: () => void;
@@ -32,7 +19,7 @@ interface CommentProps {
   handleEdit: () => void;
   handleDelete: () => void;
   handleShowVotes: () => void;
-  onVote: (id: string, vote: number, error?: any[]) => void;
+  onVote: (id: string, vote: number, error?: { message: string }[]) => void;
 }
 
 const Comment: React.FC<CommentProps> = ({
@@ -56,9 +43,9 @@ const Comment: React.FC<CommentProps> = ({
       return;
     }
     const vote = comment.isUpvoted ? 0 : 1;
-    const result = await sendJsonRequest("/Discussion/VotePost", "POST", { postId: comment.id, vote });
-    if (result.success && result.vote === vote) {
-      onVote(comment.id, result.vote);
+    const result = await sendJsonRequest<VotePostData>("/Discussion/VotePost", "POST", { postId: comment.id, vote });
+    if (result.data && result.data.vote === vote) {
+      onVote(comment.id, result.data.vote);
     } else {
       onVote(comment.id, 0, result.error);
     }
@@ -69,7 +56,7 @@ const Comment: React.FC<CommentProps> = ({
       <div className="wb-comments__options">
         <div className="d-flex gap-2">
           {
-            (userInfo && userInfo.id === comment.userId) &&
+            (userInfo && userInfo.id === comment.user.id) &&
             <>
               <span className="wb-comments__options__item" onClick={handleEdit}>
                 <FaPencil />
@@ -82,12 +69,12 @@ const Comment: React.FC<CommentProps> = ({
         </div>
       </div>
       <div>
-        <ProfileAvatar size={32} avatarUrl={comment.userAvatarUrl} />
+        <ProfileAvatar size={32} avatarUrl={comment.user.avatarUrl} />
       </div>
       <div className="flex-grow-1">
         <div className="rounded border p-2 mb-1" style={{ background: isHighlighted ? "beige" : "white" }}>
           <div>
-            <ProfileName userId={comment.userId} userName={comment.userName} />
+            <ProfileName userId={comment.user.id} userName={comment.user.name} />
           </div>
           <div className="wb-comments__message mt-2">
             {parseMessage(comment.message)}
@@ -139,9 +126,5 @@ const Comment: React.FC<CommentProps> = ({
     </div>
   );
 };
-
-export type {
-  IComment
-}
 
 export default Comment;

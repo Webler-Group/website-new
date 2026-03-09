@@ -1,19 +1,20 @@
 import { Button } from "react-bootstrap";
-import Comment, { IComment } from "./Comment";
+import Comment from "./Comment";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import useReplies from "./useReplies";
 import { UseCommentsOptions } from "./useComments";
+import { CommmentDetails } from "./types";
 
 interface CommentNodeProps {
     options: UseCommentsOptions;
-    comment: IComment;
-    defaultReplies: IComment[] | null;
-    onDelete: (post: IComment, onDeleteCallback?: (id: string) => void) => void;
-    onEdit: (post: IComment, onEditCallback?: (id: string, setter: (prev: IComment) => IComment) => void) => void;
-    onReply: (id: string, onReplyCallback: (post: IComment) => void, message?: string) => void;
+    comment: CommmentDetails;
+    defaultReplies: CommmentDetails[] | null;
+    onDelete: (post: CommmentDetails, onDeleteCallback?: (id: string) => void) => void;
+    onEdit: (post: CommmentDetails, onEditCallback?: (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void) => void;
+    onReply: (id: string, onReplyCallback: (post: CommmentDetails) => void, message?: string) => void;
     onShowVotes: (id: string) => void;
     highlightedCommentId: string | null;
-    onVote: (id: string, vote: number, error?: any[]) => void;
+    onVote: (id: string, vote: number, error?: { message: string }[]) => void;
 }
 
 const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
@@ -41,7 +42,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const intObserver = useRef<IntersectionObserver>(null);
     const lastReplyNodeRef = useCallback(
-        (node: any) => {
+        (node: HTMLDivElement) => {
             if (repliesLoading) return;
 
             if (intObserver.current) intObserver.current.disconnect();
@@ -77,7 +78,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const handleReply = () => {
         setRepliesVisible(true);
-        onReply(comment.id, (post: IComment) => {
+        onReply(comment.id, (post: CommmentDetails) => {
             createReply(post);
         });
     }
@@ -94,18 +95,18 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
         setRepliesVisible(prev => !prev);
     }
 
-    const onReplyEdit = (reply: IComment) => {
+    const onReplyEdit = (reply: CommmentDetails) => {
         onEdit(reply, editReply);
     }
 
-    const onReplyReply = (reply: IComment) => {
+    const onReplyReply = (reply: CommmentDetails) => {
         setRepliesVisible(true);
-        onReply(comment.id, (post: IComment) => {
+        onReply(comment.id, (post: CommmentDetails) => {
             createReply(post);
-        }, `[user id="${reply.userId}"]${reply.userName}[/user] `);
+        }, `[user id="${reply.user.id}"]${reply.user.name}[/user] `);
     }
 
-    const onReplyDelete = (reply: IComment) => {
+    const onReplyDelete = (reply: CommmentDetails) => {
         onDelete(reply, (postId: string) => {
             deleteReply(postId);
         });

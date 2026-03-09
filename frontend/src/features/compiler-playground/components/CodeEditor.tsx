@@ -14,54 +14,39 @@ import "ace-builds/src-noconflict/mode-html";
 import "ace-builds/src-noconflict/mode-css";
 import "ace-builds/src-noconflict/mode-javascript";
 
-import "ace-builds/src-noconflict/mode-c_cpp";   // C + C++
+import "ace-builds/src-noconflict/mode-c_cpp";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-ruby";
 import "ace-builds/src-noconflict/mode-lua";
+
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
-import { CodeDetails } from "../../codes/types";
+import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
 
 const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "javascript") => {
     switch (lang) {
         case "web":
-        case "html":
-            return "html";
-
-        case "css":
-            return "css";
-
-        case "javascript":
-            return "javascript";
-
+        case "html":       return "html";
+        case "css":        return "css";
+        case "javascript": return "javascript";
         case "c":
-        case "cpp":
-            return "c_cpp";
-
-        case "python":
-            return "python";
-
-        case "ruby":
-            return "ruby";
-
-        case "lua":
-            return "lua";
-
-        default:
-            return "text";
+        case "cpp":        return "c_cpp";
+        case "python":     return "python";
+        case "ruby":       return "ruby";
+        case "lua":        return "lua";
+        default:           return "text";
     }
-}
-
+};
 
 interface CodeEditorProps {
-    code: CodeDetails<any>;
+    code: CodeDetails<undefined | ChallengeSubmissionDetails> | UnsavedCode;
     source: string;
     setSource: (value: string) => void;
     css: string;
     setCss: (value: string) => void;
     js: string;
     setJs: (value: string) => void;
-    options: { scale: number, lineWrap: boolean };
+    options: { scale: number; lineWrap: boolean };
     tabHeightStyle: string;
     consoleVisible?: boolean;
     hideConsole?: () => void;
@@ -70,8 +55,6 @@ interface CodeEditorProps {
     challenge?: ChallengeDetails;
     submission?: ChallengeSubmissionDetails;
 }
-
-
 
 const CodeEditor = ({
     code,
@@ -95,14 +78,11 @@ const CodeEditor = ({
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
-    // Prefer mapping by lang (not idx) to avoid bugs with description/output tabs
     const editorByLang = useMemo(() => {
         const map = new Map<string, { value: string; setValue: (v: string) => void }>();
-        map.set("html", { value: source, setValue: setSource });
-        map.set("css", { value: css, setValue: setCss });
-        map.set("javascript", { value: js, setValue: setJs });
-        // For non-web single-language codes, reuse `source`
-        // (your current design already uses source for non-web)
+        map.set("html",       { value: source, setValue: setSource });
+        map.set("css",        { value: css,    setValue: setCss });
+        map.set("javascript", { value: js,     setValue: setJs });
         return map;
     }, [source, setSource, css, setCss, js, setJs]);
 
@@ -114,7 +94,7 @@ const CodeEditor = ({
             setEditorTabs([code.language]);
             setActiveKey(code.language);
         }
-    }, [code.id, code.language]);
+    }, [isCodeSaved(code) ? code.id : undefined, code.language]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -151,8 +131,8 @@ const CodeEditor = ({
                 ? editorByLang.get(lang)
                 : { value: source, setValue: setSource };
 
-            const value = entry?.value ?? "";
-            const setValue = entry?.setValue ?? (() => { });
+            const value    = entry?.value    ?? "";
+            const setValue = entry?.setValue ?? (() => {});
 
             return (
                 <AceEditor
@@ -162,24 +142,21 @@ const CodeEditor = ({
                     onChange={(v) => setValue(v)}
                     width="100%"
                     height="100%"
-                    fontSize={options.scale * 16} // mobile-friendly
+                    fontSize={options.scale * 16}
                     showGutter
                     showPrintMargin={false}
                     wrapEnabled={options.lineWrap}
-                    setOptions={{
-                        useWorker: false, // important for performance/sandboxing
-                        tabSize: 2
-                    }}
+                    setOptions={{ useWorker: false, tabSize: 2 }}
                     editorProps={{ $blockScrolling: true }}
-                    style={{
-                        height: "100%",
-                        overscrollBehavior: "contain",
-                    }}
+                    style={{ height: "100%", overscrollBehavior: "contain" }}
                 />
             );
         },
-        [code.language, editorByLang, options.scale, source, setSource]
+        [code.language, editorByLang, options.scale, options.lineWrap, source, setSource]
     );
+
+    // Only saved codes can have a challenge attached
+    const codeChallenge = isCodeSaved(code) ? code.challenge : undefined;
 
     return (
         <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
@@ -187,9 +164,9 @@ const CodeEditor = ({
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {challenge != null && (
                         <Tab
-                            key={"description"}
-                            eventKey={"description"}
-                            title={"description"}
+                            key="description"
+                            eventKey="description"
+                            title="description"
                             className="bg-white"
                             style={{ height: tabHeightStyle }}
                         >
@@ -213,12 +190,12 @@ const CodeEditor = ({
                     <Tab
                         onEnter={onTabEnter}
                         onExit={onTabLeave}
-                        key={"output"}
-                        eventKey={"output"}
-                        title={"output"}
+                        key="output"
+                        eventKey="output"
+                        title="output"
                         style={{ height: tabHeightStyle }}
                     >
-                        {!!code.challenge ? (
+                        {codeChallenge != null ? (
                             <ChallengeCodeOutput
                                 source={source}
                                 language={code.language}

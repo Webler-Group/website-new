@@ -1,34 +1,11 @@
 import React from "react";
-import { IChannelMessage } from "./ChannelMessage";
-import { IChannelInvite } from "./InvitesListItem";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { truncate } from "../../../utils/StringUtils";
-
-interface IChannelParticipant {
-    userId: string;
-    userName: string;
-    userAvatarUrl: string;
-    role: string;
-}
-
-interface IChannel {
-    id: string;
-    type: number;
-    coverImageUrl: string;
-    title: string;
-    createdAt: string;
-    updatedAt: string;
-    lastMessage?: IChannelMessage;
-    invites?: IChannelInvite[];
-    participants?: IChannelParticipant[];
-    lastActiveAt?: string;
-    unreadCount: number;
-    muted: boolean;
-}
+import { ChannelMinimal } from "../types";
 
 interface ChannelListItemProps {
-    channel: IChannel;
+    channel: ChannelMinimal;
     onClick: () => void;
     selected: boolean;
 }
@@ -67,7 +44,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                         {channel.lastMessage != null && (
                             channel.lastMessage.type === 1 ? (
                                 <>
-                                    <span className="text-primary">{channel.lastMessage.userName}: </span>
+                                    <span className="text-primary">{channel.lastMessage.user.name}: </span>
                                     {
                                         channel.lastMessage.deleted ?
                                             <i className="text-muted">Message was deleted</i>
@@ -79,7 +56,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                                 </>
                             ) : (
                                 <span className="text-muted">
-                                    {truncate(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.userName), 20)}
+                                    {truncate(channel.lastMessage.content.replace("{action_user}", channel.lastMessage.user.name), 20)}
                                 </span>
                             )
                         )}
@@ -101,11 +78,5 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
 
     return ref ? <div ref={ref}>{body}</div> : <div>{body}</div>;
 });
-
-
-export type {
-    IChannel,
-    IChannelParticipant
-};
 
 export default ChannelListItem;

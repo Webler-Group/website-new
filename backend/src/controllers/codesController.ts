@@ -19,6 +19,7 @@ import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../help
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -48,8 +49,6 @@ const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 createdAt: code.createdAt,
                 updatedAt: code.createdAt,
                 userId: code.user,
-                votes: code.votes,
-                comments: code.comments,
                 source: code.source,
                 cssSource: code.cssSource,
                 jsSource: code.jsSource,
@@ -273,69 +272,15 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
-
-    let parentPost: PopulatedPost | null = null;
-    if (parentId) {
-        parentPost = await PostModel.findById(parentId)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-            .lean<PopulatedPost>();
-    }
-
-    let dbQuery = PostModel.find({ codeId, _type: PostTypeEnum.CODE_COMMENT, hidden: false });
-    let skipCount = index;
-
-    if (findPostId) {
-        const reply = await PostModel.findById(findPostId).lean();
-        if (!reply) {
-            throw new HttpError("Post not found", 404);
-        }
-
-        parentPost = reply.parentId
-            ? await PostModel.findById(reply.parentId)
-                .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-                .lean<PopulatedPost>()
-            : null;
-
-        dbQuery = dbQuery.where({ parentId: parentPost ? parentPost._id : null });
-        skipCount = Math.max(0, await dbQuery.clone().where({ createdAt: { $lt: reply.createdAt } }).countDocuments());
-        dbQuery = dbQuery.sort({ createdAt: "asc" });
-    } else {
-        dbQuery = dbQuery.where({ parentId });
-        switch (filter) {
-            case 1: dbQuery = dbQuery.sort({ votes: "desc", createdAt: "desc" }); break;
-            case 2: dbQuery = dbQuery.sort({ createdAt: "asc" }); break;
-            case 3: dbQuery = dbQuery.sort({ createdAt: "desc" }); break;
-            default:
-                throw new HttpError("Unknown filter", 400);
-        }
-    }
-
-    const result = await dbQuery
-        .skip(skipCount)
-        .limit(count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-        .lean<PopulatedPost[]>();
-
-    const data = (findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
-        id: x._id,
-        parentId: x.parentId,
-        message: x.message,
-        date: x.createdAt,
-        user: formatUserMinimal(x.user),
-        votes: x.votes,
-        isUpvoted: false,
-        answers: x.answers,
-        index: findPostId && parentPost ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
-        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
-    }));
-
-    await Promise.all(data.map((item, i) => Promise.all([
-        currentUserId
-            ? UpvoteModel.findOne({ parentId: item.id, user: currentUserId }).lean().then(upvote => { data[i].isUpvoted = upvote !== null; })
-            : Promise.resolve(),
-        getAttachmentsByPostId({ post: item.id }).then(attachments => { data[i].attachments = attachments; })
-    ])));
+    const data = await getCommmentsList({
+        postFilter: { codeId, _type: PostTypeEnum.CODE_COMMENT },
+        parentId,
+        index,
+        count,
+        filter,
+        findPostId,
+        userId: currentUserId
+    });
 
     res.json({ success: true, data: { posts: data } });
 });
@@ -406,7 +351,6 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
                 id: reply._id,
                 message: reply.message,
                 date: reply.createdAt,
-                userId: reply.user,
                 parentId: reply.parentId,
                 votes: reply.votes,
                 answers: reply.answers,
@@ -421,25 +365,11 @@ const editCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { id, message } = body;
     const currentUserId = req.userId;
 
-    const comment = await PostModel.findById(id);
-    if (!comment) {
-        throw new HttpError("Post not found", 404);
-    }
-
-    if (!comment.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
-    }
-
-    comment.message = message;
-    await withTransaction(async (session) => {
-        await savePost(comment, session);
-    });
-
-    const attachments = await getAttachmentsByPostId({ post: comment._id });
+    const data = await editComment(id, currentUserId!, message);
 
     res.json({
         success: true,
-        data: { id: comment._id, message: comment.message, attachments }
+        data
     });
 });
 
@@ -448,23 +378,7 @@ const deleteCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { id } = body;
     const currentUserId = req.userId;
 
-    const comment = await PostModel.findById(id).lean();
-    if (!comment) {
-        throw new HttpError("Post not found", 404);
-    }
-
-    if (!comment.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
-    }
-
-    const code = await CodeModel.findById(comment.codeId).lean();
-    if (!code) {
-        throw new HttpError("Code not found", 404);
-    }
-
-    await withTransaction(async (session) => {
-        await deletePostsAndCleanup({ _id: id }, session);
-    });
+    await deleteComment(id, currentUserId!);
 
     res.json({ success: true });
 });

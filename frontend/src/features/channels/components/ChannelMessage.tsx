@@ -2,29 +2,14 @@ import React, { useRef } from "react";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import PostAttachment, { IPostAttachment } from "../../../components/post-attachment-select/PostAttachment";
 import RepliedMessage from "./RepliedMessage";
-
-interface IChannelMessage {
-    id: string;
-    type: number;
-    content: string;
-    userId: string;
-    userName: string;
-    userAvatarUrl: string;
-    createdAt: string;
-    updatedAt: string;
-    channelId: string;
-    repliedTo?: IChannelMessage;
-    deleted: boolean;
-    viewed: boolean;
-    attachments: IPostAttachment[];
-}
+import { ChannelMessageDetails } from "../types";
+import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
 
 interface ChannelMessageProps {
-    message: IChannelMessage;
+    message: ChannelMessageDetails;
     showHeader: boolean;
-    onContextMenu: (message: IChannelMessage, target: HTMLElement | null) => void;
+    onContextMenu: (message: ChannelMessageDetails, target: HTMLElement | null) => void;
 }
 
 const AVATAR_SIZE = 42;
@@ -62,7 +47,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             <div className="d-flex justify-content-center">
                 <div className="p-2 rounded text-center wb-channels-message__body">
                     {messageParts[0]}
-                    <ProfileName userId={message.userId} userName={message.userName} />
+                    <ProfileName userId={message.user.id} userName={message.user.name} />
                     {messageParts[1]}
                 </div>
             </div>
@@ -72,14 +57,14 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
             <div className="d-flex">
                 {showHeader && (
                     <div className="me-2 flex-shrink-0">
-                        <ProfileAvatar avatarUrl={message.userAvatarUrl} size={AVATAR_SIZE} />
+                        <ProfileAvatar avatarUrl={message.user.avatarUrl} size={AVATAR_SIZE} />
                     </div>
                 )}
 
                 <div className="flex-grow-1">
                     {showHeader && (
                         <div className="d-flex align-items-center mb-1">
-                            <ProfileName className="fw-bold" userId={message.userId} userName={message.userName} />
+                            <ProfileName className="fw-bold" userId={message.user.id} userName={message.user.name} />
                             <small className="text-muted ms-2">
                                 {DateUtils.format(new Date(message.createdAt))}
                             </small>
@@ -128,9 +113,5 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu }:
         </div>
     );
 });
-
-export type {
-    IChannelMessage
-};
 
 export default ChannelMessage;

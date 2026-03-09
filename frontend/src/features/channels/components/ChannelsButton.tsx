@@ -4,6 +4,7 @@ import { FaComment } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
+import { UnseenMessagesCountData } from "../types";
 
 const ChannelsButton = () => {
   const [unseenCount, setUnseenCount] = useState(0);
@@ -12,9 +13,9 @@ const ChannelsButton = () => {
 
   useEffect(() => {
     const getUnseenMessagesCount = async () => {
-      const result = await sendJsonRequest("/Channels/GetUnseenMessagesCount", "POST", {});
-      if (result && result.count !== undefined) {
-        setUnseenCount(result.count);
+      const result = await sendJsonRequest<UnseenMessagesCountData>("/Channels/GetUnseenMessagesCount", "POST", {});
+      if (result.data) {
+        setUnseenCount(result.data.count);
       }
     }
     getUnseenMessagesCount();

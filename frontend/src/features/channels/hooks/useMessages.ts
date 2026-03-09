@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
-import { IChannelMessage } from "../components/ChannelMessage";
-import { IChannelParticipant } from "../components/ChannelListItem";
+import { ChannelMessageDetails, ChannelMessagesListData, ChannelParticipantDetails, MessageDeletedData, MessageEditedData, MessagesSeenData, NewMessageData } from "../types";
+import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
+import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
 
-const useMessages = (count: number, channelId: string | null, fromDate: Date | null, onChannelJoin: (user: IChannelParticipant) => void, onChannelLeave: (userId: string) => void, onMessagesSeen: (date: string) => void) => {
+const useMessages = (count: number, channelId: string | null, fromDate: Date | null, onChannelJoin: (user: ChannelParticipantDetails) => void, onChannelLeave: (userId: string) => void, onMessagesSeen: (date: string) => void) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<IChannelMessage[]>([]);
+    const [results, setResults] = useState<ChannelMessageDetails[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [hasNextPage, setHasNextPage] = useState(false);
@@ -16,19 +17,19 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         setIsLoading(true);
         setError("");
 
-        const result = await sendJsonRequest(`/Channels/Messages`, "POST", {
+        const result = await sendJsonRequest<ChannelMessagesListData>(`/Channels/Messages`, "POST", {
             fromDate: date,
             count,
             channelId
         });
 
-        if (result && result.messages) {
+        if (result.data) {
             setResults(prev =>
-                replace ? result.messages : [...prev, ...result.messages]
+                replace ? result.data!.messages : [...prev, ...result.data!.messages]
             );
-            setHasNextPage(result.messages.length === count);
+            setHasNextPage(result.data.messages.length === count);
         } else {
-            setError(result?.error[0].message ?? "Something went wrong");
+            setError(result.error?.[0].message ?? "Something went wrong");
         }
 
         setIsLoading(false);
@@ -50,32 +51,31 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
     useEffect(() => {
         if (!socket) return () => { };
 
-        const handleNewMessage = (data: IChannelMessage) => {
-            if (data.channelId === channelId) {
-                if (data.type == 2) {
+        const handleNewMessage = (data: NewMessageData) => {
+            const newMessage = data.message;
+            if (newMessage.channelId === channelId) {
+                if (newMessage.type == ChannelMessageTypeEnum.USER_JOINED) {
                     onChannelJoin({
-                        userId: data.userId,
-                        userName: data.userName,
-                        userAvatarUrl: data.userAvatarUrl,
-                        role: "Member"
+                        user: newMessage.user,
+                        role: ChannelRolesEnum.MEMBER
                     });
-                } else if (data.type == 3) {
-                    onChannelLeave(data.userId);
+                } else if (newMessage.type == ChannelMessageTypeEnum.USER_LEFT) {
+                    onChannelLeave(newMessage.user.id);
                 }
-                setResults(prev => [data, ...prev]);
+                setResults(prev => [newMessage, ...prev]);
             }
         };
 
-        const handleMessagesSeen = (data: any) => {
+        const handleMessagesSeen = (data: MessagesSeenData) => {
             onMessagesSeen(data.lastActiveAt);
         }
 
-        const handleMessageDeleted = (data: any) => {
+        const handleMessageDeleted = (data: MessageDeletedData) => {
             setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, deleted: true } : x))
         }
 
-        const handleMessageEdited = (data: any) => {
-            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, content: data.content, attachments: data.attachments, updatedAt: data.updatedAt } : x))
+        const handleMessageEdited = (data: MessageEditedData) => {
+            setResults(prev => prev.map(x => x.id == data.messageId ? { ...x, ...data } : x))
         }
 
         socket.on("channels:new_message", handleNewMessage);
@@ -99,7 +99,7 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         });
     }, [socket, channelId]);
 
-    const sendMessage = useCallback((content: string, repliedTo: IChannelMessage | null) => {
+    const sendMessage = useCallback((content: string, repliedTo: ChannelMessageDetails | null) => {
         if (!socket) return;
 
         socket.emit("channels:send_message", {

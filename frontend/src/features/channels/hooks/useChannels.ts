@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { IChannel } from "../components/ChannelListItem";
 import { useWS } from "../../../context/wsCommunication";
 import { useAuth } from "../../auth/context/authContext";
+import { ChannelDeletedData, ChannelMinimal, ChannelsListData, GetChannelData, MessageDeletedData, MessageEditedData, MessagesSeenData, NewMessageData } from "../types";
+import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
 
 const useChannels = (
     count: number,
@@ -10,12 +11,12 @@ const useChannels = (
     onLeaveChannel?: (channelId: string) => void
 ) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<IChannel[]>([]);
+    const [results, setResults] = useState<ChannelMinimal[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
     const [hasNextPage, setHasNextPage] = useState(false);
     const { socket } = useWS();
-    const resultsRef = useRef<IChannel[]>([]);
+    const resultsRef = useRef<ChannelMinimal[]>([]);
     const { userInfo } = useAuth();
     const onLeaveChannelRef = useRef(onLeaveChannel);
 
@@ -34,17 +35,17 @@ const useChannels = (
             setIsLoading(true);
             setError("");
 
-            const result = await sendJsonRequest(
+            const result = await sendJsonRequest<ChannelsListData>(
                 `/Channels`,
                 "POST",
                 { fromDate, count }
             );
 
-            if (result && result.channels) {
-                setResults(prev => [...prev, ...result.channels]);
-                setHasNextPage(result.channels.length === count);
+            if (result.data) {
+                setResults(prev => [...prev, ...result.data!.channels]);
+                setHasNextPage(result.data.channels.length === count);
             } else {
-                setError(result?.error[0].message ?? "Something went wrong");
+                setError(result.error?.[0].message ?? "Something went wrong");
             }
 
             setIsLoading(false);
@@ -57,51 +58,53 @@ const useChannels = (
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewMessage = async (data: any) => {
+        const handleNewMessage = async (data: NewMessageData) => {
+            const newMessage = data.message;
+
             const existing = resultsRef.current.find(
-                x => x.id === data.channelId
+                x => x.id === newMessage.channelId
             );
 
-            if (data.type === 3 && data.userId === userInfo?.id) {
-                setResults(prev => prev.filter(x => x.id !== data.channelId));
-                onLeaveChannelRef.current?.(data.channelId);
+            if (newMessage.type === ChannelMessageTypeEnum.USER_LEFT && newMessage.user.id === userInfo?.id) {
+                setResults(prev => prev.filter(x => x.id !== newMessage.channelId));
+                onLeaveChannelRef.current?.(newMessage.channelId);
                 return;
             }
 
             if (!existing) {
-                const result = await sendJsonRequest(
+                const result = await sendJsonRequest<GetChannelData>(
                     "/Channels/GetChannel",
                     "POST",
-                    { channelId: data.channelId }
+                    { channelId: newMessage.channelId }
                 );
 
-                if (result && result.channel) {
+                if (result.data) {
                     setResults(prev => [
-                        { ...result.channel, lastMessage: data },
+                        { ...result.data!.channel, lastMessage: newMessage },
                         ...prev,
                     ]);
                 }
             } else {
                 setResults(prev => {
-                    const updated = prev.map(ch =>
-                        ch.id === data.channelId
+                    const updated = prev.map(channel =>
+                        channel.id === newMessage.channelId
                             ? {
-                                ...ch,
-                                updatedAt: data.createdAt,
-                                unreadCount: ch.unreadCount + 1,
-                                lastMessage: data,
+                                ...channel,
+                                updatedAt: newMessage.createdAt,
+                                unreadCount: channel.unreadCount + 1,
+                                lastMessage: newMessage,
                                 title:
-                                    data.type == 4
-                                        ? data.channelTitle
-                                        : ch.title,
+                                    newMessage.type == ChannelMessageTypeEnum.TITLE_CHANGED
+                                        ? newMessage.channelTitle
+                                        : channel.title,
                             }
-                            : ch
+                            : channel
                     );
                     const channelToMove = updated.find(
-                        ch => ch.id === data.channelId
+                        ch => ch.id === newMessage.channelId
                     );
                     const others = updated.filter(
-                        ch => ch.id !== data.channelId
+                        ch => ch.id !== newMessage.channelId
                     );
                     return channelToMove
                         ? [channelToMove, ...others]
@@ -110,7 +113,7 @@ const useChannels = (
             }
         };
 
-        const handleMessagesSeen = (data: any) => {
+        const handleMessagesSeen = (data: MessagesSeenData) => {
             setResults(prev =>
                 prev.map(ch =>
                     ch.id === data.channelId
@@ -118,7 +121,7 @@ const useChannels = (
                             ...ch,
                             lastMessage: ch.lastMessage
                                 ? { ...ch.lastMessage, viewed: true }
-                                : undefined,
+                                : null,
                             unreadCount: 0,
                         }
                         : ch
@@ -126,12 +129,12 @@ const useChannels = (
             );
         };
 
-        const handleChannelDeleted = (data: any) => {
+        const handleChannelDeleted = (data: ChannelDeletedData) => {
             setResults(prev => prev.filter(x => x.id !== data.channelId));
             onLeaveChannelRef.current?.(data.channelId);
         };
 
-        const handleMessageDeleted = (data: any) => {
+        const handleMessageDeleted = (data: MessageDeletedData) => {
             setResults(prev =>
                 prev.map(ch =>
                     ch.id === data.channelId
@@ -145,14 +148,14 @@ const useChannels = (
                                         deleted: true,
                                         content: "",
                                     }
-                                    : undefined,
+                                    : null,
                         }
                         : ch
                 )
             );
         };
 
-        const handleMessageEdited = (data: any) => {
+        const handleMessageEdited = (data: MessageEditedData) => {
             setResults(prev =>
                 prev.map(ch =>
                     ch.id === data.channelId
@@ -165,7 +168,7 @@ const useChannels = (
                                         ...ch.lastMessage,
                                         content: data.content,
                                     }
-                                    : undefined,
+                                    : null,
                         }
                         : ch
                 )
@@ -187,7 +190,7 @@ const useChannels = (
         };
     }, [socket]);
 
-    const addChannel = (data: IChannel) => {
+    const addChannel = (data: ChannelMinimal) => {
         setResults(prev => [data, ...prev]);
     };
 

@@ -67,6 +67,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     }
 
     const handleSave = async () => {
+        if(!code) return;
         setLoading(true);
 
         const result = await sendJsonRequest<SaveChallengeCodeData>("/Challenge/SaveChallengeCode", "POST", {

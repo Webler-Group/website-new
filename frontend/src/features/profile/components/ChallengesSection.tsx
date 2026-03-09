@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useSolvedChallenges from "../hooks/useSolvedChallenges";
 import LanguageIcons from "../../challenges/components/LanguageIcons";
-import { IChallenge } from "../../challenges/types";
+import ChallengeDifficultyEnum from "../../../data/ChallengeDifficultyEnum";
 
 interface ChallengesSectionProps {
     userId: string;
@@ -35,11 +35,11 @@ const ChallengesSection = ({ userId, onClose }: ChallengesSectionProps) => {
         [isLoading, hasNextPage]
     );
 
-    const renderDifficultyBadge = (difficulty: IChallenge["difficulty"]) => {
+    const renderDifficultyBadge = (difficulty: ChallengeDifficultyEnum) => {
         const className =
-            difficulty === "easy"
+            difficulty === ChallengeDifficultyEnum.EASY
                 ? "bg-success"
-                : difficulty === "medium"
+                : difficulty === ChallengeDifficultyEnum.MEDIUM
                     ? "bg-warning text-dark"
                     : "bg-danger";
 

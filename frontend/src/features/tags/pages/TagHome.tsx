@@ -27,11 +27,11 @@ const TagHomePage = () => {
 
             setTagJobEntry("");
 
-            if(result && result.message) {
-                setLoadingText(result.message);
-                return;
+            if(result.success) {
+                setLoadingText(action + " executed successfully");
+            } else {
+                setLoadingText(action + " failed to execute");
             }
-            setLoadingText("");
     }
 
   return (

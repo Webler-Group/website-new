@@ -1,33 +1,36 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { IChallenge } from "../../challenges/types";
+import { ChallengeListData, ChallengeMinimal } from "../../challenges/types";
 
 const useSolvedChallenges = (userId: string, count: number, pageNum: number) => {
     const { sendJsonRequest } = useApi();
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [results, setResults] = useState<IChallenge[]>([]);
+    const [results, setResults] = useState<ChallengeMinimal[]>([]);
     const [hasNextPage, setHasNextPage] = useState(false);
 
     useEffect(() => {
-        setIsLoading(true);
-        setError(null);
+        const fetchChallenges = async () => {
+            setIsLoading(true);
+            setError(null);
 
-        sendJsonRequest("/Challenge", "POST", {
-            userId,
-            count,
-            page: pageNum,
-            filter: 2,
-            isVisible: 1
-        })
-            .then((data) => {
-                const items: IChallenge[] = data?.challenges ?? [];
-                setResults((prev) => (pageNum === 1 ? items : [...prev, ...items]));
-                setHasNextPage(!!data?.hasNextPage);
-            })
-            .catch((e) => setError(e?.message ?? "Something went wrong"))
-            .finally(() => setIsLoading(false));
+            const result = await sendJsonRequest<ChallengeListData>("/Challenge", "POST", {
+                userId,
+                count,
+                page: pageNum,
+                filter: 2,
+                isVisible: 1
+            });
+            if (result.data) {
+                const challenges = result.data.challenges;
+                setResults(prev => (pageNum === 1 ? challenges : [...prev, ...challenges]));
+                setHasNextPage(challenges.length === count);
+            } else {
+                setError(result.error?.[0].message ?? "Something went wrong");
+            }
+        }
+        fetchChallenges();
     }, [userId, count, pageNum]);
 
     return { isLoading, error, results, hasNextPage };

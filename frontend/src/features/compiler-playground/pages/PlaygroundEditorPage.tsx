@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
-import { ICode } from "../../codes/components/Code";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
 import { Badge, Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
@@ -22,8 +21,22 @@ import { FaSearch } from "react-icons/fa";
 import CodeEditor from "../components/CodeEditor";
 import useEditorOptions from "../hooks/useEditorOptions";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import { CodeDetails, CreateCodeData, EditCodeData, GetCodeData, GetTemplateData, isCodeSaved, UnsavedCode, VoteCodeData } from "../../codes/types";
 
-const scaleValues = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0]
+const SCALE_VALUES = [0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1.0, 1.1, 1.25, 1.5, 1.75, 2.0, 2.5, 3.0, 4.0, 5.0];
+
+const getCreditsHeaders = (language: string, username: string): string[] => {
+    const message = "Created by " + username;
+    switch (language) {
+        case "web":   return [`<!-- ${message} -->`, `/* ${message} */`, `// ${message}`];
+        case "c":
+        case "cpp":   return [`// ${message}`];
+        case "python":
+        case "ruby":  return [`# ${message}`];
+        case "lua":   return [`-- ${message}`];
+        default:      return [""];
+    }
+};
 
 interface PlaygroundEditorPageProps {
     language: CompilerLanguagesEnum | null;
@@ -32,50 +45,53 @@ interface PlaygroundEditorPageProps {
 const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     const { sendJsonRequest } = useApi();
     const { codeId } = useParams();
-
     const { userInfo } = useAuth();
     const navigate = useNavigate();
-    const [code, setCode] = useState<ICode | null>(null);
-    const [saveModalVisiblie, setSaveModalVisible] = useState(false);
-    const [codeName, setCodeName] = useState("");
-    const [codePublic, setCodePublic] = useState(false);
+    const location = useLocation();
+    const { editorOptions, updateEditorOptions } = useEditorOptions();
+
+    const [code, setCode] = useState<CodeDetails | UnsavedCode | null>(null);
     const [source, setSource] = useState("");
     const [css, setCss] = useState("");
     const [js, setJs] = useState("");
+
+    const [saveModalVisible, setSaveModalVisible] = useState(false);
+    const [codeName, setCodeName] = useState("");
+    const [codePublic, setCodePublic] = useState(false);
     const [saveAsNew, setSaveAsNew] = useState(true);
-    const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
-    const [loading, setLoading] = useState(false);
+
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [commentModalVisible, setCommentModalVisible] = useState(false);
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [authModalVisible, setAuthModalVisible] = useState(false);
+    const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
+    const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
+
     const [isUserRegistering, setUserAuthPage] = useState(true);
-    const { editorOptions, updateEditorOptions } = useEditorOptions();
+
+    const [loading, setLoading] = useState(false);
     const [commentCount, setCommentCount] = useState(0);
     const [findPost, setFindPost] = useState<any | null>(null);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
-    const location = useLocation();
     const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
     const [pageTitle, setPageTitle] = useState("");
-    const [codeVotesModalVisible, setCodeVotesModalVisible] = useState(false);
-    const [codeVotesModalOptions, setCodeVotesModalOptions] = useState({ parentId: "" });
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [logsCount, setLogsCount] = useState(0);
 
     PageTitle(pageTitle);
 
     useEffect(() => {
-        if (code?.id) {
-            setPageTitle(languagesInfo[code.language].displayName + " Playground - " + code.name + " | Webler Codes");
+        if (isCodeSaved(code!)) {
+            setPageTitle(`${languagesInfo[code.language].displayName} Playground - ${code.name} | Webler Codes`);
         } else if (language) {
-            setPageTitle(languagesInfo[language].displayName + " Playground | Webler Codes");
+            setPageTitle(`${languagesInfo[language].displayName} Playground | Webler Codes`);
         }
     }, [language, code]);
 
     useEffect(() => {
-        if (location.state && location.state.postId) {
+        if (location.state?.postId) {
             openCommentModal();
             setFindPost({ id: location.state.postId, isReply: location.state.isReply });
-
         } else {
             closeCommentModal();
         }
@@ -85,305 +101,229 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
         if (codeId) {
             getCode();
             setCommentListOptions({ section: "Codes", params: { codeId } });
-        }
-        else {
+        } else {
             getCodeByTemplate();
         }
     }, [codeId]);
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const isMac = navigator.userAgent.includes('Mac');
-            const isSaveShortcut = (isMac && e.metaKey && e.key === 's') || (!isMac && e.ctrlKey && e.key === 's');
-
-            if (isSaveShortcut) {
+            const isMac = navigator.userAgent.includes("Mac");
+            const isSave = (isMac ? e.metaKey : e.ctrlKey) && e.key === "s";
+            if (isSave) {
                 e.preventDefault();
                 handleSave();
             }
         };
-
         window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        };
+        return () => window.removeEventListener("keydown", handleKeyDown);
     }, [code, userInfo, source, css, js]);
-
-    const zoomIn = () => {
-        let currentIdx = scaleValues.indexOf(editorOptions.scale);
-        const scale = currentIdx === -1 ? 1.0 : scaleValues[Math.min(currentIdx + 1, scaleValues.length - 1)];
-        updateEditorOptions({ ...editorOptions, scale })
-    }
-
-    const zoomOut = () => {
-        let currentIdx = scaleValues.indexOf(editorOptions.scale);
-        const scale = currentIdx === -1 ? 1.0 : scaleValues[Math.max(currentIdx - 1, 0)];
-        updateEditorOptions({ ...editorOptions, scale })
-    }
-
-    const openCommentModal = () => {
-        if (!codeId) return;
-        setCommentModalVisible(true)
-    }
-
-    const closeCommentModal = () => {
-        setCommentModalVisible(false);
-    }
-
-    const openSaveModal = (saveAsNew: boolean) => {
-        setSaveModalVisible(true)
-        setSaveAsNew(saveAsNew);
-    }
-
-    const closeSaveModal = () => {
-        setSaveModalVisible(false);
-    }
-
-    const closeDetailsModal = () => {
-        setDetailsModalVisible(false)
-    }
-
-    const closeAuthModal = () => {
-        setAuthModalVisible(false);
-    }
 
     const getCode = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/codes/GetCode`, "POST", {
-            codeId
-        });
-        if (result && result.code) {
-            setCode(result.code);
-            setCodeName(result.code.name);
-            setCodePublic(result.code.isPublic);
-            setSource(result.code.source);
-            setCss(result.code.cssSource);
-            setJs(result.code.jsSource);
-            setCommentCount(result.code.comments);
+        const result = await sendJsonRequest<GetCodeData>(`/codes/GetCode`, "POST", { codeId });
+        if (result.data) {
+            const { code: fetched } = result.data;
+            setCode(fetched);
+            setCodeName(fetched.name);
+            setCodePublic(fetched.isPublic);
+            setSource(fetched.source);
+            setCss(fetched.cssSource);
+            setJs(fetched.jsSource);
+            setCommentCount(fetched.comments);
         }
         setLoading(false);
-    }
+    };
 
     const getCodeByTemplate = async () => {
-        const result = await sendJsonRequest(`/codes/templates/${language}`, "POST");
-        if (result && result.template) {
-            const template = result.template;
+        const result = await sendJsonRequest<GetTemplateData>(`/codes/templates/${language}`, "POST");
+        if (result.data) {
+            const { template } = result.data;
             setCode({
                 language: language!,
-                isUpvoted: false,
                 comments: 0,
                 votes: 0,
-                isPublic: false
-            });
+                isPublic: false,
+                source: template.source,
+                cssSource: template.cssSource,
+                jsSource: template.jsSource,
+            } satisfies UnsavedCode);
             setSource(template.source);
             setCss(template.cssSource);
             setJs(template.jsSource);
         }
-    }
+    };
 
     const editCode = async (isPublic: boolean) => {
-        if (!code) {
-            return
-        }
-        const result = await sendJsonRequest("/codes/EditCode", "PUT", {
+        if (!code || !isCodeSaved(code)) return null;
+        return sendJsonRequest<EditCodeData>("/codes/EditCode", "PUT", {
             codeId: code.id,
             name: codeName,
             isPublic,
-            source: source,
+            source,
             cssSource: css,
-            jsSource: js
+            jsSource: js,
         });
-        return result;
-    }
-
-    const getCreditsHeaders = (language: string, username: string) => {
-        const message = "Created by " + username;
-        switch (language) {
-            case "web": return [
-                "<!-- " + message + " -->",
-                "/* " + message + " */",
-                "// " + message
-            ];
-            case "c": case "cpp": return [
-                "// " + message
-            ];
-            case "python": case "ruby": return [
-                "# " + message
-            ];
-            case "lua": return [
-                "-- " + message
-            ]
-            default:
-                return [""];
-        }
-    }
+    };
 
     const saveCode = async () => {
-        if (!code || !userInfo) {
-            return;
-        }
-        setLoading(true)
+        if (!code || !userInfo) return;
+        setLoading(true);
+
         if (saveAsNew) {
             let creditsHeaders: string[] = [];
-            if (code.userId && code.userId !== userInfo.id) {
-                creditsHeaders = getCreditsHeaders(code.language, code.userName!);
+            if (isCodeSaved(code) && code.user.id && code.user.id !== userInfo.id) {
+                creditsHeaders = getCreditsHeaders(code.language, code.user.name);
             }
-            const result = await sendJsonRequest("/codes/CreateCode", "POST", {
+            const result = await sendJsonRequest<CreateCodeData>("/codes/CreateCode", "POST", {
                 name: codeName,
                 language: code.language,
                 source: (creditsHeaders[0] ? creditsHeaders[0] + "\n" : "") + source,
                 cssSource: (creditsHeaders[1] ? creditsHeaders[1] + "\n" : "") + css,
-                jsSource: (creditsHeaders[2] ? creditsHeaders[2] + "\n" : "") + js
+                jsSource: (creditsHeaders[2] ? creditsHeaders[2] + "\n" : "") + js,
             });
-            if (result && result.code) {
+            if (result.data) {
                 closeSaveModal();
-                navigate("/Compiler-Playground/" + result.code.id, { replace: code.userId === undefined })
-            }
-            else {
+                navigate("/Compiler-Playground/" + result.data.code.id, { replace: !isCodeSaved(code) });
+            } else {
                 setMessage({ success: false, errors: result?.error });
             }
-            setLoading(false)
-        }
-        else {
+        } else {
             const result = await editCode(code.isPublic);
-            if (result && result.success) {
-                setCode(code => ({ ...code, ...result.data }));
+            if (result?.data) {
+                setCode(prev => (prev && isCodeSaved(prev)) ? { ...prev, ...result.data } : prev);
                 closeSaveModal();
                 setMessage({ success: true, message: "Code updated successfully" });
-            }
-            else {
+            } else {
                 setMessage({ success: false, errors: result?.error });
             }
-            setLoading(false)
         }
-    }
+
+        setLoading(false);
+    };
 
     const handleSave = async () => {
-        if (!code) {
-            return
-        }
+        if (!code) return;
         if (!userInfo) {
-            setAuthModalVisible(true)
-            return
+            setAuthModalVisible(true);
+            return;
         }
-        if (code.id && code.userId === userInfo.id) {
-            setLoading(true)
+        if (isCodeSaved(code) && code.user.id === userInfo.id) {
+            setLoading(true);
             const result = await editCode(code.isPublic);
-            if (result && result.success) {
-                setCode(code => ({ ...code, ...result.data }));
-
+            if (result?.success) {
+                setCode(prev => (prev && isCodeSaved(prev)) ? { ...prev, ...result.data } : prev);
                 setMessage({ success: true, message: "Code updated successfully" });
-            }
-            else {
+            } else {
                 setMessage({ success: false, errors: result?.error });
             }
-            setLoading(false)
-        }
-        else {
+            setLoading(false);
+        } else {
             setCodeName("");
-            openSaveModal(true)
+            openSaveModal(true);
         }
-    }
+    };
 
     const handleSaveAs = () => {
         if (!userInfo) {
-            setAuthModalVisible(true)
-            return
+            setAuthModalVisible(true);
+            return;
         }
         setCodeName("");
-        openSaveModal(true)
-    }
+        openSaveModal(true);
+    };
 
     const handleRename = () => {
-        if (!code) {
-            return
-        }
+        if (!code || !isCodeSaved(code)) return;
         setCodeName(code.name!);
-        openSaveModal(false)
-    }
-
-    const closeDeleteModal = () => {
-        setDeleteModalVisible(false);
-    }
-
-    const closeVotesModal = () => {
-        setCodeVotesModalVisible(false);
-    }
-
-    const showCodeVotesModal = (id: string | null) => {
-        if (!id) return;
-        setCodeVotesModalOptions({ parentId: id });
-        setCodeVotesModalVisible(true);
-    }
+        openSaveModal(false);
+    };
 
     const handleDeleteCode = async () => {
-        if (!code) {
-            return
-        }
+        if (!code || !isCodeSaved(code)) return;
         setLoading(true);
         const result = await sendJsonRequest("/codes/DeleteCode", "DELETE", { codeId: code.id });
-        if (result && result.success) {
-            navigate("/Codes?filter=3", { replace: true })
-        }
-        else {
-
+        if (result?.success) {
+            navigate("/Codes?filter=3", { replace: true });
         }
         setLoading(false);
-    }
+    };
 
     const voteCode = async () => {
-        if (!code) {
-            return
-        }
+        if (!code || !isCodeSaved(code)) return;
         if (!userInfo) {
             navigate("/Users/Login");
             return;
         }
         const vote = code.isUpvoted ? 0 : 1;
-        const result = await sendJsonRequest("/Codes/VoteCode", "POST", { codeId: code.id, vote });
-        if (result.vote === vote) {
-            setCode(code => {
-                if (code) {
-                    return { ...code, votes: code.votes + (vote ? 1 : -1), isUpvoted: vote === 1 }
-                }
-                return code
-            });
-        }
-        else {
+        const result = await sendJsonRequest<VoteCodeData>("/Codes/VoteCode", "POST", { codeId: code.id, vote });
+        if (result.data?.vote === vote) {
+            setCode(prev =>
+                prev && isCodeSaved(prev)
+                    ? { ...prev, votes: prev.votes + (vote ? 1 : -1), isUpvoted: vote === 1 }
+                    : prev
+            );
+        } else {
             setMessage({ success: false, errors: result?.error });
         }
-    }
+    };
 
     const toggleCodePublic = async (isPublic: boolean) => {
-        setLoading(true)
+        setLoading(true);
         const result = await editCode(isPublic);
-        if (result && result.success) {
-            setCode(code => ({ ...code, ...result.data }));
+        if (result?.data) {
+            setCode(prev => (prev && isCodeSaved(prev)) ? { ...prev, ...result.data } : prev);
             setCodePublic(result.data.isPublic);
-        }
-        else {
+        } else {
             setMessage({ success: false, errors: result?.error });
         }
-        setLoading(false)
-    }
+        setLoading(false);
+    };
 
-    let lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
-    let characterCount = source.length + css.length + js.length;
+    const openCommentModal = () => { if (codeId) setCommentModalVisible(true); };
+    const closeCommentModal = () => setCommentModalVisible(false);
+    const openSaveModal = (asNew: boolean) => { setSaveModalVisible(true); setSaveAsNew(asNew); };
+    const closeSaveModal = () => setSaveModalVisible(false);
+    const closeDetailsModal = () => setDetailsModalVisible(false);
+    const closeAuthModal = () => setAuthModalVisible(false);
+    const closeDeleteModal = () => setDeleteModalVisible(false);
+    const closeVotesModal = () => setCodeVotesModalVisible(false);
+
+    const showCodeVotesModal = (id: string | null) => {
+        if (!id) return;
+        setCodeVotesModalOptions({ parentId: id });
+        setCodeVotesModalVisible(true);
+    };
+
+    const zoomIn = () => {
+        const idx = SCALE_VALUES.indexOf(editorOptions.scale);
+        const scale = idx === -1 ? 1.0 : SCALE_VALUES[Math.min(idx + 1, SCALE_VALUES.length - 1)];
+        updateEditorOptions({ ...editorOptions, scale });
+    };
+
+    const zoomOut = () => {
+        const idx = SCALE_VALUES.indexOf(editorOptions.scale);
+        const scale = idx === -1 ? 1.0 : SCALE_VALUES[Math.max(idx - 1, 0)];
+        updateEditorOptions({ ...editorOptions, scale });
+    };
+
+    const lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
+    const characterCount = source.length + css.length + js.length;
+    const savedCode = code && isCodeSaved(code) ? code : null;
 
     return (
         <>
             <Modal show={authModalVisible} onHide={closeAuthModal} centered>
-                <Modal.Header closeButton></Modal.Header>
+                <Modal.Header closeButton />
                 <Modal.Body>
-                    {
-                        isUserRegistering ?
-                            <RegisterForm onToggleClick={() => setUserAuthPage(false)} onRegister={closeAuthModal} />
-                            :
-                            <LoginForm onToggleClick={() => setUserAuthPage(true)} onLogin={closeAuthModal} />
+                    {isUserRegistering
+                        ? <RegisterForm onToggleClick={() => setUserAuthPage(false)} onRegister={closeAuthModal} />
+                        : <LoginForm onToggleClick={() => setUserAuthPage(true)} onLogin={closeAuthModal} />
                     }
                 </Modal.Body>
             </Modal>
-            {
-                (code && code.id) &&
+
+            {savedCode && (
                 <>
                     <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
                         <Offcanvas.Header closeButton>
@@ -397,25 +337,35 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                             />
                         </Offcanvas.Body>
                     </Offcanvas>
+
                     <Modal show={detailsModalVisible} onHide={closeDetailsModal} centered>
                         <Modal.Header closeButton>
                             <Modal.Title>Code details</Modal.Title>
                         </Modal.Header>
                         <Modal.Body>
                             <ul>
-                                <li>Title: <i>{code.name}</i></li>
-                                <li>Author: <i>{code.userName}</i></li>
-                                <li>Creation Date: <i>{code.createdAt?.split("T")[0]}</i></li>
-                                <li>Last Changed: <i>{DateUtils.format(new Date(code.updatedAt!))}</i></li>
+                                <li>Title: <i>{savedCode.name}</i></li>
+                                <li>Author: <i>{savedCode.user.name}</i></li>
+                                <li>Creation Date: <i>{savedCode.createdAt?.split("T")[0]}</i></li>
+                                <li>Last Changed: <i>{DateUtils.format(new Date(savedCode.updatedAt))}</i></li>
                                 <li>Line Count: <i>{lineCount}</i></li>
                                 <li>Character Count: <i>{characterCount}</i></li>
                             </ul>
                         </Modal.Body>
                     </Modal>
-                    <ReactionsList title="Likes" visible={codeVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} options={codeVotesModalOptions} />
+
+                    <ReactionsList
+                        title="Likes"
+                        visible={codeVotesModalVisible}
+                        onClose={closeVotesModal}
+                        showReactions
+                        countPerPage={10}
+                        options={codeVotesModalOptions}
+                    />
                 </>
-            }
-            <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
+            )}
+
+            <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -425,187 +375,192 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                     <Button variant="danger" onClick={handleDeleteCode}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-            <Modal show={saveModalVisiblie} onHide={closeSaveModal} centered>
+
+            <Modal show={saveModalVisible} onHide={closeSaveModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Save code</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     <p>How would you like to name your code?</p>
-                    <FormControl className="mt-2" type="text" placeholder="Unnamed" value={codeName} onChange={(e) => setCodeName(e.target.value)} />
+                    <FormControl
+                        className="mt-2"
+                        type="text"
+                        placeholder="Unnamed"
+                        value={codeName}
+                        onChange={(e) => setCodeName(e.target.value)}
+                    />
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={closeSaveModal}>Cancel</Button>
                     <Button variant="primary" onClick={saveCode} disabled={codeName.length === 0}>Save</Button>
                 </Modal.Footer>
             </Modal>
+
             <div className="wb-compiler-playground-container">
+
                 <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
-                    <div>
-                        <Link to="/">
-                            <img src="/resources/images/logo.svg" height="32px" width="96px" alt="Webler logo" />
-                        </Link>
-                    </div>
-                    <div>
-                        <AuthNavigation />
-                    </div>
+                    <Link to="/">
+                        <img src="/resources/images/logo.svg" height="32px" width="96px" alt="Webler logo" />
+                    </Link>
+                    <AuthNavigation />
                 </div>
+
                 <Toast
                     className="position-absolute bottom-0 end-0 m-2"
-                    style={{ zIndex: "9999" }}
+                    style={{ zIndex: 9999 }}
                     bg={message.success ? "success" : "danger"}
                     onClose={() => setMessage(prev => ({ success: prev.success }))}
                     show={(message.errors && message.errors.length > 0) || !!message.message}
                     delay={1500}
-                    autohide>
+                    autohide
+                >
                     <Toast.Body className="text-white">
-                        <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
+                        <b>{message.success ? message.message : message.errors?.[0]?.message ?? ""}</b>
                     </Toast.Body>
                 </Toast>
-                {
-                    code ?
-                        <>
-                            <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
-                                <div className="d-flex align-items-center">
-                                    {
-                                        code.id &&
-                                        <>
-                                            <div className="d-flex align-items-center gap-2">
-                                                <ProfileAvatar size={32} avatarUrl={code.userAvatarUrl!} />
-                                                <div>
-                                                    <div>
-                                                        <b>{truncate(code.name!, 10)}</b>
-                                                    </div>
-                                                    <div className="d-flex justify-content-start small">
-                                                        <ProfileName userId={code.userId!} userName={code.userName!} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div className="wb-compiler-playground-voting small">
-                                                <span onClick={voteCode} className={"wb-icon-button" + (code.isUpvoted ? " text-black" : "")}>
-                                                    <FaThumbsUp />
-                                                </span>
-                                                <span style={{ cursor: "pointer" }} onClick={() => showCodeVotesModal(code.id ?? null)}>{code.votes}</span>
-                                            </div>
-                                            <div className="wb-compiler-playground-comments small">
-                                                <span style={{ cursor: "pointer" }} onClick={openCommentModal}>
-                                                    <FaComment />
-                                                </span>
-                                                <span>{commentCount}</span>
-                                            </div>
-                                            {
-                                                !code.isPublic &&
-                                                <div className="wb-compiler-playground-public small">
-                                                    <FaLock />
-                                                </div>
-                                            }
-                                        </>
-                                    }
-                                </div>
-                                <div className="d-flex gap-2 align-items-center">
-                                    {
-                                        code.language == "web" &&
-                                        <Button size="sm" variant="link" className="text-dark position-relative" onClick={() => setConsoleVisible(true)}>
-                                            <FaTerminal />
-                                            {logsCount > 0 && (
-                                                <Badge
-                                                    bg="danger"
-                                                    pill
-                                                    className="position-absolute"
-                                                >
-                                                    {logsCount > 99 ? "99+" : logsCount}
-                                                </Badge>
-                                            )}
-                                        </Button>
 
-                                    }
-                                    <Dropdown>
-                                        <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
-                                        <Dropdown.Menu style={{ width: "200px" }}>
-                                            <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
-                                            <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
-                                            {
-                                                userInfo &&
-                                                <>
-                                                    {
-                                                        (code && code.id) &&
-                                                        <>
-                                                            {
-                                                                code.userId == userInfo.id &&
-                                                                <>
-                                                                    <Dropdown.Item onClick={handleRename}>Rename</Dropdown.Item>
-                                                                    <Dropdown.Item onClick={() => setDeleteModalVisible(true)}>Delete</Dropdown.Item>
-                                                                    <Dropdown.ItemText className="d-flex justify-content-between align-items-center">
-                                                                        <span>Public</span>
-                                                                        <ToggleSwitch value={codePublic} onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)} />
-                                                                    </Dropdown.ItemText>
-                                                                </>
-                                                            }
-                                                        </>
-                                                    }
-                                                </>
-                                            }
-                                            <Dropdown.ItemText className="border-top d-flex justify-content-between">
-                                                <div>Font</div>
-                                                <div className="d-flex gap-1">
-                                                    <span className="wb-compiler-playground-options__button" onClick={zoomOut}>-</span>
-                                                    <span className="d-flex justify-content-center" style={{ width: "32px" }}>{(editorOptions.scale * 100).toFixed(0)}%</span>
-                                                    <span className="wb-compiler-playground-options__button" onClick={zoomIn}>+</span>
+                {code ? (
+                    <>
+                        <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
+                            <div className="d-flex align-items-center">
+                                {savedCode && (
+                                    <>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <ProfileAvatar size={32} avatarUrl={savedCode.user.avatarUrl} />
+                                            <div>
+                                                <div><b>{truncate(savedCode.name!, 10)}</b></div>
+                                                <div className="d-flex justify-content-start small">
+                                                    <ProfileName userId={savedCode.user.id} userName={savedCode.user.name} />
                                                 </div>
-                                            </Dropdown.ItemText>
-                                            <Dropdown.ItemText className="border-bottom d-flex justify-content-between">
-                                                <div>Line Wrap</div>
-                                                <div>
-                                                    <input type="checkbox" checked={editorOptions.lineWrap} onChange={(e) => updateEditorOptions({ ...editorOptions, lineWrap: e.target.checked })} />
-                                                </div>
-                                            </Dropdown.ItemText>
-                                            {
-                                                (code && code.id) &&
-                                                <>
-                                                    <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
-                                                    <Dropdown.Item
-                                                        onClick={() => {
-                                                            navigator.clipboard.writeText(window.location.href);
-                                                        }}
-                                                    >
-                                                        Share
-                                                    </Dropdown.Item>
-                                                </>
-                                            }
-                                        </Dropdown.Menu>
-                                    </Dropdown>
-                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="wb-compiler-playground-voting small">
+                                            <span
+                                                onClick={voteCode}
+                                                className={"wb-icon-button" + (savedCode.isUpvoted ? " text-black" : "")}
+                                            >
+                                                <FaThumbsUp />
+                                            </span>
+                                            <span style={{ cursor: "pointer" }} onClick={() => showCodeVotesModal(savedCode.id ?? null)}>
+                                                {savedCode.votes}
+                                            </span>
+                                        </div>
+
+                                        <div className="wb-compiler-playground-comments small">
+                                            <span style={{ cursor: "pointer" }} onClick={openCommentModal}>
+                                                <FaComment />
+                                            </span>
+                                            <span>{commentCount}</span>
+                                        </div>
+
+                                        {!savedCode.isPublic && (
+                                            <div className="wb-compiler-playground-public small">
+                                                <FaLock />
+                                            </div>
+                                        )}
+                                    </>
+                                )}
                             </div>
-                            <CodeEditor
-                                code={code}
-                                source={source}
-                                setSource={(value: string) => setSource(value)}
-                                css={css}
-                                setCss={(value: string) => setCss(value)}
-                                js={js}
-                                setJs={(value: string) => setJs(value)}
-                                options={editorOptions}
-                                tabHeightStyle="calc(100dvh - 130px)"
-                                consoleVisible={consoleVisible}
-                                hideConsole={() => setConsoleVisible(false)}
-                                toggleConsole={() => setConsoleVisible(prev => !prev)}
-                                setLogsCount={setLogsCount}
-                            />
-                        </>
-                        :
-                        !loading &&
-                        <div className="d-flex h-100 flex-column align-items-center justify-content-center text-center">
-                            <h4>
-                                <FaSearch />
-                            </h4>
-                            <h5>Code not found</h5>
-                            <div>
-                                <Link to="/Codes">Go back</Link>
+
+                            <div className="d-flex gap-2 align-items-center">
+                                {code.language === "web" && (
+                                    <Button
+                                        size="sm"
+                                        variant="link"
+                                        className="text-dark position-relative"
+                                        onClick={() => setConsoleVisible(true)}
+                                    >
+                                        <FaTerminal />
+                                        {logsCount > 0 && (
+                                            <Badge bg="danger" pill className="position-absolute">
+                                                {logsCount > 99 ? "99+" : logsCount}
+                                            </Badge>
+                                        )}
+                                    </Button>
+                                )}
+
+                                <Dropdown>
+                                    <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                    <Dropdown.Menu style={{ width: "200px" }}>
+                                        <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
+                                        <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
+
+                                        {userInfo && savedCode && savedCode.user.id === userInfo.id && (
+                                            <>
+                                                <Dropdown.Item onClick={handleRename}>Rename</Dropdown.Item>
+                                                <Dropdown.Item onClick={() => setDeleteModalVisible(true)}>Delete</Dropdown.Item>
+                                                <Dropdown.ItemText className="d-flex justify-content-between align-items-center">
+                                                    <span>Public</span>
+                                                    <ToggleSwitch
+                                                        value={codePublic}
+                                                        onChange={(e) => toggleCodePublic((e.target as HTMLInputElement).checked)}
+                                                    />
+                                                </Dropdown.ItemText>
+                                            </>
+                                        )}
+
+                                        <Dropdown.ItemText className="border-top d-flex justify-content-between">
+                                            <div>Font</div>
+                                            <div className="d-flex gap-1">
+                                                <span className="wb-compiler-playground-options__button" onClick={zoomOut}>-</span>
+                                                <span className="d-flex justify-content-center" style={{ width: "32px" }}>
+                                                    {(editorOptions.scale * 100).toFixed(0)}%
+                                                </span>
+                                                <span className="wb-compiler-playground-options__button" onClick={zoomIn}>+</span>
+                                            </div>
+                                        </Dropdown.ItemText>
+
+                                        <Dropdown.ItemText className="border-bottom d-flex justify-content-between">
+                                            <div>Line Wrap</div>
+                                            <input
+                                                type="checkbox"
+                                                checked={editorOptions.lineWrap}
+                                                onChange={(e) => updateEditorOptions({ ...editorOptions, lineWrap: e.target.checked })}
+                                            />
+                                        </Dropdown.ItemText>
+
+                                        {savedCode && (
+                                            <>
+                                                <Dropdown.Item onClick={() => setDetailsModalVisible(true)}>Details</Dropdown.Item>
+                                                <Dropdown.Item onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                                                    Share
+                                                </Dropdown.Item>
+                                            </>
+                                        )}
+                                    </Dropdown.Menu>
+                                </Dropdown>
                             </div>
                         </div>
-                }
+
+                        <CodeEditor
+                            code={code}
+                            source={source}
+                            setSource={(value: string) => setSource(value)}
+                            css={css}
+                            setCss={(value: string) => setCss(value)}
+                            js={js}
+                            setJs={(value: string) => setJs(value)}
+                            options={editorOptions}
+                            tabHeightStyle="calc(100dvh - 130px)"
+                            consoleVisible={consoleVisible}
+                            hideConsole={() => setConsoleVisible(false)}
+                            toggleConsole={() => setConsoleVisible(prev => !prev)}
+                            setLogsCount={setLogsCount}
+                        />
+                    </>
+                ) : (
+                    !loading && (
+                        <div className="d-flex h-100 flex-column align-items-center justify-content-center text-center">
+                            <h4><FaSearch /></h4>
+                            <h5>Code not found</h5>
+                            <Link to="/Codes">Go back</Link>
+                        </div>
+                    )
+                )}
             </div>
         </>
-    )
-}
+    );
+};
 
-export default PlaygroundEditorPage
+export default PlaygroundEditorPage;

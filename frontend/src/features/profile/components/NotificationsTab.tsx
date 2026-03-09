@@ -5,6 +5,7 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { UpdateNotificationsData } from "../types";
 
 const notificationInfo = [
     { type: "profile follow", value: NotificationTypeEnum.PROFILE_FOLLOW },
@@ -63,15 +64,15 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
         setLoading(true);
         setMessage({});
 
-        const result = await sendJsonRequest("/Profile/UpdateNotifications", "POST", {
+        const result = await sendJsonRequest<UpdateNotificationsData>("/Profile/UpdateNotifications", "POST", {
             notifications: Object.entries(notifications).map(entry => ({ type: Number(entry[0]), enabled: entry[1] }))
         });
 
-        if (result && result.success) {
+        if (result.data) {
             onUpdate(result.data.notifications);
             setMessage({ message: "Notification settings saved successfully" });
         } else {
-            setMessage({ errors: result?.error });
+            setMessage({ errors: result.error });
         }
 
         setLoading(false);

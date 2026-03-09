@@ -9,51 +9,20 @@ import { FaGear, FaHammer, FaStar } from "react-icons/fa6";
 import Country from "../../../components/Country";
 import FollowList from "../components/FollowList";
 import CodesSection from "../components/CodesSection";
-import Code, { ICode } from "../../codes/components/Code";
+import Code from "../../codes/components/Code";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import Question, { IQuestion } from "../../discuss/components/Question";
+import Question from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
 import PageTitle from "../../../layouts/PageTitle";
-import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
-
-export interface UserDetails {
-    id: string;
-    name: string;
-    email: string;
-    bio: string;
-    avatarUrl?: string | null;
-    countryCode: string;
-    followers: number;
-    following: number;
-    isFollowing: boolean;
-    level: number;
-    xp: number;
-    codes: any[];
-    questions: any[];
-    emailVerified: boolean;
-    active: boolean;
-    roles: string[];
-    notifications: Record<NotificationTypeEnum, boolean>;
-
-    solvedChallenges: {
-        easy: number;
-        medium: number;
-        hard: number;
-    };
-}
-
-export interface UserMinimal {
-    id: string;
-    name: string;
-    countryCode?: string;
-    avatarUrl?: string | null;
-    level?: number;
-    isFollowing?: boolean;
-}
+import { GetProfileData, UserDetails } from "../types";
+import { CodeMinimal } from "../../codes/types";
+import { QuestionMinimal } from "../../discuss/types";
+import RolesEnum from "../../../data/RolesEnum";
+import { CreateDirectMessagesData } from "../../channels/types";
 
 const ProfilePage = () => {
     const { sendJsonRequest } = useApi();
@@ -68,10 +37,10 @@ const ProfilePage = () => {
     const [followListOptions, setFollowListOptions] = useState({ path: "", userId: "" });
     const [followListTitle, setFollowListTitle] = useState("");
 
-    const [codes, setCodes] = useState<ICode[]>([]);
+    const [codes, setCodes] = useState<CodeMinimal[]>([]);
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
 
-    const [questions, setQuestions] = useState<IQuestion[]>([]);
+    const [questions, setQuestions] = useState<QuestionMinimal[]>([]);
     const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
 
     const [challengesSectionVisible, setChallengesSectionVisible] = useState(false);
@@ -84,20 +53,21 @@ const ProfilePage = () => {
     PageTitle(pageTitle);
 
     useEffect(() => {
-        setFollowListTitle("");
-        sendJsonRequest(`/Profile/GetProfile`, "POST", { userId })
-            .then((data) => {
-                if (data.userDetails) {
-                    setUserDetails(data.userDetails);
-                    setFollowingCount(data.userDetails.following);
-                    setFollowersCount(data.userDetails.followers);
-                    setCodes(data.userDetails.codes.slice(0, 3));
-                    setQuestions(data.userDetails.questions.slice(0, 3));
-                    setPageTitle(data.userDetails.name);
-                } else {
-                    setUserDetails(null);
-                }
-            });
+        const fetchProfile = async () => {
+            setFollowListTitle("");
+            const result = await sendJsonRequest<GetProfileData>(`/Profile/GetProfile`, "POST", { userId });
+            if (result.data) {
+                setUserDetails(result.data.userDetails);
+                setFollowingCount(result.data.userDetails.following);
+                setFollowersCount(result.data.userDetails.followers);
+                setCodes(result.data.userDetails.codes.slice(0, 3));
+                setQuestions(result.data.userDetails.questions.slice(0, 3));
+                setPageTitle(result.data.userDetails.name);
+            } else {
+                setUserDetails(null);
+            }
+        }
+        fetchProfile();
     }, [userId]);
 
     const showNotification = useCallback((type: "success" | "error", message: string) => {
@@ -114,14 +84,9 @@ const ProfilePage = () => {
 
     const handleFollow = async () => {
         if (!userDetails) return;
-
         setFollowLoading(true);
-        let data = null;
-        try {
-            data = await sendJsonRequest(`/Profile/Follow`, "POST", { userId });
-        } catch (err) { }
-
-        if (data && data.success) {
+        const result = await sendJsonRequest(`/Profile/Follow`, "POST", { userId });
+        if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: true, followers: ud.followers + 1 } : null));
             setFollowersCount((count) => count + 1);
         }
@@ -130,14 +95,9 @@ const ProfilePage = () => {
 
     const handleUnfollow = async () => {
         if (!userDetails) return;
-
         setFollowLoading(true);
-        let data = null;
-        try {
-            data = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
-        } catch (err) { }
-
-        if (data && data.success) {
+        const result = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
+        if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: false, followers: ud.followers - 1 } : null));
             setFollowersCount((count) => count - 1);
         }
@@ -172,11 +132,11 @@ const ProfilePage = () => {
     const openChallenges = () => navigate("/Challenge");
 
     const handleMessage = async () => {
-        const result = await sendJsonRequest("/Channels/CreateDirectMessages", "POST", { userId });
-        if (result && result.channel) {
-            navigate("/Channels/" + result.channel.id);
+        const result = await sendJsonRequest<CreateDirectMessagesData>("/Channels/CreateDirectMessages", "POST", { userId });
+        if (result.data) {
+            navigate("/Channels/" + result.data.channel.id);
         } else {
-            showNotification("error", result?.error?.[0]?.message ?? "Something went wrong");
+            showNotification("error", result.error?.[0]?.message ?? "Something went wrong");
         }
     };
 
@@ -186,7 +146,7 @@ const ProfilePage = () => {
     };
 
     const isCurrentUser = !!userInfo && userInfo.id === userId;
-    const isAdmin = !!userInfo && userInfo.roles.includes("Admin");
+    const isAdmin = !!userInfo && userInfo.roles.includes(RolesEnum.ADMIN);
 
     const codesSectionContent = (isCurrentUser || codes.length > 0) ? (
         <Col>
@@ -288,7 +248,7 @@ const ProfilePage = () => {
     ) : <></>;
 
     const badge = (() => {
-        if (userDetails?.roles.includes("Moderator")) {
+        if (userDetails?.roles.includes(RolesEnum.MODERATOR)) {
             return <Badge className="wb-p-details__avatar-badge" bg="secondary">Moderator</Badge>;
         }
         return <></>;
@@ -374,7 +334,7 @@ const ProfilePage = () => {
                                                     </Button>
                                                 )}
 
-                                                {userDetails.roles.includes("User") && (
+                                                {userDetails.roles.includes(RolesEnum.USER) && (
                                                     <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>
                                                         Message
                                                     </Button>

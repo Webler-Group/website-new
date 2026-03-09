@@ -1,5 +1,4 @@
 import React, { useState } from 'react'
-import { UserMinimal } from '../pages/ProfilePage'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
 import { Button } from 'react-bootstrap';
@@ -8,6 +7,7 @@ import { useAuth } from '../../auth/context/authContext';
 import ProfileName from '../../../components/ProfileName';
 import { useNavigate } from 'react-router-dom';
 import ProfileAvatar from '../../../components/ProfileAvatar';
+import { UserMinimal } from '../types';
 
 interface FollowListProfileProps {
     user: UserMinimal;

@@ -2,23 +2,10 @@ import React from "react";
 import { Button, Card } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
-
-interface IChannelInvite {
-    id: string;
-    authorId: string;
-    authorName: string;
-    authorAvatarUrl: string;
-    channelId?: string;
-    channelType?: number;
-    channelTitle?: string;
-    invitedUserId?: string;
-    invitedUserName?: string;
-    invitedUserAvatarUrl?: string;
-    createdAt: string;
-}
+import { ChannelBase, InviteDetails } from "../types";
 
 interface InvitesListItemProps {
-    invite: IChannelInvite;
+    invite: InviteDetails<undefined, ChannelBase>;
     onAccept: (id: string) => void;
     onDecline: (id: string) => void;
 }
@@ -26,11 +13,11 @@ interface InvitesListItemProps {
 const InvitesListItem = React.forwardRef(({ invite, onAccept, onDecline }: InvitesListItemProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     let body = (<Card className="mb-3">
         <Card.Body className="d-flex align-items-center gap-2">
-            <ProfileAvatar avatarUrl={invite.authorAvatarUrl} size={42} />
+            <ProfileAvatar avatarUrl={invite.author.avatarUrl} size={42} />
             <div className="flex-grow-1">
-                <div><strong>{invite.channelTitle}</strong></div>
+                <div><strong>{invite.channel.title}</strong></div>
                 <div className="text-muted small">
-                    Invited by <ProfileName userId={invite.authorId} userName={invite.authorName} />
+                    Invited by <ProfileName userId={invite.author.id} userName={invite.author.name} />
                 </div>
             </div>
             <div className="d-flex flex-column gap-2 ms-3">
@@ -46,9 +33,5 @@ const InvitesListItem = React.forwardRef(({ invite, onAccept, onDecline }: Invit
         <div>{body}</div>
     return content;
 });
-
-export type {
-    IChannelInvite
-}
 
 export default InvitesListItem;

@@ -8,11 +8,11 @@ import { languagesInfo } from '../../../data/compilerLanguages';
 import { useNavigate } from 'react-router-dom';
 import "./Code.css";
 import { CodeMinimal } from '../types';
-import { UserMinimal } from '../../profile/types';
+import { isUser, UserMinimal } from '../../profile/types';
 
 
 interface CodeProps {
-    code: CodeMinimal<UserMinimal>;
+    code: CodeMinimal<UserMinimal | string>;
     searchQuery: string;
     showUserProfile: boolean;
     onClick?: () => void;
@@ -74,7 +74,7 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
                 </div>
             </div>
             {
-                showUserProfile &&
+                showUserProfile && isUser(code.user) &&
                 <div className="d-flex justify-content-end align-items-end mt-2">
                     <div className="d-flex align-items-center">
                         <div>

@@ -6,6 +6,7 @@ import Notification from "./Notification"
 import useNotifications from "../hooks/useNotifications"
 import { useApi } from "../../../context/apiCommunication"
 import { useWS } from "../../../context/wsCommunication"
+import { UnseenMessagesCountData } from "../../channels/types"
 
 const NotificationList = () => {
     const { sendJsonRequest } = useApi();
@@ -23,9 +24,9 @@ const NotificationList = () => {
 
     useEffect(() => {
         const getUnseenNotificationCount = async () => {
-            const result = await sendJsonRequest("/Profile/GetUnseenNotificationCount", "POST", {});
-            if (result && result.count !== undefined) {
-                setUnseenCount(result.count);
+            const result = await sendJsonRequest<UnseenMessagesCountData>("/Profile/GetUnseenNotificationCount", "POST", {});
+            if (result.data) {
+                setUnseenCount(result.data.count);
             }
         }
         getUnseenNotificationCount();

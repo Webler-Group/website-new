@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../context/apiCommunication";
-import { IComment } from "./Comment";
+import { CommentListData, CommmentDetails } from "./types";
 
 interface UseCommentsOptions {
     section: string;
@@ -19,11 +19,11 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
         lastIndex: 0,
         direction: 'dont load',
     });
-    const [results, setResults] = useState<IComment[]>([]);
+    const [results, setResults] = useState<CommmentDetails[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [initialFetchDone, setInitialFetchDone] = useState(false);
-    const [error, setError] = useState<any[]>([]);
+    const [error, setError] = useState<{ message: string }[]>([]);
     const { sendJsonRequest } = useApi();
 
     useEffect(() => {
@@ -32,7 +32,7 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
 
             setError([]);
             setLoading(true);
-            const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
+            const result = await sendJsonRequest<CommentListData>(`/${options.section}/GetComments`, 'POST', {
                 ...options.params,
                 parentId: null,
                 findPostId: initialFetchDone ? null : findPostId,
@@ -40,22 +40,22 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
                 index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
                 filter,
             });
-            if (result && result.posts) {
+            if (result.data) {
                 setResults((prev) => {
                     // Filter out any posts that already exist in the results array to prevent duplicates
-                    const newPosts = result.posts.filter(
-                        (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    const newPosts = result.data!.posts.filter(
+                        (newPost: CommmentDetails) => !prev.some((existingPost) => existingPost.id === newPost.id)
                     );
                     return state.direction === 'from start'
                         ? [...newPosts, ...prev]
                         : [...prev, ...newPosts]
                 });
                 if (state.direction === 'from end') {
-                    setHasNextPage(result.posts.length === countPerPage);
+                    setHasNextPage(result.data.posts.length === countPerPage);
                 }
                 setInitialFetchDone(true);
             } else {
-                setError(result.error);
+                setError(result.error ?? []);
             }
             setLoading(false);
         }
@@ -68,17 +68,17 @@ const useComments = (options: UseCommentsOptions, findPostId: string | null, fil
         setState({ firstIndex: 0, lastIndex: 0, direction: 'from end' });
     }, [options, filter, showAllComments]);
 
-    const createComment = (post: IComment) => {
+    const createComment = (post: CommmentDetails) => {
         setResults((prev) => [post, ...prev]);
     }
 
-    const editComment = (id: string, setter: (prev: IComment) => IComment) => {
+    const editComment = (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => {
         setResults(prev => prev.map(x => x.id == id ? setter(x) : x));
     }
 
     const deleteComment = (postId: string) => {
         setResults(prev => {
-            const results: IComment[] = [];
+            const results: CommmentDetails[] = [];
             let isAfterDeleted = false;
             for (let x of prev) {
                 if (x.id === postId) {

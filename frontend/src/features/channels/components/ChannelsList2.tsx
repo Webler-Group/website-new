@@ -7,6 +7,7 @@ import useInvites from "../hooks/useInvites";
 import InvitesListItem from "./InvitesListItem";
 import Loader from "../../../components/Loader";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { CreateGroupData } from "../types";
 
 interface ChannelsListProps {
     onChannelSelect: (channelId: string) => void;
@@ -17,7 +18,7 @@ interface ChannelsListProps {
 const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsListProps) => {
     const [activeTab, setActiveTab] = useState("channels");
     const [groupTitle, setGroupTitle] = useState("");
-    const [createGroupError, setCreateGroupError] = useState<any[] | undefined>();
+    const [createGroupError, setCreateGroupError] = useState<{ message: string }[] | undefined>();
     const [createGroupModalVisible, setCreateGroupModalVisible] = useState(false);
     const { sendJsonRequest } = useApi();
     const [channelsFromDate, setChannelsFromDate] = useState<Date | null>(null);
@@ -63,11 +64,17 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
     }, [invites.isLoading, invites.hasNextPage, invites.results]);
 
     const handleCreateGroup = async () => {
-        const result = await sendJsonRequest("/Channels/CreateGroup", "POST", {
+        const result = await sendJsonRequest<CreateGroupData>("/Channels/CreateGroup", "POST", {
             title: groupTitle
         });
-        if (result && result.channel) {
-            channels.addChannel(result.channel);
+        if (result.data) {
+            channels.addChannel({
+                ...result.data.channel,
+                muted: false,
+                unreadCount: 0,
+                lastMessage: null,
+                coverImageUrl: null
+            });
             closeCreateGroupModal();
             setGroupTitle("");
         } else {

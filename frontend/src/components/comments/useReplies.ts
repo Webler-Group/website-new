@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../context/apiCommunication";
-import { IComment } from "./Comment";
 import { UseCommentsOptions, UseCommentsState } from "./useComments";
+import { CommentListData, CommmentDetails } from "./types";
 
-const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parentId: string, defaultData: IComment[] | null, countPerPage: number) => {
+const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parentId: string, defaultData: CommmentDetails[] | null, countPerPage: number) => {
     const [state, setState] = useState<UseCommentsState>({
         firstIndex: defaultData && defaultData.length > 0 ? defaultData[0].index : 0,
         lastIndex: defaultData && defaultData.length > 0 ? defaultData[defaultData.length - 1].index : 0,
         direction: 'dont load'
     });
-    const [results, setResults] = useState<IComment[]>(defaultData || []);
+    const [results, setResults] = useState<CommmentDetails[]>(defaultData || []);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(defaultData !== null && defaultData.length == countPerPage);
     const { sendJsonRequest } = useApi();
@@ -19,7 +19,7 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
             if (state.direction === 'dont load' || !repliesVisible) return;
 
             setLoading(true);
-            const result = await sendJsonRequest(`/${options.section}/GetComments`, 'POST', {
+            const result = await sendJsonRequest<CommentListData>(`/${options.section}/GetComments`, 'POST', {
                 ...options.params,
                 parentId,
                 findPostId: null,
@@ -27,17 +27,17 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
                 index: state.direction === 'from start' ? Math.max(0, state.firstIndex - countPerPage) : state.lastIndex,
                 filter: 2,
             });
-            if (result && result.posts) {
+            if (result.data) {
                 setResults((prev) => {
-                    const newPosts = result.posts.filter(
-                        (newPost: IComment) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    const newPosts = result.data!.posts.filter(
+                        (newPost: CommmentDetails) => !prev.some((existingPost) => existingPost.id === newPost.id)
                     );
                     return state.direction === 'from start'
                         ? [...newPosts, ...prev]
                         : [...prev, ...newPosts];
                 });
                 if (state.direction === 'from end') {
-                    setHasNextPage(result.posts.length === countPerPage);
+                    setHasNextPage(result.data.posts.length === countPerPage);
                 }
             }
 
@@ -58,17 +58,17 @@ const useReplies = (options: UseCommentsOptions, repliesVisible: boolean, parent
         return validComment ? validComment.index : 0;
     }
 
-    const createReply = (post: IComment) => {
+    const createReply = (post: CommmentDetails) => {
         setResults((prev) => [post, ...prev]);
     }
 
-    const editReply = (id: string, setter: (prev: IComment) => IComment) => {
+    const editReply = (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => {
         setResults(prev => prev.map(x => x.id == id ? setter(x) : x));
     }
 
     const deleteReply = (postId: string) => {
         setResults(prev => {
-            const results: IComment[] = [];
+            const results: CommmentDetails[] = [];
             let isAfterDeleted = false;
             for (let x of prev) {
                 if (x.id === postId) {

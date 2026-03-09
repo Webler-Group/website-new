@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useEffect, useRef, useState } from 'react';
 import { Badge, Button, FormControl } from 'react-bootstrap';
 import { FaTimes } from 'react-icons/fa';
 import { useApi } from '../context/apiCommunication';
+import { TagListData } from '../features/tags/types';
 
 interface WeblerBadgeProps {
     name: string,
@@ -77,9 +78,9 @@ export const TagSearch = ({
     }, [input, validTags]);
 
     const getValidTags = async () => {
-        const result = await sendJsonRequest(`/Tag`, "POST");
-        if (result) {
-            const resArr = result.map((t: any) => t.name);
+        const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
+        if (result.data) {
+            const resArr = result.data.tags.map(t => t.name);
             setValidTags(resArr);
         }
     };
@@ -181,14 +182,14 @@ const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
     }, []);
 
     const getValidTags = async () => {
-        const result = await sendJsonRequest(`/Tag`, "POST");
-        if (result) {
-            const resArr = result.map((tag: any) => tag.name);
+        const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
+        if (result.data) {
+            const resArr = result.data.tags.map(tag => tag.name);
             setValidTags(resArr);
         }
     }
 
-    const handleInputChange = (e: any) => {
+    const handleInputChange = (e: ChangeEvent<{ value: string }>) => {
         const val = e.target.value.toLowerCase().trim();
         setInput(val);
 

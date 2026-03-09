@@ -5,12 +5,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import useComments, { UseCommentsOptions } from "./useComments";
 import PostTextareaControl from "../PostTextareaControl";
 import { useAuth } from "../../features/auth/context/authContext";
-import { IComment } from "./Comment";
 import { useApi } from "../../context/apiCommunication";
 import ReactionsList from "../reactions/ReactionsList";
 import { useNavigate } from "react-router-dom";
 import "./CommentList.css"
 import PostAttachmentSelect from "../post-attachment-select/PostAttachmentSelect";
+import { CommmentDetails, CreateCommentData, EditCommentData } from "./types";
 
 interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
@@ -25,13 +25,13 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     const [answerFormVisible, setAnswerFormVisible] = useState(false);
     const [answerFormMessage, setAnswerFormMessage] = useState('');
     const [answerFormLoading, setAnswerFormLoading] = useState(false);
-    const [editedComment, setEditedComment] = useState<IComment | null>(null);
+    const [editedComment, setEditedComment] = useState<CommmentDetails | null>(null);
     const [parentCommentId, setParentCommentId] = useState<string | null>(null);
     const activeParentCommentRef = useRef<HTMLDivElement>(null);
-    const [onReplyCallback, setOnReplyCallback] = useState<(post: IComment) => void>();
-    const [onEditCallback, setOnEditCallback] = useState<(id: string, setter: (prev: IComment) => IComment) => void>();
+    const [onReplyCallback, setOnReplyCallback] = useState<(post: CommmentDetails) => void>();
+    const [onEditCallback, setOnEditCallback] = useState<(id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void>();
     const [onDeleteCallback, setOnDeleteCallback] = useState<(id: string) => void>();
-    const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
+    const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: { message: string }[]; }>({ success: true });
     const [highlightedCommentId, setHighlightedCommentId] = useState<string | null>(findPost?.id || null);
     const commentContainerRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
@@ -70,7 +70,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
     const intObserver = useRef<IntersectionObserver>(null);
     const lastCommentNodeRef = useCallback(
-        (node: any) => {
+        (node: HTMLDivElement) => {
             if (commentsLoading) return;
 
             if (intObserver.current) intObserver.current.disconnect();
@@ -98,7 +98,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setShowAllComments(true);
     };
 
-    const showAnswerForm = (post: IComment | null, parentId: string | null, message: string = "") => {
+    const showAnswerForm = (post: CommmentDetails | null, parentId: string | null, message: string = "") => {
         if (!userInfo) {
             navigate("/Users/Login");
         }
@@ -125,13 +125,13 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
         setAnswerFormLoading(true);
 
-        const result = await sendJsonRequest(`/${options.section}/CreateComment`, 'POST', {
+        const result = await sendJsonRequest<CreateCommentData>(`/${options.section}/CreateComment`, 'POST', {
             ...options.params,
             parentId: parentCommentId,
             message: answerFormMessage,
         });
-        if (result && result.post) {
-            const newPost = { ...result.post, index: -1, userName: userInfo.name, userAvatar: userInfo.avatarUrl };
+        if (result.data) {
+            const newPost: CommmentDetails = { ...result.data.post, index: -1, user: { ...userInfo }, isUpvoted: false };
             if (parentCommentId) {
                 onReplyCallback?.(newPost);
                 editComment(parentCommentId, prev => ({ ...prev, answers: prev.answers + 1 }));
@@ -167,15 +167,15 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     const handleEditAnswer = async () => {
         if (editedComment) {
             setAnswerFormLoading(true);
-            const result = await sendJsonRequest(`/${options.section}/EditComment`, "PUT", {
+            const result = await sendJsonRequest<EditCommentData>(`/${options.section}/EditComment`, "PUT", {
                 message: answerFormMessage,
                 id: editedComment.id
             });
-            if (result && result.success) {
+            if (result.data) {
                 if (editedComment.parentId) {
-                    onEditCallback?.(result.data.id, prev => ({ ...prev, message: result.data.message, attachments: result.data.attachments }));
+                    onEditCallback?.(result.data.id, prev => ({ ...prev, ...result.data }));
                 } else {
-                    editComment(result.data.id, prev => ({ ...prev, message: result.data.message, attachments: result.data.attachments }));
+                    editComment(result.data.id, prev => ({ ...prev, ...result.data }));
                 }
 
                 setMessage({ success: true, message: editedComment.parentId ? 'Reply edited successfully' : 'Comment edited successfully' });
@@ -225,23 +225,23 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         }));
     };
 
-    const onReply = (id: string, replyCallback: (post: IComment) => void, message?: string) => {
+    const onReply = (id: string, replyCallback: (post: CommmentDetails) => void, message?: string) => {
         setOnReplyCallback(() => replyCallback);
         showAnswerForm(null, id, message);
     }
 
-    const onEdit = (post: IComment, editCallback?: (id: string, setter: (prev: IComment) => IComment) => void) => {
+    const onEdit = (post: CommmentDetails, editCallback?: (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void) => {
         setOnEditCallback(() => editCallback);
         showAnswerForm(post, post.parentId, post.message);
     }
 
-    const onDelete = (post: IComment, deleteCallback?: (id: string) => void) => {
+    const onDelete = (post: CommmentDetails, deleteCallback?: (id: string) => void) => {
         setOnDeleteCallback(() => deleteCallback);
         setEditedComment(post);
         setDeleteModalVisible(true);
     }
 
-    const onVote = (id: string, vote: number, error?: any[]) => {
+    const onVote = (id: string, vote: number, error?: { message: string }[]) => {
         if (error) {
             setMessage({ success: false, errors: error });
         } else {

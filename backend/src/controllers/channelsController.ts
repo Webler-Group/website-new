@@ -88,6 +88,7 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: channel._id,
                 type: channel._type,
                 title: channel.title,
+                createdAt: channel.createdAt,
                 updatedAt: channel.updatedAt
             }
         }
@@ -168,9 +169,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         data: {
             invite: {
                 id: invite._id,
-                invitedUserId: invitedUser._id,
-                invitedUserName: invitedUser.name,
-                invitedUserAvatarUrl: getImageUrl(invitedUser.avatarHash),
+                invitedUser: formatUserMinimal(invitedUser),
                 createdAt: invite.createdAt
             }
         }
@@ -186,7 +185,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean(),
         ChannelModel.findById(channelId)
             .populate<{ DMUser: UserMinimal & { _id: Types.ObjectId } | null }>("DMUser", USER_MINIMAL_FIELDS)
-            .populate<{ createdBy: UserMinimal }>("createdBy", USER_MINIMAL_FIELDS)
+            .populate<{ createdBy: UserMinimal& { _id: Types.ObjectId } }>("createdBy", USER_MINIMAL_FIELDS)
             .lean()
     ]);
 
@@ -199,9 +198,9 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const data: ChannelResponse = {
         id: channel._id,
-        title: channel._type === ChannelTypeEnum.GROUP
-            ? channel.title
-            : channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.name : channel.DMUser?.name,
+        title: channel._type === ChannelTypeEnum.GROUP ?
+            channel.title :
+            channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.name : channel.DMUser?.name,
         coverImageUrl: getImageUrl(
             channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.avatarHash : channel.DMUser?.avatarHash
         ),
@@ -251,9 +250,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { fromDate, count } = body;
     const currentUserId = req.userId;
 
-    const participantChannels = await ChannelParticipantModel.find({ user: currentUserId })
-        .select("channel lastActiveAt muted unreadCount")
-        .lean();
+    const participantChannels = await ChannelParticipantModel.find({ user: currentUserId }).lean();
 
     const channelIds = participantChannels.map(p => p.channel);
 
@@ -297,9 +294,8 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
                         deleted: x.lastMessage.deleted,
                         content: x.lastMessage.deleted ? "" : x.lastMessage.content,
                         createdAt: x.lastMessage.createdAt,
-                        userId: x.lastMessage.user._id,
-                        userName: x.lastMessage.user.name,
-                        userAvatarUrl: getImageUrl(x.lastMessage.user.avatarHash),
+                        updatedAt: x.lastMessage.updatedAt,
+                        user: formatUserMinimal(x.lastMessage.user),
                         viewed: participant?.lastActiveAt ? participant.lastActiveAt >= x.lastMessage.createdAt! : false
                     } : null
                 };
@@ -334,10 +330,15 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
             invites: invites.map(x => ({
                 id: x._id,
                 author: formatUserMinimal(x.author),
-                channelId: x.channel._id,
-                channelType: x.channel._type,
-                channelTitle: x.channel.title,
-                createdAt: x.createdAt
+                createdAt: x.createdAt,
+                channel: {
+                    id: x.channel._id,
+                    type: x.channel._type,
+                    title: x.channel.title,
+                    coverImageUrl: null,
+                    createdAt: x.channel.createdAt,
+                    updatedAt: x.channel.updatedAt
+                }
             })),
             count: totalCount
         }
@@ -453,6 +454,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         deleted: x.deleted,
         repliedTo: x.repliedTo ? {
             id: x.repliedTo._id,
+            type: x.repliedTo._type,
             content: x.repliedTo.deleted ? "" : x.repliedTo.content,
             createdAt: x.repliedTo.createdAt,
             updatedAt: x.repliedTo.updatedAt,

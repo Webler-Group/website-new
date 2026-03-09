@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { IChannelInvite } from "../components/InvitesListItem";
 import { useWS } from "../../../context/wsCommunication";
+import { ChannelBase, InviteDetails, InvitesListData } from "../types";
 
 const useInvites = (count: number, fromDate: Date | null) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<IChannelInvite[]>([]);
+    const [results, setResults] = useState<InviteDetails<undefined, ChannelBase>[]>([]);
     const [totalCount, setTotalCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState("");
@@ -18,18 +18,18 @@ const useInvites = (count: number, fromDate: Date | null) => {
             setIsLoading(true);
             setError("");
 
-            const result = await sendJsonRequest(
+            const result = await sendJsonRequest<InvitesListData>(
                 `/Channels/Invites`,
                 "POST",
                 { fromDate, count }
             );
 
-            if (result && result.invites) {
-                setResults(prev => [...prev, ...result.invites]);
-                setTotalCount(result.count);
-                setHasNextPage(result.invites.length === count);
+            if (result.data) {
+                setResults(prev => [...prev, ...result.data!.invites]);
+                setTotalCount(result.data.count);
+                setHasNextPage(result.data.invites.length === count);
             } else {
-                setError(result?.error[0].message ?? "Something went wrong");
+                setError(result.error?.[0].message ?? "Something went wrong");
             }
 
             setIsLoading(false);
@@ -60,7 +60,7 @@ const useInvites = (count: number, fromDate: Date | null) => {
         };
     }, [socket]);
 
-    const add = (data: IChannelInvite) => {
+    const add = (data: InviteDetails<undefined, ChannelBase>) => {
         setResults(prev => [data, ...prev]);
     };
 

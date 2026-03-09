@@ -2,7 +2,6 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
-import { UserDetails } from "../pages/ProfilePage";
 import { useAuth } from "../../auth/context/authContext";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import { FaCheckCircle } from "react-icons/fa";
@@ -11,6 +10,7 @@ import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "./NotificationsTab";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import ProfileAvatar from "../../../components/ProfileAvatar";
+import { EmailChangeData, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -79,23 +79,23 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         if (!userInfo) {
             return;
         }
-        const result = await sendJsonRequest(`/Profile/UpdateProfile`, "PUT", {
+        const result = await sendJsonRequest<UpdateProfileData>(`/Profile/UpdateProfile`, "PUT", {
             userId: userDetails.id,
             name: username,
             bio,
             countryCode
         });
-        if (result.success) {
+        if (result.data) {
             if (userDetails.id == userInfo.id) {
                 userInfo.name = result.data.name;
-                userInfo.countryCode = result.data.coutryCode;
+                userInfo.countryCode = result.data.countryCode;
                 updateUser(userInfo);
             }
             onUpdate(result.data);
             setInfoMessage({ message: "Information saved successfully", errors: [] });
         }
         else {
-            setInfoMessage({ errors: result?.error });
+            setInfoMessage({ errors: result.error });
         }
     }
 
@@ -131,10 +131,10 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const verifyEmailChange = async () => {
         if (!userInfo) return;
         setEmailMessage({});
-        const result = await sendJsonRequest(`/Profile/VerifyEmailChange`, "POST", {
+        const result = await sendJsonRequest<EmailChangeData>(`/Profile/VerifyEmailChange`, "POST", {
             code: verificationCode
         });
-        if (result.success) {
+        if (result.data) {
             userInfo.email = result.data.email;
             updateUser(userInfo);
             onUpdate({ email: result.data.email, emailVerified: false });
@@ -144,7 +144,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setVerificationCode("");
         }
         else {
-            setEmailMessage({ errors: result?.error });
+            setEmailMessage({ errors: result.error });
             setVerificationCode("");
         }
     }
@@ -196,7 +196,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         setLoading(true);
         setAvatarMessage({});
 
-        const result = await sendJsonRequest(
+        const result = await sendJsonRequest<UploadProfileAvatarData>(
             "/Profile/UploadProfileAvatarImage",
             "POST",
             { avatarImage: avatarImageFile, userId: userDetails.id },
@@ -204,7 +204,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             true
         );
 
-        if (result && result.success) {
+        if (result.data) {
             if (userDetails.id == userInfo.id) {
                 userInfo.avatarUrl = result.data.avatarUrl;
                 updateUser(userInfo);

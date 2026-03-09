@@ -1,7 +1,7 @@
 import mongoose, { Types } from "mongoose";
 import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
 import LessonNodeModel, { LessonNode, LessonNodeMinimal } from "../models/LessonNode";
-import QuizAnswer from "../models/QuizAnswer";
+import QuizAnswerModel, { QuizAnswer } from "../models/QuizAnswer";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import CourseModel from "../models/Course";
 import CourseProgressModel from "../models/CourseProgress";
@@ -74,10 +74,11 @@ export type CourseLessonJson = {
     nodes: LessonNodeJson[];
 };
 
-const answersMap = (answers: any[]) => {
+const answersMap = (answers: QuizAnswer[]) => {
     const map = new Map<string, Array<{ text: string; correct: boolean }>>();
     for (const a of answers) {
-        const key = a.courseLessonNodeId.toString();
+        if(!a.courseLessonNodeId) continue;
+        const key =  a.courseLessonNodeId.toString();
         const arr = map.get(key) ?? [];
         arr.push({ text: a.text, correct: a.correct });
         map.set(key, arr);
@@ -86,7 +87,7 @@ const answersMap = (answers: any[]) => {
 };
 
 export const exportLessonNodeToJson = async (
-    node: any,
+    node: LessonNode & { _id: Types.ObjectId },
     byNodeId?: Map<string, Array<{ text: string; correct: boolean }>>
 ): Promise<LessonNodeJson> => {
     const base = {
@@ -114,7 +115,7 @@ export const exportLessonNodeToJson = async (
     const nodeId = node._id.toString();
     const answers =
         byNodeId?.get(nodeId)! ??
-        (await QuizAnswer.find({ courseLessonNodeId: node._id }).then(r =>
+        (await QuizAnswerModel.find({ courseLessonNodeId: node._id }).lean().then(r =>
             r.map(a => ({ text: a.text, correct: a.correct }))
         ));
 
@@ -173,21 +174,21 @@ export const importLessonNodeFromJson = async (
             text: a.text,
             correct: a.correct
         }));
-        if (docs.length) await QuizAnswer.insertMany(docs, { session });
+        if (docs.length) await QuizAnswerModel.insertMany(docs, { session });
     }
 
     return node;
 };
 
 export const exportCourseLessonToJson = async (lessonId: Types.ObjectId): Promise<CourseLessonJson> => {
-    const lesson = await CourseLessonModel.findById(lessonId);
+    const lesson = await CourseLessonModel.findById(lessonId).lean();
     if (!lesson) {
         throw new HttpError("Lesson not found", 404);
     }
 
-    const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: "asc" });
+    const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: "asc" }).lean();
     const nodeIds = nodes.map(n => n._id);
-    const answers = await QuizAnswer.find({ courseLessonNodeId: { $in: nodeIds } });
+    const answers = await QuizAnswerModel.find({ courseLessonNodeId: { $in: nodeIds } }).lean();
     const byNodeId = answersMap(answers);
 
     const nodeJsons: LessonNodeJson[] = [];
@@ -263,7 +264,7 @@ export const deleteLessonNodeAndCleanup = async (filter: mongoose.QueryFilter<Le
             lesson.$inc("nodes", -1);
             await lesson.save({ session });
         }
-        await QuizAnswer.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
+        await QuizAnswerModel.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
     }
     await LessonNodeModel.deleteMany(filter, { session });
 }
@@ -272,7 +273,8 @@ export const getLastUnlockedLessonIndex = async (lastLessonNodeId?: Types.Object
     let lastUnlockedLessonIndex = 1;
     if (lastLessonNodeId) {
         const lastCompletedLessonNode = await LessonNodeModel.findById(lastLessonNodeId, { index: 1 })
-            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 });
+            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
+            .lean();
         if (lastCompletedLessonNode) {
             lastUnlockedLessonIndex =
                 lastCompletedLessonNode.lessonId.nodes == lastCompletedLessonNode.index
@@ -285,7 +287,8 @@ export const getLastUnlockedLessonIndex = async (lastLessonNodeId?: Types.Object
 
 export const getLessonNodeInfo = async (lastLessonNodeId: Types.ObjectId | null, lessonNodeId: Types.ObjectId) => {
     const lessonNode = await LessonNodeModel.findById(lessonNodeId, { index: 1 })
-        .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 });
+        .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
+        .lean();
 
     const result = { unlocked: false, isLastUnlocked: false };
     if (!lessonNode) {
@@ -297,7 +300,8 @@ export const getLessonNodeInfo = async (lastLessonNodeId: Types.ObjectId | null,
 
     if (lastLessonNodeId) {
         lastCompletedLessonNode = await LessonNodeModel.findById(lastLessonNodeId, { index: 1, lessonId: 1 })
-            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { node: 1, index: 1 });
+            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { node: 1, index: 1 })
+            .lean();
     }
 
     if (lastCompletedLessonNode) {
