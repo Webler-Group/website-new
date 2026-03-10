@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 import { Button, Nav, Offcanvas } from "react-bootstrap";
 import { FaQuestionCircle, FaTimes, FaCode } from "react-icons/fa";
 import { FaBookOpen, FaComments } from "react-icons/fa6";
-import { ILesson } from "../components/Lesson";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNode from "../components/LessonNode";
 import CommentList from "../../../components/comments/CommentList";
+import { GetLessonData, LessonDetails } from "../types";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
-    const [lesson, setLesson] = useState<ILesson | null>(null);
+    const [lesson, setLesson] = useState<LessonDetails | null>(null);
     const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ const CourseLessonPage = () => {
     const [commentModalVisible, setCommentModalVisible] = useState(false);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Courses", params: { lessonId } });
     const [commentCount, setCommentCount] = useState(0);
-    const [findPost, setFindPost] = useState<any | null>(null);
+    const [findPost, setFindPost] = useState<{ id: string, isReply: boolean } | null>(null);
 
     useEffect(() => {
         if (lessonId) {
@@ -55,12 +55,12 @@ const CourseLessonPage = () => {
     }, [lesson]);
 
     const getLesson = async () => {
-        const result = await sendJsonRequest(`/Courses/GetLesson`, "POST", {
+        const result = await sendJsonRequest<GetLessonData>(`/Courses/GetLesson`, "POST", {
             lessonId
         });
-        if (result && result.lesson) {
-            setLesson(result.lesson);
-            setCommentCount(result.lesson.comments);
+        if (result.data) {
+            setLesson(result.data.lesson);
+            setCommentCount(result.data.lesson.comments);
         }
     }
 
@@ -191,7 +191,7 @@ const CourseLessonPage = () => {
                                     <Nav.Item key={node.id}>
                                         <Nav.Link
                                             className={"wb-courses-lesson-arrow-pill " + (isActive ? "bg-warning text-dark" : node.unlocked ? "bg-primary text-light" : "bg-secondary text-light")}
-                                            onClick={() => handleSelectNode(node.index, node.unlocked)}
+                                            onClick={() => handleSelectNode(node.index, node.unlocked!)}
                                             disabled={!node.unlocked}
                                         >
                                             {icon}

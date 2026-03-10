@@ -3,33 +3,13 @@ import { Button, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import HtmlRenderer from "../../../components/HtmlRenderer";
-
-interface ILessonNodeAnswer {
-    id?: string;
-    text: string;
-    correct: boolean;
-}
-
-interface ILessonNode {
-    id: string;
-    type: number;
-    mode?: number;
-    codeId?: {
-        name: string;
-        source: string;
-        cssSource: string;
-        jsSource: string;
-        language: string;
-    };
-    index: number;
-    text: string;
-    answers: ILessonNodeAnswer[];
-    correctAnswer?: string;
-}
+import { GetLessonNodeData, LessonNodeDetails, SolveData } from "../types";
+import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
 
 interface LessonNodeProps {
     nodeId?: string;
-    nodeData?: ILessonNode;
+    nodeData?: LessonNodeDetails;
     mock: boolean;
     onEnter?: (id: string) => void;
     onAnswered?: (id: string, correct: boolean) => void;
@@ -42,7 +22,7 @@ const allowedUrls = [
 ];
 
 const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
-    const [node, setNode] = useState<ILessonNode | null>(null);
+    const [node, setNode] = useState<LessonNodeDetails | null>(null);
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
     const [textAnswer, setTextAnswer] = useState("");
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
@@ -60,12 +40,12 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             setNode(nodeData);
             onEnter?.(nodeData.id);
         } else {
-            const result = await sendJsonRequest("/Courses/GetLessonNode", "POST", {
+            const result = await sendJsonRequest<GetLessonNodeData>("/Courses/GetLessonNode", "POST", {
                 nodeId,
                 mock
             });
-            if (result && result.lessonNode) {
-                setNode(result.lessonNode);
+            if (result.data) {
+                setNode(result.data.lessonNode);
                 onEnter?.(nodeId!);
             }
         }
@@ -94,29 +74,20 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     const handleSubmit = async () => {
         if (!node) return;
 
-        let payload: any = {
-            nodeId: node.id
-        };
-
-        if (nodeData) {
-            payload.mock = {
+        const result = await sendJsonRequest<SolveData>("/Courses/SolveNode", "POST", {
+            nodeId: node.id,
+            mock: nodeData ? {
                 type: nodeData.type,
                 correctAnswer: nodeData.correctAnswer,
                 answers: nodeData.answers
-            };
-        }
-
-        if (node.type === 2 || node.type === 3) {
-            payload.answers = node.answers.map(a => ({
+            } : undefined,
+            answers: node.answers.map(a => ({
                 id: a.id,
-                correct: selectedAnswers.includes(a.id!)
-            }));
-        } else if (node.type === 4) {
-            payload.correctAnswer = textAnswer;
-        }
-
-        const result = await sendJsonRequest("/Courses/SolveNode", "POST", payload);
-        if (result && result.success) {
+                correct: selectedAnswers.includes(a.id)
+            })),
+            correctAnswer: textAnswer
+        });
+        if (result.data) {
             setIsCorrect(result.data.correct);
             onAnswered?.(node.id, result.data.correct);
         }
@@ -158,7 +129,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                     className={`wb-courses-lesson-answer p-2 mt-3 ${getAnswerClass(answer.id!)}`}
                     role="button"
                     onClick={() => {
-                        activeNode.type === 2
+                        activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
                             ? handleSingleChoice(answer.id!)
                             : handleMultiChoice(answer.id!);
                     }}
@@ -168,18 +139,19 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             ));
 
         const renderContent = () => {
-            if (activeNode.type === 5 && activeNode.codeId) {
+            if (activeNode.type === LessonNodeTypeEnum.CODE && activeNode.code) {
+                const code = activeNode.code!;
                 const genOutput = () => {
-                    const doc = new DOMParser().parseFromString(activeNode.codeId!.source, "text/html");
+                    const doc = new DOMParser().parseFromString(code.source, "text/html");
                     const head = doc.head || doc.getElementsByTagName("head")[0];
                     const body = doc.body || doc.getElementsByTagName("body")[0];
 
                     const style = document.createElement("style");
-                    style.appendChild(document.createTextNode(activeNode.codeId!.cssSource));
+                    style.appendChild(document.createTextNode(code.cssSource));
                     head.appendChild(style);
 
                     const script = document.createElement("script");
-                    script.text = activeNode.codeId!.jsSource;
+                    script.text = code.jsSource;
                     body.appendChild(script);
 
                     return "<!DOCTYPE HTML>\n" + doc.documentElement.outerHTML;
@@ -188,8 +160,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 return (
                     <div style={{ height: "80vh" }}>
                         <iframe
-                            key={activeNode.codeId.name + "_" + activeNode.codeId.source.length} // Force reload when snippet changes
-                            title={activeNode.codeId.name}
+                            key={code.name + "_" + code.source.length} // Force reload when snippet changes
+                            title={code.name}
                             srcDoc={genOutput()}
                             style={{ width: "100%", height: "100%", border: "none" }}
                             sandbox="allow-scripts"
@@ -198,7 +170,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 );
             }
 
-            if (activeNode.mode === 2) {
+            if (activeNode.mode === LessonNodeModeEnum.HTML) {
                 return <HtmlRenderer html={activeNode.text} />
             }
 
@@ -262,5 +234,4 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     return content;
 };
 
-export type { ILessonNode, ILessonNodeAnswer };
 export default LessonNode;

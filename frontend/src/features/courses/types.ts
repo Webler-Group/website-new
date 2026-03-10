@@ -1,21 +1,26 @@
 import LessonNodeModeEnum from "../../data/LessonNodeModeEnum";
 import LessonNodeTypeEnum from "../../data/LessonNodeTypeEnum";
+import { CodeDetails } from "../codes/types";
+
+export interface LessonNodeAnswerDetails {
+    id: string;
+        correct: boolean;
+        text: string;
+}
 
 export interface LessonNodeMinimal {
     id: string;
     index: number;
     type: LessonNodeTypeEnum;
+    mode: LessonNodeModeEnum;
     unlocked?: boolean;
 }
 
 export interface LessonNodeDetails extends LessonNodeMinimal {
-    mode: LessonNodeModeEnum;
+    code?: CodeDetails;
     correctAnswer?: string;
-    answers?: {
-        id: string;
-        correct: boolean;
-        text: string;
-    }[];
+    text: string;
+    answers: LessonNodeAnswerDetails[];
 }
 
 export interface LessonDetails<T = LessonProgressInfo> {
@@ -25,7 +30,7 @@ export interface LessonDetails<T = LessonProgressInfo> {
     nodeCount: number;
     userProgress: T;
     comments: number;
-    nodes?: LessonNodeMinimal[];
+    nodes: LessonNodeMinimal[];
 }
 
 export interface LessonProgressInfo {
@@ -49,7 +54,7 @@ export interface CourseDetails<T = CourseProgressInfo, U = LessonProgressInfo> {
     coverImageUrl: string | null;
     userProgress: T;
     completed?: boolean;
-    lessons?: LessonDetails<U>[];
+    lessons: LessonDetails<U>[];
 }
 
 export type CourseMinimal = CourseDetails<undefined, undefined>;
@@ -60,6 +65,7 @@ export interface EditorCreateCourseData {
         code: string;
         title: string;
         visible: boolean;
+        description: string;
     }
 }
 
@@ -120,7 +126,13 @@ export interface EditorGetLessonNodeData {
 }
 
 export interface EditorEditLessonNodeData {
-    lessonNode: LessonDetails;
+    id: string;
+    type: LessonNodeTypeEnum;
+    mode: LessonNodeModeEnum;
+    unlocked?: boolean;
+    codeId?: string;
+    correctAnswer?: string;
+    answers: LessonNodeAnswerDetails[];
 }
 
 export interface EditorChangeLessonIndexData {
@@ -189,7 +201,7 @@ export interface GetLessonData {
 }
 
 export interface GetLessonNodeData {
-    course: LessonNodeDetails;
+    lessonNode: LessonNodeDetails;
 }
 
 export interface SolveData {

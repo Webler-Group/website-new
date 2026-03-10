@@ -28,14 +28,20 @@ import {
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import {
+    CourseMinimalResponse,
     CourseResponse,
     deleteCourseAndCleanup,
     deleteCourseLessonAndCleanup,
     deleteLessonNodeAndCleanup,
+    EditLessonNodeResponse,
     exportCourseLessonToJson,
+    formatCourseMinimal,
     formatLesson,
+    formatLessonNodeMinimal,
     LessonNodeJson,
     LessonNodeResponse,
+    LessonProgressInfo,
+    LessonResponse,
     QuizAnswerResponse
 } from "../helpers/courseHelper";
 import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
@@ -47,6 +53,7 @@ import { getImageUrl } from "./mediaController";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import { Code } from "../models/Code";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -61,7 +68,8 @@ const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: course._id,
                 code: course.code,
                 title: course.title,
-                visible: course.visible
+                visible: course.visible,
+                description: course.description
             }
         }
     });
@@ -73,14 +81,7 @@ const getCoursesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
     res.json({
         success: true,
         data: {
-            courses: result.map(course => ({
-                id: course._id,
-                code: course.code,
-                title: course.title,
-                description: course.description,
-                visible: course.visible,
-                coverImageUrl: getImageUrl(course.coverImageHash)
-            }))
+            courses: result.map(course => formatCourseMinimal(course))
         }
     });
 });
@@ -97,13 +98,14 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Course not found", 404);
     }
 
-    const courseData: CourseResponse = {
-        id: course._id,
+    const courseData: CourseResponse<undefined, LessonProgressInfo> = {
+        id: course._id.toString(),
         code: course.code,
         title: course.title,
         description: course.description,
         visible: course.visible,
-        coverImageUrl: getImageUrl(course.coverImageHash)
+        coverImageUrl: getImageUrl(course.coverImageHash),
+        userProgress: undefined
     };
 
     if (includeLessons === true) {
@@ -177,22 +179,17 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Lesson not found", 404);
     }
 
-    res.json({
-        success: true,
-        data: {
-            lesson: {
-                id: lesson._id,
-                title: lesson.title,
-                index: lesson.index,
-                nodeCount: lesson.nodes,
-                nodes: lessonNodes.map(x => ({
-                    id: x._id,
-                    index: x.index,
-                    type: x._type
-                }))
-            }
-        }
-    });
+    const lessonData: LessonResponse<undefined> = {
+        id: lesson._id.toString(),
+        title: lesson.title,
+        index: lesson.index,
+        nodeCount: lesson.nodes,
+        comments: lesson.comments,
+        userProgress: undefined,
+        nodes: lessonNodes.map(x => formatLessonNodeMinimal(x))
+    };
+
+    res.json({ success: true, data: { lesson: lessonData } });
 });
 
 const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -204,11 +201,13 @@ const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         success: true,
         data: {
-            lessons: lessons.map(lesson => ({
-                id: lesson._id,
+            lessons: lessons.map((lesson): LessonResponse<undefined> => ({
+                id: lesson._id.toString(),
                 title: lesson.title,
                 index: lesson.index,
-                nodeCount: lesson.nodes
+                nodeCount: lesson.nodes,
+                comments: lesson.comments,
+                userProgress: undefined
             }))
         }
     });
@@ -224,7 +223,6 @@ const createLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const lastLessonIndex = await CourseLessonModel.countDocuments({ course: courseId });
-
     const lesson = await CourseLessonModel.create({ title, course: courseId, index: lastLessonIndex + 1 });
 
     res.json({
@@ -357,7 +355,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const [lessonNode, answers] = await Promise.all([
         LessonNodeModel.findById(nodeId)
-            .populate("codeId", "name source cssSource jsSource language")
+            .populate<{ codeId: Code }>("codeId")
             .lean(),
         QuizAnswerModel.find({ courseLessonNodeId: nodeId }).lean()
     ]);
@@ -366,25 +364,22 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Lesson node not found", 404);
     }
 
-    res.json({
-        success: true,
-        data: {
-            lessonNode: {
-                id: lessonNode._id,
-                index: lessonNode.index,
-                type: lessonNode._type,
-                mode: lessonNode.mode,
-                codeId: lessonNode.codeId,
-                text: lessonNode.text ?? "",
-                correctAnswer: lessonNode.correctAnswer,
-                answers: answers.map((x): QuizAnswerResponse => ({
-                    id: x._id,
-                    text: x.text,
-                    correct: x.correct
-                }))
-            }
-        }
-    });
+    const data: LessonNodeResponse = {
+        id: lessonNode._id.toString(),
+        index: lessonNode.index,
+        type: lessonNode._type,
+        mode: lessonNode.mode ?? 1,
+        code: lessonNode.codeId,
+        text: lessonNode.text ?? "",
+        correctAnswer: lessonNode.correctAnswer,
+        answers: answers.map((x): QuizAnswerResponse => ({
+            id: x._id.toString(),
+            text: x.text,
+            correct: x.correct
+        }))
+    };
+
+    res.json({ success: true, data: { lessonNode: data } });
 });
 
 const deleteLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -428,13 +423,13 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         node.correctAnswer = correctAnswer ?? "";
         await node.save({ session });
 
-        const result: LessonNodeResponse = {
-            id: node._id,
+        const result: EditLessonNodeResponse = {
+            id: node._id.toString(),
             type: node._type,
             text: node.text || "",
-            index: node.index,
             mode: node.mode,
-            correctAnswer: node.correctAnswer
+            correctAnswer: node.correctAnswer,
+            codeId: node.codeId ? node.codeId.toString() : undefined
         };
 
         if (answers) {
@@ -464,7 +459,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
                         correct: newAnswer.correct,
                         courseLessonNodeId: node.id
                     }], { session });
-                    newAnswers.push({ id: created._id, text: newAnswer.text, correct: newAnswer.correct });
+                    newAnswers.push({ id: created._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
                 }
             }
 
@@ -474,7 +469,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return result;
     });
 
-    res.json({ success: true, lessonNode: data });
+    res.json({ success: true, data });
 });
 
 const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -666,7 +661,10 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             await course.save({ session });
             await deleteCourseLessonAndCleanup({ course: course._id }, session);
         } else {
-            const [newCourse] = await CourseModel.create([{ code, title, description, visible: visible ?? false }], { session });
+            const [newCourse] = await CourseModel.create(
+                [{ code, title, description, visible: visible ?? false }],
+                { session }
+            );
             course = newCourse;
         }
 
@@ -756,7 +754,7 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             const exportedNode: LessonNodeJson = {
                 type: node._type,
                 mode: node.mode,
-                text: node.text || "",
+                text: node.text,
                 index: node.index,
                 codeId: node.codeId ? node.codeId.toString() : undefined,
                 correctAnswer: node.correctAnswer
@@ -776,18 +774,16 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return { title: lesson.title, nodes: exportedNodes };
     }));
 
-    const data = {
-        code: course.code,
-        title: course.title,
-        description: course.description,
-        visible: course.visible,
-        lessons: exportedLessons
-    };
-
     res.json({
         success: true,
         data: {
-            course: data
+            course: {
+                code: course.code,
+                title: course.title,
+                description: course.description,
+                visible: course.visible,
+                lessons: exportedLessons
+            }
         }
     });
 });

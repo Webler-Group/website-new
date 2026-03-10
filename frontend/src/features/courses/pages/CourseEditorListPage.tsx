@@ -3,6 +3,7 @@ import Course from "../components/Course";
 import { Button } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import {useApi} from "../../../context/apiCommunication";
+import { EditorCoursesListData } from "../types";
 
 const CourseEditorListPage = () => {
     const { sendJsonRequest } = useApi();
@@ -15,9 +16,9 @@ const CourseEditorListPage = () => {
 
     const getCourses = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/CourseEditor`, "POST", {});
-        if (result && result.courses) {
-            setCourses(result.courses);
+        const result = await sendJsonRequest<EditorCoursesListData>(`/CourseEditor`, "POST", {});
+        if (result.data) {
+            setCourses(result.data.courses);
         }
         setLoading(false);
     }

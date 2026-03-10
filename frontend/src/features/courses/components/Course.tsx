@@ -1,19 +1,9 @@
 import { LinkContainer } from "react-router-bootstrap";
 import { FaEyeSlash } from "react-icons/fa6";
-
-interface ICourse {
-    id: string;
-    code: string;
-    title: string;
-    description: string;
-    visible: boolean;
-    coverImageUrl?: string | null;
-    completed?: boolean;
-    updatedAt?: string;
-}
+import { CourseMinimal } from "../types";
 
 interface CourseProps {
-    course: ICourse;
+    course: CourseMinimal;
     isEditor: boolean;
 }
 
@@ -34,7 +24,5 @@ const Course = ({ course, isEditor }: CourseProps) => {
         </LinkContainer>
     );
 }
-
-export type { ICourse };
 
 export default Course;

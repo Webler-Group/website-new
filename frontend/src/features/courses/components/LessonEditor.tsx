@@ -1,11 +1,11 @@
 import { Button, ButtonGroup, ToggleButton } from "react-bootstrap";
-import { ILesson } from "./Lesson";
 import { FaPlus } from "react-icons/fa6";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNodeEditor, { LessonNodeEditorHandle } from "./LessonNodeEditor";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import Loader from "../../../components/Loader";
+import { EditorCreateLessonNodeData, EditorGetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
 
 interface LessonEditorProps {
     lessonId: string;
@@ -13,7 +13,7 @@ interface LessonEditorProps {
 
 const LessonEditor = ({ lessonId }: LessonEditorProps) => {
     const { sendJsonRequest } = useApi();
-    const [lesson, setLesson] = useState<ILesson | null>(null);
+    const [lesson, setLesson] = useState<LessonDetails<undefined> | null>(null);
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
     const [loading, setLoading] = useState(false);
@@ -32,12 +32,12 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
 
         if (searchParams.has("slide")) {
             const idx = Number(searchParams.get("slide"));
-            const node = lesson.nodes.find((x: any) => x.index == idx);
+            const node = lesson.nodes.find(x => x.index == idx);
             if (node) {
                 setCurrentNodeId(node.id);
             }
         } else {
-            if (lesson.nodes.length > 0) {
+            if (lesson.nodes!.length > 0) {
                 setCurrentNodeId(lesson.nodes[0].id);
                 searchParams.set("slide", lesson.nodes[0].index.toString());
                 setSearchParams(searchParams, { replace: true });
@@ -47,11 +47,11 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
 
     const getLesson = async () => {
         setLoading(true);
-        const result = await sendJsonRequest("/CourseEditor/GetLesson", "POST", {
+        const result = await sendJsonRequest<EditorGetLessonData>("/CourseEditor/GetLesson", "POST", {
             lessonId,
         });
-        if (result && result.lesson) {
-            setLesson(result.lesson);
+        if (result.data) {
+            setLesson(result.data.lesson);
         }
         setLoading(false);
     };
@@ -71,19 +71,18 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
             return;
         }
 
-        const result = await sendJsonRequest("/CourseEditor/CreateLessonNode", "POST", {
+        const result = await sendJsonRequest<EditorCreateLessonNodeData>("/CourseEditor/CreateLessonNode", "POST", {
             lessonId: lessonId,
         });
 
-        if (result && result.lessonNode) {
+        if (result.data) {
+            const lessonNode = result.data.lessonNode;
             setLesson((current) => {
                 if (!current) return null;
                 const newNodes = [
                     ...current.nodes,
                     {
-                        id: result.lessonNode.id,
-                        index: result.lessonNode.index,
-                        type: result.lessonNode.type,
+                        ...lessonNode,
                         unlocked: true,
                     },
                 ];
@@ -94,9 +93,9 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
                 };
             });
 
-            setCurrentNodeId(result.lessonNode.id);
+            setCurrentNodeId(lessonNode.id);
 
-            searchParams.set("slide", result.lessonNode.index.toString());
+            searchParams.set("slide", lessonNode.index.toString());
             setSearchParams(searchParams, { replace: true });
         }
 
@@ -107,7 +106,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
         setCurrentNodeId(null);
         setLesson((current) => {
             if (!current) return null;
-            const newNodes: any[] = [];
+            const newNodes: LessonNodeMinimal[] = [];
             let deletedFound = false;
 
             for (let i = 0; i < current.nodes.length; ++i) {
@@ -134,7 +133,7 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
         setLesson((current) => {
             if (!current) return null;
 
-            const newNodes = current.nodes.map((n: any) => ({ ...n }));
+            const newNodes = current.nodes.map(n => ({ ...n }));
             const node = newNodes.find((x) => x.id == nodeId);
             if (node) {
                 const oldIndex = node.index;

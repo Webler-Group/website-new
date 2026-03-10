@@ -1,10 +1,10 @@
 import { LinkContainer } from "react-router-bootstrap";
-import { ICourse } from "./Course";
 import { Dropdown, Badge } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
+import { CourseMinimal } from "../types";
 
 interface CourseProps {
-    course: ICourse;
+    course: CourseMinimal;
     onRestart: (id: string) => void;
 }
 

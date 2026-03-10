@@ -1,10 +1,11 @@
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { LinkContainer } from "react-router-bootstrap";
 import ToggleSwitch from "../../../components/ToggleSwitch";
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, SubmitEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { EditorCreateCourseData, EditorEditCourseData, EditorGetCourseData, EditorImportCourseData, EditorUploadCourseCoverImageData } from "../types";
 
 interface CreateCoursePageProps {
     courseId: string | null;
@@ -18,13 +19,13 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [visible, setVisible] = useState(false);
-    const [error, setError] = useState<any[] | undefined>();
+    const [error, setError] = useState<{ message: string }[] | undefined>();
     const [editMessage, setEditMessage] = useState("");
     const [deleteModalVisiblie, setDeleteModalVisible] = useState(false);
     const [coverImageUrl, setCoverImageUrl] = useState<string | null>(null);
     const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-    const [uploadMessage, setUploadMessage] = useState<{ errors?: any[]; message?: string; }>({});
-    const [importMessage, setImportMessage] = useState<{ errors?: any[]; message?: string; }>({});
+    const [uploadMessage, setUploadMessage] = useState<{ errors?: { message: string }[]; message?: string; }>({});
+    const [importMessage, setImportMessage] = useState<{ errors?: { message: string }[]; message?: string; }>({});
     const [showJsonHelp, setShowJsonHelp] = useState(false);
 
     useEffect(() => {
@@ -35,20 +36,20 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
 
     const getCourse = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", {
+        const result = await sendJsonRequest<EditorGetCourseData>(`/CourseEditor/GetCourse`, "POST", {
             courseId
         });
-        if (result && result.course) {
-            setCode(result.course.code);
-            setTitle(result.course.title);
-            setDescription(result.course.description);
-            setVisible(result.course.visible);
-            setCoverImageUrl(result.course.coverImageUrl);
+        if (result.data) {
+            setCode(result.data.course.code);
+            setTitle(result.data.course.title);
+            setDescription(result.data.course.description);
+            setVisible(result.data.course.visible);
+            setCoverImageUrl(result.data.course.coverImageUrl);
         }
         setLoading(false);
     }
 
-    const handleSubmit = async (e: FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setLoading(true);
@@ -72,20 +73,20 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             lessons: importedLessons
         };
 
-        const result = await sendJsonRequest("/CourseEditor/ImportCourse", "POST", payload);
+        const result = await sendJsonRequest<EditorImportCourseData>("/CourseEditor/ImportCourse", "POST", payload);
 
-        if (result && result.success) {
-            navigate("/Courses/Editor" + result.course.id);
+        if (result.data) {
+            navigate("/Courses/Editor" + result.data.course.id);
         } else {
-            setError(result?.error || [{ message: result?.message || "Import failed" }]);
+            setError(result.error);
         }
     }
 
     const createCourse = async () => {
         setError(undefined);
-        const result = await sendJsonRequest("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
-        if (result && result.course) {
-            navigate("/Courses/Editor/" + result.course.id);
+        const result = await sendJsonRequest<EditorCreateCourseData>("/CourseEditor/CreateCourse", "POST", { code, title, description, visible });
+        if (result.data) {
+            navigate("/Courses/Editor/" + result.data.course.id);
         }
         else {
             setError(result.error);
@@ -95,15 +96,14 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const editCourse = async () => {
         setError(undefined);
         setEditMessage("");
-        const result = await sendJsonRequest("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
-        if (result && result.success) {
+        const result = await sendJsonRequest<EditorEditCourseData>("/CourseEditor/EditCourse", "PUT", { courseId, title, code, description, visible });
+        if (result.data) {
+            setVisible(result.data.visible);
+            setCode(result.data.code);
+            setTitle(result.data.title);
+            setDescription(result.data.description);
+
             setEditMessage("Course edited successfully");
-            if (result.data) {
-                setVisible(result.data.visible);
-                setCode(result.data.code ?? code);
-                setTitle(result.data.title ?? title);
-                setDescription(result.data.description ?? description);
-            }
         }
         else {
             setError(result.error);
@@ -122,18 +122,18 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             navigate("/Courses/Editor");
         }
         else {
-            setError(result?.error ? result.error.message : result.message);
+            setError(result.error);
         }
         setLoading(false);
     }
 
-    const handleCoverImageUpload = async (e: FormEvent) => {
+    const handleCoverImageUpload = async (e: SubmitEvent) => {
         e.preventDefault();
 
         setUploadMessage({});
         setLoading(true);
-        const result = await sendJsonRequest("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
-        if (result && result.success) {
+        const result = await sendJsonRequest<EditorUploadCourseCoverImageData>("/CourseEditor/UploadCourseCoverImage", "POST", { courseId, coverImage: coverImageFile }, {}, true);
+        if (result.data) {
             setCoverImageUrl(result.data.coverImageUrl);
             setUploadMessage({ message: "Course cover image updated successfully" })
         }

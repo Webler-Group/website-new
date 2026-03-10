@@ -6,7 +6,7 @@ import CourseProgressModel, { CourseProgress } from "../models/CourseProgress";
 import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
 import LessonNodeModel from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
-import User  from "../models/User";
+import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import PostModel from "../models/Post";
@@ -29,12 +29,23 @@ import {
 import { parseWithZod } from "../utils/zodUtils";
 import { getImageUrl } from "./mediaController";
 import { DocumentType } from "@typegoose/typegoose";
-import { CourseResponse, formatLesson, formatLessonNodeMinimal, getLastUnlockedLessonIndex, getLessonNodeInfo, LessonResponse } from "../helpers/courseHelper";
+import {
+    CourseProgressInfo,
+    CourseResponse,
+    formatCourseMinimal,
+    formatLesson,
+    formatLessonNodeMinimal,
+    getLastUnlockedLessonIndex,
+    getLessonNodeInfo,
+    LessonProgressInfo,
+    LessonResponse
+} from "../helpers/courseHelper";
 import { getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { Code } from "../models/Code";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseListSchema, req);
@@ -52,14 +63,7 @@ const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         success: true,
         data: {
-            courses: result.map(course => ({
-                id: course._id,
-                code: course.code,
-                title: course.title,
-                description: course.description,
-                visible: course.visible,
-                coverImageUrl: getImageUrl(course.coverImageHash)
-            }))
+            courses: result.map(course => formatCourseMinimal(course))
         }
     });
 });
@@ -75,16 +79,7 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
     res.json({
         success: true,
         data: {
-            courses: result.map(x => ({
-                id: x.course._id,
-                code: x.course.code,
-                title: x.course.title,
-                description: x.course.description,
-                visible: x.course.visible,
-                coverImageUrl: getImageUrl(x.course.coverImageHash),
-                completed: x.completed,
-                updatedAt: x.updatedAt
-            }))
+            courses: result.map(x => formatCourseMinimal(x.course, x.completed))
         }
     });
 });
@@ -107,18 +102,20 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         userProgress = await CourseProgressModel.create({ course: course._id, userId: currentUserId });
     }
 
-    const courseData: CourseResponse = {
+    const courseProgressInfo: CourseProgressInfo = {
+        updatedAt: userProgress.updatedAt,
+        nodesSolved: userProgress.nodesSolved,
+        completed: userProgress.completed
+    };
+
+    const courseData: CourseResponse<CourseProgressInfo, LessonProgressInfo> = {
         id: course._id.toString(),
         code: course.code,
         title: course.title,
         description: course.description,
         visible: course.visible,
         coverImageUrl: getImageUrl(course.coverImageHash),
-        userProgress: {
-            updatedAt: userProgress.updatedAt,
-            nodesSolved: userProgress.nodesSolved,
-            completed: userProgress.completed
-        }
+        userProgress: courseProgressInfo
     };
 
     if (includeLessons === true) {
@@ -131,7 +128,9 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         ]);
 
         const lastUnlockedNodeIndex = lastLessonNode ? lastLessonNode.index + 1 : 1;
-        courseData.lessons = lessons.map(lesson => formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }));
+        courseData.lessons = lessons.map(lesson =>
+            formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index })
+        );
     }
 
     res.json({ success: true, data: { course: courseData } });
@@ -167,12 +166,19 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const nodes = await LessonNodeModel.find({ lessonId: lesson._id }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean();
 
-    const lessonData: LessonResponse = {
+    const lessonProgressInfo: LessonProgressInfo = {
+        unlocked: lesson.index <= lastUnlockedLessonIndex,
+        completed: lesson.index < lastUnlockedLessonIndex,
+        lastUnlockedNodexIndex: lastUnlockedNodeIndex
+    };
+
+    const lessonData: LessonResponse<LessonProgressInfo> = {
         id: lesson._id.toString(),
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,
         comments: lesson.comments,
+        userProgress: lessonProgressInfo,
         nodes: nodes.map(x => formatLessonNodeMinimal(x, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }))
     };
 
@@ -185,7 +191,8 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const lessonNode = await LessonNodeModel.findById(nodeId)
-        .populate<{ lessonId: CourseLesson }>({ path: "lessonId" })
+        .populate<{ lessonId: CourseLesson }>("lessonId")
+        .populate<{ codeId: Code }>("codeId")
         .lean();
     if (!lessonNode) {
         throw new HttpError("Lesson node not found", 404);
@@ -432,10 +439,7 @@ const editLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) 
 
     const data = await editComment(id, currentUserId!, message);
 
-    res.json({
-        success: true,
-        data
-    });
+    res.json({ success: true, data });
 });
 
 const deleteLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) => {

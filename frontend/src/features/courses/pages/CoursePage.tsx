@@ -2,32 +2,17 @@ import { useEffect, useState } from "react";
 import { Container, Card, Button, ProgressBar, Row, Col, Badge } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { ILesson } from "../components/Lesson";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
-
-interface ICourse {
-    id: string;
-    code: string;
-    title: string;
-    description: string;
-    visible: boolean;
-    coverImageUrl?: string | null;
-    lessons: ILesson[];
-    userProgress: {
-        updatedAt: string;
-        nodesSolved: number;
-        completed: boolean;
-    };
-}
+import { CourseDetails, GetCourseData } from "../types";
 
 const CoursePage = () => {
     const { courseCode } = useParams();
     const { sendJsonRequest } = useApi();
 
-    const [course, setCourse] = useState<ICourse | null>(null);
+    const [course, setCourse] = useState<CourseDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [pageTitle, setPageTitle] = useState("Webler Codes");
 
@@ -39,21 +24,21 @@ const CoursePage = () => {
 
     const getCourse = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Courses/GetCourse`, "POST", {
+        const result = await sendJsonRequest<GetCourseData>(`/Courses/GetCourse`, "POST", {
             courseCode,
             includeLessons: true
         });
 
-        if (result && result.course) {
-            setCourse(result.course);
-            setPageTitle("Courses - " + result.course.title + " | Webler Codes");
+        if (result.data) {
+            setCourse(result.data.course);
+            setPageTitle("Courses - " + result.data.course.title + " | Webler Codes");
         }
         setLoading(false);
     };
 
     const getProgressPercentage = () => {
         if (!course || !course.lessons.length) return 0;
-        const completedCount = course.lessons.filter(x => x.completed).length;
+        const completedCount = course.lessons.filter(x => x.userProgress.completed).length;
         return Math.round((completedCount / course.lessons.length) * 100);
     };
 
@@ -61,7 +46,7 @@ const CoursePage = () => {
         let lastUnlockedLesson = null;
         if (course) {
             const unlockedLessons = course.lessons
-                .filter(lesson => lesson.unlocked)
+                .filter(lesson => lesson.userProgress.unlocked)
                 .sort((a, b) => b.index - a.index);
             if (unlockedLessons.length) {
                 lastUnlockedLesson = unlockedLessons[0];
@@ -108,7 +93,7 @@ const CoursePage = () => {
                             <div className="d-flex align-items-center">
                                 <ProgressBar now={getProgressPercentage()} className="flex-grow-1 me-2" />
                                 <span>
-                                    {course.lessons.filter(l => l.completed).length} / {course.lessons.length}
+                                    {course.lessons.filter(lesson => lesson.userProgress.completed).length} / {course.lessons.length}
                                 </span>
                             </div>
 
@@ -118,20 +103,20 @@ const CoursePage = () => {
                             <h5>Lessons</h5>
                             <Row>
                                 {course.lessons.map(lesson => {
-                                    const isInProgress = lesson.unlocked && !lesson.completed;
+                                    const isInProgress = lesson.userProgress.unlocked && !lesson.userProgress.completed;
 
                                     return (
                                         <Col md={6} lg={4} key={lesson.id} className="mb-3">
                                             <Card
-                                                className={`h-100 shadow-sm ${lesson.unlocked ? '' : 'bg-light text-muted'}`}
-                                                style={{ cursor: lesson.unlocked ? 'pointer' : 'not-allowed' }}
+                                                className={`h-100 shadow-sm ${lesson.userProgress.unlocked ? '' : 'bg-light text-muted'}`}
+                                                style={{ cursor: lesson.userProgress.unlocked ? 'pointer' : 'not-allowed' }}
                                             >
                                                 <Card.Body>
                                                     <Card.Title>{lesson.title}</Card.Title>
                                                     <Card.Text>Slides: {lesson.nodeCount}</Card.Text>
 
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
-                                                        {lesson.unlocked && lesson.completed && (
+                                                        {lesson.userProgress.unlocked && lesson.userProgress.completed && (
                                                             <Badge bg="success">
                                                                 <FaCheckCircle />
                                                                 Completed
@@ -145,14 +130,14 @@ const CoursePage = () => {
                                                             </Badge>
                                                         )}
 
-                                                        {lesson.unlocked && !lesson.completed && !isInProgress && (
+                                                        {lesson.userProgress.unlocked && !lesson.userProgress.completed && !isInProgress && (
                                                             <Badge bg="light" text="dark">
                                                                 <FaCircle />
                                                                 Available
                                                             </Badge>
                                                         )}
 
-                                                        {!lesson.unlocked && (
+                                                        {!lesson.userProgress.unlocked && (
                                                             <Badge bg="secondary">
                                                                 <FaLock />
                                                                 Locked
@@ -162,7 +147,7 @@ const CoursePage = () => {
                                                         <small>#{lesson.index}</small>
                                                     </div>
 
-                                                    {lesson.unlocked && (
+                                                    {lesson.userProgress.unlocked && (
                                                         <Link to={`/Courses/${course.code}/Lesson/${lesson.id}`}>
                                                             <Button size="sm" variant="outline-primary">Open</Button>
                                                         </Link>

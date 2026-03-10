@@ -71,7 +71,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
 
     const [loading, setLoading] = useState(false);
     const [commentCount, setCommentCount] = useState(0);
-    const [findPost, setFindPost] = useState<any | null>(null);
+    const [findPost, setFindPost] = useState<{ id: string, isReply: boolean } | null>(null);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
     const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
     const [pageTitle, setPageTitle] = useState("");

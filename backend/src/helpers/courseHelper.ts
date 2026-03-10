@@ -3,65 +3,82 @@ import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
 import LessonNodeModel, { LessonNode, LessonNodeMinimal } from "../models/LessonNode";
 import QuizAnswerModel, { QuizAnswer } from "../models/QuizAnswer";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import CourseModel from "../models/Course";
+import CourseModel, { Course } from "../models/Course";
 import CourseProgressModel from "../models/CourseProgress";
 import { deleteEntry } from "./fileHelper";
 import { File } from "../models/File";
 import { deletePostsAndCleanup } from "./postsHelper";
 import HttpError from "../exceptions/HttpError";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
+import { getImageUrl } from "../controllers/mediaController";
+import { Code } from "../models/Code";
 
 export interface LessonNodeMinimalResponse {
-    id: Types.ObjectId | string;
+    id: string;
     index: number;
     type: LessonNodeTypeEnum;
+    mode: LessonNodeModeEnum;
     unlocked?: boolean;
 }
 
 export interface QuizAnswerResponse {
-    id: Types.ObjectId | string;
+    id: string;
     correct: boolean;
     text: string;
 }
 
-export interface LessonNodeResponse {
-    id: Types.ObjectId | string;
-    index: number;
-    type: LessonNodeTypeEnum;
+export interface LessonNodeResponse extends LessonNodeMinimalResponse {
     text: string;
-    mode: LessonNodeModeEnum;
+    code?: Code;
     correctAnswer?: string;
     answers?: QuizAnswerResponse[];
 }
 
-export interface LessonResponse {
-    id: Types.ObjectId | string;
+export interface EditLessonNodeResponse {
+    id: string;
+    type: LessonNodeTypeEnum;
+    mode: LessonNodeModeEnum;
+    text: string;
+    codeId?: string;
+    correctAnswer?: string;
+    answers?: QuizAnswerResponse[];
+}
+
+export interface LessonProgressInfo {
+    unlocked: boolean;
+    completed: boolean;
+    lastUnlockedNodexIndex: number;
+}
+
+export interface LessonResponse<T = LessonProgressInfo> {
+    id: string;
     title: string;
     index: number;
     nodeCount: number;
     comments: number;
-    unlocked?: boolean;
-    completed?: boolean;
-    lastUnlockedNodexIndex?: number;
+    userProgress: T;
     nodes?: LessonNodeMinimalResponse[];
 }
 
-export interface UserProgress {
+export interface CourseProgressInfo {
     updatedAt: Date;
     nodesSolved: number;
     completed: boolean;
 }
 
-export interface CourseResponse {
-    id: Types.ObjectId | string;
+export interface CourseResponse<T = CourseProgressInfo, U = LessonProgressInfo> {
+    id: string;
     code: string;
     title: string;
     description: string;
     visible: boolean;
     coverImageUrl: string | null;
-    userProgress?: UserProgress;
-    lessons?: LessonResponse[];
+    userProgress: T;
+    completed?: boolean;
+    lessons?: LessonResponse<U>[];
 }
+
+export type CourseMinimalResponse = CourseResponse<undefined, undefined>;
 
 export interface QuizAnswerJson {
     text: string;
@@ -71,9 +88,9 @@ export interface QuizAnswerJson {
 export interface LessonNodeJson {
     type: LessonNodeTypeEnum;
     index: number;
-    mode: number;
+    mode?: number;
     codeId?: string;
-    text: string;
+    text?: string;
     correctAnswer?: string;
     answers?: QuizAnswerJson[];
 }
@@ -113,23 +130,20 @@ export const exportLessonNodeToJson = async (
 ): Promise<LessonNodeJson> => {
     const base: Pick<LessonNodeJson, "type" | "index" | "mode" | "codeId"> = {
         type: node._type,
-        index: node.index,
+        index: Number(node.index),
         mode: node.mode,
         codeId: node.codeId?.toString()
     };
 
     if (node._type === LessonNodeTypeEnum.TEXT) {
-        return {
-            ...base,
-            text: node.text || ""
-        };
+        return { ...base, text: String(node.text ?? "") };
     }
 
     if (node._type === LessonNodeTypeEnum.TEXT_QUESTION) {
         return {
             ...base,
-            text: node.text || "",
-            correctAnswer: node.correctAnswer || ""
+            text: String(node.text ?? ""),
+            correctAnswer: String(node.correctAnswer ?? "")
         };
     }
 
@@ -140,11 +154,7 @@ export const exportLessonNodeToJson = async (
             r.map(a => ({ text: a.text, correct: a.correct }))
         ));
 
-    return {
-        ...base,
-        text: node.text || "",
-        answers
-    };
+    return { ...base, text: String(node.text ?? ""), answers };
 };
 
 export const importLessonNodeFromJson = async (
@@ -153,9 +163,7 @@ export const importLessonNodeFromJson = async (
     session?: mongoose.ClientSession
 ): Promise<LessonNode & { _id: Types.ObjectId }> => {
     const correctAnswer =
-        nodeJson.type === LessonNodeTypeEnum.TEXT_QUESTION
-            ? nodeJson.correctAnswer
-            : "";
+        nodeJson.type === LessonNodeTypeEnum.TEXT_QUESTION ? nodeJson.correctAnswer : "";
 
     const [node] = await LessonNodeModel.create(
         [
@@ -164,11 +172,12 @@ export const importLessonNodeFromJson = async (
                 index: nodeJson.index,
                 _type: nodeJson.type,
                 mode: nodeJson.mode,
-                codeId: (nodeJson.codeId && mongoose.isValidObjectId(nodeJson.codeId))
-                    ? new mongoose.Types.ObjectId(nodeJson.codeId)
-                    : null,
-                text: nodeJson.text,
-                correctAnswer: correctAnswer
+                codeId:
+                    nodeJson.codeId && mongoose.isValidObjectId(nodeJson.codeId)
+                        ? new mongoose.Types.ObjectId(nodeJson.codeId)
+                        : null,
+                text: nodeJson.text || "",
+                correctAnswer: correctAnswer || ""
             }
         ],
         { session }
@@ -192,9 +201,7 @@ export const importLessonNodeFromJson = async (
 
 export const exportCourseLessonToJson = async (lessonId: Types.ObjectId): Promise<CourseLessonJson> => {
     const lesson = await CourseLessonModel.findById(lessonId).lean();
-    if (!lesson) {
-        throw new HttpError("Lesson not found", 404);
-    }
+    if (!lesson) throw new HttpError("Lesson not found", 404);
 
     const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: "asc" }).lean();
     const nodeIds = nodes.map(n => n._id);
@@ -204,11 +211,7 @@ export const exportCourseLessonToJson = async (lessonId: Types.ObjectId): Promis
     const nodeJsons: LessonNodeJson[] = [];
     for (const n of nodes) nodeJsons.push(await exportLessonNodeToJson(n, byNodeId));
 
-    return {
-        version: 1,
-        lesson: { title: lesson.title },
-        nodes: nodeJsons
-    };
+    return { version: 1, lesson: { title: lesson.title }, nodes: nodeJsons };
 };
 
 export const importCourseLessonFromJson = async (
@@ -219,14 +222,7 @@ export const importCourseLessonFromJson = async (
     const lastIndex = await CourseLessonModel.countDocuments({ course: courseId }).session(session ?? null);
 
     const [lesson] = await CourseLessonModel.create(
-        [
-            {
-                title: lessonJson.lesson.title,
-                course: courseId,
-                index: lastIndex + 1,
-                nodes: 0
-            }
-        ],
+        [{ title: lessonJson.lesson.title, course: courseId, index: lastIndex + 1, nodes: 0 }],
         { session }
     );
 
@@ -322,9 +318,7 @@ export const getLessonNodeInfo = async (
         .lean();
 
     const result: LessonNodeInfoResult = { unlocked: false, isLastUnlocked: false };
-    if (!lessonNode) {
-        return result;
-    }
+    if (!lessonNode) return result;
 
     const lessonIndex = lessonNode.lessonId.index;
     let lastCompletedLessonNode = null;
@@ -361,25 +355,43 @@ export const getLessonNodeInfo = async (
     return result;
 };
 
+export const formatCourseMinimal = (course: Course & { _id: Types.ObjectId }, completed?: boolean) => {
+    return {
+        id: course._id.toString(),
+        code: course.code,
+        title: course.title,
+        description: course.description,
+        visible: course.visible,
+        coverImageUrl: getImageUrl(course.coverImageHash),
+        userProgress: undefined,
+        completed
+    };
+}
+
 export const formatLesson = (
     lesson: CourseLesson & { _id: Types.ObjectId },
     userProgressParams?: UserProgressParams
 ): LessonResponse => {
-    const result: LessonResponse = {
+    let userProgress: LessonProgressInfo | undefined;
+
+    if (userProgressParams) {
+        const unlocked = lesson.index <= userProgressParams.lastUnlockedLessonIndex;
+        const completed = lesson.index < userProgressParams.lastUnlockedLessonIndex;
+        const lastUnlockedNodexIndex = completed
+            ? lesson.nodes
+            : userProgressParams.lastUnlockedNodeIndex;
+
+        userProgress = { unlocked, completed, lastUnlockedNodexIndex };
+    }
+
+    return {
         id: lesson._id.toString(),
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,
-        comments: lesson.comments
+        comments: lesson.comments,
+        userProgress: userProgress as LessonProgressInfo
     };
-    if (userProgressParams) {
-        result.unlocked = lesson.index <= userProgressParams.lastUnlockedLessonIndex;
-        result.completed = lesson.index < userProgressParams.lastUnlockedLessonIndex;
-        result.lastUnlockedNodexIndex = lesson.index < userProgressParams.lastUnlockedLessonIndex
-            ? lesson.nodes
-            : userProgressParams.lastUnlockedNodeIndex;
-    }
-    return result;
 };
 
 export const formatLessonNodeMinimal = (
@@ -390,6 +402,7 @@ export const formatLessonNodeMinimal = (
         id: lessonNode._id.toString(),
         index: lessonNode.index,
         type: lessonNode._type,
+        mode: lessonNode.mode
     };
     if (userProgressParams) {
         result.unlocked =

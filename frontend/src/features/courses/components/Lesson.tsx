@@ -1,24 +1,9 @@
 import { FaPencil, FaTrash, FaArrowUp, FaArrowDown, FaFileExport } from "react-icons/fa6";
 import { Link } from "react-router-dom";
-
-interface ILesson {
-    id: string;
-    title: string;
-    index: number;
-    nodeCount: number;
-    unlocked: boolean;
-    completed: boolean;
-    lastUnlockedNodexIndex?: number;
-    nodes: {
-        id: string;
-        index: number;
-        type: number;
-        unlocked: boolean;
-    }[];
-}
+import { LessonDetails } from "../types";
 
 interface LessonProps {
-    lesson: ILesson;
+    lesson: LessonDetails<undefined>;
     courseId: string;
     onEdit: (id: string, title: string) => void;
     onDelete: (id: string) => void;
@@ -93,5 +78,4 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onExport, onChangeIndex, i
     );
 };
 
-export type { ILesson };
 export default Lesson;

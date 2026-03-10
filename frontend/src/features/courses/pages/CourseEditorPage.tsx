@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
-import { ICourse } from "../components/Course";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import Lesson, { ILesson } from "../components/Lesson";
+import Lesson from "../components/Lesson";
 import LessonEditor from "../components/LessonEditor";
 import { useApi } from "../../../context/apiCommunication";
 import { sanitizeFilename, truncate } from "../../../utils/StringUtils";
 import NotificationToast from "../../../components/NotificationToast";
 import Loader from "../../../components/Loader";
 import { downloadJsonFile } from "../../../utils/FileUtils";
+import { CourseMinimal, EditorCreateLessonData, EditorEditLessonData, EditorGetCourseData, LessonDetails } from "../types";
 
 const CourseEditorPage = () => {
     const { sendJsonRequest } = useApi();
     const { courseId, lessonId } = useParams();
     const navigate = useNavigate();
 
-    const [course, setCourse] = useState<ICourse | null>(null);
-    const [lessons, setLessons] = useState<ILesson[]>([]);
+    const [course, setCourse] = useState<CourseMinimal | null>(null);
+    const [lessons, setLessons] = useState<LessonDetails<undefined>[]>([]);
     const [loading, setLoading] = useState(false);
     const [formVisible, setFormVisible] = useState(false);
     const [formInput, setFormInput] = useState("");
@@ -30,10 +30,10 @@ const CourseEditorPage = () => {
 
     const getCourse = async (includeLessons: boolean) => {
         setLoading(true);
-        const result = await sendJsonRequest(`/CourseEditor/GetCourse`, "POST", { courseId, includeLessons });
-        if (result && result.course) {
-            setCourse(result.course);
-            setLessons(result.course.lessons);
+        const result = await sendJsonRequest<EditorGetCourseData>(`/CourseEditor/GetCourse`, "POST", { courseId, includeLessons });
+        if (result.data) {
+            setCourse(result.data.course);
+            setLessons(result.data.course.lessons);
         }
         setLoading(false);
     }
@@ -51,16 +51,17 @@ const CourseEditorPage = () => {
 
     const handleCreateLesson = async () => {
         setLoading(true)
-        const result = await sendJsonRequest(`/CourseEditor/CreateLesson`, "POST", {
+        const result = await sendJsonRequest<EditorCreateLessonData>(`/CourseEditor/CreateLesson`, "POST", {
             courseId: course!.id,
             title: formInput
         });
-        if (result && result.lesson) {
-            setLessons(lessons => [...lessons, { ...result.lesson }]);
+        if (result.data) {
+            const newLesson: LessonDetails<undefined> = { ...result.data.lesson, comments: 0, nodeCount: 0, nodes: [], userProgress: undefined };
+            setLessons(prev => [...prev, newLesson]);
             hideLessonForm();
             setNotification({ type: "success", message: "Lesson created successfully" });
         } else {
-            setNotification({ type: "error", message: result?.error[0].message });
+            setNotification({ type: "error", message: result.error?.[0].message ?? "Failed to create lesson" });
         }
         setLoading(false);
     }
@@ -72,25 +73,17 @@ const CourseEditorPage = () => {
             return;
         }
 
-        const result = await sendJsonRequest(`/CourseEditor/EditLesson`, "PUT", {
+        const result = await sendJsonRequest<EditorEditLessonData>(`/CourseEditor/EditLesson`, "PUT", {
             lessonId: editedLessonId,
             title: formInput,
             index: lesson.index
         });
-        if (result && result.success) {
-            setLessons((lessons) => {
-                let currentLessons = [...lessons];
-                for (let i = 0; i < currentLessons.length; ++i) {
-                    if (currentLessons[i].id === editedLessonId) {
-                        currentLessons[i].title = result.data.title;
-                    }
-                }
-                return currentLessons;
-            });
+        if (result.data) {
+            setLessons((prev) => prev.map(x => x.id === result.data!.id ? { ...x, ...result.data } : x));
             hideLessonForm();
             setNotification({ type: "success", message: "Lesson edited successfully" });
         } else {
-            setNotification({ type: "error", message: result?.error[0].message });
+            setNotification({ type: "error", message: result.error?.[0].message ?? "Failed to edit lesson" });
         }
         setLoading(false);
     }
@@ -118,7 +111,7 @@ const CourseEditorPage = () => {
             });
             setNotification({ type: "success", message: "Lesson deleted successfully" });
         } else {
-            setNotification({ type: "error", message: result?.error[0].message });
+            setNotification({ type: "error", message: result.error?.[0].message ?? "Failed to delete lesson" });
         }
         setLoading(false);
     }
@@ -127,7 +120,7 @@ const CourseEditorPage = () => {
         setLoading(true);
 
         const result = await sendJsonRequest("/CourseEditor/ChangeLessonIndex", "POST", { lessonId, newIndex });
-        if (result && result.success) {
+        if (result.success) {
             setLessons((prevLessons) => {
                 const lessonsCopy = [...prevLessons];
 
@@ -148,7 +141,7 @@ const CourseEditorPage = () => {
             });
             setNotification({ type: "success", message: "Lesson index changed successfully" });
         } else {
-            setNotification({ type: "error", message: result?.error[0].message });
+            setNotification({ type: "error", message: result.error?.[0].message ?? "Failed to change lesson index" });
         }
 
         setLoading(false);

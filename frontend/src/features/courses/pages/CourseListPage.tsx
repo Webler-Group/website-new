@@ -1,15 +1,16 @@
-import Course, { ICourse } from "../components/Course";
+import Course from "../components/Course";
 import { Button, Container, Modal } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import MyCourse from "../components/MyCourse";
 import { Helmet } from "react-helmet-async";
+import { CourseMinimal, CoursesListData, UserCoursesListData } from "../types";
 
 const CourseListPage = () => {
     const { sendJsonRequest } = useApi();
-    const [courses, setCourses] = useState<ICourse[]>([]);
-    const [myCourses, setMyCourses] = useState<ICourse[]>([]);
+    const [courses, setCourses] = useState<CourseMinimal[]>([]);
+    const [myCourses, setMyCourses] = useState<CourseMinimal[]>([]);
     const [_, setLoading] = useState(false);
     const { userInfo } = useAuth();
     const [resetModalVisible, setResetModalVisible] = useState(false);
@@ -21,18 +22,18 @@ const CourseListPage = () => {
 
     const getCourses = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Courses`, "POST", {
+        const result = await sendJsonRequest<CoursesListData>(`/Courses`, "POST", {
             excludeUserId: userInfo?.id
         });
-        if (result && result.courses) {
-            setCourses(result.courses);
+        if (result.data) {
+            setCourses(result.data.courses);
         }
         if (userInfo) {
-            const result = await sendJsonRequest(`/Courses/GetUserCourses`, "POST", {
+            const result = await sendJsonRequest<UserCoursesListData>(`/Courses/GetUserCourses`, "POST", {
                 userId: userInfo.id
             });
-            if (result && result.courses) {
-                setMyCourses(result.courses);
+            if (result.data) {
+                setMyCourses(result.data.courses);
             }
         }
         setLoading(false);

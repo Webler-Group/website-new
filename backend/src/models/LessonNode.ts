@@ -35,7 +35,7 @@ export class LessonNode {
     codeId!: Types.ObjectId | null;
 }
 
-export const LESSON_NODE_MINIMAL_FIELDS = { _type: 1, index: 1 } as const;
+export const LESSON_NODE_MINIMAL_FIELDS = { _type: 1, index: 1, mode: 1 } as const;
 export type LessonNodeMinimal = Pick<LessonNode, keyof typeof LESSON_NODE_MINIMAL_FIELDS>;
 
 const LessonNodeModel = getModelForClass(LessonNode);

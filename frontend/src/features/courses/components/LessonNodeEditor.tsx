@@ -1,6 +1,6 @@
 import {
-    FormEvent,
     forwardRef,
+    SubmitEvent,
     useEffect,
     useImperativeHandle,
     useMemo,
@@ -19,12 +19,13 @@ import {
 } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
-import LessonNode, { ILessonNode, ILessonNodeAnswer } from "./LessonNode";
 import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
 import CodeList, { ICodesState } from "../../codes/components/CodeList";
-import { ICode } from "../../codes/components/Code";
 import HtmlEditorField from "../../../components/HtmlEditorField";
+import { CodeDetails, GetCodeData } from "../../codes/types";
+import { EditorChangeLessonNodeIndexData, EditorEditLessonNodeData, EditorGetLessonNodeData, LessonNodeAnswerDetails, LessonNodeDetails } from "../types";
+import LessonNode from "./LessonNode";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;
@@ -54,12 +55,12 @@ const nodeModes = [
 const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProps>(
     ({ nodeId, nodeCount, onDelete, onChangeIndex, onExit }, ref) => {
         const { sendJsonRequest } = useApi();
-        const [node, setNode] = useState<ILessonNode | null>(null);
+        const [node, setNode] = useState<LessonNodeDetails | null>(null);
         const [nodeText, setNodeText] = useState("");
         const [nodeType, setNodeType] = useState(0);
         const [nodeMode, setNodeMode] = useState(1);
-        const [nodeCodeId, setNodeCodeId] = useState("");
-        const [selectedCode, setSelectedCode] = useState<ICode | null>(null);
+        const [nodeCodeId, setNodeCodeId] = useState<string | null>(null);
+        const [selectedCode, setSelectedCode] = useState<CodeDetails | null>(null);
         const [codePickerVisible, setCodePickerVisible] = useState(false);
         const [codesState, setCodesState] = useState<ICodesState>({
             page: 1,
@@ -68,7 +69,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             language: null,
             ready: false,
         });
-        const [questionAnswers, setQuestionsAnswers] = useState<ILessonNodeAnswer[]>([]);
+        const [questionAnswers, setQuestionsAnswers] = useState<LessonNodeAnswerDetails[]>([]);
         const [questionCorrectAnswer, setQuestionCorrectAnswer] = useState("");
         const [deleteModalVisible, setDeleteModalVisible] = useState(false);
         const [message, setMessage] = useState<[string, string]>(["", ""]);
@@ -107,20 +108,20 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
 
         const getNode = async () => {
             setLoading(true);
-            const result = await sendJsonRequest("/CourseEditor/GetLessonNode", "POST", {
+            const result = await sendJsonRequest<EditorGetLessonNodeData>("/CourseEditor/GetLessonNode", "POST", {
                 nodeId,
             });
 
-            if (result && result.lessonNode) {
-                const nodeData = result.lessonNode as any;
+            if (result.data) {
+                const nodeData = result.data.lessonNode;
                 setNode(nodeData);
                 setNodeType(nodeData.type);
-                setNodeMode(nodeData.mode ?? 1);
-                setNodeCodeId(nodeData.codeId?.id ?? nodeData.codeId?._id ?? "");
-                setSelectedCode(nodeData.codeId ?? null);
-                setNodeText(nodeData.text ?? "");
+                setNodeMode(nodeData.mode);
+                setNodeCodeId(nodeData.code?.id || null);
+                setSelectedCode(nodeData.code || null);
+                setNodeText(nodeData.text);
                 setQuestionCorrectAnswer(nodeData.correctAnswer ?? "");
-                setQuestionsAnswers(nodeData.answers ?? []);
+                setQuestionsAnswers(nodeData.answers || []);
             }
 
             setLoading(false);
@@ -185,7 +186,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
 
             if (!validateNode(showMessage)) return false;
 
-            const result = await sendJsonRequest("/CourseEditor/EditLessonNode", "PUT", {
+            const result = await sendJsonRequest<EditorEditLessonNodeData>("/CourseEditor/EditLessonNode", "PUT", {
                 nodeId: node.id,
                 type: nodeType,
                 mode: nodeMode,
@@ -195,16 +196,12 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 answers: questionAnswers,
             });
 
-            if (result && result.success) {
+            if (result.data) {
                 setNode((prev) => {
                     if (!prev) return null;
                     return {
                         ...prev,
-                        type: result.data.type,
-                        mode: result.data.mode,
-                        text: result.data.text,
-                        correctAnswer: result.data.correctAnswer,
-                        answers: result.data.answers,
+                        ...result.data
                     };
                 });
 
@@ -233,7 +230,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             },
         }));
 
-        const handleSubmit = async (e: FormEvent) => {
+        const handleSubmit = async (e: SubmitEvent) => {
             e.preventDefault();
             setLoading(true);
             await saveNode(true);
@@ -292,15 +289,15 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             const ok = hasUnsavedChanges ? await saveNode(true) : validateNode(true);
 
             if (ok) {
-                const result = await sendJsonRequest("/CourseEditor/ChangeLessonNodeIndex", "POST", {
+                const result = await sendJsonRequest<EditorChangeLessonNodeIndexData>("/CourseEditor/ChangeLessonNodeIndex", "POST", {
                     nodeId: node.id,
                     newIndex,
                 });
 
-                if (result && result.success) {
+                if (result.data) {
                     setNode((prev) => {
                         if (!prev) return null;
-                        return { ...prev, index: result.data.index };
+                        return { ...prev, ...result.data };
                     });
 
                     onChangeIndex(node.id, newIndex);
@@ -323,7 +320,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 ...node,
                 type: nodeType,
                 mode: nodeMode,
-                codeId: selectedCode as any,
+                codeId: selectedCode,
                 text: nodeText,
                 correctAnswer: questionCorrectAnswer,
                 answers: questionAnswers,
@@ -575,10 +572,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         codesState={codesState}
                                         setCodesState={setCodesState}
                                         onCodeClick={async (id) => {
-                                            const result = await sendJsonRequest("/Codes/GetCode", "POST", { codeId: id });
-                                            if (result && result.code) {
+                                            const result = await sendJsonRequest<GetCodeData>("/Codes/GetCode", "POST", { codeId: id });
+                                            if (result.data) {
                                                 setNodeCodeId(id);
-                                                setSelectedCode(result.code);
+                                                setSelectedCode(result.data.code);
                                                 setCodePickerVisible(false);
                                             }
                                         }}
