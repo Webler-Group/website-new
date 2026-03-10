@@ -46,7 +46,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         filter.active = active;
     }
 
-    const users = await UserModel.find(filter, { ...USER_ADMIN_FIELDS, bio: 0 })
+    const users = await UserModel.find(filter, { ...USER_ADMIN_FIELDS })
         .sort({ createdAt: -1 })
         .skip((page - 1) * count)
         .limit(count)

@@ -5,29 +5,11 @@ import { FaCircle } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { UserMinimal } from "../types";
-
-interface INotification {
-    feedId: string;
-    id: string;
-    type: number;
-    message: string;
-    date: string;
-    user: UserMinimal;
-    actionUser: UserMinimal;
-    questionId: string;
-    postId: string;
-    post: {
-        parentId: string | null;
-    }
-    codeId: string;
-    courseCode: string;
-    lessonId: string;
-    isClicked: boolean;
-}
+import { NotificationDetails } from "../types";
+import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 
 interface NotificationProps {
-    notification: INotification;
+    notification: NotificationDetails;
     onClose: () => void;
     onView: () => void;
 }
@@ -57,37 +39,40 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
             state: {}
         }
         switch (notification.type) {
-            case 101:
+            case NotificationTypeEnum.PROFILE_FOLLOW:
                 link.to = "/Profile/" + notification.actionUser.id;
                 break;
-            case 201:
+            case NotificationTypeEnum.QA_ANSWER:
                 link.to = "/Discuss/" + notification.questionId;
                 link.state = { postId: notification.postId };
                 break;
-            case 202:
-            case 205:
+            case NotificationTypeEnum.CODE_COMMENT:
+            case NotificationTypeEnum.CODE_COMMENT_MENTION:
                 link.to = "/Compiler-Playground/" + notification.codeId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                link.state = { postId: notification.postId, isReply: notification.postParentId !== null };
                 break;
-            case 203:
-            case 204:
+            case NotificationTypeEnum.QA_QUESTION_MENTION:
+            case NotificationTypeEnum.QA_ANSWER_MENTION:
                 link.to = "/Discuss/" + notification.questionId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId !== null };
+                link.state = { postId: notification.postId, isReply: notification.postParentId !== null };
                 break;
-            case 301:
-            case 303:
-            case 304:
+            case NotificationTypeEnum.FEED_FOLLOWER_POST:
+            case NotificationTypeEnum.FEED_SHARE:
+            case NotificationTypeEnum.FEED_PIN:
                 link.to = "/Feed/" + notification.feedId;
                 break;
-            case 302:
-            case 305:
+            case NotificationTypeEnum.FEED_COMMENT:
+            case NotificationTypeEnum.FEED_COMMENT_MENTION:
                 link.to = "/Feed/" + notification.feedId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
+                link.state = { postId: notification.postId, isReply: notification.postParentId != null }
                 break;
-            case 401:
-            case 402:
+            case NotificationTypeEnum.LESSON_COMMENT:
+            case NotificationTypeEnum.LESSON_COMMENT_MENTION:
                 link.to = "/Courses/" + notification.courseCode + "/Lesson/" + notification.lessonId;
-                link.state = { postId: notification.postId, isReply: notification.post.parentId != null }
+                link.state = { postId: notification.postId, isReply: notification.postParentId != null }
+                break;
+            case NotificationTypeEnum.CHANNELS:
+                link.to = "/Channels";
                 break;
         }
         navigate(link.to, { state: link.state })
@@ -124,11 +109,7 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
         :
         <div>{body}</div>
 
-    return content
-})
-
-export type {
-    INotification
-}
+    return content;
+});
 
 export default Notification

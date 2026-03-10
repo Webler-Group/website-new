@@ -34,7 +34,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
     const { subscribed, error, subscribe, unsubscribe } = usePushNotifications();
     const [notifications, setNotifications] = useState<Record<NotificationTypeEnum, boolean>>(userNotifications);
     const [loading, setLoading] = useState(false);
-    const [message, setMessage] = useState<{ message?: string; errors?: any[] }>({});
+    const [message, setMessage] = useState<{ message?: string; errors?: { message: string }[] }>({});
     const { sendJsonRequest } = useApi();
 
     useEffect(() => {
