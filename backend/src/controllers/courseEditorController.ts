@@ -27,7 +27,17 @@ import {
     exportCourseSchema
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
-import { CourseResponse, deleteCourseAndCleanup, deleteCourseLessonAndCleanup, deleteLessonNodeAndCleanup, exportCourseLessonToJson, formatLesson, LessonNodeResponse } from "../helpers/courseHelper";
+import {
+    CourseResponse,
+    deleteCourseAndCleanup,
+    deleteCourseLessonAndCleanup,
+    deleteLessonNodeAndCleanup,
+    exportCourseLessonToJson,
+    formatLesson,
+    LessonNodeJson,
+    LessonNodeResponse,
+    QuizAnswerResponse
+} from "../helpers/courseHelper";
 import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
@@ -88,7 +98,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const courseData: CourseResponse = {
-        id: course._id.toString(),
+        id: course._id,
         code: course.code,
         title: course.title,
         description: course.description,
@@ -334,7 +344,8 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
             lessonNode: {
                 id: lessonNode._id,
                 index: lessonNode.index,
-                type: lessonNode._type
+                type: lessonNode._type,
+                mode: lessonNode.mode
             }
         }
     });
@@ -365,8 +376,8 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 mode: lessonNode.mode,
                 codeId: lessonNode.codeId,
                 text: lessonNode.text ?? "",
-                correctAnswer: lessonNode.correctAnswer ?? "",
-                answers: answers.map(x => ({
+                correctAnswer: lessonNode.correctAnswer,
+                answers: answers.map((x): QuizAnswerResponse => ({
                     id: x._id,
                     text: x.text,
                     correct: x.correct
@@ -418,10 +429,11 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         await node.save({ session });
 
         const result: LessonNodeResponse = {
-            id: node._id.toString(),
+            id: node._id,
             type: node._type,
             text: node.text || "",
             index: node.index,
+            mode: node.mode,
             correctAnswer: node.correctAnswer
         };
 
@@ -436,7 +448,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
             await QuizAnswerModel.deleteMany({ _id: { $in: idsToDelete } }, { session });
 
-            const newAnswers: { id: string; text: string; correct: boolean }[] = [];
+            const newAnswers: QuizAnswerResponse[] = [];
 
             for (const newAnswer of answers) {
                 if (newAnswer.id && currentAnswerIds.some(id => id.equals(newAnswer.id))) {
@@ -452,7 +464,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
                         correct: newAnswer.correct,
                         courseLessonNodeId: node.id
                     }], { session });
-                    newAnswers.push({ id: created._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
+                    newAnswers.push({ id: created._id, text: newAnswer.text, correct: newAnswer.correct });
                 }
             }
 
@@ -462,7 +474,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         return result;
     });
 
-    res.json({ success: true, data });
+    res.json({ success: true, lessonNode: data });
 });
 
 const changeLessonIndex = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -515,7 +527,7 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
 
     const data = await exportCourseLessonToJson(new Types.ObjectId(lessonId));
 
-    res.json({ success: true, data });
+    res.json({ success: true, data: { lesson: data } });
 });
 
 const uploadLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -740,23 +752,13 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const exportedLessons = await Promise.all(lessons.map(async lesson => {
         const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: 1 }).lean();
 
-        const exportedNodes = await Promise.all(nodes.map(async node => {
-            type ExportedNode = {
-                type: LessonNodeTypeEnum;
-                mode: number | undefined;
-                text: string | undefined;
-                index: number;
-                codeId: string | null;
-                correctAnswer: string | undefined;
-                answers?: { text: string; correct: boolean }[];
-            };
-
-            const exportedNode: ExportedNode = {
+        const exportedNodes = await Promise.all(nodes.map(async (node): Promise<LessonNodeJson> => {
+            const exportedNode: LessonNodeJson = {
                 type: node._type,
                 mode: node.mode,
-                text: node.text,
+                text: node.text || "",
                 index: node.index,
-                codeId: node.codeId ? node.codeId.toString() : null,
+                codeId: node.codeId ? node.codeId.toString() : undefined,
                 correctAnswer: node.correctAnswer
             };
 
@@ -774,14 +776,18 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         return { title: lesson.title, nodes: exportedNodes };
     }));
 
+    const data = {
+        code: course.code,
+        title: course.title,
+        description: course.description,
+        visible: course.visible,
+        lessons: exportedLessons
+    };
+
     res.json({
         success: true,
         data: {
-            code: course.code,
-            title: course.title,
-            description: course.description,
-            visible: course.visible,
-            lessons: exportedLessons
+            course: data
         }
     });
 });

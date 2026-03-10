@@ -26,7 +26,6 @@ import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
 import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
-import { Tag } from "../models/Tag";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
