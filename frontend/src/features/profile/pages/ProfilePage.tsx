@@ -75,10 +75,9 @@ const ProfilePage = () => {
         setTimeout(() => setNotification(null), 3000);
     }, []);
 
-    const onUserUpdate = (data: any) => {
+    const onUserUpdate = (data: Partial<UserDetails>) => {
         if (userDetails) {
-            const newUserDetails = { ...userDetails, ...data };
-            setUserDetails(newUserDetails);
+            setUserDetails({ ...userDetails, ...data });
         }
     };
 

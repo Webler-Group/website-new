@@ -1,10 +1,27 @@
 import mongoose, { Types } from "mongoose";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import UserModel from "../models/User";
+import UserModel, { NotificationSettings } from "../models/User";
 import { getIO, onlineUsers, uidRoom } from "../config/socketServer";
 import { sendPushToUsers } from "../services/pushService";
 import NotificationModel from "../models/Notification";
 import HttpError from "../exceptions/HttpError";
+
+export const notificationTypeToField: Record<NotificationTypeEnum, keyof NotificationSettings> = {
+    [NotificationTypeEnum.PROFILE_FOLLOW]: "profileFollow",
+    [NotificationTypeEnum.QA_ANSWER]: "qaAnswer",
+    [NotificationTypeEnum.CODE_COMMENT]: "codeComment",
+    [NotificationTypeEnum.QA_QUESTION_MENTION]: "qaQuestionMention",
+    [NotificationTypeEnum.QA_ANSWER_MENTION]: "qaAnswerMention",
+    [NotificationTypeEnum.CODE_COMMENT_MENTION]: "codeCommentMention",
+    [NotificationTypeEnum.FEED_FOLLOWER_POST]: "feedFollowerPost",
+    [NotificationTypeEnum.FEED_COMMENT]: "feedComment",
+    [NotificationTypeEnum.FEED_SHARE]: "feedShare",
+    [NotificationTypeEnum.FEED_PIN]: "feedPin",
+    [NotificationTypeEnum.FEED_COMMENT_MENTION]: "feedCommentMention",
+    [NotificationTypeEnum.LESSON_COMMENT]: "lessonComment",
+    [NotificationTypeEnum.LESSON_COMMENT_MENTION]: "lessonCommentMention",
+    [NotificationTypeEnum.CHANNELS]: "channels",
+};
 
 export interface SendNotificationsParams {
     type: NotificationTypeEnum;
@@ -21,10 +38,13 @@ export interface SendNotificationsParams {
 }
 
 export const sendNotifications = async (params: SendNotificationsParams, userIds: Types.ObjectId[], onlyPush: boolean = false, session?: mongoose.ClientSession) => {
+    const field = notificationTypeToField[params.type];
+
     const allowedUserDocs = await UserModel.find({
         _id: { $in: userIds },
-        [`notifications.${params.type}`]: true
+        [`notifications.${field}`]: { $ne: false }
     }, { _id: 1 }).lean<{ _id: Types.ObjectId }[]>().session(session ?? null);
+
     const allowedUserIds = allowedUserDocs.map(doc => doc._id);
 
     const allowedOfflineUserIds = allowedUserIds.filter(
@@ -59,10 +79,9 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
 
     const io = getIO();
     for (const userId of allowedUserIds) {
-        io?.to(uidRoom(userId.toString()))
-            .emit("notification:new", {});
+        io?.to(uidRoom(userId.toString())).emit("notification:new", {});
     }
-}
+};
 
 export const deleteNotifications = async (filter: mongoose.QueryFilter<Notification>, session?: mongoose.ClientSession) => {
     const notificationsToDelete = await NotificationModel.find(filter).session(session ?? null);

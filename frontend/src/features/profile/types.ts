@@ -3,7 +3,26 @@ import RolesEnum from "../../data/RolesEnum";
 import { CodeMinimal } from "../codes/types";
 import { QuestionMinimal } from "../discuss/types";
 
-export type UserNotificationSettings = Record<NotificationTypeEnum, boolean>;
+export const notificationTypeToField: Record<NotificationTypeEnum, string> = {
+    [NotificationTypeEnum.PROFILE_FOLLOW]: "profileFollow",
+    [NotificationTypeEnum.QA_ANSWER]: "qaAnswer",
+    [NotificationTypeEnum.CODE_COMMENT]: "codeComment",
+    [NotificationTypeEnum.QA_QUESTION_MENTION]: "qaQuestionMention",
+    [NotificationTypeEnum.QA_ANSWER_MENTION]: "qaAnswerMention",
+    [NotificationTypeEnum.CODE_COMMENT_MENTION]: "codeCommentMention",
+    [NotificationTypeEnum.FEED_FOLLOWER_POST]: "feedFollowerPost",
+    [NotificationTypeEnum.FEED_COMMENT]: "feedComment",
+    [NotificationTypeEnum.FEED_SHARE]: "feedShare",
+    [NotificationTypeEnum.FEED_PIN]: "feedPin",
+    [NotificationTypeEnum.FEED_COMMENT_MENTION]: "feedCommentMention",
+    [NotificationTypeEnum.LESSON_COMMENT]: "lessonComment",
+    [NotificationTypeEnum.LESSON_COMMENT_MENTION]: "lessonCommentMention",
+    [NotificationTypeEnum.CHANNELS]: "channels",
+} as const;
+
+export type NotificationSettingsField = typeof notificationTypeToField[keyof typeof notificationTypeToField];
+export type NotificationSettings = Record<NotificationSettingsField, boolean>;
+export type UserNotificationSettings = NotificationSettings;
 
 export interface UserDetails {
     id: string;

@@ -22,10 +22,9 @@ import { createFolder, deleteEntry, formatFileEntry, listDirectory, moveEntry, u
 import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
-import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
 import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
-import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
+import { deleteNotifications, notificationTypeToField, sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
@@ -139,15 +138,14 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 level: user.level,
                 xp: user.xp,
                 active: user.active,
-                notifications: user.notifications,
+                notifications: user.notifications ?? {},
                 codes: codes.map(x => formatCodeMinimal(x)),
                 questions: questions.map(x => formatQuestionMinimal(x)),
                 solvedChallenges
             }
         }
     });
-
-})
+});
 
 const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -562,19 +560,16 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
         throw new HttpError("Profile not found", 404);
     }
 
-    if (user.notifications) {
-        for (let entry of notifications) {
-            user.notifications[entry.type] = entry.enabled;
-        }
+    for (const entry of notifications) {
+        const field = notificationTypeToField[entry.type];
+        user.notifications[field] = entry.enabled;
     }
 
     await user.save();
 
     res.json({
         success: true,
-        data: {
-            notifications: user.notifications
-        }
+        data: { notifications: user.notifications }
     });
 });
 

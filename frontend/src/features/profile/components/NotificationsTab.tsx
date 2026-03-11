@@ -5,45 +5,68 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-import { UpdateNotificationsData } from "../types";
+import { NotificationSettings, UpdateNotificationsData } from "../types";
 
-const notificationInfo = [
-    { type: "profile follow", value: NotificationTypeEnum.PROFILE_FOLLOW },
-    { type: "QA answer", value: NotificationTypeEnum.QA_ANSWER },
-    { type: "code comment", value: NotificationTypeEnum.CODE_COMMENT },
-    { type: "QA question mention", value: NotificationTypeEnum.QA_QUESTION_MENTION },
-    { type: "QA answer mention", value: NotificationTypeEnum.QA_ANSWER_MENTION },
-    { type: "code comment mention", value: NotificationTypeEnum.CODE_COMMENT_MENTION },
-    { type: "feed follower post", value: NotificationTypeEnum.FEED_FOLLOWER_POST },
-    { type: "feed comment", value: NotificationTypeEnum.FEED_COMMENT },
-    { type: "feed share", value: NotificationTypeEnum.FEED_SHARE },
-    { type: "feed pin", value: NotificationTypeEnum.FEED_PIN },
-    { type: "feed comment mention", value: NotificationTypeEnum.FEED_COMMENT_MENTION },
-    { type: "lesson comment", value: NotificationTypeEnum.LESSON_COMMENT },
-    { type: "lesson comment mention", value: NotificationTypeEnum.LESSON_COMMENT_MENTION },
-    { type: "channels", value: NotificationTypeEnum.CHANNELS },
-] as const;
+const notificationInfo: { type: string; field: keyof NotificationSettings; value: NotificationTypeEnum }[] = [
+    { type: "profile follow", field: "profileFollow", value: NotificationTypeEnum.PROFILE_FOLLOW },
+    { type: "QA answer", field: "qaAnswer", value: NotificationTypeEnum.QA_ANSWER },
+    { type: "code comment", field: "codeComment", value: NotificationTypeEnum.CODE_COMMENT },
+    { type: "QA question mention", field: "qaQuestionMention", value: NotificationTypeEnum.QA_QUESTION_MENTION },
+    { type: "QA answer mention", field: "qaAnswerMention", value: NotificationTypeEnum.QA_ANSWER_MENTION },
+    { type: "code comment mention", field: "codeCommentMention", value: NotificationTypeEnum.CODE_COMMENT_MENTION },
+    { type: "feed follower post", field: "feedFollowerPost", value: NotificationTypeEnum.FEED_FOLLOWER_POST },
+    { type: "feed comment", field: "feedComment", value: NotificationTypeEnum.FEED_COMMENT },
+    { type: "feed share", field: "feedShare", value: NotificationTypeEnum.FEED_SHARE },
+    { type: "feed pin", field: "feedPin", value: NotificationTypeEnum.FEED_PIN },
+    { type: "feed comment mention", field: "feedCommentMention", value: NotificationTypeEnum.FEED_COMMENT_MENTION },
+    { type: "lesson comment", field: "lessonComment", value: NotificationTypeEnum.LESSON_COMMENT },
+    { type: "lesson comment mention", field: "lessonCommentMention", value: NotificationTypeEnum.LESSON_COMMENT_MENTION },
+    { type: "channels", field: "channels", value: NotificationTypeEnum.CHANNELS },
+];
+
+const defaultNotifications: NotificationSettings = {
+    profileFollow: true,
+    qaAnswer: true,
+    codeComment: true,
+    qaQuestionMention: true,
+    qaAnswerMention: true,
+    codeCommentMention: true,
+    feedFollowerPost: true,
+    feedComment: true,
+    feedShare: true,
+    feedPin: true,
+    feedCommentMention: true,
+    lessonComment: true,
+    lessonCommentMention: true,
+    channels: true,
+};
+
+const buildFullNotifications = (partial: Partial<NotificationSettings>): NotificationSettings => ({
+    ...defaultNotifications,
+    ...partial,
+} as NotificationSettings);
 
 interface NotificationsTabProps {
     userId: string;
-    userNotifications: Record<NotificationTypeEnum, boolean>;
-    onUpdate: (newValue: Record<NotificationTypeEnum, boolean>) => void;
+    userNotifications: Partial<NotificationSettings>;
+    onUpdate: (newValue: NotificationSettings) => void;
 }
 
 const NotificationsTab = ({ userId, userNotifications, onUpdate }: NotificationsTabProps) => {
     const { subscribed, error, subscribe, unsubscribe } = usePushNotifications();
-    const [notifications, setNotifications] = useState<Record<NotificationTypeEnum, boolean>>(userNotifications);
+    const [notifications, setNotifications] = useState<NotificationSettings>(
+        buildFullNotifications(userNotifications)
+    );
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ message?: string; errors?: { message: string }[] }>({});
     const { sendJsonRequest } = useApi();
 
     useEffect(() => {
-        setNotifications(userNotifications);
+        setNotifications(buildFullNotifications(userNotifications));
     }, [userNotifications]);
 
     const handleToggle = async (e: ChangeEvent) => {
         if (!userId) return;
-
         setLoading(true);
         if ((e.target as HTMLInputElement).checked) {
             await subscribe();
@@ -53,11 +76,8 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
         setLoading(false);
     };
 
-    const handleCategoryChange = (category: NotificationTypeEnum) => {
-        setNotifications(prev => ({
-            ...prev,
-            [category]: !prev[category]
-        }));
+    const handleCategoryChange = (field: keyof NotificationSettings) => {
+        setNotifications(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
     const handleSaveNotificationSettings = async () => {
@@ -65,7 +85,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
         setMessage({});
 
         const result = await sendJsonRequest<UpdateNotificationsData>("/Profile/UpdateNotifications", "POST", {
-            notifications: Object.entries(notifications).map(entry => ({ type: Number(entry[0]), enabled: entry[1] }))
+            notifications: notificationInfo.map(item => ({ type: item.value, enabled: notifications[item.field] }))
         });
 
         if (result.data) {
@@ -76,7 +96,7 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
         }
 
         setLoading(false);
-    }
+    };
 
     return (
         <div className="mt-3">
@@ -90,8 +110,8 @@ const NotificationsTab = ({ userId, userNotifications, onUpdate }: Notifications
                                 type="checkbox"
                                 id={`notification-${item.value}`}
                                 label={item.type}
-                                checked={notifications[item.value]}
-                                onChange={() => handleCategoryChange(item.value)}
+                                checked={notifications[item.field]}
+                                onChange={() => handleCategoryChange(item.field)}
                             />
                         </div>
                     ))}

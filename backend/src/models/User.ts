@@ -1,11 +1,55 @@
-import { prop, getModelForClass, modelOptions, pre, DocumentType, Severity } from "@typegoose/typegoose";
+import { prop, getModelForClass, modelOptions, pre, DocumentType } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import RolesEnum from "../data/RolesEnum";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { isEmail } from "../utils/regexUtils";
 import { levelFromXp } from "../utils/levelUtils";
+
+@modelOptions({ schemaOptions: { _id: false } })
+export class NotificationSettings {
+    @prop({ default: true })
+    profileFollow!: boolean;
+
+    @prop({ default: true })
+    qaAnswer!: boolean;
+
+    @prop({ default: true })
+    codeComment!: boolean;
+
+    @prop({ default: true })
+    qaQuestionMention!: boolean;
+
+    @prop({ default: true })
+    qaAnswerMention!: boolean;
+
+    @prop({ default: true })
+    codeCommentMention!: boolean;
+
+    @prop({ default: true })
+    feedFollowerPost!: boolean;
+
+    @prop({ default: true })
+    feedComment!: boolean;
+
+    @prop({ default: true })
+    feedShare!: boolean;
+
+    @prop({ default: true })
+    feedPin!: boolean;
+
+    @prop({ default: true })
+    feedCommentMention!: boolean;
+
+    @prop({ default: true })
+    lessonComment!: boolean;
+
+    @prop({ default: true })
+    lessonCommentMention!: boolean;
+
+    @prop({ default: true })
+    channels!: boolean;
+}
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class Ban {
@@ -25,17 +69,6 @@ export class FeedSettings {
     filter?: number;
 }
 
-type NotificationSettings = Partial<Record<NotificationTypeEnum, boolean>>;
-
-function buildNotificationDefaults(): Record<string, any> {
-    const defaults: Record<string, any> = {};
-    const notifKeys = Object.values(NotificationTypeEnum).filter(v => typeof v === "number") as NotificationTypeEnum[];
-    for (const key of notifKeys) {
-        defaults[key] = { type: Boolean, default: true };
-    }
-    return defaults;
-}
-
 @pre<User>("save", async function () {
     if (this.isModified("password")) {
         if (this.password.length < 6) {
@@ -51,13 +84,7 @@ function buildNotificationDefaults(): Record<string, any> {
 })
 @modelOptions({ schemaOptions: { collection: "users", timestamps: true } })
 export class User {
-    @prop({
-        required: true,
-        unique: true,
-        trim: true,
-        lowercase: true,
-        validate: [isEmail, "invalid email"]
-    })
+    @prop({ required: true, unique: true, trim: true, lowercase: true, validate: [isEmail, "invalid email"] })
     email!: string;
 
     @prop({ required: true })
@@ -96,11 +123,9 @@ export class User {
     @prop()
     avatarHash?: string;
 
-    // Dynamic notification settings — stored as a plain object keyed by NotificationTypeEnum
-    @prop({ type: Object, default: () => buildNotificationDefaults(), allowMixed: Severity.ALLOW })
+    @prop({ type: () => NotificationSettings, default: () => new NotificationSettings(), _id: false })
     notifications!: NotificationSettings;
 
-    // Optional ban subdocument (_id: false)
     @prop({ type: () => Ban, default: null, _id: false })
     ban!: Ban | null;
 

@@ -10,11 +10,11 @@ import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "./NotificationsTab";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { EmailChangeData, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
+import { EmailChangeData, NotificationSettings, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
-    onUpdate: (data: any) => void
+    onUpdate: (data: Partial<UserDetails>) => void;
 }
 
 const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
@@ -252,7 +252,8 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         }
     }
 
-    const onUserNotificationsUpdate = () => {
+    const onUserNotificationsUpdate = (notifications: NotificationSettings) => {
+        onUpdate({ notifications });
     }
 
     const handleSendPasswordResetEmail = async () => {
