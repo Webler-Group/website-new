@@ -11,10 +11,9 @@ import { deletePostsAndCleanup } from "./postsHelper";
 import HttpError from "../exceptions/HttpError";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 import { getImageUrl } from "../controllers/mediaController";
-import { Code } from "../models/Code";
 
 export interface LessonNodeMinimalResponse {
-    id: string;
+    id: string | Types.ObjectId;
     index: number;
     type: LessonNodeTypeEnum;
     mode: LessonNodeModeEnum;
@@ -22,24 +21,24 @@ export interface LessonNodeMinimalResponse {
 }
 
 export interface QuizAnswerResponse {
-    id: string;
+    id: string | Types.ObjectId;
     correct: boolean;
     text: string;
 }
 
 export interface LessonNodeResponse extends LessonNodeMinimalResponse {
     text: string;
-    code?: Code;
+    codeId: string | Types.ObjectId | null;
     correctAnswer?: string;
     answers?: QuizAnswerResponse[];
 }
 
 export interface EditLessonNodeResponse {
-    id: string;
+    id: string | Types.ObjectId;
     type: LessonNodeTypeEnum;
     mode: LessonNodeModeEnum;
     text: string;
-    codeId?: string;
+    codeId: string | Types.ObjectId | null;
     correctAnswer?: string;
     answers?: QuizAnswerResponse[];
 }
@@ -51,7 +50,7 @@ export interface LessonProgressInfo {
 }
 
 export interface LessonResponse<T = LessonProgressInfo> {
-    id: string;
+    id: string | Types.ObjectId;
     title: string;
     index: number;
     nodeCount: number;
@@ -67,7 +66,7 @@ export interface CourseProgressInfo {
 }
 
 export interface CourseResponse<T = CourseProgressInfo, U = LessonProgressInfo> {
-    id: string;
+    id: string | Types.ObjectId;
     code: string;
     title: string;
     description: string;
@@ -276,16 +275,11 @@ export const deleteLessonNodeAndCleanup = async (
     session?: mongoose.ClientSession
 ) => {
     const lessonNodesToDelete = await LessonNodeModel
-        .find(filter, { _id: 1, lessonId: 1 })
+        .find(filter, { _id: 1 })
         .lean<{ _id: Types.ObjectId; lessonId: Types.ObjectId }[]>()
         .session(session ?? null);
 
     for (const lessonNode of lessonNodesToDelete) {
-        const lesson = await CourseLessonModel.findById(lessonNode.lessonId).session(session ?? null);
-        if (lesson) {
-            lesson.$inc("nodes", -1);
-            await lesson.save({ session });
-        }
         await QuizAnswerModel.deleteMany({ courseLessonNodeId: lessonNode._id }, { session });
     }
     await LessonNodeModel.deleteMany(filter, { session });
@@ -326,7 +320,7 @@ export const getLessonNodeInfo = async (
     if (lastLessonNodeId) {
         lastCompletedLessonNode = await LessonNodeModel
             .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
-            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { node: 1, index: 1 })
+            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
             .lean();
     }
 
@@ -364,6 +358,7 @@ export const formatCourseMinimal = (course: Course & { _id: Types.ObjectId }, co
         visible: course.visible,
         coverImageUrl: getImageUrl(course.coverImageHash),
         userProgress: undefined,
+        participants: course.participants ?? 0,
         completed
     };
 }
@@ -385,7 +380,7 @@ export const formatLesson = (
     }
 
     return {
-        id: lesson._id.toString(),
+        id: lesson._id,
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,

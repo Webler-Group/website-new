@@ -38,7 +38,7 @@ import z from "zod";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
 import { deleteChannelAndCleanup, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
-import { getAttachmentsByPostId } from "../helpers/postsHelper";
+import { getAttachmentsByPostId, PostAttachmentDetails } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
@@ -463,7 +463,7 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
         } : null,
         channelId: x.channel,
         viewed: participant.lastActiveAt ? participant.lastActiveAt >= x.createdAt! : false,
-        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
+        attachments: [] as PostAttachmentDetails[]
     }));
 
     await Promise.all(data.map((item, i) =>

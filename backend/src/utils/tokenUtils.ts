@@ -4,6 +4,7 @@ import { config } from "../confg";
 import bcrypt from "bcrypt";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
+import HttpError from "../exceptions/HttpError";
 
 export interface RefreshTokenPayload {
     userId: string;
@@ -27,7 +28,7 @@ export interface EmailTokenPayload {
 
 export const generateRefreshToken = async (res: Response, payload: { userId: string }) => {
     const user = await User.findById(payload.userId, "tokenVersion");
-    if (!user) throw new Error("User not found");
+    if (!user) throw new HttpError("User not found", 404);
 
     const refreshPayload: RefreshTokenPayload = {
         userId: payload.userId,
@@ -37,13 +38,13 @@ export const generateRefreshToken = async (res: Response, payload: { userId: str
     const refreshToken = jwt.sign(
         refreshPayload,
         config.refreshTokenSecret,
-        { expiresIn: "14d" }
+        { expiresIn: "30d" }
     );
 
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
         secure: config.nodeEnv === "production",
-        maxAge: 14 * 24 * 60 * 60 * 1000
+        maxAge: 30 * 24 * 60 * 60 * 1000
     });
 }
 
@@ -52,8 +53,8 @@ export const clearRefreshToken = (res: Response) => {
 }
 
 export const signAccessToken = async (userInfo: { userId: string; roles: RolesEnum[]; }, deviceId: string) => {
-    const user = await User.findById(userInfo.userId).select('tokenVersion');
-    if (!user) throw new Error('User not found');
+    const user = await User.findById(userInfo.userId, { tokenVersion: 1, active: 1 });
+    if (!user) throw new HttpError('User not found', 404);
 
     const fingerprintRaw = deviceId;
     const fingerprint = await bcrypt.hash(fingerprintRaw, 10);
@@ -67,7 +68,7 @@ export const signAccessToken = async (userInfo: { userId: string; roles: RolesEn
     const accessToken = jwt.sign(
         payload,
         config.accessTokenSecret,
-        { expiresIn: "15m" }
+        { expiresIn: "30m" }
     );
 
     const data = jwt.decode(accessToken);

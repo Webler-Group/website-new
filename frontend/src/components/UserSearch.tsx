@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useApi } from "../context/apiCommunication";
-import { UserMinimal } from "../features/profile/pages/ProfilePage";
 import ProfileAvatar from "./ProfileAvatar";
 import { Form, ListGroup } from "react-bootstrap";
+import { SearchProfilesData, UserMinimal } from "../features/profile/types";
 
 interface UserSearchProps {
     value: string;
@@ -19,16 +19,16 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        if(!value) return;
+        if (!value) return;
 
         const delayDebounce = setTimeout(async () => {
-            const result = await sendJsonRequest(
+            const result = await sendJsonRequest<SearchProfilesData>(
                 "/Profile/Search",
                 "POST",
                 { searchQuery: value }
             );
-            if(result && result.users) {
-                setResults(result.users);
+            if (result.data) {
+                setResults(result.data.users);
             }
         }, 500);
 

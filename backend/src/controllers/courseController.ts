@@ -45,7 +45,6 @@ import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
-import { Code } from "../models/Code";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseListSchema, req);
@@ -90,17 +89,27 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const course = courseId
-        ? await CourseModel.findById(courseId).lean()
-        : await CourseModel.findOne({ code: courseCode }).lean();
+        ? await CourseModel.findById(courseId)
+        : await CourseModel.findOne({ code: courseCode });
 
     if (!course) {
         throw new HttpError("Course not found", 404);
     }
 
-    let userProgress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).lean();
-    if (!userProgress) {
-        userProgress = await CourseProgressModel.create({ course: course._id, userId: currentUserId });
-    }
+    const userProgress = await withTransaction(async (session) => {
+        let progress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).lean().session(session);
+        if (!progress) {
+            [progress] = await CourseProgressModel.create(
+                [{ course: course._id, userId: currentUserId }],
+                { session }
+            );
+
+            course.$inc("participants", 1);
+            await course.save({ session });
+        }
+
+        return progress;
+    });
 
     const courseProgressInfo: CourseProgressInfo = {
         updatedAt: userProgress.updatedAt,
@@ -109,7 +118,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     const courseData: CourseResponse<CourseProgressInfo, LessonProgressInfo> = {
-        id: course._id.toString(),
+        id: course._id,
         code: course.code,
         title: course.title,
         description: course.description,
@@ -173,7 +182,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     const lessonData: LessonResponse<LessonProgressInfo> = {
-        id: lesson._id.toString(),
+        id: lesson._id,
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,
@@ -192,7 +201,6 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const lessonNode = await LessonNodeModel.findById(nodeId)
         .populate<{ lessonId: CourseLesson }>("lessonId")
-        .populate<{ codeId: Code }>("codeId")
         .lean();
     if (!lessonNode) {
         throw new HttpError("Lesson node not found", 404);
@@ -204,19 +212,12 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("User progress not found", 404);
         }
 
-        const { unlocked, isLastUnlocked } = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
+        const { unlocked } = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
         if (!unlocked) {
             throw new HttpError("Node is not unlocked", 400);
         }
-
-        if ((lessonNode._type === LessonNodeTypeEnum.TEXT || lessonNode._type === LessonNodeTypeEnum.CODE) && isLastUnlocked) {
-            userProgress.$inc("nodesSolved", 1);
-            userProgress.lastLessonNodeId = lessonNode._id;
-            await userProgress.save();
-        }
     } else {
-        const user = await User.findById(currentUserId).select("roles").lean();
-        if (!user || ![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => user.roles.includes(role))) {
+        if (![RolesEnum.CREATOR, RolesEnum.ADMIN].some(role => req.roles!.includes(role))) {
             throw new HttpError("Unauthorized", 403);
         }
     }
@@ -316,7 +317,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
             const lessons = await CourseLessonModel.find({ course: userProgress.course }, { nodes: 1 }).lean<{ nodes: number }[]>();
             const courseNodes = lessons.reduce((count, lesson) => count + lesson.nodes, 0);
 
-            if (courseNodes === userProgress.nodesSolved) {
+            if (courseNodes === userProgress.nodesSolved + 1) {
                 userProgress.completed = true;
             }
 

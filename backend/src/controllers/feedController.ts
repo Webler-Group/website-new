@@ -27,7 +27,6 @@ import {
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
-import { getImageUrl } from "./mediaController";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
@@ -35,20 +34,7 @@ import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
-
-type ReactionAgg = { _id: ReactionsEnum; count: number };
-
-const getReactionsForPost = async (postId: Types.ObjectId) => {
-    const reactionsAgg = await UpvoteModel.aggregate<ReactionAgg>([
-        { $match: { parentId: postId } },
-        { $group: { _id: "$reaction", count: { $sum: 1 } } },
-        { $sort: { count: -1 } }
-    ]);
-    return {
-        totalReactions: reactionsAgg.reduce((sum, r) => sum + r.count, 0),
-        topReactions: reactionsAgg.slice(0, 3).map(r => ({ reaction: r._id, count: r.count }))
-    };
-};
+import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createFeedSchema, req);
@@ -85,11 +71,9 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             feed: {
                 type: feed._type,
                 id: feed._id,
-                title: feed.title,
                 message: feed.message,
                 date: feed.createdAt,
                 userId: feed.user,
-                isAccepted: feed.isAccepted,
                 votes: feed.votes,
                 answers: feed.answers
             }
@@ -106,19 +90,12 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     const parentObjectId = new mongoose.Types.ObjectId(parentId);
     const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-    type UserReactionAgg = {
-        _id: Types.ObjectId;
-        userId: Types.ObjectId;
-        userName: string;
-        userHash: string;
-        level: number;
-        roles: string[];
-        reaction: ReactionsEnum;
-        isFollowing: boolean;
-    };
-
     const [reactions, totalCount] = await Promise.all([
-        UpvoteModel.aggregate<UserReactionAgg>([
+        UpvoteModel.aggregate<{
+            _id: Types.ObjectId;
+            user: UserMinimal & { _id: Types.ObjectId };
+            reaction: ReactionsEnum;
+        }>([
             { $match: { parentId: parentObjectId } },
             { $sort: { _id: -1 } },
             { $skip: skip },
@@ -148,18 +125,21 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
                             }
                         }
                     ],
-                    as: "isFollowing"
+                    as: "followingDetails"
                 }
             },
             {
                 $project: {
-                    userId: "$userDetails._id",
-                    userName: "$userDetails.name",
-                    userHash: "$userDetails.avatarHash",
-                    level: "$userDetails.level",
-                    roles: "$userDetails.roles",
                     reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
-                    isFollowing: { $gt: [{ $size: "$isFollowing" }, 0] }
+                    user: {
+                        _id: "$userDetails._id",
+                        name: "$userDetails.name",
+                        avatarUrl: "$userDetails.avatarHash",
+                        level: "$userDetails.level",
+                        roles: "$userDetails.roles",
+                        countryCode: { $ifNull: ["$userDetails.countryCode", null] },
+                        isFollowing: { $gt: [{ $size: "$followingDetails" }, 0] }
+                    }
                 }
             }
         ]),
@@ -172,10 +152,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
             count: totalCount,
             userReactions: reactions.map(x => ({
                 id: x._id,
-                userId: x.userId,
-                userName: x.userName,
-                userAvatarUrl: getImageUrl(x.userHash),
-                isFollowing: x.isFollowing,
+                user: formatUserMinimal(x.user),
                 reaction: x.reaction
             }))
         }
@@ -207,7 +184,6 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         success: true,
         data: {
             id: feed._id,
-            title: feed.title,
             message: feed.message,
             attachments
         }
@@ -410,7 +386,6 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
         data: {
             feed: {
                 id: feed._id,
-                title: feed.title,
                 message: feed.message,
                 date: feed.createdAt,
                 userId: feed.user,
@@ -454,7 +429,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             if (!userId) {
                 throw new HttpError("Invalid request - userId required", 400);
             }
-            const followingUsers = await UserFollowingModel.find({ user: userId }).select("following").lean();
+            const followingUsers = await UserFollowingModel.find({ user: userId }).lean();
             const followingUserIds = followingUsers.map(f => f.following);
             if (!followingUserIds.length) {
                 res.json({ success: true, data: { count: 0, feeds: [] } });
@@ -485,48 +460,22 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             .clone()
             .skip((page - 1) * count)
             .limit(count)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-            .populate<{ parentId: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } }>({
+            .populate("user", USER_MINIMAL_FIELDS)
+            .populate({
                 path: "parentId",
                 populate: { path: "user", select: USER_MINIMAL_FIELDS }
             })
-            .lean()
+            .lean<FeedDetails[]>()
     ]);
 
     const data = await Promise.all(feeds.map(async x => {
-        const [{ totalReactions, topReactions }, attachments, upvote] = await Promise.all([
+        const [reactions, attachments, upvote] = await Promise.all([
             getReactionsForPost(x._id),
             getAttachmentsByPostId({ post: x._id }),
             currentUserId ? UpvoteModel.findOne({ parentId: x._id, user: currentUserId }).lean() : null
         ]);
 
-        const originalPost = x.parentId as (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null;
-
-        return {
-            id: x._id,
-            type: x._type,
-            title: x.title ?? null,
-            message: x.message,
-            date: x.createdAt,
-            user: formatUserMinimal(x.user),
-            answers: x.answers ?? 0,
-            votes: x.votes ?? 0,
-            shares: x.shares ?? 0,
-            isUpvoted: !!upvote,
-            reaction: upvote?.reaction ?? "",
-            score: (x.votes ?? 0) + (x.shares ?? 0) + (x.answers ?? 0),
-            isPinned: x.isPinned,
-            attachments,
-            originalPost: originalPost ? {
-                id: originalPost._id,
-                title: originalPost.title ?? null,
-                message: truncate(escapeMarkdown(originalPost.message), 40),
-                user: formatUserMinimal(originalPost.user),
-                date: originalPost.createdAt
-            } : null,
-            totalReactions,
-            topReactions
-        };
+        return formatFeedDetails(x, upvote, attachments, reactions);
     }));
 
     res.json({ success: true, data: { count: feedCount, feeds: data } });
@@ -538,52 +487,27 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const feed = await PostModel.findById(feedId)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-        .populate<{ parentId: Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } } }>({
+        .populate("user", USER_MINIMAL_FIELDS)
+        .populate({
             path: "parentId",
             populate: { path: "user", select: USER_MINIMAL_FIELDS }
         })
-        .lean();
+        .lean<FeedDetails>();
 
     if (!feed) {
         throw new HttpError("Feed not found", 404);
     }
 
-    const [{ totalReactions, topReactions }, attachments, upvote] = await Promise.all([
+    const [reactions, attachments, upvote] = await Promise.all([
         getReactionsForPost(feed._id),
         getAttachmentsByPostId({ post: feed._id }),
         currentUserId ? UpvoteModel.findOne({ parentId: feed._id, user: currentUserId }).lean() : null
     ]);
 
-    const originalPost = feed.parentId as (Post & { _id: Types.ObjectId, user: UserMinimal & { _id: Types.ObjectId } }) | null;
-
     res.json({
         success: true,
         data: {
-            feed: {
-                id: feed._id,
-                type: feed._type,
-                title: feed.title ?? null,
-                message: feed.message,
-                date: feed.createdAt,
-                user: formatUserMinimal(feed.user),
-                answers: feed.answers,
-                votes: feed.votes,
-                shares: feed.shares,
-                isPinned: feed.isPinned,
-                attachments,
-                isUpvoted: !!upvote,
-                reaction: upvote?.reaction ?? "",
-                originalPost: originalPost ? {
-                    id: originalPost._id,
-                    title: originalPost.title ?? null,
-                    message: truncate(escapeMarkdown(originalPost.message), 40),
-                    user: formatUserMinimal(originalPost.user),
-                    date: originalPost.createdAt
-                } : null,
-                totalReactions,
-                topReactions
-            }
+            feed: formatFeedDetails(feed, upvote, attachments, reactions)
         }
     });
 });

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { IFeed } from './types';
 import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from '../../../components/NotificationToast';
@@ -8,18 +7,19 @@ import { Button, Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
 import { FaArrowLeft } from 'react-icons/fa6';
 import Loader from '../../../components/Loader';
+import { FeedDetails, GetFeedData } from '../types';
 
 interface FeedDetailsProps {
   feedId?: string;
-  onGeneralUpdate: (feed: IFeed) => void;
+  onGeneralUpdate: (feed: FeedDetails) => void;
   onShowUserReactions: (feedId: string) => void;
-  onDelete: (feed: IFeed) => void;
-  onTogglePin: (feed: IFeed) => void;
+  onDelete: (feed: FeedDetails) => void;
+  onTogglePin: (feed: FeedDetails) => void;
 }
 
-const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onTogglePin }: FeedDetailsProps) => {
+const Feed = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onTogglePin }: FeedDetailsProps) => {
   const navigate = useNavigate();
-  const [feed, setFeed] = useState<IFeed | null>(null);
+  const [feed, setFeed] = useState<FeedDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { sendJsonRequest } = useApi();
@@ -47,24 +47,17 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
     if (!feedId) return;
 
     const fetchFeed = async () => {
-      try {
-        setLoading(true);
-
-        const response = await sendJsonRequest("/Feed/GetFeed", "POST", { feedId });
-        if (!response.success) {
-          throw new Error(response.message);
-        }
-        setFeed(response.feed);
-        setCommentCount(response.feed.answers);
-        onGeneralUpdate(response.feed);
-
-      } catch (err) {
+      setLoading(true);
+      const result = await sendJsonRequest<GetFeedData>("/Feed/GetFeed", "POST", { feedId });
+      if (result.data) {
+        setFeed(result.data.feed);
+        setCommentCount(result.data.feed.answers);
+        onGeneralUpdate(result.data.feed);
+      } else {
         setError("Failed to load feed");
-        console.error("Error fetching feed:", err);
-        showNotification("error", String(err));
-      } finally {
-        setLoading(false);
+        showNotification("error", result.error?.[0].message ?? "Failed to load feed");
       }
+      setLoading(false);
     };
 
     fetchFeed();
@@ -91,7 +84,7 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
     setTimeout(() => setNotification(null), 5000);
   };
 
-  const onUpdate = (feed: IFeed) => {
+  const onUpdate = (feed: FeedDetails) => {
     setFeed(feed);
     onGeneralUpdate(feed);
   }
@@ -170,4 +163,4 @@ const FeedDetails = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, o
   );
 };
 
-export default FeedDetails;
+export default Feed;

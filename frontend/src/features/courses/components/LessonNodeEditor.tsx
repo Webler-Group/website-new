@@ -23,9 +23,10 @@ import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
 import CodeList, { ICodesState } from "../../codes/components/CodeList";
 import HtmlEditorField from "../../../components/HtmlEditorField";
-import { CodeDetails, GetCodeData } from "../../codes/types";
 import { EditorChangeLessonNodeIndexData, EditorEditLessonNodeData, EditorGetLessonNodeData, LessonNodeAnswerDetails, LessonNodeDetails } from "../types";
 import LessonNode from "./LessonNode";
+import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;
@@ -57,10 +58,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
         const { sendJsonRequest } = useApi();
         const [node, setNode] = useState<LessonNodeDetails | null>(null);
         const [nodeText, setNodeText] = useState("");
-        const [nodeType, setNodeType] = useState(0);
-        const [nodeMode, setNodeMode] = useState(1);
+        const [nodeType, setNodeType] = useState<LessonNodeTypeEnum>(LessonNodeTypeEnum.TEXT);
+        const [nodeMode, setNodeMode] = useState<LessonNodeModeEnum>(LessonNodeModeEnum.MARKDOWN);
         const [nodeCodeId, setNodeCodeId] = useState<string | null>(null);
-        const [selectedCode, setSelectedCode] = useState<CodeDetails | null>(null);
+        const [nodeCodeName, setNodeCodeName] = useState<string | null>(null);
         const [codePickerVisible, setCodePickerVisible] = useState(false);
         const [codesState, setCodesState] = useState<ICodesState>({
             page: 1,
@@ -82,7 +83,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
         }, [nodeId]);
 
         useEffect(() => {
-            if (nodeType == 2) {
+            if (nodeType == LessonNodeTypeEnum.SINGLECHOICE_QUESTION) {
                 setQuestionsAnswers((answers) => {
                     const newAnswers = answers.map((a) => ({ ...a }));
                     let firstChecked = false;
@@ -117,8 +118,8 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 setNode(nodeData);
                 setNodeType(nodeData.type);
                 setNodeMode(nodeData.mode);
-                setNodeCodeId(nodeData.code?.id || null);
-                setSelectedCode(nodeData.code || null);
+                setNodeCodeId(nodeData.codeId ?? null);
+                setNodeCodeName(null); // name is unknown until the picker is used or we fetch it
                 setNodeText(nodeData.text);
                 setQuestionCorrectAnswer(nodeData.correctAnswer ?? "");
                 setQuestionsAnswers(nodeData.answers || []);
@@ -147,26 +148,24 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             if (!node) return false;
 
             const nodeTextTrimmed = nodeText.trim();
-            const savedText = (node.text ?? "").trim();
-
-            const nodeAny = node as any;
+            const savedText = node.text.trim();
 
             return (
-                nodeType != node.type ||
-                nodeMode != (node.mode ?? 1) ||
-                nodeCodeId != (nodeAny.codeId?.id ?? nodeAny.codeId?._id ?? "") ||
-                nodeTextTrimmed != savedText ||
-                questionCorrectAnswer != (node.correctAnswer ?? "") ||
-                questionAnswers.length != (node.answers?.length ?? 0) ||
-                !(node.answers ?? []).every((x) => {
-                    const answer = questionAnswers.find((y) => y.id == x.id);
-                    return answer && answer.text == x.text && answer.correct == x.correct;
-                })
+                nodeType !== node.type ||
+                nodeMode !== node.mode ||
+                (nodeType === LessonNodeTypeEnum.CODE && nodeCodeId !== node.codeId) ||
+                (nodeType !== LessonNodeTypeEnum.CODE && nodeTextTrimmed !== savedText) ||
+                (nodeType === LessonNodeTypeEnum.TEXT_QUESTION && questionCorrectAnswer !== node.correctAnswer) ||
+                ((nodeType === LessonNodeTypeEnum.MULTICHOICE_QUESTION || nodeType === LessonNodeTypeEnum.SINGLECHOICE_QUESTION) && questionAnswers.length !== node.answers.length ||
+                !node.answers.every((x) => {
+                    const answer = questionAnswers.find((y) => y.id === x.id);
+                    return answer && answer.text === x.text && answer.correct === x.correct;
+                }))
             );
-        }, [node, nodeType, nodeMode, nodeText, questionCorrectAnswer, questionAnswers]);
+        }, [node, nodeType, nodeCodeId, nodeMode, nodeText, questionCorrectAnswer, questionAnswers]);
 
         const validateNode = (showMessage: boolean) => {
-            if (nodeType == 2 || nodeType == 3) {
+            if (nodeType == LessonNodeTypeEnum.MULTICHOICE_QUESTION || nodeType == LessonNodeTypeEnum.SINGLECHOICE_QUESTION) {
                 if (questionAnswers.length < 2) {
                     if (showMessage) setMessage(["danger", "Question cannot have less than 2 answers"]);
                     return false;
@@ -174,7 +173,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                     if (showMessage) setMessage(["danger", "Question cannot have more than 4 answers"]);
                     return false;
                 }
-            } else if (nodeType == 4 && questionCorrectAnswer.length == 0) {
+            } else if (nodeType === LessonNodeTypeEnum.TEXT_QUESTION && questionCorrectAnswer.length == 0) {
                 if (showMessage) setMessage(["danger", "Correct answer cannot be empty"]);
                 return false;
             }
@@ -190,10 +189,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 nodeId: node.id,
                 type: nodeType,
                 mode: nodeMode,
-                codeId: nodeCodeId || null,
-                text: nodeText,
-                correctAnswer: questionCorrectAnswer,
-                answers: questionAnswers,
+                codeId: nodeType === LessonNodeTypeEnum.CODE ? nodeCodeId : null,
+                text: nodeType !== LessonNodeTypeEnum.CODE ? nodeText : undefined,
+                correctAnswer: nodeType === LessonNodeTypeEnum.TEXT_QUESTION ? questionCorrectAnswer : undefined,
+                answers: (nodeType === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || nodeType === LessonNodeTypeEnum.MULTICHOICE_QUESTION) ? questionAnswers : undefined
             });
 
             if (result.data) {
@@ -210,7 +209,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 if (showMessage) setMessage(["success", "Lessson node was saved successfully."]);
                 return true;
             } else {
-                if (showMessage) setMessage(["danger", result?.error?.[0]?.message ?? "Failed to save node"]);
+                if (showMessage) setMessage(["danger", result.error?.[0].message ?? "Failed to save node"]);
             }
             return false;
         };
@@ -303,7 +302,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                     onChangeIndex(node.id, newIndex);
                     setMessage(["success", "Node index changed successfully."]);
                 } else {
-                    setMessage(["danger", result?.error?.[0]?.message ?? "Failed to change index"]);
+                    setMessage(["danger", result.error?.[0]?.message ?? "Failed to change index"]);
                 }
             }
 
@@ -320,12 +319,12 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                 ...node,
                 type: nodeType,
                 mode: nodeMode,
-                codeId: selectedCode,
+                codeId: nodeCodeId,
                 text: nodeText,
                 correctAnswer: questionCorrectAnswer,
                 answers: questionAnswers,
             };
-        }, [node, nodeType, nodeMode, selectedCode, nodeText, questionCorrectAnswer, questionAnswers]);
+        }, [node, nodeType, nodeMode, nodeText, nodeCodeId, questionCorrectAnswer, questionAnswers]);
 
         const customPreview = useMemo(() => {
             if (!previewNodeData) return undefined;
@@ -500,11 +499,11 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 </FormGroup>
                             }
 
-                            {nodeType !== 5 ? (
+                            {nodeType !== LessonNodeTypeEnum.CODE ? (
                                 <FormGroup>
                                     <FormLabel>Text</FormLabel>
                                     {
-                                        nodeMode === 1 ?
+                                        nodeMode === LessonNodeModeEnum.MARKDOWN ?
                                             <MdEditorField
                                                 section="CourseEditor"
                                                 rootAlias="lesson-images"
@@ -535,7 +534,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                     <FormLabel>Selected Code Snippet</FormLabel>
                                     <div className="d-flex gap-2 align-items-center">
                                         <FormControl
-                                            value={selectedCode?.name ?? "No snippet selected"}
+                                            value={nodeCodeName ?? nodeCodeId ?? "No snippet selected"}
                                             disabled
                                         />
                                         <Button
@@ -571,13 +570,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                     <CodeList
                                         codesState={codesState}
                                         setCodesState={setCodesState}
-                                        onCodeClick={async (id) => {
-                                            const result = await sendJsonRequest<GetCodeData>("/Codes/GetCode", "POST", { codeId: id });
-                                            if (result.data) {
-                                                setNodeCodeId(id);
-                                                setSelectedCode(result.data.code);
-                                                setCodePickerVisible(false);
-                                            }
+                                        onCodeClick={async (code) => {
+                                            setNodeCodeId(code.id);
+                                            setNodeCodeName(code.name);
+                                            setCodePickerVisible(false);
                                         }}
                                         isCodeSelected={(id) => nodeCodeId === id}
                                         showNewCodeBtn={false}

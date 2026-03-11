@@ -80,8 +80,7 @@ export const TagSearch = ({
     const getValidTags = async () => {
         const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
         if (result.data) {
-            const resArr = result.data.tags.map(t => t.name);
-            setValidTags(resArr);
+            setValidTags(result.data.tags);
         }
     };
 
@@ -184,8 +183,7 @@ const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
     const getValidTags = async () => {
         const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
         if (result.data) {
-            const resArr = result.data.tags.map(tag => tag.name);
-            setValidTags(resArr);
+            setValidTags(result.data.tags);
         }
     }
 

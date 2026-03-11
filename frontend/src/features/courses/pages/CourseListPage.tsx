@@ -3,7 +3,6 @@ import { Button, Container, Modal } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
-import MyCourse from "../components/MyCourse";
 import { Helmet } from "react-helmet-async";
 import { CourseMinimal, CoursesListData, UserCoursesListData } from "../types";
 
@@ -88,7 +87,7 @@ const CourseListPage = () => {
                                     myCourses.map(course => {
                                         return (
                                             <div className="mt-3" key={course.id}>
-                                                <MyCourse course={course} onRestart={onRestartCourse} />
+                                                <Course course={course} onRestart={onRestartCourse} isMyCourse={true} />
                                             </div>
                                         )
                                     })
@@ -107,7 +106,7 @@ const CourseListPage = () => {
                                     courses.map(course => {
                                         return (
                                             <div className="mt-3" key={course.id}>
-                                                <Course course={course} isEditor={false} />
+                                                <Course course={course} />
                                             </div>
                                         )
                                     })

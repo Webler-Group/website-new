@@ -1,6 +1,9 @@
-import React, { ReactNode, useContext } from "react";
+import React, { ReactNode, useContext, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
+import { RefreshData } from "../features/auth/types";
+
+const EXPIRY_BUFFER_MS = 30_000;
 
 export interface JsonResponse<T> {
     success: boolean;
@@ -12,11 +15,18 @@ interface ApiState {
     sendJsonRequest<T>(path: string, method: string, body?: any, options?: any, isMultipart?: boolean): Promise<JsonResponse<T>>;
 }
 
-type QueryOptions = { method: string; headers?: any; body?: any; signal?: AbortSignal; accessToken?: string; deviceId?: string; };
+type QueryOptions = {
+    method: string;
+    headers?: Record<string, string>;
+    body?: any;
+    signal?: AbortSignal;
+    accessToken?: string;
+    deviceId?: string;
+};
 
 const ApiContext = React.createContext<ApiState>({} as ApiState);
 
-export const useApi = (() => useContext(ApiContext));
+export const useApi = () => useContext(ApiContext);
 
 interface ApiProviderProps {
     baseUrl: string;
@@ -25,102 +35,117 @@ interface ApiProviderProps {
 
 const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
     const navigate = useNavigate();
-    const { authenticate, accessToken, expiresIn, deviceId } = useAuth();
+    const { authenticate, logout, accessToken, tokenExpiresAt, deviceId } = useAuth();
 
-    const fetchQuery = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
-        const headers = options.headers ?? {};
-        let body;
-        if (isMultipart) {
-            body = new FormData();
-            if (options.body) {
-                for (let k in options.body) {
-                    body.append(k, options.body[k]);
+    const refreshPromiseRef = useRef<Promise<JsonResponse<RefreshData> | null> | null>(null);
+
+    const fetchQuery = async (
+        path: string,
+        options: QueryOptions,
+        isMultipart: boolean = false
+    ): Promise<Response> => {
+        const headers: Record<string, string> = { ...options.headers };
+        let body: BodyInit | undefined;
+
+        if (options.method !== "GET") {
+            if (isMultipart) {
+                const formData = new FormData();
+                if (options.body) {
+                    for (const k in options.body) {
+                        formData.append(k, options.body[k]);
+                    }
                 }
+                body = formData;
+            } else {
+                headers["Content-Type"] = "application/json";
+                body = JSON.stringify(options.body);
             }
-        } else {
-            headers["Content-Type"] = "application/json";
-            body = JSON.stringify(options.body);
         }
+
         if (options.accessToken) {
             headers["Authorization"] = "Bearer " + options.accessToken;
         }
         if (options.deviceId) {
             headers["X-Device-Id"] = options.deviceId;
         }
-        return await fetch(baseUrl + path, {
+
+        return fetch(baseUrl + path, {
             method: options.method,
             credentials: "include",
             mode: "cors",
             headers,
-            body: options.method != "GET" ? body : undefined,
-            signal: options.signal
+            body,
+            signal: options.signal,
         });
-    }
+    };
 
-    const fetchQueryWithReauthentication = async (path: string, options: QueryOptions, isMultipart: boolean = false) => {
-        if (!path.startsWith("/Auth") && options.accessToken && expiresIn <= Date.now()) {
-            const reauthResult = await reauthenticate();
-            options.accessToken = reauthResult.accessToken ?? undefined;
-            if (!options.accessToken) {
-                navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
-            }
+    const reauthenticate = async (): Promise<JsonResponse<RefreshData> | null> => {
+        if (refreshPromiseRef.current) {
+            return refreshPromiseRef.current;
         }
 
-        return await fetchQuery(path, {
-            ...options
-        }, isMultipart);
-
-    }
-
-    const reauthenticate = async (): Promise<any> => {
-        try {
-            const response = await fetchQuery("/Auth/Refresh", {
-                method: "POST",
-                headers: {
-                    "X-Device-Id": deviceId
+        refreshPromiseRef.current = (async () => {
+            try {
+                const response = await fetchQuery("/Auth/Refresh", {
+                    method: "POST",
+                    headers: { "X-Device-Id": deviceId },
+                });
+                const result: JsonResponse<RefreshData> = await response.json();
+                if (result.data) {
+                    authenticate(result.data.accessToken, result.data.expiresIn);
+                    return result;
                 }
-            });
-            const result = await response.json();
-            if (result && result.accessToken && result.expiresIn) {
-                authenticate(result.accessToken, result.expiresIn);
-                return result;
+                logout();
+                return null;
+            } catch {
+                logout();
+                return null;
+            } finally {
+                refreshPromiseRef.current = null;
             }
-        } catch {
+        })();
 
-        }
+        return refreshPromiseRef.current;
+    };
 
-        authenticate(null);
-        return null;
-    }
-
-    const sendJsonRequest = async function <T>(path: string, method: string, body: any = {}, options: any = {}, isMultipart: boolean = false): Promise<JsonResponse<T>> {
+    const sendJsonRequest = async function <T>(
+        path: string,
+        method: string,
+        body: any = {},
+        options: any = {},
+        isMultipart: boolean = false
+    ): Promise<JsonResponse<T>> {
         try {
-            const response = await fetchQueryWithReauthentication(path, {
-                method,
-                body,
-                accessToken,
-                deviceId,
-                ...options
-            }, isMultipart);
+            let currentAccessToken = accessToken;
 
-            const json: JsonResponse<T> = await response.json();
+            if (!path.startsWith("/Auth") && tokenExpiresAt - EXPIRY_BUFFER_MS <= Date.now()) {
+                const result = await reauthenticate();
+                if (result?.data) {
+                    currentAccessToken = result.data.accessToken;
+                } else {
+                    navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
+                    return { success: false, error: [{ message: "Session expired" }] };
+                }
+            }
 
-            return json;
+            const response = await fetchQuery(
+                path,
+                { method, body, accessToken: currentAccessToken, deviceId, ...options },
+                isMultipart
+            );
+
+            return await response.json() as JsonResponse<T>;
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unexpected error occurred";
             return { success: false, error: [{ message }] };
         }
-    }
-
-    const value: ApiState = {
-        sendJsonRequest
     };
 
     return (
-        <ApiContext.Provider value={value}>
+        <ApiContext.Provider value={{ sendJsonRequest }}>
             {children}
         </ApiContext.Provider>
     );
-}
+};
 
-export default ApiProvider;
+export default ApiProvider; 

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { SubmitEvent, useEffect, useState } from "react";
 import { Button, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import MdEditorField from "../../../components/MdEditorField";
+import { CreateFeedData, EditFeedData, GetFeedData } from "../types";
 
 interface FeedCreatePageProps {
     feedId: string | null;
@@ -12,7 +13,7 @@ interface FeedCreatePageProps {
 const FeedCreatePage = ({ feedId }: FeedCreatePageProps) => {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<any[] | undefined>();
+    const [error, setError] = useState<{ message: string }[] | undefined>();
     const navigate = useNavigate();
     const { sendJsonRequest } = useApi();
 
@@ -24,39 +25,39 @@ const FeedCreatePage = ({ feedId }: FeedCreatePageProps) => {
 
     const getFeed = async () => {
         setLoading(true);
-        const result = await sendJsonRequest(`/Feed/GetFeed`, "POST", { feedId });
-        if (result && result.feed) {
-            setMessage(result.feed.message);
+        const result = await sendJsonRequest<GetFeedData>(`/Feed/GetFeed`, "POST", { feedId });
+        if (result.data) {
+            setMessage(result.data.feed.message);
         }
         setLoading(false);
     }
 
     const createFeed = async () => {
-        const result = await sendJsonRequest("/Feed/CreateFeed", "POST", {
+        const result = await sendJsonRequest<CreateFeedData>("/Feed/CreateFeed", "POST", {
             message
         });
 
-        if (result.success) {
-            navigate("/Feed/" + result.feed.id);
+        if (result.data) {
+            navigate("/Feed/" + result.data.feed.id);
         } else {
             setError(result.error);
         }
     }
 
     const editFeed = async () => {
-        const result = await sendJsonRequest("/Feed/EditFeed", "PUT", {
+        const result = await sendJsonRequest<EditFeedData>("/Feed/EditFeed", "PUT", {
             feedId: feedId,
             message
         });
 
-        if (result.success) {
+        if (result.data) {
             navigate("/Feed/" + result.data.id);
         } else {
             setError(result.error);
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: SubmitEvent) => {
         e.preventDefault();
         if (!message.trim()) return;
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { IFeed } from "../components/types";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
+import { FeedDetails, FeedListData } from "../types";
 
 interface UseFeedState {
     page: number;
@@ -9,9 +9,9 @@ interface UseFeedState {
 
 const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     const [state, setState] = useState<UseFeedState>({ page: 0 });
-    const [results, setResults] = useState<IFeed[]>([]);
+    const [results, setResults] = useState<FeedDetails[]>([]);
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<any[]>([]);
+    const [error, setError] = useState<{ message: string }[]>([]);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [totalCount, setTotalCount] = useState(0);
     const { sendJsonRequest } = useApi();
@@ -32,7 +32,7 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
 
         const keepPrev = state.page !== 1;
 
-        const result = await sendJsonRequest("/Feed", "POST", {
+        const result = await sendJsonRequest<FeedListData>("/Feed", "POST", {
             page: state.page,
             count: countPerPage,
             filter,
@@ -40,27 +40,27 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
             userId: userInfo?.id
         });
 
-        if (result && result.success) {
+        if (result.data) {
             if (keepPrev) {
                 setResults((prev) => {
-                    const newPosts = result.feeds.filter(
-                        (newPost: IFeed) => !prev.some((existingPost) => existingPost.id === newPost.id)
+                    const newPosts = result.data!.feeds.filter(
+                        (newPost) => !prev.some((existingPost) => existingPost.id === newPost.id)
                     );
                     return [...prev, ...newPosts];
                 });
             } else {
-                setResults(result.feeds);
+                setResults(result.data.feeds);
             }
-            setTotalCount(result.count);
-            setHasNextPage(result.feeds.length === countPerPage);
+            setTotalCount(result.data.count);
+            setHasNextPage(result.data.feeds.length === countPerPage);
         } else {
-            setError(result.error);
+            setError(result.error ?? []);
         }
 
         setLoading(false);
     };
 
-    const editPost = (updatedPost: IFeed) => {
+    const editPost = (updatedPost: FeedDetails) => {
         setResults(prev => prev.map(x => x.id == updatedPost.id ? updatedPost : x))
     }
 
@@ -68,8 +68,8 @@ const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
         setResults(prev => prev.filter(x => x.id != id));
     }
 
-    const addPost = (post: IFeed) => {
-        setResults(prev => [post, ...prev]);
+    const addPost = (post: FeedDetails) => {
+        setResults(prev => prev.some(x => x.id === post.id) ? prev : [post, ...prev]);
     }
 
     return {

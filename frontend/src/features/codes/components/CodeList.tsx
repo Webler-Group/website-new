@@ -21,7 +21,7 @@ interface ICodesState {
 interface CodeListProps {
     codesState: ICodesState;
     setCodesState: (setter: (prev: ICodesState) => ICodesState) => void;
-    onCodeClick?: (id: string) => void;
+    onCodeClick?: (code: CodeMinimal<UserMinimal>) => void;
     isCodeSelected?: (id: string) => boolean;
     showNewCodeBtn: boolean;
 }
@@ -182,7 +182,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                                             code={code}
                                             searchQuery={searchQuery}
                                             showUserProfile={filter != 3}
-                                            onClick={onCodeClick ? () => onCodeClick(code.id) : undefined}
+                                            onClick={onCodeClick ? () => onCodeClick(code) : undefined}
                                             selected={isCodeSelected?.(code.id)} />
                                     </div>
                                 )

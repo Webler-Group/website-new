@@ -28,7 +28,7 @@ const getTagList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({
         success: true,
         data: {
-            tags
+            tags: tags.map(tag => tag.name)
         }
     });
 });

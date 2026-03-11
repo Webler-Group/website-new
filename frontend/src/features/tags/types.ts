@@ -4,7 +4,7 @@ export interface Tag {
 }
 
 export interface TagListData {
-    tags: Tag[];
+    tags: string[];
 }
 
 export interface GetTagData {

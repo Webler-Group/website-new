@@ -6,12 +6,12 @@ import HtmlRenderer from "../../../components/HtmlRenderer";
 import { GetLessonNodeData, LessonNodeDetails, SolveData } from "../types";
 import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
+import { CodeDetails, GetCodeData } from "../../codes/types";
 
 interface LessonNodeProps {
     nodeId?: string;
     nodeData?: LessonNodeDetails;
     mock: boolean;
-    onEnter?: (id: string) => void;
     onAnswered?: (id: string, correct: boolean) => void;
     onContinue?: (id: string) => void;
 }
@@ -21,12 +21,15 @@ const allowedUrls = [
     /^\/.*/
 ];
 
-const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }: LessonNodeProps) => {
+const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNodeProps) => {
     const [node, setNode] = useState<LessonNodeDetails | null>(null);
+    const [code, setCode] = useState<CodeDetails | null>(null);
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
     const [textAnswer, setTextAnswer] = useState("");
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
     const { sendJsonRequest } = useApi();
+
+    const activeNode = nodeData ?? node;
 
     useEffect(() => {
         setSelectedAnswers([]);
@@ -35,10 +38,25 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
         getNode();
     }, [nodeId]);
 
+    useEffect(() => {
+        if (activeNode?.type !== LessonNodeTypeEnum.CODE || !activeNode?.codeId) {
+            setCode(null);
+            return;
+        }
+
+        const fetchCode = async () => {
+            const result = await sendJsonRequest<GetCodeData>("/Codes/GetCode", "POST", { codeId: activeNode.codeId });
+            if (result.data) {
+                setCode(result.data.code);
+            }
+        };
+
+        fetchCode();
+    }, [activeNode?.codeId, activeNode?.type]);
+
     const getNode = async () => {
         if (nodeData) {
             setNode(nodeData);
-            onEnter?.(nodeData.id);
         } else {
             const result = await sendJsonRequest<GetLessonNodeData>("/Courses/GetLessonNode", "POST", {
                 nodeId,
@@ -46,7 +64,6 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             });
             if (result.data) {
                 setNode(result.data.lessonNode);
-                onEnter?.(nodeId!);
             }
         }
     };
@@ -72,16 +89,16 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     };
 
     const handleSubmit = async () => {
-        if (!node) return;
+        if (!activeNode) return;
 
         const result = await sendJsonRequest<SolveData>("/Courses/SolveNode", "POST", {
-            nodeId: node.id,
+            nodeId: activeNode.id,
             mock: nodeData ? {
                 type: nodeData.type,
                 correctAnswer: nodeData.correctAnswer,
                 answers: nodeData.answers
             } : undefined,
-            answers: node.answers.map(a => ({
+            answers: activeNode.answers.map(a => ({
                 id: a.id,
                 correct: selectedAnswers.includes(a.id)
             })),
@@ -89,7 +106,11 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
         });
         if (result.data) {
             setIsCorrect(result.data.correct);
-            onAnswered?.(node.id, result.data.correct);
+            if (activeNode.type === LessonNodeTypeEnum.TEXT || activeNode.type === LessonNodeTypeEnum.CODE) {
+                onContinue?.(activeNode.id);
+            } else {
+                onAnswered?.(activeNode.id, result.data.correct);
+            }
         }
     };
 
@@ -99,10 +120,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     };
 
     const handleContinue = () => {
-        if (!node) {
-            return;
-        }
-        onContinue?.(node.id);
+        if (!activeNode) return;
+        onContinue?.(activeNode.id);
     };
 
     const getAnswerClass = (answerId: string) => {
@@ -118,8 +137,6 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
     };
 
     let content = <></>;
-
-    const activeNode = nodeData || node;
 
     if (activeNode) {
         const renderAnswers = () =>
@@ -139,8 +156,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
             ));
 
         const renderContent = () => {
-            if (activeNode.type === LessonNodeTypeEnum.CODE && activeNode.code) {
-                const code = activeNode.code!;
+            if (activeNode.type === LessonNodeTypeEnum.CODE && code) {
                 const genOutput = () => {
                     const doc = new DOMParser().parseFromString(code.source, "text/html");
                     const head = doc.head || doc.getElementsByTagName("head")[0];
@@ -160,7 +176,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 return (
                     <div style={{ height: "80vh" }}>
                         <iframe
-                            key={code.name + "_" + code.source.length} // Force reload when snippet changes
+                            key={code.name + "_" + code.source.length}
                             title={code.name}
                             srcDoc={genOutput()}
                             style={{ width: "100%", height: "100%", border: "none" }}
@@ -197,8 +213,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                 </div>
 
                 <div className="text-center bg-light p-3">
-                    {(activeNode.type === 1 || activeNode.type === 5) ?
-                        <Button variant="success" onClick={handleContinue}>
+                    {(activeNode.type === LessonNodeTypeEnum.TEXT || activeNode.type === LessonNodeTypeEnum.CODE) ?
+                        <Button variant="success" onClick={handleSubmit}>
                             Continue
                         </Button>
                         :
@@ -216,8 +232,8 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue, onEnter }:
                                     variant="primary"
                                     onClick={handleSubmit}
                                     disabled={
-                                        (activeNode.type === 4 && textAnswer.trim() === "") ||
-                                        ((activeNode.type === 2 || activeNode.type === 3) &&
+                                        (activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && textAnswer.trim() === "") ||
+                                        ((activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) &&
                                             selectedAnswers.length === 0)
                                     }
                                 >

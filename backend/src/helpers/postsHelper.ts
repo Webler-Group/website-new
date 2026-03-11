@@ -15,6 +15,20 @@ import { truncate } from "../utils/StringUtils";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import { config } from "../confg";
 import { DocumentType } from "@typegoose/typegoose";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+
+export interface PostAttachmentDetails {
+    id: Types.ObjectId;
+    type: PostAttachmentTypeEnum;
+    user: UserMinimal;
+    codeId?: Types.ObjectId;
+    codeName?: string;
+    codeLanguage?: CompilerLanguagesEnum;
+    questionId?: Types.ObjectId;
+    questionTitle?: string;
+    feedId?: Types.ObjectId;
+    feedMessage?: string;
+}
 
 export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, session?: mongoose.ClientSession) => {
     const postsToDelete = await PostModel.find(filter, { message: 0 }).lean().session(session ?? null);
@@ -132,7 +146,7 @@ export const getAttachmentsByPostId = async (id: { post?: Types.ObjectId | strin
                 return { id: x._id, type: x._type, user, feedId: x.feed._id, feedMessage: truncate(escapeMarkdown(x.feed.message), 40).replaceAll(/\n+/g, " "), feedType: x.feed._type };
         }
         return null;
-    }).filter(x => x !== null);
+    }).filter(x => x !== null) as PostAttachmentDetails[];
 }
 
 export const updatePostAttachments = async (message: string, id: { post?: Types.ObjectId; channelMessage?: Types.ObjectId }, session?: mongoose.ClientSession) => {
@@ -323,7 +337,7 @@ export const deletePostAttachments = async (filter: mongoose.QueryFilter<PostAtt
     }
 }
 
-export const savePost = async (post: DocumentType<Post>,session?: mongoose.ClientSession) => {
+export const savePost = async (post: DocumentType<Post>, session?: mongoose.ClientSession) => {
     const messageModified = post.isNew || post.isModified("message");
 
     await post.save({ session });

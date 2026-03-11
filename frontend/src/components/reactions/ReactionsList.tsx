@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import useReactions from './useReactions';
-import ReactionListItem, { IUserReaction } from './ReactionListItem';
+import ReactionListItem from './ReactionListItem';
 import { Modal } from 'react-bootstrap';
 import Loader from '../Loader';
 
@@ -43,12 +43,16 @@ const ReactionsList = ({ options, visible, onClose, title, showReactions, countP
 
                 {
                     error ?
-                        <p className="text-danger">{error}</p>
+                        <ul>
+                            {
+                                error.map((err, idx) => <li key={idx}>{err.message}</li>)
+                            }
+                        </ul>
                         :
-                        results.map((item: IUserReaction, index) => (
-                            <div key={index} className="mb-2">
+                        results.map((item, idx) => (
+                            <div key={item.id} className="mb-2">
                                 <ReactionListItem
-                                    ref={index === results.length - 1 ? lastElemRef : undefined}
+                                    ref={idx === results.length - 1 ? lastElemRef : undefined}
                                     item={item}
                                     showReactions={showReactions}
                                 />

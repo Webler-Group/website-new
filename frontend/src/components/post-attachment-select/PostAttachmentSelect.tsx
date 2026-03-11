@@ -3,6 +3,8 @@ import { Button, Modal } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa";
 import CodeList, { ICodesState } from "../../features/codes/components/CodeList";
 import "./PostAttachmentSelect.css";
+import { CodeMinimal } from "../../features/codes/types";
+import { UserMinimal } from "../../features/profile/types";
 
 interface PostAttachmentSelectProps {
     onSubmit: (value: string[]) => void;
@@ -30,12 +32,12 @@ const PostAttachmentSelect = ({ onSubmit }: PostAttachmentSelectProps) => {
         setCodesModalVisible(false);
     }
 
-    const handleCodeSelect = (id: string) => {
+    const handleCodeSelect = (code: CodeMinimal<UserMinimal>) => {
         setSelectedCodes(prev => {
-            if(prev.includes(id)) {
-                return prev.filter(x => x != id);
+            if(prev.includes(code.id)) {
+                return prev.filter(x => x != code.id);
             }
-            return [...prev, id];
+            return [...prev, code.id];
         });
     }
 

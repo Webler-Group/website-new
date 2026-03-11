@@ -1,5 +1,4 @@
 import { useState, useCallback, useRef, useLayoutEffect } from 'react';
-import { IFeed, OriginalPost, PostType } from './types';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { useNavigate } from "react-router-dom";
 import ShareModal from './ShareModal';
@@ -19,20 +18,23 @@ import ProfileName from '../../../components/ProfileName';
 import allowedUrls from '../../../data/discussAllowedUrls';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import React from 'react';
+import { FeedDetails, FeedMinimal, ShareFeedData, TogglePinFeedData, VotePostData } from '../types';
+import RolesEnum from '../../../data/RolesEnum';
+import PostTypeEnum from '../../../data/PostTypeEnum';
 
 interface FeedItemProps {
-  feed: IFeed;
+  feed: FeedDetails;
   onCommentsClick?: (feedId: string) => void;
   onShowUserReactions?: (feedId: string) => void;
-  onGeneralUpdate?: (feed: IFeed) => void;
+  onGeneralUpdate?: (feed: FeedDetails) => void;
   commentCount?: number;
-  onDelete: (feed: IFeed) => void;
-  onTogglePin?: (feed: IFeed) => void;
+  onDelete: (feed: FeedDetails) => void;
+  onTogglePin?: (feed: FeedDetails) => void;
   showFullContent?: boolean;
   onShowFullContent?: (feedId: string) => void;
 }
 
-const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
+const OriginalPostCard = ({ originalPost }: { originalPost: FeedMinimal }) => {
   const navigate = useNavigate();
 
   return (
@@ -42,8 +44,8 @@ const OriginalPostCard = ({ originalPost }: { originalPost: OriginalPost }) => {
       style={{ cursor: "pointer" }}
     >
       <div className='d-flex gap-2 align-items-center mb-2'>
-        <ProfileAvatar size={28} avatarUrl={originalPost.userAvatarUrl} />
-        <ProfileName userId={originalPost.userId} userName={originalPost.userName} />
+        <ProfileAvatar size={28} avatarUrl={originalPost.user.avatarUrl} />
+        <ProfileName userId={originalPost.user.id} userName={originalPost.user.name} />
         <span>wrote</span>
       </div>
 
@@ -74,7 +76,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const navigate = useNavigate();
-  const canModerate = userInfo?.roles?.includes("Admin") || userInfo?.roles?.includes("Moderator");
+  const canModerate = userInfo?.roles?.includes(RolesEnum.ADMIN) || userInfo?.roles?.includes(RolesEnum.MODERATOR);
 
   const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
@@ -97,47 +99,36 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
   }, [feed.message, feed.attachments, showFullContent]);
 
   const handleTogglePin = async () => {
-    const result = await sendJsonRequest("/Feed/PinFeed", "POST", { feedId: feed.id, pinned: !feed.isPinned });
-    if (result && result.success) {
+    const result = await sendJsonRequest<TogglePinFeedData>("/Feed/PinFeed", "POST", { feedId: feed.id, pinned: !feed.isPinned });
+    if (result.data) {
       onTogglePin?.({ ...feed, isPinned: result.data.isPinned });
       showNotification("success", result.data.isPinned ? "Post pinned" : "Post unpinned");
     } else {
-      showNotification("error", result?.error[0].message);
+      showNotification("error", result.error?.[0].message ?? "Something went wrong");
     }
   }
 
-  // const handleEdit = async (updatedContent: string) => {
-  //   const result = await sendJsonRequest("/Feed/EditFeed", "PUT", { feedId: feed.id, message: updatedContent });
-  //   if (result && result.success) {
-  //     onGeneralUpdate?.({ ...feed, message: result.data.message, attachments: result.data.attachments });
-  //     showNotification("success", "Post updated successfully");
-  //     setShowEditModal(false);
-  //   } else {
-  //     showNotification("error", result?.error[0].message);
-  //   }
-  // }
-
   const handleDelete = async () => {
     const result = await sendJsonRequest("/Feed/DeleteFeed", "DELETE", { feedId: feed.id });
-    if (result && result.success) {
+    if (result.success) {
       onDelete(feed);
       navigate("/Feed")
       showNotification("success", "Post deleted successfully");
     } else {
-      showNotification("error", result?.error[0].message);
+      showNotification("error", result.error?.[0].message ?? "Failed to delete post");
     }
   }
 
   const handleLike = async (reactionChange: ReactionsEnum | null) => {
-    const result = await sendJsonRequest("/Feed/VotePost", "POST", {
+    const result = await sendJsonRequest<VotePostData>("/Feed/VotePost", "POST", {
       postId: feed.id,
       vote: reactionChange != null,
       reaction: reactionChange
     });
-    if (result && result.success) {
-      const votes = feed.votes + (feed.isUpvoted != result.vote ? result.vote ? 1 : -1 : 0);
+    if (result.data) {
+      const votes = feed.votes + ((feed.reaction ? 1 : 0) != result.data.vote ? result.data.vote ? 1 : -1 : 0);
 
-      let topReactions = [...feed.topReactions];
+      let topReactions = [...feed.reactions.topReactions];
       const previousReaction = feed.reaction;
 
       if (previousReaction) {
@@ -175,35 +166,35 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         }
       }
 
-      if (result.vote === 1) {
-        if (feed.isUpvoted && feed.reaction === reactionChange) {
-          feed.totalReactions -= 1;
-          feed.isUpvoted = false;
-        } else if (!feed.isUpvoted) {
-          feed.totalReactions += 1;
-          feed.isUpvoted = true;
+      if (result.data.vote === 1) {
+        if (feed.reaction && feed.reaction === reactionChange) {
+          feed.reactions.totalReactions -= 1;
+          feed.reaction = null;
+        } else if (!feed.reaction) {
+          feed.reactions.totalReactions += 1;
+          feed.reaction = ReactionsEnum.LIKE;
         }
       } else {
-        if (feed.isUpvoted) {
-          feed.totalReactions -= 1;
-          feed.isUpvoted = false;
+        if (feed.reaction) {
+          feed.reactions.totalReactions -= 1;
+          feed.reaction = null;
         }
       }
 
-      onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, isUpvoted: result.vote, topReactions, totalReactions: feed.totalReactions });
+      onGeneralUpdate?.({ ...feed, reaction: reactionChange, votes, reactions: { ...feed.reactions, topReactions } });
     } else {
-      showNotification("error", result?.error[0].message);
+      showNotification("error", result.error?.[0].message ?? "Something went wrong");
     }
   }
 
   const handleShare = async (shareMessage: string, tags?: string[]) => {
-    const result = await sendJsonRequest("/Feed/ShareFeed", "POST", { feedId: feed.id, message: shareMessage, tags });
-    if (result && result.success) {
-      navigate(`/Feed/${result.feed.id}`);
+    const result = await sendJsonRequest<ShareFeedData>("/Feed/ShareFeed", "POST", { feedId: feed.id, message: shareMessage, tags });
+    if (result.data) {
+      navigate(`/Feed/${result.data.feed.id}`);
       setShowShareModal(false);
       showNotification("success", "Post shared successfully");
     } else {
-      showNotification("error", result?.error[0].message);
+      showNotification("error", result.error?.[0].message ?? "Failed to share post");
     }
   }
 
@@ -219,7 +210,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
     onShowFullContent?.(feed.id);
   };
 
-  const canEdit = feed.userId === currentUserId;
+  const canEdit = feed.user.id === currentUserId;
 
   const body = (
     <>
@@ -229,11 +220,11 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
         {/* Header */}
         <div className="d-flex justify-content-between">
           <div className="d-flex align-items-start gap-2 flex-grow-1">
-            <ProfileAvatar size={36} avatarUrl={feed.userAvatarUrl} />
+            <ProfileAvatar size={36} avatarUrl={feed.user.avatarUrl} />
 
             <div className='d-flex flex-column'>
               <div className='d-flex gap-2'>
-                <ProfileName userId={feed.userId} userName={feed.userName} />
+                <ProfileName userId={feed.user.id} userName={feed.user.name} />
 
                 {feed.isPinned && (
                   <span className="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">
@@ -290,8 +281,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           )}
         </div>
 
-        {/* Content */}
-        {feed.type === PostType.SHARED_FEED && (
+        {feed.type === PostTypeEnum.SHARED_FEED && (
           feed.originalPost ? <OriginalPostCard originalPost={feed.originalPost} />
             :
             <div className="wb-feed-shared-post-unavailable">
@@ -330,10 +320,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           {!showFullContent && needsTruncation && <div className="fade-overlay"></div>}
         </div>
 
-        {/* Reactions */}
         <div className="wb-feed-reactions mt-2 d-flex gap-1 align-items-center" onClick={handleShowUserReactions}>
           <div className='d-flex'>
-            {feed.topReactions.map((r: any, index: number) => (
+            {feed.reactions.topReactions.map((r: any, index: number) => (
               <span
                 className='bg-white rounded-circle d-flex align-items-center justify-content-center'
                 key={`${r.reaction}-${index}`}
@@ -341,21 +330,20 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
                   marginLeft: index === 0 ? "0" : "-6px",
                   width: "18px",
                   height: "18px",
-                  zIndex: (feed.topReactions.length - index).toString()
+                  zIndex: (feed.reactions.topReactions.length - index).toString()
                 }}
               >
                 {reactionsInfo[(r.reaction ?? ReactionsEnum.LIKE) as ReactionsEnum].emoji}
               </span>
             ))}
           </div>
-          {feed.totalReactions > 0 && (
+          {feed.reactions.totalReactions > 0 && (
             <span className="text-muted">
-              {feed.totalReactions}
+              {feed.reactions.totalReactions}
             </span>
           )}
         </div>
 
-        {/* Actions */}
         <div className="mt-3 d-flex align-items-center justify-content-between">
 
           <ReactionPicker onReactionChange={handleLike} currentState={feed.reaction} />
@@ -384,15 +372,6 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             </span>
           </span>
         </div>
-
-        {/* {showEditModal &&
-          <EditModal
-            show={showEditModal}
-            feed={feed}
-            onSave={handleEdit}
-            onClose={() => setShowEditModal(false)}
-          />
-        } */}
 
         {showDeleteModal && (
           <DeleteModal

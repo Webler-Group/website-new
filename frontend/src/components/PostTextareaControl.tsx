@@ -2,10 +2,10 @@ import { forwardRef, useRef, useState, useLayoutEffect } from "react";
 import { FormControl, Button } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
 import UserSearch from "./UserSearch";
-import { UserMinimal } from "../features/profile/pages/ProfilePage";
 import React from "react";
 import { Link } from "react-router-dom";
 import { JSX } from "react/jsx-runtime";
+import { UserMinimal } from "../features/profile/types";
 
 interface PostTextareaControlProps {
     value: string;

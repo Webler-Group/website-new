@@ -6,7 +6,8 @@ import { useLocation, useNavigate, useParams, useSearchParams } from "react-rout
 import { useApi } from "../../../context/apiCommunication";
 import LessonNode from "../components/LessonNode";
 import CommentList from "../../../components/comments/CommentList";
-import { GetLessonData, LessonDetails } from "../types";
+import { GetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
+import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
@@ -82,6 +83,9 @@ const CourseLessonPage = () => {
         const node = lesson.nodes.find(x => x.id == id);
         if (node) {
             if (node.index < lesson.nodeCount) {
+                if(node.type === LessonNodeTypeEnum.TEXT || node.type === LessonNodeTypeEnum.CODE) {
+                    unlockNode(node);
+                }
                 const newSearchParams = new URLSearchParams(searchParams);
                 newSearchParams.set("slide", (node.index + 1).toString());
                 setSearchParams(newSearchParams, { replace: true });
@@ -91,50 +95,31 @@ const CourseLessonPage = () => {
         }
     }
 
-    const onNodeEnter = (id: string) => {
-        if (!lesson) {
-            return;
-        }
-        const node = lesson.nodes.find(x => x.id == id);
-        if (node && (node.type === 1 || node.type === 5)) {
-            setLesson(current => {
-                if (!current) return null;
-                const nodes = current.nodes.map(n => {
-                    if (n.index === node.index + 1) {
-                        return { ...n, unlocked: true };
-                    }
-                    return n;
-                });
-                return {
-                    ...current,
-                    nodes
-                };
-            });
-        }
-    }
-
     const onNodeAnswered = (id: string, correct: boolean) => {
-        if (!lesson) {
+        if (!lesson || !correct) {
             return;
         }
         const node = lesson.nodes.find(x => x.id == id);
-        if (node && correct) {
-            setLesson(current => {
-                if (!current) return null;
-                const nodes = current.nodes.map(n => {
-                    if (n.index === node.index + 1) {
-                        return { ...n, unlocked: true };
-                    }
-                    return n;
-                });
-                return {
-                    ...current,
-                    nodes
-                };
-            });
+        if (node) {
+            unlockNode(node);
         }
     }
 
+    const unlockNode = (node: LessonNodeMinimal) => {
+        setLesson(current => {
+            if (!current) return null;
+            const nodes = current.nodes.map(n => {
+                if (n.index === node.index + 1) {
+                    return { ...n, unlocked: true };
+                }
+                return n;
+            });
+            return {
+                ...current,
+                nodes
+            };
+        });
+    }
 
     const openCommentModal = () => {
         if (!lessonId) return;
@@ -185,7 +170,7 @@ const CourseLessonPage = () => {
                         <Nav variant="pills" className="flex-nowrap overflow-auto my-2">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
-                                const icon = node.type === 5 ? <FaCode /> : node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;
+                                const icon = node.type === LessonNodeTypeEnum.CODE ? <FaCode /> : node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;
 
                                 return (
                                     <Nav.Item key={node.id}>
@@ -205,7 +190,7 @@ const CourseLessonPage = () => {
                     <div className="flex-grow-1 mt-2">
                         {
                             currentNodeIndex != 0 &&
-                            <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} onContinue={onNodeContinue} onAnswered={onNodeAnswered} onEnter={onNodeEnter} />
+                            <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />
                         }
                     </div>
                 </>

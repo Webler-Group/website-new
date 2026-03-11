@@ -25,7 +25,7 @@ const verifyJWTWebSocket = async (socket: Socket, next: (err?: Error) => void) =
       return next();
     }
 
-    const user = await User.findById(decoded.userInfo.userId).select('tokenVersion active');
+    const user = await User.findById(decoded.userInfo.userId, { tokenVersion: 1, active: 1 });
     if (!user || !user.active || decoded.tokenVersion !== user.tokenVersion) {
       return next();
     }

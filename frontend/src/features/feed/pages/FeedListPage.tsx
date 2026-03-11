@@ -2,15 +2,15 @@ import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FeedItem from '../components/FeedItem';
 import { Button, FormControl, FormLabel, FormSelect, Modal } from 'react-bootstrap';
-import FeedDetails from '../components/FeedDetail';
+import Feed from '../components/Feed';
 import ReactionsList from '../../../components/reactions/ReactionsList';
 import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
 import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
 import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
-import { IFeed } from '../components/types';
 import Loader from '../../../components/Loader';
+import { FeedDetails, FeedListData } from '../types';
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest', requireLogin: false },
@@ -43,7 +43,7 @@ const FeedListPage = () => {
   const [pinnedVisible, setPinnedVisible] = useState(true);
   const { sendJsonRequest } = useApi();
   const feeds = useFeed(filter, searchQuery, 10);
-  const [pinnedFeeds, setPinnedFeeds] = useState<IFeed[]>([]);
+  const [pinnedFeeds, setPinnedFeeds] = useState<FeedDetails[]>([]);
   const [loading, setLoading] = useState(false);
 
   const intObserver = useRef<IntersectionObserver>(null);
@@ -84,15 +84,15 @@ const FeedListPage = () => {
   const fetchPinnedFeeds = async () => {
     setLoading(true);
 
-    const result = await sendJsonRequest("/Feed", "POST", {
+    const result = await sendJsonRequest<FeedListData>("/Feed", "POST", {
       page: 1,
       count: 10,
       filter: 7,
       searchQuery: ""
     });
 
-    if (result && result.feeds) {
-      setPinnedFeeds(() => result.feeds);
+    if (result.data) {
+      setPinnedFeeds(result.data.feeds);
     }
 
     setLoading(false);
@@ -122,7 +122,7 @@ const FeedListPage = () => {
     setVotesModalVisible(false);
   }
 
-  const onGeneralUpdate = (post: IFeed) => {
+  const onGeneralUpdate = (post: FeedDetails) => {
     if (post.isPinned) {
       setPinnedFeeds(prev => prev.map(x => x.id == post.id ? post : x));
     } else {
@@ -130,7 +130,7 @@ const FeedListPage = () => {
     }
   }
 
-  const onDelete = (post: IFeed) => {
+  const onDelete = (post: FeedDetails) => {
     if (post.isPinned) {
       setPinnedFeeds(prev => prev.filter(x => x.id != post.id));
     } else {
@@ -143,10 +143,10 @@ const FeedListPage = () => {
     setVotesModalVisible(true);
   }
 
-  const onTogglePin = (post: IFeed) => {
+  const onTogglePin = (post: FeedDetails) => {
     if (post.isPinned) {
       feeds.deletePost(post.id);
-      setPinnedFeeds(prev => [post, ...prev]);
+      setPinnedFeeds(prev => prev.some(x => post.id === x.id) ? prev : [post, ...prev]);
       setTimeout(() => {
         scrollTo({ top: 0, behavior: "smooth" });
       });
@@ -169,7 +169,7 @@ const FeedListPage = () => {
         backdrop="static"
       >
         <Modal.Body className="p-0">
-          <FeedDetails
+          <Feed
             feedId={feedId}
             onGeneralUpdate={onGeneralUpdate}
             onShowUserReactions={onShowUserReactions}
@@ -180,11 +180,9 @@ const FeedListPage = () => {
       </Modal>
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
       <div className="wb-feed-list-container">
-        {/* Header */}
         <div className="p-2 wb-feed-list-header wb-feed-visible">
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
-            {/* Search */}
             <div className="d-flex gap-2">
               <FormLabel htmlFor="search" className="visually-hidden">
                 Search
@@ -205,9 +203,7 @@ const FeedListPage = () => {
               />
               <Button size='sm' onClick={handleSearch}>Search</Button>
             </div>
-            {/* Controls */}
             <div className="d-flex align-items-center justify-content-between gap-2">
-              {/* Filter Dropdown */}
               <FormLabel htmlFor="filter" className="visually-hidden">
                 Filter
               </FormLabel>
@@ -242,7 +238,6 @@ const FeedListPage = () => {
             </div>
             :
             <>
-              {/* Pinned Feeds Section */}
               {pinnedFeeds.length > 0 && (
                 <div className="px-2 wb-pinned-feeds-section bg-light">
                   <div className="d-flex justify-content-between align-items-center py-2">
@@ -271,7 +266,6 @@ const FeedListPage = () => {
                 </div>
               )}
 
-              {/* Content */}
               <div className="px-2 wb-feed-items">
                 {feeds.error.length > 0 && (
                   <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">

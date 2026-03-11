@@ -10,6 +10,8 @@ import { Types } from "mongoose";
 import mongoose from "mongoose";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import HttpError from "../exceptions/HttpError";
+import { formatUserMinimal } from "./userHelper";
+import { getImageUrl } from "../controllers/mediaController";
 
 type ImageFit = "cover" | "inside";
 
@@ -220,6 +222,20 @@ export const listDirectory = async (virtualPath: string, session?: mongoose.Clie
     return FileModel.find({ path: virtualPath })
         .session(session ?? null)
         .sort({ type: "desc", updatedAt: "desc" })
-        .populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS)
-        .lean();
+        .populate("author", USER_MINIMAL_FIELDS)
+        .lean<(File & { _id: Types.ObjectId } & { author: UserMinimal & { _id: Types.ObjectId } })[]>();
 };
+
+export const formatFileEntry = (file: File & { _id: Types.ObjectId } & { author: UserMinimal & { _id: Types.ObjectId } }) => {
+    return {
+        id: file._id,
+        author: formatUserMinimal(file.author),
+        type: file._type,
+        name: file.name,
+        mimetype: file.mimetype,
+        size: file.size,
+        updatedAt: file.updatedAt,
+        url: getImageUrl(file.contenthash),
+        previewUrl: (file._type === FileTypeEnum.FILE && file.preview) ? `/media/files/${file.contenthash}/preview` : null
+    };
+}

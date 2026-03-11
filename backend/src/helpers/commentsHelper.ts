@@ -2,7 +2,7 @@ import mongoose, { Types } from "mongoose";
 import HttpError from "../exceptions/HttpError";
 import PostModel, { Post } from "../models/Post";
 import { withTransaction } from "../utils/transaction";
-import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "./postsHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, savePost } from "./postsHelper";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "./userHelper";
 import UpvoteModel from "../models/Upvote";
@@ -72,7 +72,7 @@ export const getCommmentsList = async (params: GetCommentsListParams) => {
         isUpvoted: false,
         answers: x.answers,
         index: params.findPostId && parentPost ? (offset === 0 ? -1 : skipCount + offset - 1) : skipCount + offset,
-        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
+        attachments: [] as PostAttachmentDetails[]
     }));
 
     await Promise.all(data.map((item, i) => Promise.all([

@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '../../context/apiCommunication';
-import { IUserReaction } from './ReactionListItem';
+import { UserReaction, UserReactionsListData } from '../../features/feed/types';
 
 const useReactions = (options: { parentId: string | null }, countPerPage: number) => {
     const { sendJsonRequest } = useApi();
-    const [results, setResults] = useState<IUserReaction[]>([]);
+    const [results, setResults] = useState<UserReaction[]>([]);
     const [loading, setLoading] = useState(false);
     const [hasNextPage, setHasNextPage] = useState(true);
-    const [error, setError] = useState<any[] | undefined>();
+    const [error, setError] = useState<{ message: string }[] | undefined>();
     const [state, setState] = useState({ page: 1 });
 
     useEffect(() => {
@@ -16,15 +16,16 @@ const useReactions = (options: { parentId: string | null }, countPerPage: number
 
             setError(undefined);
             setLoading(true);
-            const result = await sendJsonRequest(
+            const result = await sendJsonRequest<UserReactionsListData>(
                 "/Feed/GetUserReactions",
                 'POST',
                 { parentId: options.parentId, page: state.page, count: countPerPage }
             );
 
-            if (result && result.userReactions) {
-                setResults((prev) => state.page == 1 ? result.userReactions : [...prev, ...result.userReactions]);
-                setHasNextPage(result.userReactions.length === countPerPage);
+            if (result.data) {
+                const reactions = result.data.userReactions;
+                setResults((prev) => state.page == 1 ? reactions : [...prev, ...reactions]);
+                setHasNextPage(result.data.userReactions.length === countPerPage);
             } else {
                 setError(result.error);
             }

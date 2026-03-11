@@ -32,8 +32,7 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
                     const match = await bcrypt.compare(rawFingerprint, accessTokenPayload.fingerprint);
 
                     if (match) {
-                        // NEW: Fetch user and check tokenVersion
-                        const user = await User.findById(accessTokenPayload.userInfo.userId).select('tokenVersion active');
+                        const user = await User.findById(accessTokenPayload.userInfo.userId, { tokenVersion: 1, active: 1 });
                         if (user && user.active && accessTokenPayload.tokenVersion === user.tokenVersion) {
                             const userInfo = accessTokenPayload.userInfo;
                             req.userId = userInfo.userId;

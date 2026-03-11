@@ -18,7 +18,7 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmissionModel from "../models/ChallengeSubmission";
-import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
+import { createFolder, deleteEntry, formatFileEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
@@ -361,7 +361,6 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .populate("user", USER_MINIMAL_FIELDS)
-        .select("user")
         .lean<{ user: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
@@ -391,7 +390,6 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .populate("following", USER_MINIMAL_FIELDS)
-        .select("following")
         .lean<{ following: UserMinimal & { _id: Types.ObjectId } }[]>();
 
     const promises: Promise<void>[] = [];
@@ -665,17 +663,7 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
     res.json({
         success: true,
         data: {
-            items: items.map((x) => ({
-                id: x._id,
-                author: formatUserMinimal(x.author),
-                type: x._type,
-                name: x.name,
-                mimetype: x.mimetype,
-                size: x.size,
-                updatedAt: x.updatedAt,
-                url: getImageUrl(x.contenthash),
-                previewUrl: (x._type === FileTypeEnum.FILE && x.preview) ? `/media/files/${x.contenthash}/preview` : null
-            }))
+            items: items.map(item => formatFileEntry(item))
         }
     });
 });
@@ -685,12 +673,12 @@ const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
-    const fileDoc = await FileModel.findById(fileId).select("author name path").lean();
+    const fileDoc = await FileModel.findById(fileId).lean();
     if (!fileDoc) {
         throw new HttpError("File not found", 404);
     }
 
-    if (fileDoc.author.toString() !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
+    if (!fileDoc.author.equals(currentUserId) && !req.roles?.includes(RolesEnum.ADMIN)) {
         throw new HttpError("Unauthorized", 401);
     }
 
@@ -732,12 +720,12 @@ const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(moveImageSchema, req);
     const { fileId, newName, newSubPath } = body;
 
-    const fileDoc = await FileModel.findById(fileId).select("author path name");
+    const fileDoc = await FileModel.findById(fileId);
     if (!fileDoc) {
         throw new HttpError("File not found", 404);
     }
 
-    const isOwner = fileDoc.author.toString() === currentUserId;
+    const isOwner = fileDoc.author.equals(currentUserId);
     const isAdmin = req.roles?.includes(RolesEnum.ADMIN);
 
     if (!isOwner && !isAdmin) {

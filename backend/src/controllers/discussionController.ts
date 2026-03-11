@@ -16,7 +16,7 @@ import RolesEnum from "../data/RolesEnum";
 import { isAuthorizedRole } from "../utils/modelUtils";
 import { getImageUrl } from "./mediaController";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
+import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, savePost } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
@@ -106,7 +106,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             if (!userId) {
                 throw new HttpError("Invalid request", 400);
             }
-            const replies = await PostModel.find({ user: userId, _type: PostTypeEnum.ANSWER }).select("parentId").lean();
+            const replies = await PostModel.find({ user: userId, _type: PostTypeEnum.ANSWER }, { parentId: 1 }).lean();
             const questionIds = [...new Set(replies.map(x => x.parentId))];
             dbQuery = dbQuery.where({ _id: { $in: questionIds } }).sort({ createdAt: "desc" });
             break;
@@ -303,7 +303,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
         isAccepted: x.isAccepted,
         answers: x.answers,
         index: skipCount + offset,
-        attachments: [] as Awaited<ReturnType<typeof getAttachmentsByPostId>>
+        attachments: [] as PostAttachmentDetails[]
     }));
 
     await Promise.all(data.map((item, i) => Promise.all([
@@ -556,7 +556,6 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-        .select("user")
         .lean();
 
     const users = result.map(x => ({

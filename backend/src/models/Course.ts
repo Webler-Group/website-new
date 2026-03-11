@@ -31,6 +31,9 @@ export class Course {
 
     @prop({ default: false })
     visible!: boolean;
+
+    @prop({ default: 0 })
+    participants!: number;
 }
 
 const CourseModel = getModelForClass(Course);

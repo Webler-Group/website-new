@@ -44,7 +44,7 @@ import {
     LessonResponse,
     QuizAnswerResponse
 } from "../helpers/courseHelper";
-import { createFolder, deleteEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
+import { createFolder, deleteEntry, formatFileEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
 import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
@@ -99,7 +99,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const courseData: CourseResponse<undefined, LessonProgressInfo> = {
-        id: course._id.toString(),
+        id: course._id,
         code: course.code,
         title: course.title,
         description: course.description,
@@ -180,7 +180,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const lessonData: LessonResponse<undefined> = {
-        id: lesson._id.toString(),
+        id: lesson._id,
         title: lesson.title,
         index: lesson.index,
         nodeCount: lesson.nodes,
@@ -202,7 +202,7 @@ const getLessonList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         success: true,
         data: {
             lessons: lessons.map((lesson): LessonResponse<undefined> => ({
-                id: lesson._id.toString(),
+                id: lesson._id,
                 title: lesson.title,
                 index: lesson.index,
                 nodeCount: lesson.nodes,
@@ -329,11 +329,13 @@ const createLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) =
         const lesson = await CourseLessonModel.findById(lessonId).session(session);
         if (!lesson) throw new HttpError("Lesson not found", 404);
 
-        const lessonNode = await LessonNodeModel.create([{ lessonId, index: lesson.nodes + 1 }], { session });
-        lesson.$inc("nodes", 1);
+        const lastNodeIndex = await LessonNodeModel.countDocuments({ lessonId: lesson._id });
+        const [lessonNode] = await LessonNodeModel.create([{ lessonId, index: lastNodeIndex + 1 }], { session });
+
+        lesson.nodes = lastNodeIndex + 1;
         await lesson.save({ session });
 
-        return lessonNode[0];
+        return lessonNode;
     });
 
     res.json({
@@ -354,9 +356,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { nodeId } = body;
 
     const [lessonNode, answers] = await Promise.all([
-        LessonNodeModel.findById(nodeId)
-            .populate<{ codeId: Code }>("codeId")
-            .lean(),
+        LessonNodeModel.findById(nodeId).lean(),
         QuizAnswerModel.find({ courseLessonNodeId: nodeId }).lean()
     ]);
 
@@ -365,15 +365,15 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const data: LessonNodeResponse = {
-        id: lessonNode._id.toString(),
+        id: lessonNode._id,
         index: lessonNode.index,
         type: lessonNode._type,
         mode: lessonNode.mode ?? 1,
-        code: lessonNode.codeId,
+        codeId: lessonNode.codeId,
         text: lessonNode.text ?? "",
         correctAnswer: lessonNode.correctAnswer,
         answers: answers.map((x): QuizAnswerResponse => ({
-            id: x._id.toString(),
+            id: x._id,
             text: x.text,
             correct: x.correct
         }))
@@ -417,19 +417,19 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
         if (!node) throw new HttpError("Lesson node not found", 404);
 
         node._type = type;
-        node.mode = mode ?? node.mode;
+        node.mode = mode;
         node.codeId = codeId ? new mongoose.Types.ObjectId(codeId) : null;
         node.text = text;
-        node.correctAnswer = correctAnswer ?? "";
+        node.correctAnswer = correctAnswer;
         await node.save({ session });
 
         const result: EditLessonNodeResponse = {
-            id: node._id.toString(),
+            id: node._id,
             type: node._type,
             text: node.text || "",
             mode: node.mode,
             correctAnswer: node.correctAnswer,
-            codeId: node.codeId ? node.codeId.toString() : undefined
+            codeId: node.codeId
         };
 
         if (answers) {
@@ -459,7 +459,7 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
                         correct: newAnswer.correct,
                         courseLessonNodeId: node.id
                     }], { session });
-                    newAnswers.push({ id: created._id.toString(), text: newAnswer.text, correct: newAnswer.correct });
+                    newAnswers.push({ id: created._id, text: newAnswer.text, correct: newAnswer.correct });
                 }
             }
 
@@ -573,19 +573,7 @@ const getLessonImageList = asyncHandler(async (req: IAuthRequest, res: Response)
     res.json({
         success: true,
         data: {
-            items: items.map(x => ({
-                id: x._id,
-                authorId: x.author._id,
-                authorName: x.author.name,
-                authorAvatarUrl: getImageUrl(x.author.avatarHash),
-                type: x._type,
-                name: x.name,
-                mimetype: x.mimetype,
-                size: x.size,
-                updatedAt: x.updatedAt,
-                url: getImageUrl(x.contenthash),
-                previewUrl: x._type === FileTypeEnum.FILE && x.preview ? `/media/files/${x.contenthash}/preview` : null
-            }))
+            items: items.map(item => formatFileEntry(item))
         }
     });
 });
@@ -594,7 +582,7 @@ const deleteLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(deleteImageSchema, req);
     const { fileId } = body;
 
-    const fileDoc = await File.findById(fileId).select("author name path").lean();
+    const fileDoc = await File.findById(fileId).lean();
     if (!fileDoc) {
         throw new HttpError("File not found", 404);
     }
@@ -631,7 +619,7 @@ const moveLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { body } = parseWithZod(moveImageSchema, req);
     const { fileId, newName, newSubPath } = body;
 
-    const fileDoc = await File.findById(fileId).select("author path name").lean();
+    const fileDoc = await File.findById(fileId).lean();
     if (!fileDoc) {
         throw new HttpError("File not found", 404);
     }

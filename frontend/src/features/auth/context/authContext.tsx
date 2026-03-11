@@ -7,9 +7,9 @@ export type UserInfo = AuthUser;
 interface AuthState {
     userInfo: UserInfo | null;
     accessToken: string | null;
-    expiresIn: number;
+    tokenExpiresAt: number; // ms timestamp, compare directly with Date.now()
     deviceId: string;
-    authenticate: (accessToken: string | null, expiresIn?: number) => void;
+    authenticate: (accessToken: string, expiresAtSeconds: number) => void;
     updateUser: (userInfo: UserInfo) => void;
     logout: () => void;
 }
@@ -36,9 +36,9 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.getItem("accessToken") ?? null
     );
 
-    const [expiresIn, setExpiresIn] = useState(
-        localStorage.getItem("expiresIn")
-            ? Number(localStorage.getItem("expiresIn"))
+    const [tokenExpiresAt, setTokenExpiresAt] = useState(
+        localStorage.getItem("tokenExpiresAt")
+            ? Number(localStorage.getItem("tokenExpiresAt"))
             : 0
     );
 
@@ -51,20 +51,20 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const [userInfo, setUserInfo] = useState(defaultUserInfo);
 
-    const authenticate = (accessTokenValue: string | null, expiresInValue: number = 0) => {
-        if (accessTokenValue) {
-            setAccessToken(accessTokenValue);
-            localStorage.setItem("accessToken", accessTokenValue);
-            setExpiresIn(expiresInValue);
-            localStorage.setItem("expiresIn", expiresInValue.toString());
-        } else {
-            setAccessToken(null);
-            localStorage.removeItem("accessToken");
-            setExpiresIn(0);
-            localStorage.removeItem("expiresIn");
-            setUserInfo(null);
-            localStorage.removeItem("userInfo");
-        }
+    const authenticate = (accessTokenValue: string, expiresAtMs: number) => {
+        setAccessToken(accessTokenValue);
+        localStorage.setItem("accessToken", accessTokenValue);
+        setTokenExpiresAt(expiresAtMs);
+        localStorage.setItem("tokenExpiresAt", expiresAtMs.toString());
+    };
+
+    const logout = () => {
+        setAccessToken(null);
+        localStorage.removeItem("accessToken");
+        setTokenExpiresAt(0);
+        localStorage.removeItem("tokenExpiresAt");
+        setUserInfo(null);
+        localStorage.removeItem("userInfo");
     };
 
     const updateUser = (userInfo: UserInfo) => {
@@ -72,14 +72,10 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem("userInfo", JSON.stringify(userInfo));
     };
 
-    const logout = () => {
-        authenticate(null);
-    };
-
     const value: AuthState = {
         userInfo,
         accessToken,
-        expiresIn,
+        tokenExpiresAt,
         deviceId,
         authenticate,
         updateUser,

@@ -1,6 +1,5 @@
 import LessonNodeModeEnum from "../../data/LessonNodeModeEnum";
 import LessonNodeTypeEnum from "../../data/LessonNodeTypeEnum";
-import { CodeDetails } from "../codes/types";
 
 export interface LessonNodeAnswerDetails {
     id: string;
@@ -17,7 +16,7 @@ export interface LessonNodeMinimal {
 }
 
 export interface LessonNodeDetails extends LessonNodeMinimal {
-    code?: CodeDetails;
+    codeId: string | null;
     correctAnswer?: string;
     text: string;
     answers: LessonNodeAnswerDetails[];
@@ -54,6 +53,7 @@ export interface CourseDetails<T = CourseProgressInfo, U = LessonProgressInfo> {
     coverImageUrl: string | null;
     userProgress: T;
     completed?: boolean;
+    participants: number;
     lessons: LessonDetails<U>[];
 }
 
@@ -130,7 +130,7 @@ export interface EditorEditLessonNodeData {
     type: LessonNodeTypeEnum;
     mode: LessonNodeModeEnum;
     unlocked?: boolean;
-    codeId?: string;
+    codeId: string | null;
     correctAnswer?: string;
     answers: LessonNodeAnswerDetails[];
 }
