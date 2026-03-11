@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { useApi } from "./apiCommunication";
 import { useWS } from "./wsCommunication";
 import { UnseenMessagesCountData } from "../features/channels/types";
+import { useAuth } from "../features/auth/context/authContext";
 
 interface UserInfoContextType {
     unseenNotificationsCount: number;
@@ -13,12 +14,15 @@ interface UserInfoContextType {
 const UserInfoContext = createContext<UserInfoContextType | null>(null);
 
 const UserInfoProvider = ({ children }: { children: ReactNode }) => {
+    const { userInfo } = useAuth();
     const { sendJsonRequest } = useApi();
     const { socket } = useWS();
     const [unseenNotificationsCount, setUnseenNotificationsCount] = useState(0);
     const [unseenMessagesCount, setUnseenMessagesCount] = useState(0);
 
     useEffect(() => {
+        if(!userInfo) return;
+
         const fetchCounts = async () => {
             const [notificationsResult, messagesResult] = await Promise.all([
                 sendJsonRequest<UnseenMessagesCountData>("/Profile/GetUnseenNotificationCount", "POST", {}),
@@ -34,9 +38,8 @@ const UserInfoProvider = ({ children }: { children: ReactNode }) => {
         };
 
         fetchCounts();
-    }, []);
+    }, [userInfo]);
 
-    // Socket listeners for real-time updates
     useEffect(() => {
         if (!socket) return;
 

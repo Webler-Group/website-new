@@ -118,7 +118,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
         try {
             let currentAccessToken = accessToken;
 
-            if (!path.startsWith("/Auth") && tokenExpiresAt - EXPIRY_BUFFER_MS <= Date.now()) {
+            if (!path.startsWith("/Auth") && accessToken && tokenExpiresAt - EXPIRY_BUFFER_MS <= Date.now()) {
                 const result = await reauthenticate();
                 if (result?.data) {
                     currentAccessToken = result.data.accessToken;
