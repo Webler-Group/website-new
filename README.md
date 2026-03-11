@@ -3,8 +3,24 @@
 ## Requirements
 
 - NodeJS
-- Mongo DB Community: Download [here](https://www.mongodb.com/try/download/community-edition)
+- MongoDB Community: Download [here](https://www.mongodb.com/try/download/community-edition)
 - Recommended OS: Linux - Debian based (use WSL on Windows) (If used other OS, some parts of the project may not work properly e.g. code playgorund)
+
+### MongoDB Configuration
+
+`/etc/mongod.conf`:
+```
+# network interfaces
+net:
+  port: 27017
+  bindIp: 0.0.0.0
+
+#replication:
+replication:
+  replSetName: "rs0"
+```
+
+MongoDB Atlas connection URI requires `?directConnection=true`
 
 ## How to first run
 
