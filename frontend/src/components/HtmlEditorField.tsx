@@ -4,9 +4,13 @@ import FileExplorer from "./file-explorer/FileExplorer";
 import HtmlRenderer from "./HtmlRenderer";
 import { MDEditorMode } from "./MdEditorField";
 import AceEditor from "react-ace";
+import ace from "ace-builds";
 
+import "ace-builds/src-noconflict/ext-searchbox";
 import "ace-builds/src-noconflict/theme-tomorrow_night";
 import "ace-builds/src-noconflict/mode-html";
+
+ace.config.set("basePath", new URL("ace-builds/src-noconflict", import.meta.url).pathname);
 
 interface HtmlEditorFieldProps {
     text: string;

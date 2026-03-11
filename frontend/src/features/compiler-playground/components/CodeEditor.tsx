@@ -1,13 +1,9 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { Tab, Tabs } from "react-bootstrap";
 import AceEditor from "react-ace";
+import ace from "ace-builds";
 
-import WebOutput from "./WebOutput";
-import useTab from "../hooks/useTab";
-import CompileOutput from "./CompileOutput";
-import MarkdownRenderer from "../../../components/MarkdownRenderer";
-import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
-
+import "ace-builds/src-noconflict/ext-searchbox";
 import "ace-builds/src-noconflict/theme-tomorrow_night";
 
 import "ace-builds/src-noconflict/mode-html";
@@ -19,9 +15,17 @@ import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-ruby";
 import "ace-builds/src-noconflict/mode-lua";
 
+import WebOutput from "./WebOutput";
+import useTab from "../hooks/useTab";
+import CompileOutput from "./CompileOutput";
+import MarkdownRenderer from "../../../components/MarkdownRenderer";
+import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
+
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
+
+ace.config.set("basePath", new URL("ace-builds/src-noconflict", import.meta.url).pathname);
 
 const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "javascript") => {
     switch (lang) {
@@ -37,6 +41,10 @@ const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "j
         default:           return "text";
     }
 };
+
+export interface CodeEditorHandle {
+    openSearch: () => void;
+}
 
 interface CodeEditorProps {
     code: CodeDetails<undefined | ChallengeSubmissionDetails> | UnsavedCode;
@@ -56,7 +64,7 @@ interface CodeEditorProps {
     submission?: ChallengeSubmissionDetails;
 }
 
-const CodeEditor = ({
+const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
     code,
     source,
     setSource,
@@ -72,11 +80,23 @@ const CodeEditor = ({
     setLogsCount,
     challenge,
     submission,
-}: CodeEditorProps) => {
+}, ref) => {
     const [editorTabs, setEditorTabs] = useState<string[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
+
+    // One ref per tab so search always targets the visible editor
+    const aceRefs = useRef<Record<string, AceEditor | null>>({});
+
+    // Expose openSearch to parent via ref
+    useImperativeHandle(ref, () => ({
+        openSearch: () => {
+            const currentTab = activeKey ?? editorTabs[0];
+            const editor = aceRefs.current[currentTab]?.editor;
+            editor?.execCommand("find");
+        },
+    }), [activeKey, editorTabs]);
 
     const editorByLang = useMemo(() => {
         const map = new Map<string, { value: string; setValue: (v: string) => void }>();
@@ -136,6 +156,7 @@ const CodeEditor = ({
 
             return (
                 <AceEditor
+                    ref={(el) => { aceRefs.current[lang] = el; }}
                     mode={compilerLangToAceMode(lang as any)}
                     theme="tomorrow_night"
                     value={value}
@@ -155,7 +176,6 @@ const CodeEditor = ({
         [code.language, editorByLang, options.scale, options.lineWrap, source, setSource]
     );
 
-    // Only saved codes can have a challenge attached
     const codeChallenge = isCodeSaved(code) ? code.challenge : undefined;
 
     return (
@@ -224,6 +244,8 @@ const CodeEditor = ({
             )}
         </div>
     );
-};
+});
+
+CodeEditor.displayName = "CodeEditor";
 
 export default CodeEditor;

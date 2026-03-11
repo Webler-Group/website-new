@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
@@ -18,7 +18,7 @@ import { languagesInfo } from "../../../data/compilerLanguages";
 import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import { FaSearch } from "react-icons/fa";
-import CodeEditor from "../components/CodeEditor";
+import CodeEditor, { CodeEditorHandle } from "../components/CodeEditor";
 import useEditorOptions from "../hooks/useEditorOptions";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { CodeDetails, CreateCodeData, EditCodeData, GetCodeData, GetTemplateData, isCodeSaved, UnsavedCode, VoteCodeData } from "../../codes/types";
@@ -49,6 +49,8 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     const navigate = useNavigate();
     const location = useLocation();
     const { editorOptions, updateEditorOptions } = useEditorOptions();
+
+    const codeEditorRef = useRef<CodeEditorHandle>(null);
 
     const [code, setCode] = useState<CodeDetails | UnsavedCode | null>(null);
     const [source, setSource] = useState("");
@@ -307,6 +309,10 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
         updateEditorOptions({ ...editorOptions, scale });
     };
 
+    const handleCodeSearch = () => {
+        codeEditorRef.current?.openSearch();
+    };
+
     const lineCount = source.split("\n").length + css.split("\n").length + js.split("\n").length;
     const characterCount = source.length + css.length + js.length;
     const savedCode = code && isCodeSaved(code) ? code : null;
@@ -464,6 +470,15 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                             </div>
 
                             <div className="d-flex gap-2 align-items-center">
+                                <Button
+                                    size="sm"
+                                    variant="link"
+                                    className="text-dark position-relative"
+                                    onClick={handleCodeSearch}
+                                >
+                                    <FaSearch />
+                                </Button>
+
                                 {code.language === "web" && (
                                     <Button
                                         size="sm"
@@ -534,6 +549,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                         </div>
 
                         <CodeEditor
+                            ref={codeEditorRef}
                             code={code}
                             source={source}
                             setSource={(value: string) => setSource(value)}
