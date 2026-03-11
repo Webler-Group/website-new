@@ -664,7 +664,7 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         const nodeDocs = lessons.flatMap((lessonData, i) =>
             lessonData.nodes.map((node, nodeIndex) => ({
-                lesson: createdLessons[i]._id,
+                lessonId: createdLessons[i]._id,
                 index: nodeIndex + 1,
                 _type: node.type,
                 mode: node.mode,

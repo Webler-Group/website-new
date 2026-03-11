@@ -5,7 +5,7 @@ import { ChangeEvent, SubmitEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-import { EditorCreateCourseData, EditorEditCourseData, EditorGetCourseData, EditorImportCourseData, EditorUploadCourseCoverImageData } from "../types";
+import { EditorCreateCourseData, EditorEditCourseData, EditorGetCourseData, EditorImportCourseData, EditorUploadCourseCoverImageData, LessonNodeJson } from "../types";
 
 interface CreateCoursePageProps {
     courseId: string | null;
@@ -76,7 +76,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         const result = await sendJsonRequest<EditorImportCourseData>("/CourseEditor/ImportCourse", "POST", payload);
 
         if (result.data) {
-            navigate("/Courses/Editor" + result.data.course.id);
+            navigate("/Courses/Editor/" + result.data.course.id);
         } else {
             setError(result.error);
         }
@@ -150,7 +150,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
         }
     }
 
-    const [importedLessons, setImportedLessons] = useState<any[] | null>(null);
+    const [importedLessons, setImportedLessons] = useState<LessonNodeJson[] | null>(null);
 
     const handleImportFileChange = (e: ChangeEvent) => {
         const files = (e.target as HTMLInputElement).files;
