@@ -47,24 +47,15 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
         setSearchInput(codesState.searchQuery);
         setSearchQuery(codesState.searchQuery);
         setLanguage(codesState.language || "all");
+        setCurrentPage(codesState.page);
     }, [codesState]);
-
-    useEffect(() => {
-        handlePageChange(1);
-    }, [filter, language, searchQuery]);
 
     const handlePageChange = (page: number) => {
         if (currentPage === page) {
-            return
+            return;
         }
         setCodesState(prev => ({ ...prev, page }));
         setCurrentPage(page);
-    }
-
-    const handleSearch = () => {
-        const value = searchInput.trim()
-        setCodesState(prev => ({ ...prev, searchQuery: value }));
-        setSearchQuery(value);
     }
 
     const getCodes = async () => {
@@ -86,14 +77,20 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
 
     const handleFilterSelect = (e: ChangeEvent) => {
         const value = Number((e.target as HTMLSelectElement).selectedOptions[0].value);
-        setCodesState(prev => ({ ...prev, filter: value }))
+        setCodesState(prev => ({ ...prev, filter: value, page: 1 }));
         setFilter(value);
     }
 
     const handleLanguageSelect = (e: ChangeEvent) => {
-        const value = (e.target as HTMLSelectElement).selectedOptions[0].value
-        setCodesState(prev => ({ ...prev, language: value === "all" ? null : value }))
-        setLanguage(value)
+        const value = (e.target as HTMLSelectElement).selectedOptions[0].value;
+        setCodesState(prev => ({ ...prev, language: value === "all" ? null : value, page: 1 }));
+        setLanguage(value);
+    }
+
+    const handleSearch = () => {
+        const value = searchInput.trim();
+        setCodesState(prev => ({ ...prev, searchQuery: value, page: 1 }));
+        setSearchQuery(value);
     }
 
     let placeholders = [];

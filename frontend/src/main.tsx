@@ -10,6 +10,7 @@ import WSProvider from './context/wsCommunication';
 import ScrollToTop from './components/ScrollToTop';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
+import UserInfoProvider from './context/userInfoContext';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AuthProvider>
@@ -17,10 +18,12 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
       <BrowserRouter>
         <ApiProvider baseUrl='/api'>
           <WSProvider>
-            <ScrollToTop excludePaths={["/feed"]} />
-            <Routes>
-              <Route path="/*" element={<App />} />
-            </Routes>
+            <UserInfoProvider>
+              <ScrollToTop excludePaths={["/feed"]} />
+              <Routes>
+                <Route path="/*" element={<App />} />
+              </Routes>
+            </UserInfoProvider>
           </WSProvider>
         </ApiProvider>
       </BrowserRouter>

@@ -1,12 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { Badge, Dropdown } from "react-bootstrap"
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle"
 import { FaBell } from "react-icons/fa6"
 import Notification from "./Notification"
 import useNotifications from "../hooks/useNotifications"
 import { useApi } from "../../../context/apiCommunication"
-import { useWS } from "../../../context/wsCommunication"
-import { UnseenMessagesCountData } from "../../channels/types"
+import { useUserInfo } from "../../../context/userInfoContext"
 
 const NotificationList = () => {
     const { sendJsonRequest } = useApi();
@@ -19,38 +18,7 @@ const NotificationList = () => {
         hasNextPage,
         onMarkAllAsRead
     } = useNotifications(20, prevId, opened);
-    const [unseenCount, setUnseenCount] = useState(0);
-    const { socket } = useWS();
-
-    useEffect(() => {
-        const getUnseenNotificationCount = async () => {
-            const result = await sendJsonRequest<UnseenMessagesCountData>("/Profile/GetUnseenNotificationCount", "POST", {});
-            if (result.data) {
-                setUnseenCount(result.data.count);
-            }
-        }
-        getUnseenNotificationCount();
-    }, []);
-
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleNew = () => {
-            setUnseenCount((prev) => prev + 1);
-        };
-
-        const handleDeleted = () => {
-            setUnseenCount((prev) => prev - 1);
-        }
-
-        socket.on("notification:new", handleNew);
-        socket.on("notification:deleted", handleDeleted);
-
-        return () => {
-            socket.off("notification:new", handleNew);
-            socket.off("notification:deleted", handleDeleted);
-        };
-    }, [socket]);
+    const { unseenNotificationsCount: unseenCount, setUnseenNotificationsCount: setUnseenCount } = useUserInfo();
 
     const markAllAsRead = async () => {
         await sendJsonRequest("/Profile/MarkNotificationsClicked", "POST", {});
@@ -71,7 +39,6 @@ const NotificationList = () => {
                 setPrevId(results[results.length - 1].id)
             }
         })
-
 
         if (profile) intObserver.current.observe(profile)
     }, [isLoading, hasNextPage])

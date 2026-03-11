@@ -1,51 +1,10 @@
-import { useEffect, useState } from "react";
 import { Badge } from "react-bootstrap";
 import { FaComment } from "react-icons/fa6";
 import { Link } from "react-router-dom";
-import { useApi } from "../../../context/apiCommunication";
-import { useWS } from "../../../context/wsCommunication";
-import { UnseenMessagesCountData } from "../types";
+import { useUserInfo } from "../../../context/userInfoContext";
 
 const ChannelsButton = () => {
-  const [unseenCount, setUnseenCount] = useState(0);
-  const { sendJsonRequest } = useApi();
-  const { socket } = useWS();
-
-  useEffect(() => {
-    const getUnseenMessagesCount = async () => {
-      const result = await sendJsonRequest<UnseenMessagesCountData>("/Channels/GetUnseenMessagesCount", "POST", {});
-      if (result.data) {
-        setUnseenCount(result.data.count);
-      }
-    }
-    getUnseenMessagesCount();
-  }, []);
-
-  useEffect(() => {
-    if (!socket) return;
-
-        const handleNewMessage = async () => {
-            setUnseenCount(prev => prev + 1);
-        };
-
-        const handleNewInvite = () => {
-            setUnseenCount(prev => prev + 1);
-        }
-
-        const handleInviteCanceled = () => {
-            setUnseenCount(prev => prev - 1);
-        }
-
-        socket.on("channels:new_invite", handleNewInvite);
-        socket.on("channels:invite_canceled", handleInviteCanceled);
-        socket.on("channels:new_message_info", handleNewMessage);
-
-        return () => {
-            socket.off("channels:new_message_info", handleNewMessage);
-            socket.off("channels:new_invite", handleNewInvite);
-            socket.off("channels:invite_canceled", handleInviteCanceled);
-        };
-  }, [socket]);
+  const { unseenMessagesCount: unseenCount } = useUserInfo();
 
   return (
     <Link

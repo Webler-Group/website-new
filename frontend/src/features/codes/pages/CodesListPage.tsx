@@ -27,7 +27,7 @@ const CodesListPage = () => {
         searchParams.set("filter", codesState.filter.toString());
         searchParams.set("query", codesState.searchQuery);
         if (codesState.language == null) {
-            searchParams.delete("langauge");
+            searchParams.delete("language");
         } else {
             searchParams.set("language", codesState.language);
         }

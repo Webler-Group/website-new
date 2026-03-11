@@ -7,7 +7,7 @@ export type UserInfo = AuthUser;
 interface AuthState {
     userInfo: UserInfo | null;
     accessToken: string | null;
-    tokenExpiresAt: number; // ms timestamp, compare directly with Date.now()
+    tokenExpiresAt: number;
     deviceId: string;
     authenticate: (accessToken: string, expiresAtSeconds: number) => void;
     updateUser: (userInfo: UserInfo) => void;
