@@ -8,7 +8,7 @@ import { sanitizeFilename, truncate } from "../../../utils/StringUtils";
 import NotificationToast from "../../../components/NotificationToast";
 import Loader from "../../../components/Loader";
 import { downloadJsonFile } from "../../../utils/FileUtils";
-import { CourseMinimal, EditorCreateLessonData, EditorEditLessonData, EditorGetCourseData, LessonDetails } from "../types";
+import { CourseMinimal, EditorCreateLessonData, EditorEditLessonData, EditorExportCourseData, EditorExportCourseLessonData, EditorGetCourseData, LessonDetails } from "../types";
 
 const CourseEditorPage = () => {
     const { sendJsonRequest } = useApi();
@@ -160,7 +160,7 @@ const CourseEditorPage = () => {
     const onExport = async (id: string, title: string) => {
         setLoading(true);
 
-        const result = await sendJsonRequest("/CourseEditor/ExportCourseLesson", "POST", { lessonId: id });
+        const result = await sendJsonRequest<EditorExportCourseLessonData>("/CourseEditor/ExportCourseLesson", "POST", { lessonId: id });
 
         if (result && result.success && result.data) {
             const fileName = `${sanitizeFilename(title)}.json`;
@@ -175,19 +175,12 @@ const CourseEditorPage = () => {
 
     const handleExportCourse = async () => {
         setLoading(true);
-        const result = await sendJsonRequest("/CourseEditor/ExportCourse", "POST", { courseId });
+        const result = await sendJsonRequest<EditorExportCourseData>("/CourseEditor/ExportCourse", "POST", { courseId });
         if (result && result.success && result.data) {
-            const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `${course?.code || 'course'}-export.json`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            downloadJsonFile(`${result.data.course.code}-export.json`, result.data.course);
+            setNotification({ type: "success", message: "Course exported" });
         } else {
-            setNotification({ type: "error", message: result?.error?.[0]?.message ?? "Export failed" });
+            setNotification({ type: "error", message: result.error?.[0]?.message ?? "Export failed" });
         }
         setLoading(false);
     }

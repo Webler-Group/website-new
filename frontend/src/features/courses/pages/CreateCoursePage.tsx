@@ -250,13 +250,18 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
       "title": "Lesson 1",
       "nodes": [
         {
-          "type": 1, // 1=Text, 2=SingleChoice, 3=MultiChoice
-          "text": "Markdown content here...",
+          "type": 1, // 1=Text, 2=SingleChoice, 3=MultiChoice, 4=TextQuestion, 5=Code
+          "mode": 1, // 1=Markdown, 2=HTML
+          "text": "Markdown or HTML content here...",
+          // For Questions (Type 4):
+          "correctAnswer": "10",
           // For Questions (Type 2 & 3):
           "answers": [
             { "text": "Option A", "correct": true },
             { "text": "Option B", "correct": false }
-          ]
+          ],
+          // For Code Node
+          "codeId": "Code ID string value"
         }
       ]
     }

@@ -144,11 +144,12 @@ export interface EditorChangeLessonNodeIndexData {
 }
 
 export interface LessonNodeJson {
+    version: number;
     type: LessonNodeTypeEnum;
     index: number;
-    mode: number;
+    mode?: number;
     codeId?: string;
-    text: string;
+    text?: string;
     correctAnswer?: string;
     answers?: Array<{ text: string; correct: boolean }>;
 };
@@ -160,6 +161,7 @@ export interface CourseLessonJson {
 };
 
 export interface CourseJson {
+    version: number;
     code: string;
     title: string;
     description: string;

@@ -12,6 +12,8 @@ import HttpError from "../exceptions/HttpError";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 import { getImageUrl } from "../controllers/mediaController";
 
+export const JSON_VERSION = 1;
+
 export interface LessonNodeMinimalResponse {
     id: string | Types.ObjectId;
     index: number;
@@ -85,10 +87,11 @@ export interface QuizAnswerJson {
 }
 
 export interface LessonNodeJson {
+    version: number;
     type: LessonNodeTypeEnum;
     index: number;
     mode?: number;
-    codeId?: string;
+    codeId?: string | null;
     text?: string;
     correctAnswer?: string;
     answers?: QuizAnswerJson[];
@@ -96,7 +99,7 @@ export interface LessonNodeJson {
 
 export interface CourseLessonJson {
     version: number;
-    lesson: { title: string };
+    title: string;
     nodes: LessonNodeJson[];
 }
 
@@ -126,79 +129,32 @@ const answersMap = (answers: QuizAnswer[]): Map<string, QuizAnswerJson[]> => {
 export const exportLessonNodeToJson = async (
     node: LessonNode & { _id: Types.ObjectId },
     byNodeId?: Map<string, QuizAnswerJson[]>
-): Promise<LessonNodeJson> => {
-    const base: Pick<LessonNodeJson, "type" | "index" | "mode" | "codeId"> = {
+) => {
+    const data: LessonNodeJson = {
+        version: JSON_VERSION,
         type: node._type,
-        index: Number(node.index),
+        index: node.index,
         mode: node.mode,
         codeId: node.codeId?.toString()
     };
 
-    if (node._type === LessonNodeTypeEnum.TEXT) {
-        return { ...base, text: String(node.text ?? "") };
+    if (node._type !== LessonNodeTypeEnum.CODE) {
+        data.text = node.text;
     }
 
     if (node._type === LessonNodeTypeEnum.TEXT_QUESTION) {
-        return {
-            ...base,
-            text: String(node.text ?? ""),
-            correctAnswer: String(node.correctAnswer ?? "")
-        };
+        data.correctAnswer = node.correctAnswer;
     }
 
-    const nodeId = node._id.toString();
-    const answers =
-        byNodeId?.get(nodeId) ??
-        (await QuizAnswerModel.find({ courseLessonNodeId: node._id }).lean().then(r =>
-            r.map(a => ({ text: a.text, correct: a.correct }))
-        ));
-
-    return { ...base, text: String(node.text ?? ""), answers };
-};
-
-export const importLessonNodeFromJson = async (
-    lessonId: mongoose.Types.ObjectId | string,
-    nodeJson: LessonNodeJson,
-    session?: mongoose.ClientSession
-): Promise<LessonNode & { _id: Types.ObjectId }> => {
-    const correctAnswer =
-        nodeJson.type === LessonNodeTypeEnum.TEXT_QUESTION ? nodeJson.correctAnswer : "";
-
-    const [node] = await LessonNodeModel.create(
-        [
-            {
-                lessonId,
-                index: nodeJson.index,
-                _type: nodeJson.type,
-                mode: nodeJson.mode,
-                codeId:
-                    nodeJson.codeId && mongoose.isValidObjectId(nodeJson.codeId)
-                        ? new mongoose.Types.ObjectId(nodeJson.codeId)
-                        : null,
-                text: nodeJson.text || "",
-                correctAnswer: correctAnswer || ""
-            }
-        ],
-        { session }
-    );
-
-    if (
-        (nodeJson.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION ||
-            nodeJson.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) &&
-        nodeJson.answers?.length
-    ) {
-        const docs = nodeJson.answers.map(a => ({
-            courseLessonNodeId: node._id,
-            text: a.text,
-            correct: a.correct
-        }));
-        await QuizAnswerModel.insertMany(docs, { session });
+    if (node._type === LessonNodeTypeEnum.MULTICHOICE_QUESTION || node._type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION) {
+        const nodeId = node._id.toString();
+        data.answers = byNodeId?.get(nodeId) ?? (await QuizAnswerModel.find({ courseLessonNodeId: node._id }).lean()).map(a => ({ text: a.text, correct: a.correct }));
     }
 
-    return node;
+    return data;
 };
 
-export const exportCourseLessonToJson = async (lessonId: Types.ObjectId): Promise<CourseLessonJson> => {
+export const exportCourseLessonToJson = async (lessonId: Types.ObjectId | string): Promise<CourseLessonJson> => {
     const lesson = await CourseLessonModel.findById(lessonId).lean();
     if (!lesson) throw new HttpError("Lesson not found", 404);
 
@@ -208,31 +164,12 @@ export const exportCourseLessonToJson = async (lessonId: Types.ObjectId): Promis
     const byNodeId = answersMap(answers);
 
     const nodeJsons: LessonNodeJson[] = [];
-    for (const n of nodes) nodeJsons.push(await exportLessonNodeToJson(n, byNodeId));
-
-    return { version: 1, lesson: { title: lesson.title }, nodes: nodeJsons };
-};
-
-export const importCourseLessonFromJson = async (
-    courseId: Types.ObjectId,
-    lessonJson: CourseLessonJson,
-    session?: mongoose.ClientSession
-) => {
-    const lastIndex = await CourseLessonModel.countDocuments({ course: courseId }).session(session ?? null);
-
-    const [lesson] = await CourseLessonModel.create(
-        [{ title: lessonJson.lesson.title, course: courseId, index: lastIndex + 1, nodes: 0 }],
-        { session }
-    );
-
-    for (const nodeJson of lessonJson.nodes) {
-        await importLessonNodeFromJson(lesson._id, nodeJson, session);
+    for (const n of nodes) {
+        const nodeJson = await exportLessonNodeToJson(n, byNodeId);
+        nodeJsons.push(nodeJson);
     }
 
-    lesson.nodes = lessonJson.nodes.length;
-    await lesson.save({ session });
-
-    return lesson;
+    return { version: JSON_VERSION, title: lesson.title, nodes: nodeJsons };
 };
 
 export const deleteCourseAndCleanup = async (courseId: Types.ObjectId, session?: mongoose.ClientSession) => {

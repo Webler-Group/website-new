@@ -28,7 +28,6 @@ import {
 } from "../validation/courseEditorSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import {
-    CourseMinimalResponse,
     CourseResponse,
     deleteCourseAndCleanup,
     deleteCourseLessonAndCleanup,
@@ -38,7 +37,6 @@ import {
     formatCourseMinimal,
     formatLesson,
     formatLessonNodeMinimal,
-    LessonNodeJson,
     LessonNodeResponse,
     LessonProgressInfo,
     LessonResponse,
@@ -48,12 +46,10 @@ import { createFolder, deleteEntry, formatFileEntry, listDirectory, moveEntry, u
 import uploadImage from "../middleware/uploadImage";
 import File from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
-import FileTypeEnum from "../data/FileTypeEnum";
 import { getImageUrl } from "./mediaController";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { Code } from "../models/Code";
+import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
@@ -520,7 +516,7 @@ const exportCourseLesson = asyncHandler(async (req: IAuthRequest, res: Response)
     const { body } = parseWithZod(exportCourseLessonSchema, req);
     const { lessonId } = body;
 
-    const data = await exportCourseLessonToJson(new Types.ObjectId(lessonId));
+    const data = await exportCourseLessonToJson(lessonId);
 
     res.json({ success: true, data: { lesson: data } });
 });
@@ -645,12 +641,12 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (course) {
             course.title = title;
             course.description = description;
-            if (visible !== undefined) course.visible = visible;
+            course.visible = visible;
             await course.save({ session });
             await deleteCourseLessonAndCleanup({ course: course._id }, session);
         } else {
             const [newCourse] = await CourseModel.create(
-                [{ code, title, description, visible: visible ?? false }],
+                [{ code, title, description, visible }],
                 { session }
             );
             course = newCourse;
@@ -668,44 +664,44 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         const nodeDocs = lessons.flatMap((lessonData, i) =>
             lessonData.nodes.map((node, nodeIndex) => ({
-                lessonId: createdLessons[i]._id,
+                lesson: createdLessons[i]._id,
                 index: nodeIndex + 1,
                 _type: node.type,
                 mode: node.mode,
                 codeId: node.codeId,
-                text: node.text || "",
+                text: node.text ?? "",
                 correctAnswer: node.correctAnswer
             }))
         );
 
-        if (nodeDocs.length > 0) {
-            const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
+        if (nodeDocs.length === 0) return course;
 
-            const answerDocs: Omit<QuizAnswer, "_id">[] = [];
-            let nodeOffset = 0;
+        const createdNodes = await LessonNodeModel.insertMany(nodeDocs, { session });
 
-            for (const lessonData of lessons) {
-                for (const sourceNode of lessonData.nodes) {
-                    const createdNode = createdNodes[nodeOffset++];
+        const answerDocs: Omit<QuizAnswer, "_id">[] = [];
+        let nodeOffset = 0;
 
-                    if (
-                        sourceNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
-                        sourceNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
-                    ) {
-                        sourceNode.answers?.forEach(ans => {
-                            answerDocs.push({
-                                courseLessonNodeId: createdNode._id,
-                                text: ans.text,
-                                correct: ans.correct
-                            });
+        for (const lessonData of lessons) {
+            for (const node of lessonData.nodes) {
+                const createdNode = createdNodes[nodeOffset++];
+
+                if (
+                    node.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
+                    node.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
+                ) {
+                    node.answers?.forEach(ans => {
+                        answerDocs.push({
+                            courseLessonNodeId: createdNode._id,
+                            text: ans.text,
+                            correct: ans.correct
                         });
-                    }
+                    });
                 }
             }
+        }
 
-            if (answerDocs.length > 0) {
-                await QuizAnswerModel.insertMany(answerDocs, { session });
-            }
+        if (answerDocs.length > 0) {
+            await QuizAnswerModel.insertMany(answerDocs, { session });
         }
 
         return course;
@@ -734,33 +730,7 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const lessons = await CourseLessonModel.find({ course: courseId }).sort({ index: 1 }).lean();
-
-    const exportedLessons = await Promise.all(lessons.map(async lesson => {
-        const nodes = await LessonNodeModel.find({ lessonId: lesson._id }).sort({ index: 1 }).lean();
-
-        const exportedNodes = await Promise.all(nodes.map(async (node): Promise<LessonNodeJson> => {
-            const exportedNode: LessonNodeJson = {
-                type: node._type,
-                mode: node.mode,
-                text: node.text,
-                index: node.index,
-                codeId: node.codeId ? node.codeId.toString() : undefined,
-                correctAnswer: node.correctAnswer
-            };
-
-            if (
-                node._type === LessonNodeTypeEnum.MULTICHOICE_QUESTION ||
-                node._type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
-            ) {
-                const answers = await QuizAnswerModel.find({ courseLessonNodeId: node._id }).lean();
-                exportedNode.answers = answers.map(ans => ({ text: ans.text, correct: ans.correct }));
-            }
-
-            return exportedNode;
-        }));
-
-        return { title: lesson.title, nodes: exportedNodes };
-    }));
+    const exportedLessons = await Promise.all(lessons.map(async (lesson) => exportCourseLessonToJson(lesson._id)));
 
     res.json({
         success: true,

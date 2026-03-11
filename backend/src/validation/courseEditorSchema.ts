@@ -1,7 +1,10 @@
 import { z } from "zod";
-import { countPerPageSchema, courseCodeSchema, courseDescriptionSchema, idSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
+import { courseCodeSchema, courseDescriptionSchema, idSchema, indexSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
+
+const nodeCorrectAnswerSchema = z.string().max(80, "Correct answer must not exceed 80 characters");
+const nodeTextSchema = z.string().max(8000, "Text must not exceed 8000 characters");
 
 const quizAnswerSchema = z.object({
     id: idSchema("answerId").optional(),
@@ -101,8 +104,8 @@ export const editLessonNodeSchema = z.object({
         type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
         mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode"),
         codeId: z.string().nullable().optional(),
-        text: z.string().max(8000, "Text must not exceed 8000 characters").optional(),
-        correctAnswer: z.string().max(80, "Correct answer must not exceed 80 characters").optional(),
+        text: nodeTextSchema.optional(),
+        correctAnswer: nodeCorrectAnswerSchema.optional(),
         answers: z.array(quizAnswerSchema).optional()
     })
 });
@@ -110,28 +113,20 @@ export const editLessonNodeSchema = z.object({
 export const changeLessonIndexSchema = z.object({
     body: z.object({
         lessonId: idSchema("lessonId"),
-        newIndex: z.number().int().min(1, "New index must be a positive integer")
+        newIndex: indexSchema
     })
 });
 
 export const changeLessonNodeIndexSchema = z.object({
     body: z.object({
         nodeId: idSchema("nodeId"),
-        newIndex: z.number().int().min(1, "New index must be a positive integer")
+        newIndex: indexSchema
     })
 });
 
 export const exportCourseLessonSchema = z.object({
     body: z.object({
         lessonId: idSchema("lessonId")
-    })
-});
-
-export const generateLessonNodeSchema = z.object({
-    body: z.object({
-        nodeId: idSchema("nodeId"),
-        type: z.enum(LessonNodeTypeEnum),
-        description: z.string().max(256).nullish()
     })
 });
 
@@ -143,22 +138,22 @@ export const exportCourseSchema = z.object({
 
 export const importCourseSchema = z.object({
     body: z.object({
-        code: z.string().min(1).max(64).regex(/^([a-z0-9]+-)*[a-z0-9]+$/),
-        title: z.string().min(1).max(120),
-        description: z.string().min(1).max(1000),
-        visible: z.boolean().optional(),
+        code: courseCodeSchema,
+        title: titleSchema,
+        description: courseDescriptionSchema,
+        visible: z.boolean("Visible must be a boolean"),
         lessons: z.array(z.object({
-            title: z.string().min(1).max(120),
+            version: z.number(),
+            title: titleSchema,
             nodes: z.array(z.object({
+                version: z.number(),
+                index: indexSchema,
                 type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
                 mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode").optional(),
-                codeId: z.string().nullable().optional(),
-                text: z.string().min(0).max(8000).optional(),
-                correctAnswer: z.string().max(8000).nullable().optional(),
-                answers: z.array(z.object({
-                    text: z.string().min(1).max(120),
-                    correct: z.boolean()
-                })).optional()
+                codeId: idSchema("codeId").nullable().optional(),
+                text: nodeTextSchema.optional(),
+                correctAnswer: nodeCorrectAnswerSchema.optional(),
+                answers: z.array(quizAnswerSchema).optional()
             }))
         }))
     })
