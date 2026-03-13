@@ -1,10 +1,11 @@
-import { FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Button, FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
 import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./post-attachment-select/PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import allowedUrls from "../data/discussAllowedUrls";
 import FileExplorer from "./file-explorer/FileExplorer";
+import { FaPlus } from "react-icons/fa";
 
 export type MDEditorMode = "write" | "preview";
 
@@ -36,6 +37,7 @@ const MdEditorField = ({
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [showImages, setShowImages] = useState(false);
+    const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
 
     useEffect(() => {
         onModeChange?.(mode);
@@ -99,7 +101,8 @@ const MdEditorField = ({
     ];
 
     return (
-        <div>
+        <>
+            <PostAttachmentSelect show={postAttachmentSelectVisible} onClose={() => setPostAttachmentSelectVisible(false)} onSubmit={handlePostAttachments} />
             <FileExplorer
                 title="Image Select"
                 section={section}
@@ -108,86 +111,89 @@ const MdEditorField = ({
                 onHide={() => setShowImages(false)}
                 onSelect={(url, alt) => insertImageMarkdownAtCursor(url, alt)}
             />
+            <div>
+                <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
+                    {toolbarButtons.map((btn, idx) => (
+                        <button
+                            key={idx}
+                            className={"btn btn-sm btn-outline-secondary flex-shrink-0" + (btn.className ? " " + btn.className : "")}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                btn.action();
+                            }}
+                            style={{ minWidth: "40px" }}
+                        >
+                            {btn.icon}
+                        </button>
+                    ))}
+                </div>
 
-            <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
-                {toolbarButtons.map((btn, idx) => (
-                    <button
-                        key={idx}
-                        className={"btn btn-sm btn-outline-secondary flex-shrink-0" + (btn.className ? " " + btn.className : "")}
-                        onClick={(e) => {
-                            e.preventDefault();
-                            btn.action();
-                        }}
-                        style={{ minWidth: "40px" }}
-                    >
-                        {btn.icon}
-                    </button>
-                ))}
-            </div>
+                <div className="mb-3">
+                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={(val: any) => setMode(val)}>
+                        <ToggleButton id="write-btn" value="write" variant="outline-primary">
+                            Write
+                        </ToggleButton>
+                        <ToggleButton id="preview-btn" value="preview" variant="outline-primary">
+                            Preview
+                        </ToggleButton>
+                    </ToggleButtonGroup>
+                </div>
 
-            <div className="mb-3">
-                <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={(val: any) => setMode(val)}>
-                    <ToggleButton id="write-btn" value="write" variant="outline-primary">
-                        Write
-                    </ToggleButton>
-                    <ToggleButton id="preview-btn" value="preview" variant="outline-primary">
-                        Preview
-                    </ToggleButton>
-                </ToggleButtonGroup>
-            </div>
+                {mode === "write" && (
+                    <FormGroup className="mb-3">
+                        {isPost ? (
+                            <>
+                                <PostTextareaControl
+                                    ref={textareaRef}
+                                    rows={row}
+                                    placeholder={placeHolder}
+                                    value={text}
+                                    setValue={setText}
+                                    required
+                                    maxLength={maxCharacters}
+                                />
 
-            {mode === "write" && (
-                <FormGroup className="mb-3">
-                    {isPost ? (
-                        <>
-                            <PostTextareaControl
-                                ref={textareaRef}
-                                rows={row}
-                                placeholder={placeHolder}
-                                value={text}
-                                setValue={setText}
-                                required
-                                maxLength={maxCharacters}
-                            />
-
-                            <div className="d-flex justify-content-between">
-                                <div className="mt-2 text-muted small">
-                                    {text.length}/{maxCharacters} characters
+                                <div className="d-flex justify-content-between">
+                                    <div className="mt-2 text-muted small">
+                                        {text.length}/{maxCharacters} characters
+                                    </div>
+                                    <Button variant="link" className="text-secondary" onClick={() => setPostAttachmentSelectVisible(true)}>
+                                        <FaPlus />
+                                    </Button>
                                 </div>
-                                <PostAttachmentSelect onSubmit={handlePostAttachments} />
-                            </div>
-                        </>
+                            </>
+                        ) : (
+                            <>
+                                <FormControl
+                                    ref={textareaRef}
+                                    as="textarea"
+                                    rows={row}
+                                    placeholder={placeHolder}
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                    required
+                                    maxLength={maxCharacters}
+                                />
+                                <div className="d-flex justify-content-between">
+                                    <div className="mt-2 text-muted small">
+                                        {text.length}/{maxCharacters} characters
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </FormGroup>
+                )}
+
+                {mode === "preview" &&
+                    (customPreview != null ? (
+                        customPreview
                     ) : (
-                        <>
-                            <FormControl
-                                ref={textareaRef}
-                                as="textarea"
-                                rows={row}
-                                placeholder={placeHolder}
-                                value={text}
-                                onChange={(e) => setText(e.target.value)}
-                                required
-                                maxLength={maxCharacters}
-                            />
-                            <div className="d-flex justify-content-between">
-                                <div className="mt-2 text-muted small">
-                                    {text.length}/{maxCharacters} characters
-                                </div>
-                            </div>
-                        </>
-                    )}
-                </FormGroup>
-            )}
-
-            {mode === "preview" &&
-                (customPreview != null ? (
-                    customPreview
-                ) : (
-                    <div className="p-2 border rounded bg-light">
-                        <MarkdownRenderer content={text} allowedUrls={allowedUrls} />
-                    </div>
-                ))}
-        </div>
+                        <div className="p-2 border rounded bg-light">
+                            <MarkdownRenderer content={text} allowedUrls={allowedUrls} />
+                        </div>
+                    ))}
+            </div>
+        </>
     );
 };
 

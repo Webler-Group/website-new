@@ -1,6 +1,6 @@
 import { Button, Form, FormGroup, FormLabel, Modal, Toast } from "react-bootstrap";
 import CommentNode from "./CommentNode";
-import { FaLeftLong } from "react-icons/fa6";
+import { FaLeftLong, FaPlus } from "react-icons/fa6";
 import { useCallback, useEffect, useRef, useState } from "react";
 import useComments, { UseCommentsOptions } from "./useComments";
 import PostTextareaControl from "../PostTextareaControl";
@@ -50,6 +50,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     } = useComments(options, findPost ? findPost.id : null, filter, 10, showAllComments);
     const [commentVotesModalVisible, setCommentVotesModalVisible] = useState(false);
     const [commentVotesModalOptions, setCommentVotesModalOptions] = useState({ parentId: "" });
+    const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
     const navigate = useNavigate();
 
     // Remove highlight after 3 seconds
@@ -272,6 +273,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     <Button variant="danger" onClick={handleDeleteComment}>Delete</Button>
                 </Modal.Footer>
             </Modal>
+            <PostAttachmentSelect show={postAttachmentSelectVisible} onClose={() => setPostAttachmentSelectVisible(false)} onSubmit={handlePostAttachments} />
             <ReactionsList title="Likes" options={commentVotesModalOptions} visible={commentVotesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
             <div className="d-flex justify-content-between">
                 {showAllComments ? (
@@ -359,7 +361,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                         />
                     </FormGroup>
                     <div className="d-flex justify-content-end mt-2">
-                        <PostAttachmentSelect onSubmit={handlePostAttachments} />
+                        <Button variant="link" className="text-secondary" onClick={() => setPostAttachmentSelectVisible(true)}>
+                            <FaPlus />
+                        </Button>
                         <Button size="sm" variant="secondary" className="ms-2" onClick={hideAnswerForm}>
                             Cancel
                         </Button>

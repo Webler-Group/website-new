@@ -67,7 +67,6 @@
     cursor: pointer;
     border-radius: 4px;
     object-fit: cover;
-    margin: 0.5em 0;
 }
 
 .wb-markdown ul,

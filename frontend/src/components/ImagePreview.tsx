@@ -157,6 +157,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, alt, onClose }) => {
                 justifyContent: "center",
                 zIndex: 9999,
                 touchAction: "auto",
+                color: "#ccc"
             }}
             onClick={onClose}
         >

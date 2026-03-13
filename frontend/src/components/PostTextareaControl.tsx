@@ -12,12 +12,12 @@ interface PostTextareaControlProps {
     setValue: (value: string) => void;
     placeholder?: string;
     rows?: number;
-    size?: "sm" | "lg"; // bootstrap sizes
+    size?: "sm" | "lg";
     required?: boolean;
     maxLength?: number;
 }
 
-export function parseMessage(message: string): JSX.Element[] {
+export const parseMessage = (message: string) => {
     const regex = /\[user id="([0-9a-fA-F]{24})"\](.*?)\[\/user\]/g;
     const parts: JSX.Element[] = [];
     let lastIndex = 0;
@@ -37,7 +37,6 @@ export function parseMessage(message: string): JSX.Element[] {
     return parts;
 }
 
-// Forward ref so parent can still access textarea
 const PostTextareaControl = forwardRef<HTMLTextAreaElement, PostTextareaControlProps>(
     ({ value, setValue, placeholder, rows = 3, size, required, maxLength }, ref) => {
         const innerRef = useRef<HTMLTextAreaElement>(null);

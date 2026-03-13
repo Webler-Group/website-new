@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
 import { TransitionGroup, CSSTransition } from "react-transition-group";
 import ChannelMessage from "./ChannelMessage";
 import { Button, Form, Badge, Modal } from "react-bootstrap";
-import { FaArrowCircleDown, FaCog, FaTimes } from "react-icons/fa";
+import { FaArrowCircleDown, FaCog, FaPlus, FaTimes } from "react-icons/fa";
 import ChannelRoomSettings from "./ChannelRoomSettings";
 import { useApi } from "../../../context/apiCommunication";
 import useMessages from "../hooks/useMessages";
@@ -14,12 +14,58 @@ import Loader from "../../../components/Loader";
 import PostAttachmentSelect from "../../../components/post-attachment-select/PostAttachmentSelect";
 import { ChannelDetails, ChannelMessageDetails, ChannelParticipantDetails, GetChannelData, InviteDetails } from "../types";
 import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
+import ImagePreview from "../../../components/ImagePreview";
+import FileExplorer from "../../../components/file-explorer/FileExplorer";
+
 interface ChannelRoomProps {
     channelId: string;
     onExit: () => void;
 }
 
 const MAX_ROWS = 5;
+
+const AttachDropdown = ({ onCode, onImage }: { onCode: () => void; onImage: () => void; }) => {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} className="position-relative">
+            <Button variant="link" className="text-secondary" onClick={() => setOpen(v => !v)}>
+                <FaPlus />
+            </Button>
+            {open && (
+                <div
+                    className="position-absolute bg-white border rounded shadow-sm py-1"
+                    style={{ bottom: "100%", right: 0, minWidth: "120px", zIndex: 10 }}
+                >
+                    {[
+                        { label: "Code", action: onCode },
+                        { label: "Image", action: onImage },
+                    ].map(({ label, action }) => (
+                        <button
+                            key={label}
+                            className="dropdown-item px-3 py-2"
+                            onClick={() => { action(); setOpen(false); }}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [channel, setChannel] = useState<ChannelDetails | null>(null);
@@ -66,17 +112,20 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [editedMessage, setEditedMessage] = useState<ChannelMessageDetails | null>(null);
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
-    const [skipTransition, setSkipTransition] = useState(true); // Updated: State to skip animations on initial load
+    const [skipTransition, setSkipTransition] = useState(true);
     const [loading, setLoading] = useState(false);
     const [repliedMessage, setRepliedMessage] = useState<ChannelMessageDetails | null>(null);
     const nodeRefs = useRef<Map<string, React.RefObject<HTMLDivElement | null>>>(new Map());
+    const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
+    const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
+    const [showImages, setShowImages] = useState(false);
 
     useEffect(() => {
         getChannel();
         setMessagesFromDate(null);
         setJustChangedChannel(true);
         setSettingsVisible(false);
-        setSkipTransition(true); // Reset skip on channel change
+        setSkipTransition(true);
     }, [channelId]);
 
     useEffect(() => {
@@ -88,12 +137,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     useEffect(() => {
         const textarea = textareaRef.current;
         if (!textarea) return;
-
-        // Temporarily shrink to 1 row to measure correctly
         textarea.rows = 1;
-
         const lineHeight = parseInt(window.getComputedStyle(textarea).lineHeight, 10);
-        const rows = Math.ceil(textarea.scrollHeight / lineHeight) - 1; // -1 feels more natural
+        const rows = Math.ceil(textarea.scrollHeight / lineHeight) - 1;
         textarea.rows = Math.min(rows, MAX_ROWS);
     }, [newMessage]);
 
@@ -110,9 +156,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const messagesIntObserver = useRef<IntersectionObserver>(null);
     const lastMessageRef = useCallback((message: Element | null) => {
         if (messages.isLoading) return;
-
         if (messagesIntObserver.current) messagesIntObserver.current.disconnect();
-
         messagesIntObserver.current = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && messages.hasNextPage) {
@@ -120,24 +164,20 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 }
             }
         );
-
         if (message) messagesIntObserver.current.observe(message);
     }, [messages.isLoading, messages.hasNextPage, messages.results.length]);
 
     useEffect(() => {
         const container = messagesContainerRef.current;
         if (!container) return;
-
         const handleScroll = () => {
             const scrollTop = container.scrollTop;
             const isAtBottomNow = Math.abs(scrollTop) < 5;
             isAtBottomRef.current = isAtBottomNow;
             setShowJumpButton(!isAtBottomNow);
-
             if (isAtBottomNow && unreadCount > 0) {
                 setUnreadCount(0);
             }
-
             if (isAtBottomNow && messages.results.length > 0 && channel?.lastActiveAt && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt)) {
                 setChannel(prev => {
                     if (!prev) return null;
@@ -146,9 +186,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                 messages.markMessagesSeen();
             }
         };
-
         handleScroll();
-
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
     }, [messages.results.length, channel?.id, unreadCount]);
@@ -185,7 +223,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         if (justChangedChannel && !messages.isLoading && messages.results.length > 0) {
             scrollToBottom('auto');
             setJustChangedChannel(false);
-            setSkipTransition(false); // Updated: Enable transitions after initial load to allow animations only for new messages
+            setSkipTransition(false);
         }
     }, [justChangedChannel, messages.isLoading, messages.results]);
 
@@ -213,7 +251,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setTimeout(() => {
             const container = messagesContainerRef.current;
             if (container) {
-                // For flex-column-reverse, the bottom is scrollTop = 0
                 container.scrollTo({ top: 0, behavior })
             }
         }, 50);
@@ -234,7 +271,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     const handleSendMessage = async () => {
         if (newMessage.trim().length === 0) return;
-
         if (editedMessage) {
             messages.editMessage(editedMessage.id, newMessage);
             setEditedMessage(null);
@@ -385,6 +421,10 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setNewMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
     }
 
+    const handleImageSelect = (url: string) => {
+        setNewMessage(prev => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + url + "\n");
+    }
+
     let firstTime: number;
     const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
 
@@ -403,6 +443,18 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 <Button variant="danger" onClick={handleDeleteMessage}>Delete</Button>
                             </Modal.Footer>
                         </Modal>
+                        <PostAttachmentSelect show={postAttachmentSelectVisible} onClose={() => setPostAttachmentSelectVisible(false)} onSubmit={handlePostAttachments} />
+                        <FileExplorer
+                            title="Image Select"
+                            section="Profile"
+                            rootAlias="post-images"
+                            show={showImages}
+                            onHide={() => setShowImages(false)}
+                            onSelect={handleImageSelect}
+                        />
+                        {preview && (
+                            <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
+                        )}
                         <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
                             <div className="d-flex align-items-center">
                                 <Button variant="link" className="text-secondary" onClick={onExit}>
@@ -410,22 +462,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 </Button>
                                 <h5 className="mb-0">{channel.title}</h5>
                             </div>
-                            <Button
-                                variant="secondary"
-                                size="sm"
-                                onClick={toggleSettings}
-                            >
+                            <Button variant="secondary" size="sm" onClick={toggleSettings}>
                                 {settingsVisible ? (
-                                    <>
-                                        <FaTimes className="me-1" /> Settings
-                                    </>
+                                    <><FaTimes className="me-1" /> Settings</>
                                 ) : (
-                                    <>
-                                        <FaCog className="me-1" /> Settings
-                                    </>
+                                    <><FaCog className="me-1" /> Settings</>
                                 )}
                             </Button>
-
                         </div>
 
                         <div className="d-flex flex-column flex-grow-1 overflow-hidden">
@@ -439,21 +482,17 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
                                         let isLastFromUser = false;
                                         if (!nextMessage) {
-                                            // No next message = always show header
                                             isLastFromUser = true;
                                         } else if (nextMessage.user.id !== message.user.id || nextMessage.type !== 1) {
-                                            // Different user = show header
                                             isLastFromUser = true;
                                             const nextTime = new Date(nextMessage.createdAt).getTime();
                                             firstTime = nextTime;
                                         } else {
-                                            // Same user, check time difference
                                             const currentTime = new Date(message.createdAt).getTime();
                                             if (i === 0) {
                                                 firstTime = currentTime;
                                             }
                                             const nextTime = new Date(nextMessage.createdAt).getTime();
-
                                             if (Math.abs(nextTime - firstTime) > 2 * 60 * 1000) {
                                                 isLastFromUser = true;
                                                 firstTime = nextTime;
@@ -468,20 +507,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                 nodeRef={getNodeRef(message.id)}
                                             >
                                                 <div ref={getNodeRef(message.id)} className="mt-2">
-                                                    {i === renderMessages.length - 1 ? (
-                                                        <ChannelMessage
-                                                            ref={lastMessageRef}
-                                                            message={message}
-                                                            showHeader={isLastFromUser || message.repliedTo != null}
-                                                            onContextMenu={onContextMenu}
-                                                        />
-                                                    ) : (
-                                                        <ChannelMessage
-                                                            message={message}
-                                                            showHeader={isLastFromUser || message.repliedTo != null}
-                                                            onContextMenu={onContextMenu}
-                                                        />
-                                                    )}
+                                                    <ChannelMessage
+                                                        ref={i === renderMessages.length - 1 ? lastMessageRef : undefined}
+                                                        message={message}
+                                                        showHeader={isLastFromUser || message.repliedTo != null}
+                                                        onContextMenu={onContextMenu}
+                                                        onImagePreview={setPreview}
+                                                    />
                                                 </div>
                                             </CSSTransition>
                                         );
@@ -504,13 +536,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         <div className="flex-grow-1" style={{ minWidth: 0 }}>
                                             <RepliedMessage message={repliedMessage} />
                                         </div>
-
-                                        <Button
-                                            size="sm"
-                                            variant="link"
-                                            className="text-muted ms-2 p-0 flex-shrink-0"
-                                            onClick={() => setRepliedMessage(null)}
-                                        >
+                                        <Button size="sm" variant="link" className="text-muted ms-2 p-0 flex-shrink-0" onClick={() => setRepliedMessage(null)}>
                                             <FaTimes />
                                         </Button>
                                     </div>
@@ -543,9 +569,11 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         maxLength={1024}
                                         style={{ resize: "none", boxShadow: "none" }}
                                     />
-                                    <PostAttachmentSelect onSubmit={handlePostAttachments} />
-                                    {
-                                        newMessage.trim().length > 0 &&
+                                    <AttachDropdown
+                                        onCode={() => setPostAttachmentSelectVisible(true)}
+                                        onImage={() => setShowImages(true)}
+                                    />
+                                    {newMessage.trim().length > 0 &&
                                         <Button variant="primary" onClick={handleSendMessage}>
                                             {editedMessage ? <FaCheck /> : <FaPaperPlane />}
                                         </Button>
