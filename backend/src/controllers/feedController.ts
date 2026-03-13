@@ -133,7 +133,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
                     user: {
                         _id: "$userDetails._id",
                         name: "$userDetails.name",
-                        avatarUrl: "$userDetails.avatarHash",
+                        avatarHash: "$userDetails.avatarHash",
                         level: "$userDetails.level",
                         roles: "$userDetails.roles",
                         countryCode: { $ifNull: ["$userDetails.countryCode", null] },
