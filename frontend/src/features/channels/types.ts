@@ -30,8 +30,7 @@ export interface ChannelMessageMinimal {
 
 export interface ChannelMessageDetails extends ChannelMessageMinimal {
     repliedTo: ChannelMessageMinimal;
-    channelId: string;
-    channelTitle?: string;
+    channel: ChannelBase;
     attachments: PostAttachmentDetails[];
 }
 
@@ -121,6 +120,7 @@ export interface GroupChangeRoleData {
 
 export interface UnseenMessagesCountData {
     count: number;
+    channelIds: string[];
 }
 
 export interface MuteChannelData {
@@ -151,5 +151,17 @@ export interface MessageDeletedData {
 }
 
 export interface ChannelDeletedData {
+    channelId: string;
+}
+
+export interface NewInviteData {
+    invite: InviteDetails<undefined, ChannelBase>;
+}
+
+export interface InviteCanceledData {
+    inviteId: string;
+}
+
+export interface NewMessageInfo {
     channelId: string;
 }

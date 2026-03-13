@@ -312,7 +312,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         if (parentPost && !parentPost.user.equals(currentUserId)) {
             await sendNotifications({
                 title: "New reply",
-                message: `{action_user} replied to your comment on "${code.name}"`,
+                message: `{action_user} replied to your comment on code "${code.name}"`,
                 type: NotificationTypeEnum.CODE_COMMENT,
                 actionUser: new Types.ObjectId(currentUserId),
                 codeId: code._id,

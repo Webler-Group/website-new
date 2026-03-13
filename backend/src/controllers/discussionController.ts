@@ -220,7 +220,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             message: `{action_user} posted in "${question.title}"`,
             questionId: question._id,
             postId: reply._id
-        }, followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user));
+        }, followers.filter(x => !x.user.equals(currentUserId) && !x.user.equals(question.user)).map(x => x.user));
 
         if (!question.user.equals(currentUserId)) {
             await sendNotifications({

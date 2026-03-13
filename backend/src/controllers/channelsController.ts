@@ -7,7 +7,6 @@ import ChannelParticipantModel from "../models/ChannelParticipant";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import ChannelMessageModel, { ChannelMessage } from "../models/ChannelMessage";
 import { Socket } from "socket.io";
-import { getIO, uidRoom } from "../config/socketServer";
 import mongoose, { Types } from "mongoose";
 import ChannelRolesEnum from "../data/ChannelRolesEnum";
 import ChannelTypeEnum from "../data/ChannelTypeEnum";
@@ -37,7 +36,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
-import { deleteChannelAndCleanup, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
+import { deleteChannelAndCleanup, formatChannelBase, inviteToChannel, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
 import { getAttachmentsByPostId, PostAttachmentDetails } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
@@ -162,7 +161,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
         throw new HttpError("Invite already exists", 400);
     }
 
-    const invite = await ChannelInviteModel.create({ invitedUser: invitedUser._id, channel: channelId, author: currentUserId });
+    const invite = await inviteToChannel(currentUserId!, invitedUser._id, channelId);
 
     res.json({
         success: true,
@@ -185,7 +184,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean(),
         ChannelModel.findById(channelId)
             .populate<{ DMUser: UserMinimal & { _id: Types.ObjectId } | null }>("DMUser", USER_MINIMAL_FIELDS)
-            .populate<{ createdBy: UserMinimal& { _id: Types.ObjectId } }>("createdBy", USER_MINIMAL_FIELDS)
+            .populate<{ createdBy: UserMinimal & { _id: Types.ObjectId } }>("createdBy", USER_MINIMAL_FIELDS)
             .lean()
     ]);
 
@@ -331,14 +330,7 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
                 id: x._id,
                 author: formatUserMinimal(x.author),
                 createdAt: x.createdAt,
-                channel: {
-                    id: x.channel._id,
-                    type: x.channel._type,
-                    title: x.channel.title,
-                    coverImageUrl: null,
-                    createdAt: x.channel.createdAt,
-                    updatedAt: x.channel.updatedAt
-                }
+                channel: formatChannelBase(x.channel)
             })),
             count: totalCount
         }
@@ -490,9 +482,7 @@ const groupCancelInvite = asyncHandler(async (req: IAuthRequest, res: Response) 
         throw new HttpError("Unauthorized", 403);
     }
 
-    await ChannelInviteModel.deleteOne({ _id: invite._id });
-
-    getIO()?.to(uidRoom(invite.invitedUser.toString())).emit("channels:invite_canceled", { inviteId });
+    await processChannelInvite(invite, false);
 
     res.json({ success: true });
 });
@@ -577,13 +567,9 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Unauthorized", 403);
     }
 
-    const participants = await ChannelParticipantModel.find({ channel: channelId }).lean();
-
     await withTransaction(async (session) => {
         await deleteChannelAndCleanup(channel._id, session);
     });
-
-    getIO()?.to(participants.map(x => uidRoom(x.user.toString()))).emit("channels:channel_deleted", { channelId });
 
     res.json({ success: true });
 });
@@ -593,22 +579,27 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
 
     const user = await UserModel.findById(currentUserId, { emailVerified: 1 }).lean();
     if (user?.emailVerified === false) {
-        res.json({ success: true, data: { count: 0 } });
+        res.json({ success: true, data: { count: 0, channelIds: [] } });
         return;
     }
 
-    type UnseenAgg = { _id: null; total: number };
-
-    const [results, invitesCount] = await Promise.all([
-        ChannelParticipantModel.aggregate<UnseenAgg>([
-            { $match: { user: new mongoose.Types.ObjectId(currentUserId), muted: false } },
-            { $group: { _id: null, total: { $sum: "$unreadCount" } } }
-        ]),
-        ChannelInviteModel.countDocuments({ invitedUser: currentUserId })
+    const [unseenParticipants, invites] = await Promise.all([
+        ChannelParticipantModel.find(
+            { user: new mongoose.Types.ObjectId(currentUserId), muted: false, unreadCount: { $gt: 0 } },
+            { channel: 1 }
+        ).lean(),
+        ChannelInviteModel.find(
+            { invitedUser: currentUserId },
+            { channel: 1 }
+        ).lean()
     ]);
 
-    const unseenMessagesCount = results.length > 0 ? results[0].total : 0;
-    res.json({ success: true, data: { count: unseenMessagesCount + invitesCount } });
+    const unseenChannelIds = unseenParticipants.map(p => p.channel.toString());
+    const inviteChannelIds = invites.map(i => i.channel.toString());
+
+    const allUniqueChannelIds = [...new Set([...unseenChannelIds, ...inviteChannelIds])];
+
+    res.json({ success: true, data: { count: allUniqueChannelIds.length, channelIds: allUniqueChannelIds } });
 });
 
 const muteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -651,7 +642,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: unknown) => {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
         } else if (err instanceof Error) {
-            console.log("Mark messages seen failed:", err.message);
+            socket.emit("channels:error", { error: [{ message: err.message }] });
         }
     }
 };
@@ -678,11 +669,11 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
 
         const channel = await ChannelModel.findById(newMessage.channel).lean();
         if (channel && channel._type === ChannelTypeEnum.DM) {
-            const messages = await ChannelMessageModel.find({ channel: channel._id }).limit(2).lean();
+            const messages = await ChannelMessageModel.find({ channel: channel._id }, { _id: 1 }).limit(2).lean();
             if (messages.length === 1) {
                 const exists = await ChannelParticipantModel.exists({ channel: channel._id, user: channel.DMUser });
                 if (!exists) {
-                    await ChannelInviteModel.create({ channel: channel._id, author: channel.createdBy, invitedUser: channel.DMUser ?? undefined });
+                    await inviteToChannel(channel.createdBy, channel.DMUser!, channel._id);
                 }
             }
         }
@@ -690,7 +681,7 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
         } else if (err instanceof Error) {
-            console.log("Message could not be created:", err.message);
+            socket.emit("channels:error", { error: [{ message: err.message }] });
         }
     }
 };
@@ -712,7 +703,7 @@ const deleteMessageWS = async (socket: Socket, payload: unknown) => {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
         } else if (err instanceof Error) {
-            console.log("Message could not be deleted:", err.message);
+            socket.emit("channels:error", { error: [{ message: err.message }] });
         }
     }
 };
@@ -734,7 +725,7 @@ const editMessageWS = async (socket: Socket, payload: unknown) => {
         if (err instanceof z.ZodError) {
             socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
         } else if (err instanceof Error) {
-            console.log("Message could not be edited:", err.message);
+            socket.emit("channels:error", { error: [{ message: err.message }] });
         }
     }
 };

@@ -46,8 +46,8 @@ export class Post {
     @prop({ default: 0 })
     shares!: number;
 
-    @prop({ trim: true, minlength: 1, maxlength: 120 })
-    title?: string;
+    @prop({ trim: true, default: "", maxlength: 120 })
+    title!: string;
 
     @prop({
         type: () => [Types.ObjectId],

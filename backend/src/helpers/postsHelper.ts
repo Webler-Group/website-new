@@ -30,6 +30,19 @@ export interface PostAttachmentDetails {
     feedMessage?: string;
 }
 
+type PopulatedParentPost = Post & {
+    _id: Types.ObjectId;
+    user: { name: string; _id: Types.ObjectId };
+    codeId: { name: string; _id: Types.ObjectId } | null;
+    parentId: { title: string; _id: Types.ObjectId } | null;
+    lessonId: {
+        title: string;
+        _id: Types.ObjectId;
+        course: { code: string; title: string };
+    } | null;
+    feedId: { message: string; _id: Types.ObjectId } | null;
+};
+
 export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, session?: mongoose.ClientSession) => {
     const postsToDelete = await PostModel.find(filter, { message: 0 }).lean().session(session ?? null);
 
@@ -149,10 +162,10 @@ export const getAttachmentsByPostId = async (id: { post?: Types.ObjectId | strin
     }).filter(x => x !== null) as PostAttachmentDetails[];
 }
 
-export const updatePostAttachments = async (message: string, id: { post?: Types.ObjectId; channelMessage?: Types.ObjectId }, session?: mongoose.ClientSession) => {
+export const updatePostAttachments = async (message: string, parentId: { post?: Types.ObjectId; channelMessage?: Types.ObjectId }, session?: mongoose.ClientSession) => {
     const currentAttachments = await PostAttachmentModel.find({
-        postId: id.post ?? null,
-        channelMessageId: id.channelMessage ?? null
+        postId: parentId.post ?? null,
+        channelMessageId: parentId.channelMessage ?? null
     }).lean().session(session ?? null);
 
     const newAttachmentIds: Types.ObjectId[] = [];
@@ -163,45 +176,58 @@ export const updatePostAttachments = async (message: string, id: { post?: Types.
 
     for (const match of message.matchAll(pattern)) {
         if (match.length < 4 || !isObjectIdOrHexString(match[3])) continue;
+
         let attachment: PostAttachment & { _id: Types.ObjectId } | null = null;
 
         switch (match[2].toLowerCase()) {
             case "compiler-playground": {
                 const codeId = new Types.ObjectId(match[3]);
                 const code = await CodeModel.findById(codeId, { user: 1 }).lean().session(session ?? null);
-                if (!code) continue;
-                attachment = currentAttachments.find(x => x.code && x.code.equals(codeId)) || null;
-                if (!attachment) {
-                    [attachment] = await PostAttachmentModel.create([{
-                        postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.CODE, code: codeId, user: code.user
-                    }], { session });
+                if (code) {
+                    attachment = currentAttachments.find(x => x.code && x.code.equals(codeId)) ?? null;
+                    if (!attachment) {
+                        [attachment] = await PostAttachmentModel.create([{
+                            postId: parentId.post ?? null,
+                            channelMessageId: parentId.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.CODE,
+                            code: codeId,
+                            user: code.user
+                        }], { session });
+                    }
                 }
                 break;
             }
             case "discuss": {
                 const questionId = new Types.ObjectId(match[3]);
                 const question = await PostModel.findById(questionId, { user: 1 }).lean().session(session ?? null);
-                if (!question) continue;
-                attachment = currentAttachments.find(x => x.question && x.question.equals(questionId)) || null;
-                if (!attachment) {
-                    [attachment] = await PostAttachmentModel.create([{
-                        postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.QUESTION, question: questionId, user: question.user
-                    }], { session });
+                if (question) {
+                    attachment = currentAttachments.find(x => x.question && x.question.equals(questionId)) ?? null;
+                    if (!attachment) {
+                        [attachment] = await PostAttachmentModel.create([{
+                            postId: parentId.post ?? null,
+                            channelMessageId: parentId.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.QUESTION,
+                            question: questionId,
+                            user: question.user
+                        }], { session });
+                    }
                 }
                 break;
             }
             case "feed": {
                 const postId = new Types.ObjectId(match[3]);
-                const post = await PostModel.findById(postId, { _type: 1, user: 1 }).lean().session(session ?? null);
-                if (!post || (post._type !== PostTypeEnum.FEED && post._type !== PostTypeEnum.SHARED_FEED)) continue;
-                attachment = currentAttachments.find(x => x.feed && x.feed.equals(postId)) || null;
-                if (!attachment) {
-                    [attachment] = await PostAttachmentModel.create([{
-                        postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
-                        _type: PostAttachmentTypeEnum.FEED, feed: postId, user: post.user
-                    }], { session });
+                const feed = await PostModel.findOne({ _id: postId, _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] } }, { _type: 1, user: 1 }).lean().session(session ?? null);
+                if (feed) {
+                    attachment = currentAttachments.find(x => x.feed && x.feed.equals(postId)) ?? null;
+                    if (!attachment) {
+                        [attachment] = await PostAttachmentModel.create([{
+                            postId: parentId.post ?? null,
+                            channelMessageId: parentId.channelMessage ?? null,
+                            _type: PostAttachmentTypeEnum.FEED,
+                            feed: postId,
+                            user: feed.user
+                        }], { session });
+                    }
                 }
                 break;
             }
@@ -209,86 +235,42 @@ export const updatePostAttachments = async (message: string, id: { post?: Types.
         if (attachment) newAttachmentIds.push(attachment._id);
     }
 
-    const userPattern = /\[user id="([0-9a-fA-F]{24})"\](.+?)\[\/user\]/gi;
-    for (const match of message.matchAll(userPattern)) {
-        const userid = match[1];
-        if (!isObjectIdOrHexString(userid)) continue;
-        const mentionedUser = await UserModel.findById(userid).lean().session(session ?? null);
-        if (!mentionedUser) continue;
-        let attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.equals(userid));
-        if (!attachment) {
-            [attachment] = await PostAttachmentModel.create([{
-                postId: id.post ?? null, channelMessageId: id.channelMessage ?? null,
-                _type: PostAttachmentTypeEnum.MENTION, user: mentionedUser._id
-            }], { session });
-            const post = await PostModel.findById(attachment.postId, { message: 0 })
-                .populate<{ user: { name: string, _id: Types.ObjectId } }>("user", { name: 1 })
-                .populate<{ codeId: { name: string, _id: Types.ObjectId } }>("codeId", { name: 1 })
-                .populate<{ parentId: { title: string, _id: Types.ObjectId } }>("parentId", { title: 1 })
-                .populate<{ lessonId: { title: string, _id: Types.ObjectId, course: { code: string, title: string } } }>({
-                    path: "lessonId",
-                    select: { course: 1, title: 1 },
-                    populate: { path: "course", select: { code: 1, title: 1 } }
-                })
-                .populate<{ feedId: { message: string, _id: Types.ObjectId } }>("feedId", { message: 1 })
-                .lean();
+    if (parentId.post) {
+        const parentPost = await PostModel.findById(parentId.post, { message: 0 })
+            .populate("user", { name: 1 })
+            .populate("codeId", { name: 1 })
+            .populate("parentId", { title: 1 })
+            .populate({
+                path: "lessonId",
+                select: { course: 1, title: 1 },
+                populate: { path: "course", select: { code: 1, title: 1 } }
+            })
+            .populate("feedId", { message: 1 })
+            .lean<PopulatedParentPost>()
+            .session(session ?? null);
 
-            if (!post || attachment.user.equals(post.user._id)) return;
+        if (parentPost) {
+            const validUserIds = new Set<string>();
+            const userPattern = /\[user id="([0-9a-fA-F]{24})"\](.+?)\[\/user\]/gi;
 
-            switch (post._type) {
-                case PostTypeEnum.QUESTION:
-                    await sendNotifications({
-                        title: "New mention",
-                        type: NotificationTypeEnum.QA_QUESTION_MENTION,
-                        actionUser: post.user._id,
-                        message: `{action_user} mentioned you in question "${post.title}"`,
-                        questionId: post._id
-                    }, [attachment.user]);
-                    break;
-                case PostTypeEnum.ANSWER:
-                    await sendNotifications({
-                        title: "New mention",
-                        type: NotificationTypeEnum.QA_ANSWER_MENTION,
-                        actionUser: post.user._id,
-                        message: `{action_user} mentioned you in answer to question "${post.parentId?.title}"`,
-                        questionId: post.parentId?._id,
-                        postId: post._id
-                    }, [attachment.user]);
-                    break;
-                case PostTypeEnum.CODE_COMMENT:
-                    await sendNotifications({
-                        title: "New mention",
-                        type: NotificationTypeEnum.CODE_COMMENT_MENTION,
-                        actionUser: post.user._id,
-                        message: `{action_user} mentioned you in comment to code "${post.codeId?.name}"`,
-                        codeId: post.codeId?._id,
-                        postId: post._id
-                    }, [attachment.user]);
-                    break;
-                case PostTypeEnum.LESSON_COMMENT:
-                    await sendNotifications({
-                        title: "New mention",
-                        type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
-                        actionUser: post.user._id,
-                        message: `{action_user} mentioned you in comment on lesson "${post.lessonId?.title}" to ${post.lessonId?.course.title}`,
-                        lessonId: post.lessonId?._id,
-                        postId: post._id,
-                        courseCode: post.lessonId.course.code
-                    }, [attachment.user]);
-                    break;
-                case PostTypeEnum.FEED_COMMENT:
-                    await sendNotifications({
-                        title: "New mention",
-                        type: NotificationTypeEnum.FEED_COMMENT_MENTION,
-                        actionUser: post.user._id,
-                        message: `{action_user} mentioned you in comment to post "${truncate(escapeMarkdown(post.feedId?.message ?? ""), 20).replaceAll(/\n+/g, " ")}"`,
-                        feedId: post.feedId?._id,
-                        postId: post._id
-                    }, [attachment.user]);
-                    break;
+            for (const match of message.matchAll(userPattern)) {
+                const userId = match[1];
+                if (isObjectIdOrHexString(userId)) {
+                    validUserIds.add(userId);
+                }
+            }
+
+            for (const userId of validUserIds) {
+                const mentionedUser = await UserModel.findById(userId, { _id: 1 }).lean().session(session ?? null);
+                if (mentionedUser) {
+                    let attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.equals(userId));
+                    if (!attachment) {
+                        attachment = await createMentionAttachment(parentPost, mentionedUser._id, session);
+                    }
+                    if (attachment) newAttachmentIds.push(attachment._id);
+                }
             }
         }
-        if (attachment) newAttachmentIds.push(attachment._id);
     }
 
     const idsToDelete = currentAttachments.map(x => x._id).filter(v => !newAttachmentIds.includes(v));
@@ -346,3 +328,76 @@ export const savePost = async (post: DocumentType<Post>, session?: mongoose.Clie
         await updatePostAttachments(post.message, { post: post._id }, session);
     }
 };
+
+const createMentionAttachment = async (parentPost: PopulatedParentPost, mentionedUserId: Types.ObjectId, session?: mongoose.ClientSession) => {
+    const [attachment] = await PostAttachmentModel.create([{
+        postId: parentPost._id ?? null,
+        _type: PostAttachmentTypeEnum.MENTION,
+        user: mentionedUserId
+    }], { session });
+
+    if (attachment.user.equals(parentPost.user._id)) return;
+
+    switch (parentPost._type) {
+        case PostTypeEnum.QUESTION:
+            await sendNotifications({
+                title: "New mention",
+                type: NotificationTypeEnum.QA_QUESTION_MENTION,
+                actionUser: parentPost.user._id,
+                message: `{action_user} mentioned you in question "${parentPost.title}"`,
+                questionId: parentPost._id
+            }, [attachment.user]);
+            break;
+        case PostTypeEnum.ANSWER:
+            if (parentPost.parentId) {
+                await sendNotifications({
+                    title: "New mention",
+                    type: NotificationTypeEnum.QA_ANSWER_MENTION,
+                    actionUser: parentPost.user._id,
+                    message: `{action_user} mentioned you in answer to question "${parentPost.parentId.title}"`,
+                    questionId: parentPost.parentId._id,
+                    postId: parentPost._id
+                }, [attachment.user]);
+            }
+            break;
+        case PostTypeEnum.CODE_COMMENT:
+            if (parentPost.codeId) {
+                await sendNotifications({
+                    title: "New mention",
+                    type: NotificationTypeEnum.CODE_COMMENT_MENTION,
+                    actionUser: parentPost.user._id,
+                    message: `{action_user} mentioned you in comment to code "${parentPost.codeId.name}"`,
+                    codeId: parentPost.codeId._id,
+                    postId: parentPost._id
+                }, [attachment.user]);
+            }
+            break;
+        case PostTypeEnum.LESSON_COMMENT:
+            if (parentPost.lessonId) {
+                await sendNotifications({
+                    title: "New mention",
+                    type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
+                    actionUser: parentPost.user._id,
+                    message: `{action_user} mentioned you in comment on lesson "${parentPost.lessonId.title}" to ${parentPost.lessonId.course.title}`,
+                    lessonId: parentPost.lessonId._id,
+                    postId: parentPost._id,
+                    courseCode: parentPost.lessonId.course.code
+                }, [attachment.user]);
+            }
+            break;
+        case PostTypeEnum.FEED_COMMENT:
+            if (parentPost.feedId) {
+                await sendNotifications({
+                    title: "New mention",
+                    type: NotificationTypeEnum.FEED_COMMENT_MENTION,
+                    actionUser: parentPost.user._id,
+                    message: `{action_user} mentioned you in comment to post "${truncate(escapeMarkdown(parentPost.feedId.message ?? ""), 20).replaceAll(/\n+/g, " ")}"`,
+                    feedId: parentPost.feedId._id,
+                    postId: parentPost._id
+                }, [attachment.user]);
+            }
+            break;
+    }
+
+    return attachment;
+}

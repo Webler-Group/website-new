@@ -63,7 +63,6 @@ export interface LessonResponse<T = LessonProgressInfo> {
 
 export interface CourseProgressInfo {
     updatedAt: Date;
-    nodesSolved: number;
     completed: boolean;
 }
 
@@ -226,7 +225,7 @@ export const getLastUnlockedLessonIndex = async (lastLessonNodeId?: Types.Object
     let lastUnlockedLessonIndex = 1;
     if (lastLessonNodeId) {
         const lastCompletedLessonNode = await LessonNodeModel
-            .findById(lastLessonNodeId, { index: 1 })
+            .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
             .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
             .lean();
         if (lastCompletedLessonNode) {
@@ -244,7 +243,7 @@ export const getLessonNodeInfo = async (
     lessonNodeId: Types.ObjectId
 ): Promise<LessonNodeInfoResult> => {
     const lessonNode = await LessonNodeModel
-        .findById(lessonNodeId, { index: 1 })
+        .findById(lessonNodeId, { index: 1 }, { index: 1, lessonId: 1 })
         .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
         .lean();
 
@@ -343,3 +342,18 @@ export const formatLessonNodeMinimal = (
     }
     return result;
 };
+
+export const isCourseCompleted = async (courseId: Types.ObjectId, lastLessonNodeId: Types.ObjectId, session?: mongoose.ClientSession) => {
+    const lessonNode = await LessonNodeModel
+        .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
+        .populate<{ lessonId: { nodes: number, index: number } }>("lessonId", { nodes: 1, index: 1 })
+        .lean()
+        .session(session ?? null);
+
+    if (lessonNode) {
+        const courseLessons = await CourseLessonModel.countDocuments({ course: courseId });
+        return lessonNode.index === lessonNode.lessonId.nodes && lessonNode.lessonId.index === courseLessons;
+    }
+
+    return false;
+}

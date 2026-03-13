@@ -1,14 +1,14 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { useApi } from "./apiCommunication";
 import { useWS } from "./wsCommunication";
-import { UnseenMessagesCountData } from "../features/channels/types";
+import { ChannelDeletedData, InviteCanceledData, MessagesSeenData, NewInviteData, NewMessageInfo, UnseenMessagesCountData } from "../features/channels/types";
 import { useAuth } from "../features/auth/context/authContext";
+import { UnseenNotificationsData } from "../features/profile/types";
 
 interface UserInfoContextType {
     unseenNotificationsCount: number;
     unseenMessagesCount: number;
     setUnseenNotificationsCount: React.Dispatch<React.SetStateAction<number>>;
-    setUnseenMessagesCount: React.Dispatch<React.SetStateAction<number>>;
 }
 
 const UserInfoContext = createContext<UserInfoContextType | null>(null);
@@ -18,14 +18,16 @@ const UserInfoProvider = ({ children }: { children: ReactNode }) => {
     const { sendJsonRequest } = useApi();
     const { socket } = useWS();
     const [unseenNotificationsCount, setUnseenNotificationsCount] = useState(0);
-    const [unseenMessagesCount, setUnseenMessagesCount] = useState(0);
+    const [unseenChannelIds, setUnseenChannelIds] = useState<string[]>([]);
+
+    const unseenMessagesCount = unseenChannelIds.length;
 
     useEffect(() => {
         if(!userInfo) return;
 
         const fetchCounts = async () => {
             const [notificationsResult, messagesResult] = await Promise.all([
-                sendJsonRequest<UnseenMessagesCountData>("/Profile/GetUnseenNotificationCount", "POST", {}),
+                sendJsonRequest<UnseenNotificationsData>("/Profile/GetUnseenNotificationCount", "POST", {}),
                 sendJsonRequest<UnseenMessagesCountData>("/Channels/GetUnseenMessagesCount", "POST", {}),
             ]);
 
@@ -33,7 +35,7 @@ const UserInfoProvider = ({ children }: { children: ReactNode }) => {
                 setUnseenNotificationsCount(notificationsResult.data.count);
             }
             if (messagesResult.data) {
-                setUnseenMessagesCount(messagesResult.data.count);
+                setUnseenChannelIds(messagesResult.data.channelIds);
             }
         };
 
@@ -46,22 +48,28 @@ const UserInfoProvider = ({ children }: { children: ReactNode }) => {
         const handleNewNotification = () => setUnseenNotificationsCount((prev) => prev + 1);
         const handleDeletedNotification = () => setUnseenNotificationsCount((prev) => prev - 1);
 
-        const handleNewMessage = () => setUnseenMessagesCount((prev) => prev + 1);
-        const handleNewInvite = () => setUnseenMessagesCount((prev) => prev + 1);
-        const handleInviteCanceled = () => setUnseenMessagesCount((prev) => prev - 1);
+        const handleNewMessage = (data: NewMessageInfo) => setUnseenChannelIds((prev) => prev.includes(data.channelId) ? prev : [...prev, data.channelId]);
+        const handleMessagesSeen = (data: MessagesSeenData) => setUnseenChannelIds((prev) => prev.filter(id => id !== data.channelId));
+        const handleNewInvite = (data: NewInviteData) => setUnseenChannelIds((prev) => prev.includes(data.invite.channel.id) ? prev : [...prev, data.invite.channel.id]);
+        const handleInviteCanceled = (data: InviteCanceledData) => setUnseenChannelIds((prev) => prev.filter(id => id !== data.inviteId));
+        const handleChannelDeleted = (data: ChannelDeletedData) => setUnseenChannelIds((prev) => prev.filter(id => id !== data.channelId));
 
         socket.on("notification:new", handleNewNotification);
         socket.on("notification:deleted", handleDeletedNotification);
         socket.on("channels:new_message_info", handleNewMessage);
+        socket.on("channels:messages_seen", handleMessagesSeen);
         socket.on("channels:new_invite", handleNewInvite);
         socket.on("channels:invite_canceled", handleInviteCanceled);
+        socket.on("channels:channel_deleted", handleChannelDeleted);
 
         return () => {
             socket.off("notification:new", handleNewNotification);
             socket.off("notification:deleted", handleDeletedNotification);
             socket.off("channels:new_message_info", handleNewMessage);
+            socket.on("channels:messages_seen", handleMessagesSeen);
             socket.off("channels:new_invite", handleNewInvite);
             socket.off("channels:invite_canceled", handleInviteCanceled);
+            socket.off("channels:channel_deleted", handleChannelDeleted);
         };
     }, [socket]);
 
@@ -69,8 +77,7 @@ const UserInfoProvider = ({ children }: { children: ReactNode }) => {
         <UserInfoContext.Provider value={{
             unseenNotificationsCount,
             unseenMessagesCount,
-            setUnseenNotificationsCount,
-            setUnseenMessagesCount,
+            setUnseenNotificationsCount
         }}>
             {children}
         </UserInfoContext.Provider>

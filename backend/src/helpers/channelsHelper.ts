@@ -13,13 +13,25 @@ import { formatUserMinimal } from "./userHelper";
 import { DocumentType } from "@typegoose/typegoose";
 import { getAttachmentsByPostId, updatePostAttachments } from "./postsHelper";
 import HttpError from "../exceptions/HttpError";
-import { getImageUrl } from "../controllers/mediaController";
 
 export const deleteChannelAndCleanup = async (channelId: Types.ObjectId, session?: mongoose.ClientSession) => {
+    const participants = await ChannelParticipantModel.find({ channel: channelId }).lean().session(session ?? null);
+    const invites = await ChannelInviteModel.find({ channel: channelId }).lean().session(session ?? null);
+
     await ChannelParticipantModel.deleteMany({ channel: channelId }, { session });
     await ChannelInviteModel.deleteMany({ channel: channelId }, { session });
     await ChannelMessageModel.deleteMany({ channel: channelId }, { session });
     await ChannelModel.deleteOne({ _id: channelId }, { session });
+
+    const userIds = new Set<string>([
+        ...participants.map(x => x.user.toString()),
+        ...invites.map(x => x.invitedUser.toString())
+    ]);
+
+    const socketRooms = Array.from(userIds).map(x => uidRoom(x));
+    if(socketRooms.length > 0) {
+        getIO()?.to(socketRooms).emit("channels:channel_deleted", { channelId });
+    }
 }
 
 export const joinChannel = async (channelId: Types.ObjectId, userId: Types.ObjectId, session?: mongoose.ClientSession) => {
@@ -37,17 +49,16 @@ export const joinChannel = async (channelId: Types.ObjectId, userId: Types.Objec
     }
 }
 
-interface InviteToChannelParams {
-    authorId: Types.ObjectId,
-    invitedUserId: Types.ObjectId,
-    channelId: Types.ObjectId
-}
-
-export const inviteToChannel = async (params: InviteToChannelParams, session?: mongoose.ClientSession) => {
+export const inviteToChannel = async (
+    authorId: Types.ObjectId | string,
+    invitedUserId: Types.ObjectId | string,
+    channelId: Types.ObjectId | string,
+    session?: mongoose.ClientSession
+) => {
     const [doc] = await ChannelInviteModel.create([{
-        author: params.authorId,
-        invitedUser: params.invitedUserId,
-        channel: params.channelId
+        author: authorId,
+        invitedUser: invitedUserId,
+        channel: channelId
     }], { session });
 
     const io = getIO();
@@ -56,7 +67,7 @@ export const inviteToChannel = async (params: InviteToChannelParams, session?: m
     if (!author) {
         throw new HttpError("Author not found", 404);
     }
-    const channel = await ChannelModel.findById(doc.channel, "title _type").session(session ?? null);
+    const channel = await ChannelModel.findById(doc.channel).lean().session(session ?? null);
     if (!channel) {
         throw new HttpError("Channel not found", 404);
     }
@@ -70,20 +81,24 @@ export const inviteToChannel = async (params: InviteToChannelParams, session?: m
     }, [doc.invitedUser], true, session);
 
     io?.to(uidRoom(doc.invitedUser.toString())).emit("channels:new_invite", {
-        id: doc._id,
-        author: formatUserMinimal(author),
-        channelId: channel._id,
-        channelType: channel._type,
-        channelTitle: channel.title,
-        createdAt: doc.createdAt
+        invite: {
+            id: doc._id,
+            author: formatUserMinimal(author),
+            channel: formatChannelBase(channel),
+            createdAt: doc.createdAt
+        }
     });
+
+    return doc;
 }
 
 export const processChannelInvite = async (invite: ChannelInvite & { _id: Types.ObjectId }, accepted: boolean, session?: mongoose.ClientSession) => {
+    await ChannelInviteModel.deleteOne({ _id: invite._id }, { session });
     if (accepted) {
         await joinChannel(invite.channel, invite.invitedUser, session);
+    } else {
+        getIO()?.to(uidRoom(invite.invitedUser.toString())).emit("channels:invite_canceled", { inviteId: invite._id });
     }
-    await ChannelInviteModel.deleteOne({ _id: invite._id }, { session });
 }
 
 export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, session?: mongoose.ClientSession) => {
@@ -172,49 +187,67 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             ? [...allParticipantRooms, uidRoom(user._id.toString())]
             : allParticipantRooms;
 
-        io?.to(socketRooms).emit("channels:new_message", {
-            message: {
-                id: doc._id,
-                type: doc._type,
-                channelId: doc.channel.toString(),
-                channelTitle: channel.title,
-                content: doc.content,
-                createdAt: doc.createdAt,
-                updatedAt: doc.updatedAt,
-                viewed: false,
-                deleted: doc.deleted,
-                user: formatUserMinimal(user),
-                repliedTo: reply ? {
-                    id: reply._id,
-                    content: reply.content,
-                    createdAt: reply.createdAt,
-                    updatedAt: reply.updatedAt,
-                    user: formatUserMinimal(reply.user),
-                    deleted: reply.deleted
-                } : null,
-                attachments
-            }
-        });
+        if (socketRooms.length > 0) {
+            io?.to(socketRooms).emit("channels:new_message", {
+                message: {
+                    id: doc._id,
+                    type: doc._type,
+                    channel: formatChannelBase(channel),
+                    content: doc.content,
+                    createdAt: doc.createdAt,
+                    updatedAt: doc.updatedAt,
+                    viewed: false,
+                    deleted: doc.deleted,
+                    user: formatUserMinimal(user),
+                    repliedTo: reply ? {
+                        id: reply._id,
+                        content: reply.content,
+                        createdAt: reply.createdAt,
+                        updatedAt: reply.updatedAt,
+                        user: formatUserMinimal(reply.user),
+                        deleted: reply.deleted
+                    } : null,
+                    attachments
+                }
+            });
+        }
 
-        io?.to(unmutedParticipantRooms).emit("channels:new_message_info", {});
+        if (unmutedParticipantRooms.length > 0) {
+            io?.to(unmutedParticipantRooms).emit("channels:new_message_info", { channelId: doc.channel });
+        }
 
     } else {
         if (contentModified) {
             const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
-            io?.to(allParticipantRooms).emit("channels:message_edited", {
-                messageId: doc._id.toString(),
-                channelId: doc.channel.toString(),
-                content: doc.content,
-                attachments,
-                updatedAt: new Date()
-            });
+            if (allParticipantRooms.length > 0) {
+                io?.to(allParticipantRooms).emit("channels:message_edited", {
+                    messageId: doc._id,
+                    channelId: doc.channel,
+                    content: doc.content,
+                    attachments,
+                    updatedAt: new Date()
+                });
+            }
         }
 
         if (isDeleted) {
-            io?.to(allParticipantRooms).emit("channels:message_deleted", {
-                messageId: doc._id.toString(),
-                channelId: doc.channel.toString()
-            });
+            if (allParticipantRooms.length > 0) {
+                io?.to(allParticipantRooms).emit("channels:message_deleted", {
+                    messageId: doc._id,
+                    channelId: doc.channel
+                });
+            }
         }
     }
 };
+
+export const formatChannelBase = (channel: Channel & { _id: Types.ObjectId }) => {
+    return {
+        id: channel._id.toString(),
+        type: channel._type,
+        coverImageUrl: null,
+        title: channel.title,
+        createdAt: channel.createdAt,
+        updatedAt: channel.updatedAt
+    };
+}

@@ -78,16 +78,20 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
     })), { session });
 
     const io = getIO();
-    for (const userId of allowedUserIds) {
-        io?.to(uidRoom(userId.toString())).emit("notification:new", {});
+    const socketRooms = allowedUserIds.map(x => uidRoom(x.toString()));
+    if (socketRooms.length > 0) {
+        io?.to(socketRooms).emit("notification:new", {});
     }
 };
 
 export const deleteNotifications = async (filter: mongoose.QueryFilter<Notification>, session?: mongoose.ClientSession) => {
     const notificationsToDelete = await NotificationModel.find(filter).session(session ?? null);
     await NotificationModel.deleteMany(filter, { session });
-    const io = getIO();
-    io?.to(notificationsToDelete.filter(doc => !doc.isClicked)
-        .map(doc => uidRoom(doc.user.toString())))
-        .emit("notification:deleted", {});
+    const socketRooms = notificationsToDelete.filter(doc => !doc.isClicked)
+        .map(doc => uidRoom(doc.user.toString()));
+    if (socketRooms.length > 0) {
+        getIO()?.to(socketRooms)
+            .emit("notification:deleted", {});
+    }
+
 }

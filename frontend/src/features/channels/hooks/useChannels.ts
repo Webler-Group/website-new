@@ -54,7 +54,6 @@ const useChannels = (
         fetchChannels();
     }, [fromDate]);
 
-    // WebSocket listeners
     useEffect(() => {
         if (!socket) return;
 
@@ -62,12 +61,12 @@ const useChannels = (
             const newMessage = data.message;
 
             const existing = resultsRef.current.find(
-                x => x.id === newMessage.channelId
+                x => x.id === newMessage.channel.id
             );
 
             if (newMessage.type === ChannelMessageTypeEnum.USER_LEFT && newMessage.user.id === userInfo?.id) {
-                setResults(prev => prev.filter(x => x.id !== newMessage.channelId));
-                onLeaveChannelRef.current?.(newMessage.channelId);
+                setResults(prev => prev.filter(x => x.id !== newMessage.channel.id));
+                onLeaveChannelRef.current?.(newMessage.channel.id);
                 return;
             }
 
@@ -75,7 +74,7 @@ const useChannels = (
                 const result = await sendJsonRequest<GetChannelData>(
                     "/Channels/GetChannel",
                     "POST",
-                    { channelId: newMessage.channelId }
+                    { channelId: newMessage.channel.id }
                 );
 
                 if (result.data) {
@@ -87,7 +86,7 @@ const useChannels = (
             } else {
                 setResults(prev => {
                     const updated = prev.map(channel =>
-                        channel.id === newMessage.channelId
+                        channel.id === newMessage.channel.id
                             ? {
                                 ...channel,
                                 updatedAt: newMessage.createdAt,
@@ -95,16 +94,16 @@ const useChannels = (
                                 lastMessage: newMessage,
                                 title:
                                     newMessage.type == ChannelMessageTypeEnum.TITLE_CHANGED
-                                        ? newMessage.channelTitle
+                                        ? newMessage.channel.title
                                         : channel.title,
                             }
                             : channel
                     );
                     const channelToMove = updated.find(
-                        ch => ch.id === newMessage.channelId
+                        ch => ch.id === newMessage.channel.id
                     );
                     const others = updated.filter(
-                        ch => ch.id !== newMessage.channelId
+                        ch => ch.id !== newMessage.channel.id
                     );
                     return channelToMove
                         ? [channelToMove, ...others]

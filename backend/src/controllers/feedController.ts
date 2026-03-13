@@ -44,7 +44,6 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const feed = await withTransaction(async (session) => {
         const feed = new PostModel({
             _type: PostTypeEnum.FEED,
-            title: "",
             message,
             user: currentUserId
         });
@@ -358,7 +357,6 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
         const feed = new PostModel({
             _type: PostTypeEnum.SHARED_FEED,
-            title: "",
             message,
             user: currentUserId,
             parentId: feedId

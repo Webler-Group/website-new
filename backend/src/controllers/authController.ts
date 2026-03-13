@@ -105,8 +105,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
             await user.save();
         }
         catch (err) {
-            if (err instanceof Error)
-                console.log("Activation email error:", err.message);
+            console.log("Activation email error:", err);
         }
     }
 
@@ -188,9 +187,7 @@ const sendPasswordResetCode = asyncHandler(async (req: Request, res: Response) =
         res.json({ success: true });
     }
     catch (err) {
-        if (err instanceof Error) {
-            console.log("Reset email error:", err.message);
-        }
+        console.log("Reset email error:", err);
         throw new HttpError("Email could not be sent", 500);
     }
 

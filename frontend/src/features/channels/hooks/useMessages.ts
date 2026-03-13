@@ -35,25 +35,22 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         setIsLoading(false);
     };
 
-    // Load on channel change (full reset)
     useEffect(() => {
         if (!channelId) return;
         fetchMessages(null, true);
     }, [channelId]);
 
-    // Load more on pagination
     useEffect(() => {
         if (!channelId || fromDate === null) return;
         fetchMessages(fromDate, false);
     }, [fromDate]);
 
-    // WebSocket listener for new messages
     useEffect(() => {
         if (!socket) return () => { };
 
         const handleNewMessage = (data: NewMessageData) => {
             const newMessage = data.message;
-            if (newMessage.channelId === channelId) {
+            if (newMessage.channel.id === channelId) {
                 if (newMessage.type == ChannelMessageTypeEnum.USER_JOINED) {
                     onChannelJoin({
                         user: newMessage.user,

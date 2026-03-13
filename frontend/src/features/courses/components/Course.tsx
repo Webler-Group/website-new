@@ -59,7 +59,7 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
                     )}
 
                     {isMyCourse && (
-                        <Badge bg={course.completed ? "success" : "warning"} text={course.completed ? undefined : "dark"}>
+                        <Badge bg={course.completed ? "success" : "info"} text={course.completed ? undefined : "dark"}>
                             {course.completed ? "Completed" : "In Progress"}
                         </Badge>
                     )}

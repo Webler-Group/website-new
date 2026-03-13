@@ -37,6 +37,7 @@ import {
     formatLessonNodeMinimal,
     getLastUnlockedLessonIndex,
     getLessonNodeInfo,
+    isCourseCompleted,
     LessonProgressInfo,
     LessonResponse
 } from "../helpers/courseHelper";
@@ -113,7 +114,6 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const courseProgressInfo: CourseProgressInfo = {
         updatedAt: userProgress.updatedAt,
-        nodesSolved: userProgress.nodesSolved,
         completed: userProgress.completed
     };
 
@@ -314,15 +314,12 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
 
         if (isLast && correct) {
-            const lessons = await CourseLessonModel.find({ course: userProgress.course }, { nodes: 1 }).lean<{ nodes: number }[]>();
-            const courseNodes = lessons.reduce((count, lesson) => count + lesson.nodes, 0);
-
-            if (courseNodes === userProgress.nodesSolved + 1) {
+            userProgress.lastLessonNodeId = lessonNode._id;
+            const isCompleted = await isCourseCompleted(userProgress.course, lessonNode._id);
+            if(isCompleted) {
                 userProgress.completed = true;
             }
 
-            userProgress.lastLessonNodeId = lessonNode._id;
-            userProgress.$inc("nodesSolved", 1);
             await userProgress.save();
         }
     }
@@ -341,7 +338,6 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
     }
 
     userProgress.lastLessonNodeId = null;
-    userProgress.nodesSolved = 0;
     userProgress.completed = false;
     await userProgress.save();
 

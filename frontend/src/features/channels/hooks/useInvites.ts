@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
-import { ChannelBase, InviteDetails, InvitesListData } from "../types";
+import { ChannelBase, ChannelDeletedData, InviteCanceledData, InviteDetails, InvitesListData, NewInviteData } from "../types";
 
 const useInvites = (count: number, fromDate: Date | null) => {
     const { sendJsonRequest } = useApi();
@@ -41,22 +41,29 @@ const useInvites = (count: number, fromDate: Date | null) => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewInvite = (data: any) => {
-            setResults(prev => [data, ...prev]);
+        const handleNewInvite = (data: NewInviteData) => {
+            setResults(prev => [data.invite, ...prev]);
             setTotalCount(prev => prev + 1);
         };
 
-        const handleInviteCanceled = (data: any) => {
+        const handleInviteCanceled = (data: InviteCanceledData) => {
             setResults(prev => prev.filter(x => x.id !== data.inviteId));
             setTotalCount(prev => prev - 1);
         };
 
+        const handleChanneDeleted = (data: ChannelDeletedData) => {
+            setResults(prev => prev.filter(x => x.channel.id !== data.channelId));
+            setTotalCount(prev => prev - 1);
+        }
+
         socket.on("channels:new_invite", handleNewInvite);
         socket.on("channels:invite_canceled", handleInviteCanceled);
+        socket.on("channels:channel_deleted", handleChanneDeleted);
 
         return () => {
             socket.off("channels:new_invite", handleNewInvite);
             socket.off("channels:invite_canceled", handleInviteCanceled);
+            socket.off("channels:channel_deleted", handleChanneDeleted);
         };
     }, [socket]);
 

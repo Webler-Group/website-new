@@ -40,7 +40,6 @@ export interface LessonProgressInfo {
 
 export interface CourseProgressInfo {
     updatedAt: Date;
-    nodesSolved: number;
     completed: boolean;
 }
 
