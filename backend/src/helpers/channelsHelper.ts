@@ -29,7 +29,7 @@ export const deleteChannelAndCleanup = async (channelId: Types.ObjectId, session
     ]);
 
     const socketRooms = Array.from(userIds).map(x => uidRoom(x));
-    if(socketRooms.length > 0) {
+    if (socketRooms.length > 0) {
         getIO()?.to(socketRooms).emit("channels:channel_deleted", { channelId });
     }
 }
@@ -129,10 +129,6 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
 
     const allParticipantRooms = participants.map(p => uidRoom(p.user.toString()));
 
-    const unmutedParticipantRooms = participants
-        .filter(p => !p.user.equals(user._id) && !p.muted)
-        .map(p => uidRoom(p.user.toString()));
-
     if (isNew) {
         const channel = await ChannelModel.findById(doc.channel).session(session ?? null);
         if (!channel) throw new HttpError("Channel not found", 404);
@@ -151,25 +147,6 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             },
             { $inc: { unreadCount: 1 } },
             { session }
-        );
-
-        const pushNotificationUserIds = participants
-            .filter(p => !p.user.equals(user._id) && !p.muted && (!p.unreadCount || p.unreadCount <= 1))
-            .map(p => p.user);
-
-        await sendNotifications(
-            {
-                title: "New message",
-                type: NotificationTypeEnum.CHANNELS,
-                actionUser: user._id,
-                message: channel._type === ChannelTypeEnum.DM
-                    ? `${user.name} sent you a message`
-                    : `New messages in group ${channel.title}`,
-                url: "/Channels/" + channel._id
-            },
-            pushNotificationUserIds,
-            true,
-            session
         );
 
         const [attachments, reply] = await Promise.all([
@@ -210,10 +187,33 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
                     attachments
                 }
             });
-        }
 
-        if (unmutedParticipantRooms.length > 0) {
-            io?.to(unmutedParticipantRooms).emit("channels:new_message_info", { channelId: doc.channel });
+            const unmutedParticipantRooms = participants
+                .filter(p => !p.user.equals(user._id) && !p.muted)
+                .map(p => uidRoom(p.user.toString()));
+
+            if (unmutedParticipantRooms.length > 0) {
+                io?.to(unmutedParticipantRooms).emit("channels:new_message_info", { channelId: doc.channel });
+            }
+
+            const pushNotificationUserIds = participants
+                .filter(p => !p.user.equals(user._id) && !p.muted && p.unreadCount == 0)
+                .map(p => p.user);
+
+            await sendNotifications(
+                {
+                    title: "New message",
+                    type: NotificationTypeEnum.CHANNELS,
+                    actionUser: user._id,
+                    message: channel._type === ChannelTypeEnum.DM
+                        ? `${user.name} sent you a message`
+                        : `New messages in group ${channel.title}`,
+                    url: "/Channels/" + channel._id
+                },
+                pushNotificationUserIds,
+                true,
+                session
+            );
         }
 
     } else {
