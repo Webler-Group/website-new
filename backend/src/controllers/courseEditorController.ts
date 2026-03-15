@@ -664,7 +664,7 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             await deleteCourseLessonAndCleanup({ course: course._id }, session);
         } else {
             const [newCourse] = await CourseModel.create(
-                [{ code, title, description, visible }],
+                [{ code, title, description, visible, css }],
                 { session }
             );
             course = newCourse;
