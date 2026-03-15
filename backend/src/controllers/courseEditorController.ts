@@ -758,6 +758,7 @@ const exportCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 title: course.title,
                 description: course.description,
                 visible: course.visible,
+                css: course.css,
                 lessons: exportedLessons
             }
         }
