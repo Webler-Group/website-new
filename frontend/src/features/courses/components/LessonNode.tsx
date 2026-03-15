@@ -27,9 +27,9 @@ const calcIframeHeight = (nodeType: LessonNodeTypeEnum, answersCount: number = 0
     if (nodeType === LessonNodeTypeEnum.TEXT_QUESTION) {
         contentHeight = 60;
     } else if (nodeType === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || nodeType === LessonNodeTypeEnum.MULTICHOICE_QUESTION) {
-        contentHeight = 50 * answersCount;
+        contentHeight = 60 * answersCount;
     }
-    return `calc(100vh - ${contentHeight + 200}px)`;
+    return `calc(100vh - ${contentHeight + 160}px)`;
 }
 
 const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: LessonNodeProps) => {
@@ -215,7 +215,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
                     {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="p-2">{renderAnswers()}</div>}
                     {activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && (
-                        <div className="d-flex justify-content-center">
+                        <div className="d-flex justify-content-center mt-3">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "120px" }}
