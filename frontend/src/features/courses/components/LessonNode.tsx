@@ -22,6 +22,16 @@ const allowedUrls = [
     /^\/.*/
 ];
 
+const calcIframeHeight = (nodeType: LessonNodeTypeEnum, answersCount: number = 0) => {
+    let contentHeight = 0;
+    if (nodeType === LessonNodeTypeEnum.TEXT_QUESTION) {
+        contentHeight = 60;
+    } else if (nodeType === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || nodeType === LessonNodeTypeEnum.MULTICHOICE_QUESTION) {
+        contentHeight = 50 * answersCount;
+    }
+    return `calc(100vh - ${contentHeight + 200}px)`;
+}
+
 const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: LessonNodeProps) => {
     const [node, setNode] = useState<LessonNodeDetails | null>(null);
     const [code, setCode] = useState<CodeDetails | null>(null);
@@ -175,7 +185,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                 };
 
                 return (
-                    <div style={{ height: "calc(100vh - 200px)" }}>
+                    <div style={{ height: calcIframeHeight(activeNode.type) }}>
                         <iframe
                             key={code.name + "_" + code.source.length}
                             title={code.name}
@@ -189,7 +199,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
             if (activeNode.mode === LessonNodeModeEnum.HTML) {
                 return (
-                    <div style={{ height: activeNode.type === LessonNodeTypeEnum.TEXT ? "calc(100vh - 200px)" : "calc(100vh - 400px)" }}>
+                    <div style={{ height: calcIframeHeight(activeNode.type, activeNode.answers.length) }}>
                         <HtmlRenderer html={activeNode.text} css={css} />
                     </div>
                 )
@@ -205,7 +215,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
                     {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="p-2">{renderAnswers()}</div>}
                     {activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && (
-                        <div className="p-2 d-flex justify-content-center">
+                        <div className="d-flex justify-content-center">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "120px" }}
