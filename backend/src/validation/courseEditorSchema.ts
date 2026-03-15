@@ -151,11 +151,8 @@ export const importCourseSchema = z.object({
         visible: z.boolean("Visible must be a boolean"),
         css: z.string().optional(),
         lessons: z.array(z.object({
-            version: z.number(),
             title: titleSchema,
             nodes: z.array(z.object({
-                version: z.number(),
-                index: indexSchema,
                 type: z.enum(LessonNodeTypeEnum, "Invalid lesson node type"),
                 mode: z.enum(LessonNodeModeEnum, "Invalid lesson node mode").optional(),
                 codeId: idSchema("codeId").nullable().optional(),

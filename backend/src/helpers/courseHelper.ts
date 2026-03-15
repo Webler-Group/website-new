@@ -12,8 +12,6 @@ import HttpError from "../exceptions/HttpError";
 import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
 import { getImageUrl } from "../controllers/mediaController";
 
-export const JSON_VERSION = 1;
-
 export interface LessonNodeMinimalResponse {
     id: string | Types.ObjectId;
     index: number;
@@ -87,9 +85,7 @@ export interface QuizAnswerJson {
 }
 
 export interface LessonNodeJson {
-    version: number;
     type: LessonNodeTypeEnum;
-    index: number;
     mode?: number;
     codeId?: string | null;
     text?: string;
@@ -98,7 +94,6 @@ export interface LessonNodeJson {
 }
 
 export interface CourseLessonJson {
-    version: number;
     title: string;
     nodes: LessonNodeJson[];
 }
@@ -131,9 +126,7 @@ export const exportLessonNodeToJson = async (
     byNodeId?: Map<string, QuizAnswerJson[]>
 ) => {
     const data: LessonNodeJson = {
-        version: JSON_VERSION,
         type: node._type,
-        index: node.index,
         mode: node.mode,
         codeId: node.codeId?.toString()
     };
@@ -169,7 +162,7 @@ export const exportCourseLessonToJson = async (lessonId: Types.ObjectId | string
         nodeJsons.push(nodeJson);
     }
 
-    return { version: JSON_VERSION, title: lesson.title, nodes: nodeJsons };
+    return { title: lesson.title, nodes: nodeJsons };
 };
 
 export const deleteCourseAndCleanup = async (courseId: Types.ObjectId, session?: mongoose.ClientSession) => {
