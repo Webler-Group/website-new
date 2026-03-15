@@ -16,6 +16,7 @@ router.route("/").post(courseEditorController.getCoursesList);
 router.route("/GetCourse").post(courseEditorController.getCourse);
 router.route("/CreateCourse").post(courseEditorController.createCourse);
 router.route("/EditCourse").put(courseEditorController.editCourse);
+router.route("/EditCourseCss").put(courseEditorController.editCourseCss);
 router.route("/DeleteCourse").delete(courseEditorController.deleteCourse);
 router.route("/UploadCourseCoverImage").post(courseEditorController.coverImageUploadMiddleware.single("coverImage"), courseEditorController.uploadCourseCoverImage);
 

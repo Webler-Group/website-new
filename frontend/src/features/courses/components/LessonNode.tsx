@@ -12,6 +12,7 @@ interface LessonNodeProps {
     nodeId?: string;
     nodeData?: LessonNodeDetails;
     mock: boolean;
+    css?: string;
     onAnswered?: (id: string, correct: boolean) => void;
     onContinue?: (id: string) => void;
 }
@@ -21,7 +22,7 @@ const allowedUrls = [
     /^\/.*/
 ];
 
-const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNodeProps) => {
+const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: LessonNodeProps) => {
     const [node, setNode] = useState<LessonNodeDetails | null>(null);
     const [code, setCode] = useState<CodeDetails | null>(null);
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
@@ -174,7 +175,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNo
                 };
 
                 return (
-                    <div style={{ height: "80vh" }}>
+                    <div style={{ height: "calc(100vh - 200px)" }}>
                         <iframe
                             key={code.name + "_" + code.source.length}
                             title={code.name}
@@ -187,7 +188,11 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNo
             }
 
             if (activeNode.mode === LessonNodeModeEnum.HTML) {
-                return <HtmlRenderer html={activeNode.text} />
+                return (
+                    <div style={{ height: activeNode.type === LessonNodeTypeEnum.TEXT ? "calc(100vh - 200px)" : "calc(100vh - 400px)" }}>
+                        <HtmlRenderer html={activeNode.text} css={css} />
+                    </div>
+                )
             }
 
             return <MarkdownRenderer content={activeNode.text} allowedUrls={allowedUrls} />;
@@ -195,11 +200,11 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNo
 
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === 5 ? " wb-code-mode" : " p-2")}>
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === LessonNodeTypeEnum.CODE ? " wb-code-mode" : " p-2")}>
                     {renderContent()}
 
-                    {(activeNode.type === 2 || activeNode.type === 3) && <div className="p-2">{renderAnswers()}</div>}
-                    {activeNode.type === 4 && (
+                    {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="p-2">{renderAnswers()}</div>}
+                    {activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && (
                         <div className="p-2 d-flex justify-content-center">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
@@ -212,7 +217,7 @@ const LessonNode = ({ nodeData, nodeId, mock, onAnswered, onContinue }: LessonNo
                     )}
                 </div>
 
-                <div className="text-center bg-light p-3">
+                <div className="text-center bg-light p-2">
                     {(activeNode.type === LessonNodeTypeEnum.TEXT || activeNode.type === LessonNodeTypeEnum.CODE) ?
                         <Button variant="success" onClick={handleSubmit}>
                             Continue

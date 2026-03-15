@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, ToggleButton } from "react-bootstrap";
 import { FaPlus } from "react-icons/fa6";
-import { useEffect, useRef, useState } from "react";
+import { Dispatch, SetStateAction, useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import LessonNodeEditor, { LessonNodeEditorHandle } from "./LessonNodeEditor";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -9,9 +9,11 @@ import { EditorCreateLessonNodeData, EditorGetLessonData, LessonDetails, LessonN
 
 interface LessonEditorProps {
     lessonId: string;
+    css: string;
+    setCss: Dispatch<SetStateAction<string>>;
 }
 
-const LessonEditor = ({ lessonId }: LessonEditorProps) => {
+const LessonEditor = ({ lessonId, css, setCss }: LessonEditorProps) => {
     const { sendJsonRequest } = useApi();
     const [lesson, setLesson] = useState<LessonDetails<undefined> | null>(null);
     const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
@@ -217,6 +219,9 @@ const LessonEditor = ({ lessonId }: LessonEditorProps) => {
                         ref={nodeEditorRef}
                         nodeId={currentNodeId}
                         nodeCount={lesson.nodeCount}
+                        courseId={courseId!}
+                        css={css}
+                        setCss={setCss}
                         onChangeIndex={onLessonNodeChangeIndex}
                         onDelete={onLessonNodeDelete}
                         onExit={onLessonNodeExit}

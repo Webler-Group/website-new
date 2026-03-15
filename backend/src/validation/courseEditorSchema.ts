@@ -130,6 +130,13 @@ export const exportCourseLessonSchema = z.object({
     })
 });
 
+export const editCourseCssSchema = z.object({
+    body: z.object({
+        courseId: idSchema("courseId"),
+        css: z.string()
+    })
+});
+
 export const exportCourseSchema = z.object({
     body: z.object({
         courseId: idSchema("courseId")

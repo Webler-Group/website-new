@@ -34,6 +34,9 @@ export class Course {
 
     @prop({ default: 0 })
     participants!: number;
+
+    @prop()
+    css?: string;
 }
 
 const CourseModel = getModelForClass(Course);

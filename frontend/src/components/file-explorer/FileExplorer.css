@@ -1,34 +1,17 @@
-/* ── Modal sizing: cap height so it never exceeds the viewport ───────────── */
-
-.wb-file-explorer-modal.modal-content {
+.wb-file-explorer-modal {
     display: flex;
     flex-direction: column;
 }
 
 @media (min-width: 576px) {
-    .wb-file-explorer-modal.modal-content {
+    .wb-file-explorer-modal {
         max-height: 80vh;
     }
 }
 
-/* ── Confirm-dialog backdrop (sits above the main modal) ─────────────────── */
-
 .wb-file-explorer-confirm-backdrop {
     z-index: 1065 !important;
 }
-
-/* ── Modal body: flex column, takes remaining height ─────────────────────── */
-
-.wb-file-explorer-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: hidden;
-    /* children handle their own scroll */
-}
-
-/* ── Tab.Content: flex column, fills modal body below the nav ────────────── */
 
 .wb-file-explorer-tabcontent {
     display: flex;
@@ -39,7 +22,6 @@
     padding: 0;
 }
 
-/* Override Bootstrap's block/fade pattern — inactive panes must not occupy space */
 .wb-file-explorer-tabcontent>.tab-pane,
 .wb-file-explorer-tabcontent>.tab-pane.fade {
     display: none !important;
@@ -48,15 +30,12 @@
     min-height: 0;
     padding: 8px;
     opacity: 1 !important;
-    /* defeat Bootstrap fade so we control visibility via display */
 }
 
 .wb-file-explorer-tabcontent>.tab-pane.active,
 .wb-file-explorer-tabcontent>.tab-pane.fade.show.active {
     display: flex !important;
 }
-
-/* ── Toolbar ─────────────────────────────────────────────────────────────── */
 
 .wb-file-explorer-toolbar {
     display: flex;
@@ -77,8 +56,6 @@
     gap: 6px;
     flex-shrink: 0;
 }
-
-/* ── Breadcrumb ───────────────────────────────────────────────────────────── */
 
 .wb-file-explorer-breadcrumb {
     display: flex;
@@ -120,8 +97,6 @@
     user-select: none;
 }
 
-/* ── Scrollable list container ───────────────────────────────────────────── */
-
 .wb-file-explorer-scroll {
     flex: 1 1 auto;
     min-height: 0;
@@ -129,16 +104,12 @@
     overflow-x: hidden;
 }
 
-/* ── List ────────────────────────────────────────────────────────────────── */
-
 .wb-file-explorer-list {
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding: 2px 0;
 }
-
-/* ── Item ────────────────────────────────────────────────────────────────── */
 
 .wb-file-explorer-item {
     display: flex;
@@ -160,8 +131,6 @@
 .wb-file-explorer-item:active {
     background-color: var(--bs-tertiary-bg, #dee2e6);
 }
-
-/* ── Thumbnail ───────────────────────────────────────────────────────────── */
 
 .wb-file-explorer-thumb-wrapper {
     width: 40px;
@@ -196,8 +165,6 @@
     opacity: 0.75;
 }
 
-/* ── Item info ───────────────────────────────────────────────────────────── */
-
 .wb-file-explorer-item-info {
     display: flex;
     flex-direction: column;
@@ -215,9 +182,6 @@
     line-height: 1.3;
 }
 
-/* ── Item two-row layout ─────────────────────────────────────────────────── */
-
-/* Row 1: name (left) + date (right) */
 .wb-file-explorer-row1 {
     display: flex;
     align-items: baseline;
@@ -233,7 +197,6 @@
     white-space: nowrap;
 }
 
-/* Row 2: tags (left) + author (right) */
 .wb-file-explorer-row2 {
     display: flex;
     align-items: center;
@@ -248,7 +211,6 @@
     flex-shrink: 0;
 }
 
-/* ProfileName link */
 .wb-file-explorer-author {
     margin-left: auto;
     font-size: 0.75rem !important;
@@ -269,8 +231,6 @@
     text-transform: uppercase;
     letter-spacing: 0.02em;
 }
-
-/* ── Floating context menu ───────────────────────────────────────────────── */
 
 .wb-file-explorer-context-menu {
     position: fixed;

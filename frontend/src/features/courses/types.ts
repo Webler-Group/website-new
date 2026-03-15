@@ -53,6 +53,7 @@ export interface CourseDetails<T = CourseProgressInfo, U = LessonProgressInfo> {
     userProgress: T;
     completed?: boolean;
     participants: number;
+    css?: string;
     lessons: LessonDetails<U>[];
 }
 
@@ -82,6 +83,11 @@ export interface EditorEditCourseData {
     description: string;
     visible: boolean;
     code: string;
+}
+
+export interface EditorEditCourseCssData {
+    courseId: string;
+    css: string;
 }
 
 export interface EditorGetLessonData {
@@ -199,6 +205,7 @@ export interface GetCourseData {
 
 export interface GetLessonData {
     lesson: LessonDetails;
+    css?: string;
 }
 
 export interface GetLessonNodeData {

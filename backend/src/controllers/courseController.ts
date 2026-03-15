@@ -124,6 +124,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         description: course.description,
         visible: course.visible,
         coverImageUrl: getImageUrl(course.coverImageHash),
+        css: course.css,
         userProgress: courseProgressInfo
     };
 
@@ -155,9 +156,12 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Lesson not found", 404);
     }
 
-    const userProgress = await CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId })
-        .populate<{ lastLessonNodeId: { index: number; lessonId: Types.ObjectId; _id: Types.ObjectId } | null }>("lastLessonNodeId", { index: 1, lessonId: 1 })
-        .lean();
+    const [course, userProgress] = await Promise.all([
+        CourseModel.findById(lesson.course, { css: 1 }).lean(),
+        CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId })
+            .populate<{ lastLessonNodeId: { index: number; lessonId: Types.ObjectId; _id: Types.ObjectId } | null }>("lastLessonNodeId", { index: 1, lessonId: 1 })
+            .lean()
+    ]);
 
     if (!userProgress) {
         throw new HttpError("User progress not found", 404);
@@ -191,7 +195,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         nodes: nodes.map(x => formatLessonNodeMinimal(x, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index }))
     };
 
-    res.json({ success: true, data: { lesson: lessonData } });
+    res.json({ success: true, data: { lesson: lessonData, css: course?.css } });
 });
 
 const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {

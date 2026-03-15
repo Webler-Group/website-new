@@ -11,6 +11,7 @@ import {
     getCourseSchema,
     deleteCourseSchema,
     editCourseSchema,
+    editCourseCssSchema,
     getLessonSchema,
     getLessonListSchema,
     createLessonSchema,
@@ -101,6 +102,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
         description: course.description,
         visible: course.visible,
         coverImageUrl: getImageUrl(course.coverImageHash),
+        css: course.css,
         userProgress: undefined
     };
 
@@ -110,6 +112,21 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     res.json({ success: true, data: { course: courseData } });
+});
+
+const editCourseCss = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(editCourseCssSchema, req);
+    const { courseId, css } = body;
+
+    const course = await CourseModel.findById(courseId);
+    if (!course) {
+        throw new HttpError("Course not found", 404);
+    }
+
+    course.css = css;
+    await course.save();
+
+    res.json({ success: true, data: { courseId: course._id, css: course.css } });
 });
 
 const deleteCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -753,6 +770,7 @@ const courseEditorController = {
     getCourse,
     deleteCourse,
     editCourse,
+    editCourseCss,
     uploadCourseCoverImage,
     coverImageUploadMiddleware,
     getLessonList,

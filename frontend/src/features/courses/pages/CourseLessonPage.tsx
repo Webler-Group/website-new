@@ -12,6 +12,7 @@ import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
     const [lesson, setLesson] = useState<LessonDetails | null>(null);
+    const [css, setCss] = useState("");
     const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
@@ -61,6 +62,7 @@ const CourseLessonPage = () => {
         });
         if (result.data) {
             setLesson(result.data.lesson);
+            setCss(result.data.css ?? "");
             setCommentCount(result.data.lesson.comments);
         }
     }
@@ -167,10 +169,10 @@ const CourseLessonPage = () => {
                     </div>
 
                     <div className="wb-courses-lesson-main">
-                        <Nav variant="pills" className="flex-nowrap overflow-auto my-2">
+                        <Nav variant="pills" className="flex-wrap overflow-auto m-2 gap-1">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
-                                const icon = node.type === LessonNodeTypeEnum.CODE ? <FaCode /> : node.type === 1 ? <FaBookOpen /> : <FaQuestionCircle />;
+                                const icon = node.type === LessonNodeTypeEnum.CODE ? <FaCode /> : node.type === LessonNodeTypeEnum.TEXT ? <FaBookOpen /> : <FaQuestionCircle />;
 
                                 return (
                                     <Nav.Item key={node.id}>
@@ -190,7 +192,7 @@ const CourseLessonPage = () => {
                     <div className="flex-grow-1 mt-2">
                         {
                             currentNodeIndex != 0 &&
-                            <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />
+                            <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} css={css} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />
                         }
                     </div>
                 </>

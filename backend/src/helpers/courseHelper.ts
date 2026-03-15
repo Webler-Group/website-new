@@ -75,6 +75,7 @@ export interface CourseResponse<T = CourseProgressInfo, U = LessonProgressInfo> 
     coverImageUrl: string | null;
     userProgress: T;
     completed?: boolean;
+    css?: string;
     lessons?: LessonResponse<U>[];
 }
 

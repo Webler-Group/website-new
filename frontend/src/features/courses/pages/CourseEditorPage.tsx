@@ -16,6 +16,7 @@ const CourseEditorPage = () => {
     const navigate = useNavigate();
 
     const [course, setCourse] = useState<CourseMinimal | null>(null);
+    const [css, setCss] = useState("");
     const [lessons, setLessons] = useState<LessonDetails<undefined>[]>([]);
     const [loading, setLoading] = useState(false);
     const [formVisible, setFormVisible] = useState(false);
@@ -33,6 +34,7 @@ const CourseEditorPage = () => {
         const result = await sendJsonRequest<EditorGetCourseData>(`/CourseEditor/GetCourse`, "POST", { courseId, includeLessons });
         if (result.data) {
             setCourse(result.data.course);
+            setCss(result.data.course.css ?? "");
             setLessons(result.data.course.lessons);
         }
         setLoading(false);
@@ -257,7 +259,7 @@ const CourseEditorPage = () => {
                 </div>
                 {
                     lessonId ?
-                        <LessonEditor lessonId={lessonId} />
+                        <LessonEditor lessonId={lessonId} css={css} setCss={setCss} />
                         :
                         <>
                             <div className="d-flex justify-content-between">

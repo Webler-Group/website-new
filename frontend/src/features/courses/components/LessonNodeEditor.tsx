@@ -1,5 +1,7 @@
 import {
+    Dispatch,
     forwardRef,
+    SetStateAction,
     SubmitEvent,
     useEffect,
     useImperativeHandle,
@@ -23,7 +25,7 @@ import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
 import { genMongooseId } from "../../../utils/StringUtils";
 import CodeList, { ICodesState } from "../../codes/components/CodeList";
 import HtmlEditorField from "../../../components/HtmlEditorField";
-import { EditorChangeLessonNodeIndexData, EditorEditLessonNodeData, EditorGetLessonNodeData, LessonNodeAnswerDetails, LessonNodeDetails } from "../types";
+import { EditorChangeLessonNodeIndexData, EditorEditCourseCssData, EditorEditLessonNodeData, EditorGetLessonNodeData, LessonNodeAnswerDetails, LessonNodeDetails } from "../types";
 import LessonNode from "./LessonNode";
 import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
 import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
@@ -35,6 +37,9 @@ export interface LessonNodeEditorHandle {
 interface LessonNodeEditorProps {
     nodeId: string;
     nodeCount: number;
+    courseId: string;
+    css: string;
+    setCss: Dispatch<SetStateAction<string>>;
     onDelete: (nodeId: string) => void;
     onChangeIndex: (nodeId: string, newIndex: number) => void;
     onExit: () => void;
@@ -54,7 +59,7 @@ const nodeModes = [
 ];
 
 const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProps>(
-    ({ nodeId, nodeCount, onDelete, onChangeIndex, onExit }, ref) => {
+    ({ nodeId, nodeCount, courseId, css, setCss, onDelete, onChangeIndex, onExit }, ref) => {
         const { sendJsonRequest } = useApi();
         const [node, setNode] = useState<LessonNodeDetails | null>(null);
         const [nodeText, setNodeText] = useState("");
@@ -302,7 +307,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                     onChangeIndex(node.id, newIndex);
                     setMessage(["success", "Node index changed successfully."]);
                 } else {
-                    setMessage(["danger", result.error?.[0]?.message ?? "Failed to change index"]);
+                    setMessage(["danger", result.error?.[0].message ?? "Failed to change index"]);
                 }
             }
 
@@ -312,6 +317,15 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
         const onEditorModeChange = (mode: MDEditorMode) => {
             setFormVisible(mode == "write");
         };
+
+        const handleCssSave = async (newCss: string) => {
+            const result = await sendJsonRequest<EditorEditCourseCssData>("/CourseEditor/EditCourseCss", "PUT", { courseId, css: newCss });
+            if(result.data) {
+                setCss(result.data.css);
+            } else {
+                setMessage(["danger", result.error?.[0].message ?? "Failed to save css"]);
+            }
+        }
 
         const previewNodeData = useMemo(() => {
             if (!node) return null;
@@ -335,11 +349,12 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                         <LessonNode
                             nodeData={previewNodeData}
                             mock={true}
+                            css={css}
                         />
                     </div>
                 </div>
             );
-        }, [previewNodeData]);
+        }, [previewNodeData, css]);
 
         const getEditorFields = () => {
             switch (nodeType) {
@@ -482,7 +497,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                             </FormGroup>
 
                             {
-                                nodeType !== 5 &&
+                                nodeType !== LessonNodeTypeEnum.CODE &&
                                 <FormGroup>
                                     <FormLabel>Mode</FormLabel>
                                     <FormSelect
@@ -522,6 +537,8 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                                 rootAlias="lesson-images"
                                                 text={nodeText}
                                                 setText={setNodeText}
+                                                css={css}
+                                                onCssSave={handleCssSave}
                                                 maxCharacters={8000}
                                                 rows={20}
                                                 onModeChange={onEditorModeChange}

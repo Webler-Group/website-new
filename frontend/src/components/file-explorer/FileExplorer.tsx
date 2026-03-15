@@ -455,13 +455,12 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 onHide={onHide}
                 size="lg"
                 fullscreen="sm-down"
-                contentClassName="wb-modal__container wb-file-explorer-modal"
             >
                 <Modal.Header closeButton>
                     <Modal.Title>{title}</Modal.Title>
                 </Modal.Header>
 
-                <Modal.Body className="wb-file-explorer-body">
+                <Modal.Body>
                     <Tab.Container activeKey={tabKey} onSelect={(k) => setTabKey((k as any) ?? "library")}>
                         <Nav variant="tabs" className="flex-shrink-0">
                             <Nav.Item>
