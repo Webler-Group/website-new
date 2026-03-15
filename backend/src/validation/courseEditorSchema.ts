@@ -149,6 +149,7 @@ export const importCourseSchema = z.object({
         title: titleSchema,
         description: courseDescriptionSchema,
         visible: z.boolean("Visible must be a boolean"),
+        css: z.string().optional(),
         lessons: z.array(z.object({
             version: z.number(),
             title: titleSchema,

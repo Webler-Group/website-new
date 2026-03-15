@@ -27,6 +27,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
     const [uploadMessage, setUploadMessage] = useState<{ errors?: { message: string }[]; message?: string; }>({});
     const [importMessage, setImportMessage] = useState<{ errors?: { message: string }[]; message?: string; }>({});
     const [showJsonHelp, setShowJsonHelp] = useState(false);
+    const [css, setCss] = useState("");
 
     useEffect(() => {
         if (courseId) {
@@ -70,6 +71,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
             title,
             description,
             visible,
+            css,
             lessons: importedLessons
         };
 
@@ -168,6 +170,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     if (json.title) setTitle(json.title);
                     if (json.description) setDescription(json.description);
                     if (json.visible !== undefined) setVisible(json.visible);
+                    if(json.css) setCss(json.css);
 
                     if (json.lessons && Array.isArray(json.lessons)) {
                         setImportedLessons(json.lessons);
@@ -245,6 +248,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
   "title": "Course Title",
   "description": "Description...",
   "visible": false,
+  "css": "", // Optional custom CSS for HTML nodes
   "lessons": [
     {
       "title": "Lesson 1",

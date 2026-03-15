@@ -650,7 +650,7 @@ const moveLessonImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(importCourseSchema, req);
-    const { code, title, description, visible, lessons } = body;
+    const { code, title, description, visible, lessons, css } = body;
 
     const course = await withTransaction(async (session) => {
         let course = await CourseModel.findOne({ code }).session(session);
@@ -659,6 +659,7 @@ const importCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             course.title = title;
             course.description = description;
             course.visible = visible;
+            course.css = css;
             await course.save({ session });
             await deleteCourseLessonAndCleanup({ course: course._id }, session);
         } else {
