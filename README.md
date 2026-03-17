@@ -20,6 +20,11 @@ replication:
   replSetName: "rs0"
 ```
 
+After enabling replica set:
+1. Restart MongoDB
+2. Connect via shell (mongosh)
+3. Run `rs.initiate()`
+
 MongoDB Atlas connection URI requires `?directConnection=true`
 
 ## How to first run
