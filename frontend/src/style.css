@@ -246,3 +246,13 @@ ul {
     justify-content: center;
     margin: 160px auto;
 }
+
+.offcanvas.wb-comments-offcanvas {
+    --bs-offcanvas-width: 100% !important;
+}
+
+@media(min-width: 768px) {
+    .offcanvas.wb-comments-offcanvas {
+        --bs-offcanvas-width: 50% !important;
+    }
+}

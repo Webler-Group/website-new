@@ -123,7 +123,7 @@ const Feed = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onToggle
 
   return (
     <>
-      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} backdropClassName="wb-feed-comment-modal__backdrop" style={{ zIndex: 1060 }} placement="end">
+      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} backdropClassName="wb-feed-comment-modal__backdrop" className="wb-comments-offcanvas" style={{ zIndex: 1060 }} placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
         </Offcanvas.Header>
