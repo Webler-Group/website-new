@@ -30,8 +30,8 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
                 </div>
             )}
             <div className="flex-grow-1 min-width-0">
-                <Link to={"/Discuss/" + question.id}>
-                    <b className="text-dark d-block text-truncate" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>{title}</b>
+                <Link to={"/Discuss/" + question.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>
+                    <b>{title}</b>
                 </Link>
 
                 {!isCompact && (
