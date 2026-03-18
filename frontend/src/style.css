@@ -1,3 +1,7 @@
+.min-width-0 {
+    min-width: 0;
+}
+
 ul,
 p {
     margin: 0;
