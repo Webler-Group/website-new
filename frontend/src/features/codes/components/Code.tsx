@@ -48,37 +48,37 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
 
             {/* Content Area */}
             <div className="flex-grow-1 min-width-0 d-flex flex-column gap-1">
-                {/* Row 1: Title & Timestamp */}
-                <div className="d-flex justify-content-between align-items-start gap-2">
-                    <b className="text-dark text-truncate" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</b>
+                {/* Row 1: Title */}
+                <b className="text-dark text-truncate d-block" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</b>
+
+                {/* Row 2: Username · Language · Stats · Timestamp */}
+                <div className="d-flex align-items-center justify-content-between gap-2 wb-code-meta">
+                    <div className="d-flex align-items-center flex-wrap gap-2 min-width-0">
+                        {isUser(code.user) && !isCompact && (
+                            <ProfileName userId={code.user.id} userName={code.user.name} />
+                        )}
+                        <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>
+                            {languagesInfo[code.language]?.displayName || code.language}
+                        </span>
+                        <span className="d-flex align-items-center gap-1">
+                            <FaThumbsUp size={11} />
+                            <span>{code.votes}</span>
+                        </span>
+                        <span className="d-flex align-items-center gap-1">
+                            <FaComment size={11} />
+                            <span>{code.comments}</span>
+                        </span>
+                        {code.isPublic === false && <FaLock size={11} className="text-warning" />}
+                    </div>
                     <span className="text-muted flex-shrink-0 wb-code-timestamp">
                         {DateUtils.format(new Date(code.updatedAt || code.createdAt!))}
                     </span>
-                </div>
-
-                {/* Row 2: Username · Language · Stats */}
-                <div className="d-flex align-items-center flex-wrap gap-2 wb-code-meta">
-                    {isUser(code.user) && !isCompact && (
-                        <ProfileName userId={code.user.id} userName={code.user.name} />
-                    )}
-                    <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>
-                        {languagesInfo[code.language]?.displayName || code.language}
-                    </span>
-                    <span className="d-flex align-items-center gap-1">
-                        <FaThumbsUp size={11} />
-                        <span>{code.votes}</span>
-                    </span>
-                    <span className="d-flex align-items-center gap-1">
-                        <FaComment size={11} />
-                        <span>{code.comments}</span>
-                    </span>
-                    {code.isPublic === false && <FaLock size={11} className="text-warning" />}
                 </div>
             </div>
         </div>
     );
 
-    return ref ? <div ref={ref}>{body}</div> : <div>{body}</div>;
+    return ref ? <div ref={ref} className="min-width-0 overflow-hidden">{body}</div> : <div className="min-width-0 overflow-hidden">{body}</div>;
 });
 
 export default Code;
