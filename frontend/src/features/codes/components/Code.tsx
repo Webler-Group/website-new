@@ -52,8 +52,8 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
                 <b className="text-dark text-truncate d-block" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</b>
 
                 {/* Row 2: Username · Language · Stats · Timestamp */}
-                <div className="d-flex align-items-center justify-content-between gap-2 wb-code-meta">
-                    <div className="d-flex align-items-center flex-wrap gap-2 min-width-0">
+                <div className="d-flex align-items-center justify-content-between gap-2 wb-code-meta overflow-hidden">
+                    <div className="d-flex align-items-center flex-wrap gap-2 min-width-0 overflow-hidden">
                         {isUser(code.user) && !isCompact && (
                             <ProfileName userId={code.user.id} userName={code.user.name} />
                         )}

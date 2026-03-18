@@ -42,8 +42,8 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
                     </div>
                 )}
 
-                <div className={`d-flex align-items-center justify-content-between gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
-                    <div className="d-flex align-items-center gap-2 flex-wrap">
+                <div className={`d-flex align-items-center justify-content-between gap-2 small text-secondary overflow-hidden ${isCompact ? "mt-1" : "mt-2"}`}>
+                    <div className="d-flex align-items-center gap-2 flex-wrap min-width-0 overflow-hidden">
                         {showUserProfile && isUser(question.user) && (
                             <ProfileName userId={question.user.id} userName={question.user.name} />
                         )}
