@@ -54,6 +54,12 @@ ul {
     padding: 0 4px;
 }
 
+@media (max-width: 768px) {
+    .wb-icon-button {
+        padding: 6px 8px; /* Balanced mobile touch target */
+    }
+}
+
 .wb-icon-button:hover {
     color: gray;
 }

@@ -86,8 +86,14 @@
     transition: color 0.1s ease;
     background: none;
     border: none;
-    padding: 0;
+    padding: 4px 0; /* Default vertical padding */
     line-height: normal; /* Using normal instead of 1 for better baseline behavior */
+}
+
+@media (max-width: 768px) {
+    .wb-comments-footer-btn {
+        padding: 8px 4px; /* Increased touch target for mobile */
+    }
 }
 
 .wb-comments-footer-btn:hover {
