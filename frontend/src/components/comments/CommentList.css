@@ -78,6 +78,8 @@
 }
 
 .wb-comments-footer-btn {
+    display: flex;
+    align-items: center;
     font-size: 0.8rem;
     color: #6c757d;
     font-weight: 500;
@@ -85,6 +87,7 @@
     background: none;
     border: none;
     padding: 0;
+    line-height: normal; /* Using normal instead of 1 for better baseline behavior */
 }
 
 .wb-comments-footer-btn:hover {
@@ -96,4 +99,10 @@
     flex-shrink: 0;
     position: relative;
     z-index: 1;
-}
+}
+
+.wb-comment-footer-icon {
+    position: relative;
+    top: -1px; /* Optical adjustment to center icons with text */
+}
+

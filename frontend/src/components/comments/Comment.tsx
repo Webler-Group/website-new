@@ -94,7 +94,7 @@ const Comment: React.FC<CommentProps> = ({
         </div>
         <div className="d-flex gap-3 align-items-center mt-2">
           <div className="d-flex align-items-center gap-1">
-            <span className={"wb-icon-button p-0 " + (comment.isUpvoted ? " text-primary" : "text-secondary")} onClick={handleVote} style={{ fontSize: '0.9rem' }}>
+            <span className={"wb-icon-button p-0 d-flex align-items-center wb-comment-footer-icon " + (comment.isUpvoted ? " text-primary" : "text-secondary")} onClick={handleVote} style={{ fontSize: '0.9rem' }}>
               <FaThumbsUp />
             </span>
             <span 
