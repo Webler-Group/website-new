@@ -23,7 +23,7 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
     let title = question.title;
 
     let body = (
-        <div className={`wb-question-item border-bottom bg-white d-md-flex ${isCompact ? "p-2 compact" : "py-2"}`}>
+        <div className={`wb-question-item border-bottom bg-white d-flex ${isCompact ? "p-2 compact" : "py-2"}`}>
             <div className="flex-grow-1 min-width-0">
                 <Link to={"/Discuss/" + question.id}>
                     <b className="text-dark d-block text-truncate" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem", wordBreak: "break-word" }}>{title}</b>
