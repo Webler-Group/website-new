@@ -65,7 +65,7 @@
 /* Mobile Adjustments */
 @media (max-width: 576px) {
     .wb-question-item {
-        padding: 10px 0;
+        padding: 12px 0;
     }
 
     .wb-question-item b {
