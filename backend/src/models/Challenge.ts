@@ -4,7 +4,7 @@ import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
 export class TestCase {
-    @prop({ required: true, minlength: 1, maxlength: 500 })
+    @prop({ maxlength: 500, default: "" })
     input!: string;
 
     @prop({ required: true, minlength: 1, maxlength: 500 })
@@ -44,6 +44,15 @@ export class Challenge {
 
     @prop({ default: 10 })
     xp!: number;
+
+    @prop({ default: 0 })
+    totalSubmissions!: number;
+
+    @prop({ default: 0 })
+    passedSubmissions!: number;
+
+    @prop({ default: "" })
+    solution!: string;
 
     @prop({ ref: "User", required: true })
     author!: Types.ObjectId;

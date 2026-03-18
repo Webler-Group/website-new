@@ -16,9 +16,11 @@ interface CodeProps {
     searchQuery: string;
     onClick?: () => void;
     selected?: boolean;
+    variant?: "default" | "compact";
 }
 
-const Code = React.forwardRef(({ code, onClick, selected }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }: CodeProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+    const isCompact = variant === "compact";
     const navigate = useNavigate();
 
     let title = code.name;
@@ -36,47 +38,41 @@ const Code = React.forwardRef(({ code, onClick, selected }: CodeProps, ref: Reac
     }
 
     const body = (
-        <div className={"wb-codes-item border-bottom p-3 d-flex align-items-center gap-3" + (selected ? " selected" : "")} onClick={handleClick}>
+        <div className={`wb-codes-item border-bottom d-flex align-items-center gap-3 ${isCompact ? "p-2 compact" : "py-2 px-3"} ${selected ? "selected" : ""}`} onClick={handleClick}>
             {/* Left Side: Avatar */}
             {isUser(code.user) && (
                 <div className="flex-shrink-0">
-                    <ProfileAvatar size={44} avatarUrl={code.user.avatarUrl} />
+                    <ProfileAvatar size={isCompact ? 32 : 38} avatarUrl={code.user.avatarUrl} />
                 </div>
             )}
 
             {/* Content Area */}
             <div className="flex-grow-1 min-width-0 d-flex flex-column gap-1">
                 {/* Row 1: Title & Timestamp */}
-                <div className="d-flex justify-content-between align-items-center">
-                    <b className="text-dark text-truncate" style={{ fontSize: "1.05rem" }}>{title}</b>
-                    <div className="text-muted ms-2 flex-shrink-0" style={{ fontSize: "0.75rem" }}>
+                <div className="d-flex justify-content-between align-items-start gap-2">
+                    <b className="text-dark text-truncate" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</b>
+                    <span className="text-muted flex-shrink-0 wb-code-timestamp">
                         {DateUtils.format(new Date(code.updatedAt || code.createdAt!))}
-                    </div>
+                    </span>
                 </div>
 
-                {/* Row 2: User Name */}
-                {isUser(code.user) && (
-                    <div className="d-flex align-items-center mt-n1">
+                {/* Row 2: Username · Language · Stats */}
+                <div className="d-flex align-items-center flex-wrap gap-2 wb-code-meta">
+                    {isUser(code.user) && !isCompact && (
                         <ProfileName userId={code.user.id} userName={code.user.name} />
-                    </div>
-                )}
-                
-                {/* Row 3: Language Chip & Stats */}
-                <div className="d-flex small align-items-center flex-wrap gap-3 text-secondary pt-1">
+                    )}
                     <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>
                         {languagesInfo[code.language]?.displayName || code.language}
                     </span>
-                    
-                    <div className="d-flex align-items-center gap-1">
-                        <FaThumbsUp size={12} className="opacity-75" />
-                        <span style={{ fontWeight: 500 }}>{code.votes}</span>
-                    </div>
-                    <div className="d-flex align-items-center gap-1">
-                        <FaComment size={12} className="opacity-75" />
-                        <span style={{ fontWeight: 500 }}>{code.comments}</span>
-                    </div>
-                    
-                    {code.isPublic === false && <FaLock size={12} className="text-warning" />}
+                    <span className="d-flex align-items-center gap-1">
+                        <FaThumbsUp size={11} />
+                        <span>{code.votes}</span>
+                    </span>
+                    <span className="d-flex align-items-center gap-1">
+                        <FaComment size={11} />
+                        <span>{code.comments}</span>
+                    </span>
+                    {code.isPublic === false && <FaLock size={11} className="text-warning" />}
                 </div>
             </div>
         </div>

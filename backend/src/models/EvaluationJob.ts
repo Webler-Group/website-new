@@ -29,7 +29,7 @@ export class EvaluationJob {
     @prop({ required: true, enum: Object.values(CompilerLanguagesEnum) })
     language!: CompilerLanguagesEnum;
 
-    @prop({ required: true })
+    @prop({ default: "" })
     source!: string;
 
     @prop({ type: () => [String], default: [] })

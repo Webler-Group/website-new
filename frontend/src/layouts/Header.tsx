@@ -19,7 +19,7 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
 
   return (
     <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom w-100" collapseOnSelect>
-      <Container fluid>
+      <Container>
         <Link to="/" aria-label="Home">
           <Navbar.Brand><img src="/resources/images/logo.svg" alt="Webler logo" height="32px" width="96px" /></Navbar.Brand>
         </Link>

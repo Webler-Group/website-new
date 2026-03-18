@@ -5,6 +5,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { Helmet } from "react-helmet-async";
 import { QuestionListData, QuestionMinimal } from "../types";
 import { UserMinimal } from "../../profile/types";
+import { FaFire } from "react-icons/fa6";
 
 interface DiscussLayoutProps {
     MainPage: ReactNode
@@ -39,17 +40,32 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
                     <div className="row pt-2" style={{ minHeight: "100vh" }}>
                         <div className="col-12 col-md-8">{MainPage}</div>
                         <div className="col-12 col-md-4">
-                            <h2>Hot today</h2>
-                            <div className="my-3">
-                                {
-                                    questions.map(question => {
-                                        return (
-                                            <div className="mb-2" key={question.id}>
-                                                <Question question={question} searchQuery="" showUserProfile={false} />
-                                            </div>
-                                        );
-                                    })
-                                }
+                            <div className="wb-discuss-sidebar-card">
+                                <div className="wb-discuss-sidebar-header">
+                                    <span className="text-danger"><FaFire /></span>
+                                    <h5>Hot today</h5>
+                                </div>
+                                <div className="wb-discuss-sidebar-content">
+                                    {
+                                        questions.map(question => {
+                                            return (
+                                                <div key={question.id}>
+                                                    <Question 
+                                                        question={question} 
+                                                        searchQuery="" 
+                                                        showUserProfile={false} 
+                                                        variant="compact"
+                                                    />
+                                                </div>
+                                            );
+                                        })
+                                    }
+                                    {questions.length === 0 && (
+                                        <div className="p-4 text-center text-muted">
+                                            <small>No trending questions yet</small>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>

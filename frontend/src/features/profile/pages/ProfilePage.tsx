@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { Badge, Button, Card, Col, Container, Dropdown, Row } from "react-bootstrap";
+import { Badge, Button, Card, Container, Dropdown } from "react-bootstrap";
 import ProfileSettings from "../components/ProfileSettings";
 import countries from "../../../data/countries";
 import { FaGear, FaHammer, FaStar } from "react-icons/fa6";
@@ -21,8 +21,15 @@ import ChallengesSection from "../components/ChallengesSection";
 import { GetProfileData, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
+import { FeedDetails, FeedListData } from "../../feed/types";
+import { CourseMinimal, UserCoursesListData } from "../../courses/types";
 import RolesEnum from "../../../data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
+import DateUtils from "../../../utils/DateUtils";
+import { FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
+import { FaBookOpen, FaUsers } from "react-icons/fa6";
+import { LinkContainer } from "react-router-bootstrap";
+import "../profile.css";
 
 const ProfilePage = () => {
     const { sendJsonRequest } = useApi();
@@ -45,6 +52,9 @@ const ProfilePage = () => {
 
     const [challengesSectionVisible, setChallengesSectionVisible] = useState(false);
 
+    const [feedPosts, setFeedPosts] = useState<FeedDetails[]>([]);
+    const [courses, setCourses] = useState<CourseMinimal[]>([]);
+
     const [pageTitle, setPageTitle] = useState("Webler Codes");
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -66,8 +76,24 @@ const ProfilePage = () => {
             } else {
                 setUserDetails(null);
             }
-        }
+        };
         fetchProfile();
+    }, [userId]);
+
+    useEffect(() => {
+        if (!userId) return;
+        const fetchFeed = async () => {
+            const result = await sendJsonRequest<FeedListData>(`/Feed`, "POST", {
+                page: 1, count: 3, filter: 2, userId
+            });
+            if (result.data) setFeedPosts(result.data.feeds);
+        };
+        const fetchCourses = async () => {
+            const result = await sendJsonRequest<UserCoursesListData>(`/Courses/GetUserCourses`, "POST", { userId });
+            if (result.data) setCourses(result.data.courses);
+        };
+        fetchFeed();
+        fetchCourses();
     }, [userId]);
 
     const showNotification = useCallback((type: "success" | "error", message: string) => {
@@ -76,9 +102,7 @@ const ProfilePage = () => {
     }, []);
 
     const onUserUpdate = (data: Partial<UserDetails>) => {
-        if (userDetails) {
-            setUserDetails({ ...userDetails, ...data });
-        }
+        if (userDetails) setUserDetails({ ...userDetails, ...data });
     };
 
     const handleFollow = async () => {
@@ -87,7 +111,7 @@ const ProfilePage = () => {
         const result = await sendJsonRequest(`/Profile/Follow`, "POST", { userId });
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: true, followers: ud.followers + 1 } : null));
-            setFollowersCount((count) => count + 1);
+            setFollowersCount((c) => c + 1);
         }
         setFollowLoading(false);
     };
@@ -98,7 +122,7 @@ const ProfilePage = () => {
         const result = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId });
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: false, followers: ud.followers - 1 } : null));
-            setFollowersCount((count) => count - 1);
+            setFollowersCount((c) => c - 1);
         }
         setFollowLoading(false);
     };
@@ -126,10 +150,6 @@ const ProfilePage = () => {
     const showChallengesSection = () => setChallengesSectionVisible(true);
     const closeChallengesSection = () => setChallengesSectionVisible(false);
 
-    const openPlaygroundMenu = () => navigate("/Compiler-Playground");
-    const openDiscussAsk = () => navigate("/Discuss/New");
-    const openChallenges = () => navigate("/Challenge");
-
     const handleMessage = async () => {
         const result = await sendJsonRequest<CreateDirectMessagesData>("/Channels/CreateDirectMessages", "POST", { userId });
         if (result.data) {
@@ -147,111 +167,10 @@ const ProfilePage = () => {
     const isCurrentUser = !!userInfo && userInfo.id === userId;
     const isAdmin = !!userInfo && userInfo.roles.includes(RolesEnum.ADMIN);
 
-    const codesSectionContent = (isCurrentUser || codes.length > 0) ? (
-        <Col>
-            <Card className="p-2 wb-p-section__card">
-                <div className="d-flex justify-content-between align-items-center">
-                    <h3>Codes</h3>
-                    {codes.length > 0 && <Button onClick={showCodesSection} variant="link">Show All</Button>}
-                </div>
-                <div className="mt-2">
-                    {codes.length > 0 ? (
-                        codes.map((code) => (
-                            <div key={code.id}>
-                                <Code code={code} searchQuery="" showUserProfile={false} />
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-4">
-                            <p className="text-secondary">You do not have saved any codes</p>
-                        </div>
-                    )}
-
-                    {isCurrentUser && (
-                        <div className="mt-3">
-                            <Button onClick={openPlaygroundMenu} className="w-100">Add New</Button>
-                        </div>
-                    )}
-                </div>
-            </Card>
-        </Col>
-    ) : <></>;
-
-    const questionSectionContent = (isCurrentUser || questions.length > 0) ? (
-        <Col>
-            <Card className="p-2 wb-p-section__card">
-                <div className="d-flex justify-content-between align-items-center">
-                    <h3>Questions</h3>
-                    {questions.length > 0 && <Button onClick={showQuestionsSection} variant="link">Show All</Button>}
-                </div>
-                <div className="mt-2">
-                    {questions.length > 0 ? (
-                        questions.map((question) => (
-                            <div className="mt-2" key={question.id}>
-                                <Question question={question} searchQuery="" showUserProfile={false} />
-                            </div>
-                        ))
-                    ) : (
-                        <div className="text-center py-4">
-                            <p className="text-secondary">You have not asked any questions</p>
-                        </div>
-                    )}
-
-                    {isCurrentUser && (
-                        <div className="mt-3">
-                            <Button onClick={openDiscussAsk} className="w-100">Ask</Button>
-                        </div>
-                    )}
-                </div>
-            </Card>
-        </Col>
-    ) : <></>;
-
     const easySolved = userDetails?.solvedChallenges.easy ?? 0;
     const mediumSolved = userDetails?.solvedChallenges.medium ?? 0;
     const hardSolved = userDetails?.solvedChallenges.hard ?? 0;
     const totalSolved = easySolved + mediumSolved + hardSolved;
-
-    const challengesSectionContent = (isCurrentUser || totalSolved > 0) ? (
-        <Col xs={12}>
-            <Card className="p-2 wb-p-section__card">
-                <div className="d-flex justify-content-between align-items-center">
-                    <h3 className="mb-0">Challenges</h3>
-                    {easySolved + mediumSolved + hardSolved > 0 && <Button onClick={showChallengesSection} variant="link">Show All</Button>}
-                </div>
-
-                <div className="mt-3 d-flex flex-wrap gap-2">
-                    <div className="wb-p-details-challenges-summary__pill">
-                        <Badge bg="success" className="me-2">Easy</Badge>
-                        <span className="fw-semibold">{easySolved}</span>
-                    </div>
-
-                    <div className="wb-p-details-challenges-summary__pill">
-                        <Badge className="bg-warning text-dark me-2">Medium</Badge>
-                        <span className="fw-semibold">{mediumSolved}</span>
-                    </div>
-
-                    <div className="wb-p-details-challenges-summary__pill">
-                        <Badge bg="danger" className="me-2">Hard</Badge>
-                        <span className="fw-semibold">{hardSolved}</span>
-                    </div>
-                </div>
-
-                {isCurrentUser && (
-                    <div className="mt-3">
-                        <Button onClick={openChallenges} className="w-100">Solve</Button>
-                    </div>
-                )}
-            </Card>
-        </Col>
-    ) : <></>;
-
-    const badge = (() => {
-        if (userDetails?.roles.includes(RolesEnum.MODERATOR)) {
-            return <Badge className="wb-p-details__avatar-badge" bg="secondary">Moderator</Badge>;
-        }
-        return <></>;
-    })();
 
     return (
         <div className="wb-p-container">
@@ -259,17 +178,9 @@ const ProfilePage = () => {
                 <>
                     <NotificationToast notification={notification} onClose={() => setNotification(null)} />
 
-                    {codesSectionVisible && (
-                        <CodesSection userId={userDetails.id} onClose={closeCodesSection} />
-                    )}
-
-                    {questionsSectionVisible && (
-                        <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />
-                    )}
-
-                    {challengesSectionVisible && (
-                        <ChallengesSection userId={userDetails.id} onClose={closeChallengesSection} />
-                    )}
+                    {codesSectionVisible && <CodesSection userId={userDetails.id} onClose={closeCodesSection} />}
+                    {questionsSectionVisible && <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />}
+                    {challengesSectionVisible && <ChallengesSection userId={userDetails.id} onClose={closeChallengesSection} />}
 
                     <FollowList
                         options={followListOptions}
@@ -283,16 +194,18 @@ const ProfilePage = () => {
                         <ProfileSettings userDetails={userDetails} onUpdate={onUserUpdate} />
                     )}
 
-                    <Container className="p-2">
-                        <Card className="p-2">
-                            <div className="wb-edit-button">
+                    <Container className="py-3 px-2">
+
+                        {/* ── Profile Header ── */}
+                        <Card className="wb-p-header border mb-3">
+                            <div className="wb-p-header__menu">
                                 <Dropdown drop="start">
                                     <Dropdown.Toggle as={EllipsisDropdownToggle} />
                                     <Dropdown.Menu>
                                         {(isCurrentUser || isAdmin) && (
                                             <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
                                         )}
-                                        {(userInfo && userInfo.roles.some(role => ["Moderator", "Admin"].includes(role))) && (
+                                        {userInfo?.roles.some(r => ["Moderator", "Admin"].includes(r)) && (
                                             <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
                                                 <FaHammer /> Open in Mod View
                                             </Dropdown.Item>
@@ -301,40 +214,36 @@ const ProfilePage = () => {
                                 </Dropdown>
                             </div>
 
-                            <div className="d-block d-md-flex gap-3">
-                                <div className="wb-p-details__avatar">
-                                    <ProfileAvatar size={96} avatarUrl={userDetails.avatarUrl} />
-                                    {badge}
+                            <div className="wb-p-header__body">
+                                {/* Avatar */}
+                                <div className="wb-p-header__avatar-wrap">
+                                    <ProfileAvatar size={80} avatarUrl={userDetails.avatarUrl} />
+                                    {userDetails.roles.includes(RolesEnum.MODERATOR) && (
+                                        <Badge className="wb-p-header__badge" bg="secondary">Moderator</Badge>
+                                    )}
                                 </div>
 
-                                <div className="d-flex flex-column align-items-center align-items-md-start">
-                                    <div className="d-flex wb-p-details__row">
-                                        <p
-                                            className="wb-p-details__name text-center"
-                                            style={{
-                                                fontFamily: "monospace",
-                                                textDecoration: userDetails.active ? "none" : "line-through",
-                                            }}
+                                {/* Info */}
+                                <div className="wb-p-header__info">
+                                    <div className="wb-p-header__name-row">
+                                        <span
+                                            className="wb-p-header__name"
+                                            style={{ textDecoration: userDetails.active ? "none" : "line-through" }}
                                         >
                                             {userDetails.name}
-                                        </p>
-                                    </div>
-
-                                    <div>
+                                        </span>
                                         {userInfo && userDetails.id !== userInfo.id && (
-                                            <div className="d-flex wb-p-details__row">
-                                                {userDetails.isFollowing ? (
-                                                    <Button variant="primary" size="sm" onClick={handleUnfollow} disabled={followLoading}>
-                                                        Unfollow
-                                                    </Button>
-                                                ) : (
-                                                    <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>
-                                                        Follow
-                                                    </Button>
-                                                )}
-
+                                            <div className="d-flex gap-2 flex-shrink-0">
+                                                <Button
+                                                    variant={userDetails.isFollowing ? "outline-secondary" : "primary"}
+                                                    size="sm"
+                                                    onClick={userDetails.isFollowing ? handleUnfollow : handleFollow}
+                                                    disabled={followLoading}
+                                                >
+                                                    {userDetails.isFollowing ? "Unfollow" : "Follow"}
+                                                </Button>
                                                 {userDetails.roles.includes(RolesEnum.USER) && (
-                                                    <Button className="ms-1" variant="primary" size="sm" onClick={handleMessage}>
+                                                    <Button variant="outline-primary" size="sm" onClick={handleMessage}>
                                                         Message
                                                     </Button>
                                                 )}
@@ -342,54 +251,250 @@ const ProfilePage = () => {
                                         )}
                                     </div>
 
-                                    <div className="wb-p-details__row">
-                                        {followingCount > 0 ? (
-                                            <button className="wb-p-details__follows__button" onClick={showFollowing}>
-                                                {followingCount} Following
-                                            </button>
-                                        ) : (
-                                            <span>{followingCount} Following</span>
-                                        )}
+                                    {userDetails.bio && (
+                                        <p className="wb-p-header__bio">{userDetails.bio}</p>
+                                    )}
 
-                                        {followersCount > 0 ? (
-                                            <button className="wb-p-details__follows__button ms-2" onClick={showFollowers}>
-                                                {followersCount} Followers
-                                            </button>
-                                        ) : (
-                                            <span className="ms-2">{followersCount} Followers</span>
-                                        )}
-                                    </div>
-
-                                    <p className="wb-p-details__row">
-                                        <FaStar style={{ color: "gold" }} />
-                                        <b>{userDetails.xp} XP</b>
-                                    </p>
-
-                                    <div className="wb-p-details__row">
-                                        <p className="text-secondary wb-p-details__bio small">{userDetails.bio}</p>
-                                    </div>
-
-                                    <div className="wb-p-details__row">
+                                    <div className="wb-p-header__meta">
+                                        <button className="wb-p-follows-btn" onClick={showFollowing}>
+                                            <b>{followingCount}</b> Following
+                                        </button>
+                                        <button className="wb-p-follows-btn" onClick={showFollowers}>
+                                            <b>{followersCount}</b> Followers
+                                        </button>
+                                        <span className="wb-p-header__stat">
+                                            <FaStar style={{ color: "gold" }} /> <b>{userDetails.xp}</b> XP
+                                        </span>
+                                        <span className="wb-p-header__stat text-muted">
+                                            Lvl {userDetails.level}
+                                        </span>
                                         {userDetails.countryCode && (
-                                            <>
-                                                <Country country={countries.find((country) => country.code === userDetails.countryCode)!} />
-                                                <span className="mx-2">·</span>
-                                            </>
+                                            <span className="wb-p-header__stat">
+                                                <Country country={countries.find(c => c.code === userDetails.countryCode)!} />
+                                            </span>
                                         )}
-                                        Lvl {userDetails.level}
                                     </div>
+
+                                    {/* Challenges stats inline */}
+                                    {(isCurrentUser || totalSolved > 0) && (
+                                        <div className="wb-p-header__challenges">
+                                            <button
+                                                className="wb-p-challenges-pill bg-success-subtle border-success-subtle text-success"
+                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
+                                            >
+                                                <Badge bg="success">Easy</Badge> {easySolved}
+                                            </button>
+                                            <button
+                                                className="wb-p-challenges-pill bg-warning-subtle border-warning-subtle text-warning-emphasis"
+                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
+                                            >
+                                                <Badge bg="warning" text="dark">Medium</Badge> {mediumSolved}
+                                            </button>
+                                            <button
+                                                className="wb-p-challenges-pill bg-danger-subtle border-danger-subtle text-danger"
+                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
+                                            >
+                                                <Badge bg="danger">Hard</Badge> {hardSolved}
+                                            </button>
+                                            {isCurrentUser && (
+                                                <Button
+                                                    variant="link"
+                                                    size="sm"
+                                                    className="p-0 ms-1"
+                                                    onClick={() => navigate("/Challenge")}
+                                                >
+                                                    Solve more
+                                                </Button>
+                                            )}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </Card>
 
-                        <Row className="mt-2 row-cols-1 row-gap-2">
-                            {challengesSectionContent}
-                        </Row>
+                        {/* ── Content Grid ── */}
+                        <div className="wb-p-grid">
 
-                        <Row className="mt-2 row-cols-1 row-cols-md-2 row-gap-2">
-                            {codesSectionContent}
-                            {questionSectionContent}
-                        </Row>
+                            {/* Left column */}
+                            <div className="wb-p-grid__col">
+
+                                {/* Codes */}
+                                {(isCurrentUser || codes.length > 0) && (
+                                    <Card className="wb-p-section border mb-3">
+                                        <div className="wb-p-section__header">
+                                            <span className="wb-p-section__title">
+                                                <FaCode className="text-muted me-2" /> Codes
+                                            </span>
+                                            {codes.length > 0 && (
+                                                <Button variant="link" size="sm" className="p-0" onClick={showCodesSection}>
+                                                    Show All
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {codes.length > 0 ? (
+                                                codes.map((code) => (
+                                                    <Code key={code.id} code={code} searchQuery="" />
+                                                ))
+                                            ) : (
+                                                <div className="wb-p-section__empty">
+                                                    <p>No codes saved yet</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isCurrentUser && (
+                                            <div className="wb-p-section__footer">
+                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Compiler-Playground")}>
+                                                    Add New
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                )}
+
+                                {/* Feed Posts */}
+                                {(isCurrentUser || feedPosts.length > 0) && (
+                                    <Card className="wb-p-section border mb-3">
+                                        <div className="wb-p-section__header">
+                                            <span className="wb-p-section__title">
+                                                <FaNewspaper className="text-muted me-2" /> Posts
+                                            </span>
+                                            {feedPosts.length > 0 && (
+                                                <LinkContainer to="/Feed">
+                                                    <Button variant="link" size="sm" className="p-0">View Feed</Button>
+                                                </LinkContainer>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {feedPosts.length > 0 ? (
+                                                feedPosts.map((post) => (
+                                                    <div
+                                                        key={post.id}
+                                                        className="wb-p-feed-item border-bottom"
+                                                        onClick={() => navigate("/Feed/" + post.id)}
+                                                    >
+                                                        <p className="wb-p-feed-item__text">{post.message}</p>
+                                                        <div className="wb-p-feed-item__meta">
+                                                            <span className="d-flex align-items-center gap-1">
+                                                                <FaCommentAlt size={11} /> {post.answers}
+                                                            </span>
+                                                            <span>{DateUtils.format(new Date(post.date))}</span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="wb-p-section__empty">
+                                                    <p>No posts yet</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isCurrentUser && (
+                                            <div className="wb-p-section__footer">
+                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Feed")}>
+                                                    Go to Feed
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                )}
+                            </div>
+
+                            {/* Right column */}
+                            <div className="wb-p-grid__col">
+
+                                {/* Questions */}
+                                {(isCurrentUser || questions.length > 0) && (
+                                    <Card className="wb-p-section border mb-3">
+                                        <div className="wb-p-section__header">
+                                            <span className="wb-p-section__title">
+                                                <FaCommentAlt className="text-muted me-2" /> Questions
+                                            </span>
+                                            {questions.length > 0 && (
+                                                <Button variant="link" size="sm" className="p-0" onClick={showQuestionsSection}>
+                                                    Show All
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {questions.length > 0 ? (
+                                                questions.map((question) => (
+                                                    <Question key={question.id} question={question} searchQuery="" showUserProfile={false} />
+                                                ))
+                                            ) : (
+                                                <div className="wb-p-section__empty">
+                                                    <p>No questions asked yet</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isCurrentUser && (
+                                            <div className="wb-p-section__footer">
+                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Discuss/New")}>
+                                                    Ask a Question
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                )}
+
+                                {/* Courses */}
+                                {(isCurrentUser || courses.length > 0) && (
+                                    <Card className="wb-p-section border mb-3">
+                                        <div className="wb-p-section__header">
+                                            <span className="wb-p-section__title">
+                                                <FaBookOpen className="text-muted me-2" /> Courses
+                                            </span>
+                                            {courses.length > 0 && (
+                                                <LinkContainer to="/Courses">
+                                                    <Button variant="link" size="sm" className="p-0">Browse</Button>
+                                                </LinkContainer>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {courses.length > 0 ? (
+                                                courses.slice(0, 3).map((course) => (
+                                                    <div
+                                                        key={course.id}
+                                                        className="wb-p-course-item border-bottom"
+                                                        onClick={() => navigate("/Courses/" + course.code)}
+                                                    >
+                                                        <div className="wb-p-course-item__img">
+                                                            <img
+                                                                src={course.coverImageUrl || "/resources/images/logoicon.svg"}
+                                                                alt={course.title}
+                                                            />
+                                                        </div>
+                                                        <div className="wb-p-course-item__info">
+                                                            <span className="wb-p-course-item__title">{course.title}</span>
+                                                            <Badge
+                                                                bg={course.completed ? "success" : "info"}
+                                                                text={course.completed ? undefined : "dark"}
+                                                                className="wb-p-course-item__badge"
+                                                            >
+                                                                {course.completed ? "Completed" : "In Progress"}
+                                                            </Badge>
+                                                        </div>
+                                                        <span className="wb-p-course-item__participants text-muted">
+                                                            <FaUsers size={12} /> {course.participants}
+                                                        </span>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="wb-p-section__empty">
+                                                    <p>No courses enrolled yet</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {isCurrentUser && (
+                                            <div className="wb-p-section__footer">
+                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Courses")}>
+                                                    Browse Courses
+                                                </Button>
+                                            </div>
+                                        )}
+                                    </Card>
+                                )}
+                            </div>
+                        </div>
                     </Container>
                 </>
             ) : (

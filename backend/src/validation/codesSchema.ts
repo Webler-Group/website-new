@@ -39,7 +39,7 @@ export const editCodeSchema = z.object({
         codeId: idSchema("codeId"),
         name: titleSchema,
         isPublic: z.boolean("isPublic must be a boolean"),
-        source: z.string(),
+        source: z.string().min(1, "Source code is required"),
         cssSource: z.string(),
         jsSource: z.string()
     })
@@ -93,7 +93,7 @@ export const deleteCodeCommentSchema = z.object({
 export const createJobSchema = z.object({
     body: z.object({
         language: compilerLanguageSchema,
-        source: z.string(),
+        source: z.string().min(1, "Source code is required"),
         stdin: z.string().optional()
     })
 });
