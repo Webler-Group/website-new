@@ -92,7 +92,16 @@
 
 @media (max-width: 768px) {
     .wb-comments-footer-btn {
-        padding: 8px 4px; /* Increased touch target for mobile */
+        padding: 4px 2px;
+    }
+
+    .wb-comment-item {
+        padding: 8px;
+        margin-bottom: 2px;
+    }
+
+    .wb-comment-node {
+        margin-bottom: 8px !important;
     }
 }
 

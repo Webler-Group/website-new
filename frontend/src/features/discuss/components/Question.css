@@ -48,6 +48,20 @@
     border-bottom: none !important;
 }
 
+.wb-question-date {
+    font-size: 0.72rem;
+}
+
+.wb-question-user-meta {
+    max-width: 40%;
+}
+
+.wb-question-user-meta .wb-profile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 576px) {
     .wb-question-item {
@@ -60,6 +74,6 @@
     }
 
     .wb-question-date {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
     }
 }

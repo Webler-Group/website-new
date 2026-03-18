@@ -39,7 +39,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
             <Container>
                 <div className="row mt-2" style={{ minHeight: "100vh" }}>
                     <div className="col-12 col-md-8">{MainPage}</div>
-                    <div className="col-12 col-md-4">
+                    <div className="col-12 col-md-4 mb-4">
                         <div className="wb-codes-sidebar-card">
                             <div className="wb-codes-sidebar-header">
                                 <span className="text-danger"><FaFire /></span>

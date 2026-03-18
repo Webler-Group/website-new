@@ -39,7 +39,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
                 <Container>
                     <div className="row pt-2" style={{ minHeight: "100vh" }}>
                         <div className="col-12 col-md-8">{MainPage}</div>
-                        <div className="col-12 col-md-4">
+                        <div className="col-12 col-md-4 mb-4">
                             <div className="wb-discuss-sidebar-card">
                                 <div className="wb-discuss-sidebar-header">
                                     <span className="text-danger"><FaFire /></span>

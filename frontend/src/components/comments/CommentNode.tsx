@@ -117,7 +117,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
     }
 
     return (
-        <div className="mb-4 position-relative" ref={ref}>
+        <div className="mb-4 position-relative wb-comment-node" ref={ref}>
             <Comment
                 comment={comment}
                 repliesVisible={repliesVisible}

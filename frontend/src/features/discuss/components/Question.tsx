@@ -25,62 +25,50 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
     let body = (
         <div className={`wb-question-item border-bottom bg-white d-flex ${isCompact ? "p-2 compact" : "py-2"}`}>
             <div className="flex-grow-1 min-width-0">
-                <Link to={"/Discuss/" + question.id}>
-                    <b className="text-dark d-block text-truncate" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem", wordBreak: "break-word" }}>{title}</b>
+                <Link to={"/Discuss/" + question.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>
+                    <b>{title}</b>
                 </Link>
-                
-                {!isCompact && (
-                    <div className="d-flex flex-wrap mt-2">
-                        {
-                            question.tags.map((tag, idx) => {
-                                return (
-                                    <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
-                                )
-                            })
-                        }
+
+                {!isCompact && question.tags.length > 0 && (
+                    <div className="d-flex flex-wrap mt-1">
+                        {question.tags.map((tag, idx) => (
+                            <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
+                        ))}
                     </div>
                 )}
 
-                <div className={`d-flex small gap-3 text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
-                    <div className="d-flex align-items-center gap-1 opacity-75">
+                <div className={`d-flex align-items-center gap-2 small text-secondary opacity-75 ${isCompact ? "mt-1" : "mt-2"}`}>
+                    <div className="d-flex align-items-center gap-1">
                         <FaThumbsUp size={isCompact ? 10 : 12} />
-                        <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.votes}</span>
+                        <span>{question.votes}</span>
                     </div>
-                    <div className="d-flex align-items-center gap-1 opacity-75">
+                    <div className="d-flex align-items-center gap-1">
                         <FaComment size={isCompact ? 10 : 12} />
-                        <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.answers}</span>
+                        <span>{question.answers}</span>
                     </div>
-                    {
-                        showUserProfile === false &&
-                        <div>
-                            <span style={{ fontSize: "0.75rem" }}>{DateUtils.format2(new Date(question.date!))}</span>
-                        </div>
-                    }
+                    {!showUserProfile && (
+                        <span className="wb-question-date ms-1">{DateUtils.format(new Date(question.date))}</span>
+                    )}
                 </div>
             </div>
-            {
-                showUserProfile && isUser(question.user) &&
-                <div className="wb-question-user-meta d-flex justify-content-end align-items-center mt-2">
-                    <div className="text-end">
-                        <div className="wb-question-date">
-                            <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
-                        </div>
-                        <div className="d-flex justify-content-end">
-                            <ProfileName userId={question.user.id} userName={question.user.name} />
-                        </div>
-                    </div>
-                    <div className="ms-2 flex-shrink-0">
-                        <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
+
+            {/* Right: date + name + avatar */}
+            {showUserProfile && isUser(question.user) && (
+                <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-question-user-meta">
+                    <small className="text-muted wb-question-date">{DateUtils.format(new Date(question.date))}</small>
+                    <div className="d-flex align-items-center gap-1 mt-1">
+                        <ProfileName userId={question.user.id} userName={question.user.name} />
+                        <ProfileAvatar size={isCompact ? 24 : 28} avatarUrl={question.user.avatarUrl} />
                     </div>
                 </div>
-            }
+            )}
         </div>
     );
 
     const content = ref ?
-        <div ref={ref}>{body}</div>
+        <div ref={ref} className="min-width-0 overflow-hidden">{body}</div>
         :
-        <div>{body}</div>
+        <div className="min-width-0 overflow-hidden">{body}</div>
     return content;
 });
 

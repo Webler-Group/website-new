@@ -2,7 +2,7 @@ import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import { languagesInfo } from '../../../data/compilerLanguages';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import "./Code.css";
 import { CodeMinimal } from '../types';
 import { isUser, UserMinimal } from '../../profile/types';
@@ -29,8 +29,7 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
         if ((e.target as HTMLElement).closest("a")) {
             return;
         }
-
-        if(onClick) {
+        if (onClick) {
             onClick();
         } else {
             navigate("/Compiler-Playground/" + code.id);
@@ -38,47 +37,45 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
     }
 
     const body = (
-        <div className={`wb-codes-item border-bottom d-flex align-items-center gap-3 ${isCompact ? "p-2 compact" : "py-2 px-3"} ${selected ? "selected" : ""}`} onClick={handleClick}>
-            {/* Left Side: Avatar */}
-            {isUser(code.user) && (
-                <div className="flex-shrink-0">
-                    <ProfileAvatar size={isCompact ? 32 : 38} avatarUrl={code.user.avatarUrl} />
-                </div>
-            )}
+        <div className={`wb-codes-item border-bottom bg-white d-flex align-items-start ${isCompact ? "p-2 compact" : "py-2"} ${selected ? "selected" : ""}`} onClick={handleClick}>
+            {/* Left: title + language + stats */}
+            <div className="flex-grow-1 min-width-0">
+                <Link to={"/Compiler-Playground/" + code.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>
+                    <b>{title}</b>
+                </Link>
 
-            {/* Content Area */}
-            <div className="flex-grow-1 min-width-0 d-flex flex-column gap-1">
-                {/* Row 1: Title & Timestamp */}
-                <div className="d-flex justify-content-between align-items-start gap-2">
-                    <b className="text-dark text-truncate" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</b>
-                    <span className="text-muted flex-shrink-0 wb-code-timestamp">
-                        {DateUtils.format(new Date(code.updatedAt || code.createdAt!))}
-                    </span>
-                </div>
-
-                {/* Row 2: Username · Language · Stats */}
-                <div className="d-flex align-items-center flex-wrap gap-2 wb-code-meta">
-                    {isUser(code.user) && !isCompact && (
-                        <ProfileName userId={code.user.id} userName={code.user.name} />
-                    )}
+                <div className={`d-flex align-items-center gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
                     <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>
                         {languagesInfo[code.language]?.displayName || code.language}
                     </span>
-                    <span className="d-flex align-items-center gap-1">
-                        <FaThumbsUp size={11} />
+                    <div className="d-flex align-items-center gap-1 opacity-75">
+                        <FaThumbsUp size={isCompact ? 10 : 11} />
                         <span>{code.votes}</span>
-                    </span>
-                    <span className="d-flex align-items-center gap-1">
-                        <FaComment size={11} />
+                    </div>
+                    <div className="d-flex align-items-center gap-1 opacity-75">
+                        <FaComment size={isCompact ? 10 : 11} />
                         <span>{code.comments}</span>
-                    </span>
+                    </div>
                     {code.isPublic === false && <FaLock size={11} className="text-warning" />}
                 </div>
             </div>
+
+            {/* Right: date + name + avatar */}
+            {isUser(code.user) && (
+                <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-codes-user-meta">
+                    <small className="text-muted wb-code-timestamp">{DateUtils.format(new Date(code.updatedAt || code.createdAt!))}</small>
+                    {!isCompact && (
+                        <div className="d-flex align-items-center gap-1 mt-1">
+                            <ProfileName userId={code.user.id} userName={code.user.name} />
+                            <ProfileAvatar size={28} avatarUrl={code.user.avatarUrl} />
+                        </div>
+                    )}
+                </div>
+            )}
         </div>
     );
 
-    return ref ? <div ref={ref}>{body}</div> : <div>{body}</div>;
+    return ref ? <div ref={ref} className="min-width-0 overflow-hidden">{body}</div> : <div className="min-width-0 overflow-hidden">{body}</div>;
 });
 
 export default Code;

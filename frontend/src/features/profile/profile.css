@@ -127,6 +127,10 @@
     align-items: start;
 }
 
+.wb-p-grid__col {
+    min-width: 0;
+}
+
 @media (max-width: 640px) {
     .wb-p-grid {
         grid-template-columns: 1fr;
