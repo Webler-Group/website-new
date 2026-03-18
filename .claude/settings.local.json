@@ -1,7 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(find c:UsersfirstOneDriveDocumentsprojectswebwebsite-newfrontendsrcfeaturesprofile -type f -name *.tsx -o -name *.ts)"
-    ]
-  }
-}
