@@ -1,0 +1,279 @@
+.wb-challenge-header {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+}
+
+.wb-challenge-table-container {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #eee;
+    overflow: hidden;
+}
+
+.wb-challenge-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+}
+
+.wb-challenge-table thead th {
+    background: #fff;
+    border-bottom: 2px solid #eee;
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    color: #333;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.wb-challenge-table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.wb-challenge-table tbody tr:hover {
+    background-color: #fcfcfc !important;
+}
+
+.wb-challenge-table tbody td {
+    padding: 10px 16px;
+    border-top: 1px solid #f2f2f2;
+}
+
+.wb-table-title {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.wb-table-title:hover {
+    color: #0d6efd;
+}
+
+.wb-challenge-difficulty-mini {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    min-width: 60px;
+}
+
+.text-light-grey {
+    color: #ccc;
+}
+
+.wb-icon-amber {
+    color: #ffb800;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+/* Column Widths */
+.wb-col-status { width: 60px; }
+.wb-col-title { min-width: 150px; }
+.wb-col-id { width: 60px; }
+.wb-col-sol { width: 100px; }
+.wb-col-acc { width: 110px; }
+.wb-col-diff { width: 110px; }
+
+@media (max-width: 768px) {
+    .wb-challenge-table thead th,
+    .wb-challenge-table tbody td {
+        padding: 8px 10px;
+    }
+    
+    .wb-col-status { width: 40px; }
+    .wb-col-diff { width: 90px; }
+    
+    .wb-table-title {
+        font-size: 0.9rem;
+    }
+    
+    .wb-challenge-difficulty-mini {
+        min-width: 50px;
+        padding: 3px 6px;
+        font-size: 0.65rem;
+    }
+
+    .wb-challenge-table-container {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+/* Desktop Specific Detail Header */
+.wb-challenge-details-header {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 24px;
+    border: 1px solid #eee;
+    margin-bottom: 24px;
+}
+
+.wb-challenge-lang-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.wb-challenge-details-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.wb-challenge-breadcrumb {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 1rem;
+}
+
+.wb-challenge-breadcrumb a {
+    color: var(--bs-primary);
+    text-decoration: none;
+}
+
+.wb-challenge-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+/* Premium Redesign Classes */
+
+.wb-challenge-hero {
+    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    border-radius: 12px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+}
+@media (max-width: 768px) {
+    .wb-challenge-hero {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+}
+
+.wb-difficulty-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wb-xp-badge {
+    background: rgba(255, 184, 0, 0.1);
+    color: #b38100;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wb-challenge-tabs {
+    display: flex;
+    gap: 30px;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 30px;
+}
+
+.wb-challenge-tab-item {
+    padding: 12px 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: #666;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.wb-challenge-tab-item:hover {
+    color: #333;
+}
+
+.wb-challenge-tab-item.active {
+    color: var(--bs-primary);
+}
+
+.wb-challenge-tab-item.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bs-primary);
+    border-radius: 2px;
+}
+
+.wb-stat-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.06);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.wb-solve-card {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.1);
+    padding: 24px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+}
+
+.wb-solve-card select {
+    border: 1px solid #ced4da;
+    height: 48px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    padding: 0 15px;
+}
+
+.wb-solve-card .btn-primary {
+    height: 48px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(13, 110, 253, 0.2);
+}
+
+.wb-sidebar-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.wb-sidebar-stat-item:not(:last-child) {
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.wb-sidebar-stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.wb-sidebar-stat-value {
+    font-weight: 600;
+    color: #212529;
+    font-size: 0.9rem;
+}

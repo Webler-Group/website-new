@@ -18,6 +18,7 @@ router.route("/GetChallengeCode").post(ChallengeController.getChallengeCode);
 router.route("/SaveChallengeCode").post(ChallengeController.saveChallengeCode);
 router.route("/CreateChallengeJob").post(ChallengeController.createChallengeJob);
 router.route("/GetChallengeJob").post(ChallengeController.getChallengeJob);
+router.route("/UnlockSolution").post(ChallengeController.unlockChallengeSolution);
 
 router.use(requireRoles([RolesEnum.ADMIN, RolesEnum.CREATOR]));
 

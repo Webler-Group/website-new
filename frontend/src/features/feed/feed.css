@@ -71,6 +71,14 @@
     cursor: pointer;
     font-size: 0.85rem;
     font-weight: 600;
+    border-radius: 4px; /* Added for better hover/active states */
+}
+
+@media (max-width: 768px) {
+    .wb-feed-action-btn,
+    .wb-reaction-picker-btn {
+        padding: 8px 12px; /* Increased for mobile touch targets */
+    }
 }
 
 .wb-feed-action-btn:hover,

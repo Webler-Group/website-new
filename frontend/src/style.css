@@ -1,3 +1,7 @@
+.min-width-0 {
+    min-width: 0;
+}
+
 ul,
 p {
     margin: 0;
@@ -52,6 +56,12 @@ ul {
     cursor: pointer;
     color: silver;
     padding: 0 4px;
+}
+
+@media (max-width: 768px) {
+    .wb-icon-button {
+        padding: 6px 8px; /* Balanced mobile touch target */
+    }
 }
 
 .wb-icon-button:hover {
@@ -245,4 +255,14 @@ ul {
     align-items: center;
     justify-content: center;
     margin: 160px auto;
+}
+
+.offcanvas.wb-comments-offcanvas {
+    --bs-offcanvas-width: 100% !important;
+}
+
+@media(min-width: 768px) {
+    .offcanvas.wb-comments-offcanvas {
+        --bs-offcanvas-width: 50% !important;
+    }
 }

@@ -5,6 +5,7 @@ import Code from "../components/Code";
 import { Helmet } from "react-helmet-async";
 import { CodeMinimal, CodesListData } from "../types";
 import { UserMinimal } from "../../profile/types";
+import { FaFire } from "react-icons/fa";
 
 interface CodesLayoutProps {
     MainPage: ReactNode
@@ -38,18 +39,32 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
             <Container>
                 <div className="row mt-2" style={{ minHeight: "100vh" }}>
                     <div className="col-12 col-md-8">{MainPage}</div>
-                    <div className="col-12 col-md-4">
-                        <h2>Hot today</h2>
-                        <div className="my-3">
-                            {
-                                codes.map(code => {
-                                    return (
-                                        <div key={code.id}>
-                                            <Code code={code} searchQuery="" showUserProfile={false} />
-                                        </div>
-                                    );
-                                })
-                            }
+                    <div className="col-12 col-md-4 mb-4">
+                        <div className="wb-codes-sidebar-card">
+                            <div className="wb-codes-sidebar-header">
+                                <span className="text-danger"><FaFire /></span>
+                                <h5>Hot today</h5>
+                            </div>
+                            <div className="wb-codes-sidebar-content">
+                                {
+                                    codes.map(code => {
+                                        return (
+                                            <div key={code.id}>
+                                                <Code 
+                                                    code={code} 
+                                                    searchQuery="" 
+                                                    variant="compact"
+                                                />
+                                            </div>
+                                        );
+                                    })
+                                }
+                                {codes.length === 0 && (
+                                    <div className="p-4 text-center text-muted">
+                                        <small>No trending codes yet</small>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

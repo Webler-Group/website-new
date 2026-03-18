@@ -1,0 +1,79 @@
+.wb-question-item {
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.wb-question-item:hover {
+    background-color: #fafbfc !important;
+}
+
+.wb-question-item a {
+    text-decoration: none;
+}
+
+.wb-question-item a:hover b {
+    color: #007bff !important;
+}
+
+/* Sidebar Specific */
+.wb-discuss-sidebar-card {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.08);
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+.wb-discuss-sidebar-header {
+    padding: 16px 20px;
+    background: #fcfcfc;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wb-discuss-sidebar-header h5 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #212529;
+}
+
+.wb-question-item.compact {
+    padding: 12px 16px !important;
+}
+
+.wb-question-item.compact:last-child {
+    border-bottom: none !important;
+}
+
+.wb-question-date {
+    font-size: 0.72rem;
+}
+
+.wb-question-user-meta {
+    max-width: 40%;
+}
+
+.wb-question-user-meta .wb-profile-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 576px) {
+    .wb-question-item {
+        padding: 12px 0;
+    }
+
+    .wb-question-item b {
+        font-size: 0.95rem !important;
+        line-height: 1.3;
+    }
+
+    .wb-question-date {
+        font-size: 0.68rem;
+    }
+}

@@ -41,10 +41,11 @@
 
 
 .wb-compiler-playground-voting {
-    min-width: 35px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    gap: 4px;
+    padding: 0 6px;
 }
 
 .wb-compiler-playground-voting__button {
@@ -57,10 +58,11 @@
 }
 
 .wb-compiler-playground-comments {
-    min-width: 35px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
+    gap: 4px;
+    padding: 0 6px;
 }
 
 .wb-compiler-playground-public {

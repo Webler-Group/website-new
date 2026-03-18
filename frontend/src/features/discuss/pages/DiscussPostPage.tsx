@@ -380,97 +380,84 @@ const DiscussPostPage = () => {
                     <span>&rsaquo;</span>
                     <span>{truncate(question.title, 20)}</span>
                 </div>
-                <div className="mb-3 d-flex flex-column position-relative">
-                    <div className="wb-edit-button">
-                        <Dropdown drop="start">
-                            <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                            <Dropdown.Menu>
-                                {
-                                    userInfo &&
-                                    <>
-                                        {
-                                            (question && question.user.id === userInfo.id) &&
-                                            <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                                                <Dropdown.Item>Edit</Dropdown.Item>
-                                            </LinkContainer>
-                                        }
-                                        <Dropdown.Item onClick={handleFollowQuestion}>
+                <div className="wb-discuss-post mb-4">
+                    {/* Title row */}
+                    <div className="d-flex align-items-start gap-2 mb-2">
+                        <h2 className="wb-discuss-post__title flex-grow-1">{question.title}</h2>
+                        <div className="flex-shrink-0">
+                            <Dropdown drop="start">
+                                <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                <Dropdown.Menu>
+                                    {
+                                        userInfo &&
+                                        <>
                                             {
-                                                question.isFollowed ?
-                                                    "Unfollow"
-                                                    :
-                                                    "Follow"
+                                                (question && question.user.id === userInfo.id) &&
+                                                <LinkContainer to={"/Discuss/Edit/" + questionId}>
+                                                    <Dropdown.Item>Edit</Dropdown.Item>
+                                                </LinkContainer>
                                             }
-                                        </Dropdown.Item>
-                                    </>
-                                }
-                                <Dropdown.Item
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(window.location.href);
-                                    }}
-                                >
-                                    Share
-                                </Dropdown.Item>
-                                {
-                                    userInfo && (isPriviledged || (question && question.user.id === userInfo.id)) &&
-                                    <Dropdown.Item onClick={() => openDeleteModal(true)}>Delete</Dropdown.Item>
-                                }
-                            </Dropdown.Menu>
-                        </Dropdown>
-                    </div>
-
-                    <div className="d-flex gap-2">
-                        <div className="d-flex flex-column align-items-center">
-                            <div className="wb-discuss-voting">
-                                <span onClick={voteQuestion} className={"wb-icon-button" + (question.isUpvoted ? " text-black" : "")}>
-                                    <FaThumbsUp />
-                                </span>
-                                <b className="wb-icon-button text-black" onClick={handleShowVoters}>{question.votes}</b>
-                            </div>
-                            <div>
-                                <span className={question.isFollowed ? "text-warning" : "text-secondary"}>
-                                    <FaStar />
-                                </span>
-                            </div>
-                        </div>
-
-                        <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: "0" }}>
-                            <h3 className="wb-discuss-question__title">{question.title}</h3>
-                            <div className="d-flex mb-1 flex-wrap gap-1">
-                                {
-                                    question.tags.map((tag, idx) => {
-                                        return (
-                                            <WeblerBadge key={idx} name={tag} state="neutral" />
-                                        )
-                                    })
-                                }
-                            </div>
-                            <div className="mt-1">
-                                <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
-                            </div>
-                            <div className="mt-1">
-                                {
-                                    question.attachments.map(attachment => {
-                                        return (
-                                            <div key={attachment.id} className="mt-1">
-                                                <PostAttachment data={attachment} />
-                                            </div>
-                                        )
-                                    })
-                                }
-                            </div>
+                                            <Dropdown.Item onClick={handleFollowQuestion}>
+                                                {question.isFollowed ? "Unfollow" : "Follow"}
+                                            </Dropdown.Item>
+                                        </>
+                                    }
+                                    <Dropdown.Item onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                                        Share
+                                    </Dropdown.Item>
+                                    {
+                                        userInfo && (isPriviledged || (question && question.user.id === userInfo.id)) &&
+                                        <Dropdown.Item onClick={() => openDeleteModal(true)}>Delete</Dropdown.Item>
+                                    }
+                                </Dropdown.Menu>
+                            </Dropdown>
                         </div>
                     </div>
-                    <div className="d-flex justify-content-end mt-2 align-items-center gap-2">
-                        <div>
-                            <div>
-                                <small>{DateUtils.format(new Date(question.date))}</small>
+
+                    {/* Tags */}
+                    {question.tags.length > 0 && (
+                        <div className="d-flex flex-wrap gap-1 mb-3">
+                            {question.tags.map((tag, idx) => (
+                                <WeblerBadge key={idx} name={tag} state="neutral" />
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Body */}
+                    <div className="wb-discuss-post__body">
+                        <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
+                        {question.attachments.map(attachment => (
+                            <div key={attachment.id} className="mt-2">
+                                <PostAttachment data={attachment} />
                             </div>
-                            <div className="d-flex justify-content-end">
+                        ))}
+                    </div>
+
+                    {/* Footer: votes + author */}
+                    <div className="wb-discuss-post__footer d-flex align-items-center justify-content-between mt-3 pt-3">
+                        <div className="d-flex align-items-center gap-3">
+                            <button
+                                className={"wb-discuss-vote-btn" + (question.isUpvoted ? " active" : "")}
+                                onClick={voteQuestion}
+                            >
+                                <FaThumbsUp size={13} />
+                                <span onClick={(e) => { e.stopPropagation(); handleShowVoters(); }}>{question.votes}</span>
+                            </button>
+                            <button
+                                className={"wb-discuss-follow-btn" + (question.isFollowed ? " active" : "")}
+                                onClick={handleFollowQuestion}
+                            >
+                                <FaStar size={13} />
+                                <span>{question.isFollowed ? "Following" : "Follow"}</span>
+                            </button>
+                        </div>
+                        <div className="d-flex align-items-center gap-2">
+                            <ProfileAvatar size={30} avatarUrl={question.user.avatarUrl} />
+                            <div>
                                 <ProfileName userId={question.user.id} userName={question.user.name} />
+                                <div className="wb-discuss-post__date">{DateUtils.format(new Date(question.date))}</div>
                             </div>
                         </div>
-                        <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
                     </div>
                 </div>
                 {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
@@ -503,15 +490,15 @@ const DiscussPostPage = () => {
                         </div>
                     </Form>
                 </div>
-                <div className="d-flex">
-                    <h4>{question.answers} Answers</h4>
-                </div>
-                <div className="d-flex justify-content-between">
-                    <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
-                        <option value="1">Sort by: Votes</option>
-                        <option value="2">Sort by: Date</option>
-                    </Form.Select>
-                    <Button size="sm" variant="primary" className="ms-2" onClick={() => showAnswerForm("", null)}>Answer</Button>
+                <div className="d-flex align-items-center justify-content-between py-2">
+                    <h5 className="mb-0 fw-semibold">{question.answers} {question.answers === 1 ? "Answer" : "Answers"}</h5>
+                    <div className="d-flex align-items-center gap-2">
+                        <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                            <option value="1">Sort by: Votes</option>
+                            <option value="2">Sort by: Date</option>
+                        </Form.Select>
+                        <Button size="sm" variant="primary" onClick={() => showAnswerForm("", null)}>Answer</Button>
+                    </div>
                 </div>
                 <div className="mt-2 d-flex flex-column w-100">
                     {

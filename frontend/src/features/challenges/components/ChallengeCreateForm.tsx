@@ -25,6 +25,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [templates, setTemplates] = useState<ChallengeTemplate[]>([]);
     const [xp, setXP] = useState(10);
     const [isVisible, setIsVisible] = useState(true);
+    const [solution, setSolution] = useState("");
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -46,6 +47,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setTemplates(result.data.challenge.templates);
             setXP(result.data.challenge.xp);
             setIsVisible(result.data.challenge.isPublic);
+            setSolution(result.data.challenge.solution ?? "");
         }
         setLoading(false);
     }
@@ -58,12 +60,13 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             testCases,
             templates,
             xp,
-            isVisible: isVisible ? 1 : 0
+            isVisible: isVisible ? 1 : 0,
+            solution
         });
         if (result.data) {
             showMessage(`Challenge created Successfully`);
 
-            navigate("/Challenge/" + result.data.challege.id);
+            navigate("/Challenge/" + result.data.challenge.id);
         } else {
             setError(result.error?.[0].message ?? "Something went wrong");
         }
@@ -78,7 +81,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             testCases,
             templates,
             xp,
-            isVisible: isVisible ? 1 : 0
+            isVisible: isVisible ? 1 : 0,
+            solution
         });
         if (result.data) {
             showMessage(`Challenge updated Successfully`);
@@ -128,6 +132,21 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         text={description}
                         setText={setDescription}
                         placeHolder="Describe the challenge..."
+                        row={10}
+                        isPost={false}
+                    />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
+                    <Form.Label>
+                        <FaAlignLeft className="me-2" /> Solution (Markdown)
+                    </Form.Label>
+                    <MdEditorField
+                        section="CourseEditor"
+                        rootAlias="lesson-images"
+                        text={solution}
+                        setText={setSolution}
+                        placeHolder="Provide a solution or explanation..."
                         row={10}
                         isPost={false}
                     />

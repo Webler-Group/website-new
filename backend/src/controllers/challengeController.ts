@@ -3,16 +3,18 @@ import ChallengeModel, { Challenge, TestCase } from "../models/Challenge";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import asyncHandler from "express-async-handler";
 import { escapeRegex } from "../utils/regexUtils";
-import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, getChallengeCodeSchema, getChallengeJobSchema, getChallengeListSchema, getChallengeSchema, saveChallengeCodeSchema } from "../validation/challengeSchema";
+import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, getChallengeCodeSchema, getChallengeJobSchema, getChallengeListSchema, getChallengeSchema, saveChallengeCodeSchema, unlockChallengeSolutionSchema } from "../validation/challengeSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
 import EvaluationJobModel from "../models/EvaluationJob";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
+import ChallengeUnlockModel from "../models/ChallengeUnlock";
 import RolesEnum from "../data/RolesEnum";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import UserModel from "../models/User";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -45,6 +47,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         xp,
         isPublic: Number(isVisible) === 1,
         author: currentUserId,
+        solution: body.solution
     });
 
     res.json({ success: true, data: { challenge: { id: challenge._id } } });
@@ -92,24 +95,33 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
     const [total, challenges] = await Promise.all([
         ChallengeModel.countDocuments(challengeQuery),
         ChallengeModel.find(challengeQuery)
-            .select({ title: 1, difficulty: 1 })
+            .select("title difficulty totalSubmissions passedSubmissions solution")
             .skip((page - 1) * count)
             .limit(count)
             .lean()
     ]);
 
     let submissionsMap = new Map<string, SubmissionEntry[]>();
+    let unlockedMap = new Map<string, boolean>();
 
     if (userId && challenges.length) {
         const ids = challenges.map(c => c._id);
 
-        const subs = await ChallengeSubmissionModel.find({
-            challenge: { $in: ids },
-            user: userId,
-            passed: true
-        })
-            .select({ challenge: 1, language: 1, passed: 1 })
-            .lean();
+        const [subs, unlocks] = await Promise.all([
+            ChallengeSubmissionModel.find({
+                challenge: { $in: ids },
+                user: userId,
+                passed: true
+            })
+                .select({ challenge: 1, language: 1, passed: 1 })
+                .lean(),
+            ChallengeUnlockModel.find({
+                challenge: { $in: ids },
+                user: userId
+            })
+                .select({ challenge: 1 })
+                .lean()
+        ]);
 
         const tmp = new Map<string, Map<string, SubmissionEntry>>();
 
@@ -122,14 +134,29 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         submissionsMap = new Map(
             Array.from(tmp.entries()).map(([k, v]) => [k, Array.from(v.values())])
         );
+
+        for (const u of unlocks) {
+            unlockedMap.set(String(u.challenge), true);
+        }
     }
 
-    const data = challenges.map(c => ({
-        id: c._id,
-        title: c.title,
-        difficulty: c.difficulty,
-        submissions: userId ? submissionsMap.get(String(c._id)) ?? [] : undefined
-    }));
+    const data = challenges.map(c => {
+        const total = c.totalSubmissions ?? 0;
+        const passedCount = c.passedSubmissions ?? 0;
+        const acceptance = total > 0 ? (passedCount / total) * 100 : 0;
+        
+        return {
+            id: c._id,
+            title: c.title,
+            difficulty: c.difficulty,
+            acceptance: Number(acceptance.toFixed(1)),
+            isSolved: userId ? !!submissionsMap.get(String(c._id)) : false,
+            isUnlocked: userId ? !!unlockedMap.get(String(c._id)) : false,
+            hasSolution: !!(c as any).solution && (c as any).solution.trim().length > 0,
+            submissions: userId ? submissionsMap.get(String(c._id)) : undefined,
+            totalSubmissions: total
+        };
+    });
 
     res.json({
         success: true,
@@ -143,6 +170,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
 const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeSchema, req);
     const { challengeId } = body;
+    const userId = req.userId;
 
     const challenge = await ChallengeModel.findById(challengeId).lean();
 
@@ -155,11 +183,17 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Challenge not found", 404);
     }
 
-    const submissions = await ChallengeSubmissionModel.aggregate<SubmissionEntry>([
-        { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(req.userId), passed: true } },
-        { $group: { _id: "$language", passed: { $max: "$passed" } } },
-        { $project: { language: "$_id", passed: 1, _id: 0 } }
+    const [submissions, hasUnlocked] = await Promise.all([
+        ChallengeSubmissionModel.aggregate<SubmissionEntry>([
+            { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(userId), passed: true } },
+            { $group: { _id: "$language", passed: { $max: "$passed" } } },
+            { $project: { language: "$_id", passed: 1, _id: 0 } }
+        ]),
+        userId ? ChallengeUnlockModel.exists({ challenge: challenge._id, user: userId }) : Promise.resolve(null)
     ]);
+
+    const isSolved = submissions.length > 0;
+    const showSolution = isSolved || hasUnlocked || isAuthorized;
 
     res.json({
         success: true,
@@ -169,6 +203,7 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 description: challenge.description,
                 difficulty: challenge.difficulty,
                 xp: challenge.xp ?? 0,
+                totalSubmissions: challenge.totalSubmissions ?? 0,
                 title: challenge.title,
                 testCases: (challenge.testCases as (TestCase & { _id: Types.ObjectId })[]).map((x) => (x.isHidden ?
                     {
@@ -181,10 +216,34 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                         expectedOutput: x.expectedOutput,
                         isHidden: x.isHidden
                     })),
-                submissions
+                submissions,
+                solution: showSolution ? (challenge.solution ?? "") : null,
+                isUnlocked: !!hasUnlocked
             }
         }
     });
+});
+
+const unlockChallengeSolution = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(unlockChallengeSolutionSchema, req);
+    const { challengeId } = body;
+    const userId = req.userId;
+
+    if (!userId) {
+        throw new HttpError("User not found", 401);
+    }
+
+    const challenge = await ChallengeModel.findById(challengeId).lean();
+    if (!challenge) {
+        throw new HttpError("Challenge not found", 404);
+    }
+
+    const alreadyUnlocked = await ChallengeUnlockModel.exists({ challenge: challengeId, user: userId });
+    if (!alreadyUnlocked) {
+        await ChallengeUnlockModel.create({ challenge: challengeId, user: userId });
+    }
+
+    res.json({ success: true });
 });
 
 const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -293,6 +352,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
                 title: challenge.title,
                 xp: challenge.xp ?? 0,
                 isPublic: challenge.isPublic ?? true,
+                solution: challenge.solution ?? "",
                 templates: challenge.templates.map(x => ({
                     name: x.name,
                     source: x.source
@@ -324,6 +384,7 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.templates = templates;
     challenge.xp = xp;
     challenge.isPublic = Number(isVisible) === 1;
+    challenge.solution = body.solution ?? "";
 
     await challenge.save();
     res.json({
@@ -336,7 +397,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             testCases: challenge.testCases,
             templates: challenge.templates,
             xp: challenge.xp,
-            isPublic: challenge.isPublic
+            isPublic: challenge.isPublic,
+            solution: challenge.solution
         }
     });
 });
@@ -425,7 +487,8 @@ const ChallengeController = {
     getChallengeCode,
     saveChallengeCode,
     createChallengeJob,
-    getChallengeJob
+    getChallengeJob,
+    unlockChallengeSolution
 };
 
 export default ChallengeController;
