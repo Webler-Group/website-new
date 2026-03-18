@@ -32,7 +32,7 @@ export interface ChallengeDetails {
 export interface ChallengeMinimal {
     id: string;
     title: string;
-    difficulty: "easy" | "medium" | "hard";
+    difficulty: ChallengeDifficultyEnum;
     acceptance?: number;
     isSolved?: boolean;
     isUnlocked?: boolean;

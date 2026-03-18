@@ -42,9 +42,9 @@ const CodesSection = ({ userId, onClose }: CodesSectionProps) => {
             <div key={code.id}>
                 {
                     results.length === i + 1 ?
-                        <Code ref={lastCodeRef} code={code} searchQuery="" showUserProfile={false} />
+                        <Code ref={lastCodeRef} code={code} searchQuery="" />
                         :
-                        <Code code={code} searchQuery="" showUserProfile={false} />
+                        <Code code={code} searchQuery="" />
                 }
             </div>
         )
