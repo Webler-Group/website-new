@@ -4,6 +4,7 @@
     -webkit-user-select: none;
     -moz-user-select: none;
     background-color: #ffffff;
+    transition: background-color 0.2s ease;
 }
 
 .wb-codes-item.selected {
@@ -11,5 +12,15 @@
 }
 
 .wb-codes-item:hover {
-    background-color: #f1f3f4;
+    background-color: #f8f9fa;
+}
+
+.wb-language-chip {
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: white;
+    text-transform: uppercase;
+    display: inline-block;
 }
