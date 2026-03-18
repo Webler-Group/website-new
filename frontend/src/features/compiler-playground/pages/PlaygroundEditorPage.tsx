@@ -470,15 +470,6 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                             </div>
 
                             <div className="d-flex gap-2 align-items-center">
-                                <Button
-                                    size="sm"
-                                    variant="link"
-                                    className="text-dark position-relative"
-                                    onClick={handleCodeSearch}
-                                >
-                                    <FaSearch />
-                                </Button>
-
                                 {code.language === "web" && (
                                     <Button
                                         size="sm"
@@ -526,7 +517,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                             </div>
                                         </Dropdown.ItemText>
 
-                                        <Dropdown.ItemText className="border-bottom d-flex justify-content-between">
+                                        <Dropdown.ItemText className="d-flex justify-content-between">
                                             <div>Line Wrap</div>
                                             <input
                                                 type="checkbox"
@@ -534,6 +525,8 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                                 onChange={(e) => updateEditorOptions({ ...editorOptions, lineWrap: e.target.checked })}
                                             />
                                         </Dropdown.ItemText>
+
+                                        <Dropdown.Item className="border-bottom" onClick={handleCodeSearch}>Search</Dropdown.Item>
 
                                         {savedCode && (
                                             <>

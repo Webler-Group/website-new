@@ -218,7 +218,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                         <div className="d-flex justify-content-center mt-3">
                             <FormControl
                                 className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
-                                style={{ width: "120px" }}
+                                style={{ width: "240px" }}
                                 value={textAnswer}
                                 readOnly={isCorrect !== null}
                                 onChange={(e) => handleTextAnswer(e.target.value)}
