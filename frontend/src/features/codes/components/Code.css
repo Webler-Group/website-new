@@ -79,6 +79,10 @@
     font-size: 0.72rem;
 }
 
+.wb-codes-user-meta {
+    max-width: 40%;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 576px) {
     .wb-codes-item {

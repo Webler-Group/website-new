@@ -23,18 +23,14 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
     let title = question.title;
 
     let body = (
-        <div className={`wb-question-item border-bottom bg-white d-flex ${isCompact ? "p-2 compact" : "py-2"}`}>
-            {showUserProfile && isUser(question.user) && (
-                <div className="flex-shrink-0 me-2">
-                    <ProfileAvatar size={isCompact ? 28 : 32} avatarUrl={question.user.avatarUrl} />
-                </div>
-            )}
+        <div className={`wb-question-item border-bottom bg-white d-flex align-items-start ${isCompact ? "p-2 compact" : "py-2"}`}>
+            {/* Left: title + tags + stats */}
             <div className="flex-grow-1 min-width-0">
                 <Link to={"/Discuss/" + question.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>
                     <b>{title}</b>
                 </Link>
 
-                {!isCompact && (
+                {!isCompact && question.tags.length > 0 && (
                     <div className="d-flex flex-wrap mt-1">
                         {question.tags.map((tag, idx) => (
                             <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
@@ -42,25 +38,31 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
                     </div>
                 )}
 
-                <div className={`d-flex align-items-center gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
-                    <div className="d-flex align-items-center gap-2 flex-wrap" style={{ flex: "1 1 0", minWidth: 0 }}>
-                        {showUserProfile && isUser(question.user) && (
-                            <ProfileName userId={question.user.id} userName={question.user.name} />
-                        )}
-                        <div className="d-flex align-items-center gap-1 opacity-75">
-                            <FaThumbsUp size={isCompact ? 10 : 12} />
-                            <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.votes}</span>
-                        </div>
-                        <div className="d-flex align-items-center gap-1 opacity-75">
-                            <FaComment size={isCompact ? 10 : 12} />
-                            <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.answers}</span>
-                        </div>
+                <div className={`d-flex align-items-center gap-2 small text-secondary opacity-75 ${isCompact ? "mt-1" : "mt-2"}`}>
+                    <div className="d-flex align-items-center gap-1">
+                        <FaThumbsUp size={isCompact ? 10 : 12} />
+                        <span>{question.votes}</span>
                     </div>
-                    <span className="text-muted flex-shrink-0 wb-question-date">
-                        {DateUtils.format(new Date(question.date))}
-                    </span>
+                    <div className="d-flex align-items-center gap-1">
+                        <FaComment size={isCompact ? 10 : 12} />
+                        <span>{question.answers}</span>
+                    </div>
+                    {!showUserProfile && (
+                        <span className="wb-question-date ms-1">{DateUtils.format(new Date(question.date))}</span>
+                    )}
                 </div>
             </div>
+
+            {/* Right: date + name + avatar */}
+            {showUserProfile && isUser(question.user) && (
+                <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-question-user-meta">
+                    <small className="text-muted wb-question-date">{DateUtils.format(new Date(question.date))}</small>
+                    <div className="d-flex align-items-center gap-1 mt-1">
+                        <ProfileName userId={question.user.id} userName={question.user.name} />
+                        <ProfileAvatar size={isCompact ? 24 : 28} avatarUrl={question.user.avatarUrl} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 
