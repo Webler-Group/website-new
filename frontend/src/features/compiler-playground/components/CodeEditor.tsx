@@ -176,7 +176,6 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
         [code.language, editorByLang, options.scale, options.lineWrap, source, setSource]
     );
 
-    const codeChallenge = isCodeSaved(code) ? code.challenge : undefined;
 
     return (
         <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
@@ -215,11 +214,11 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                         title="output"
                         style={{ height: tabHeightStyle }}
                     >
-                        {codeChallenge != null ? (
+                        {challenge != null ? (
                             <ChallengeCodeOutput
                                 source={source}
                                 language={code.language}
-                                challenge={challenge!}
+                                challenge={challenge}
                                 submission={submission}
                             />
                         ) : code.language === "web" ? (

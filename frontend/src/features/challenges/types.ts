@@ -23,14 +23,22 @@ export interface ChallengeDetails {
   templates: ChallengeTemplate[];
   testCases: ChallengeTestCase[];
   submissions?: ChallengeSubmissionMinimal[];
+  totalSubmissions?: number;
   isPublic: boolean;
+  solution?: string;
+  isUnlocked?: boolean;
 }
 
 export interface ChallengeMinimal {
-  id: string;
-  title: string;
-  difficulty: ChallengeDifficultyEnum;
-  submissions?: ChallengeSubmissionMinimal[];
+    id: string;
+    title: string;
+    difficulty: "easy" | "medium" | "hard";
+    acceptance?: number;
+    isSolved?: boolean;
+    isUnlocked?: boolean;
+    hasSolution?: boolean;
+    submissions?: { language: string; passed: boolean }[];
+    totalSubmissions?: number;
 }
 
 export interface ChallengeTestResult {
@@ -54,12 +62,12 @@ export interface ChallengeJobDetails {
   id: string;
   deviceId: string;
   status: string;
-  langauge: CompilerLanguagesEnum;
+  language: CompilerLanguagesEnum;
   submission: ChallengeSubmissionDetails | null;
 }
 
 export interface CreateChallengeData {
-  challege: {
+  challenge: {
     id: string;
   }
 }
@@ -81,7 +89,7 @@ export interface GetChallengeCodeData {
 
 export interface SaveChallengeCodeData {
   id: string;
-  langauge: CompilerLanguagesEnum;
+  language: CompilerLanguagesEnum;
   createdAt: string;
   updatedAt: string;
   source: string;
@@ -96,11 +104,12 @@ export interface EditChallengeData {
   id: string;
   title: string;
   description: string;
-  difficlty: ChallengeDifficultyEnum;
+  difficulty: ChallengeDifficultyEnum;
   testCases: ChallengeTestCase[];
   templates: ChallengeTemplate[];
   xp: number;
   isPublic: boolean;
+  solution: string;
 }
 
 export interface CreateChallengeJobData {

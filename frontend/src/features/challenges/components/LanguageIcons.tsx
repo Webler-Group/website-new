@@ -9,21 +9,18 @@ interface LanguageIconsProps {
 const LanguageIcons = ({ challenge }: LanguageIconsProps) => {
     return (
         <div className="d-flex flex-wrap gap-2">
-            {Object.entries(languagesInfo).filter(([key]) => key != "web").map(([key, info]) => (
+            {Object.entries(languagesInfo).filter(([key]) => key !== "web").map(([key, info]) => (
                 <div
                     key={key}
-                    className="d-flex justify-content-center align-items-center rounded-circle text-light position-relative small"
-                    style={{
-                        backgroundColor: info.color,
-                        width: "32px",
-                        height: "32px"
-                    }}
+                    className="wb-challenge-lang-icon position-relative"
+                    style={{ backgroundColor: info.color }}
+                    title={info.displayName}
                 >
                     {info.shortName}
                     {challenge.submissions?.some(sub => sub.language === key && sub.passed) && (
                         <div
-                            className="position-absolute bottom-0 end-0 text-success"
-                            style={{ transform: "translate(25%, 25%)" }}>
+                            className="position-absolute bottom-0 end-0 text-success bg-white rounded-circle d-flex"
+                            style={{ transform: "translate(25%, 25%)", fontSize: "10px", padding: "1px" }}>
                             <FaCheckCircle />
                         </div>
                     )}

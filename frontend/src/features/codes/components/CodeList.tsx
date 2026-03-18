@@ -178,7 +178,6 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                                         <Code
                                             code={code}
                                             searchQuery={searchQuery}
-                                            showUserProfile={filter != 3}
                                             onClick={onCodeClick ? () => onCodeClick(code) : undefined}
                                             selected={isCodeSelected?.(code.id)} />
                                     </div>

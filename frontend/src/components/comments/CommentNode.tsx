@@ -117,7 +117,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
     }
 
     return (
-        <div className="mb-3" ref={ref}>
+        <div className="mb-4 position-relative" ref={ref}>
             <Comment
                 comment={comment}
                 repliesVisible={repliesVisible}
@@ -130,7 +130,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                 onVote={onVote}
             />
             {repliesVisible && (
-                <div className="ms-5 mt-2">
+                <div className="ms-4 mt-1 position-relative">
                     {replies.length > 0 && getFirstValidReplyIndex() > 0 && (
                         <Button
                             variant="primary"
@@ -143,7 +143,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                         </Button>
                     )}
                     {replies.map((reply, index) => (
-                        <div key={reply.id} className="mb-2" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
+                        <div key={reply.id} className="mb-1 wb-reply-item" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
                             <Comment
                                 comment={reply}
                                 handleDelete={() => onReplyDelete(reply)}
@@ -159,6 +159,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
             )}
         </div>
     );
+
 });
 
 export default CommentNode;

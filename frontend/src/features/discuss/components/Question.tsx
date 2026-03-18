@@ -9,63 +9,68 @@ import React from "react";
 import { QuestionMinimal } from "../types";
 import { isUser, UserMinimal } from "../../profile/types";
 
+import "./Question.css";
+
 interface QuestionProps {
     question: QuestionMinimal<UserMinimal | string>;
     searchQuery: string;
     showUserProfile: boolean;
+    variant?: "default" | "compact";
 }
 
-const Question = React.forwardRef(({ question, showUserProfile }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
-
+const Question = React.forwardRef(({ question, showUserProfile, variant = "default" }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+    const isCompact = variant === "compact";
     let title = question.title;
 
     let body = (
-        <div className="py-2 border-bottom mb-2 bg-white d-md-flex">
-            <div className="flex-grow-1">
+        <div className={`wb-question-item border-bottom bg-white d-flex ${isCompact ? "p-2 compact" : "py-2"}`}>
+            <div className="flex-grow-1 min-width-0">
                 <Link to={"/Discuss/" + question.id}>
-                    <b style={{ wordBreak: "break-word" }}>{title}</b>
+                    <b className="text-dark d-block text-truncate" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem", wordBreak: "break-word" }}>{title}</b>
                 </Link>
-                <div className="d-flex flex-wrap mt-2">
-                    {
-                        question.tags.map((tag, idx) => {
-                            return (
-                                <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
-                            )
-                        })
-                    }
-                </div>
-                <div className="d-flex small mt-2 gap-3">
-                    <div className="d-flex align-items-center">
-                        <FaThumbsUp />
-                        <span className="ms-1">{question.votes}</span>
+                
+                {!isCompact && (
+                    <div className="d-flex flex-wrap mt-2">
+                        {
+                            question.tags.map((tag, idx) => {
+                                return (
+                                    <WeblerBadge key={idx} name={tag} state="neutral" className="me-2" />
+                                )
+                            })
+                        }
                     </div>
-                    <div className="d-flex align-items-center">
-                        <FaComment />
-                        <span className="ms-1">{question.answers}</span>
+                )}
+
+                <div className={`d-flex small gap-3 text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
+                    <div className="d-flex align-items-center gap-1 opacity-75">
+                        <FaThumbsUp size={isCompact ? 10 : 12} />
+                        <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.votes}</span>
+                    </div>
+                    <div className="d-flex align-items-center gap-1 opacity-75">
+                        <FaComment size={isCompact ? 10 : 12} />
+                        <span style={{ fontSize: isCompact ? "0.75rem" : "0.85rem" }}>{question.answers}</span>
                     </div>
                     {
                         showUserProfile === false &&
                         <div>
-                            <span className="text-secondary">{DateUtils.format2(new Date(question.date!))}</span>
+                            <span style={{ fontSize: "0.75rem" }}>{DateUtils.format2(new Date(question.date!))}</span>
                         </div>
                     }
                 </div>
             </div>
             {
                 showUserProfile && isUser(question.user) &&
-                <div className="d-flex justify-content-end align-items-end mt-2">
-                    <div className="d-flex align-items-center">
-                        <div>
-                            <div>
-                                <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
-                            </div>
-                            <div className="d-flex justify-content-end">
-                                <ProfileName userId={question.user.id} userName={question.user.name} />
-                            </div>
+                <div className="wb-question-user-meta d-flex justify-content-end align-items-center mt-2">
+                    <div className="text-end">
+                        <div className="wb-question-date">
+                            <small className="text-secondary">{DateUtils.format(new Date(question.date))}</small>
                         </div>
-                        <div className="ms-2">
-                            <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
+                        <div className="d-flex justify-content-end">
+                            <ProfileName userId={question.user.id} userName={question.user.name} />
                         </div>
+                    </div>
+                    <div className="ms-2 flex-shrink-0">
+                        <ProfileAvatar size={32} avatarUrl={question.user.avatarUrl} />
                     </div>
                 </div>
             }

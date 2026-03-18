@@ -141,7 +141,7 @@ const CourseLessonPage = () => {
         <div className="wb-courses-lesson-container d-flex flex-column">
             {lesson && (
                 <>
-                    <Offcanvas show={commentModalVisible} onHide={closeCommentModal} placement="end">
+                    <Offcanvas show={commentModalVisible} onHide={closeCommentModal} className="wb-comments-offcanvas" placement="end">
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
                         </Offcanvas.Header>

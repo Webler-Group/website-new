@@ -26,9 +26,89 @@
 }
 
 .wb-comments__message {
-    font-size: 13px;
-    line-height: 1.3;
+    font-size: 14px;
+    line-height: 1.5;
     width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
+    color: #333;
 }
+
+.wb-comment-item {
+    padding: 12px;
+    transition: background-color 0.2s ease;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.wb-comment-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+
+.wb-comment-item.highlighted {
+    background-color: #fff9db !important;
+}
+
+.wb-reply-item {
+    position: relative;
+}
+
+/* Curved L-shape connector for replies */
+.wb-reply-item::before {
+    content: "";
+    position: absolute;
+    left: -11px;
+    top: -14px; /* Connects with previous sibling or parent area */
+    width: 14px;
+    height: 42px; /* Reaches center of 32px avatar (14 + 28) */
+    border-left: 2px solid #dee2e6;
+    border-bottom: 2px solid #dee2e6;
+    border-bottom-left-radius: 10px;
+}
+
+/* Vertical line continuation for nested replies (except the last one) */
+.wb-reply-item:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: -11px;
+    top: 28px;
+    bottom: -14px;
+    width: 2px;
+    background-color: #dee2e6;
+}
+
+.wb-comments-footer-btn {
+    display: flex;
+    align-items: center;
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-weight: 500;
+    transition: color 0.1s ease;
+    background: none;
+    border: none;
+    padding: 4px 0; /* Default vertical padding */
+    line-height: normal; /* Using normal instead of 1 for better baseline behavior */
+}
+
+@media (max-width: 768px) {
+    .wb-comments-footer-btn {
+        padding: 8px 4px; /* Increased touch target for mobile */
+    }
+}
+
+.wb-comments-footer-btn:hover {
+    color: #007bff;
+}
+
+.wb-comment-avatar-container {
+    width: 32px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.wb-comment-footer-icon {
+    position: relative;
+    top: -1px; /* Optical adjustment to center icons with text */
+}
+

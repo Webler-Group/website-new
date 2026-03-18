@@ -19,7 +19,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
       <div className="d-flex flex-column min-vh-100">
         {/* Sticky Header */}
         {Header && (
-          <header className="sticky-top bg-light shadow-sm d-flex align-items-center justify-content-between p-2 bg-warning">
+          <header className="p-0 border-0 bg-transparent sticky-top">
             {Header}
             <div className="d-md-none d-flex gap-2">
               {SideMenu && (
@@ -37,7 +37,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
         )}
 
         <Container className="py-2">
-          <Row>
+          <Row className="justify-content-center">
             {/* Side Menu (desktop) */}
             {SideMenu && (
               <Col xs={12} md={2} className="bg-light border-end d-none d-md-block">
@@ -46,7 +46,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
             )}
 
             {/* Main Content */}
-            <Col xs={12} md={AsideMenu ? 8 : 10}>
+            <Col xs={12} md={AsideMenu ? 8 : 10} lg={AsideMenu ? 8 : 9}>
               <Outlet />
             </Col>
 

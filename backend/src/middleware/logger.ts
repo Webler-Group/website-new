@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { v4 as uuid } from "uuid";
+import crypto from "crypto";
 import fs from "fs";
 import path from "path";
 import { NextFunction, Request, Response } from "express";
@@ -7,7 +7,7 @@ import { config } from "../confg";
 
 const logEvents = async (message: string, logFileName: string) => {
     const dateTime = format(new Date(), 'yyyyMMdd\tHH:mm:ss');
-    const logItem = `${dateTime}\t${uuid()}\t${message}\n`;
+    const logItem = `${dateTime}\t${crypto.randomUUID()}\t${message}\n`;
 
     console.log(message);
 

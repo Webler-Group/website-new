@@ -23,7 +23,8 @@ export const createChallengeSchema = z.object({
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
     templates: z.array(templateSchema),
     xp: z.number(),
-    isVisible: z.number()
+    isVisible: z.number(),
+    solution: z.string().optional()
   })
 });
 
@@ -36,7 +37,8 @@ export const editChallengeSchema = createChallengeSchema.extend({
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
     templates: z.array(templateSchema),
     xp: z.number(),
-    isVisible: z.number()
+    isVisible: z.number(),
+    solution: z.string().optional()
   })
 });
 
@@ -69,7 +71,7 @@ export const saveChallengeCodeSchema = z.object({
   body: z.object({
     language: compilerLanguageSchema,
     challengeId: idSchema("challengeId"),
-    source: z.string(),
+    source: z.string().min(1, "Source code is required"),
     title: z.string().min(1, "Title is required"),
   })
 });
@@ -78,7 +80,7 @@ export const createChallengeJobSchema = z.object({
   body: z.object({
     challengeId: idSchema("challengeId"),
     language: compilerLanguageSchema,
-    source: z.string()
+    source: z.string().min(1, "Source code is required")
   })
 });
 
@@ -86,4 +88,10 @@ export const getChallengeJobSchema = z.object({
   body: z.object({
     jobId: idSchema("jobId")
   })
+});
+
+export const unlockChallengeSolutionSchema = z.object({
+  body: z.object({
+    challengeId: idSchema("challengeId")
+  }),
 });
