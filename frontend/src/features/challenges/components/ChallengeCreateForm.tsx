@@ -63,7 +63,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
         if (result.data) {
             showMessage(`Challenge created Successfully`);
 
-            navigate("/Challenge/" + result.data.challege.id);
+            navigate("/Challenge/" + result.data.challenge.id);
         } else {
             setError(result.error?.[0].message ?? "Something went wrong");
         }

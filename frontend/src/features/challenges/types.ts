@@ -54,12 +54,12 @@ export interface ChallengeJobDetails {
   id: string;
   deviceId: string;
   status: string;
-  langauge: CompilerLanguagesEnum;
+  language: CompilerLanguagesEnum;
   submission: ChallengeSubmissionDetails | null;
 }
 
 export interface CreateChallengeData {
-  challege: {
+  challenge: {
     id: string;
   }
 }
@@ -81,7 +81,7 @@ export interface GetChallengeCodeData {
 
 export interface SaveChallengeCodeData {
   id: string;
-  langauge: CompilerLanguagesEnum;
+  language: CompilerLanguagesEnum;
   createdAt: string;
   updatedAt: string;
   source: string;
@@ -96,7 +96,7 @@ export interface EditChallengeData {
   id: string;
   title: string;
   description: string;
-  difficlty: ChallengeDifficultyEnum;
+  difficulty: ChallengeDifficultyEnum;
   testCases: ChallengeTestCase[];
   templates: ChallengeTemplate[];
   xp: number;

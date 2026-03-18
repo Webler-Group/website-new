@@ -51,7 +51,7 @@ export interface GetCodeData {
 
 export interface GetTemplateData {
     template: {
-        langauge: CompilerLanguagesEnum;
+        language: CompilerLanguagesEnum;
         source: string;
         cssSource: string;
         jsSource: string;
