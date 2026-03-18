@@ -147,6 +147,8 @@
 
     .wb-p-header__name-row {
         justify-content: center;
+        flex-direction: column;
+        align-items: center;
     }
 
     .wb-p-header__bio {
