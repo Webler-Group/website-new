@@ -40,9 +40,19 @@ const Code = React.forwardRef(({ code, showUserProfile, onClick, selected }: Cod
         <div className={"wb-codes-item border-bottom p-2 d-md-flex" + (selected ? " selected" : "")} onClick={handleClick}>
             <div className="flex-grow-1 d-flex gap-2">
                 <div>
-                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light small"
-                        style={{ width: "32px", height: "32px", background: selected ? "dodgerblue" : languagesInfo[code.language].color }}>
-                        {selected ? <FaCheck /> : languagesInfo[code.language].shortName}
+                    <div className="rounded-circle d-flex justify-content-center align-items-center text-light small overflow-hidden"
+                        style={{ width: "32px", height: "32px", background: selected ? "dodgerblue" : (languagesInfo[code.language]?.color || "#ccc") }}>
+                        {selected ? <FaCheck /> : (
+                            languagesInfo[code.language]?.logo ? (
+                                <img 
+                                    src={languagesInfo[code.language].logo} 
+                                    alt={languagesInfo[code.language].displayName}
+                                    style={{ width: "100%", height: "100%", objectFit: "contain", padding: "4px" }}
+                                />
+                            ) : (
+                                <span>{languagesInfo[code.language]?.shortName || "?"}</span>
+                            )
+                        )}
                     </div>
                 </div>
                 <div>
