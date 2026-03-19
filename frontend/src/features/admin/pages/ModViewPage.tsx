@@ -6,7 +6,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-import { AdminUser, BanUserData, GetAdminUserData, UpdateRolesData } from "../types";
+import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, UpdateRolesData } from "../types";
 import RolesEnum from "../../../data/RolesEnum";
 
 const ModViewPage = () => {
@@ -21,6 +21,9 @@ const ModViewPage = () => {
 
     const [rolesInput, setRolesInput] = useState("");
     const [rolesAlert, setRolesAlert] = useState<{ errors?: { message: string }[]; message?: string; }>({});
+
+    const [showDeleteFilesModal, setShowDeleteFilesModal] = useState(false);
+    const [deleteFilesAlert, setDeleteFilesAlert] = useState<{ errors?: { message: string }[]; message?: string; }>({});
 
     // Load user
     useEffect(() => {
@@ -79,7 +82,18 @@ const ModViewPage = () => {
     const handleResetRoles = () => {
         if (!user) return;
         setRolesInput(user.roles.join(", "));
-    }
+    };
+
+    const handleDeleteUserFiles = async () => {
+        if (!user) return;
+        const result = await sendJsonRequest<DeleteUserFilesData>("/Admin/DeleteUserFiles", "POST", { userId: user.id });
+        setShowDeleteFilesModal(false);
+        if (result.data) {
+            setDeleteFilesAlert({ message: `Deleted ${result.data.deletedCount} file(s) successfully.` });
+        } else {
+            setDeleteFilesAlert({ errors: result.error });
+        }
+    };
 
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
     if (!user) return <Alert variant="warning">No user found</Alert>;
@@ -191,6 +205,27 @@ const ModViewPage = () => {
                 )}
 
                 {userInfo?.roles.includes(RolesEnum.ADMIN) && (
+                    <>
+                    <Modal show={showDeleteFilesModal} onHide={() => setShowDeleteFilesModal(false)} centered>
+                        <Modal.Header closeButton>
+                            <Modal.Title>Delete User Files</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body>
+                            <p>Are you sure you want to delete all files created by <b>{user.name}</b>? This cannot be undone.</p>
+                        </Modal.Body>
+                        <Modal.Footer>
+                            <Button variant="secondary" onClick={() => setShowDeleteFilesModal(false)}>Cancel</Button>
+                            <Button variant="danger" onClick={handleDeleteUserFiles}>Delete Files</Button>
+                        </Modal.Footer>
+                    </Modal>
+                    <Card className="mt-3">
+                        <Card.Body>
+                            <RequestResultAlert message={deleteFilesAlert.message} errors={deleteFilesAlert.errors} />
+                            <Button variant="danger" onClick={() => setShowDeleteFilesModal(true)}>
+                                Delete User Files
+                            </Button>
+                        </Card.Body>
+                    </Card>
                     <Card className="mt-3">
                         <Card.Body>
                             <RequestResultAlert message={rolesAlert.message} errors={rolesAlert.errors} />
@@ -217,6 +252,7 @@ const ModViewPage = () => {
                             </div>
                         </Card.Body>
                     </Card>
+                    </>
                 )}
             </Container>
         </>

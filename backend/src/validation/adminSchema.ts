@@ -34,3 +34,9 @@ export const updateRolesSchema = z.object({
     })
 });
 
+export const deleteUserFilesSchema = z.object({
+    body: z.object({
+        userId: idSchema("userId")
+    })
+});
+

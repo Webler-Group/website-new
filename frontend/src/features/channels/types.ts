@@ -46,6 +46,7 @@ export interface ChannelBase {
 export interface ChannelDetails extends ChannelBase {
     unreadCount: number;
     muted: boolean;
+    active: boolean;
     lastActiveAt: string | null;
     invites: {
         id: string;

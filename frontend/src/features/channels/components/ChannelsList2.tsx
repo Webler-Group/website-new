@@ -133,12 +133,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
     const invitesListContent = invites.results.map((invite, i) => {
         return (
             <div key={invite.id} className="mt-2">
-                {
-                    channels.results.length === i + 1 ?
-                        <InvitesListItem ref={lastInviteRef} invite={invite} onAccept={onAcceptInvite} onDecline={onDeclineInvite} />
-                        :
-                        <InvitesListItem invite={invite} onAccept={onAcceptInvite} onDecline={onDeclineInvite} />
-                }
+                <InvitesListItem ref={channels.results.length === i + 1 ? lastInviteRef : undefined} invite={invite} onAccept={onAcceptInvite} onDecline={onDeclineInvite} />
             </div>
         );
     });

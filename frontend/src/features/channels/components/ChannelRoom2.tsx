@@ -541,44 +541,49 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         </Button>
                                     </div>
                                 }
-                                <div className="d-flex align-items-center gap-2">
-                                    {showJumpButton && (
-                                        <Button
-                                            size="sm"
-                                            variant="secondary"
-                                            className="position-absolute end-0 me-3 mt-1 z-1"
-                                            style={{ top: "-50px" }}
-                                            onClick={() => {
-                                                scrollToBottom('smooth');
-                                                setUnreadCount(0);
-                                            }}
-                                        >
-                                            {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
-                                            <FaArrowCircleDown />
-                                        </Button>
-                                    )}
-                                    <Form.Control
-                                        ref={textareaRef}
-                                        as="textarea"
-                                        rows={1}
-                                        placeholder="Type your message..."
-                                        value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        onKeyDown={handleTextareaKeydown}
-                                        className="me-2 border-0"
-                                        maxLength={1024}
-                                        style={{ resize: "none", boxShadow: "none" }}
-                                    />
-                                    <AttachDropdown
-                                        onCode={() => setPostAttachmentSelectVisible(true)}
-                                        onImage={() => setShowImages(true)}
-                                    />
-                                    {newMessage.trim().length > 0 &&
-                                        <Button variant="primary" onClick={handleSendMessage}>
-                                            {editedMessage ? <FaCheck /> : <FaPaperPlane />}
-                                        </Button>
-                                    }
-                                </div>
+                                {channel.active
+                                    ? <div className="d-flex align-items-center gap-2">
+                                        {showJumpButton && (
+                                            <Button
+                                                size="sm"
+                                                variant="secondary"
+                                                className="position-absolute end-0 me-3 mt-1 z-1"
+                                                style={{ top: "-50px" }}
+                                                onClick={() => {
+                                                    scrollToBottom('smooth');
+                                                    setUnreadCount(0);
+                                                }}
+                                            >
+                                                {unreadCount > 0 && <Badge bg="info" className="me-2">{unreadCount + " new message" + (unreadCount > 1 ? "s" : "")}</Badge>}
+                                                <FaArrowCircleDown />
+                                            </Button>
+                                        )}
+                                        <Form.Control
+                                            ref={textareaRef}
+                                            as="textarea"
+                                            rows={1}
+                                            placeholder="Type your message..."
+                                            value={newMessage}
+                                            onChange={(e) => setNewMessage(e.target.value)}
+                                            onKeyDown={handleTextareaKeydown}
+                                            className="me-2 border-0"
+                                            maxLength={1024}
+                                            style={{ resize: "none", boxShadow: "none" }}
+                                        />
+                                        <AttachDropdown
+                                            onCode={() => setPostAttachmentSelectVisible(true)}
+                                            onImage={() => setShowImages(true)}
+                                        />
+                                        {newMessage.trim().length > 0 &&
+                                            <Button variant="primary" onClick={handleSendMessage}>
+                                                {editedMessage ? <FaCheck /> : <FaPaperPlane />}
+                                            </Button>
+                                        }
+                                    </div>
+                                    : <div className="d-flex justify-content-center align-items-center py-2 text-muted fst-italic">
+                                        You cannot continue in this conversation
+                                    </div>
+                                }
                             </div>
                         </div>
                     </>

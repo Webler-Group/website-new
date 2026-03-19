@@ -7,6 +7,7 @@ export interface AuthUser {
     avatarUrl: string | null;
     roles: RolesEnum[];
     emailVerified: boolean;
+    active: boolean;
     countryCode: string | null;
     registerDate: string;
     level: number;

@@ -11,6 +11,7 @@ export const formatUserMinimal = (user: UserMinimal & { _id: Types.ObjectId }) =
         countryCode: user.countryCode,
         level: user.level,
         roles: user.roles,
+        active: user.active,
         isFollowing: false
     };
 }

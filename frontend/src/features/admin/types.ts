@@ -38,3 +38,7 @@ export interface BanUserData {
 export interface UpdateRolesData {
     roles: RolesEnum[];
 }
+
+export interface DeleteUserFilesData {
+    deletedCount: number;
+}

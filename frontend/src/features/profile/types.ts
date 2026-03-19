@@ -58,6 +58,7 @@ export interface UserMinimal {
     roles: RolesEnum[];
     isFollowing?: boolean;
     countryCode: string | null;
+    active: boolean;
 }
 
 export interface GetProfileData {

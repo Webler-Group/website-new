@@ -9,7 +9,8 @@ import {
     getUsersListSchema,
     getUserSchema,
     banUserSchema,
-    updateRolesSchema
+    updateRolesSchema,
+    deleteUserFilesSchema
 } from "../validation/adminSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import PostModel from "../models/Post";
@@ -18,6 +19,9 @@ import NotificationModel from "../models/Notification";
 import { withTransaction } from "../utils/transaction";
 import { formatUserAdmin } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
+import FileModel from "../models/File";
+import FileTypeEnum from "../data/FileTypeEnum";
+import { deleteSingleFile } from "../helpers/fileHelper";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
@@ -129,11 +133,36 @@ const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { roles: user.roles } });
 });
 
+const deleteUserFiles = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteUserFilesSchema, req);
+    const { userId } = body;
+
+    const deletedCount = await withTransaction(async (session) => {
+        const user = await UserModel.findById(userId).session(session);
+        if (!user) throw new HttpError("User not found", 404);
+
+        const files = await FileModel.find({ author: userId }).session(session);
+
+        for (const file of files) {
+            await deleteSingleFile(file, session);
+        }
+
+        user.avatarHash = undefined;
+        user.avatarFileId = undefined;
+        await user.save({ session });
+
+        return files.length;
+    });
+
+    res.json({ success: true, data: { deletedCount } });
+});
+
 const controller = {
     getUsersList,
     banUser,
     getUser,
-    updateRoles
+    updateRoles,
+    deleteUserFiles
 };
 
 export default controller;

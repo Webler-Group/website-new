@@ -52,6 +52,7 @@ interface ChannelResponse {
     lastActiveAt: Date | null;
     unreadCount: number;
     muted: boolean;
+    active: boolean;
     invites?: {
         id: Types.ObjectId;
         author: UserMinimal;
@@ -208,7 +209,10 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         updatedAt: channel.updatedAt,
         lastActiveAt: participant.lastActiveAt,
         unreadCount: participant.unreadCount,
-        muted: participant.muted
+        muted: participant.muted,
+        active: channel._type === ChannelTypeEnum.GROUP ?
+            true :
+            channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.active : channel.DMUser?.active ?? true,
     };
 
     if (includeInvites || includeParticipants) {
@@ -317,18 +321,25 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
         query
             .sort({ createdAt: -1 })
             .limit(count)
-            .populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS)
+            .populate<{ author: (UserMinimal & { _id: Types.ObjectId }) | null }>({ path: "author", select: USER_MINIMAL_FIELDS, match: { active: true } })
             .populate<{ channel: Channel & { _id: Types.ObjectId } }>("channel")
             .lean(),
-        ChannelInviteModel.countDocuments({ invitedUser: currentUserId })
+        ChannelInviteModel.aggregate<{ total: number }>([
+            { $match: { invitedUser: new mongoose.Types.ObjectId(currentUserId!) } },
+            { $lookup: { from: "users", localField: "author", foreignField: "_id", as: "authorData" } },
+            { $match: { "authorData.active": true } },
+            { $count: "total" }
+        ]).then(r => r[0]?.total ?? 0)
     ]);
+
+    const filteredInvites = invites.filter(x => x.author !== null);
 
     res.json({
         success: true,
         data: {
-            invites: invites.map(x => ({
+            invites: filteredInvites.map(x => ({
                 id: x._id,
-                author: formatUserMinimal(x.author),
+                author: formatUserMinimal(x.author!),
                 createdAt: x.createdAt,
                 channel: formatChannelBase(x.channel)
             })),
@@ -588,14 +599,13 @@ const getUnseenMessagesCount = asyncHandler(async (req: IAuthRequest, res: Respo
             { user: new mongoose.Types.ObjectId(currentUserId), muted: false, unreadCount: { $gt: 0 } },
             { channel: 1 }
         ).lean(),
-        ChannelInviteModel.find(
-            { invitedUser: currentUserId },
-            { channel: 1 }
-        ).lean()
+        ChannelInviteModel.find({ invitedUser: currentUserId }, { channel: 1, author: 1 })
+            .populate<{ author: { active: boolean } | null }>({ path: "author", select: { active: 1 }, match: { active: true } })
+            .lean()
     ]);
 
     const unseenChannelIds = unseenParticipants.map(p => p.channel.toString());
-    const inviteChannelIds = invites.map(i => i.channel.toString());
+    const inviteChannelIds = invites.filter(i => i.author !== null).map(i => i.channel.toString());
 
     const allUniqueChannelIds = [...new Set([...unseenChannelIds, ...inviteChannelIds])];
 
