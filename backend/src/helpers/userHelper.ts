@@ -63,7 +63,7 @@ export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
         ban: user.ban
             ? { author: user.ban.author, note: user.ban.note, date: user.ban.date }
             : null,
-        ips: user.ips,
+        ips: user.ips ?? [],
         lastIp: user.lastIp
     };
 };

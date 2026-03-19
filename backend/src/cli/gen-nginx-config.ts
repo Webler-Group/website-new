@@ -82,7 +82,7 @@ server {
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
         proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;
-        proxy_set_header X-Forwarded-For $http_cf_connecting_ip;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
     # Only cache frontend build assets
