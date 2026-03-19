@@ -10,7 +10,7 @@ import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
 import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
 import UserFollowingModel from "../models/UserFollowing";
-import { formatAuthUser } from "../helpers/userHelper";
+import { formatAuthUser, getRequestIp, updateUserIp } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
 
 const login = asyncHandler(async (req, res) => {
@@ -41,6 +41,11 @@ const login = asyncHandler(async (req, res) => {
         (tokenInfo as JwtPayload).exp! * 1000 : 0;
 
     await generateRefreshToken(res, { userId: user._id.toString() });
+
+    const ip = getRequestIp(req);
+    if (ip) {
+        await updateUserIp(user._id, ip);
+    }
 
     res.json({
         success: true,
@@ -112,6 +117,11 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const weblercodesUser = await UserModel.exists({ email: config.adminEmail });
     if (weblercodesUser) {
         await UserFollowingModel.create({ user: user._id, following: weblercodesUser._id });
+    }
+
+    const ip = getRequestIp(req);
+    if (ip) {
+        await updateUserIp(user._id, ip);
     }
 
     res.json({

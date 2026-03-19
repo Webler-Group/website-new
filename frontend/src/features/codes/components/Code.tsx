@@ -36,8 +36,8 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
         }
     }
 
-    const body = (
-        <div className={`wb-codes-item border-bottom bg-white d-flex align-items-start ${isCompact ? "p-2 compact" : "py-2"} ${selected ? "selected" : ""}`} onClick={handleClick}>
+    return <div ref={ref ?? undefined} className="min-width-0 overflow-hidden">
+        <div className={`wb-codes-item border-bottom bg-white d-flex align-items-start p-2${isCompact ? " compact" : ""} ${selected ? "selected" : ""}`} onClick={handleClick}>
             {/* Left: title + language + stats */}
             <div className="flex-grow-1 min-width-0">
                 <Link to={"/Compiler-Playground/" + code.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>
@@ -73,9 +73,7 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
                 </div>
             )}
         </div>
-    );
-
-    return ref ? <div ref={ref} className="min-width-0 overflow-hidden">{body}</div> : <div className="min-width-0 overflow-hidden">{body}</div>;
+    </div>;
 });
 
 export default Code;

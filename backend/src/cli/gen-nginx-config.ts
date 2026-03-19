@@ -81,6 +81,8 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+        proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;
+        proxy_set_header X-Forwarded-For $http_cf_connecting_ip;
     }
 
     # Only cache frontend build assets

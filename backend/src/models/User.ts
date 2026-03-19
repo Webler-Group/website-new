@@ -138,6 +138,12 @@ export class User {
     @prop({ type: () => FeedSettings, _id: false })
     feed?: FeedSettings;
 
+    @prop({ type: () => [String], default: [] })
+    ips!: string[];
+
+    @prop()
+    lastIp?: string;
+
     async matchPassword(this: DocumentType<User>, inputPassword: string): Promise<boolean> {
         return bcrypt.compare(inputPassword, this.password);
     }
@@ -148,7 +154,7 @@ export class User {
 export const USER_MINIMAL_FIELDS = { name: 1, avatarHash: 1, countryCode: 1, level: 1, roles: 1, active: 1 } as const;
 export type UserMinimal = Pick<User, keyof typeof USER_MINIMAL_FIELDS>;
 
-export const USER_ADMIN_FIELDS = { email: 1, countryCode: 1, name: 1, avatarHash: 1, roles: 1, createdAt: 1, level: 1, emailVerified: 1, active: 1, ban: 1, bio: 1 } as const;
+export const USER_ADMIN_FIELDS = { email: 1, countryCode: 1, name: 1, avatarHash: 1, roles: 1, createdAt: 1, level: 1, emailVerified: 1, active: 1, ban: 1, bio: 1, ips: 1, lastIp: 1 } as const;
 export type UserAdmin = Pick<User, keyof typeof USER_ADMIN_FIELDS>;
 
 const UserModel = getModelForClass(User);

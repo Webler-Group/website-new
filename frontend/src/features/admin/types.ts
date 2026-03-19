@@ -19,6 +19,8 @@ export interface AdminUser {
     verified: boolean;
     active: boolean
     ban: Ban | null;
+    ips: string[];
+    lastIp?: string;
 }
 
 export interface AdminUserListData {

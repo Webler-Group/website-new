@@ -175,6 +175,26 @@ const ModViewPage = () => {
 
                 {user.bio && <Card className="mb-3"><Card.Body><i>{user.bio}</i></Card.Body></Card>}
 
+                <Card className="mb-3">
+                    <Card.Body>
+                        <Card.Title>IP Addresses</Card.Title>
+                        {user.ips.length === 0 ? (
+                            <span className="text-muted">No IPs recorded</span>
+                        ) : (
+                            <ul className="mb-0 ps-3">
+                                {user.ips.map(ip => (
+                                    <li key={ip}>
+                                        <code>{ip}</code>
+                                        {ip === user.lastIp && (
+                                            <Badge bg="primary" className="ms-2">last</Badge>
+                                        )}
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </Card.Body>
+                </Card>
+
                 {user.ban != null && (
                     <Alert variant="danger">
                         <Alert.Heading>User is Banned</Alert.Heading>

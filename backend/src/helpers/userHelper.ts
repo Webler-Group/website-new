@@ -1,7 +1,38 @@
+import { Request } from "express";
 import { Types } from "mongoose";
 import UserModel, { User, UserAdmin, UserMinimal } from "../models/User";
 import { getImageUrl } from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
+
+const MAX_IPS = 50;
+
+export const getRequestIp = (req: Request) => {
+    return (
+        (req.headers["cf-connecting-ip"] as string) ||
+        (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
+        req.ip
+    );
+};
+
+export const updateUserIp = async (userId: Types.ObjectId, ip: string) => {
+    await UserModel.updateOne(
+        { _id: userId },
+        [
+            {
+                $set: {
+                    lastIp: ip,
+                    ips: {
+                        $slice: [
+                            { $setUnion: [{ $ifNull: ["$ips", []] }, [ip]] },
+                            -MAX_IPS
+                        ]
+                    }
+                }
+            }
+        ],
+        { updatePipeline: true }
+    );
+};
 
 export const formatUserMinimal = (user: UserMinimal & { _id: Types.ObjectId }) => {
     return {
@@ -31,7 +62,9 @@ export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
         active: user.active,
         ban: user.ban
             ? { author: user.ban.author, note: user.ban.note, date: user.ban.date }
-            : null
+            : null,
+        ips: user.ips,
+        lastIp: user.lastIp
     };
 };
 
