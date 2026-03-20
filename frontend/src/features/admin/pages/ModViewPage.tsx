@@ -6,7 +6,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, UpdateRolesData } from "../types";
+import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, IpRecord, ToggleBanIpData, UpdateRolesData } from "../types";
 import RolesEnum from "../../../data/RolesEnum";
 
 const ModViewPage = () => {
@@ -24,6 +24,8 @@ const ModViewPage = () => {
 
     const [showDeleteFilesModal, setShowDeleteFilesModal] = useState(false);
     const [deleteFilesAlert, setDeleteFilesAlert] = useState<{ errors?: { message: string }[]; message?: string; }>({});
+
+    const [ipToBan, setIpToBan] = useState<IpRecord | null>(null);
 
     // Load user
     useEffect(() => {
@@ -95,6 +97,22 @@ const ModViewPage = () => {
         }
     };
 
+    const handleToggleBanIp = async () => {
+        if (!ipToBan) return;
+        const result = await sendJsonRequest<ToggleBanIpData>("/Admin/ToggleBanIp", "POST", {
+            ipId: ipToBan.id,
+            banned: !ipToBan.banned
+        });
+        if (result.data) {
+            setUser(prev => prev ? {
+                ...prev,
+                ips: prev.ips.map(ip => ip.id === result.data!.id ? { ...ip, banned: result.data!.banned } : ip),
+                lastIp: prev.lastIp?.id === result.data!.id ? { ...prev.lastIp, banned: result.data!.banned } : prev.lastIp
+            } : null);
+        }
+        setIpToBan(null);
+    };
+
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
     if (!user) return <Alert variant="warning">No user found</Alert>;
 
@@ -137,6 +155,21 @@ const ModViewPage = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
+            <Modal show={!!ipToBan} onHide={() => setIpToBan(null)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>{ipToBan?.banned ? "Unban IP" : "Ban IP"}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Are you sure you want to {ipToBan?.banned ? "unban" : "ban"} <code>{ipToBan?.value}</code>?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setIpToBan(null)}>Cancel</Button>
+                    <Button variant={ipToBan?.banned ? "success" : "danger"} onClick={handleToggleBanIp}>
+                        {ipToBan?.banned ? "Unban" : "Ban"}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
             <Container className="mt-4">
                 <Breadcrumb>
                     <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Admin" }}>
@@ -181,16 +214,28 @@ const ModViewPage = () => {
                         {user.ips.length === 0 ? (
                             <span className="text-muted">No IPs recorded</span>
                         ) : (
-                            <ul className="mb-0 ps-3">
+                            <div className="d-flex flex-column gap-2">
                                 {user.ips.map(ip => (
-                                    <li key={ip}>
-                                        <code>{ip}</code>
-                                        {ip === user.lastIp && (
-                                            <Badge bg="primary" className="ms-2">last</Badge>
+                                    <div key={ip.id} className="d-flex align-items-center gap-2">
+                                        <code>{ip.value}</code>
+                                        {ip.id === user.lastIp?.id && (
+                                            <Badge bg="primary">last</Badge>
                                         )}
-                                    </li>
+                                        {ip.banned && (
+                                            <Badge bg="danger">banned</Badge>
+                                        )}
+                                        {userInfo?.roles.includes(RolesEnum.ADMIN) && (
+                                            <Button
+                                                size="sm"
+                                                variant={ip.banned ? "outline-success" : "outline-danger"}
+                                                onClick={() => setIpToBan(ip)}
+                                            >
+                                                {ip.banned ? "Unban" : "Ban"}
+                                            </Button>
+                                        )}
+                                    </div>
                                 ))}
-                            </ul>
+                            </div>
                         )}
                     </Card.Body>
                 </Card>

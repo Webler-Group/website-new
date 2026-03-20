@@ -6,6 +6,13 @@ export interface Ban {
     date: string;
 }
 
+export interface IpRecord {
+    id: string;
+    value: string;
+    banned: boolean;
+    description?: string;
+}
+
 export interface AdminUser {
     id: string;
     email: string;
@@ -19,8 +26,8 @@ export interface AdminUser {
     verified: boolean;
     active: boolean
     ban: Ban | null;
-    ips: string[];
-    lastIp?: string;
+    ips: IpRecord[];
+    lastIp?: IpRecord;
 }
 
 export interface AdminUserListData {
@@ -43,4 +50,20 @@ export interface UpdateRolesData {
 
 export interface DeleteUserFilesData {
     deletedCount: number;
+}
+
+export interface ToggleBanIpData {
+    id: string;
+    banned: boolean;
+}
+
+export interface IpListData {
+    ips: IpRecord[];
+    count: number;
+}
+
+export interface CreateIpData {
+    id: string;
+    value: string;
+    banned: boolean;
 }

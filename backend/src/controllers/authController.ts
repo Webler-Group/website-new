@@ -12,6 +12,8 @@ import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPa
 import UserFollowingModel from "../models/UserFollowing";
 import { formatAuthUser, getRequestIp, updateUserIp } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
+import IpModel from "../models/Ip";
+import { withTransaction } from "../utils/transaction";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -19,6 +21,14 @@ const login = asyncHandler(async (req, res) => {
         headers
     } = parseWithZod(loginSchema, req);
     const { email, password } = body;
+
+    const ip = getRequestIp(req);
+    if (ip) {
+        const ipDoc = await IpModel.findOne({ value: ip }).lean();
+        if (ipDoc?.banned) {
+            throw new HttpError("Access denied", 403);
+        }
+    }
 
     const user = await UserModel.findOne({ email });
 
@@ -42,7 +52,6 @@ const login = asyncHandler(async (req, res) => {
 
     await generateRefreshToken(res, { userId: user._id.toString() });
 
-    const ip = getRequestIp(req);
     if (ip) {
         await updateUserIp(user._id, ip);
     }
@@ -62,6 +71,14 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const { body, headers } = parseWithZod(registerSchema, req);
     const { email, name, password, solution, captchaId } = body;
 
+    const ip = getRequestIp(req);
+    if (ip) {
+        const ipDoc = await IpModel.findOne({ value: ip }).lean();
+        if (ipDoc?.banned) {
+            throw new HttpError("Access denied", 403);
+        }
+    }
+
     const record = await CaptchaRecordModel.findById(captchaId).lean();
 
     if (record === null || !verifyCaptcha(solution, record.encrypted)) {
@@ -78,12 +95,25 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         throw new HttpError("Username is already used", 400);
     }
 
-    const user = await UserModel.create({
-        email,
-        name,
-        password,
-        emailVerified: config.nodeEnv == "development",
-        lastLoginAt: new Date()
+    const user = await withTransaction(async (session) => {
+        const [created] = await UserModel.create([{
+            email,
+            name,
+            password,
+            emailVerified: config.nodeEnv == "development",
+            lastLoginAt: new Date()
+        }], { session });
+
+        const weblercodesUser = await UserModel.exists({ email: config.adminEmail }).session(session);
+        if (weblercodesUser) {
+            await UserFollowingModel.create([{ user: created._id, following: weblercodesUser._id }], { session });
+        }
+
+        if (ip) {
+            await updateUserIp(created._id, ip, session);
+        }
+
+        return created;
     });
 
     const { accessToken, data: tokenInfo } = await signAccessToken({
@@ -112,16 +142,6 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         catch (err) {
             console.log("Activation email error:", err);
         }
-    }
-
-    const weblercodesUser = await UserModel.exists({ email: config.adminEmail });
-    if (weblercodesUser) {
-        await UserFollowingModel.create({ user: user._id, following: weblercodesUser._id });
-    }
-
-    const ip = getRequestIp(req);
-    if (ip) {
-        await updateUserIp(user._id, ip);
     }
 
     res.json({

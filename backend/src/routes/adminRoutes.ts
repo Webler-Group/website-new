@@ -16,6 +16,9 @@ router.route("/Users").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR])
 router.route("/GetUser").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getUser);
 router.route("/UpdateRoles").post(requireRoles([RolesEnum.ADMIN]), adminController.updateRoles);
 router.route("/DeleteUserFiles").post(requireRoles([RolesEnum.ADMIN]), adminController.deleteUserFiles);
+router.route("/ToggleBanIp").post(requireRoles([RolesEnum.ADMIN]), adminController.toggleBanIp);
+router.route("/Ips").post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), adminController.getIpList);
+router.route("/CreateIp").post(requireRoles([RolesEnum.ADMIN]), adminController.createIp);
 
 
 export default router;

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Button, Container } from "react-bootstrap";
+import { Container } from "react-bootstrap";
 
 const AdminHomePage = () => {
     return (
@@ -7,9 +7,14 @@ const AdminHomePage = () => {
             <h2>Admin Dashboard</h2>
             <p>Welcome to the admin panel.</p>
 
-            <Link to="/Admin/UserSearch">
-                <Button variant="primary">Go to User Search</Button>
-            </Link>
+            <ul style={{ listStyleType: "disc" }}>
+                <li>
+                    <Link to="/Admin/UserSearch">User Search</Link>
+                </li>
+                <li>
+                    <Link to="/Admin/IpList">IP List</Link>
+                </li>
+            </ul>
         </Container>
     );
 }

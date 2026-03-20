@@ -5,6 +5,7 @@ import RequireAuth from "../auth/components/RequireAuth"
 import AdminHomePage from "./pages/AdminHomePage"
 import AdminUserListPage from "./pages/AdminUserListPage"
 import ModViewPage from "./pages/ModViewPage"
+import IpListPage from "./pages/IpListPage"
 import RolesEnum from "../../data/RolesEnum"
 
 const AdminRoutes = () => {
@@ -17,6 +18,7 @@ const AdminRoutes = () => {
                         <Route index element={<AdminUserListPage />} />
                         <Route path=":userId" element={<ModViewPage />} />
                     </Route>
+                    <Route path="IpList" element={<IpListPage />} />
                 </Route>
             </Route>
         </Routes>

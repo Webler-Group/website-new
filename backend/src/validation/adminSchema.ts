@@ -40,3 +40,25 @@ export const deleteUserFilesSchema = z.object({
     })
 });
 
+export const toggleBanIpSchema = z.object({
+    body: z.object({
+        ipId: idSchema("ipId"),
+        banned: z.boolean()
+    })
+});
+
+export const getIpListSchema = z.object({
+    body: z.object({
+        count: countPerPageSchema,
+        page: pageSchema,
+        banned: z.boolean().optional(),
+        value: searchQuerySchema
+    })
+});
+
+export const createIpSchema = z.object({
+    body: z.object({
+        value: z.string().min(1, "IP value is required").max(45, "IP value cannot exceed 45 characters").trim()
+    })
+});
+

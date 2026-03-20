@@ -1,6 +1,7 @@
 import { Request } from "express";
-import { Types } from "mongoose";
-import UserModel, { User, UserAdmin, UserMinimal } from "../models/User";
+import mongoose, { Types } from "mongoose";
+import UserModel, { User, UserAdminMinimal, UserMinimal } from "../models/User";
+import IpModel from "../models/Ip";
 import { getImageUrl } from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
 
@@ -14,23 +15,29 @@ export const getRequestIp = (req: Request) => {
     );
 };
 
-export const updateUserIp = async (userId: Types.ObjectId, ip: string) => {
+export const updateUserIp = async (userId: Types.ObjectId, ip: string, session?: mongoose.ClientSession) => {
+    const ipDoc = await IpModel.findOneAndUpdate(
+        { value: ip },
+        { $setOnInsert: { value: ip } },
+        { upsert: true, new: true, session }
+    );
+
     await UserModel.updateOne(
         { _id: userId },
         [
             {
                 $set: {
-                    lastIp: ip,
+                    lastIp: ipDoc._id,
                     ips: {
                         $slice: [
-                            { $setUnion: [{ $ifNull: ["$ips", []] }, [ip]] },
+                            { $setUnion: [{ $ifNull: ["$ips", []] }, [ipDoc._id]] },
                             -MAX_IPS
                         ]
                     }
                 }
             }
         ],
-        { updatePipeline: true }
+        { updatePipeline: true, session }
     );
 };
 
@@ -47,7 +54,29 @@ export const formatUserMinimal = (user: UserMinimal & { _id: Types.ObjectId }) =
     };
 }
 
-export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
+export const formatUserAdminMinimal = (user: UserAdminMinimal & { _id: Types.ObjectId }) => {
+    return {
+        id: user._id,
+        email: user.email,
+        countryCode: user.countryCode,
+        name: user.name,
+        avatarUrl: getImageUrl(user.avatarHash),
+        roles: user.roles,
+        registerDate: user.createdAt,
+        level: user.level,
+        verified: user.emailVerified,
+        active: user.active
+    };
+};
+
+type PopulatedIp = { _id: Types.ObjectId; value: string; banned: boolean };
+type PopulatedUserAdmin = Omit<User, "ips" | "lastIp"> & {
+    _id: Types.ObjectId;
+    ips: PopulatedIp[];
+    lastIp?: PopulatedIp;
+};
+
+export const formatUserAdmin = (user: PopulatedUserAdmin) => {
     return {
         id: user._id,
         email: user.email,
@@ -63,8 +92,8 @@ export const formatUserAdmin = (user: UserAdmin & { _id: Types.ObjectId }) => {
         ban: user.ban
             ? { author: user.ban.author, note: user.ban.note, date: user.ban.date }
             : null,
-        ips: user.ips ?? [],
-        lastIp: user.lastIp
+        ips: (user.ips ?? []).map(ip => ({ id: ip._id.toString(), value: ip.value, banned: ip.banned })),
+        lastIp: user.lastIp ? { id: user.lastIp._id.toString(), value: user.lastIp.value, banned: user.lastIp.banned } : undefined
     };
 };
 
