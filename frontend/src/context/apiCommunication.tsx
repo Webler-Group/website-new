@@ -134,7 +134,14 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
                 isMultipart
             );
 
-            return await response.json() as JsonResponse<T>;
+            const json = await response.json() as JsonResponse<T>;
+
+            if (response.status === 403) {
+                logout();
+                navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
+            }
+
+            return json;
         } catch (error) {
             const message = error instanceof Error ? error.message : "An unexpected error occurred";
             return { success: false, error: [{ message }] };
