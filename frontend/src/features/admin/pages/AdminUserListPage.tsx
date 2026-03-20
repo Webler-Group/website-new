@@ -2,22 +2,27 @@ import { useState, useEffect } from "react";
 import { Table, Form, Row, Col, Button, Container, Breadcrumb } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import roles from "../../../data/roles";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { Link, useNavigate } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
 
 const rolesOptions = ["All", ...roles];
 
+const sortOptions = [
+    { value: 1, label: "Newest registered" },
+    { value: 2, label: "Oldest registered" },
+    { value: 3, label: "Last login (newest)" },
+    { value: 4, label: "Last login (oldest)" }
+];
+
 const AdminUserListPage = () => {
     const { sendJsonRequest } = useApi();
 
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [search, setSearch] = useState("");
-    const [date, setDate] = useState<Date | null>(null);
     const [activeFilter, setActiveFilter] = useState<"all" | "true" | "false">("all");
     const [role, setRole] = useState("All");
+    const [sortFilter, setSortFilter] = useState(1);
 
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
@@ -27,9 +32,9 @@ const AdminUserListPage = () => {
     const fetchUsers = async () => {
         const result = await sendJsonRequest<AdminUserListData>("/Admin/Users", "POST", {
             search: search.trim() || undefined,
-            date: date ? date.toISOString() : undefined,
             active: activeFilter === "all" ? undefined : activeFilter === "true",
             role: role !== "All" ? role : undefined,
+            filter: sortFilter,
             count: pageSize,
             page
         });
@@ -54,9 +59,9 @@ const AdminUserListPage = () => {
 
     const handleResetFilters = () => {
         setSearch("");
-        setDate(null);
         setActiveFilter("all");
         setRole("All");
+        setSortFilter(1);
     };
 
     const handlePageChange = (pageNum: number) => {
@@ -95,18 +100,20 @@ const AdminUserListPage = () => {
                         </Form.Group>
                     </Col>
 
-                    <Col md={3}>
+                    <Col md={2}>
                         <Form.Group>
-                            <Form.Label className="small">Register Date</Form.Label>
-                            <DatePicker
-                                selected={date}
-                                onChange={(d: any) => {
-                                    setDate(d);
-                                }}
-                                className="form-control form-control-sm"
-                                placeholderText="Select date"
-                                isClearable
-                            />
+                            <Form.Label className="small">Sort</Form.Label>
+                            <Form.Select
+                                size="sm"
+                                value={sortFilter}
+                                onChange={(e) => setSortFilter(Number(e.target.value))}
+                            >
+                                {sortOptions.map((o) => (
+                                    <option key={o.value} value={o.value}>
+                                        {o.label}
+                                    </option>
+                                ))}
+                            </Form.Select>
                         </Form.Group>
                     </Col>
 
@@ -168,12 +175,13 @@ const AdminUserListPage = () => {
                         <th>Verified</th>
                         <th>Active</th>
                         <th>Register Date</th>
+                        <th>Last Login</th>
                     </tr>
                 </thead>
                 <tbody>
                     {users.length === 0 ? (
                         <tr>
-                            <td colSpan={7} className="text-center small">
+                            <td colSpan={8} className="text-center small">
                                 No users found
                             </td>
                         </tr>
@@ -189,6 +197,7 @@ const AdminUserListPage = () => {
                                 <td>{u.verified ? "Yes" : "No"}</td>
                                 <td>{u.active ? "Yes" : "No"}</td>
                                 <td>{new Date(u.registerDate).toLocaleDateString("en")}</td>
+                                <td>{u.lastLoginDate ? new Date(u.lastLoginDate).toLocaleDateString("en") : "—"}</td>
                             </tr>
                         ))
                     )}

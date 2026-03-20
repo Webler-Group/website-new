@@ -22,6 +22,7 @@ export interface AdminUser {
     roles: RolesEnum[];
     bio?: string;
     registerDate: string;
+    lastLoginDate?: string;
     level: number;
     verified: boolean;
     active: boolean

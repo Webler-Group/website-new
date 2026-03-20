@@ -23,44 +23,42 @@ import { withTransaction } from "../utils/transaction";
 import { formatUserAdmin, formatUserAdminMinimal } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
 import FileModel from "../models/File";
-import FileTypeEnum from "../data/FileTypeEnum";
 import { deleteSingleFile } from "../helpers/fileHelper";
 import IpModel, { Ip } from "../models/Ip";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
-    const { search, count, page, date, role, active } = body;
+    const { search, count, page, filter, role, active } = body;
 
-    const filter: mongoose.QueryFilter<User> = {};
+    const query: mongoose.QueryFilter<User> = {};
 
     if (search && search.trim().length > 0) {
-        filter.name = new RegExp(escapeRegex(search.trim()), "i");
-    }
-
-    if (date) {
-        const parsed = new Date(date);
-        const start = new Date(parsed);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(parsed);
-        end.setHours(23, 59, 59, 999);
-        filter.createdAt = { $gte: start, $lte: end };
+        query.name = new RegExp(escapeRegex(search.trim()), "i");
     }
 
     if (role) {
-        filter.roles = role;
+        query.roles = role;
     }
 
     if (active !== undefined) {
-        filter.active = active;
+        query.active = active;
     }
 
-    const users = await UserModel.find(filter, { ...USER_ADMIN_MINIMAL_FIELDS })
-        .sort({ createdAt: -1 })
+    const sortMap: Record<number, Record<string, "asc" | "desc">> = {
+        1: { createdAt: "desc" },
+        2: { createdAt: "asc" },
+        3: { lastLoginAt: "desc" },
+        4: { lastLoginAt: "asc" }
+    };
+    const sort = sortMap[filter ?? 1];
+
+    const users = await UserModel.find(query, { ...USER_ADMIN_MINIMAL_FIELDS })
+        .sort(sort)
         .skip((page - 1) * count)
         .limit(count)
         .lean<(UserAdminMinimal & { _id: Types.ObjectId })[]>();
 
-    const total = await UserModel.countDocuments(filter);
+    const total = await UserModel.countDocuments(query);
 
     res.json({
         success: true,
@@ -76,7 +74,7 @@ const getUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId } = body;
 
     const user = await UserModel.findById(userId)
-        .populate<{ ips: { _id: Types.ObjectId; value: string; banned: boolean }[]; lastIp?: { _id: Types.ObjectId; value: string; banned: boolean } }>("ips lastIp", "value banned")
+        .populate<{ ips: { _id: Types.ObjectId; value: string; banned: boolean }[]; lastIp?: { _id: Types.ObjectId; value: string; banned: boolean } }>("ips lastIp")
         .lean();
 
     if (!user) {

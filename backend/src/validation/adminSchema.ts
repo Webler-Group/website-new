@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, isoDateTimeSchema } from "./commonSchema";
+import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, isoDateTimeSchema, filterSchema } from "./commonSchema";
 import RolesEnum from "../data/RolesEnum";
 
 export const getUsersListSchema = z.object({
@@ -7,7 +7,7 @@ export const getUsersListSchema = z.object({
         search: searchQuerySchema,
         count: countPerPageSchema,
         page: pageSchema,
-        date: isoDateTimeSchema.optional(),
+        filter: filterSchema([1, 2, 3, 4]).optional(),
         role: z.enum(Object.values(RolesEnum) as [string, ...string[]]).optional(),
         active: z.boolean().optional()
     })

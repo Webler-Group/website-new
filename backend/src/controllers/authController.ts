@@ -40,7 +40,14 @@ const login = asyncHandler(async (req, res) => {
         throw new HttpError("Account is deactivated", 401);
     }
 
-    user.lastLoginAt = new Date();
+    await withTransaction(async (session) => {
+        user.lastLoginAt = new Date();
+        await user.save({ session });
+
+        if (ip) {
+            await updateUserIp(user._id, ip, session);
+        }
+    });
 
     const { accessToken, data: tokenInfo } = await signAccessToken({
         userId: user._id.toString(),
@@ -51,10 +58,6 @@ const login = asyncHandler(async (req, res) => {
         (tokenInfo as JwtPayload).exp! * 1000 : 0;
 
     await generateRefreshToken(res, { userId: user._id.toString() });
-
-    if (ip) {
-        await updateUserIp(user._id, ip);
-    }
 
     res.json({
         success: true,

@@ -197,6 +197,7 @@ const ModViewPage = () => {
                             <div>Verified: {user.verified ? "Yes" : "No"}</div>
                             <div>Active: {user.active ? "Yes" : "No"}</div>
                             <div>Registered: {new Date(user.registerDate).toLocaleDateString("en")}</div>
+                            <div>Last Login: {user.lastLoginDate ? new Date(user.lastLoginDate).toLocaleDateString("en") : "Never"}</div>
                             <div className="mt-3">
                                 <LinkContainer to={`/Profile/${user.id}`}>
                                     <Button variant="primary">View Profile</Button>

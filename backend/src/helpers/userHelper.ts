@@ -65,7 +65,8 @@ export const formatUserAdminMinimal = (user: UserAdminMinimal & { _id: Types.Obj
         registerDate: user.createdAt,
         level: user.level,
         verified: user.emailVerified,
-        active: user.active
+        active: user.active,
+        lastLoginDate: user.lastLoginAt
     };
 };
 
@@ -89,6 +90,7 @@ export const formatUserAdmin = (user: PopulatedUserAdmin) => {
         level: user.level,
         verified: user.emailVerified,
         active: user.active,
+        lastLoginDate: user.lastLoginAt,
         ban: user.ban
             ? { author: user.ban.author, note: user.ban.note, date: user.ban.date }
             : null,

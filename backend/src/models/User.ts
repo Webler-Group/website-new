@@ -154,7 +154,7 @@ export class User {
 export const USER_MINIMAL_FIELDS = { name: 1, avatarHash: 1, countryCode: 1, level: 1, roles: 1, active: 1 } as const;
 export type UserMinimal = Pick<User, keyof typeof USER_MINIMAL_FIELDS>;
 
-export const USER_ADMIN_MINIMAL_FIELDS = { email: 1, countryCode: 1, name: 1, avatarHash: 1, roles: 1, createdAt: 1, level: 1, emailVerified: 1, active: 1 } as const;
+export const USER_ADMIN_MINIMAL_FIELDS = { email: 1, countryCode: 1, name: 1, avatarHash: 1, roles: 1, createdAt: 1, level: 1, emailVerified: 1, active: 1, lastLoginAt: 1 } as const;
 export type UserAdminMinimal = Pick<User, keyof typeof USER_ADMIN_MINIMAL_FIELDS>;
 
 const UserModel = getModelForClass(User);
