@@ -169,7 +169,7 @@ const CourseLessonPage = () => {
                     </div>
 
                     <div className="wb-courses-lesson-main">
-                        <Nav variant="pills" className="flex-wrap overflow-auto m-2 gap-1">
+                        <Nav variant="pills" className="m-2 gap-1">
                             {lesson.nodes.map((node) => {
                                 const isActive = node.index === currentNodeIndex;
                                 const icon = node.type === LessonNodeTypeEnum.CODE ? <FaCode /> : node.type === LessonNodeTypeEnum.TEXT ? <FaBookOpen /> : <FaQuestionCircle />;
@@ -189,7 +189,7 @@ const CourseLessonPage = () => {
                         </Nav>
                     </div>
 
-                    <div className="flex-grow-1 mt-2">
+                    <div className="flex-grow-1 mt-2" style={{ minHeight: 0, overflow: "hidden" }}>
                         {
                             currentNodeIndex != 0 &&
                             <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} css={css} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />

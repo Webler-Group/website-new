@@ -40,7 +40,7 @@ export interface EditLessonNodeResponse {
     text: string;
     codeId: string | Types.ObjectId | null;
     correctAnswer?: string;
-    answers?: QuizAnswerResponse[];
+    answers: QuizAnswerResponse[];
 }
 
 export interface LessonProgressInfo {

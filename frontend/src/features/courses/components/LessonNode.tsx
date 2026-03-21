@@ -22,15 +22,6 @@ const allowedUrls = [
     /^\/.*/
 ];
 
-const calcIframeHeight = (nodeType: LessonNodeTypeEnum, answersCount: number = 0) => {
-    let contentHeight = 0;
-    if (nodeType === LessonNodeTypeEnum.TEXT_QUESTION) {
-        contentHeight = 60;
-    } else if (nodeType === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || nodeType === LessonNodeTypeEnum.MULTICHOICE_QUESTION) {
-        contentHeight = 60 * answersCount;
-    }
-    return `calc(100vh - ${contentHeight + 160}px)`;
-}
 
 const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: LessonNodeProps) => {
     const [node, setNode] = useState<LessonNodeDetails | null>(null);
@@ -150,21 +141,27 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
     let content = <></>;
 
     if (activeNode) {
-        const renderAnswers = () =>
-            activeNode.answers.map((answer, idx) => (
-                <div
-                    key={idx}
-                    className={`wb-courses-lesson-answer p-2 mt-3 ${getAnswerClass(answer.id!)}`}
-                    role="button"
-                    onClick={() => {
-                        activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
-                            ? handleSingleChoice(answer.id!)
-                            : handleMultiChoice(answer.id!);
-                    }}
-                >
-                    <div className="card-body">{answer.text}</div>
-                </div>
-            ));
+        const renderAnswers = () => (
+            <div className="d-flex flex-column gap-2">
+                {
+                    activeNode.answers.map((answer, idx) => (
+                        <div
+                            key={idx}
+                            className={`wb-courses-lesson-answer p-2 ${getAnswerClass(answer.id!)}`}
+                            role="button"
+                            onClick={() => {
+                                activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION
+                                    ? handleSingleChoice(answer.id!)
+                                    : handleMultiChoice(answer.id!);
+                            }}
+                        >
+                            <div className="card-body">{answer.text}</div>
+                        </div>
+
+                    ))
+                }
+            </div>
+        );
 
         const renderContent = () => {
             if (activeNode.type === LessonNodeTypeEnum.CODE && code) {
@@ -185,7 +182,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                 };
 
                 return (
-                    <div style={{ height: calcIframeHeight(activeNode.type) }}>
+                    <div style={{ flex: 1, minHeight: 0 }}>
                         <iframe
                             key={code.name + "_" + code.source.length}
                             title={code.name}
@@ -199,25 +196,29 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
             if (activeNode.mode === LessonNodeModeEnum.HTML) {
                 return (
-                    <div style={{ height: calcIframeHeight(activeNode.type, activeNode.answers.length) }}>
+                    <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
                         <HtmlRenderer html={activeNode.text} css={css} />
                     </div>
                 )
             }
 
-            return <MarkdownRenderer content={activeNode.text} allowedUrls={allowedUrls} />;
+            return (
+                <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+                    <MarkdownRenderer content={activeNode.text} allowedUrls={allowedUrls} />
+                </div>
+            );
         };
 
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === LessonNodeTypeEnum.CODE ? " wb-code-mode" : " p-2")}>
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === LessonNodeTypeEnum.CODE ? " wb-code-mode" : " px-2")}>
                     {renderContent()}
 
-                    {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="p-2">{renderAnswers()}</div>}
+                    {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="my-3">{renderAnswers()}</div>}
                     {activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && (
-                        <div className="d-flex justify-content-center mt-3">
+                        <div className="d-flex justify-content-center my-3">
                             <FormControl
-                                className={"wb-courses-lesson-answer p-2" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
+                                className={"wb-courses-lesson-answer" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
                                 style={{ width: "240px" }}
                                 value={textAnswer}
                                 readOnly={isCorrect !== null}

@@ -442,7 +442,8 @@ const editLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => 
             text: node.text || "",
             mode: node.mode,
             correctAnswer: node.correctAnswer,
-            codeId: node.codeId
+            codeId: node.codeId,
+            answers: []
         };
 
         if (answers) {
