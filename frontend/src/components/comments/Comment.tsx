@@ -13,9 +13,7 @@ import { CommmentDetails } from "./types";
 interface CommentProps {
   comment: CommmentDetails;
   isReply?: boolean;
-  repliesVisible?: boolean;
   isHighlighted: boolean;
-  handleToggleReplies?: () => void;
   handleReply?: () => void;
   handleEdit: () => void;
   handleDelete: () => void;
@@ -26,8 +24,6 @@ interface CommentProps {
 const Comment: React.FC<CommentProps> = ({
   comment,
   isReply = false,
-  repliesVisible,
-  handleToggleReplies,
   handleReply,
   handleEdit,
   handleDelete,
