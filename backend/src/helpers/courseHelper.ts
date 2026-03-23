@@ -215,11 +215,22 @@ export const deleteLessonNodeAndCleanup = async (
     await LessonNodeModel.deleteMany(filter, { session });
 };
 
-export const getUnlockedIndexes = (courseProgress: CourseProgress): { lastUnlockedLessonIndex: number; lastUnlockedNodeIndex: number } => {
-    return {
-        lastUnlockedLessonIndex: courseProgress.lastLessonIndex ?? 1,
-        lastUnlockedNodeIndex: courseProgress.lastNodeIndex ? courseProgress.lastNodeIndex + 1 : 1
-    };
+export const getUnlockedIndexes = async (courseProgress: CourseProgress): Promise<{ lastUnlockedLessonIndex: number; lastUnlockedNodeIndex: number }> => {
+    if (!courseProgress.lastLessonIndex || !courseProgress.lastNodeIndex) {
+        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
+    }
+    const [lastLesson] = await CourseLessonModel
+        .find({ course: courseProgress.course, index: { $lte: courseProgress.lastLessonIndex } }, { nodes: 1, index: 1 })
+        .sort({ index: "desc" })
+        .limit(1)
+        .lean();
+    if (!lastLesson) {
+        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
+    }
+    if (courseProgress.lastNodeIndex >= lastLesson.nodes) {
+        return { lastUnlockedLessonIndex: courseProgress.lastLessonIndex + 1, lastUnlockedNodeIndex: 1 };
+    }
+    return { lastUnlockedLessonIndex: courseProgress.lastLessonIndex, lastUnlockedNodeIndex: courseProgress.lastNodeIndex + 1 };
 };
 
 export const getLessonNodeInfo = async (

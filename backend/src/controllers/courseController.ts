@@ -129,8 +129,10 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     if (includeLessons === true) {
-        const lessons = await CourseLessonModel.find({ course: course._id }).sort({ index: "asc" }).lean();
-        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = getUnlockedIndexes(userProgress);
+        const [lessons, { lastUnlockedLessonIndex, lastUnlockedNodeIndex }] = await Promise.all([
+            CourseLessonModel.find({ course: course._id }).sort({ index: "asc" }).lean(),
+            getUnlockedIndexes(userProgress)
+        ]);
 
         courseData.lessons = lessons.map(lesson =>
             formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index })
@@ -159,7 +161,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("User progress not found", 404);
     }
 
-    const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = getUnlockedIndexes(userProgress);
+    const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(userProgress);
 
     if (lesson.index > lastUnlockedLessonIndex) {
         throw new HttpError("Lesson is not unlocked", 400);
@@ -204,7 +206,7 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("User progress not found", 404);
         }
 
-        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = getUnlockedIndexes(userProgress);
+        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(userProgress);
         const { unlocked } = await getLessonNodeInfo(lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonNode._id);
         if (!unlocked) {
             throw new HttpError("Node is not unlocked", 400);
@@ -281,7 +283,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("User progress not found", 404);
         }
 
-        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = getUnlockedIndexes(userProgress);
+        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(userProgress);
         const nodeInfo = await getLessonNodeInfo(lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonNode._id);
         if (!nodeInfo.unlocked) {
             throw new HttpError("Node is not unlocked", 400);
