@@ -31,82 +31,159 @@
     width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
-    color: #333;
+    color: #0f1419;
 }
 
 .wb-comment-item {
-    padding: 12px;
     transition: background-color 0.2s ease;
     border-radius: 8px;
-    margin-bottom: 8px;
-}
-
-.wb-comment-item:hover {
-    background-color: rgba(0, 0, 0, 0.02);
+    margin-bottom: 4px;
+    padding: 4px 8px; /* Slightly tighter padding */
 }
 
 .wb-comment-item.highlighted {
     background-color: #fff9db !important;
 }
 
+/* ----------------------
+   YouTube Style Threads 
+   ---------------------- */
+
+.wb-thread-container {
+    /* Set left margin so the thread container starts at the right edge of the 32px avatar + its gap */
+    margin-left: 48px;
+    display: flex;
+    flex-direction: column;
+}
+
+.wb-thread-toggle {
+    margin-top: -4px;
+    margin-bottom: 8px;
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.wb-thread-toggle-btn {
+    display: flex;
+    align-items: center;
+    background: none;
+    border: none;
+    color: #065fd4; /* YouTube blue link color */
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.wb-thread-toggle-btn:hover {
+    background-color: #def1ff;
+}
+
+/* Curved thread line from the left up to the parent avatar */
+.wb-thread-curve {
+    position: absolute;
+    /* 48px margin - 16px (half of 32px avatar) = 32px offset. Then we need to align the line itself, so -33px */
+    left: -33px; 
+    /* Pull it all the way up to touch the bottom of the 32px avatar */
+    top: -46px; 
+    width: 33px;
+    height: 66px;
+    border-left: 2px solid #e5e5e5;
+    border-bottom: 2px solid #e5e5e5;
+    border-bottom-left-radius: 12px;
+    pointer-events: none;
+}
+
+.wb-thread-replies-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    margin-left: -20px; 
+}
+
+/* Vertical line for the replies list */
+.wb-thread-replies-list::before {
+    content: "";
+    position: absolute;
+    /* 48px parent indent - 16px (half avatar) = 32px.
+       Replies list margin is -20px. So 32 - 20 = 12px offset. We use -13px to center the 2px border */
+    left: -13px; 
+    top: -54px; /* Pull it up to connect directly to the parent avatar */
+    bottom: 24px; /* Don't go all the way to the bottom of the last reply */
+    width: 2px;
+    background-color: #e5e5e5;
+    pointer-events: none;
+}
+
 .wb-reply-item {
     position: relative;
 }
 
-/* Curved L-shape connector for replies */
+/* Curved thread line to each individual reply */
 .wb-reply-item::before {
     content: "";
     position: absolute;
-    left: -11px;
-    top: -14px; /* Connects with previous sibling or parent area */
-    width: 14px;
-    height: 42px; /* Reaches center of 32px avatar (14 + 28) */
-    border-left: 2px solid #dee2e6;
-    border-bottom: 2px solid #dee2e6;
-    border-bottom-left-radius: 10px;
+    /* The vertical line is at -13px. */
+    left: -13px; 
+    /* Target the vertical center of the 24px avatar, accounting for padding (4px) -> 12px + 4px = 16px */
+    top: 16px; 
+    width: 14px; /* Bridge gap between -13px and the start of the item (0) */
+    height: 20px; /* Curve height */
+    /* Pull the box up so the bottom-left corner is at exactly top: 16px */
+    transform: translateY(-100%);
+    border-left: 2px solid #e5e5e5;
+    border-bottom: 2px solid #e5e5e5;
+    border-bottom-left-radius: 12px;
+    pointer-events: none;
 }
 
-/* Vertical line continuation for nested replies (except the last one) */
-.wb-reply-item:not(:last-child)::after {
-    content: "";
-    position: absolute;
-    left: -11px;
-    top: 28px;
-    bottom: -14px;
-    width: 2px;
-    background-color: #dee2e6;
-}
+/* ----------------------
+   Action Buttons Footer 
+   ---------------------- */
 
-.wb-comments-footer-btn {
+.wb-comments-action-btn {
     display: flex;
     align-items: center;
     font-size: 0.8rem;
-    color: #6c757d;
+    color: #606060;
     font-weight: 500;
-    transition: color 0.1s ease;
     background: none;
     border: none;
-    padding: 4px 0; /* Default vertical padding */
-    line-height: normal; /* Using normal instead of 1 for better baseline behavior */
+    padding: 4px 8px;
+    border-radius: 16px;
+    line-height: normal;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.wb-comments-action-btn:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    color: #0f1419;
+}
+
+.wb-comments-action-btn.active {
+    color: #000;
 }
 
 @media (max-width: 768px) {
-    .wb-comments-footer-btn {
-        padding: 4px 2px;
+    .wb-comments-action-btn {
+        padding: 4px 6px;
     }
 
     .wb-comment-item {
-        padding: 8px;
+        padding: 4px 0px;
         margin-bottom: 2px;
     }
 
     .wb-comment-node {
-        margin-bottom: 8px !important;
+        margin-bottom: 12px !important;
     }
-}
-
-.wb-comments-footer-btn:hover {
-    color: #007bff;
+    
+    .wb-thread-container {
+        margin-left: 40px;
+    }
 }
 
 .wb-comment-avatar-container {

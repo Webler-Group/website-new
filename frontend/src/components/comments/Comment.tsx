@@ -12,6 +12,7 @@ import { CommmentDetails } from "./types";
 
 interface CommentProps {
   comment: CommmentDetails;
+  isReply?: boolean;
   repliesVisible?: boolean;
   isHighlighted: boolean;
   handleToggleReplies?: () => void;
@@ -24,6 +25,7 @@ interface CommentProps {
 
 const Comment: React.FC<CommentProps> = ({
   comment,
+  isReply = false,
   repliesVisible,
   handleToggleReplies,
   handleReply,
@@ -52,68 +54,77 @@ const Comment: React.FC<CommentProps> = ({
   }
 
   return (
-    <div className={`d-flex position-relative gap-3 wb-comment-item ${isHighlighted ? "highlighted" : ""}`}>
+    <div className={`d-flex position-relative gap-3 wb-comment-item ${isHighlighted ? "highlighted" : ""} ${isReply ? "wb-reply-comment" : ""}`}>
       <div className="wb-comments__options">
         <div className="d-flex gap-2">
           {
             (userInfo && userInfo.id === comment.user.id) &&
             <>
-              <span className="wb-comments__options__item" title="Edit" onClick={handleEdit}>
+              <span className="wb-comments__options__item text-muted" title="Edit" onClick={handleEdit}>
                 <FaPencil size={12} />
               </span>
-              <span className="wb-comments__options__item" title="Delete" onClick={handleDelete}>
+              <span className="wb-comments__options__item text-muted" title="Delete" onClick={handleDelete}>
                 <FaTrash size={12} />
               </span>
             </>
           }
         </div>
       </div>
-      <div className="wb-comment-avatar-container">
-        <ProfileAvatar size={32} avatarUrl={comment.user.avatarUrl} />
+      
+      {/* Avatar Container aligned to the top */}
+      <div className="wb-comment-avatar-container" style={{ width: isReply ? '24px' : '32px' }}>
+        <ProfileAvatar size={isReply ? 24 : 32} avatarUrl={comment.user.avatarUrl} />
       </div>
-      <div className="flex-grow-1">
-        <div className="mb-1">
-          <div className="d-flex align-items-center gap-2">
-            <ProfileName userId={comment.user.id} userName={comment.user.name} />
-            <small className="text-secondary" style={{ fontSize: '0.75rem' }}>• {DateUtils.format2(new Date(comment.date), true)}</small>
-          </div>
-          <div className="wb-comments__message mt-1">
-            {parseMessage(comment.message)}
-          </div>
-          <div className="mt-2 text-center">
-            {
-              comment.attachments.map(attachment => {
-                return (
-                  <div key={attachment.id} className="mt-1 d-inline-block">
-                    <PostAttachment data={attachment} />
-                  </div>
-                )
-              })
-            }
-          </div>
+
+      <div className="flex-grow-1" style={{ minWidth: 0 }}>
+        {/* Username & Timestamp row */}
+        <div className="d-flex align-items-center gap-2 mb-1">
+          <ProfileName userId={comment.user.id} userName={comment.user.name} className={isReply ? "fs-6" : ""} />
+          <small className="text-secondary" style={{ fontSize: '0.75rem' }}>{DateUtils.format2(new Date(comment.date), true)}</small>
         </div>
-        <div className="d-flex gap-3 align-items-center mt-2">
-          <div className="d-flex align-items-center gap-1">
-            <span className={"wb-icon-button p-0 d-flex align-items-center wb-comment-footer-icon " + (comment.isUpvoted ? " text-primary" : "text-secondary")} onClick={handleVote} style={{ fontSize: '0.9rem' }}>
-              <FaThumbsUp />
-            </span>
-            <span 
-              className="small text-secondary fw-medium" 
-              style={{ cursor: comment.votes > 0 ? "pointer" : "default" }} 
-              onClick={comment.votes > 0 ? handleShowVotes : undefined}
-            >
-              {comment.votes}
-            </span>
+
+        {/* Message Content */}
+        <div className="wb-comments__message">
+          {parseMessage(comment.message)}
+        </div>
+        
+        {/* Attachments */}
+        {comment.attachments.length > 0 && (
+          <div className="mt-2 text-center text-md-start">
+            {comment.attachments.map(attachment => (
+              <div key={attachment.id} className="mt-1 d-inline-block me-2">
+                <PostAttachment data={attachment} />
+              </div>
+            ))}
           </div>
-          <button className="wb-comments-footer-btn" onClick={handleReply}>
+        )}
+
+        {/* Action Buttons Footer */}
+        <div className="d-flex gap-3 align-items-center mt-2">
+          <button 
+            className={`wb-comments-action-btn ${comment.isUpvoted ? "active" : ""}`} 
+            onClick={handleVote}
+          >
+            <FaThumbsUp size={14} className="me-1 mb-1" />
+            <span 
+              className="fw-medium"
+              style={{ paddingLeft: '2px' }}
+              onClick={(e) => {
+                if (comment.votes > 0) {
+                  e.stopPropagation();
+                  handleShowVotes();
+                }
+              }}
+            >
+              {comment.votes > 0 ? comment.votes : ""}
+            </span>
+          </button>
+          
+          <button className="wb-comments-action-btn fw-medium" onClick={handleReply}>
             Reply
           </button>
-          {
-            (comment.parentId === null && comment.answers > 0) &&
-            <button className={"wb-comments-footer-btn " + (repliesVisible ? "text-primary" : "")} onClick={handleToggleReplies}>
-              {comment.answers} {comment.answers === 1 ? 'reply' : 'replies'}
-            </button>
-          }
+
+          {/* The show/hide replies toggle is now handled by CommentNode, so we omit it here */}
         </div>
       </div>
     </div>

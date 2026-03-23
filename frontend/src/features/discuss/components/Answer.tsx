@@ -53,20 +53,20 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
     let bg = isNewlyCreated ? "beige" : "white";
 
     let body = (
-        <div className="gap-2 d-flex flex-column border-bottom border-2 py-2" style={{ background: bg }}>
-            <div className="d-flex gap-2">
-                <div className="d-flex flex-column align-items-center">
+        <div className="gap-3 d-flex flex-column border-bottom border-2 py-3" style={{ background: bg }}>
+            <div className="d-flex gap-3 align-items-start">
+                <div className="d-flex flex-column align-items-center flex-shrink-0" style={{ width: '40px' }}>
                     {
                         (isQuestionOwner || isAccepted) &&
-                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button" + (isAccepted ? " text-success" : " text-secondary")} style={{ cursor: isQuestionOwner ? "pointer" : "default" }}>
+                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button mb-2" + (isAccepted ? " text-success" : " text-secondary")} style={{ cursor: isQuestionOwner ? "pointer" : "default" }}>
                             <FaCheckCircle />
                         </div>
                     }
-                    <div className="wb-discuss-voting mt-2">
-                        <span onClick={voteAnswer} className={"wb-icon-button" + (upvoted ? " text-black" : "")}>
+                    <div className="wb-discuss-voting d-flex align-items-center">
+                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-black" : "")}>
                             <FaThumbsUp />
                         </span>
-                        <b className="wb-icon-button text-black" onClick={showVoters}>{votes}</b>
+                        <b className="wb-icon-button text-black ms-1" onClick={showVoters}>{votes}</b>
                     </div>
                 </div>
 
