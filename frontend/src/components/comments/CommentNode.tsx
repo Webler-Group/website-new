@@ -120,17 +120,28 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
         <div className="mb-4 position-relative wb-comment-node" ref={ref}>
             <Comment
                 comment={comment}
-                repliesVisible={repliesVisible}
                 handleDelete={handleDelete}
                 handleEdit={handleEdit}
                 handleReply={handleReply}
-                handleToggleReplies={handleToggleReplies}
                 handleShowVotes={() => onShowVotes(comment.id)}
                 isHighlighted={highlightedCommentId === comment.id}
                 onVote={onVote}
             />
-            {repliesVisible && (
-                <div className="ms-4 mt-1 position-relative">
+
+            {comment.answers > 0 && (
+                <div className="wb-thread-container">
+                    <div className="wb-thread-toggle">
+                        <button 
+                            className="wb-thread-toggle-btn" 
+                            onClick={handleToggleReplies}
+                        >
+                            <span className="wb-thread-curve"></span>
+                            {repliesVisible ? "Hide" : "View"} {comment.answers} {comment.answers === 1 ? 'reply' : 'replies'}
+                        </button>
+                    </div>
+
+                    {repliesVisible && (
+                        <div className="wb-thread-replies-list">
                     {replies.length > 0 && getFirstValidReplyIndex() > 0 && (
                         <Button
                             variant="primary"
@@ -146,6 +157,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                         <div key={reply.id} className="mb-1 wb-reply-item" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
                             <Comment
                                 comment={reply}
+                                isReply={true}
                                 handleDelete={() => onReplyDelete(reply)}
                                 handleEdit={() => onReplyEdit(reply)}
                                 handleReply={() => onReplyReply(reply)}
@@ -155,6 +167,8 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                             />
                         </div>
                     ))}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

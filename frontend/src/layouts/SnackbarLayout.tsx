@@ -59,7 +59,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
           </Row>
         </Container>
 
-        {Footer && <footer className="bg-dark text-white p-3 mt-auto">{Footer}</footer>}
+        {Footer && Footer}
 
         {/* Mobile Offcanvas - Side Menu */}
         {SideMenu && (
