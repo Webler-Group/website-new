@@ -21,7 +21,7 @@ export class BoxIdPool {
                 if(!this.inUse.has(i)) {
                     const timeoutId = setTimeout(() => {
                         this.release(i);
-                    });
+                    }, this.maxHoldingTimeMs);
                     this.inUse.set(i, {
                         timeoutId
                     });

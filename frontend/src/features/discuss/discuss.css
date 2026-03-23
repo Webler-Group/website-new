@@ -84,3 +84,25 @@
 .wb-discuss-reply__actions__best-answer-button {
     font-size: 26px;
 }
+
+.wb-discuss-voting {
+    user-select: none;
+    line-height: 1;
+}
+
+.wb-discuss-voting .wb-icon-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    transition: transform 0.1s ease;
+}
+
+.wb-discuss-voting .wb-icon-button:active {
+    transform: scale(0.9);
+}
+
+.wb-discuss-voting b {
+    font-size: 0.95rem;
+    font-weight: 700;
+}

@@ -58,6 +58,17 @@ async function processSingleJob(job: DocumentType<EvaluationJob>) {
                     .sort({ updatedAt: "desc" })
                     .limit(1);
 
+                // Update Challenge stats for acceptance rate (before submission save so it always runs)
+                await ChallengeModel.updateOne(
+                    { _id: job.challenge },
+                    {
+                        $inc: {
+                            totalSubmissions: 1,
+                            passedSubmissions: passed ? 1 : 0
+                        }
+                    }
+                );
+
                 let submission: DocumentType<ChallengeSubmission> | null = submissions.length > 0 ? submissions[0] : null;
 
                 if (submission) {
@@ -79,17 +90,6 @@ async function processSingleJob(job: DocumentType<EvaluationJob>) {
                 }
 
                 job.submission = submission._id;
-
-                // Update Challenge stats for acceptance rate
-                await ChallengeModel.updateOne(
-                    { _id: job.challenge },
-                    {
-                        $inc: {
-                            totalSubmissions: 1,
-                            passedSubmissions: passed ? 1 : 0
-                        }
-                    }
-                );
 
                 // Award XP if passed for the first time
                 if (passed) {

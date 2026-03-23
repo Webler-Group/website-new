@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router-dom";
 import SnackbarLayout from "../../layouts/SnackbarLayout";
 import Header from "../../layouts/Header";
+import Footer from "../../layouts/Footer";
 import ChallengeList from "./pages/ChallengeListPage";
 import roles from "../../data/roles";
 import RequireAuth from "../auth/components/RequireAuth";
@@ -13,7 +14,7 @@ import "./challenges.css";
 const ChallengeRoutes = () => {
     return (
         <Routes>
-            <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={null} />}>
+            <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={<Footer />} />}>
                 <Route index element={<ChallengeList />} />
                 <Route element={<RequireAuth allowedRoles={roles} />}>
                     <Route path=":challengeId" element={<ChallengeDetailsPage />} />
