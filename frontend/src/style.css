@@ -201,26 +201,123 @@ ul {
     min-height: 720px;
 }
 
-.wb-home-footer {
-    color: rgb(121, 121, 121);
-    font-weight: 700;
-    text-decoration: none;
+.wb-footer {
+    background-color: #0d0d0d;
+    border-top: 1px solid #1f1f1f;
 }
 
-.wb-home-footer a {
-    color: rgb(121, 121, 121);
-    font-weight: 700;
-    text-decoration: none;
+.wb-footer__inner {
+    padding: 48px 0 24px;
 }
 
-.wb-made-by {
-    color: rgb(121, 121, 121);
-    font-weight: bolder;
-    margin-right: 50px;
+.wb-footer__grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid #1f1f1f;
 }
 
-.wb-made-by b {
+.wb-footer__brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wb-footer__logo {
+    font-size: 1.4rem;
+    font-weight: 800;
     color: #fff;
+    letter-spacing: -0.5px;
+}
+
+.wb-footer__tagline {
+    color: #555;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.wb-footer__heading {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #444;
+    margin-bottom: 14px;
+}
+
+.wb-footer__links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.wb-footer__links a {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.15s;
+}
+
+.wb-footer__links a:hover {
+    color: #fff;
+}
+
+.wb-footer__social-icons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.wb-footer__social-icons a {
+    color: #888;
+    font-size: 1.1rem;
+    transition: color 0.15s;
+    text-decoration: none;
+}
+
+.wb-footer__social-icons a:hover {
+    color: #fff;
+}
+
+.wb-footer__bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    color: #444;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wb-footer__bottom b {
+    color: #888;
+}
+
+.wb-footer__heart {
+    color: #e25555;
+    vertical-align: -2px;
+    margin: 0 2px;
+}
+
+@media (max-width: 576px) {
+    .wb-footer__grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .wb-footer__brand {
+        grid-column: 1 / -1;
+    }
+
+    .wb-footer__bottom {
+        flex-direction: column;
+        align-items: flex-start;
+    }
 }
 
 @media(min-width: 576px) {
