@@ -13,7 +13,6 @@ import UserFollowingModel from "../models/UserFollowing";
 import { formatAuthUser, getRequestIp, updateUserIp } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
 import IpModel from "../models/Ip";
-import { withTransaction } from "../utils/transaction";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -40,14 +39,12 @@ const login = asyncHandler(async (req, res) => {
         throw new HttpError("Account is deactivated", 401);
     }
 
-    await withTransaction(async (session) => {
-        user.lastLoginAt = new Date();
-        await user.save({ session });
+    user.lastLoginAt = new Date();
+    await user.save();
 
-        if (ip) {
-            await updateUserIp(user._id, ip, session);
-        }
-    });
+    if (ip) {
+        await updateUserIp(user._id, ip);
+    }
 
     const { accessToken, data: tokenInfo } = await signAccessToken({
         userId: user._id.toString(),
@@ -98,26 +95,22 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         throw new HttpError("Username is already used", 400);
     }
 
-    const user = await withTransaction(async (session) => {
-        const [created] = await UserModel.create([{
-            email,
-            name,
-            password,
-            emailVerified: config.nodeEnv == "development",
-            lastLoginAt: new Date()
-        }], { session });
-
-        const weblercodesUser = await UserModel.exists({ email: config.adminEmail }).session(session);
-        if (weblercodesUser) {
-            await UserFollowingModel.create([{ user: created._id, following: weblercodesUser._id }], { session });
-        }
-
-        if (ip) {
-            await updateUserIp(created._id, ip, session);
-        }
-
-        return created;
+    const user = await UserModel.create({
+        email,
+        name,
+        password,
+        emailVerified: config.nodeEnv == "development",
+        lastLoginAt: new Date()
     });
+
+    const weblercodesUser = await UserModel.exists({ email: config.adminEmail });
+    if (weblercodesUser) {
+        await UserFollowingModel.create([{ user: user._id, following: weblercodesUser._id }]);
+    }
+
+    if (ip) {
+        await updateUserIp(user._id, ip);
+    }
 
     const { accessToken, data: tokenInfo } = await signAccessToken({
         userId: user._id.toString(),

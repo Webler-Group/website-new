@@ -1,43 +1,40 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
 import PageTitle from "../layouts/PageTitle";
+import RolesEnum from "../data/RolesEnum";
+import { Container } from "react-bootstrap";
 
 export interface IPriviledgeInfo {
     name: string;
     url: string;
-    roles: string[];
+    roles: RolesEnum[];
 }
 
 const tools = [
-    { name: "Tag Executor", url: "/Tools/Tags", roles: ["Moderator"] },
-    { name: "Course Editor", url: "/Courses/Editor", roles: ["Creator"] },
-    { name: "Admin Panel", url: "/Admin", roles: ["Moderator"] }
+    { name: "Tag Executor", url: "/Tools/Tags", roles: [RolesEnum.MODERATOR] },
+    { name: "Course Editor", url: "/Courses/Editor", roles: [RolesEnum.CREATOR] },
+    { name: "Admin Panel", url: "/Admin", roles: [RolesEnum.MODERATOR] }
 ];
 
 const ToolsHomePage = () => {
     PageTitle("Tools");
 
     const { userInfo } = useAuth();
-    const navigate = useNavigate();
 
     return (
-        <div className="d-flex flex-column">
-            <ul>
+        <Container className="mt-4">
+            <ul style={{ listStyleType: "disc" }}>
                 {
                     tools
-                        .filter(item => userInfo?.roles.some(role => ["Admin", ...item.roles].includes(role)))
+                        .filter(item => userInfo?.roles.some(role => [RolesEnum.ADMIN, ...item.roles].includes(role)))
                         .map((item) => (
-                            <li key={item.name}
-                                className="m-1 p-1 bg-hover-primary"
-                                style={{ cursor: "pointer" }}
-                                onClick={() => { navigate(item.url) }}
-                            >
-                                {item.name}
+                            <li key={item.name}>
+                                <Link to={item.url}>{item.name}</Link>
                             </li>
                         ))
                 }
             </ul>
-        </div>
+        </Container>
     )
 }
 

@@ -344,9 +344,10 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             if (!previewNodeData) return undefined;
 
             return (
-                <div className="d-flex flex-column" style={{ minHeight: "368px" }}>
-                    <div className="flex-grow-1 border border-2 rounded">
+                <div className="d-flex flex-column" style={{ height: "80vh" }}>
+                    <div className="flex-grow-1 border border-2 rounded" style={{ height: "100%" }}>
                         <LessonNode
+                            key={node!.id}
                             nodeData={previewNodeData}
                             mock={true}
                             css={css}
