@@ -4,7 +4,7 @@ import LessonNodeModel, { LessonNode, LessonNodeMinimal } from "../models/Lesson
 import QuizAnswerModel, { QuizAnswer } from "../models/QuizAnswer";
 import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 import CourseModel, { Course } from "../models/Course";
-import CourseProgressModel from "../models/CourseProgress";
+import CourseProgressModel, { CourseProgress } from "../models/CourseProgress";
 import { deleteEntry } from "./fileHelper";
 import { File } from "../models/File";
 import { deletePostsAndCleanup } from "./postsHelper";
@@ -215,24 +215,11 @@ export const deleteLessonNodeAndCleanup = async (
     await LessonNodeModel.deleteMany(filter, { session });
 };
 
-export const getUnlockedIndexes = async (
-    courseId: Types.ObjectId,
-    lastLessonIndex?: number,
-    lastNodeIndex?: number
-): Promise<{ lastUnlockedLessonIndex: number; lastUnlockedNodeIndex: number }> => {
-    if (!lastLessonIndex || !lastNodeIndex) {
-        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
-    }
-    const lastLesson = await CourseLessonModel
-        .findOne({ course: courseId, index: lastLessonIndex }, { nodes: 1 })
-        .lean();
-    if (!lastLesson) {
-        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
-    }
-    if (lastNodeIndex >= lastLesson.nodes) {
-        return { lastUnlockedLessonIndex: lastLessonIndex + 1, lastUnlockedNodeIndex: 1 };
-    }
-    return { lastUnlockedLessonIndex: lastLessonIndex, lastUnlockedNodeIndex: lastNodeIndex + 1 };
+export const getUnlockedIndexes = (courseProgress: CourseProgress): { lastUnlockedLessonIndex: number; lastUnlockedNodeIndex: number } => {
+    return {
+        lastUnlockedLessonIndex: courseProgress.lastLessonIndex ?? 1,
+        lastUnlockedNodeIndex: courseProgress.lastNodeIndex ? courseProgress.lastNodeIndex + 1 : 1
+    };
 };
 
 export const getLessonNodeInfo = async (
