@@ -16,7 +16,8 @@ export const createCourseSchema = z.object({
     body: z.object({
         title: titleSchema,
         description: courseDescriptionSchema,
-        code: courseCodeSchema
+        code: courseCodeSchema,
+        visible: z.boolean("Visible must be a boolean")
     })
 });
 

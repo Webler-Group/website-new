@@ -12,6 +12,12 @@ export class CourseProgress {
     @prop({ ref: "LessonNode", default: null })
     lastLessonNodeId!: Types.ObjectId | null;
 
+    @prop()
+    lastLessonIndex?: number;
+
+    @prop()
+    lastNodeIndex?: number;
+
     @prop({ default: false })
     completed!: boolean;
 

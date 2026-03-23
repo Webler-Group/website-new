@@ -54,9 +54,9 @@ import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);
-    const { title, description, code } = body;
+    const { title, description, code, visible } = body;
 
-    const course = await CourseModel.create({ title, description, code, visible: false });
+    const course = await CourseModel.create({ title, description, code, visible });
 
     res.json({
         success: true,

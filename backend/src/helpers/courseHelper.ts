@@ -215,65 +215,47 @@ export const deleteLessonNodeAndCleanup = async (
     await LessonNodeModel.deleteMany(filter, { session });
 };
 
-export const getLastUnlockedLessonIndex = async (lastLessonNodeId?: Types.ObjectId | null): Promise<number> => {
-    let lastUnlockedLessonIndex = 1;
-    if (lastLessonNodeId) {
-        const lastCompletedLessonNode = await LessonNodeModel
-            .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
-            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
-            .lean();
-        if (lastCompletedLessonNode) {
-            lastUnlockedLessonIndex =
-                lastCompletedLessonNode.lessonId.nodes === lastCompletedLessonNode.index
-                    ? lastCompletedLessonNode.lessonId.index + 1
-                    : lastCompletedLessonNode.lessonId.index;
-        }
+export const getUnlockedIndexes = async (
+    courseId: Types.ObjectId,
+    lastLessonIndex?: number,
+    lastNodeIndex?: number
+): Promise<{ lastUnlockedLessonIndex: number; lastUnlockedNodeIndex: number }> => {
+    if (!lastLessonIndex || !lastNodeIndex) {
+        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
     }
-    return lastUnlockedLessonIndex;
+    const lastLesson = await CourseLessonModel
+        .findOne({ course: courseId, index: lastLessonIndex }, { nodes: 1 })
+        .lean();
+    if (!lastLesson) {
+        return { lastUnlockedLessonIndex: 1, lastUnlockedNodeIndex: 1 };
+    }
+    if (lastNodeIndex >= lastLesson.nodes) {
+        return { lastUnlockedLessonIndex: lastLessonIndex + 1, lastUnlockedNodeIndex: 1 };
+    }
+    return { lastUnlockedLessonIndex: lastLessonIndex, lastUnlockedNodeIndex: lastNodeIndex + 1 };
 };
 
 export const getLessonNodeInfo = async (
-    lastLessonNodeId: Types.ObjectId | null,
+    lastUnlockedLessonIndex: number,
+    lastUnlockedNodeIndex: number,
     lessonNodeId: Types.ObjectId
 ): Promise<LessonNodeInfoResult> => {
     const lessonNode = await LessonNodeModel
-        .findById(lessonNodeId, { index: 1 }, { index: 1, lessonId: 1 })
-        .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
+        .findById(lessonNodeId, { index: 1, lessonId: 1 })
+        .populate<{ lessonId: { index: number } }>("lessonId", { index: 1 })
         .lean();
 
     const result: LessonNodeInfoResult = { unlocked: false, isLastUnlocked: false };
     if (!lessonNode) return result;
 
     const lessonIndex = lessonNode.lessonId.index;
-    let lastCompletedLessonNode = null;
+    const nodeIndex = lessonNode.index;
 
-    if (lastLessonNodeId) {
-        lastCompletedLessonNode = await LessonNodeModel
-            .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
-            .populate<{ lessonId: { nodes: number; index: number } }>("lessonId", { nodes: 1, index: 1 })
-            .lean();
-    }
-
-    if (lastCompletedLessonNode) {
-        const lastUnlockedLessonIndex =
-            lastCompletedLessonNode.lessonId.nodes === lastCompletedLessonNode.index
-                ? lastCompletedLessonNode.lessonId.index + 1
-                : lastCompletedLessonNode.lessonId.index;
-
-        if (lessonIndex < lastUnlockedLessonIndex) {
-            result.unlocked = true;
-        } else if (lessonIndex === lastUnlockedLessonIndex) {
-            if (lastCompletedLessonNode.lessonId.nodes === lastCompletedLessonNode.index) {
-                result.unlocked = lessonNode.index === 1;
-                result.isLastUnlocked = result.unlocked;
-            } else {
-                result.unlocked = lessonNode.index <= lastCompletedLessonNode.index + 1;
-                result.isLastUnlocked = lessonNode.index === lastCompletedLessonNode.index + 1;
-            }
-        }
-    } else {
-        result.unlocked = lessonNode.index === 1 && lessonIndex === 1;
-        result.isLastUnlocked = result.unlocked;
+    if (lessonIndex < lastUnlockedLessonIndex) {
+        result.unlocked = true;
+    } else if (lessonIndex === lastUnlockedLessonIndex) {
+        result.unlocked = nodeIndex <= lastUnlockedNodeIndex;
+        result.isLastUnlocked = nodeIndex === lastUnlockedNodeIndex;
     }
 
     return result;
@@ -337,17 +319,17 @@ export const formatLessonNodeMinimal = (
     return result;
 };
 
-export const isCourseCompleted = async (courseId: Types.ObjectId, lastLessonNodeId: Types.ObjectId, session?: mongoose.ClientSession) => {
-    const lessonNode = await LessonNodeModel
-        .findById(lastLessonNodeId, { index: 1, lessonId: 1 })
-        .populate<{ lessonId: { nodes: number, index: number } }>("lessonId", { nodes: 1, index: 1 })
-        .lean()
-        .session(session ?? null);
+export const isCourseCompleted = async (
+    courseId: Types.ObjectId,
+    lastLessonIndex: number,
+    lastNodeIndex: number,
+    session?: mongoose.ClientSession
+): Promise<boolean> => {
+    const [lesson, totalLessons] = await Promise.all([
+        CourseLessonModel.findOne({ course: courseId, index: lastLessonIndex }, { nodes: 1 }).lean().session(session ?? null),
+        CourseLessonModel.countDocuments({ course: courseId }).session(session ?? null)
+    ]);
 
-    if (lessonNode) {
-        const courseLessons = await CourseLessonModel.countDocuments({ course: courseId });
-        return lessonNode.index === lessonNode.lessonId.nodes && lessonNode.lessonId.index === courseLessons;
-    }
-
-    return false;
+    if (!lesson) return false;
+    return lastNodeIndex === lesson.nodes && lastLessonIndex === totalLessons;
 }

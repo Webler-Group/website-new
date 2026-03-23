@@ -35,7 +35,7 @@ import {
     formatCourseMinimal,
     formatLesson,
     formatLessonNodeMinimal,
-    getLastUnlockedLessonIndex,
+    getUnlockedIndexes,
     getLessonNodeInfo,
     isCourseCompleted,
     LessonProgressInfo,
@@ -129,15 +129,11 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     };
 
     if (includeLessons === true) {
-        const [lessons, lastUnlockedLessonIndex, lastLessonNode] = await Promise.all([
+        const [lessons, { lastUnlockedLessonIndex, lastUnlockedNodeIndex }] = await Promise.all([
             CourseLessonModel.find({ course: course._id }).sort({ index: "asc" }).lean(),
-            getLastUnlockedLessonIndex(userProgress.lastLessonNodeId),
-            userProgress.lastLessonNodeId
-                ? LessonNodeModel.findById(userProgress.lastLessonNodeId, { index: 1 }).lean<{ index: number }>()
-                : Promise.resolve(null)
+            getUnlockedIndexes(course._id, userProgress.lastLessonIndex, userProgress.lastNodeIndex)
         ]);
 
-        const lastUnlockedNodeIndex = lastLessonNode ? lastLessonNode.index + 1 : 1;
         courseData.lessons = lessons.map(lesson =>
             formatLesson(lesson, { lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonIndex: lesson.index })
         );
@@ -158,23 +154,19 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const [course, userProgress] = await Promise.all([
         CourseModel.findById(lesson.course, { css: 1 }).lean(),
-        CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId })
-            .populate<{ lastLessonNodeId: { index: number; lessonId: Types.ObjectId; _id: Types.ObjectId } | null }>("lastLessonNodeId", { index: 1, lessonId: 1 })
-            .lean()
+        CourseProgressModel.findOne({ course: lesson.course, userId: currentUserId }).lean()
     ]);
 
     if (!userProgress) {
         throw new HttpError("User progress not found", 404);
     }
 
-    const lastUnlockedLessonIndex = await getLastUnlockedLessonIndex(userProgress.lastLessonNodeId?._id);
+    const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(
+        lesson.course, userProgress.lastLessonIndex, userProgress.lastNodeIndex
+    );
+
     if (lesson.index > lastUnlockedLessonIndex) {
         throw new HttpError("Lesson is not unlocked", 400);
-    }
-
-    let lastUnlockedNodeIndex = 1;
-    if (userProgress.lastLessonNodeId && lesson._id.equals(userProgress.lastLessonNodeId.lessonId)) {
-        lastUnlockedNodeIndex = userProgress.lastLessonNodeId.index + 1;
     }
 
     const nodes = await LessonNodeModel.find({ lessonId: lesson._id }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean();
@@ -216,7 +208,10 @@ const getLessonNode = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("User progress not found", 404);
         }
 
-        const { unlocked } = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
+        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(
+            lessonNode.lessonId.course, userProgress.lastLessonIndex, userProgress.lastNodeIndex
+        );
+        const { unlocked } = await getLessonNodeInfo(lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonNode._id);
         if (!unlocked) {
             throw new HttpError("Node is not unlocked", 400);
         }
@@ -292,7 +287,10 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("User progress not found", 404);
         }
 
-        const nodeInfo = await getLessonNodeInfo(userProgress.lastLessonNodeId, lessonNode._id);
+        const { lastUnlockedLessonIndex, lastUnlockedNodeIndex } = await getUnlockedIndexes(
+            lessonNode.lessonId.course, userProgress.lastLessonIndex, userProgress.lastNodeIndex
+        );
+        const nodeInfo = await getLessonNodeInfo(lastUnlockedLessonIndex, lastUnlockedNodeIndex, lessonNode._id);
         if (!nodeInfo.unlocked) {
             throw new HttpError("Node is not unlocked", 400);
         }
@@ -318,9 +316,10 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
         }
 
         if (isLast && correct) {
-            userProgress.lastLessonNodeId = lessonNode._id;
-            const isCompleted = await isCourseCompleted(userProgress.course, lessonNode._id);
-            if(isCompleted) {
+            userProgress.lastLessonIndex = lastUnlockedLessonIndex;
+            userProgress.lastNodeIndex = lastUnlockedNodeIndex;
+            const isCompleted = await isCourseCompleted(userProgress.course, lastUnlockedLessonIndex, lastUnlockedNodeIndex);
+            if (isCompleted) {
                 userProgress.completed = true;
             }
 
@@ -341,7 +340,8 @@ const resetCourseProgress = asyncHandler(async (req: IAuthRequest, res: Response
         throw new HttpError("Course progress not found", 404);
     }
 
-    userProgress.lastLessonNodeId = null;
+    userProgress.lastLessonIndex = undefined;
+    userProgress.lastNodeIndex = undefined;
     userProgress.completed = false;
     await userProgress.save();
 
