@@ -3,7 +3,7 @@ import { Types } from "mongoose";
 
 @modelOptions({ schemaOptions: { collection: "quizanswers" } })
 export class QuizAnswer {
-    @prop({ required: true, trim: true, minlength: 1, maxlength: 120 })
+    @prop({ required: true, trim: true, minlength: 1, maxlength: 180 })
     text!: string;
 
     @prop({ default: false })

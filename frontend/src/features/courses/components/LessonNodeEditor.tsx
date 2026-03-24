@@ -359,7 +359,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
 
         const getEditorFields = () => {
             switch (nodeType) {
-                case 2:
+                case LessonNodeTypeEnum.SINGLECHOICE_QUESTION:
                     return (
                         <FormGroup>
                             <FormLabel>Answers</FormLabel>
@@ -398,7 +398,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                         </FormGroup>
                     );
 
-                case 3:
+                case LessonNodeTypeEnum.MULTICHOICE_QUESTION:
                     return (
                         <FormGroup>
                             <FormLabel>Answers</FormLabel>
@@ -409,7 +409,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         onChange={(e) => handleEditAnswerText(i, e.target.value)}
                                         placeholder={`Answer ${i + 1}`}
                                         required
-                                        maxLength={120}
+                                        maxLength={180}
                                     />
                                     <FormCheck
                                         name="answer-correct"
@@ -438,7 +438,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                         </FormGroup>
                     );
 
-                case 4:
+                case LessonNodeTypeEnum.TEXT_QUESTION:
                     return (
                         <FormGroup>
                             <FormLabel>Correct answer</FormLabel>

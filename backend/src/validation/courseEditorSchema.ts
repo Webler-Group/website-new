@@ -8,7 +8,7 @@ const nodeTextSchema = z.string().max(8000, "Text must not exceed 8000 character
 
 const quizAnswerSchema = z.object({
     id: idSchema("answerId").optional(),
-    text: z.string().min(1, "Answer text must not be empty").max(120, "Answer text must not exceed 120 characters"),
+    text: z.string().min(1, "Answer text must not be empty").max(180, "Answer text must not exceed 180 characters"),
     correct: z.boolean("Correct must be a boolean")
 });
 
