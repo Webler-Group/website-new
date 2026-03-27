@@ -132,7 +132,7 @@ export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, 
             }
         }
         await Upvote.deleteMany({ parentId: post._id }, { session });
-        await PostAttachmentModel.deleteMany({ postId: post._id }, { session });
+        await deletePostAttachments({ postId: post._id }, session);
     }
 
     await PostModel.deleteMany(filter, { session });
