@@ -47,7 +47,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             message,
             user: currentUserId
         });
-        await savePost(feed, session);
+        const notifications = await savePost(feed, session);
 
         const followers = await UserFollowingModel.find({ following: currentUserId }).lean().session(session);
         await sendNotifications(
@@ -58,7 +58,7 @@ const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 message: `{action_user} made a new post "${truncate(escapeMarkdown(feed.message), 20).replaceAll(/\n+/g, " ")}"`,
                 feedId: feed._id
             },
-            followers.filter(x => !x.user.equals(currentUserId)).map(x => x.user)
+            followers.filter(x => !x.user.equals(currentUserId) && !notifications.some(y => x.user.equals(y.user))).map(x => x.user)
         );
 
         return feed;
@@ -232,9 +232,9 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             parentId,
             user: currentUserId
         });
-        await savePost(reply, session);
+        const notifications = await savePost(reply, session);
 
-        if (parentComment && !parentComment.user.equals(currentUserId)) {
+        if (parentComment && !parentComment.user.equals(currentUserId) && !notifications.some(x => x.user.equals(parentComment.user))) {
             await sendNotifications({
                 title: "New reply",
                 type: NotificationTypeEnum.FEED_COMMENT,
@@ -245,7 +245,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             }, [parentComment.user]);
         }
 
-        if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user))) {
+        if (!feed.user.equals(currentUserId) && (!parentComment || !feed.user.equals(parentComment.user)) && !notifications.some(x => x.user.equals(feed.user))) {
             await sendNotifications({
                 title: "New comment",
                 type: NotificationTypeEnum.FEED_COMMENT,
@@ -361,12 +361,9 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
             user: currentUserId,
             parentId: feedId
         });
-        await savePost(feed, session);
+        const notifications = await savePost(feed, session);
 
-        originalFeed.$inc("shares", 1);
-        await originalFeed.save({ session });
-
-        if (!originalFeed.user.equals(currentUserId)) {
+        if (!originalFeed.user.equals(currentUserId) && !notifications.some(x => x.user.equals(originalFeed.user))) {
             await sendNotifications({
                 title: "Feed share",
                 type: NotificationTypeEnum.FEED_SHARE,
@@ -375,6 +372,9 @@ const shareFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 feedId: feed._id
             }, [originalFeed.user]);
         }
+
+        originalFeed.$inc("shares", 1);
+        await savePost(originalFeed, session);
 
         return feed;
     });

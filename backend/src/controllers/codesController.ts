@@ -307,9 +307,9 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             parentId,
             user: currentUserId
         });
-        await savePost(reply, session);
+        const notifications = await savePost(reply, session);
 
-        if (parentPost && !parentPost.user.equals(currentUserId)) {
+        if (parentPost && !parentPost.user.equals(currentUserId) && !notifications.some(x => x.user.equals(parentPost.user))) {
             await sendNotifications({
                 title: "New reply",
                 message: `{action_user} replied to your comment on code "${code.name}"`,
@@ -320,7 +320,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             }, [parentPost.user]);
         }
 
-        if (!code.user.equals(currentUserId) && (!parentPost || !code.user.equals(parentPost.user))) {
+        if (!code.user.equals(currentUserId) && (!parentPost || !code.user.equals(parentPost.user)) && !notifications.some(x => x.user.equals(code.user))) {
             await sendNotifications({
                 title: "New comment",
                 message: `{action_user} posted comment on your code "${code.name}"`,

@@ -16,6 +16,7 @@ import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import { config } from "../confg";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import { Notification } from "../models/Notification";
 
 export interface PostAttachmentDetails {
     id: Types.ObjectId;
@@ -169,6 +170,7 @@ export const updatePostAttachments = async (message: string, parentId: { post?: 
     }).lean().session(session ?? null);
 
     const newAttachmentIds: Types.ObjectId[] = [];
+    const notifications: Notification[] = [];
     const pattern = new RegExp(
         "(" + config.allowedOrigins.map(x => escapeRegex(x)).join("|") + ")\\/([\\w\\-]+)\\/([0-9a-fA-F]{24})",
         "gi"
@@ -265,7 +267,9 @@ export const updatePostAttachments = async (message: string, parentId: { post?: 
                 if (mentionedUser) {
                     let attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.equals(userId));
                     if (!attachment) {
-                        attachment = await createMentionAttachment(parentPost, mentionedUser._id, session);
+                        const result = await createMentionAttachment(parentPost, mentionedUser._id, session);
+                        attachment = result.attachment;
+                        notifications.push(...result.notifications);
                     }
                     if (attachment) newAttachmentIds.push(attachment._id);
                 }
@@ -275,6 +279,8 @@ export const updatePostAttachments = async (message: string, parentId: { post?: 
 
     const idsToDelete = currentAttachments.map(x => x._id).filter(v => !newAttachmentIds.includes(v));
     await deletePostAttachments({ _id: { $in: idsToDelete } }, session);
+
+    return notifications;
 }
 
 export const deletePostAttachments = async (filter: mongoose.QueryFilter<PostAttachment>, session?: mongoose.ClientSession) => {
@@ -325,8 +331,10 @@ export const savePost = async (post: DocumentType<Post>, session?: mongoose.Clie
     await post.save({ session });
 
     if (messageModified) {
-        await updatePostAttachments(post.message, { post: post._id }, session);
+        return updatePostAttachments(post.message, { post: post._id }, session);
     }
+
+    return [];
 };
 
 const createMentionAttachment = async (parentPost: PopulatedParentPost, mentionedUserId: Types.ObjectId, session?: mongoose.ClientSession) => {
@@ -336,11 +344,13 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
         user: mentionedUserId
     }], { session });
 
-    if (attachment.user.equals(parentPost.user._id)) return;
+    if (attachment.user.equals(parentPost.user._id)) return { attachment, notifications: [] };
+
+    let notifications: Notification[] = [];
 
     switch (parentPost._type) {
         case PostTypeEnum.QUESTION:
-            await sendNotifications({
+            notifications = await sendNotifications({
                 title: "New mention",
                 type: NotificationTypeEnum.QA_QUESTION_MENTION,
                 actionUser: parentPost.user._id,
@@ -350,7 +360,7 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
             break;
         case PostTypeEnum.ANSWER:
             if (parentPost.parentId) {
-                await sendNotifications({
+                notifications = await sendNotifications({
                     title: "New mention",
                     type: NotificationTypeEnum.QA_ANSWER_MENTION,
                     actionUser: parentPost.user._id,
@@ -362,7 +372,7 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
             break;
         case PostTypeEnum.CODE_COMMENT:
             if (parentPost.codeId) {
-                await sendNotifications({
+                notifications = await sendNotifications({
                     title: "New mention",
                     type: NotificationTypeEnum.CODE_COMMENT_MENTION,
                     actionUser: parentPost.user._id,
@@ -374,7 +384,7 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
             break;
         case PostTypeEnum.LESSON_COMMENT:
             if (parentPost.lessonId) {
-                await sendNotifications({
+                notifications = await sendNotifications({
                     title: "New mention",
                     type: NotificationTypeEnum.LESSON_COMMENT_MENTION,
                     actionUser: parentPost.user._id,
@@ -387,7 +397,7 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
             break;
         case PostTypeEnum.FEED_COMMENT:
             if (parentPost.feedId) {
-                await sendNotifications({
+                notifications = await sendNotifications({
                     title: "New mention",
                     type: NotificationTypeEnum.FEED_COMMENT_MENTION,
                     actionUser: parentPost.user._id,
@@ -399,5 +409,5 @@ const createMentionAttachment = async (parentPost: PopulatedParentPost, mentione
             break;
     }
 
-    return attachment;
+    return { attachment, notifications };
 }

@@ -384,9 +384,9 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
             parentId,
             user: currentUserId
         });
-        await savePost(reply, session);
+        const notifications = await savePost(reply, session);
 
-        if (parentPost && !parentPost.user.equals(currentUserId)) {
+        if (parentPost && !parentPost.user.equals(currentUserId) && !notifications.some(x => x.user.equals(parentPost.user))) {
             await sendNotifications({
                 title: "New reply",
                 type: NotificationTypeEnum.LESSON_COMMENT,

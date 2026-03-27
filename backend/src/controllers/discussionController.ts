@@ -205,7 +205,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             parentId: questionId,
             user: currentUserId
         });
-        await savePost(reply, session);
+        const notifications = await savePost(reply, session);
 
         const questionFollowed = await PostFollowing.exists({ user: currentUserId, following: question._id }).session(session);
         if (!questionFollowed) {
@@ -220,9 +220,9 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             message: `{action_user} posted in "${question.title}"`,
             questionId: question._id,
             postId: reply._id
-        }, followers.filter(x => !x.user.equals(currentUserId) && !x.user.equals(question.user)).map(x => x.user));
+        }, followers.filter(x => !x.user.equals(currentUserId) && !x.user.equals(question.user) && !notifications.some(y => x.user.equals(y.user))).map(x => x.user));
 
-        if (!question.user.equals(currentUserId)) {
+        if (!question.user.equals(currentUserId) && !notifications.some(x => x.user.equals(question.user))) {
             await sendNotifications({
                 title: "New answer",
                 type: NotificationTypeEnum.QA_ANSWER,

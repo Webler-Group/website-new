@@ -62,9 +62,9 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
         url: params.url
     });
 
-    if (onlyPush) return;
+    if (onlyPush) return [];
 
-    await NotificationModel.insertMany(allowedUserIds.map(userId => ({
+    const created = await NotificationModel.insertMany(allowedUserIds.map(userId => ({
         user: userId,
         _type: params.type,
         actionUser: params.actionUser,
@@ -82,6 +82,8 @@ export const sendNotifications = async (params: SendNotificationsParams, userIds
     if (socketRooms.length > 0) {
         io?.to(socketRooms).emit("notification:new", {});
     }
+
+    return created;
 };
 
 export const deleteNotifications = async (filter: mongoose.QueryFilter<Notification>, session?: mongoose.ClientSession) => {
