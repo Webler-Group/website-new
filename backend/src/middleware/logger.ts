@@ -4,6 +4,7 @@ import fs from "fs";
 import path from "path";
 import { NextFunction, Request, Response } from "express";
 import { config } from "../confg";
+import { getRequestIp } from "../helpers/userHelper";
 
 const logEvents = async (message: string, logFileName: string) => {
     const dateTime = format(new Date(), 'yyyyMMdd\tHH:mm:ss');
@@ -23,7 +24,10 @@ const logEvents = async (message: string, logFileName: string) => {
 }
 
 const logger = (req: Request, res: Response, next: NextFunction) => {
-    console.log(`${req.method} ${req.path}`);
+    const ip = getRequestIp(req);
+    const query = Object.keys(req.query).length ? JSON.stringify(req.query) : '';
+    const body = req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : '';
+    console.log(`${ip}\t${req.method} ${req.path}${query ? '\t' + query : ''}${body ? '\t' + body : ''}`);
     next();
 }
 
