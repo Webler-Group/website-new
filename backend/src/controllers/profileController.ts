@@ -33,14 +33,11 @@ import EmailDeliveryError from "../exceptions/EmailDeliveryError";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
-    const roles = req.roles;
     const { body } = parseWithZod(getProfileSchema, req);
     const { userId } = body;
 
-    const isModerator = roles && roles.some(role => [RolesEnum.MODERATOR, RolesEnum.ADMIN].includes(role));
-
     const user = await UserModel.findById(userId).lean();
-    if (!user || (!user.active && !isModerator)) {
+    if (!user) {
         throw new HttpError("Profile not found", 404);
     }
 
