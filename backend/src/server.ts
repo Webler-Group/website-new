@@ -48,8 +48,6 @@ async function main() {
 
     app.use("/media", mediaRoutes);
 
-    app.use(logger);
-
     app.use(`${apiPrefix}/Sitemap`, sitemapRoutes);
 
     if (config.nodeEnv == "production") {
@@ -57,6 +55,8 @@ async function main() {
     }
     app.use(express.json({ limit: "2mb" }));
     app.use(cookieParser());
+
+    app.use(logger);
 
     app.use(`${apiPrefix}/Test`, (req, res) => {
         res.send("Server is up and running");
