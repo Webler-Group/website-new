@@ -73,6 +73,7 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { userId } = body;
 
     const result = await CourseProgressModel.find({ userId })
+        .sort({ updatedAt: "desc" })
         .populate<{ course: Course & { _id: Types.ObjectId } }>("course")
         .lean();
 
@@ -98,7 +99,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     const userProgress = await withTransaction(async (session) => {
-        let progress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).lean().session(session);
+        let progress = await CourseProgressModel.findOne({ course: course._id, userId: currentUserId }).session(session);
         if (!progress) {
             [progress] = await CourseProgressModel.create(
                 [{ course: course._id, userId: currentUserId }],
@@ -107,6 +108,9 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
             course.$inc("participants", 1);
             await course.save({ session });
+        } else {
+            progress.updatedAt = new Date();
+            await progress.save({ session });
         }
 
         return progress;

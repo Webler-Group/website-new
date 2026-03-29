@@ -7,14 +7,6 @@
     background-color: #fafbfc !important;
 }
 
-.wb-question-item a {
-    text-decoration: none;
-}
-
-.wb-question-item a:hover b {
-    color: #007bff !important;
-}
-
 /* Sidebar Specific */
 .wb-discuss-sidebar-card {
     background: #ffffff;

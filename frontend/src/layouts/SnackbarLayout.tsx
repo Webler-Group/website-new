@@ -36,7 +36,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
           </header>
         )}
 
-        <Container className="py-2">
+        <Container className="py-2" style={{ minHeight: "100vh" }}>
           <Row className="justify-content-center">
             {/* Side Menu (desktop) */}
             {SideMenu && (

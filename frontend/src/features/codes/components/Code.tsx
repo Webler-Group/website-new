@@ -2,7 +2,7 @@ import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import { languagesInfo } from '../../../data/compilerLanguages';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import "./Code.css";
 import { CodeMinimal } from '../types';
 import { isUser, UserMinimal } from '../../profile/types';
@@ -40,9 +40,7 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
         <div className={`wb-codes-item border-bottom bg-white d-flex align-items-start p-2${isCompact ? " compact" : ""} ${selected ? "selected" : ""}`} onClick={handleClick}>
             {/* Left: title + language + stats */}
             <div className="flex-grow-1 min-width-0">
-                <Link to={"/Compiler-Playground/" + code.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>
-                    <b>{title}</b>
-                </Link>
+                <h3 className="text-truncate text-dark" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</h3>
 
                 <div className={`d-flex align-items-center gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
                     <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>

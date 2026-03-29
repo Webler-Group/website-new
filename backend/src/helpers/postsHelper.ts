@@ -75,7 +75,7 @@ export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, 
                     const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
                     if (parentComment) {
                         parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                        await savePost(parentComment, session);
                     }
                     await deletePostsAndCleanup({ parentId: post._id }, session);
                     await deleteNotifications({
@@ -100,7 +100,7 @@ export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, 
                     const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
                     if (parentComment) {
                         parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                        await savePost(parentComment, session);
                     }
                     await deletePostsAndCleanup({ parentId: post._id }, session);
                     await deleteNotifications({
@@ -119,7 +119,7 @@ export const deletePostsAndCleanup = async (filter: mongoose.QueryFilter<Post>, 
                     const parentComment = await PostModel.findById(post.parentId).session(session ?? null);
                     if (parentComment) {
                         parentComment.$inc("answers", -1);
-                        await parentComment.save({ session });
+                        await savePost(parentComment, session);
                     }
                     await deletePostsAndCleanup({ parentId: post._id }, session);
                     await deleteNotifications({

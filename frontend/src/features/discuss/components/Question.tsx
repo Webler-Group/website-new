@@ -1,7 +1,7 @@
 import { FaComment } from "react-icons/fa6";
 import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
@@ -21,14 +21,21 @@ interface QuestionProps {
 const Question = React.forwardRef(({ question, showUserProfile, variant = "default" }: QuestionProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const isCompact = variant === "compact";
     let title = question.title;
+    const navigate = useNavigate();
+
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest("a")) {
+            return;
+        }
+        
+        navigate("/Discuss/" + question.id);
+    }
 
     return (
         <div ref={ref ?? undefined} className="min-width-0 overflow-hidden">
-            <div className={`wb-question-item border-bottom bg-white d-flex p-2${isCompact ? " compact" : ""}`}>
+            <div className={`wb-question-item border-bottom bg-white d-flex p-2${isCompact ? " compact" : ""}`} onClick={handleClick}>
                 <div className="flex-grow-1 min-width-0">
-                    <Link to={"/Discuss/" + question.id} className="d-block text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>
-                        <b>{title}</b>
-                    </Link>
+                    <h3 className="text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>{title}</h3>
 
                     {!isCompact && question.tags.length > 0 && (
                         <div className="d-flex flex-wrap mt-1">

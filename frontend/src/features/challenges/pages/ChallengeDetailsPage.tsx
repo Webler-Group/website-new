@@ -212,7 +212,7 @@ const ChallengeDetailsPage = () => {
                             </div>
                         </div>
 
-                        <div className="wb-solve-card sticky-top" style={{ top: "2rem" }}>
+                        <div className="wb-solve-card">
                             <div className="d-flex align-items-center gap-2 mb-4">
                                 <div className="bg-primary bg-opacity-10 p-2 rounded-3 text-primary">
                                     <FaCode size={20} />

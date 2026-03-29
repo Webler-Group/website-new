@@ -101,6 +101,7 @@ const DiscussListPage = () => {
                     maxWidthPx={360}
                     query={searchQuery}
                     handleSearch={handleSearch}
+                    size="sm"
                 />
             </div>
             <div className="mt-2 d-flex justify-content-between">

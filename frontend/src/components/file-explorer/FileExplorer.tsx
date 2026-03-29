@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Alert, Button, Form, Modal, Nav, Spinner, Tab } from "react-bootstrap";
 import "./FileExplorer.css";
 import { useAuth } from "../../features/auth/context/authContext";
@@ -27,8 +28,7 @@ interface FileExplorerProps {
 const FOLDER_ICON = "/resources/images/folder.svg";
 const IMAGE_ICON = "/resources/images/image.svg";
 
-// Confirm dialogs sit above the main modal (Bootstrap modal z-index: 1055)
-const CONFIRM_MODAL_Z = 1070;
+const CONFIRM_MODAL_Z = 1080;
 
 const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootAlias = "root" }: FileExplorerProps) => {
     const { sendJsonRequest } = useApi();
@@ -455,6 +455,9 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 onHide={onHide}
                 size="lg"
                 fullscreen="sm-down"
+                dialogClassName="wb-file-explorer-modal"
+                backdropClassName="wb-file-explorer-backdrop"
+                style={{ zIndex: 1070 }}
             >
                 <Modal.Header closeButton>
                     <Modal.Title>{title}</Modal.Title>
@@ -629,7 +632,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 </Modal.Body>
             </Modal>
 
-            {contextMenu && (
+            {contextMenu && createPortal(
                 <div
                     ref={contextMenuRef}
                     className="wb-file-explorer-context-menu"
@@ -667,7 +670,8 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                     >
                         Delete
                     </button>
-                </div>
+                </div>,
+                document.body
             )}
         </>
     );

@@ -1,16 +1,26 @@
-.wb-file-explorer-modal {
-    display: flex;
-    flex-direction: column;
-}
-
-@media (min-width: 576px) {
-    .wb-file-explorer-modal {
-        max-height: 80vh;
-    }
+.wb-file-explorer-backdrop {
+    z-index: 1069 !important;
 }
 
 .wb-file-explorer-confirm-backdrop {
-    z-index: 1065 !important;
+    z-index: 1079 !important;
+}
+
+@media (min-width: 576px) {
+    .wb-file-explorer-modal .modal-content {
+        max-height: 80vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .wb-file-explorer-modal .modal-body {
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 auto;
+        min-height: 0;
+    }
 }
 
 .wb-file-explorer-tabcontent {
