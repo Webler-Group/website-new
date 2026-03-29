@@ -25,7 +25,9 @@ const logEvents = async (message: string, logFileName: string) => {
 
 const logger = (req: Request, res: Response, next: NextFunction) => {
     const ip = getRequestIp(req);
-    console.log(`${ip}\t${req.method} ${req.path}`);
+    const referer = req.headers['referer'] || '';
+    const userAgent = req.headers['user-agent'] || '';
+    console.log(`${ip}\t${req.method} ${req.path}\t${referer}\t${userAgent}`);
     next();
 }
 
