@@ -10,7 +10,7 @@ import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "./NotificationsTab";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { EmailChangeData, NotificationSettings, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
+import { EmailChangeData, IGetBlockUserGroupData, NotificationSettings, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -43,6 +43,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [avatarMessage, setAvatarMessage] = useState<{ message?: string; errors?: any[]; }>({});
 
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [blockedUsers, setBlockedUsers] = useState<IGetBlockUserGroupData[]>([]);
 
     useEffect(() => {
         if (userDetails) {
@@ -56,6 +57,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     useEffect(() => {
         setVisible(searchParams.has("settings"));
+        getBlockedUsers();
     }, [searchParams]);
 
     const onClose = () => {
@@ -98,6 +100,31 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
             setInfoMessage({ errors: result.error });
         }
     }
+
+
+    const getBlockedUsers = async() => {
+        if(blockedUsers.length > 0) return;
+
+        const result = await sendJsonRequest<IGetBlockUserGroupData[]>("/Block/All", "POST");
+        const resUser: IGetBlockUserGroupData[] = [];
+        if(result.success) {
+            for(let v of result.data as any) {
+                resUser.push(v);
+                setBlockedUsers(prev => [...prev, v]);
+            }
+        }
+    }
+
+
+    const unblockUser = async(targetId: string, index: number) => {
+        const bu = [...blockedUsers];
+        bu.splice(index, 1);
+        setBlockedUsers([...bu]);
+
+        await sendJsonRequest("/Block/Unblock", "POST", { targetId });
+        // i'm not sure what to do with this        
+    }
+
 
     const resetInfo = () => {
         if (userDetails) {
@@ -427,6 +454,12 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         </Tab>
                         <Tab eventKey="notifications" title="Notifications">
                             <NotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
+                        </Tab>
+                        <Tab eventKey="blockedUsers" title="Blocked">
+                            { blockedUsers.map((user, index) => (
+                                <div key={index}> {user.blocked.name} <button onClick={() => unblockUser(user.blocked._id, index) }>UnBlock</button></div>
+                            ))}
+                            
                         </Tab>
                     </Tabs>
                 </Modal.Body>

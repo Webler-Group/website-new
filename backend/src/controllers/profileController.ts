@@ -30,6 +30,7 @@ import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
+import { getBlockedUserIds } from "../utils/blockUtils";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -574,7 +575,15 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     const { body } = parseWithZod(searchProfilesSchema, req);
     const { searchQuery } = body;
 
-    const match: mongoose.QueryFilter<typeof UserModel> = { active: true, roles: RolesEnum.USER };
+    const userId = req.userId!;
+    const blockedIds = await getBlockedUserIds(userId as string);
+    const excludeIds = [...blockedIds, userId];
+
+    const match: mongoose.QueryFilter<typeof UserModel> = { 
+        active: true, 
+        roles: RolesEnum.USER, 
+        _id: { $nin: excludeIds } 
+    };
 
     if (searchQuery && searchQuery.trim() !== "") {
         const safeQuery = escapeRegex(searchQuery.trim());

@@ -23,6 +23,7 @@ import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
+import { getBlockedUserIds, isBlocked } from "../utils/blockUtils";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -67,12 +68,18 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     });
 });
 
+
 const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getQuestionListSchema, req);
     const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = PostModel.find({ _type: PostTypeEnum.QUESTION, hidden: false });
+    const blockedIds = await getBlockedUserIds(currentUserId as string);
+    let dbQuery = PostModel.find({ 
+        _type: PostTypeEnum.QUESTION, 
+        hidden: false,  
+        user: { $nin: blockedIds }
+    });
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -149,6 +156,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     res.json({ success: true, data: { count: questionCount, questions: data } });
 });
 
+
 const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getQuestionSchema, req);
     const { questionId } = body;
@@ -161,6 +169,10 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (!question) {
         throw new HttpError("Question not found", 404);
+    }
+
+    if(await isBlocked(currentUserId as string, question.user._id.toString())) {
+        throw new HttpError("You cannot view this post", 403);
     }
 
     const [isUpvoted, isFollowed, attachments] = await Promise.all([
@@ -194,6 +206,8 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createReplySchema, req);
     const { message, questionId } = body;
     const currentUserId = req.userId;
+
+    
 
     const reply = await withTransaction(async (session) => {
         const question = await PostModel.findById(questionId).session(session);

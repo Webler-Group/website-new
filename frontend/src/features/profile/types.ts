@@ -126,3 +126,18 @@ export const isUser = (user: UserMinimal | string): user is UserMinimal => {
 export interface PublicKeyData {
     publicKey: string;
 }
+
+
+export interface IGetBlockUserData {
+    success: string;
+    message: string;
+}
+
+
+export interface IGetBlockUserGroupData {
+    blocked: {
+        name: string,
+        _id: string,
+        unblocked?: boolean
+    }
+}

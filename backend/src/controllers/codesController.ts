@@ -20,6 +20,7 @@ import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { getBlockedUserIds, isBlocked } from "../utils/blockUtils";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -63,12 +64,15 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
 
+    const blockedIds = await getBlockedUserIds(currentUserId as string);
+
     let dbQuery = CodeModel.find({
         hidden: false,
         $or: [
             { challenge: null },
             { challenge: { $exists: false } }
-        ]
+        ],
+        user: { $nin: blockedIds }
     });
 
     if (searchQuery && searchQuery.trim().length > 0) {
@@ -128,6 +132,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { count: codeCount, codes: data } });
 });
 
+
 const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCodeSchema, req);
     const { codeId } = body;
@@ -139,6 +144,10 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (!code) {
         throw new HttpError("Code not found", 404);
+    }
+
+    if(await isBlocked(currentUserId as string, code.user._id.toString())) {
+        throw new HttpError("You cannot view this code", 403);
     }
 
     const isUpvoted = currentUserId
@@ -244,6 +253,10 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
 
+        if(await isBlocked(currentUserId as string, code.user._id.toString())) {
+            throw new HttpError("You cannot like this post", 403);
+        }
+
         let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId }).session(session);
 
         if (vote === 1) {
@@ -272,6 +285,11 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
+    const code = await CodeModel.findById(codeId);
+    if(await isBlocked(currentUserId as string, code!.user._id.toString())) {
+        throw new HttpError("You cannot get comments to this code", 403);
+    }
+
     const data = await getCommmentsList({
         postFilter: { codeId, _type: PostTypeEnum.CODE_COMMENT },
         parentId,
@@ -293,6 +311,10 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
     const reply = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
+
+        if(await isBlocked(currentUserId as string, code!.user._id.toString())) {
+            throw new HttpError("You cannot comment on this code", 403);
+        }
 
         let parentPost = null;
         if (parentId) {

@@ -3,13 +3,14 @@ import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import { Router } from "express";
 import requestLimiter from "../middleware/requestLimiter";
+import checkBlocked from "../middleware/checkBlocked";
 
 const router = Router();
 
 router.use(verifyJWT);
 
 router.route("/GetProfile")
-    .post(profileController.getProfile);
+    .post(checkBlocked((req) => req.body.userId as string), profileController.getProfile);
 
 router.route("/GetFollowing")
     .post(profileController.getFollowing);

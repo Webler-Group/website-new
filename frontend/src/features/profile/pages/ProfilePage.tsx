@@ -18,7 +18,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
-import { GetProfileData, UserDetails } from "../types";
+import { GetProfileData, IGetBlockUserData, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
 import { FeedDetails, FeedListData } from "../../feed/types";
@@ -26,7 +26,7 @@ import { CourseMinimal, UserCoursesListData } from "../../courses/types";
 import RolesEnum from "../../../data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
-import { FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
+import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
 import { FaBookOpen, FaUsers } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
 import "../profile.css";
@@ -164,6 +164,18 @@ const ProfilePage = () => {
         navigate("/Profile/" + userDetails.id + "?settings=true");
     };
 
+    const blockUser = async() => {
+        const q = prompt("Would you like to block this user?", "yes");
+        if(!q) return;
+        const targetId = userId;
+        const result = await sendJsonRequest<IGetBlockUserData>("/Block", "POST", { targetId });
+        if(result.success && userInfo) {
+            navigate("/Profile/" + userInfo.id);
+        } else {
+            alert(result.data);
+        }
+    }
+
     const isCurrentUser = !!userInfo && userInfo.id === userId;
     const isAdmin = !!userInfo && userInfo.roles.includes(RolesEnum.ADMIN);
 
@@ -210,6 +222,12 @@ const ProfilePage = () => {
                                                 <FaHammer /> Open in Mod View
                                             </Dropdown.Item>
                                         )}
+
+                                        {
+                                            !isCurrentUser && 
+                                            <Dropdown.Item onClick={blockUser}><FaBan /> Block</Dropdown.Item>
+                                        }
+
                                     </Dropdown.Menu>
                                 </Dropdown>
                             </div>
