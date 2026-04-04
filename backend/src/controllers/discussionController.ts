@@ -22,7 +22,6 @@ import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
-import { isBlocked } from "../helpers/blockHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -203,10 +202,6 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const reply = await withTransaction(async (session) => {
         const question = await PostModel.findById(questionId).session(session);
         if (!question) throw new HttpError("Question not found", 404);
-
-        if (await isBlocked(currentUserId, question.user._id, session)) {
-            throw new HttpError("You cannot reply to this post", 403);
-        }
 
         const reply = new PostModel({
             _type: PostTypeEnum.ANSWER,
@@ -490,10 +485,6 @@ const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const upvote = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
         if (!post) throw new HttpError("Post not found", 404);
-
-        if (await isBlocked(currentUserId, post.user, session)) {
-            throw new HttpError("You cannot vote this post", 404);
-        }
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 
