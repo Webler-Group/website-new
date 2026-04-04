@@ -209,7 +209,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (channel._type === ChannelTypeEnum.DM) {
         const DMUser = channel.DMUser!;
         const blocked = await isBlocked(channel.createdBy._id, DMUser._id);
-        active = !blocked && DMUser._id.equals(currentUserId) ? channel.createdBy.active : DMUser.active;
+        active = !blocked && (DMUser._id.equals(currentUserId) ? channel.createdBy.active : DMUser.active);
     }
 
     const data: ChannelResponse = {
