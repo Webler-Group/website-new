@@ -3,7 +3,7 @@ import { Table, Form, Row, Col, Button, Container, Breadcrumb } from "react-boot
 import { useApi } from "../../../context/apiCommunication";
 import roles from "../../../data/roles";
 import { PaginationControl } from "react-bootstrap-pagination-control";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
 
 const rolesOptions = ["All", ...roles];
@@ -17,6 +17,7 @@ const sortOptions = [
 
 const AdminUserListPage = () => {
     const { sendJsonRequest } = useApi();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [search, setSearch] = useState("");
@@ -26,17 +27,33 @@ const AdminUserListPage = () => {
 
     const [page, setPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
+    const [ready, setReady] = useState(false);
     const navigate = useNavigate();
     const pageSize = 50;
 
-    const fetchUsers = async () => {
+    useEffect(() => {
+        setSearch(searchParams.get("query") ?? "");
+        setActiveFilter((searchParams.get("active") as "all" | "true" | "false") ?? "all");
+        setRole(searchParams.get("role") ?? "All");
+        setSortFilter(searchParams.has("filter") ? Number(searchParams.get("filter")) : 1);
+        setPage(searchParams.has("page") ? Number(searchParams.get("page")) : 1);
+        setReady(true);
+    }, []);
+
+    const fetchUsers = async (params: {
+        search: string;
+        activeFilter: "all" | "true" | "false";
+        role: string;
+        sortFilter: number;
+        page: number;
+    }) => {
         const result = await sendJsonRequest<AdminUserListData>("/Admin/Users", "POST", {
-            search: search.trim() || undefined,
-            active: activeFilter === "all" ? undefined : activeFilter === "true",
-            role: role !== "All" ? role : undefined,
-            filter: sortFilter,
+            search: params.search.trim() || undefined,
+            active: params.activeFilter === "all" ? undefined : params.activeFilter === "true",
+            role: params.role !== "All" ? params.role : undefined,
+            filter: params.sortFilter,
             count: pageSize,
-            page
+            page: params.page
         });
 
         if (result.data) {
@@ -45,15 +62,34 @@ const AdminUserListPage = () => {
         }
     };
 
+    const syncParams = (params: {
+        search: string;
+        activeFilter: string;
+        role: string;
+        sortFilter: number;
+        page: number;
+    }) => {
+        const next = new URLSearchParams();
+        next.set("page", params.page.toString());
+        next.set("filter", params.sortFilter.toString());
+        next.set("query", params.search);
+        next.set("active", params.activeFilter);
+        next.set("role", params.role);
+        setSearchParams(next, { replace: true });
+    };
+
     useEffect(() => {
-        fetchUsers();
-    }, [page]);
+        if (!ready) return;
+        fetchUsers({ search, activeFilter, role, sortFilter, page });
+    }, [ready, page]);
 
     const handleSearch = () => {
-        if (page !== 1) {
-            setPage(1);
+        const newPage = 1;
+        syncParams({ search, activeFilter, role, sortFilter, page: newPage });
+        if (page !== newPage) {
+            setPage(newPage);
         } else {
-            fetchUsers();
+            fetchUsers({ search, activeFilter, role, sortFilter, page: newPage });
         }
     };
 
@@ -65,6 +101,7 @@ const AdminUserListPage = () => {
     };
 
     const handlePageChange = (pageNum: number) => {
+        syncParams({ search, activeFilter, role, sortFilter, page: pageNum });
         setPage(pageNum);
     };
 
