@@ -9,11 +9,6 @@ import Loader from "../../../components/Loader";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { truncate } from "../../../utils/StringUtils";
 
-const allowedUrls = [
-    /^https?:\/\/.+/i,
-    /^\/.*/ 
-];
-
 const ChallengeSolutionPage = () => {
     const { challengeId } = useParams<{ challengeId: string }>();
     const navigate = useNavigate();
@@ -87,7 +82,7 @@ const ChallengeSolutionPage = () => {
                         <FaLightbulb size={24} className="wb-icon-amber" />
                         <h2 className="mb-0 fw-bold">Official Solution</h2>
                     </div>
-                    <MarkdownRenderer content={challenge.solution} allowedUrls={allowedUrls} />
+                    <MarkdownRenderer content={challenge.solution} />
                 </div>
             ) : challenge?.solution === null ? (
                 <div className="wb-solution-container text-center py-5 bg-white border rounded-3 shadow-sm">

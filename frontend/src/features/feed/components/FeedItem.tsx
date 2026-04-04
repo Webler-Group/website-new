@@ -6,7 +6,7 @@ import { useAuth } from '../../auth/context/authContext';
 import NotificationToast from '../../../components/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
-import { ReactionsEnum, reactionsInfo } from '../../../data/reactions';
+import { ReactionsEnum, reactionsInfo } from '../../../data/ReactionsEnum';
 import DateUtils from '../../../utils/DateUtils';
 import { FaClock, FaComment, FaMapPin, FaShareNodes, FaTrash } from 'react-icons/fa6';
 import { FaEdit } from 'react-icons/fa';
@@ -15,7 +15,6 @@ import PostAttachment from '../../../components/post-attachment-select/PostAttac
 import { Dropdown } from 'react-bootstrap';
 import EllipsisDropdownToggle from '../../../components/EllipsisDropdownToggle';
 import ProfileName from '../../../components/ProfileName';
-import allowedUrls from '../../../data/discussAllowedUrls';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import React from 'react';
 import { FeedDetails, FeedMinimal, ShareFeedData, TogglePinFeedData, VotePostData } from '../types';
@@ -298,7 +297,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
           <div style={!showFullContent ? { pointerEvents: "none" } : {}}>
-            <MarkdownRenderer content={feed.message} allowedUrls={allowedUrls} />
+            <MarkdownRenderer content={feed.message} />
           </div>
 
           {feed.attachments?.length > 0 && (

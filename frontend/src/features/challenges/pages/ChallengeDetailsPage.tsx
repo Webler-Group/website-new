@@ -14,11 +14,6 @@ import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { ChallengeDetails, GetChallengeData } from "../types";
 import "../components/Challenge.css";
 
-const allowedUrls = [
-    /^https?:\/\/.+/i,
-    /^\/.*/ 
-];
-
 const ChallengeDetailsPage = () => {
     const { challengeId } = useParams<{ challengeId: string }>();
     const navigate = useNavigate();
@@ -148,7 +143,7 @@ const ChallengeDetailsPage = () => {
                         <div className="wb-challenge-content-area min-vh-50">
                             {activeTab === "description" && (
                                 <div className="bg-white rounded-3 border p-4 p-md-5 shadow-sm mb-4">
-                                    <MarkdownRenderer content={challenge.description} allowedUrls={allowedUrls} />
+                                    <MarkdownRenderer content={challenge.description} />
                                 </div>
                             )}
 
@@ -160,7 +155,7 @@ const ChallengeDetailsPage = () => {
                                                 <FaLightbulb size={24} className="wb-icon-amber" />
                                                 <h3 className="mb-0 fw-bold">Official Solution</h3>
                                             </div>
-                                            <MarkdownRenderer content={challenge.solution} allowedUrls={allowedUrls} />
+                                            <MarkdownRenderer content={challenge.solution} />
                                         </div>
                                     ) : challenge.solution === null ? (
                                         <div className="bg-white rounded-3 border p-5 shadow-sm text-center">

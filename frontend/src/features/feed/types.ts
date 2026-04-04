@@ -1,6 +1,6 @@
 import { PostAttachmentDetails } from "../../components/post-attachment-select/types";
 import PostTypeEnum from "../../data/PostTypeEnum";
-import { ReactionsEnum } from "../../data/reactions";
+import { ReactionsEnum } from "../../data/ReactionsEnum";
 import { UserMinimal } from "../profile/types";
 
 export interface UserReaction {

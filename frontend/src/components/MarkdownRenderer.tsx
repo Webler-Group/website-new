@@ -9,12 +9,17 @@ import { Link } from 'react-router-dom';
 import "./MarkdownRenderer.css";
 import remarkBreaks from 'remark-breaks';
 
+const defaultAllowedUrls = [
+    /^https?:\/\/.*/i,      // allow any http/https URL
+    /^\/.*/                 // relative paths
+];
+
 interface MarkdownRendererProps {
     content: string;
     allowedUrls?: (string | RegExp)[];
 }
 
-const MarkdownRenderer = ({ content, allowedUrls = [] }: MarkdownRendererProps) => {
+const MarkdownRenderer = ({ content, allowedUrls = defaultAllowedUrls }: MarkdownRendererProps) => {
     const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
 
     const isAllowedUrl = (url?: string) => {

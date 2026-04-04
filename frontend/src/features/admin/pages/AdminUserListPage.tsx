@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { Table, Form, Row, Col, Button, Container, Breadcrumb } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
-import roles from "../../../data/roles";
+import RolesEnum from "../../../data/RolesEnum";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
 
-const rolesOptions = ["All", ...roles];
+const rolesOptions = ["All", ...Object.values(RolesEnum)];
 
 const sortOptions = [
     { value: 1, label: "Newest registered" },

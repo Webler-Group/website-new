@@ -9,7 +9,6 @@ import { useNavigate } from "react-router-dom";
 import React from "react";
 import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import allowedUrls from "../../../data/discussAllowedUrls";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import { AnswerDetails, VotePostData } from "../types";
 
@@ -80,7 +79,7 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         }
                     </div>
                     <div className="mt-1">
-                        <MarkdownRenderer content={answer.message} allowedUrls={allowedUrls} />
+                        <MarkdownRenderer content={answer.message} />
                     </div>
                     <div className="mt-2">
                         {

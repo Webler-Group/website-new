@@ -4,17 +4,17 @@ import Header from "../../layouts/Header"
 import FeedLayout from "./layouts/FeedLayout"
 import FeedListPage from "./pages/FeedListPage"
 import RequireAuth from "../auth/components/RequireAuth"
-import roles from "../../data/roles"
 import FeedCreatePage from "./pages/FeedCreatePage"
 import "./feed.css"
 import FeedEditPage from "./pages/FeedEditPage"
+import RolesEnum from "../../data/RolesEnum"
 
 const FeedRoutes = () => {
     return (
         <Routes>
             <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
                 <Route index element={<FeedLayout MainPage={<FeedListPage />} />} />
-                <Route element={<RequireAuth allowedRoles={roles} />}>
+                <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path="New" element={<FeedLayout MainPage={<FeedCreatePage feedId={null} />} />} />
                     <Route path="Edit/:feedId" element={<FeedLayout MainPage={<FeedEditPage />} />} />
                 </Route>

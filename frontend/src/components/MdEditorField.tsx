@@ -3,7 +3,6 @@ import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from
 import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./post-attachment-select/PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
-import allowedUrls from "../data/discussAllowedUrls";
 import FileExplorer from "./file-explorer/FileExplorer";
 import { FaPlus } from "react-icons/fa";
 
@@ -36,11 +35,27 @@ const MdEditorField = ({
 }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const textareaHeightRef = useRef<number | null>(null);
     const [showImages, setShowImages] = useState(false);
     const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
 
     useEffect(() => {
         onModeChange?.(mode);
+    }, [mode]);
+
+    useEffect(() => {
+        const textarea = textareaRef.current;
+        if (!textarea) return;
+        if (textareaHeightRef.current !== null) {
+            textarea.style.height = `${textareaHeightRef.current}px`;
+        }
+        const observer = new ResizeObserver(() => {
+            if (textarea.offsetHeight > 0) {
+                textareaHeightRef.current = textarea.offsetHeight;
+            }
+        });
+        observer.observe(textarea);
+        return () => observer.disconnect();
     }, [mode]);
 
     const handlePostAttachments = (selected: string[]) => {
@@ -57,6 +72,7 @@ const MdEditorField = ({
         if (!textarea) return;
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
+        const scrollTop = textarea.scrollTop;
         const selected = text.slice(start, end);
         const before = text.slice(0, start);
         const after = text.slice(end);
@@ -64,6 +80,7 @@ const MdEditorField = ({
         handleChange(newText);
         setTimeout(() => {
             textarea.focus();
+            textarea.scrollTop = scrollTop;
             textarea.setSelectionRange(start + syntaxStart.length, end + syntaxStart.length);
         }, 50);
     };
@@ -77,12 +94,14 @@ const MdEditorField = ({
         }
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
+        const scrollTop = textarea.scrollTop;
         const before = text.slice(0, start);
         const after = text.slice(end);
         const newText = before + md + after;
         handleChange(newText);
         setTimeout(() => {
             textarea.focus();
+            textarea.scrollTop = scrollTop;
             textarea.setSelectionRange(start + md.length, start + md.length);
         }, 50);
     };
@@ -129,11 +148,11 @@ const MdEditorField = ({
                 </div>
 
                 <div className="mb-3">
-                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={(val: any) => setMode(val)}>
-                        <ToggleButton id="write-btn" value="write" variant="outline-primary">
+                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={setMode}>
+                        <ToggleButton id="write-btn" value="write" variant="outline-primary"size="sm">
                             Write
                         </ToggleButton>
-                        <ToggleButton id="preview-btn" value="preview" variant="outline-primary">
+                        <ToggleButton id="preview-btn" value="preview" variant="outline-primary" size="sm">
                             Preview
                         </ToggleButton>
                     </ToggleButtonGroup>
@@ -173,6 +192,7 @@ const MdEditorField = ({
                                     onChange={(e) => setText(e.target.value)}
                                     required
                                     maxLength={maxCharacters}
+                                    style={{ overscrollBehavior: "contain" }}
                                 />
                                 <div className="d-flex justify-content-between">
                                     <div className="mt-2 text-muted small">
@@ -189,7 +209,7 @@ const MdEditorField = ({
                         customPreview
                     ) : (
                         <div className="p-2 border rounded bg-light">
-                            <MarkdownRenderer content={text} allowedUrls={allowedUrls} />
+                            <MarkdownRenderer content={text} />
                         </div>
                     ))}
             </div>

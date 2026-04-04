@@ -17,12 +17,6 @@ interface LessonNodeProps {
     onContinue?: (id: string) => void;
 }
 
-const allowedUrls = [
-    /^https?:\/\/.+/i,
-    /^\/.*/
-];
-
-
 const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: LessonNodeProps) => {
     const [node, setNode] = useState<LessonNodeDetails | null>(null);
     const [code, setCode] = useState<CodeDetails | null>(null);
@@ -204,7 +198,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
             return (
                 <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-                    <MarkdownRenderer content={activeNode.text} allowedUrls={allowedUrls} />
+                    <MarkdownRenderer content={activeNode.text} />
                 </div>
             );
         };

@@ -132,6 +132,7 @@ const PostTextareaControl = forwardRef<HTMLTextAreaElement, PostTextareaControlP
                     size={size}
                     required={required}
                     maxLength={maxLength}
+                    style={{ overscrollBehavior: "contain" }}
                 />
 
                 {showUserSearch && (

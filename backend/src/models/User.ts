@@ -1,7 +1,7 @@
 import { prop, getModelForClass, modelOptions, pre, DocumentType } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
-import countryCodesEnum from "../config/countryCodes";
+import countryCodesEnum from "../data/countryCodes";
 import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
 import { levelFromXp } from "../helpers/userHelper";

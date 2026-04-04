@@ -8,8 +8,8 @@ import Footer from "../../layouts/Footer"
 import DiscussPostPage from "./pages/DiscussPostPage"
 import DiscussEditPage from "./pages/DiscussEditPage"
 import RequireAuth from "../auth/components/RequireAuth"
-import roles from "../../data/roles"
 import "./discuss.css"
+import RolesEnum from "../../data/RolesEnum"
 
 const DiscussRoutes = () => {
     return (
@@ -17,7 +17,7 @@ const DiscussRoutes = () => {
             <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
                 <Route index element={<DiscussLayout MainPage={<DiscussListPage />} />} />
                 <Route path=":questionId" element={<DiscussLayout MainPage={<DiscussPostPage />} />} />
-                <Route element={<RequireAuth allowedRoles={roles} />}>
+                <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path="New" element={<DiscussLayout MainPage={<DiscussAskPage questionId={null} />} />} />
                     <Route path="Edit/:questionId" element={<DiscussLayout MainPage={<DiscussEditPage />} />} />
                 </Route>

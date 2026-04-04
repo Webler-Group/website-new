@@ -18,6 +18,7 @@ import ToolsHomePage from './pages/ToolsHome';
 import RequireAuth from './features/auth/components/RequireAuth';
 import TagHomePage from './features/tags/pages/TagHome';
 import LoadingPage from './pages/LoadingPage';
+import RolesEnum from './data/RolesEnum';
 
 const ChallengeRoutes = React.lazy(() => import('./features/challenges/ChallengeRoutes'));
 const ChannelsRoutes = React.lazy(() => import("./features/channels/ChannelsRoutes"));
@@ -62,7 +63,7 @@ function App() {
         <Route path="Tools">
           <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
             <Route index element={<ToolsHomePage />} />
-            <Route element={<RequireAuth allowedRoles={["Admin", "Moderator"]} />}>
+            <Route element={<RequireAuth allowedRoles={[RolesEnum.MODERATOR]} />}>
               <Route path="Tags" element={<TagHomePage />} />
             </Route>
           </Route>

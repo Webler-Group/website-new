@@ -1,8 +1,9 @@
 import { useLocation, Navigate, Outlet } from "react-router-dom"
 import { useAuth } from "../context/authContext"
+import RolesEnum from "../../../data/RolesEnum";
 
 interface RequireAuthProps {
-    allowedRoles: string[];
+    allowedRoles: RolesEnum[];
 }
 
 const RequireAuth = ({ allowedRoles }: RequireAuthProps) => {
@@ -10,7 +11,7 @@ const RequireAuth = ({ allowedRoles }: RequireAuthProps) => {
     const { userInfo } = useAuth();
 
     const content = (
-        userInfo?.roles.some(role => allowedRoles.includes(role))
+        userInfo?.roles.some(role => [...allowedRoles, RolesEnum.ADMIN].includes(role))
             ? <Outlet />
             : <Navigate to={"/Users/Login?returnUrl=" + location.pathname} state={{ from: location }} replace />
     )

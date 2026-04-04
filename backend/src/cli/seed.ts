@@ -1,8 +1,7 @@
 import { config } from "../confg";
 import connectDB from "../config/dbConn";
-import tags from "../config/tags";
+import tags from "../data/tags";
 import RolesEnum from "../data/RolesEnum";
-import Challenge from "../models/Challenge";
 import Tag from "../models/Tag";
 import User from "../models/User";
 

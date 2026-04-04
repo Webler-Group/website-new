@@ -1,6 +1,6 @@
 
 import { z } from "zod";
-import countryCodes from "../config/countryCodes";
+import countryCodes from "../data/countryCodes";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 
 export const emailSchema = z.email("Invalid email").max(120, "Invalid email");

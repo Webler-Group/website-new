@@ -1,5 +1,5 @@
 import { FormGroup, Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
-import { Dispatch, ReactNode, SetStateAction, useEffect, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
 import FileExplorer from "./file-explorer/FileExplorer";
 import HtmlRenderer from "./HtmlRenderer";
 import { MDEditorMode } from "./MdEditorField";
@@ -44,6 +44,9 @@ const HtmlEditorField = ({
     const [showImages, setShowImages] = useState(false);
     const [showCssModal, setShowCssModal] = useState(false);
     const [cssDraft, setCssDraft] = useState("");
+    const aceEditorRef = useRef<ace.Ace.Editor | null>(null);
+    const editorHeightRef = useRef<number>(height ?? rows * 24);
+    const [editorHeight, setEditorHeight] = useState(height ?? rows * 24);
 
     useEffect(() => {
         onModeChange?.(mode);
@@ -51,6 +54,14 @@ const HtmlEditorField = ({
 
     const handleChange = (value: string) => {
         setText(value.slice(0, maxCharacters));
+    };
+
+    const insertAtCursor = (html: string) => {
+        if (aceEditorRef.current) {
+            aceEditorRef.current.session.insert(aceEditorRef.current.getCursorPosition(), html);
+        } else {
+            handleChange(text + html);
+        }
     };
 
     const openCssModal = () => {
@@ -61,6 +72,28 @@ const HtmlEditorField = ({
     const saveCss = async () => {
         await onCssSave?.(cssDraft);
         setShowCssModal(false);
+    };
+
+    const handleDragStart = (e: React.PointerEvent) => {
+        e.preventDefault();
+        (e.target as Element).setPointerCapture(e.pointerId);
+        const startY = e.clientY;
+        const startHeight = editorHeightRef.current;
+
+        const handlePointerMove = (e: PointerEvent) => {
+            const newHeight = Math.max(100, startHeight + e.clientY - startY);
+            editorHeightRef.current = newHeight;
+            setEditorHeight(newHeight);
+        };
+
+        const handlePointerUp = (e: PointerEvent) => {
+            (e.target as Element).releasePointerCapture(e.pointerId);
+            window.removeEventListener("pointermove", handlePointerMove);
+            window.removeEventListener("pointerup", handlePointerUp);
+        };
+
+        window.addEventListener("pointermove", handlePointerMove);
+        window.addEventListener("pointerup", handlePointerUp);
     };
 
     const toolbarButtons = [
@@ -78,7 +111,7 @@ const HtmlEditorField = ({
                 onHide={() => setShowImages(false)}
                 onSelect={(url, alt) => {
                     const html = `<img src="${url}" alt="${alt || "image"}" />`;
-                    handleChange(text + html);
+                    insertAtCursor(html);
                 }}
             />
 
@@ -134,10 +167,10 @@ const HtmlEditorField = ({
                     value={mode}
                     onChange={setMode}
                 >
-                    <ToggleButton id="write-btn" value="write" variant="outline-primary">
+                    <ToggleButton id="write-btn" value="write" variant="outline-primary" size="sm">
                         Write
                     </ToggleButton>
-                    <ToggleButton id="preview-btn" value="preview" variant="outline-primary">
+                    <ToggleButton id="preview-btn" value="preview" variant="outline-primary" size="sm">
                         Preview
                     </ToggleButton>
                 </ToggleButtonGroup>
@@ -150,19 +183,35 @@ const HtmlEditorField = ({
                         theme="tomorrow_night"
                         value={text}
                         onChange={handleChange}
+                        onLoad={(editor) => {
+                            aceEditorRef.current = editor;
+                        }}
                         width="100%"
-                        height={height ? `${height}px` : undefined}
-                        minLines={height ? undefined : rows}
-                        maxLines={height ? undefined : rows}
+                        height={`${editorHeight}px`}
                         fontSize={16}
                         showGutter
                         showPrintMargin={false}
-                        setOptions={{
-                            useWorker: false,
-                            tabSize: 2
-                        }}
+                        setOptions={{ useWorker: false, tabSize: 2 }}
                         editorProps={{ $blockScrolling: true }}
                     />
+                    <div
+                        onPointerDown={handleDragStart}
+                        style={{
+                            height: "10px",
+                            cursor: "ns-resize",
+                            background: "#343a40",
+                            borderRadius: "0 0 4px 4px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            userSelect: "none"
+                        }}
+                    >
+                        <svg width="24" height="4" viewBox="0 0 24 4" fill="#6c757d">
+                            <rect y="0" width="24" height="1.5" rx="1" />
+                            <rect y="2.5" width="24" height="1.5" rx="1" />
+                        </svg>
+                    </div>
                 </FormGroup>
             )}
 

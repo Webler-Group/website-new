@@ -14,7 +14,6 @@ import PostAttachment from "../../../components/post-attachment-select/PostAttac
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
-import allowedUrls from "../../../data/discussAllowedUrls";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import ReactionsList from "../../../components/reactions/ReactionsList";
@@ -425,7 +424,7 @@ const DiscussPostPage = () => {
 
                     {/* Body */}
                     <div className="wb-discuss-post__body">
-                        <MarkdownRenderer content={question.message} allowedUrls={allowedUrls} />
+                        <MarkdownRenderer content={question.message} />
                         {question.attachments.map(attachment => (
                             <div key={attachment.id} className="mt-2">
                                 <PostAttachment data={attachment} />
