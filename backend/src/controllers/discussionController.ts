@@ -22,7 +22,7 @@ import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
-import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
+import { isBlocked } from "../helpers/blockHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -73,11 +73,9 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
 
-    const blockedIds = currentUserId ? await getBlockedUserIds(currentUserId) : [];
     let dbQuery = PostModel.find({
         _type: PostTypeEnum.QUESTION,
-        hidden: false,
-        user: { $nin: blockedIds }
+        hidden: false
     });
 
     if (searchQuery && searchQuery.trim().length > 0) {
@@ -168,10 +166,6 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (!question) {
         throw new HttpError("Question not found", 404);
-    }
-
-    if (currentUserId && await isBlocked(currentUserId, question.user._id)) {
-        throw new HttpError("You cannot view this post", 403);
     }
 
     const [isUpvoted, isFollowed, attachments] = await Promise.all([
@@ -491,11 +485,15 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(votePostSchema, req);
     const { postId, vote } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const upvote = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
         if (!post) throw new HttpError("Post not found", 404);
+
+        if (await isBlocked(currentUserId, post.user, session)) {
+            throw new HttpError("You cannot vote this post", 404);
+        }
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 

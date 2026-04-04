@@ -35,7 +35,7 @@ import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
-import { getBlockedUserIds } from "../helpers/blockHelper";
+import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createFeedSchema, req);
@@ -214,11 +214,15 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createReplySchema, req);
     const { message, feedId, parentId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const feed = await PostModel.findById(feedId).session(session);
         if (!feed) throw new HttpError("Feed not found", 404);
+
+        if (await isBlocked(currentUserId, feed.user, session)) {
+            throw new HttpError("You cannot comment on this post", 404);
+        }
 
         let parentComment = null;
         if (parentId) {
@@ -289,11 +293,15 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(votePostSchema, req);
     const { postId, vote, reaction } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const result = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
         if (!post) throw new HttpError("Post not found", 404);
+
+        if (await isBlocked(currentUserId, post.user, session)) {
+            throw new HttpError("You cannot vote this post", 404);
+        }
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 
@@ -403,7 +411,7 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
 
-    const blockedIds = await getBlockedUserIds(currentUserId as string);
+    const blockedIds = currentUserId ? await getBlockedUserIds(currentUserId) : [];
 
     const baseMatch: mongoose.QueryFilter<Post> = {
         _type: { $in: [PostTypeEnum.FEED, PostTypeEnum.SHARED_FEED] },
@@ -500,6 +508,10 @@ const getFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (!feed) {
         throw new HttpError("Feed not found", 404);
+    }
+
+    if (currentUserId && await isBlocked(currentUserId, feed.user)) {
+        throw new HttpError("You cannot view this post", 403);
     }
 
     const [reactions, attachments, upvote] = await Promise.all([
