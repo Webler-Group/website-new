@@ -33,7 +33,7 @@ import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
 
@@ -170,7 +170,7 @@ const editFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!feed.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     feed.message = message;
@@ -201,7 +201,7 @@ const deleteFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!feed.user.equals(currentUserId) && !req.roles?.some(role => [RolesEnum.ADMIN, RolesEnum.MODERATOR].includes(role))) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
@@ -224,11 +224,7 @@ const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
             throw new HttpError("You cannot comment on this post", 404);
         }
 
-        let parentComment = null;
-        if (parentId) {
-            parentComment = await PostModel.findById(parentId).session(session);
-            if (!parentComment) throw new HttpError("Parent comment not found", 404);
-        }
+        const parentComment = parentId ? await findParentCommentToReply(parentId, currentUserId, session) : null;
 
         const reply = new PostModel({
             _type: PostTypeEnum.FEED_COMMENT,

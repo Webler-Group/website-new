@@ -337,7 +337,7 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
         const question = await PostModel.findById(post.parentId).session(session);
         if (!question) throw new HttpError("Question not found", 404);
 
-        if (!question.user.equals(currentUserId)) throw new HttpError("Unauthorized", 401);
+        if (!question.user.equals(currentUserId)) throw new HttpError("Forbidden", 403);
 
         if (accepted || post.isAccepted) {
             question.isAccepted = accepted;
@@ -377,7 +377,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!question.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const tagIds = (await getOrCreateTagsByNames(tags)).map(x => x._id);
@@ -415,7 +415,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     if (!question.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
@@ -436,7 +436,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!reply.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     reply.message = message;
@@ -467,7 +467,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!reply.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const question = await PostModel.findById(reply.parentId).lean();

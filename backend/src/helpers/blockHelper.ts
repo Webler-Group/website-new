@@ -3,6 +3,8 @@ import { BlockModel } from "../models/Block";
 import { User } from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 
+export const MAX_BLOCK_COUNT = 100;
+
 export const isBlocked = async (userA: Types.ObjectId | string, userB: Types.ObjectId | string, session?: mongoose.ClientSession) => {
     const exists = await BlockModel.exists({
         $or: [

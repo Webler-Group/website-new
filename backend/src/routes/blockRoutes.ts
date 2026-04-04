@@ -8,8 +8,8 @@ const router = Router();
 router.use(verifyJWT);
 router.use(protectRoute);
 
-router.route("/").post(BlockController.blockUser);
-router.route("/Unblock").post(BlockController.unblockUser);
-router.route("/All").post(BlockController.getBlockedUsers);
+router.route("/BlockUser").post(BlockController.blockUser);
+router.route("/UnblockUser").post(BlockController.unblockUser);
+router.route("/GetBlockedUsers").post(BlockController.getBlockedUsers);
 
 export default router;

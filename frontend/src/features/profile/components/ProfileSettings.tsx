@@ -1,4 +1,4 @@
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, SubmitEvent, useEffect, useState } from "react";
 import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
@@ -10,7 +10,9 @@ import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "./NotificationsTab";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { EmailChangeData, IGetBlockUserGroupData, NotificationSettings, UpdateProfileData, UploadProfileAvatarData, UserDetails } from "../types";
+import ProfileName from "../../../components/ProfileName";
+import Country from "../../../components/Country";
+import { EmailChangeData, GetBlockedUsersData, NotificationSettings, UpdateProfileData, UploadProfileAvatarData, UserDetails, UserMinimal } from "../types";
 
 interface ProfileSettingsProps {
     userDetails: UserDetails;
@@ -43,7 +45,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     const [avatarMessage, setAvatarMessage] = useState<{ message?: string; errors?: any[]; }>({});
 
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [blockedUsers, setBlockedUsers] = useState<IGetBlockUserGroupData[]>([]);
+    const [blockedUsers, setBlockedUsers] = useState<UserMinimal[]>([]);
 
     useEffect(() => {
         if (userDetails) {
@@ -57,7 +59,6 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     useEffect(() => {
         setVisible(searchParams.has("settings"));
-        getBlockedUsers();
     }, [searchParams]);
 
     const onClose = () => {
@@ -65,7 +66,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
         setSearchParams(searchParams);
     }
 
-    const handleSubmit = async (e: FormEvent, action: () => Promise<void>) => {
+    const handleSubmit = async (e: SubmitEvent, action: () => Promise<void>) => {
         e.preventDefault();
 
         setLoading(true);
@@ -102,27 +103,19 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
     }
 
 
-    const getBlockedUsers = async() => {
-        if(blockedUsers.length > 0) return;
-
-        const result = await sendJsonRequest<IGetBlockUserGroupData[]>("/Block/All", "POST");
-        const resUser: IGetBlockUserGroupData[] = [];
-        if(result.success) {
-            for(let v of result.data as any) {
-                resUser.push(v);
-                setBlockedUsers(prev => [...prev, v]);
-            }
+    const fetchBlockedUsers = async () => {
+        if (!userInfo || userInfo.id !== userDetails.id) return;
+        const result = await sendJsonRequest<GetBlockedUsersData>(`/Block/GetBlockedUsers`, "POST", {});
+        if (result.data) {
+            setBlockedUsers(result.data.users);
         }
-    }
+    };
 
-
-    const unblockUser = async(targetId: string, index: number) => {
-        const bu = [...blockedUsers];
-        bu.splice(index, 1);
-        setBlockedUsers([...bu]);
-
-        await sendJsonRequest("/Block/Unblock", "POST", { targetId });
-        // i'm not sure what to do with this        
+    const unblockUser = async (targetId: string) => {
+        const result = await sendJsonRequest(`/Block/UnblockUser`, "POST", { targetId });
+        if (result.success) {
+            setBlockedUsers(prev => prev.filter(u => u.id !== targetId));
+        }
     }
 
 
@@ -455,11 +448,27 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         <Tab eventKey="notifications" title="Notifications">
                             <NotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
                         </Tab>
-                        <Tab eventKey="blockedUsers" title="Blocked">
-                            { blockedUsers.map((user, index) => (
-                                <div key={index}> {user.blocked.name} <button onClick={() => unblockUser(user.blocked._id, index) }>UnBlock</button></div>
-                            ))}
-                            
+                        <Tab eventKey="blockedUsers" title="Blocked" onEnter={fetchBlockedUsers}>
+                            {blockedUsers.length === 0 ? (
+                                <p className="text-muted text-center">No blocked users</p>
+                            ) : (
+                                blockedUsers.map(user => (
+                                    <div key={user.id} className="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <div className="d-flex align-items-start gap-2">
+                                            <ProfileAvatar size={42} avatarUrl={user.avatarUrl} />
+                                            <div className="d-flex flex-column gap-1">
+                                                <ProfileName userId={user.id} userName={user.name} />
+                                                {user.countryCode && (
+                                                    <Country country={countries.find(c => c.code === user.countryCode)!} />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Button variant="outline-secondary" size="sm" onClick={() => unblockUser(user.id)}>
+                                            Unblock
+                                        </Button>
+                                    </div>
+                                ))
+                            )}
                         </Tab>
                     </Tabs>
                 </Modal.Body>

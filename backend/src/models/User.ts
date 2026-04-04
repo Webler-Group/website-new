@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import countryCodesEnum from "../config/countryCodes";
 import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
-import { levelFromXp } from "../utils/levelUtils";
+import { levelFromXp } from "../helpers/userHelper";
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class NotificationSettings {

@@ -18,7 +18,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
-import { GetProfileData, IGetBlockUserData, UserDetails } from "../types";
+import { GetProfileData, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
 import { FeedDetails, FeedListData } from "../../feed/types";
@@ -112,6 +112,8 @@ const ProfilePage = () => {
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: true, followers: ud.followers + 1 } : null));
             setFollowersCount((c) => c + 1);
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
         setFollowLoading(false);
     };
@@ -123,6 +125,8 @@ const ProfilePage = () => {
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: false, followers: ud.followers - 1 } : null));
             setFollowersCount((c) => c - 1);
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
         setFollowLoading(false);
     };
@@ -155,7 +159,7 @@ const ProfilePage = () => {
         if (result.data) {
             navigate("/Channels/" + result.data.channel.id);
         } else {
-            showNotification("error", result.error?.[0]?.message ?? "Something went wrong");
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
     };
 
@@ -164,17 +168,27 @@ const ProfilePage = () => {
         navigate("/Profile/" + userDetails.id + "?settings=true");
     };
 
-    const blockUser = async() => {
-        const q = prompt("Would you like to block this user?", "yes");
-        if(!q) return;
-        const targetId = userId;
-        const result = await sendJsonRequest<IGetBlockUserData>("/Block", "POST", { targetId });
-        if(result.success && userInfo) {
-            navigate("/Profile/" + userInfo.id);
+    const blockUser = async () => {
+        if (!userDetails) return;
+        const result = await sendJsonRequest(`/Block/BlockUser`, "POST", { targetId: userDetails.id });
+        if (result.success) {
+            setUserDetails((ud) => ud ? { ...ud, isBlocked: true } : null);
+            showNotification("success", "User blocked successfully");
         } else {
-            alert(result.data);
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
-    }
+    };
+
+    const unblockUser = async () => {
+        if (!userDetails) return;
+        const result = await sendJsonRequest(`/Block/UnblockUser`, "POST", { targetId: userDetails.id });
+        if (result.success) {
+            setUserDetails((ud) => ud ? { ...ud, isBlocked: false } : null);
+            showNotification("success", "User unblocked successfully");
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
+        }
+    };
 
     const isCurrentUser = !!userInfo && userInfo.id === userId;
     const isAdmin = !!userInfo && userInfo.roles.includes(RolesEnum.ADMIN);
@@ -210,27 +224,31 @@ const ProfilePage = () => {
 
                         {/* ── Profile Header ── */}
                         <Card className="wb-p-header border mb-3">
-                            <div className="wb-p-header__menu">
-                                <Dropdown drop="start">
-                                    <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                                    <Dropdown.Menu>
-                                        {(isCurrentUser || isAdmin) && (
-                                            <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
-                                        )}
-                                        {userInfo?.roles.some(r => ["Moderator", "Admin"].includes(r)) && (
-                                            <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
-                                                <FaHammer /> Open in Mod View
-                                            </Dropdown.Item>
-                                        )}
+                            {
+                                userInfo &&
+                                <div className="wb-p-header__menu">
+                                    <Dropdown drop="start">
+                                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                        <Dropdown.Menu>
+                                            {(isCurrentUser || isAdmin) && (
+                                                <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
+                                            )}
+                                            {userInfo?.roles.some(r => ["Moderator", "Admin"].includes(r)) && (
+                                                <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
+                                                    <FaHammer /> Open in Mod View
+                                                </Dropdown.Item>
+                                            )}
 
-                                        {
-                                            !isCurrentUser && 
-                                            <Dropdown.Item onClick={blockUser}><FaBan /> Block</Dropdown.Item>
-                                        }
+                                            {!isCurrentUser && (
+                                                <Dropdown.Item onClick={userDetails.isBlocked ? unblockUser : blockUser}>
+                                                    <FaBan /> {userDetails.isBlocked ? "Unblock" : "Block"}
+                                                </Dropdown.Item>
+                                            )}
 
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
+                            }
 
                             <div className="wb-p-header__body">
                                 {/* Avatar */}
@@ -238,6 +256,9 @@ const ProfilePage = () => {
                                     <ProfileAvatar size={80} avatarUrl={userDetails.avatarUrl} />
                                     {userDetails.roles.includes(RolesEnum.MODERATOR) && (
                                         <Badge className="wb-p-header__badge" bg="secondary">Moderator</Badge>
+                                    )}
+                                    {userDetails.isBlocked && (
+                                        <Badge className="wb-p-header__badge" bg="danger"><FaBan /> Blocked</Badge>
                                     )}
                                 </div>
 
@@ -250,7 +271,7 @@ const ProfilePage = () => {
                                         >
                                             {userDetails.name}
                                         </span>
-                                        {userInfo && userDetails.id !== userInfo.id && (
+                                        {userInfo && userDetails.id !== userInfo.id && !userDetails.isBlocked && (
                                             <div className="d-flex gap-2 flex-shrink-0">
                                                 <Button
                                                     variant={userDetails.isFollowing ? "outline-secondary" : "primary"}

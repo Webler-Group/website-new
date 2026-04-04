@@ -41,6 +41,7 @@ import { getAttachmentsByPostId, PostAttachmentDetails } from "../helpers/postsH
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
+import { isBlocked } from "../helpers/blockHelper";
 
 interface ChannelResponse {
     id: Types.ObjectId;
@@ -98,11 +99,15 @@ const createGroup = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createDirectMessagesSchema, req);
     const { userId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const DMUser = await UserModel.findById(userId, USER_MINIMAL_FIELDS).lean();
     if (!DMUser || !DMUser.roles.includes(RolesEnum.USER)) {
         throw new HttpError("User not found", 404);
+    }
+
+    if (await isBlocked(currentUserId, userId)) {
+        throw new HttpError("You cannot message this user", 403);
     }
 
     let channel = await ChannelModel.findOne().where({
@@ -138,7 +143,7 @@ const createDirectMessages = asyncHandler(async (req: IAuthRequest, res: Respons
 const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(groupInviteUserSchema, req);
     const { channelId, userId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
     if (!participant || ![ChannelRolesEnum.OWNER, ChannelRolesEnum.ADMIN].includes(participant.role)) {
@@ -148,6 +153,10 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const invitedUser = await UserModel.findById(userId, USER_MINIMAL_FIELDS).lean();
     if (!invitedUser || !invitedUser.roles.includes(RolesEnum.USER)) {
         throw new HttpError("User not found", 404);
+    }
+
+    if (await isBlocked(currentUserId, userId)) {
+        throw new HttpError("You cannot invite this user", 403);
     }
 
     const [alreadyParticipant, existingInvite] = await Promise.all([
@@ -179,7 +188,7 @@ const groupInviteUser = asyncHandler(async (req: IAuthRequest, res: Response) =>
 const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChannelSchema, req);
     const { channelId, includeParticipants, includeInvites } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const [participant, channel] = await Promise.all([
         ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean(),
@@ -196,6 +205,13 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Channel not found", 404);
     }
 
+    let active = true;
+    if (channel._type === ChannelTypeEnum.DM) {
+        const DMUser = channel.DMUser!;
+        const blocked = await isBlocked(channel.createdBy._id, DMUser._id);
+        active = !blocked && DMUser._id.equals(currentUserId) ? channel.createdBy.active : DMUser.active;
+    }
+
     const data: ChannelResponse = {
         id: channel._id,
         title: channel._type === ChannelTypeEnum.GROUP ?
@@ -210,9 +226,7 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         lastActiveAt: participant.lastActiveAt,
         unreadCount: participant.unreadCount,
         muted: participant.muted,
-        active: channel._type === ChannelTypeEnum.GROUP ?
-            true :
-            channel.DMUser?._id.equals(currentUserId) ? channel.createdBy.active : channel.DMUser?.active ?? true,
+        active
     };
 
     if (includeInvites || includeParticipants) {
@@ -635,8 +649,7 @@ const markMessagesSeenWS = async (socket: Socket, payload: unknown) => {
 
         const participant = await ChannelParticipantModel.findOne({ user: currentUserId, channel: channelId });
         if (!participant) {
-            socket.emit("channels:error", { error: [{ message: "Not a member of this channel" }] });
-            return;
+            throw new Error("Not a member of this channel");
         }
 
         participant.lastActiveAt = new Date();
@@ -662,10 +675,18 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
         const { channelId, content, repliedTo } = createMessageWSSchema.parse(payload);
         const currentUserId = socket.data.userId;
 
+        const channel = await ChannelModel.findById(channelId).lean();
+        if (!channel) {
+            throw new Error("Channel not found");
+        }
+
         const participant = await ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean();
         if (!participant) {
-            socket.emit("channels:error", { error: [{ message: "Not a member of this channel" }] });
-            return;
+            throw new Error("Not a member of this channel");
+        }
+
+        if(channel._type === ChannelTypeEnum.DM && await isBlocked(channel.createdBy, channel.DMUser!)) {
+            throw new Error("You cannot send messages to this user");
         }
 
         const newMessage = new ChannelMessageModel({
@@ -677,8 +698,8 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
         });
         await saveChannelMessage(newMessage);
 
-        const channel = await ChannelModel.findById(newMessage.channel).lean();
-        if (channel && channel._type === ChannelTypeEnum.DM) {
+
+        if (channel._type === ChannelTypeEnum.DM) {
             const messages = await ChannelMessageModel.find({ channel: channel._id }, { _id: 1 }).limit(2).lean();
             if (messages.length === 1) {
                 const exists = await ChannelParticipantModel.exists({ channel: channel._id, user: channel.DMUser });
@@ -703,8 +724,7 @@ const deleteMessageWS = async (socket: Socket, payload: unknown) => {
 
         const message = await ChannelMessageModel.findById(messageId);
         if (!message || !message.user.equals(currentUserId)) {
-            socket.emit("channels:error", { error: [{ message: "Message not found or unauthorized" }] });
-            return;
+            throw new Error("Message not found");
         }
 
         message.deleted = true;
@@ -725,8 +745,7 @@ const editMessageWS = async (socket: Socket, payload: unknown) => {
 
         const message = await ChannelMessageModel.findById(messageId);
         if (!message || !message.user.equals(currentUserId)) {
-            socket.emit("channels:error", { error: [{ message: "Message not found or unauthorized" }] });
-            return;
+            throw new Error("Message not found");
         }
 
         message.content = content;

@@ -229,10 +229,6 @@ const unlockChallengeSolution = asyncHandler(async (req: IAuthRequest, res: Resp
     const { challengeId } = body;
     const userId = req.userId;
 
-    if (!userId) {
-        throw new HttpError("User not found", 401);
-    }
-
     const challenge = await ChallengeModel.findById(challengeId).lean();
     if (!challenge) {
         throw new HttpError("Challenge not found", 404);

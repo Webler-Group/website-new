@@ -136,7 +136,7 @@ const ApiProvider = ({ baseUrl, children }: ApiProviderProps) => {
 
             const json = await response.json() as JsonResponse<T>;
 
-            if (response.status === 403) {
+            if (response.status === 401) {
                 logout();
                 navigate("/Users/Login?returnUrl=" + location.pathname, { replace: true });
             }

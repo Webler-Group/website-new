@@ -19,7 +19,7 @@ import { getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -198,7 +198,7 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!code.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     code.name = name;
@@ -234,7 +234,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!code.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
@@ -311,11 +311,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
             throw new HttpError("You cannot comment on this code", 403);
         }
 
-        let parentPost = null;
-        if (parentId) {
-            parentPost = await PostModel.findById(parentId).session(session);
-            if (!parentPost) throw new HttpError("Parent post not found", 404);
-        }
+        const parentPost = parentId ? await findParentCommentToReply(parentId, currentUserId, session) : null;
 
         const reply = new PostModel({
             _type: PostTypeEnum.CODE_COMMENT,
