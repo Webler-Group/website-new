@@ -6,6 +6,7 @@ import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, s
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "./userHelper";
 import UpvoteModel from "../models/Upvote";
+import { getBlockedUserIds, isBlocked } from "./blockHelper";
 
 type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
 
@@ -27,7 +28,9 @@ export const getCommmentsList = async (params: GetCommentsListParams) => {
             .lean<PopulatedPost>();
     }
 
-    let dbQuery = PostModel.find({ ...params.postFilter, hidden: false });
+    const blockedIds = params.userId ? await getBlockedUserIds(params.userId) : [];
+
+    let dbQuery = PostModel.find({ ...params.postFilter, hidden: false, user: { $nin: blockedIds } });
     let skipCount = params.index;
 
     if (params.findPostId) {
@@ -92,7 +95,7 @@ export const editComment = async (id: Types.ObjectId | string, userId: Types.Obj
     }
 
     if (!comment.user.equals(userId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     comment.message = message;
@@ -112,10 +115,21 @@ export const deleteComment = async (id: Types.ObjectId | string, userId: Types.O
     }
 
     if (!comment.user.equals(userId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
         await deletePostsAndCleanup({ _id: comment._id }, session);
     });
+}
+
+export const findParentCommentToReply = async (id: Types.ObjectId | string, userId: Types.ObjectId | string, session?: mongoose.ClientSession) => {
+    const parentComment = await PostModel.findById(id, { message: 0 }).session(session ?? null);
+    if (!parentComment) {
+        throw new HttpError("Parent comment not found", 404);
+    }
+    if (await isBlocked(userId, parentComment.user)) {
+        throw new HttpError("You cannot reply this comment", 403);
+    }
+    return parentComment;
 }

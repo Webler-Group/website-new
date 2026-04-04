@@ -45,7 +45,7 @@ import { getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 
 const getCourseList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCourseListSchema, req);
@@ -367,7 +367,7 @@ const getLessonComments = asyncHandler(async (req: IAuthRequest, res: Response) 
 const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createLessonCommentSchema, req);
     const { lessonId, message, parentId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const lesson = await CourseLessonModel.findById(lessonId)
@@ -375,11 +375,7 @@ const createLessonComment = asyncHandler(async (req: IAuthRequest, res: Response
             .session(session);
         if (!lesson) throw new HttpError("Lesson not found", 404);
 
-        let parentPost = null;
-        if (parentId) {
-            parentPost = await PostModel.findById(parentId).session(session);
-            if (!parentPost) throw new HttpError("Parent post not found", 404);
-        }
+        const parentPost = parentId ? await findParentCommentToReply(parentId, currentUserId, session) : null;
 
         const reply = new PostModel({
             _type: PostTypeEnum.LESSON_COMMENT,

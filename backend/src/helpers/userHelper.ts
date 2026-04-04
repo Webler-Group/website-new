@@ -4,6 +4,9 @@ import UserModel, { User, UserAdminMinimal, UserMinimal } from "../models/User";
 import IpModel from "../models/Ip";
 import { getImageUrl } from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
+import UserFollowingModel from "../models/UserFollowing";
+import { deleteNotifications } from "./notificationHelper";
+import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const MAX_IPS = 50;
 
@@ -120,4 +123,26 @@ export const generateEmailChangeRecord = async (userId: Types.ObjectId, newEmail
     const code = Math.floor(Math.random() * 1000000).toString().padStart(6, "0");
     await EmailChangeRecordModel.create({ userId, newEmail, code });
     return code;
+}
+
+export const totalXpToReachLevel = (level: number): number => {
+    const x = level - 1;
+    return 25 * (x + x * x);
+}
+
+export const levelFromXp = (xp: number): number => {
+    const x = Math.floor(
+        (-1 + Math.sqrt(1 + (4 * xp) / 25)) / 2
+    );
+
+    return x + 1;
+}
+
+export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId: Types.ObjectId, session?: mongoose.ClientSession) => {
+    await UserFollowingModel.deleteOne({ user: userId, following: followingId }, { session });
+    await deleteNotifications({
+        user: followingId,
+        actionUser: userId,
+        _type: NotificationTypeEnum.PROFILE_FOLLOW
+    }, session);
 }

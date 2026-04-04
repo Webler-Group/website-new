@@ -1,4 +1,4 @@
-import { IAuthRequest } from "../middleware/verifyJWT";
+import { IAuthRequest, isAuthorizedRole } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { QUESTION_MINIMAL_FIELDS, QuestionMinimal } from "../models/Post";
@@ -13,7 +13,6 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
 import RolesEnum from "../data/RolesEnum";
-import { isAuthorizedRole } from "../utils/modelUtils";
 import { getImageUrl } from "./mediaController";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, savePost } from "../helpers/postsHelper";
@@ -23,6 +22,7 @@ import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
+import { isBlocked } from "../helpers/blockHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -67,12 +67,16 @@ const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     });
 });
 
+
 const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getQuestionListSchema, req);
     const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
 
-    let dbQuery = PostModel.find({ _type: PostTypeEnum.QUESTION, hidden: false });
+    let dbQuery = PostModel.find({
+        _type: PostTypeEnum.QUESTION,
+        hidden: false
+    });
 
     if (searchQuery && searchQuery.trim().length > 0) {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -149,6 +153,7 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     res.json({ success: true, data: { count: questionCount, questions: data } });
 });
 
+
 const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getQuestionSchema, req);
     const { questionId } = body;
@@ -193,11 +198,15 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createReplySchema, req);
     const { message, questionId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const question = await PostModel.findById(questionId).session(session);
         if (!question) throw new HttpError("Question not found", 404);
+
+        if (await isBlocked(currentUserId, question.user._id, session)) {
+            throw new HttpError("You cannot reply to this post", 403);
+        }
 
         const reply = new PostModel({
             _type: PostTypeEnum.ANSWER,
@@ -328,7 +337,7 @@ const toggleAcceptedAnswer = asyncHandler(async (req: IAuthRequest, res: Respons
         const question = await PostModel.findById(post.parentId).session(session);
         if (!question) throw new HttpError("Question not found", 404);
 
-        if (!question.user.equals(currentUserId)) throw new HttpError("Unauthorized", 401);
+        if (!question.user.equals(currentUserId)) throw new HttpError("Forbidden", 403);
 
         if (accepted || post.isAccepted) {
             question.isAccepted = accepted;
@@ -368,7 +377,7 @@ const editQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!question.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const tagIds = (await getOrCreateTagsByNames(tags)).map(x => x._id);
@@ -406,7 +415,7 @@ const deleteQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     if (!question.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
@@ -427,7 +436,7 @@ const editReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!reply.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     reply.message = message;
@@ -458,7 +467,7 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!reply.user.equals(currentUserId) && !isAuthorizedRole(req, [RolesEnum.ADMIN, RolesEnum.MODERATOR])) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const question = await PostModel.findById(reply.parentId).lean();
@@ -476,11 +485,15 @@ const deleteReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const votePost = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(votePostSchema, req);
     const { postId, vote } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const upvote = await withTransaction(async (session) => {
         const post = await PostModel.findById(postId).session(session);
         if (!post) throw new HttpError("Post not found", 404);
+
+        if (await isBlocked(currentUserId, post.user, session)) {
+            throw new HttpError("You cannot vote this post", 404);
+        }
 
         let upvote = await UpvoteModel.findOne({ parentId: postId, user: currentUserId }).session(session);
 

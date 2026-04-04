@@ -26,8 +26,8 @@ import { CourseMinimal, UserCoursesListData } from "../../courses/types";
 import RolesEnum from "../../../data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
-import { FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
-import { FaBookOpen, FaUsers } from "react-icons/fa6";
+import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
+import { FaBookOpen } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
 import "../profile.css";
 
@@ -112,6 +112,8 @@ const ProfilePage = () => {
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: true, followers: ud.followers + 1 } : null));
             setFollowersCount((c) => c + 1);
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
         setFollowLoading(false);
     };
@@ -123,6 +125,8 @@ const ProfilePage = () => {
         if (result.success) {
             setUserDetails((ud) => (ud ? { ...ud, isFollowing: false, followers: ud.followers - 1 } : null));
             setFollowersCount((c) => c - 1);
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
         setFollowLoading(false);
     };
@@ -155,13 +159,35 @@ const ProfilePage = () => {
         if (result.data) {
             navigate("/Channels/" + result.data.channel.id);
         } else {
-            showNotification("error", result.error?.[0]?.message ?? "Something went wrong");
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
         }
     };
 
     const openSettings = () => {
         if (!userDetails) return;
         navigate("/Profile/" + userDetails.id + "?settings=true");
+    };
+
+    const blockUser = async () => {
+        if (!userDetails) return;
+        const result = await sendJsonRequest(`/Block/BlockUser`, "POST", { targetId: userDetails.id });
+        if (result.success) {
+            setUserDetails((ud) => ud ? { ...ud, isBlocked: true } : null);
+            showNotification("success", "User blocked successfully");
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
+        }
+    };
+
+    const unblockUser = async () => {
+        if (!userDetails) return;
+        const result = await sendJsonRequest(`/Block/UnblockUser`, "POST", { targetId: userDetails.id });
+        if (result.success) {
+            setUserDetails((ud) => ud ? { ...ud, isBlocked: false } : null);
+            showNotification("success", "User unblocked successfully");
+        } else {
+            showNotification("error", result.error?.[0].message ?? "Something went wrong");
+        }
     };
 
     const isCurrentUser = !!userInfo && userInfo.id === userId;
@@ -198,21 +224,31 @@ const ProfilePage = () => {
 
                         {/* ── Profile Header ── */}
                         <Card className="wb-p-header border mb-3">
-                            <div className="wb-p-header__menu">
-                                <Dropdown drop="start">
-                                    <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                                    <Dropdown.Menu>
-                                        {(isCurrentUser || isAdmin) && (
-                                            <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
-                                        )}
-                                        {userInfo?.roles.some(r => ["Moderator", "Admin"].includes(r)) && (
-                                            <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
-                                                <FaHammer /> Open in Mod View
-                                            </Dropdown.Item>
-                                        )}
-                                    </Dropdown.Menu>
-                                </Dropdown>
-                            </div>
+                            {
+                                userInfo &&
+                                <div className="wb-p-header__menu">
+                                    <Dropdown drop="start">
+                                        <Dropdown.Toggle as={EllipsisDropdownToggle} />
+                                        <Dropdown.Menu>
+                                            {(isCurrentUser || isAdmin) && (
+                                                <Dropdown.Item onClick={openSettings}><FaGear /> Settings</Dropdown.Item>
+                                            )}
+                                            {userInfo?.roles.some(r => ["Moderator", "Admin"].includes(r)) && (
+                                                <Dropdown.Item as={Link} to={`/Admin/UserSearch/${userDetails.id}`}>
+                                                    <FaHammer /> Open in Mod View
+                                                </Dropdown.Item>
+                                            )}
+
+                                            {!isCurrentUser && (
+                                                <Dropdown.Item onClick={userDetails.isBlocked ? unblockUser : blockUser}>
+                                                    <FaBan /> {userDetails.isBlocked ? "Unblock" : "Block"}
+                                                </Dropdown.Item>
+                                            )}
+
+                                        </Dropdown.Menu>
+                                    </Dropdown>
+                                </div>
+                            }
 
                             <div className="wb-p-header__body">
                                 {/* Avatar */}
@@ -220,6 +256,9 @@ const ProfilePage = () => {
                                     <ProfileAvatar size={80} avatarUrl={userDetails.avatarUrl} />
                                     {userDetails.roles.includes(RolesEnum.MODERATOR) && (
                                         <Badge className="wb-p-header__badge" bg="secondary">Moderator</Badge>
+                                    )}
+                                    {userDetails.isBlocked && (
+                                        <Badge className="wb-p-header__badge" bg="danger"><FaBan /> Blocked</Badge>
                                     )}
                                 </div>
 
@@ -232,7 +271,7 @@ const ProfilePage = () => {
                                         >
                                             {userDetails.name}
                                         </span>
-                                        {userInfo && userDetails.id !== userInfo.id && (
+                                        {userInfo && userDetails.id !== userInfo.id && !userDetails.isBlocked && (
                                             <div className="d-flex gap-2 flex-shrink-0">
                                                 <Button
                                                     variant={userDetails.isFollowing ? "outline-secondary" : "primary"}
@@ -311,6 +350,52 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                         </Card>
+
+                        {/* ── Courses Row ── */}
+                        {(isCurrentUser || courses.length > 0) && (
+                            <Card className="wb-p-section border-0 mb-3">
+                                <div className="wb-p-section__header" style={{ borderBottom: "none" }}>
+                                    <span className="wb-p-section__title">
+                                        <FaBookOpen className="text-muted me-2" /> Courses
+                                    </span>
+                                    {courses.length > 0 && (
+                                        <LinkContainer to="/Courses">
+                                            <Button variant="link" size="sm" className="p-0">Browse</Button>
+                                        </LinkContainer>
+                                    )}
+                                </div>
+                                {courses.length > 0 ? (
+                                    <div className="wb-p-courses-scroll">
+                                        {courses.map((course) => (
+                                            <div
+                                                key={course.id}
+                                                className="wb-p-courses-card"
+                                                onClick={() => navigate("/Courses/" + course.code)}
+                                            >
+                                                <div className="wb-p-courses-card__img">
+                                                    <img
+                                                        src={course.coverImageUrl || "/resources/images/logoicon.svg"}
+                                                        alt={course.title}
+                                                    />
+                                                </div>
+                                                <span className="wb-p-courses-card__title">{course.title}</span>
+                                                <Badge
+                                                    bg={course.completed ? "success" : "info"}
+                                                    text={course.completed ? undefined : "dark"}
+                                                    className="wb-p-courses-card__badge"
+                                                >
+                                                    {course.completed ? "Completed" : "In Progress"}
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="wb-p-section__empty">
+                                        <p>No courses enrolled yet</p>
+                                    </div>
+                                )}
+                            </Card>
+                        )}
 
                         {/* ── Content Grid ── */}
                         <div className="wb-p-grid">
@@ -436,63 +521,6 @@ const ProfilePage = () => {
                                     </Card>
                                 )}
 
-                                {/* Courses */}
-                                {(isCurrentUser || courses.length > 0) && (
-                                    <Card className="wb-p-section border mb-3">
-                                        <div className="wb-p-section__header">
-                                            <span className="wb-p-section__title">
-                                                <FaBookOpen className="text-muted me-2" /> Courses
-                                            </span>
-                                            {courses.length > 0 && (
-                                                <LinkContainer to="/Courses">
-                                                    <Button variant="link" size="sm" className="p-0">Browse</Button>
-                                                </LinkContainer>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {courses.length > 0 ? (
-                                                courses.slice(0, 3).map((course) => (
-                                                    <div
-                                                        key={course.id}
-                                                        className="wb-p-course-item border-bottom"
-                                                        onClick={() => navigate("/Courses/" + course.code)}
-                                                    >
-                                                        <div className="wb-p-course-item__img">
-                                                            <img
-                                                                src={course.coverImageUrl || "/resources/images/logoicon.svg"}
-                                                                alt={course.title}
-                                                            />
-                                                        </div>
-                                                        <div className="wb-p-course-item__info">
-                                                            <span className="wb-p-course-item__title">{course.title}</span>
-                                                            <Badge
-                                                                bg={course.completed ? "success" : "info"}
-                                                                text={course.completed ? undefined : "dark"}
-                                                                className="wb-p-course-item__badge"
-                                                            >
-                                                                {course.completed ? "Completed" : "In Progress"}
-                                                            </Badge>
-                                                        </div>
-                                                        <span className="wb-p-course-item__participants text-muted">
-                                                            <FaUsers size={12} /> {course.participants}
-                                                        </span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="wb-p-section__empty">
-                                                    <p>No courses enrolled yet</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {isCurrentUser && (
-                                            <div className="wb-p-section__footer">
-                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Courses")}>
-                                                    Browse Courses
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Card>
-                                )}
                             </div>
                         </div>
                     </Container>

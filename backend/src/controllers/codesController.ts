@@ -6,7 +6,7 @@ import UpvoteModel from "../models/Upvote";
 import templates from "../data/templates";
 import EvaluationJobModel from "../models/EvaluationJob";
 import { escapeRegex } from "../utils/regexUtils";
-import PostModel, { Post } from "../models/Post";
+import PostModel from "../models/Post";
 import PostTypeEnum from "../data/PostTypeEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { Types } from "mongoose";
@@ -15,11 +15,12 @@ import { createCodeCommentSchema, createCodeSchema, createJobSchema, deleteCodeC
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { deleteCodeAndCleanup, formatCodeMinimal } from "../helpers/codesHelper";
-import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
+import { getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { deleteComment, editComment, getCommmentsList } from "../helpers/commentsHelper";
+import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
+import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);
@@ -63,12 +64,15 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
 
+    const blockedIds = currentUserId ? await getBlockedUserIds(currentUserId) : [];
+
     let dbQuery = CodeModel.find({
         hidden: false,
         $or: [
             { challenge: null },
             { challenge: { $exists: false } }
-        ]
+        ],
+        user: { $nin: blockedIds }
     });
 
     if (searchQuery && searchQuery.trim().length > 0) {
@@ -128,6 +132,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { count: codeCount, codes: data } });
 });
 
+
 const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getCodeSchema, req);
     const { codeId } = body;
@@ -139,6 +144,10 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     if (!code) {
         throw new HttpError("Code not found", 404);
+    }
+
+    if (currentUserId && await isBlocked(currentUserId, code.user._id)) {
+        throw new HttpError("You cannot view this code", 403);
     }
 
     const isUpvoted = currentUserId
@@ -189,7 +198,7 @@ const editCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!code.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     code.name = name;
@@ -225,7 +234,7 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     if (!code.user.equals(currentUserId)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     await withTransaction(async (session) => {
@@ -238,11 +247,15 @@ const deleteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(voteCodeSchema, req);
     const { codeId, vote } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const upvote = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
+
+        if (await isBlocked(currentUserId, code.user, session)) {
+            throw new HttpError("You cannot vote this code", 404);
+        }
 
         let upvote = await UpvoteModel.findOne({ parentId: codeId, user: currentUserId }).session(session);
 
@@ -288,17 +301,17 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeCommentSchema, req);
     const { codeId, message, parentId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
 
-        let parentPost = null;
-        if (parentId) {
-            parentPost = await PostModel.findById(parentId).session(session);
-            if (!parentPost) throw new HttpError("Parent post not found", 404);
+        if (await isBlocked(currentUserId, code.user._id, session)) {
+            throw new HttpError("You cannot comment on this code", 403);
         }
+
+        const parentPost = parentId ? await findParentCommentToReply(parentId, currentUserId, session) : null;
 
         const reply = new PostModel({
             _type: PostTypeEnum.CODE_COMMENT,

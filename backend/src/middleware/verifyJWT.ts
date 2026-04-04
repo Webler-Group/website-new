@@ -6,7 +6,7 @@ import { AccessTokenPayload } from "../utils/tokenUtils";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 
-interface IAuthRequest extends Request {
+export interface IAuthRequest extends Request {
     userId?: string;
     roles?: RolesEnum[];
     deviceId?: string;
@@ -49,8 +49,7 @@ const verifyJWT = (req: IAuthRequest, res: Response, next: NextFunction) => {
     }
 }
 
-export {
-    IAuthRequest
-}
+export const isAuthorizedRole = (req: IAuthRequest, expectedRoles: RolesEnum[]) =>
+    req.roles && req.roles.some(i => expectedRoles.includes(i));
 
 export default verifyJWT;

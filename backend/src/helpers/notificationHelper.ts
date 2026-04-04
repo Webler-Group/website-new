@@ -3,7 +3,7 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import UserModel, { NotificationSettings } from "../models/User";
 import { getIO, onlineUsers, uidRoom } from "../config/socketServer";
 import { sendPushToUsers } from "../services/pushService";
-import NotificationModel from "../models/Notification";
+import NotificationModel, { Notification } from "../models/Notification";
 import HttpError from "../exceptions/HttpError";
 
 export const notificationTypeToField: Record<NotificationTypeEnum, keyof NotificationSettings> = {

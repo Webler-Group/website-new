@@ -17,6 +17,7 @@ import { config } from "../confg";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import { Notification } from "../models/Notification";
+import { isBlocked } from "./blockHelper";
 
 export interface PostAttachmentDetails {
     id: Types.ObjectId;
@@ -262,11 +263,11 @@ export const updatePostAttachments = async (message: string, parentId: { post?: 
                 }
             }
 
-            for (const userId of validUserIds) {
+            for (const userId of Array.from(validUserIds).slice(0, 10)) {
                 const mentionedUser = await UserModel.findById(userId, { _id: 1 }).lean().session(session ?? null);
                 if (mentionedUser) {
                     let attachment = currentAttachments.find(x => x._type === PostAttachmentTypeEnum.MENTION && x.user.equals(userId));
-                    if (!attachment) {
+                    if (!attachment && !await isBlocked(parentPost.user._id, mentionedUser._id)) {
                         const result = await createMentionAttachment(parentPost, mentionedUser._id, session);
                         attachment = result.attachment;
                         notifications.push(...result.notifications);

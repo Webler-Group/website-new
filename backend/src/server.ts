@@ -18,6 +18,7 @@ import tagRoutes from "./routes/tagRoutes";
 import challengeRoutes from "./routes/challengeRoutes";
 import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import blockRoutes from "./routes/blockRoutes";
 import http from "http";
 import { config } from "./confg";
 import { initCronJobs } from "./services/cronJobs";
@@ -73,6 +74,7 @@ async function main() {
     app.use(`${apiPrefix}/Challenge`, challengeRoutes);
     app.use(`${apiPrefix}/PushNotifications`, notificationRoutes);
     app.use(`${apiPrefix}/Admin`, adminRoutes);
+    app.use(`${apiPrefix}/Block`, blockRoutes);
 
     app.use((req, res) => {
         res.status(404).json({ success: false, error: [{ message: "resource not found" }] });

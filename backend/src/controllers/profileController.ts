@@ -23,13 +23,14 @@ import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import { getImageUrl } from "./mediaController";
-import { formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
-import { deleteNotifications, notificationTypeToField, sendNotifications } from "../helpers/notificationHelper";
+import { deleteFollowAndCleanup, formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
+import { notificationTypeToField, sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
+import { getBlockedUserIds, hasBlocked, isBlocked } from "../helpers/blockHelper";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -43,6 +44,10 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const isFollowing = currentUserId ?
         await UserFollowingModel.findOne({ user: currentUserId, following: userId }) !== null :
+        false;
+
+    const isBlocked = currentUserId ?
+        await hasBlocked(currentUserId, userId) :
         false;
 
     const followers = await UserFollowingModel.countDocuments({ following: userId });
@@ -131,6 +136,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 followers,
                 following,
                 isFollowing,
+                isBlocked,
                 registerDate: user.createdAt,
                 level: user.level,
                 xp: user.xp,
@@ -150,7 +156,7 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { userId, name, bio, countryCode } = body;
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const user = await UserModel.findById(userId);
@@ -287,7 +293,7 @@ const sendActivationCode = asyncHandler(async (req: IAuthRequest, res: Response)
 })
 
 const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
     const { body } = parseWithZod(followSchema, req);
     const { userId } = body;
 
@@ -297,13 +303,17 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const userExists = await UserModel.exists({ _id: userId });
     if (!userExists) {
-        throw new HttpError("Profile not found", 404);
+        throw new HttpError("User not found", 404);
     }
 
     const exists = await UserFollowingModel.exists({ user: currentUserId, following: userId });
     if (exists) {
         res.json({ success: true });
         return;
+    }
+
+    if (await isBlocked(currentUserId, userId)) {
+        throw new HttpError("You cannot follow this user", 403);
     }
 
     await withTransaction(async (session) => {
@@ -328,19 +338,14 @@ const unfollow = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Fields 'user' and 'following' cannot be same", 400);
     }
 
-    const userFollowing = await UserFollowingModel.findOne({ user: currentUserId, following: userId });
+    const userFollowing = await UserFollowingModel.findOne({ user: currentUserId, following: userId }).lean();
     if (!userFollowing) {
         res.json({ success: true });
         return;
     }
 
     await withTransaction(async (session) => {
-        await UserFollowingModel.deleteOne({ _id: userFollowing._id }, { session });
-        await deleteNotifications({
-            user: userId,
-            actionUser: currentUserId,
-            _type: NotificationTypeEnum.PROFILE_FOLLOW
-        }, session);
+        await deleteFollowAndCleanup(userFollowing.user, userFollowing.following, session);
     });
 
     res.json({ success: true });
@@ -488,7 +493,7 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res) => 
     }
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const fileDoc = await uploadImageToBlob({
@@ -533,7 +538,7 @@ const removeProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res: Res
     }
 
     if (currentUserId !== userId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     if (user.avatarFileId) {
@@ -573,8 +578,15 @@ const updateNotifications = asyncHandler(async (req: IAuthRequest, res: Response
 const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(searchProfilesSchema, req);
     const { searchQuery } = body;
+    const userId = req.userId;
 
-    const match: mongoose.QueryFilter<typeof UserModel> = { active: true, roles: RolesEnum.USER };
+    const excludeIds = userId ? [...(await getBlockedUserIds(userId)), userId] : []
+
+    const match: mongoose.QueryFilter<typeof UserModel> = {
+        active: true,
+        roles: RolesEnum.USER,
+        _id: { $nin: excludeIds }
+    };
 
     if (searchQuery && searchQuery.trim() !== "") {
         const safeQuery = escapeRegex(searchQuery.trim());
@@ -642,7 +654,7 @@ const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) =
     const targetUserId = userId ?? currentUserId;
 
     if (targetUserId !== currentUserId && !req.roles?.includes(RolesEnum.ADMIN)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const basePath = `users/${targetUserId}/post-images`;
@@ -671,7 +683,7 @@ const deletePostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     if (!fileDoc.author.equals(currentUserId) && !req.roles?.includes(RolesEnum.ADMIN)) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const basePath = `users/${currentUserId}/post-images`;
@@ -721,7 +733,7 @@ const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const isAdmin = req.roles?.includes(RolesEnum.ADMIN);
 
     if (!isOwner && !isAdmin) {
-        throw new HttpError("Unauthorized", 401);
+        throw new HttpError("Forbidden", 403);
     }
 
     const basePath = `users/${fileDoc.author.toString()}/post-images`;

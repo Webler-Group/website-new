@@ -36,7 +36,7 @@ const login = asyncHandler(async (req, res) => {
     }
 
     if (!user.active) {
-        throw new HttpError("Account is deactivated", 401);
+        throw new HttpError("Account is deactivated", 403);
     }
 
     user.lastLoginAt = new Date();
@@ -82,7 +82,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const record = await CaptchaRecordModel.findById(captchaId).lean();
 
     if (record === null || !verifyCaptcha(solution, record.encrypted)) {
-        throw new HttpError("Captcha verification failed", 403);
+        throw new HttpError("Captcha verification failed", 400);
     }
 
     await CaptchaRecordModel.deleteOne({ _id: captchaId });
@@ -165,7 +165,7 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
     try {
         decoded = jwt.verify(cookies.refreshToken, config.refreshTokenSecret) as RefreshTokenPayload;
     } catch {
-        throw new HttpError("Please Login First", 403);
+        throw new HttpError("Please Login First", 401);
     }
 
     const user = await UserModel.findById(decoded.userId, { roles: 1, active: 1, tokenVersion: 1 });

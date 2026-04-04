@@ -34,6 +34,7 @@ export interface UserDetails {
     followers: number;
     following: number;
     isFollowing: boolean;
+    isBlocked: boolean;
     level: number;
     xp: number;
     emailVerified: boolean;
@@ -125,4 +126,8 @@ export const isUser = (user: UserMinimal | string): user is UserMinimal => {
 
 export interface PublicKeyData {
     publicKey: string;
+}
+
+export interface GetBlockedUsersData {
+    users: UserMinimal[];
 }
