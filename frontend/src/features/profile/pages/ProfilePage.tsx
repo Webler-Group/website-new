@@ -27,7 +27,7 @@ import RolesEnum from "../../../data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
 import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
-import { FaBookOpen, FaUsers } from "react-icons/fa6";
+import { FaBookOpen } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
 import "../profile.css";
 
@@ -351,6 +351,52 @@ const ProfilePage = () => {
                             </div>
                         </Card>
 
+                        {/* ── Courses Row ── */}
+                        {(isCurrentUser || courses.length > 0) && (
+                            <Card className="wb-p-section border-0 mb-3">
+                                <div className="wb-p-section__header" style={{ borderBottom: "none" }}>
+                                    <span className="wb-p-section__title">
+                                        <FaBookOpen className="text-muted me-2" /> Courses
+                                    </span>
+                                    {courses.length > 0 && (
+                                        <LinkContainer to="/Courses">
+                                            <Button variant="link" size="sm" className="p-0">Browse</Button>
+                                        </LinkContainer>
+                                    )}
+                                </div>
+                                {courses.length > 0 ? (
+                                    <div className="wb-p-courses-scroll">
+                                        {courses.map((course) => (
+                                            <div
+                                                key={course.id}
+                                                className="wb-p-courses-card"
+                                                onClick={() => navigate("/Courses/" + course.code)}
+                                            >
+                                                <div className="wb-p-courses-card__img">
+                                                    <img
+                                                        src={course.coverImageUrl || "/resources/images/logoicon.svg"}
+                                                        alt={course.title}
+                                                    />
+                                                </div>
+                                                <span className="wb-p-courses-card__title">{course.title}</span>
+                                                <Badge
+                                                    bg={course.completed ? "success" : "info"}
+                                                    text={course.completed ? undefined : "dark"}
+                                                    className="wb-p-courses-card__badge"
+                                                >
+                                                    {course.completed ? "Completed" : "In Progress"}
+                                                </Badge>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="wb-p-section__empty">
+                                        <p>No courses enrolled yet</p>
+                                    </div>
+                                )}
+                            </Card>
+                        )}
+
                         {/* ── Content Grid ── */}
                         <div className="wb-p-grid">
 
@@ -475,63 +521,6 @@ const ProfilePage = () => {
                                     </Card>
                                 )}
 
-                                {/* Courses */}
-                                {(isCurrentUser || courses.length > 0) && (
-                                    <Card className="wb-p-section border mb-3">
-                                        <div className="wb-p-section__header">
-                                            <span className="wb-p-section__title">
-                                                <FaBookOpen className="text-muted me-2" /> Courses
-                                            </span>
-                                            {courses.length > 0 && (
-                                                <LinkContainer to="/Courses">
-                                                    <Button variant="link" size="sm" className="p-0">Browse</Button>
-                                                </LinkContainer>
-                                            )}
-                                        </div>
-                                        <div>
-                                            {courses.length > 0 ? (
-                                                courses.slice(0, 3).map((course) => (
-                                                    <div
-                                                        key={course.id}
-                                                        className="wb-p-course-item border-bottom"
-                                                        onClick={() => navigate("/Courses/" + course.code)}
-                                                    >
-                                                        <div className="wb-p-course-item__img">
-                                                            <img
-                                                                src={course.coverImageUrl || "/resources/images/logoicon.svg"}
-                                                                alt={course.title}
-                                                            />
-                                                        </div>
-                                                        <div className="wb-p-course-item__info">
-                                                            <span className="wb-p-course-item__title">{course.title}</span>
-                                                            <Badge
-                                                                bg={course.completed ? "success" : "info"}
-                                                                text={course.completed ? undefined : "dark"}
-                                                                className="wb-p-course-item__badge"
-                                                            >
-                                                                {course.completed ? "Completed" : "In Progress"}
-                                                            </Badge>
-                                                        </div>
-                                                        <span className="wb-p-course-item__participants text-muted">
-                                                            <FaUsers size={12} /> {course.participants}
-                                                        </span>
-                                                    </div>
-                                                ))
-                                            ) : (
-                                                <div className="wb-p-section__empty">
-                                                    <p>No courses enrolled yet</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                        {isCurrentUser && (
-                                            <div className="wb-p-section__footer">
-                                                <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Courses")}>
-                                                    Browse Courses
-                                                </Button>
-                                            </div>
-                                        )}
-                                    </Card>
-                                )}
                             </div>
                         </div>
                     </Container>
