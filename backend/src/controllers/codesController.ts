@@ -64,7 +64,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { page, count, filter, searchQuery, userId, language } = body;
     const currentUserId = req.userId;
 
-    const blockedIds = await getBlockedUserIds(currentUserId as string);
+    const blockedIds = currentUserId ? await getBlockedUserIds(currentUserId) : [];
 
     let dbQuery = CodeModel.find({
         hidden: false,
@@ -146,7 +146,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Code not found", 404);
     }
 
-    if(await isBlocked(currentUserId as string, code.user._id.toString())) {
+    if (currentUserId && await isBlocked(currentUserId, code.user._id)) {
         throw new HttpError("You cannot view this code", 403);
     }
 
@@ -253,7 +253,7 @@ const voteCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
 
-        if(await isBlocked(currentUserId as string, code.user._id.toString())) {
+        if (await isBlocked(currentUserId as string, code.user._id.toString())) {
             throw new HttpError("You cannot like this post", 403);
         }
 
@@ -285,8 +285,11 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { codeId, parentId, index, count, filter, findPostId } = body;
     const currentUserId = req.userId;
 
-    const code = await CodeModel.findById(codeId);
-    if(await isBlocked(currentUserId as string, code!.user._id.toString())) {
+    const code = await CodeModel.findById(codeId, { user: 1 }).lean();
+    if (!code) {
+        throw new HttpError("Code not found", 404);
+    }
+    if (currentUserId && await isBlocked(currentUserId, code.user._id)) {
         throw new HttpError("You cannot get comments to this code", 403);
     }
 
@@ -312,7 +315,7 @@ const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) 
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
 
-        if(await isBlocked(currentUserId as string, code!.user._id.toString())) {
+        if (await isBlocked(currentUserId as string, code!.user._id.toString())) {
             throw new HttpError("You cannot comment on this code", 403);
         }
 
