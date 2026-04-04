@@ -1,4 +1,4 @@
-import { IAuthRequest } from "../middleware/verifyJWT";
+import { IAuthRequest, isAuthorizedRole } from "../middleware/verifyJWT";
 import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { QUESTION_MINIMAL_FIELDS, QuestionMinimal } from "../models/Post";
@@ -13,7 +13,6 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
 import RolesEnum from "../data/RolesEnum";
-import { isAuthorizedRole } from "../utils/modelUtils";
 import { getImageUrl } from "./mediaController";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, savePost } from "../helpers/postsHelper";
@@ -23,7 +22,7 @@ import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
-import { getBlockedUserIds, isBlocked } from "../utils/blockUtils";
+import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);

@@ -1,6 +1,7 @@
-import { getModelForClass, prop, index, Ref, modelOptions } from "@typegoose/typegoose";
+import { getModelForClass, prop, index, modelOptions } from "@typegoose/typegoose";
 
 import { User } from "./User";
+import { Types } from "mongoose";
 
 
 @modelOptions({ schemaOptions: {timestamps: { createdAt: true, updatedAt: false }} })
@@ -8,28 +9,12 @@ import { User } from "./User";
 export class Block {
 
 	@prop({ ref: () => User, required: true })
-	public blocker!: Ref<User>;
+	public blocker!: Types.ObjectId;
 
 	@prop({ ref: () => User, required: true })
-	public blocked!: Ref<User>;
+	public blocked!: Types.ObjectId;
 
 	public createdAt?: Date;
-
-	public static async isBlocked(userA: string, userB: string) {
-		return await BlockModel.exists({
-		$or: [
-			{ blocker: userA, blocked: userB },
-			{ blocker: userB, blocked: userA }
-		]
-		});
-	}
-
-	public static async hasBlocked(blocker: string, target: string) {
-		return await BlockModel.exists({
-			blocker,
-			blocked: target
-		});
-	}
 }
 
 export const BlockModel = getModelForClass(Block);

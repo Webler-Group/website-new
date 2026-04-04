@@ -30,7 +30,7 @@ import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
-import { getBlockedUserIds } from "../utils/blockUtils";
+import { getBlockedUserIds } from "../helpers/blockHelper";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;

@@ -1,6 +1,6 @@
 import { Response, NextFunction } from "express";
 import { IAuthRequest } from "./verifyJWT";
-import { isBlocked } from "../utils/blockUtils";
+import { isBlocked } from "../helpers/blockHelper";
 
 
 /**
