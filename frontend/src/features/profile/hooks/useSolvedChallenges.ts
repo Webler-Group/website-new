@@ -29,6 +29,7 @@ const useSolvedChallenges = (userId: string, count: number, pageNum: number) => 
             } else {
                 setError(result.error?.[0].message ?? "Something went wrong");
             }
+            setIsLoading(false);
         }
         fetchChallenges();
     }, [userId, count, pageNum]);

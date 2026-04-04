@@ -271,7 +271,7 @@ const CourseEditorPage = () => {
                                     <Button variant="primary" size="sm" onClick={() => showLessonForm("", null)} disabled={loading}>Create Lesson</Button>
                                 </div>
                             </div>
-                            <div className="mt-3">
+                            <div className="my-3">
                                 {
                                     lessons.map(lesson => {
                                         return (

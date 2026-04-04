@@ -1,6 +1,7 @@
 import { FaCheckCircle } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import { ChallengeMinimal } from "../types";
+import "./LanguageIcons.css";
 
 interface LanguageIconsProps {
     challenge: ChallengeMinimal;

@@ -36,6 +36,7 @@ const MdEditorField = ({
     const [mode, setMode] = useState<MDEditorMode>("write");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const textareaHeightRef = useRef<number | null>(null);
+    const scrollTopRef = useRef<number>(0);
     const [showImages, setShowImages] = useState(false);
     const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
 
@@ -49,6 +50,7 @@ const MdEditorField = ({
         if (textareaHeightRef.current !== null) {
             textarea.style.height = `${textareaHeightRef.current}px`;
         }
+        textarea.scrollTop = scrollTopRef.current;
         const observer = new ResizeObserver(() => {
             if (textarea.offsetHeight > 0) {
                 textareaHeightRef.current = textarea.offsetHeight;
@@ -57,6 +59,13 @@ const MdEditorField = ({
         observer.observe(textarea);
         return () => observer.disconnect();
     }, [mode]);
+
+    const handleModeChange = (newMode: MDEditorMode) => {
+        if (newMode === "preview" && textareaRef.current) {
+            scrollTopRef.current = textareaRef.current.scrollTop;
+        }
+        setMode(newMode);
+    };
 
     const handlePostAttachments = (selected: string[]) => {
         setText((prev) => (prev.trim().length == 0 || prev.endsWith("\n") ? prev : prev + "\n") + selected.join("\n") + "\n");
@@ -67,13 +76,18 @@ const MdEditorField = ({
         setText(limitedValue);
     };
 
-    const insertMarkdown = (syntaxStart: string, syntaxEnd = "") => {
+    const insertMarkdown = (syntaxStart: string, syntaxEnd = "", replaceSelection = false) => {
         const textarea = textareaRef.current;
-        if (!textarea) return;
+        if (!textarea) {
+            if (replaceSelection) {
+                handleChange(text + (text.endsWith("\n") ? "" : "\n") + syntaxStart + "\n");
+            }
+            return;
+        }
         const start = textarea.selectionStart;
         const end = textarea.selectionEnd;
         const scrollTop = textarea.scrollTop;
-        const selected = text.slice(start, end);
+        const selected = replaceSelection ? "" : text.slice(start, end);
         const before = text.slice(0, start);
         const after = text.slice(end);
         const newText = before + syntaxStart + selected + syntaxEnd + after;
@@ -81,28 +95,12 @@ const MdEditorField = ({
         setTimeout(() => {
             textarea.focus();
             textarea.scrollTop = scrollTop;
-            textarea.setSelectionRange(start + syntaxStart.length, end + syntaxStart.length);
-        }, 50);
-    };
-
-    const insertImageMarkdownAtCursor = (url: string, altText: string) => {
-        const textarea = textareaRef.current;
-        const md = `![${altText || "image"}](${url})`;
-        if (!textarea) {
-            handleChange(text + (text.endsWith("\n") ? "" : "\n") + md + "\n");
-            return;
-        }
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const scrollTop = textarea.scrollTop;
-        const before = text.slice(0, start);
-        const after = text.slice(end);
-        const newText = before + md + after;
-        handleChange(newText);
-        setTimeout(() => {
-            textarea.focus();
-            textarea.scrollTop = scrollTop;
-            textarea.setSelectionRange(start + md.length, start + md.length);
+            if (replaceSelection) {
+                const pos = start + syntaxStart.length;
+                textarea.setSelectionRange(pos, pos);
+            } else {
+                textarea.setSelectionRange(start + syntaxStart.length, end + syntaxStart.length);
+            }
         }, 50);
     };
 
@@ -128,7 +126,7 @@ const MdEditorField = ({
                 rootAlias={rootAlias}
                 show={showImages}
                 onHide={() => setShowImages(false)}
-                onSelect={(url, alt) => insertImageMarkdownAtCursor(url, alt)}
+                onSelect={(url, alt) => insertMarkdown(`![${alt || "image"}](${url})`, "", true)}
             />
             <div>
                 <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
@@ -148,7 +146,7 @@ const MdEditorField = ({
                 </div>
 
                 <div className="mb-3">
-                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={setMode}>
+                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={handleModeChange}>
                         <ToggleButton id="write-btn" value="write" variant="outline-primary"size="sm">
                             Write
                         </ToggleButton>
