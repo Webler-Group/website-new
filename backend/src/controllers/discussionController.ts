@@ -73,10 +73,10 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const { page, count, filter, searchQuery, userId } = body;
     const currentUserId = req.userId;
 
-    const blockedIds = await getBlockedUserIds(currentUserId as string);
-    let dbQuery = PostModel.find({ 
-        _type: PostTypeEnum.QUESTION, 
-        hidden: false,  
+    const blockedIds = currentUserId ? await getBlockedUserIds(currentUserId) : [];
+    let dbQuery = PostModel.find({
+        _type: PostTypeEnum.QUESTION,
+        hidden: false,
         user: { $nin: blockedIds }
     });
 
@@ -170,7 +170,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Question not found", 404);
     }
 
-    if(await isBlocked(currentUserId as string, question.user._id.toString())) {
+    if (currentUserId && await isBlocked(currentUserId, question.user._id)) {
         throw new HttpError("You cannot view this post", 403);
     }
 
@@ -204,13 +204,15 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
 const createReply = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createReplySchema, req);
     const { message, questionId } = body;
-    const currentUserId = req.userId;
-
-    
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const question = await PostModel.findById(questionId).session(session);
         if (!question) throw new HttpError("Question not found", 404);
+
+        if (await isBlocked(currentUserId, question.user._id, session)) {
+            throw new HttpError("You cannot reply to this post", 403);
+        }
 
         const reply = new PostModel({
             _type: PostTypeEnum.ANSWER,

@@ -1,15 +1,15 @@
-import { Types } from "mongoose";
+import mongoose, { Types } from "mongoose";
 import { BlockModel } from "../models/Block";
 import { User } from "../models/User";
 import RolesEnum from "../data/RolesEnum";
 
-export const isBlocked = async (userA: Types.ObjectId | string, userB: Types.ObjectId | string) => {
+export const isBlocked = async (userA: Types.ObjectId | string, userB: Types.ObjectId | string, session?: mongoose.ClientSession) => {
     return await BlockModel.exists({
         $or: [
             { blocker: userA, blocked: userB },
             { blocker: userB, blocked: userA }
         ]
-    });
+    }).session(session ?? null);
 }
 
 

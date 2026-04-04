@@ -309,13 +309,13 @@ const getCodeComments = asyncHandler(async (req: IAuthRequest, res: Response) =>
 const createCodeComment = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeCommentSchema, req);
     const { codeId, message, parentId } = body;
-    const currentUserId = req.userId;
+    const currentUserId = req.userId!;
 
     const reply = await withTransaction(async (session) => {
         const code = await CodeModel.findById(codeId).session(session);
         if (!code) throw new HttpError("Code not found", 404);
 
-        if (await isBlocked(currentUserId as string, code!.user._id.toString())) {
+        if (await isBlocked(currentUserId, code.user._id, session)) {
             throw new HttpError("You cannot comment on this code", 403);
         }
 
