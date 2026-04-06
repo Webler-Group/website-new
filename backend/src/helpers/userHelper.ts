@@ -146,3 +146,13 @@ export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId
         _type: NotificationTypeEnum.PROFILE_FOLLOW
     }, session);
 }
+
+
+
+export const getFollowingIds = async (userId: Types.ObjectId | string): Promise<Types.ObjectId[]> => {
+    const relations = await UserFollowingModel.find({ user: userId })
+        .select("following")
+        .lean();
+
+    return relations.map(r => r.following);
+};

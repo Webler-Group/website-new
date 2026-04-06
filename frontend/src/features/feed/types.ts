@@ -79,3 +79,7 @@ export interface GetFeedData {
 export interface TogglePinFeedData {
   isPinned: boolean;
 }
+
+export interface FeedSuggestedUserData {
+  users: UserMinimal[]
+}

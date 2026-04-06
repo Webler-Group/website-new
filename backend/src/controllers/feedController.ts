@@ -23,19 +23,22 @@ import {
     getRepliesSchema,
     togglePinFeedSchema,
     votePostSchema,
-    getUserReactionsSchema
+    getUserReactionsSchema,
+    getActiveUsersSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
-import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { formatUserMinimal } from "../helpers/userHelper";
+import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import { formatUserMinimal, getFollowingIds } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
+import { success } from "zod";
+import { getImageUrl } from "./mediaController";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createFeedSchema, req);
@@ -579,6 +582,130 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { isPinned: result.isPinned } });
 });
 
+
+const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getActiveUsersSchema, req);
+    const { name } = body;
+    
+    const currentUserId = new Types.ObjectId(req.userId);
+
+    if (!name.trim()) {
+        throw new HttpError("Empty Name", 404);
+    }
+
+    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+    const search = escapeRegex(name.trim());
+
+    const blockedIds = await getBlockedUserIds(currentUserId);
+
+    const excludedIds = [   currentUserId, ...blockedIds ];
+
+    const users = await UserModel.find({
+        _id: { $nin: excludedIds },
+        active: true,
+        name: {
+            $regex: `^${search}`,
+            $options: "i"
+        }
+    })
+    .limit(20)
+    .lean();
+
+    const result = users.map(user => ({
+        id: user._id,
+        name: user.name,
+        avatarUrl: getImageUrl(user.avatarHash),
+        level: user.level
+    }));
+
+    res.json({ success: true, data: { users: result } });
+
+});
+
+
+
+
+const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    
+    const currentUserId = new Types.ObjectId(req.userId);
+    
+    const limit = 20;
+    const limitNum = Math.min(20, Number(limit));
+
+    const blockedIds = await getBlockedUserIds(currentUserId);
+    const followerCount = await UserFollowingModel.countDocuments({ following: currentUserId });
+    const followingIds = await getFollowingIds(currentUserId);
+
+    const excludedIds = [ currentUserId, ...blockedIds, ...followingIds];
+
+    const pipeline: any[] = [
+        {
+            $match: {
+                _id: { $nin: excludedIds },
+                active: true,
+            }
+        },
+
+        // Mutual follower
+        // {
+        //     $addFields: {
+        //         mutualCount: {
+        //             $size: {
+        //                 $setIntersection: [
+        //                    
+        //                 ]
+        //             }
+        //         }
+        //     }
+        // },
+
+        // follower count : suggest people with more followers too
+        // {
+        //     $addFields: {
+        //         followersCount: {
+        //         }
+        //     }
+        // },
+
+        {
+            $addFields: {
+                score: {
+                    $add: [
+                        // { $multiply: ["$mutualCount", 50] },
+                        // { $multiply: ["$followersCount", 0.2] },
+                        { $multiply: ["$level", 40] },
+                        // random boost per user
+                        { $multiply: [{ $rand: {} }, 5] }
+                    ]
+                }
+            }
+        },
+
+        // Sort the score from best → worst
+        {
+            $sort: {
+                score: -1
+            }
+        },
+
+        {
+            $limit: limitNum
+        }
+    ];
+
+    const users = (await UserModel.aggregate(pipeline)).map((user) => ({
+        id: user._id,
+        name: user.name,
+        level: user.level,
+        followerCount: followerCount,
+        avatarUrl: getImageUrl(user.avatarHash)
+    }));
+
+    res.json({ success: true, data: { users } });
+});
+
+
 const feedController = {
     createFeed,
     editFeed,
@@ -592,7 +719,9 @@ const feedController = {
     getReplies,
     togglePinFeed,
     votePost,
-    getUserReactions
+    getUserReactions,
+    getSuggestedUsers,
+    getActiveUsers
 };
 
 export default feedController;

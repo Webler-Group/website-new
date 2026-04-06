@@ -33,6 +33,10 @@ router.route("/EditComment")
     .put(feedController.editReply);
 router.route("/DeleteComment")
     .delete(feedController.deleteReply);
-router.route("/VotePost").post(verifyEmail, feedController.votePost)
+router.route("/VotePost").post(verifyEmail, feedController.votePost);
+
+router.route("/Users/GetActiveUsers").post(feedController.getActiveUsers);
+
+router.route("/Users/Suggestion").post(feedController.getSuggestedUsers);
 
 export default router;

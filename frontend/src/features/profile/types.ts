@@ -60,6 +60,7 @@ export interface UserMinimal {
     isFollowing?: boolean;
     countryCode: string | null;
     active: boolean;
+    followerCount?: number
 }
 
 export interface GetProfileData {

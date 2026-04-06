@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import FeedItem from '../components/FeedItem';
 import { Button, FormControl, FormLabel, FormSelect, Modal } from 'react-bootstrap';
 import Feed from '../components/Feed';
 import ReactionsList from '../../../components/reactions/ReactionsList';
 import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
-import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
+import { FaExclamationCircle, FaSearch, FaUserAstronaut } from 'react-icons/fa';
 import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
 import Loader from '../../../components/Loader';
 import { FeedDetails, FeedListData } from '../types';
+import { LinkContainer } from 'react-router-bootstrap';
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest', requireLogin: false },
@@ -227,6 +228,11 @@ const FeedListPage = () => {
                 />
                 <span className="d-none d-sm-inline">Refresh</span>
               </button>
+
+              <LinkContainer to="/Feed/Users" className='btn text-primary'>
+                  <p>Discover Peers</p>
+              </LinkContainer>
+
             </div>
           </div>
         </div>

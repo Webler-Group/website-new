@@ -98,3 +98,10 @@ export const getUserReactionsSchema = z.object({
         count: countPerPageSchema
     })
 });
+
+
+export const getActiveUsersSchema = z.object({
+    body: z.object({
+        name: z.string()
+    })
+});
