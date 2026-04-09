@@ -36,6 +36,7 @@
 .wb-courses-lesson-container {
     position: relative;
     height: 100vh;
+    height: 100dvh;
 }
 
 .wb-courses-lesson-main {

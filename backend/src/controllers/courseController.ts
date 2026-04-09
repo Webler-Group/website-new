@@ -109,6 +109,7 @@ const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
             course.$inc("participants", 1);
             await course.save({ session });
         } else {
+            progress.completed = await isCourseCompleted(progress, session);
             progress.updatedAt = new Date();
             await progress.save({ session });
         }
@@ -316,7 +317,7 @@ const solve = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (isLast && correct) {
             userProgress.lastLessonIndex = lastUnlockedLessonIndex;
             userProgress.lastNodeIndex = lastUnlockedNodeIndex;
-            const isCompleted = await isCourseCompleted(userProgress.course, lastUnlockedLessonIndex, lastUnlockedNodeIndex);
+            const isCompleted = await isCourseCompleted(userProgress);
             if (isCompleted) {
                 userProgress.completed = true;
             }

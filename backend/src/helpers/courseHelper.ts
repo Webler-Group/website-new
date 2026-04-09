@@ -318,11 +318,10 @@ export const formatLessonNodeMinimal = (
 };
 
 export const isCourseCompleted = async (
-    courseId: Types.ObjectId,
-    lastLessonIndex: number,
-    lastNodeIndex: number,
+    userProgress: CourseProgress,
     session?: mongoose.ClientSession
 ): Promise<boolean> => {
+    const { course: courseId, lastLessonIndex, lastNodeIndex } = userProgress;
     const [lesson, totalLessons] = await Promise.all([
         CourseLessonModel.findOne({ course: courseId, index: lastLessonIndex }, { nodes: 1 }).lean().session(session ?? null),
         CourseLessonModel.countDocuments({ course: courseId }).session(session ?? null)

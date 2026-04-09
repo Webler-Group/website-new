@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
@@ -23,6 +23,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
     const [selectedAnswers, setSelectedAnswers] = useState<string[]>([]);
     const [textAnswer, setTextAnswer] = useState("");
     const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const { sendJsonRequest } = useApi();
 
     const activeNode = nodeData ?? node;
@@ -31,6 +32,9 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
         setSelectedAnswers([]);
         setTextAnswer("");
         setIsCorrect(null);
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = 0;
+        }
         getNode();
     }, [nodeId]);
 
@@ -188,17 +192,12 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                 );
             }
 
-            if (activeNode.mode === LessonNodeModeEnum.HTML) {
-                return (
-                    <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-                        <HtmlRenderer html={activeNode.text} css={css} />
-                    </div>
-                )
-            }
-
             return (
-                <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
-                    <MarkdownRenderer content={activeNode.text} />
+                <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+                    {activeNode.mode === LessonNodeModeEnum.HTML
+                        ? <HtmlRenderer html={activeNode.text} css={css} />
+                        : <MarkdownRenderer content={activeNode.text} />
+                    }
                 </div>
             );
         };
