@@ -1,17 +1,19 @@
 import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import {useNavigate, useParams } from 'react-router-dom';
 import FeedItem from '../components/FeedItem';
 import { Button, FormControl, FormLabel, FormSelect, Modal } from 'react-bootstrap';
 import Feed from '../components/Feed';
 import ReactionsList from '../../../components/reactions/ReactionsList';
 import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
-import { FaExclamationCircle, FaSearch, FaUserAstronaut } from 'react-icons/fa';
+import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
 import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
 import Loader from '../../../components/Loader';
-import { FeedDetails, FeedListData } from '../types';
+import {FeedDetails, FeedListData, FeedSuggestedUserData} from '../types';
 import { LinkContainer } from 'react-router-bootstrap';
+import {UserMinimal} from "../../profile/types.ts";
+import SuggestedUserBar from "../components/SuggestedUserBar.tsx";
 
 const FILTER_OPTIONS = [
   { value: 1, label: 'Latest', requireLogin: false },
@@ -46,6 +48,7 @@ const FeedListPage = () => {
   const feeds = useFeed(filter, searchQuery, 10);
   const [pinnedFeeds, setPinnedFeeds] = useState<FeedDetails[]>([]);
   const [loading, setLoading] = useState(false);
+  const [suggestedUsers, setSuggestedUsers] = useState<UserMinimal[]>([]);
 
   const intObserver = useRef<IntersectionObserver>(null);
   const lastFeedRef = useCallback(
@@ -95,6 +98,8 @@ const FeedListPage = () => {
     if (result.data) {
       setPinnedFeeds(result.data.feeds);
     }
+
+    await fetchSuggested();
 
     setLoading(false);
   }
@@ -161,6 +166,14 @@ const FeedListPage = () => {
     setPinnedVisible(prev => !prev);
   }
 
+  const fetchSuggested = async () => {
+    const result = await sendJsonRequest<FeedSuggestedUserData>("/Feed/Users/Suggestion", "POST");
+
+    if (result.data) {
+      setSuggestedUsers(result.data.users);
+    }
+  };
+
   return (
     <>
       <Modal
@@ -211,7 +224,7 @@ const FeedListPage = () => {
               <FormSelect id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
                 {
                   FILTER_OPTIONS
-                    .filter(x => x.requireLogin == false || userInfo != null)
+                    .filter(x => !x.requireLogin || userInfo != null)
                     .map(x => (
                       <option key={x.value} value={x.value}>{x.label}</option>
                     ))
@@ -315,6 +328,11 @@ const FeedListPage = () => {
                         key={feed.id}
                         ref={isLast ? lastFeedRef : undefined}
                       >
+                        {
+                            index == 4 && suggestedUsers.length > 0 && (
+                                <SuggestedUserBar users={suggestedUsers} />
+                            )
+                        }
                         <FeedItem
                           feed={feed}
                           onGeneralUpdate={onGeneralUpdate}

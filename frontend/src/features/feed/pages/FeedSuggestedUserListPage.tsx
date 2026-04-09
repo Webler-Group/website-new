@@ -3,15 +3,19 @@ import { Container, Row, Col, Form, Button, Card, InputGroup } from "react-boots
 import { useApi } from "../../../context/apiCommunication";
 import { FeedSuggestedUserData } from "../types";
 import { UserMinimal } from "../../profile/types";
+import {useAuth} from "../../auth/context/authContext.tsx";
+import ProfileAvatar from "../../../components/ProfileAvatar.tsx";
 
 
 
 export default function FeedSuggestedUserListPage() {
     const { sendJsonRequest } = useApi();
-    const [suggestedUsers, setSuggestedUsers] = useState<UserMinimal[]>([]);
+    const [, setSuggestedUsers] = useState<UserMinimal[]>([]);
+    const [reqUsers, setReqUsers] = useState<UserMinimal[]>([]);
     const [query, setQuery] = useState<string>();
     const [loading, setLoading] = useState(false);
-    const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const { userInfo } = useAuth();
+    const [, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
 
     const showNotification = useCallback((type: "success" | "error", message: string) => {
@@ -29,6 +33,17 @@ export default function FeedSuggestedUserListPage() {
         }
     };
 
+    const fetchUsers = async () => {
+        setLoading(true);
+        const result = await sendJsonRequest<FeedSuggestedUserData>("/Feed/Users/GetActiveUsers", "POST",
+            { name: query },);
+
+        if(result.data) {
+            setReqUsers(result.data.users);
+        } else setReqUsers([]);
+
+        setLoading(false);
+    }
   
     const fetchSuggested = async () => {
         setLoading(true);
@@ -36,35 +51,22 @@ export default function FeedSuggestedUserListPage() {
     
         if (result.data) {
             setSuggestedUsers(result.data.users);
+            setReqUsers(result.data.users);
         }
     
         setLoading(false);
     };
 
-
-    const searchUsers = async () => {
-        // try {
-        //   setLoading(true);
-        //   const res = await axios.get(`/api/users?q=${query}&limit=30`);
-        //   setUsers(res.data.users);
-        // } catch (err) {
-        //   console.error(err);
-        // } finally {
-        //   setLoading(false);
-        // }
-    };
-
     
     const handleInvite = async () => {
-        const link = `www.weblercodes.com`;
+        const link = `${window.location.host}/Profile/${userInfo?.id}`;
         await navigator.clipboard.writeText(link);
 		alert("Link copied");
-        // alert("Profile link copied!");
     };
 
 
     useEffect(() => {
-        fetchSuggested();
+        fetchSuggested().then(() => {});
     }, []);
 
 
@@ -79,7 +81,7 @@ export default function FeedSuggestedUserListPage() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
-            <Button variant="dark" onClick={searchUsers}>
+            <Button variant="dark" onClick={fetchUsers}>
               Search
             </Button>
           </InputGroup>
@@ -94,26 +96,16 @@ export default function FeedSuggestedUserListPage() {
 
       
       <div>
-        {suggestedUsers.map((user, index) => (
+        {reqUsers.map((user, index) => (
           <Card key={index} className="mb-2 shadow-sm border-0">
             <Card.Body className="d-flex align-items-center justify-content-between">
 
               <div className="d-flex align-items-center gap-3">
-                <img
-                  src={user.avatarUrl || "/default-avatar.png"}
-                  alt=""
-                  style={{
-                    width: 50,
-                    height: 50,
-                    borderRadius: "50%",
-                    objectFit: "cover"
-                  }}
-                />
-
+                  <ProfileAvatar size={50} avatarUrl={user.avatarUrl} />
                 <div>
                   <div className="fw-bold">{user.name}</div>
                   <small className="text-muted">
-                    <b>{user.followerCount}</b> Followers • Level <b>{user.level}</b>
+                    <b>{user.followersCount}</b> Followers • Level <b>{user.level}</b>
                   </small>
                 </div>
               </div>
@@ -131,7 +123,7 @@ export default function FeedSuggestedUserListPage() {
 
         {loading && <p className="text-center mt-3">Loading...</p>}
 
-        {!loading && suggestedUsers.length === 0 && (
+        {reqUsers.length === 0 && (
           <p className="text-center mt-3 text-muted">No users found</p>
         )}
       </div>
