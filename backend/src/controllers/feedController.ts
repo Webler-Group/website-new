@@ -31,7 +31,7 @@ import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { formatUserMinimal, getFollowingIds } from "../helpers/userHelper";
+import {formatUserMinimal, getFollowingIds } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
@@ -583,10 +583,13 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 
+/**
+ * Return the user searched via the Discover peers
+ */
 const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getActiveUsersSchema, req);
     const { name } = body;
-    
+
     const currentUserId = new Types.ObjectId(req.userId);
 
     if (!name.trim()) {
@@ -594,112 +597,191 @@ const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => 
     }
 
     const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
     const search = escapeRegex(name.trim());
 
     const blockedIds = await getBlockedUserIds(currentUserId);
-
-    const excludedIds = [   currentUserId, ...blockedIds ];
-
-    const users = await UserModel.find({
-        _id: { $nin: excludedIds },
-        active: true,
-        name: {
-            $regex: `^${search}`,
-            $options: "i"
-        }
-    })
-    .limit(20)
-    .lean();
-
-    const result = users.map(user => ({
-        id: user._id,
-        name: user.name,
-        avatarUrl: getImageUrl(user.avatarHash),
-        level: user.level
-    }));
-
-    res.json({ success: true, data: { users: result } });
-
-});
-
-
-
-
-const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    
-    const currentUserId = new Types.ObjectId(req.userId);
-    
-    const limit = 20;
-    const limitNum = Math.min(20, Number(limit));
-
-    const blockedIds = await getBlockedUserIds(currentUserId);
-    const followerCount = await UserFollowingModel.countDocuments({ following: currentUserId });
-    const followingIds = await getFollowingIds(currentUserId);
-
-    const excludedIds = [ currentUserId, ...blockedIds, ...followingIds];
+    const excludedIds = [currentUserId, ...blockedIds];
 
     const pipeline: any[] = [
         {
             $match: {
                 _id: { $nin: excludedIds },
                 active: true,
+                name: { $regex: `^${search}`, $options: "i" }
             }
         },
 
-        // Mutual follower
-        // {
-        //     $addFields: {
-        //         mutualCount: {
-        //             $size: {
-        //                 $setIntersection: [
-        //                    
-        //                 ]
-        //             }
-        //         }
-        //     }
-        // },
+        { $limit: 50 },
 
-        // follower count : suggest people with more followers too
-        // {
-        //     $addFields: {
-        //         followersCount: {
-        //         }
-        //     }
-        // },
+        {
+            $lookup: {
+                from: "userfollowings",
+                localField: "_id",
+                foreignField: "following",
+                as: "followersDocs"
+            }
+        },
 
+        {
+            $addFields: {
+                followersCount: { $size: "$followersDocs" }
+            }
+        },
+
+        // Score for search ranking (optional: you can sort by followers, level, etc.)
         {
             $addFields: {
                 score: {
                     $add: [
-                        // { $multiply: ["$mutualCount", 50] },
-                        // { $multiply: ["$followersCount", 0.2] },
-                        { $multiply: ["$level", 40] },
-                        // random boost per user
+                        { $multiply: ["$level", 10] },
+                        { $multiply: ["$followersCount", 0.1] },
                         { $multiply: [{ $rand: {} }, 5] }
                     ]
                 }
             }
         },
 
-        // Sort the score from best → worst
         {
-            $sort: {
-                score: -1
+            $sort: { score: -1 }
+        },
+
+        {
+            $limit: 20
+        },
+
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                username: 1,
+                avatarHash: 1,
+                level: 1,
+                followersCount: 1
+            }
+        }
+    ];
+
+    const rawUsers = await UserModel.aggregate(pipeline);
+
+    const result = rawUsers.map(user => ({
+        id: user._id,
+        name: user.name,
+        username: user.username,
+        level: user.level,
+        avatarUrl: getImageUrl(user.avatarHash),
+        followersCount: user.followersCount
+    }));
+
+    res.json({ success: true, data: { users: result } });
+});
+
+
+
+
+const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+
+    const currentUserId = new Types.ObjectId(req.userId);
+
+    const limit = 20;
+    const limitNum = Math.min(20, Number(limit));
+
+    const blockedIds = await getBlockedUserIds(currentUserId);
+    const followingIds = await getFollowingIds(currentUserId);
+
+    const excludedIds = [
+        currentUserId,
+        ...blockedIds,
+        ...followingIds
+    ];
+
+    const pipeline: any[] = [
+        {
+            $match: {
+                _id: { $nin: excludedIds },
+                active: true
+            }
+        },
+        {
+            $limit: 100
+        },
+        {
+            $lookup: {
+                from: "userfollowings",
+                localField: "_id",
+                foreignField: "following",
+                as: "followersDocs"
+            }
+        },
+
+        // mutual followers
+        {
+            $addFields: {
+                mutualCount: {
+                    $size: {
+                        $setIntersection: [
+                            {
+                                $map: {
+                                    input: "$followersDocs",
+                                    as: "f",
+                                    in: "$$f.user"
+                                }
+                            },
+                            followingIds
+                        ]
+                    }
+                }
             }
         },
 
         {
+            $addFields: {
+                followersCount: { $size: "$followersDocs" }
+            }
+        },
+
+        // scoring
+        {
+            $addFields: {
+                score: {
+                    $add: [
+                        { $multiply: ["$mutualCount", 60] },
+                        { $multiply: ["$level", 40] },
+                        { $multiply: ["$followersCount", 20] },
+                        { $multiply: [{ $rand: {} }, 5] }
+                    ]
+                }
+            }
+        },
+
+        {
+            $sort: { score: -1 }
+        },
+
+        {
             $limit: limitNum
+        },
+
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                username: 1,
+                avatarHash: 1,
+                level: 1,
+                followersCount: 1
+            }
         }
     ];
 
-    const users = (await UserModel.aggregate(pipeline)).map((user) => ({
+    const rawUsers = await UserModel.aggregate(pipeline);
+
+    const users = rawUsers.map(user => ({
         id: user._id,
         name: user.name,
+        username: user.username,
         level: user.level,
-        followerCount: followerCount,
-        avatarUrl: getImageUrl(user.avatarHash)
+        avatarUrl: getImageUrl(user.avatarHash),
+        followersCount: user.followersCount
     }));
 
     res.json({ success: true, data: { users } });
