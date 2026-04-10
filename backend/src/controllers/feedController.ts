@@ -3,7 +3,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { Post } from "../models/Post";
 import UpvoteModel from "../models/Upvote";
-import mongoose, { Types } from "mongoose";
+import mongoose, {PipelineStage, Types} from "mongoose";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import UserFollowingModel from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
@@ -31,7 +31,7 @@ import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import {formatUserMinimal, getFollowingIds } from "../helpers/userHelper";
+import {baseUserSuggestionPipeline, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
@@ -601,8 +601,9 @@ const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
     const blockedIds = await getBlockedUserIds(currentUserId);
     const excludedIds = [currentUserId, ...blockedIds];
+    const followingIds = await getFollowingIds(currentUserId);
 
-    const pipeline: any[] = [
+    const pipeline: PipelineStage[] = [
         {
             $match: {
                 _id: { $nin: excludedIds },
@@ -613,52 +614,9 @@ const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => 
 
         { $limit: 50 },
 
-        {
-            $lookup: {
-                from: "userfollowings",
-                localField: "_id",
-                foreignField: "following",
-                as: "followersDocs"
-            }
-        },
-
-        {
-            $addFields: {
-                followersCount: { $size: "$followersDocs" }
-            }
-        },
-
-        // Score for search ranking (optional: you can sort by followers, level, etc.)
-        {
-            $addFields: {
-                score: {
-                    $add: [
-                        { $multiply: ["$level", 10] },
-                        { $multiply: ["$followersCount", 0.1] },
-                        { $multiply: [{ $rand: {} }, 5] }
-                    ]
-                }
-            }
-        },
-
-        {
-            $sort: { score: -1 }
-        },
-
-        {
-            $limit: 20
-        },
-
-        {
-            $project: {
-                _id: 1,
-                name: 1,
-                username: 1,
-                avatarHash: 1,
-                level: 1,
-                followersCount: 1
-            }
-        }
+        ...baseUserSuggestionPipeline(
+            followingIds, 20, UserFollowingModel.collection.name
+        )
     ];
 
     const rawUsers = await UserModel.aggregate(pipeline);
@@ -694,85 +652,20 @@ const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) 
         ...followingIds
     ];
 
-    const pipeline: any[] = [
+    const pipeline: PipelineStage[] = [
         {
             $match: {
                 _id: { $nin: excludedIds },
                 active: true
             }
         },
-        {
-            $limit: 100
-        },
-        {
-            $lookup: {
-                from: "userfollowings",
-                localField: "_id",
-                foreignField: "following",
-                as: "followersDocs"
-            }
-        },
 
-        // mutual followers
-        {
-            $addFields: {
-                mutualCount: {
-                    $size: {
-                        $setIntersection: [
-                            {
-                                $map: {
-                                    input: "$followersDocs",
-                                    as: "f",
-                                    in: "$$f.user"
-                                }
-                            },
-                            followingIds
-                        ]
-                    }
-                }
-            }
-        },
+        { $limit: 100 },
 
-        {
-            $addFields: {
-                followersCount: { $size: "$followersDocs" }
-            }
-        },
-
-        // scoring
-        {
-            $addFields: {
-                score: {
-                    $add: [
-                        { $multiply: ["$mutualCount", 60] },
-                        { $multiply: ["$level", 40] },
-                        { $multiply: ["$followersCount", 20] },
-                        { $multiply: [{ $rand: {} }, 5] }
-                    ]
-                }
-            }
-        },
-
-        {
-            $sort: { score: -1 }
-        },
-
-        {
-            $limit: limitNum
-        },
-
-        {
-            $project: {
-                _id: 1,
-                name: 1,
-                username: 1,
-                avatarHash: 1,
-                level: 1,
-                followersCount: 1
-            }
-        }
+        ...baseUserSuggestionPipeline(
+            followingIds, 20, UserFollowingModel.collection.name
+        )
     ];
-
     const rawUsers = await UserModel.aggregate(pipeline);
 
     const users = rawUsers.map(user => ({

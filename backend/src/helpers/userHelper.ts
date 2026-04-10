@@ -1,11 +1,11 @@
-import { Request } from "express";
-import mongoose, { Types } from "mongoose";
-import UserModel, { User, UserAdminMinimal, UserMinimal } from "../models/User";
+import {Request} from "express";
+import mongoose, {PipelineStage, Types} from "mongoose";
+import UserModel, {User, UserAdminMinimal, UserMinimal} from "../models/User";
 import IpModel from "../models/Ip";
-import { getImageUrl } from "../controllers/mediaController";
+import {getImageUrl} from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
 import UserFollowingModel from "../models/UserFollowing";
-import { deleteNotifications } from "./notificationHelper";
+import {deleteNotifications} from "./notificationHelper";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 
 const MAX_IPS = 50;
@@ -156,3 +156,77 @@ export const getFollowingIds = async (userId: Types.ObjectId | string): Promise<
 
     return relations.map(r => r.following);
 };
+
+interface GetSuggestedUsersPipelineParams {
+
+}
+
+
+export const baseUserSuggestionPipeline = (
+    followingIds: Types.ObjectId[],
+    limitMin: number,
+    followCollection: string
+): PipelineStage[] => [
+    {
+        $lookup: {
+            from: followCollection,
+            localField: "_id",
+            foreignField: "following",
+            as: "followersDocs"
+        }
+    },
+
+    {
+        $addFields: {
+            followersCount: { $size: "$followersDocs" }
+        }
+    },
+
+    {
+        $addFields: {
+            mutualCount: {
+                $size: {
+                    $setIntersection: [
+                        {
+                            $map: {
+                                input: "$followersDocs",
+                                as: "f",
+                                in: "$$f.user"
+                            }
+                        },
+                        followingIds
+                    ]
+                }
+            }
+        }
+    },
+
+    {
+        $addFields: {
+            score: {
+                $add: [
+                    { $multiply: ["$mutualCount", 50] },
+                    { $multiply: ["$level", 40] },
+                    { $multiply: ["$followersCount", 0.2] },
+                    { $multiply: [{ $rand: {} }, 5] }
+                ]
+            }
+        }
+    },
+
+    { $sort: { score: -1 } },
+
+    { $limit: limitMin },
+
+    {
+        $project: {
+            _id: 1,
+            name: 1,
+            username: 1,
+            avatarHash: 1,
+            level: 1,
+            followersCount: 1,
+            mutualCount: 1
+        }
+    }
+];
