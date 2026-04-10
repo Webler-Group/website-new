@@ -2,6 +2,7 @@ import {UserMinimal} from "../../profile/types.ts";
 import {useCallback, useState} from "react";
 import {useApi} from "../../../context/apiCommunication.tsx";
 import ProfileAvatar from "../../../components/ProfileAvatar.tsx";
+import ProfileName from "../../../components/ProfileName.tsx";
 
 interface iSuggestedUserBar {
     users: UserMinimal[]
@@ -62,7 +63,7 @@ const SuggestedUsersBar = ({ users }: iSuggestedUserBar) => {
                                 style={{ fontSize: "0.9rem" }}
                                 title={user.name}
                             >
-                                {user.name}
+                                <ProfileName userId={user.id} userName={user.name} />
                             </div>
 
                             <div className="text-muted small mb-2">

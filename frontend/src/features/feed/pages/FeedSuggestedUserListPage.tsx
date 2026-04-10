@@ -5,6 +5,7 @@ import { FeedSuggestedUserData } from "../types";
 import { UserMinimal } from "../../profile/types";
 import {useAuth} from "../../auth/context/authContext.tsx";
 import ProfileAvatar from "../../../components/ProfileAvatar.tsx";
+import ProfileName from "../../../components/ProfileName.tsx";
 
 
 
@@ -12,7 +13,7 @@ export default function FeedSuggestedUserListPage() {
     const { sendJsonRequest } = useApi();
     const [, setSuggestedUsers] = useState<UserMinimal[]>([]);
     const [reqUsers, setReqUsers] = useState<UserMinimal[]>([]);
-    const [query, setQuery] = useState<string>();
+    const [query, setQuery] = useState<string>("");
     const [loading, setLoading] = useState(false);
     const { userInfo } = useAuth();
     const [, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -103,7 +104,9 @@ export default function FeedSuggestedUserListPage() {
               <div className="d-flex align-items-center gap-3">
                   <ProfileAvatar size={50} avatarUrl={user.avatarUrl} />
                 <div>
-                  <div className="fw-bold">{user.name}</div>
+                  <div className="fw-bold">
+                      <ProfileName userId={user.id} userName={user.name} />
+                  </div>
                   <small className="text-muted">
                     <b>{user.followersCount}</b> Followers • Level <b>{user.level}</b>
                   </small>
