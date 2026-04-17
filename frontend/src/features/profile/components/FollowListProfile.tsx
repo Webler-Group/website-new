@@ -85,7 +85,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
                     {
                         userInfo.id != user.id && (
                             following ?
-                                <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Following</Button>
+                                <Button variant="secondary" size="sm" onClick={handleUnfollow} disabled={followLoading}>Unfollow</Button>
                                 :
                                 <Button variant="primary" size="sm" onClick={handleFollow} disabled={followLoading}>Follow</Button>
                         )
