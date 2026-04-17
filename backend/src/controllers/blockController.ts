@@ -75,7 +75,7 @@ export const getBlockedUsers = asyncHandler(async (req: IAuthRequest, res: Respo
     const userId = req.userId!;
 
     const blocked = await BlockModel.find({ blocker: userId })
-        .populate<{ blocked: UserMinimal & { _id: Types.ObjectId } }>({
+        .populate<{ blocked: UserMinimal }>({
             path: "blocked",
             select: USER_MINIMAL_FIELDS
         })

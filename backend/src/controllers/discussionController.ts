@@ -134,9 +134,9 @@ const getQuestionList = asyncHandler(async (req: IAuthRequest, res: Response) =>
             .skip((page - 1) * count)
             .limit(count)
             .select(QUESTION_MINIMAL_FIELDS)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
             .populate<{ tags: Tag[] }>("tags")
-            .lean<(QuestionMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>()
+            .lean<(QuestionMinimal & { _id: Types.ObjectId } & { user: UserMinimal })[]>()
     ]);
 
     const data = questions.map(x => formatQuestionMinimal(x, x.user));
@@ -159,7 +159,7 @@ const getQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const question = await PostModel.findById(questionId)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
         .populate<{ tags: Tag[] }>("tags")
         .lean();
 
@@ -293,7 +293,7 @@ const getReplies = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
         .lean();
 
     const data = result.map((x, offset) => ({
@@ -559,7 +559,7 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort({ createdAt: "desc" })
         .skip((page - 1) * count)
         .limit(count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
         .lean();
 
     const users = result.map(x => ({

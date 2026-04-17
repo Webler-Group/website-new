@@ -3,7 +3,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { Post } from "../models/Post";
 import UpvoteModel from "../models/Upvote";
-import mongoose, {PipelineStage, Types} from "mongoose";
+import mongoose, {Types} from "mongoose";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import UserFollowingModel from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
@@ -24,20 +24,19 @@ import {
     togglePinFeedSchema,
     votePostSchema,
     getUserReactionsSchema,
-    getActiveUsersSchema
+    getSuggestedUsersSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
-import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import {baseUserSuggestionPipeline, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
+import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import {getSuggestedUsers as fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
-import { success } from "zod";
 import { getImageUrl } from "./mediaController";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -96,7 +95,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     const [reactions, totalCount] = await Promise.all([
         UpvoteModel.aggregate<{
             _id: Types.ObjectId;
-            user: UserMinimal & { _id: Types.ObjectId };
+            user: UserMinimal;
             reaction: ReactionsEnum;
         }>([
             { $match: { parentId: parentObjectId } },
@@ -583,99 +582,27 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 });
 
 
-/**
- * Return the user searched via the Discover peers
- */
-const getActiveUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
-    const { body } = parseWithZod(getActiveUsersSchema, req);
-    const { name } = body;
-
-    const currentUserId = new Types.ObjectId(req.userId);
-
-    if (!name.trim()) {
-        throw new HttpError("Empty Name", 404);
-    }
-
-    const escapeRegex = (str: string) => str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const search = escapeRegex(name.trim());
-
-    const blockedIds = await getBlockedUserIds(currentUserId);
-    const excludedIds = [currentUserId, ...blockedIds];
-    const followingIds = await getFollowingIds(currentUserId);
-
-    const pipeline: PipelineStage[] = [
-        {
-            $match: {
-                _id: { $nin: excludedIds },
-                active: true,
-                name: { $regex: `^${search}`, $options: "i" }
-            }
-        },
-
-        { $limit: 50 },
-
-        ...baseUserSuggestionPipeline(
-            followingIds, 20, UserFollowingModel.collection.name
-        )
-    ];
-
-    const rawUsers = await UserModel.aggregate(pipeline);
-
-    const result = rawUsers.map(user => ({
-        id: user._id,
-        name: user.name,
-        username: user.username,
-        level: user.level,
-        avatarUrl: getImageUrl(user.avatarHash),
-        followersCount: user.followersCount
-    }));
-
-    res.json({ success: true, data: { users: result } });
-});
-
-
-
-
 const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getSuggestedUsersSchema, req);
+    const { searchQuery, page, count } = body;
 
     const currentUserId = new Types.ObjectId(req.userId);
-
-    const limit = 20;
-    const limitNum = Math.min(20, Number(limit));
-
     const blockedIds = await getBlockedUserIds(currentUserId);
     const followingIds = await getFollowingIds(currentUserId);
 
-    const excludedIds = [
-        currentUserId,
-        ...blockedIds,
-        ...followingIds
-    ];
+    const isSearch = searchQuery && searchQuery.trim().length > 0;
 
-    const pipeline: PipelineStage[] = [
-        {
-            $match: {
-                _id: { $nin: excludedIds },
-                active: true
-            }
-        },
+    const rawUsers = await fetchSuggestedUsers({
+        excludedIds: isSearch
+            ? [currentUserId, ...blockedIds]
+            : [currentUserId, ...blockedIds, ...followingIds],
+        followingIds,
+        limit: count,
+        skip: (page - 1) * count,
+        select: isSearch ? { name: { $regex: `^${escapeRegex(searchQuery.trim())}`, $options: "i" } } : {}
+    });
 
-        { $limit: 100 },
-
-        ...baseUserSuggestionPipeline(
-            followingIds, 20, UserFollowingModel.collection.name
-        )
-    ];
-    const rawUsers = await UserModel.aggregate(pipeline);
-
-    const users = rawUsers.map(user => ({
-        id: user._id,
-        name: user.name,
-        username: user.username,
-        level: user.level,
-        avatarUrl: getImageUrl(user.avatarHash),
-        followersCount: user.followersCount
-    }));
+    const users = rawUsers.map(user => formatUserMinimal(user, user.followersCount));
 
     res.json({ success: true, data: { users } });
 });
@@ -696,7 +623,6 @@ const feedController = {
     votePost,
     getUserReactions,
     getSuggestedUsers,
-    getActiveUsers
 };
 
 export default feedController;

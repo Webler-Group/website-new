@@ -63,7 +63,7 @@ export const inviteToChannel = async (
 
     const io = getIO();
 
-    const author = await User.findById(doc.author, USER_MINIMAL_FIELDS).lean<UserMinimal & { _id: Types.ObjectId }>().session(session ?? null);
+    const author = await User.findById(doc.author, USER_MINIMAL_FIELDS).lean<UserMinimal>().session(session ?? null);
     if (!author) {
         throw new HttpError("Author not found", 404);
     }
@@ -119,7 +119,7 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             .session(session ?? null),
         User
             .findById(doc.user, USER_MINIMAL_FIELDS)
-            .lean<UserMinimal & { _id: Types.ObjectId }>()
+            .lean<UserMinimal>()
             .session(session ?? null)
     ]);
 
@@ -154,7 +154,7 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             doc.repliedTo
                 ? ChannelMessageModel
                     .findById(doc.repliedTo)
-                    .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                    .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
                     .lean()
                     .session(session ?? null)
                 : Promise.resolve(null)

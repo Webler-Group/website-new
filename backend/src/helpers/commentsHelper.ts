@@ -8,7 +8,7 @@ import { formatUserMinimal } from "./userHelper";
 import UpvoteModel from "../models/Upvote";
 import { getBlockedUserIds, isBlocked } from "./blockHelper";
 
-type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } };
+type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal };
 
 interface GetCommentsListParams {
     postFilter: mongoose.QueryFilter<Post>,
@@ -24,7 +24,7 @@ export const getCommmentsList = async (params: GetCommentsListParams) => {
     let parentPost: PopulatedPost | null = null;
     if (params.parentId) {
         parentPost = await PostModel.findById(params.parentId)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+            .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
             .lean<PopulatedPost>();
     }
 
@@ -41,7 +41,7 @@ export const getCommmentsList = async (params: GetCommentsListParams) => {
 
         parentPost = reply.parentId
             ? await PostModel.findById(reply.parentId)
-                .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
                 .lean<PopulatedPost>()
             : null;
 
@@ -62,7 +62,7 @@ export const getCommmentsList = async (params: GetCommentsListParams) => {
     const result = await dbQuery
         .skip(skipCount)
         .limit(params.count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
         .lean<PopulatedPost[]>();
 
     const data = (params.findPostId && parentPost ? [parentPost, ...result] : result).map((x, offset) => ({
