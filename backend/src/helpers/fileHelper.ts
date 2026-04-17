@@ -223,10 +223,10 @@ export const listDirectory = async (virtualPath: string, session?: mongoose.Clie
         .session(session ?? null)
         .sort({ type: "desc", updatedAt: "desc" })
         .populate("author", USER_MINIMAL_FIELDS)
-        .lean<(File & { _id: Types.ObjectId } & { author: UserMinimal & { _id: Types.ObjectId } })[]>();
+        .lean<(File & { _id: Types.ObjectId } & { author: UserMinimal })[]>();
 };
 
-export const formatFileEntry = (file: File & { _id: Types.ObjectId } & { author: UserMinimal & { _id: Types.ObjectId } }) => {
+export const formatFileEntry = (file: File & { _id: Types.ObjectId } & { author: UserMinimal }) => {
     return {
         id: file._id,
         author: formatUserMinimal(file.author),

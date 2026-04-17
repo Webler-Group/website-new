@@ -160,6 +160,7 @@ const FeedListPage = () => {
     setPinnedVisible(prev => !prev);
   }
 
+
   return (
     <>
       <Modal
@@ -210,7 +211,7 @@ const FeedListPage = () => {
               <FormSelect id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
                 {
                   FILTER_OPTIONS
-                    .filter(x => x.requireLogin == false || userInfo != null)
+                    .filter(x => !x.requireLogin || userInfo != null)
                     .map(x => (
                       <option key={x.value} value={x.value}>{x.label}</option>
                     ))
@@ -227,6 +228,14 @@ const FeedListPage = () => {
                 />
                 <span className="d-none d-sm-inline">Refresh</span>
               </button>
+
+              <button
+                className="btn btn-outline-primary btn-sm"
+                onClick={() => navigate("/Feed/Users")}
+              >
+                Discover Peers
+              </button>
+
             </div>
           </div>
         </div>

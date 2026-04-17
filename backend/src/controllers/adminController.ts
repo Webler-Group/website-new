@@ -56,7 +56,7 @@ const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .sort(sort)
         .skip((page - 1) * count)
         .limit(count)
-        .lean<(UserAdminMinimal & { _id: Types.ObjectId })[]>();
+        .lean<(UserAdminMinimal)[]>();
 
     const total = await UserModel.countDocuments(query);
 

@@ -22,7 +22,7 @@ import { isBlocked } from "./blockHelper";
 export interface PostAttachmentDetails {
     id: Types.ObjectId;
     type: PostAttachmentTypeEnum;
-    user: UserMinimal;
+    user: ReturnType<typeof formatUserMinimal>;
     codeId?: Types.ObjectId;
     codeName?: string;
     codeLanguage?: CompilerLanguagesEnum;
@@ -145,7 +145,7 @@ export const getAttachmentsByPostId = async (id: { post?: Types.ObjectId | strin
         .populate<{ code: Code & { _id: Types.ObjectId } }>("code", { name: 1, language: 1 })
         .populate<{ question: Post & { _id: Types.ObjectId } }>("question", { title: 1 })
         .populate<{ feed: Post & { _id: Types.ObjectId } }>("feed", { _type: 1, message: 1 })
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS);
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS);
 
     return result.map(x => {
         const user = formatUserMinimal(x.user);
@@ -161,7 +161,7 @@ export const getAttachmentsByPostId = async (id: { post?: Types.ObjectId | strin
                 return { id: x._id, type: x._type, user, feedId: x.feed._id, feedMessage: truncate(escapeMarkdown(x.feed.message), 40).replaceAll(/\n+/g, " "), feedType: x.feed._type };
         }
         return null;
-    }).filter(x => x !== null) as PostAttachmentDetails[];
+    }).filter(x => x !== null);
 }
 
 export const updatePostAttachments = async (message: string, parentId: { post?: Types.ObjectId; channelMessage?: Types.ObjectId }, session?: mongoose.ClientSession) => {

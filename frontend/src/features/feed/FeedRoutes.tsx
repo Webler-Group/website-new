@@ -8,6 +8,7 @@ import FeedCreatePage from "./pages/FeedCreatePage"
 import "./feed.css"
 import FeedEditPage from "./pages/FeedEditPage"
 import RolesEnum from "../../data/RolesEnum"
+import FeedSuggestedUserListPage from "./pages/FeedSuggestedUserListPage"
 
 const FeedRoutes = () => {
     return (
@@ -17,6 +18,7 @@ const FeedRoutes = () => {
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path="New" element={<FeedLayout MainPage={<FeedCreatePage feedId={null} />} />} />
                     <Route path="Edit/:feedId" element={<FeedLayout MainPage={<FeedEditPage />} />} />
+                    <Route path="Users" element={<FeedLayout MainPage={<FeedSuggestedUserListPage/>} />} />
                 </Route>
                 <Route path=":feedId" element={<FeedLayout MainPage={<FeedListPage />} />} />
             </Route>

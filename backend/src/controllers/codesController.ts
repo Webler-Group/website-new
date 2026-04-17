@@ -115,8 +115,8 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
             .skip((page - 1) * count)
             .limit(count)
             .select(CODE_MINIMAL_FIELDS)
-            .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-            .lean<(CodeMinimal & { _id: Types.ObjectId } & { user: UserMinimal & { _id: Types.ObjectId } })[]>()
+            .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
+            .lean<(CodeMinimal & { _id: Types.ObjectId } & { user: UserMinimal })[]>()
     ]);
 
     const data = result.map(x => formatCodeMinimal(x, x.user));
@@ -139,7 +139,7 @@ const getCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
 
     const code = await CodeModel.findById(codeId)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
         .lean();
 
     if (!code) {

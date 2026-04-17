@@ -56,12 +56,12 @@ interface ChannelResponse {
     active: boolean;
     invites?: {
         id: Types.ObjectId;
-        author: UserMinimal;
-        invitedUser: UserMinimal;
+        author: ReturnType<typeof formatUserMinimal>;
+        invitedUser: ReturnType<typeof formatUserMinimal>;
     }[];
     participants?: {
         role: ChannelRolesEnum;
-        user: UserMinimal;
+        user: ReturnType<typeof formatUserMinimal>;
     }[];
 }
 
@@ -193,8 +193,8 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const [participant, channel] = await Promise.all([
         ChannelParticipantModel.findOne({ channel: channelId, user: currentUserId }).lean(),
         ChannelModel.findById(channelId)
-            .populate<{ DMUser: UserMinimal & { _id: Types.ObjectId } | null }>("DMUser", USER_MINIMAL_FIELDS)
-            .populate<{ createdBy: UserMinimal & { _id: Types.ObjectId } }>("createdBy", USER_MINIMAL_FIELDS)
+            .populate<{ DMUser: UserMinimal | null }>("DMUser", USER_MINIMAL_FIELDS)
+            .populate<{ createdBy: UserMinimal }>("createdBy", USER_MINIMAL_FIELDS)
             .lean()
     ]);
 
@@ -233,13 +233,13 @@ const getChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
         const [invites, participants] = await Promise.all([
             includeInvites
                 ? ChannelInviteModel.find({ channel: channelId })
-                    .populate<{ author: UserMinimal & { _id: Types.ObjectId } }>("author", USER_MINIMAL_FIELDS)
-                    .populate<{ invitedUser: UserMinimal & { _id: Types.ObjectId } }>("invitedUser", USER_MINIMAL_FIELDS)
+                    .populate<{ author: UserMinimal }>("author", USER_MINIMAL_FIELDS)
+                    .populate<{ invitedUser: UserMinimal }>("invitedUser", USER_MINIMAL_FIELDS)
                     .lean()
                 : Promise.resolve(null),
             includeParticipants
                 ? ChannelParticipantModel.find({ channel: channelId })
-                    .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
+                    .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
                     .lean()
                 : Promise.resolve(null)
         ]);
@@ -279,7 +279,7 @@ const getChannelsList = asyncHandler(async (req: IAuthRequest, res: Response) =>
     const channels = await query
         .sort({ updatedAt: -1 })
         .limit(count)
-        .populate<{ DMUser: UserMinimal & { _id: Types.ObjectId } | null }>("DMUser", USER_MINIMAL_FIELDS)
+        .populate<{ DMUser: UserMinimal | null }>("DMUser", USER_MINIMAL_FIELDS)
         .populate<{ createdBy: UserMinimal }>("createdBy", USER_MINIMAL_FIELDS)
         .populate<{ lastMessage: ChannelMessage & { _id: Types.ObjectId; user: UserMinimal } | null }>({
             path: "lastMessage",
@@ -335,7 +335,7 @@ const getInvitesList = asyncHandler(async (req: IAuthRequest, res: Response) => 
         query
             .sort({ createdAt: -1 })
             .limit(count)
-            .populate<{ author: (UserMinimal & { _id: Types.ObjectId }) | null }>({ path: "author", select: USER_MINIMAL_FIELDS, match: { active: true } })
+            .populate<{ author: (UserMinimal) | null }>({ path: "author", select: USER_MINIMAL_FIELDS, match: { active: true } })
             .populate<{ channel: Channel & { _id: Types.ObjectId } }>("channel")
             .lean(),
         ChannelInviteModel.aggregate<{ total: number }>([
@@ -454,8 +454,8 @@ const getMessages = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const messages = await query
         .sort({ createdAt: -1 })
         .limit(count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-        .populate<{ repliedTo: ChannelMessage & { _id: Types.ObjectId; user: UserMinimal & { _id: Types.ObjectId } } }>({
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ repliedTo: ChannelMessage & { _id: Types.ObjectId; user: UserMinimal } }>({
             path: "repliedTo",
             populate: { path: "user", select: USER_MINIMAL_FIELDS }
         })

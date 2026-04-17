@@ -3,7 +3,7 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import PostModel, { Post } from "../models/Post";
 import UpvoteModel from "../models/Upvote";
-import mongoose, { Types } from "mongoose";
+import mongoose, {Types} from "mongoose";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import UserFollowingModel from "../models/UserFollowing";
 import { truncate } from "../utils/StringUtils";
@@ -23,19 +23,21 @@ import {
     getRepliesSchema,
     togglePinFeedSchema,
     votePostSchema,
-    getUserReactionsSchema
+    getUserReactionsSchema,
+    getSuggestedUsersSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import { formatUserMinimal } from "../helpers/userHelper";
+import {getSuggestedUsers as fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
+import { getImageUrl } from "./mediaController";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createFeedSchema, req);
@@ -93,7 +95,7 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     const [reactions, totalCount] = await Promise.all([
         UpvoteModel.aggregate<{
             _id: Types.ObjectId;
-            user: UserMinimal & { _id: Types.ObjectId };
+            user: UserMinimal;
             reaction: ReactionsEnum;
         }>([
             { $match: { parentId: parentObjectId } },
@@ -579,6 +581,33 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { isPinned: result.isPinned } });
 });
 
+
+const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getSuggestedUsersSchema, req);
+    const { searchQuery, page, count } = body;
+
+    const currentUserId = new Types.ObjectId(req.userId);
+    const blockedIds = await getBlockedUserIds(currentUserId);
+    const followingIds = await getFollowingIds(currentUserId);
+
+    const isSearch = searchQuery && searchQuery.trim().length > 0;
+
+    const rawUsers = await fetchSuggestedUsers({
+        excludedIds: isSearch
+            ? [currentUserId, ...blockedIds]
+            : [currentUserId, ...blockedIds, ...followingIds],
+        followingIds,
+        limit: count,
+        skip: (page - 1) * count,
+        select: isSearch ? { name: { $regex: `^${escapeRegex(searchQuery.trim())}`, $options: "i" } } : {}
+    });
+
+    const users = rawUsers.map(user => formatUserMinimal(user, user.followersCount));
+
+    res.json({ success: true, data: { users } });
+});
+
+
 const feedController = {
     createFeed,
     editFeed,
@@ -592,7 +621,8 @@ const feedController = {
     getReplies,
     togglePinFeed,
     votePost,
-    getUserReactions
+    getUserReactions,
+    getSuggestedUsers,
 };
 
 export default feedController;

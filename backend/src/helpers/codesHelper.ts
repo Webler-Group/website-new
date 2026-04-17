@@ -5,7 +5,7 @@ import { deletePostsAndCleanup } from "./postsHelper";
 import { UserMinimal } from "../models/User";
 import { formatUserMinimal } from "./userHelper";
 
-export const formatCodeMinimal = (code: CodeMinimal & { _id: Types.ObjectId }, user?: UserMinimal & { _id: Types.ObjectId }) => {
+export const formatCodeMinimal = (code: CodeMinimal & { _id: Types.ObjectId }, user?: UserMinimal) => {
     return {
         id: code._id,
         name: code.name,

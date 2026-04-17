@@ -24,19 +24,15 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
 
     const handleFollow = async () => {
         if (!userInfo) {
-            navigate("/Users/Login")
-            return
+            navigate("/Users/Login");
+            return;
         }
         setFollowLoading(true);
-        let data = null;
-        try {
-            data = await sendJsonRequest(`/Profile/Follow`, "POST", { userId: user.id });
-        }
-        catch (err) { }
+        const data = await sendJsonRequest(`/Profile/Follow`, "POST", { userId: user.id });
         if (data && data.success) {
             setFollowing(true);
             if (viewedUserId === userInfo.id) {
-                setCount?.(count => count + 1)
+                setCount?.(count => count + 1);
             }
         }
         setFollowLoading(false);
@@ -44,19 +40,15 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
 
     const handleUnfollow = async () => {
         if (!userInfo) {
-            navigate("/Users/Login")
-            return
+            navigate("/Users/Login");
+            return;
         }
         setFollowLoading(true);
-        let data = null;
-        try {
-            data = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId: user.id });
-        }
-        catch (err) { }
+        const data = await sendJsonRequest(`/Profile/Unfollow`, "POST", { userId: user.id });
         if (data && data.success) {
             setFollowing(false);
             if (viewedUserId === userInfo.id) {
-                setCount?.(count => count - 1)
+                setCount?.(count => count - 1);
             }
         }
         setFollowLoading(false);
@@ -100,7 +92,7 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
         <div ref={ref}>{body}</div>
         :
         <div>{body}</div>
-    return content
+    return content;
 })
 
-export default FollowListProfile
+export default FollowListProfile;

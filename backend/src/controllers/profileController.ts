@@ -361,7 +361,7 @@ const getFollowers = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .populate("user", USER_MINIMAL_FIELDS)
-        .lean<{ user: UserMinimal & { _id: Types.ObjectId } }[]>();
+        .lean<{ user: UserMinimal }[]>();
 
     const promises: Promise<void>[] = [];
     const users = result.map(x => formatUserMinimal(x.user));
@@ -390,7 +390,7 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
         .skip((page - 1) * count)
         .limit(count)
         .populate("following", USER_MINIMAL_FIELDS)
-        .lean<{ following: UserMinimal & { _id: Types.ObjectId } }[]>();
+        .lean<{ following: UserMinimal }[]>();
 
     const promises: Promise<void>[] = [];
     const users = result.map(x => formatUserMinimal(x.following));
@@ -429,8 +429,8 @@ const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) =
 
     const result = await dbQuery
         .limit(count)
-        .populate<{ user: UserMinimal & { _id: Types.ObjectId } }>("user", USER_MINIMAL_FIELDS)
-        .populate<{ actionUser: UserMinimal & { _id: Types.ObjectId } }>("actionUser", USER_MINIMAL_FIELDS)
+        .populate<{ user: UserMinimal }>("user", USER_MINIMAL_FIELDS)
+        .populate<{ actionUser: UserMinimal }>("actionUser", USER_MINIMAL_FIELDS)
         .populate<{ postId: { _id: Types.ObjectId, parentId: Types.ObjectId } }>("postId", { parentId: 1 });
 
     const notifications = result.map(x => ({
@@ -593,7 +593,7 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
         match.name = new RegExp(`^${safeQuery}`, "i");
     }
 
-    const users = await UserModel.find(match, USER_MINIMAL_FIELDS).lean<(UserMinimal & { _id: Types.ObjectId })[]>();
+    const users = await UserModel.find(match, USER_MINIMAL_FIELDS).lean<(UserMinimal)[]>();
 
     res.json({
         success: true,
