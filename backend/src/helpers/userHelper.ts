@@ -158,7 +158,7 @@ export const getFollowingIds = async (userId: Types.ObjectId | string): Promise<
     return relations.map(r => r.following);
 };
 
-export type SuggestedUserResult = UserMinimal & { followersCount: number };
+export type SuggestedUserResult = UserMinimal & { followersCount: number, isFollowing: boolean };
 
 export interface GetSuggestedUsersParams {
     excludedIds: Types.ObjectId[];
@@ -166,9 +166,10 @@ export interface GetSuggestedUsersParams {
     limit: number;
     skip?: number;
     select?: Record<string, any>;
+    userId?: Types.ObjectId;
 }
 
-export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip, select = {} }: GetSuggestedUsersParams): Promise<SuggestedUserResult[]> => {
+export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip, select = {}, userId }: GetSuggestedUsersParams): Promise<SuggestedUserResult[]> => {
     return UserModel.aggregate<SuggestedUserResult>([
         {
             $match: {
@@ -186,6 +187,13 @@ export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip
             }
         },
         { $addFields: { followersCount: { $size: "$followersDocs" } } },
+        {
+            $addFields: {
+                isFollowing: userId
+                    ? { $in: [userId, { $map: { input: "$followersDocs", as: "f", in: "$$f.user" } }] }
+                    : false
+            }
+        },
         {
             $addFields: {
                 mutualCount: {
@@ -214,7 +222,7 @@ export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip
         ...(skip ? [{ $skip: skip }] : []),
         { $limit: limit },
         {
-            $project: { ...USER_MINIMAL_FIELDS, followersCount: 1 }
+            $project: { ...USER_MINIMAL_FIELDS, followersCount: 1, isFollowing: 1 }
         }
     ]);
 };

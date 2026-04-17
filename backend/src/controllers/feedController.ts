@@ -599,10 +599,11 @@ const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) 
         followingIds,
         limit: count,
         skip: (page - 1) * count,
-        select: isSearch ? { name: { $regex: `^${escapeRegex(searchQuery.trim())}`, $options: "i" } } : {}
+        select: isSearch ? { name: { $regex: `^${escapeRegex(searchQuery.trim())}`, $options: "i" } } : {},
+        userId: currentUserId
     });
 
-    const users = rawUsers.map(user => formatUserMinimal(user, user.followersCount));
+    const users = rawUsers.map(user => ({ ...formatUserMinimal(user, user.followersCount), isFollowing: user.isFollowing }));
 
     res.json({ success: true, data: { users } });
 });

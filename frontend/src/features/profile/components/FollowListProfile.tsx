@@ -62,14 +62,20 @@ const FollowListProfile = React.forwardRef(({ user, viewedUserId, setCount }: Fo
                 </div>
                 <div className='d-flex flex-column gap-1'>
                     <ProfileName userId={user.id} userName={user.name} />
-                    <div>
-                        {
-                            user.countryCode &&
+                    <div className="d-flex align-items-center flex-wrap text-muted small">
+                        {user.countryCode && (
                             <>
-                                {<Country country={countries.find(country => country.code === user.countryCode)!} />}
+                                <Country country={countries.find(country => country.code === user.countryCode)!} />
                                 <span className="mx-2">·</span>
                             </>
-                        }
+                        )}
+                        <span>Lvl {user.level}</span>
+                        {user.followersCount !== undefined && user.followersCount > 0 && (
+                            <>
+                                <span className="mx-2">·</span>
+                                <span>{user.followersCount} followers</span>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
