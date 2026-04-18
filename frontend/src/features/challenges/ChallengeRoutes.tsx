@@ -7,7 +7,6 @@ import RequireAuth from "../auth/components/RequireAuth";
 import ChallengeDetailsPage from "./pages/ChallengeDetailsPage";
 import ChallengeCreate from "./pages/ChallengeCreatePage";
 import ChallengeEdit from "./pages/ChallengeEditPage";
-import ChallengeSolutionPage from "./pages/ChallengeSolutionPage";
 import "./challenges.css";
 import RolesEnum from "../../data/RolesEnum";
 
@@ -18,7 +17,6 @@ const ChallengeRoutes = () => {
                 <Route index element={<ChallengeList />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path=":challengeId" element={<ChallengeDetailsPage />} />
-                    <Route path=":challengeId/Solution" element={<ChallengeSolutionPage />} />
                 </Route>
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.CREATOR]} />}>
                     <Route path="Create" element={<ChallengeCreate />} />

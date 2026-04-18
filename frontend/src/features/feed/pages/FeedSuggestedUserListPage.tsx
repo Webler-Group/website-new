@@ -17,6 +17,7 @@ export default function FeedSuggestedUserListPage() {
 
     const [users, setUsers] = useState<UserMinimal[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(false);
     const [query, setQuery] = useState("");
     const [activeQuery, setActiveQuery] = useState("");
     const [reloadKey, setReloadKey] = useState(0);
@@ -25,10 +26,16 @@ export default function FeedSuggestedUserListPage() {
     useEffect(() => {
         const fetchUsers = async () => {
             setLoading(true);
+            setError(false);
             const result = await sendJsonRequest<FeedSuggestedUserData>("/Feed/Users/Suggestion", "POST", {
                 searchQuery: activeQuery
             });
-            setUsers(result.data?.users ?? []);
+            if (result.success) {
+                setUsers(result.data?.users ?? []);
+            } else {
+                setUsers([]);
+                setError(true);
+            }
             setLoading(false);
         };
         void fetchUsers();
@@ -101,7 +108,11 @@ export default function FeedSuggestedUserListPage() {
                     </div>
                 )}
 
-                {!loading && users.length === 0 && (
+                {!loading && error && (
+                    <p className="text-center mt-3 text-danger">Failed to load users. Try again.</p>
+                )}
+
+                {!loading && !error && users.length === 0 && (
                     <p className="text-center mt-3 text-muted">No users found</p>
                 )}
             </div>
