@@ -31,7 +31,7 @@ import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
-import {getSuggestedUsers as fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
+import {fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
@@ -584,7 +584,7 @@ const togglePinFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
 const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getSuggestedUsersSchema, req);
-    const { searchQuery, page, count } = body;
+    const { searchQuery } = body;
 
     const currentUserId = new Types.ObjectId(req.userId);
     const blockedIds = await getBlockedUserIds(currentUserId);
@@ -597,8 +597,7 @@ const getSuggestedUsers = asyncHandler(async (req: IAuthRequest, res: Response) 
             ? [currentUserId, ...blockedIds]
             : [currentUserId, ...blockedIds, ...followingIds],
         followingIds,
-        limit: count,
-        skip: (page - 1) * count,
+        limit: 20,
         select: isSearch ? { name: { $regex: `^${escapeRegex(searchQuery.trim())}`, $options: "i" } } : {},
         userId: currentUserId
     });

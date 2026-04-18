@@ -164,12 +164,11 @@ export interface GetSuggestedUsersParams {
     excludedIds: Types.ObjectId[];
     followingIds: Types.ObjectId[];
     limit: number;
-    skip?: number;
     select?: Record<string, any>;
     userId?: Types.ObjectId;
 }
 
-export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip, select = {}, userId }: GetSuggestedUsersParams): Promise<SuggestedUserResult[]> => {
+export const fetchSuggestedUsers = async ({ excludedIds, followingIds, limit, select = {}, userId }: GetSuggestedUsersParams): Promise<SuggestedUserResult[]> => {
     return UserModel.aggregate<SuggestedUserResult>([
         {
             $match: {
@@ -219,7 +218,6 @@ export const getSuggestedUsers = async ({ excludedIds, followingIds, limit, skip
             }
         },
         { $sort: { score: -1 } },
-        ...(skip ? [{ $skip: skip }] : []),
         { $limit: limit },
         {
             $project: { ...USER_MINIMAL_FIELDS, followersCount: 1, isFollowing: 1 }

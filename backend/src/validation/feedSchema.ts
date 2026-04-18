@@ -102,8 +102,6 @@ export const getUserReactionsSchema = z.object({
 
 export const getSuggestedUsersSchema = z.object({
     body: z.object({
-        searchQuery: z.string().optional(),
-        page: pageSchema,
-        count: countPerPageSchema,
+        searchQuery: z.string().optional()
     })
 });
