@@ -1,5 +1,5 @@
 import { FormGroup, Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
-import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useEffect, useId, useRef, useState } from "react";
 import FileExplorer from "./file-explorer/FileExplorer";
 import HtmlRenderer from "./HtmlRenderer";
 import { MDEditorMode } from "./MdEditorField";
@@ -41,6 +41,7 @@ const HtmlEditorField = ({
     height
 }: HtmlEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
+    const uid = useId();
     const [showImages, setShowImages] = useState(false);
     const [showCssModal, setShowCssModal] = useState(false);
     const [cssDraft, setCssDraft] = useState("");
@@ -160,24 +161,24 @@ const HtmlEditorField = ({
                 ))}
             </div>
 
-            <div className="mb-3">
+            <div className="mb-2">
                 <ToggleButtonGroup
                     type="radio"
-                    name="editorMode"
+                    name={`${uid}-editorMode`}
                     value={mode}
                     onChange={setMode}
                 >
-                    <ToggleButton id="write-btn" value="write" variant="outline-primary" size="sm">
+                    <ToggleButton id={`${uid}-write-btn`} value="write" variant="outline-primary" size="sm">
                         Write
                     </ToggleButton>
-                    <ToggleButton id="preview-btn" value="preview" variant="outline-primary" size="sm">
+                    <ToggleButton id={`${uid}-preview-btn`} value="preview" variant="outline-primary" size="sm">
                         Preview
                     </ToggleButton>
                 </ToggleButtonGroup>
             </div>
 
             {mode === "write" && (
-                <FormGroup className="mb-3">
+                <FormGroup>
                     <AceEditor
                         mode="html"
                         theme="tomorrow_night"
@@ -219,7 +220,7 @@ const HtmlEditorField = ({
                 (customPreview != null ? (
                     customPreview
                 ) : (
-                    <div className="p-2 border rounded bg-light">
+                    <div style={editorHeightRef.current ? { minHeight: editorHeightRef.current } : undefined}>
                         <HtmlRenderer html={text} css={css} />
                     </div>
                 ))}

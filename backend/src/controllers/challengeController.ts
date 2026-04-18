@@ -35,7 +35,7 @@ interface ChallengeCode {
 
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates, xp, isVisible } = body;
+    const { title, description, difficulty, testCases, templates, xp, isVisible, solution } = body;
     const currentUserId = req.userId;
 
     const challenge = await ChallengeModel.create({
@@ -47,7 +47,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         xp,
         isPublic: Number(isVisible) === 1,
         author: currentUserId,
-        solution: body.solution
+        solution
     });
 
     res.json({ success: true, data: { challenge: { id: challenge._id } } });

@@ -149,6 +149,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         placeHolder="Provide a solution or explanation..."
                         row={10}
                         isPost={false}
+                        required={false}
                     />
                 </Form.Group>
 

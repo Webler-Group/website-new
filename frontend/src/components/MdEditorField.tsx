@@ -1,5 +1,5 @@
 import { Button, FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
-import { Dispatch, ReactNode, SetStateAction, useEffect, useRef, useState } from "react";
+import { Dispatch, ReactNode, SetStateAction, useEffect, useId, useRef, useState } from "react";
 import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./post-attachment-select/PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
@@ -7,6 +7,8 @@ import FileExplorer from "./file-explorer/FileExplorer";
 import { FaPlus } from "react-icons/fa";
 
 export type MDEditorMode = "write" | "preview";
+
+const BOTTOM_ROW_HEIGHT = 36;
 
 interface MdEditorFieldProps {
     row: number;
@@ -19,6 +21,7 @@ interface MdEditorFieldProps {
     isPost?: boolean;
     section: string;
     rootAlias: string;
+    required?: boolean;
 }
 
 const MdEditorField = ({
@@ -31,9 +34,11 @@ const MdEditorField = ({
     onModeChange,
     isPost = true,
     section,
-    rootAlias
+    rootAlias,
+    required = true
 }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
+    const uid = useId();
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const textareaHeightRef = useRef<number | null>(null);
     const scrollTopRef = useRef<number>(0);
@@ -145,19 +150,19 @@ const MdEditorField = ({
                     ))}
                 </div>
 
-                <div className="mb-3">
-                    <ToggleButtonGroup type="radio" name="editorMode" value={mode} onChange={handleModeChange}>
-                        <ToggleButton id="write-btn" value="write" variant="outline-primary"size="sm">
+                <div className="mb-2">
+                    <ToggleButtonGroup type="radio" name={`${uid}-editorMode`} value={mode} onChange={handleModeChange}>
+                        <ToggleButton id={`${uid}-write-btn`} value="write" variant="outline-primary" size="sm">
                             Write
                         </ToggleButton>
-                        <ToggleButton id="preview-btn" value="preview" variant="outline-primary" size="sm">
+                        <ToggleButton id={`${uid}-preview-btn`} value="preview" variant="outline-primary" size="sm">
                             Preview
                         </ToggleButton>
                     </ToggleButtonGroup>
                 </div>
 
                 {mode === "write" && (
-                    <FormGroup className="mb-3">
+                    <FormGroup>
                         {isPost ? (
                             <>
                                 <PostTextareaControl
@@ -166,12 +171,12 @@ const MdEditorField = ({
                                     placeholder={placeHolder}
                                     value={text}
                                     setValue={setText}
-                                    required
+                                    required={required}
                                     maxLength={maxCharacters}
                                 />
 
-                                <div className="d-flex justify-content-between">
-                                    <div className="mt-2 text-muted small">
+                                <div className="d-flex justify-content-between align-items-center" style={{ height: BOTTOM_ROW_HEIGHT }}>
+                                    <div className="text-muted small">
                                         {text.length}/{maxCharacters} characters
                                     </div>
                                     <Button variant="link" className="text-secondary" onClick={() => setPostAttachmentSelectVisible(true)}>
@@ -188,11 +193,11 @@ const MdEditorField = ({
                                     placeholder={placeHolder}
                                     value={text}
                                     onChange={(e) => setText(e.target.value)}
-                                    required
+                                    required={required}
                                     maxLength={maxCharacters}
                                     style={{ overscrollBehavior: "contain" }}
                                 />
-                                <div className="d-flex justify-content-between">
+                                <div className="d-flex justify-content-between align-items-center" style={{ height: BOTTOM_ROW_HEIGHT }}>
                                     <div className="mt-2 text-muted small">
                                         {text.length}/{maxCharacters} characters
                                     </div>
@@ -206,7 +211,7 @@ const MdEditorField = ({
                     (customPreview != null ? (
                         customPreview
                     ) : (
-                        <div className="p-2 border rounded bg-light">
+                        <div style={textareaHeightRef.current ? { minHeight: textareaHeightRef.current + BOTTOM_ROW_HEIGHT } : undefined}>
                             <MarkdownRenderer content={text} />
                         </div>
                     ))}

@@ -51,8 +51,8 @@ export class Challenge {
     @prop({ default: 0 })
     passedSubmissions!: number;
 
-    @prop({ default: "" })
-    solution!: string;
+    @prop()
+    solution?: string;
 
     @prop({ ref: "User", required: true })
     author!: Types.ObjectId;
