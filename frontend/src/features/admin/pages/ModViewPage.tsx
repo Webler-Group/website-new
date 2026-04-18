@@ -6,7 +6,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
-import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, IpRecord, ToggleBanIpData, UpdateRolesData } from "../types";
+import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, IpRecord, ToggleBanIpData, UpdateRolesData, UpdateUserXpData } from "../types";
 import RolesEnum from "../../../data/RolesEnum";
 
 const ModViewPage = () => {
@@ -14,6 +14,8 @@ const ModViewPage = () => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const [user, setUser] = useState<AdminUser | null>(null);
+    const [xp, setXp] = useState<number>(0);
+    const [level, setLevel] = useState<number>(0);
     const [loading, setLoading] = useState(true);
 
     const [showModal, setShowModal] = useState(false);
@@ -35,6 +37,7 @@ const ModViewPage = () => {
             setLoading(true);
             const result = await sendJsonRequest<GetAdminUserData>("/Admin/GetUser", "POST", { userId });
             if (result.data) {
+                setLevel(result.data.user.level);
                 setUser(result.data.user);
                 setRolesInput(result.data.user.roles.join(", "));
             }
@@ -112,6 +115,17 @@ const ModViewPage = () => {
         }
         setIpToBan(null);
     };
+
+    const updateXp = async() => {
+        const result = await sendJsonRequest<UpdateUserXpData>("/Admin/UpdateUserXp", "POST", {
+            userId: user?.id,
+            xp
+        });
+
+        if(result.data) {
+            setLevel(result.data.level);
+        }
+    }
 
     if (loading) return <div className="d-flex justify-content-center mt-5"><Spinner animation="border" /></div>;
     if (!user) return <Alert variant="warning">No user found</Alert>;
@@ -289,6 +303,20 @@ const ModViewPage = () => {
                             <RequestResultAlert message={deleteFilesAlert.message} errors={deleteFilesAlert.errors} />
                             <Button variant="danger" onClick={() => setShowDeleteFilesModal(true)}>
                                 Delete User Files
+                            </Button>
+                        </Card.Body>
+                    </Card>
+                    <Card className="mt-3">
+                        <Card.Body>
+                            <mark>XP: Return original xp for this user from the backend</mark>
+                            <Form.Control
+                                type="number"
+                                value={xp}
+                                onChange={e => setXp(parseInt(e.target.value))}
+                            />
+                            <p><b>Level: </b>{level}</p>                         
+                            <Button variant="success" onClick={() => updateXp()}>
+                                Update XP
                             </Button>
                         </Card.Body>
                     </Card>

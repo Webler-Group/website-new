@@ -126,18 +126,42 @@ export const generateEmailChangeRecord = async (userId: Types.ObjectId, newEmail
     return code;
 }
 
-export const totalXpToReachLevel = (level: number): number => {
-    const x = level - 1;
-    return 25 * (x + x * x);
-}
+export const levelUtils = (() => {
+    const max_level = 30;
+    const minMultiplier = 60;
+    const maxMultiplier = 100;
 
-export const levelFromXp = (xp: number): number => {
-    const x = Math.floor(
-        (-1 + Math.sqrt(1 + (4 * xp) / 25)) / 2
-    );
+    const totalXpToReachLevel = (level: number): number => {
+        if (level <= 1) return 0;
 
-    return x + 1;
-}
+        return Math.floor(minMultiplier * level * level + maxMultiplier * level);
+    }
+
+    const fromXp = (xp: number): number => {
+        const a = minMultiplier;
+        const b = maxMultiplier;
+
+        const level = Math.floor((-b + Math.sqrt(b * b + 4 * a * xp)) / (2 * a));
+
+        return Math.min(Math.max(level, 1), max_level);
+    }
+
+    const xpForNextLevel = (level: number): number => {
+        if (level >= max_level) return 0;
+
+        return (
+            totalXpToReachLevel(level + 1) -
+            totalXpToReachLevel(level)
+        );
+    };
+
+
+    return {
+        totalXpToReachLevel,
+        fromXp,
+        xpForNextLevel,
+    }
+})();
 
 export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId: Types.ObjectId, session?: mongoose.ClientSession) => {
     await UserFollowingModel.deleteOne({ user: userId, following: followingId }, { session });

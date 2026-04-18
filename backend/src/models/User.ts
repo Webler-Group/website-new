@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import countryCodesEnum from "../data/countryCodes";
 import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
-import { levelFromXp } from "../helpers/userHelper";
+import { levelUtils } from "../helpers/userHelper";
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class NotificationSettings {
@@ -79,7 +79,7 @@ export class FeedSettings {
     }
 
     if (this.isModified("xp")) {
-        this.level = levelFromXp(this.xp);
+        this.level = levelUtils.fromXp(this.xp);
     }
 })
 @modelOptions({ schemaOptions: { collection: "users", timestamps: true } })

@@ -8,9 +8,17 @@ import User from "../models/User";
 async function main() {
     await connectDB();
 
-    const tagDocs = tags.map(name => ({ name }));
-    await Tag.insertMany(tagDocs);
-    console.log("New tags added successfully.");
+    await Tag.bulkWrite(
+        data.map(tag => ({
+            updateOne: {
+                filter: { name: tag.name },
+                update: { $setOnInsert: tag },
+                upsert: true
+            }
+        }))
+    );
+
+
 
     let adminUser = await User.findOne({ email: config.adminEmail });
     if (adminUser) {

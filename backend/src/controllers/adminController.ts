@@ -13,7 +13,8 @@ import {
     deleteUserFilesSchema,
     toggleBanIpSchema,
     getIpListSchema,
-    createIpSchema
+    createIpSchema,
+    updateUserXpSchema
 } from "../validation/adminSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import PostModel from "../models/Post";
@@ -216,6 +217,19 @@ const createIp = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { id: ip._id.toString(), value: ip.value, banned: ip.banned } });
 });
 
+const updateUserXp = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(updateUserXpSchema, req);
+    const { userId, xp } = body;
+
+    const user = await UserModel.findById(userId);
+    if (!user) throw new HttpError("User not found", 404);
+
+    user.xp = xp;
+    await user.save();
+
+    res.json({ success: true, data: { level: user.level, xp } });
+});
+
 const controller = {
     getUsersList,
     banUser,
@@ -224,7 +238,8 @@ const controller = {
     deleteUserFiles,
     toggleBanIp,
     getIpList,
-    createIp
+    createIp,
+    updateUserXp
 };
 
 export default controller;
