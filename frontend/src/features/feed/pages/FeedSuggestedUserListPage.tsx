@@ -10,7 +10,7 @@ import NotificationToast from "../../../components/NotificationToast.tsx";
 import FollowListProfile from "../../profile/components/FollowListProfile.tsx";
 import Loader from "../../../components/Loader.tsx";
 
-export default function FeedSuggestedUserListPage() {
+const FeedSuggestedUserListPage = () => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const navigate = useNavigate();
@@ -119,3 +119,5 @@ export default function FeedSuggestedUserListPage() {
         </Container>
     );
 }
+
+export default FeedSuggestedUserListPage;
