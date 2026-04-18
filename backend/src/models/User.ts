@@ -6,6 +6,16 @@ import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
 import { levelUtils } from "../helpers/userHelper";
 
+
+class UserBadge {
+  @prop({ required: true })
+  key!: string;
+
+  @prop({ default: Date.now })
+  earnedAt!: Date;
+}
+
+
 @modelOptions({ schemaOptions: { _id: false } })
 export class NotificationSettings {
     @prop({ default: true })
@@ -49,6 +59,9 @@ export class NotificationSettings {
 
     @prop({ default: true })
     channels!: boolean;
+
+    @prop({ default: true })
+    badges!: boolean;
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -143,6 +156,9 @@ export class User {
 
     @prop({ ref: "Ip" })
     lastIp?: Types.ObjectId;
+
+    @prop({ type: () => [UserBadge], default: [] })
+    badges!: UserBadge[];
 
     async matchPassword(this: DocumentType<User>, inputPassword: string): Promise<boolean> {
         return bcrypt.compare(inputPassword, this.password);

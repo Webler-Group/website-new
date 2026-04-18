@@ -12,7 +12,8 @@ enum NotificationTypeEnum {
     FEED_COMMENT_MENTION = 305,
     LESSON_COMMENT = 401,
     LESSON_COMMENT_MENTION = 402,
-    CHANNELS = 701
+    CHANNELS = 701,
+    BADGES = 802,
 }
 
 export default NotificationTypeEnum;
