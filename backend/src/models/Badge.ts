@@ -7,9 +7,6 @@ export class Badge {
   @prop({ required: true })
   description!: string;
 
-  @prop({ required: true })
-  icon!: string;
-
   @prop({ default: 0 })
   xpReward!: number;
 }

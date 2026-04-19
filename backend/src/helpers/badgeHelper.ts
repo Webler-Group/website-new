@@ -92,12 +92,12 @@ const BADGE_RULES: Record<badge_t, badgeRule_t> = {
 
     crowd_builder: async(user: user_t) => {
         const followers = await UserFollowingModel.countDocuments({ following: user._id });
-        return Promise.resolve(followers >= 2);
+        return Promise.resolve(followers >= 50);
     },
 
     influencer: async(user: user_t) => {
         const followers = await UserFollowingModel.countDocuments({ following: user._id });
-        return Promise.resolve(followers >= 3);
+        return Promise.resolve(followers >= 1000);
     },
 
 

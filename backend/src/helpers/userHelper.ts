@@ -126,42 +126,63 @@ export const generateEmailChangeRecord = async (userId: Types.ObjectId, newEmail
     return code;
 }
 
+
 export const levelUtils = (() => {
-    const max_level = 30;
-    const minMultiplier = 60;
-    const maxMultiplier = 100;
 
-    const totalXpToReachLevel = (level: number): number => {
-        if (level <= 1) return 0;
+    const MAX_LEVEL = 30;
 
-        return Math.floor(minMultiplier * level * level + maxMultiplier * level);
-    }
+    const xpRequiredForLevel = (level: number): number => {
+        if (level <= 15) {
+            return 200 + level * 80;
+        }
 
-    const fromXp = (xp: number): number => {
-        const a = minMultiplier;
-        const b = maxMultiplier;
+        if (level <= 25) {
+            return 2000 + level * 600;
+        }
 
-        const level = Math.floor((-b + Math.sqrt(b * b + 4 * a * xp)) / (2 * a));
-
-        return Math.min(Math.max(level, 1), max_level);
-    }
-
-    const xpForNextLevel = (level: number): number => {
-        if (level >= max_level) return 0;
-
-        return (
-            totalXpToReachLevel(level + 1) -
-            totalXpToReachLevel(level)
-        );
+        return 20000 + level * level * 2500;
     };
 
+
+    const totalXpToReachLevel = (level: number): number => {
+        let total = 0;
+
+        for (let i = 1; i < level; i++) {
+            total += xpRequiredForLevel(i);
+        }
+
+        return total;
+    };
+
+
+    const fromXp = (xp: number): number => {
+        let total = 0;
+
+        for (let level = 1; level <= MAX_LEVEL; level++) {
+            total += xpRequiredForLevel(level);
+
+            if (xp < total) {
+                return level;
+            }
+        }
+
+        return MAX_LEVEL;
+    };
+    
+
+    const xpForNextLevel = (level: number): number => {
+        if (level >= MAX_LEVEL) return 0;
+        return xpRequiredForLevel(level);
+    };
 
     return {
         totalXpToReachLevel,
         fromXp,
-        xpForNextLevel,
-    }
+        xpForNextLevel
+    };
+
 })();
+
 
 export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId: Types.ObjectId, session?: mongoose.ClientSession) => {
     await UserFollowingModel.deleteOne({ user: userId, following: followingId }, { session });
