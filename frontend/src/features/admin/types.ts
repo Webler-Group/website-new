@@ -68,3 +68,9 @@ export interface CreateIpData {
     value: string;
     banned: boolean;
 }
+
+
+export interface UpdateUserXpData {
+    xp: number,
+    level: number
+}

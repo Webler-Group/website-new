@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1.5"/>
+  <path d="M30 70 Q28 60 30 48 Q32 40 42 38 L52 38 L56 28 Q58 22 64 22 Q70 22 70 28 L70 46 Q70 50 66 52 L60 52 L60 70 Z" fill="#185FA5"/>
+  <path d="M38 44 Q36 38 40 36" stroke="#B5D4F4" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <text x="48" y="88" text-anchor="middle" fill="#0C447C" font-size="10" font-family="sans-serif">first step</text>
+</svg>

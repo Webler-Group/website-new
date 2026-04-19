@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#2C2C2A" stroke="#444441" stroke-width="1.5"/>
+  <circle cx="22" cy="28" r="4" fill="#E24B4A"/>
+  <circle cx="34" cy="28" r="4" fill="#EF9F27"/>
+  <circle cx="46" cy="28" r="4" fill="#639922"/>
+  <text x="16" y="46" fill="#5DCAA5" font-size="10" font-family="monospace">&gt; hello,</text>
+  <text x="16" y="58" fill="#5DCAA5" font-size="10" font-family="monospace">  world!</text>
+  <rect x="16" y="63" width="7" height="9" rx="1" fill="#5DCAA5" opacity="0.8"/>
+  <text x="48" y="88" text-anchor="middle" fill="#B4B2A9" font-size="10" font-family="sans-serif">hello world</text>
+</svg>

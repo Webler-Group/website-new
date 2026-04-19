@@ -4,7 +4,18 @@ import bcrypt from "bcrypt";
 import countryCodesEnum from "../data/countryCodes";
 import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
-import { levelFromXp } from "../helpers/userHelper";
+import { levelUtils } from "../helpers/userHelper";
+import { emitBadgeEvent } from "../helpers/badgeHelper";
+
+
+class UserBadge {
+  @prop({ required: true })
+  key!: string;
+
+  @prop({ default: Date.now })
+  earnedAt!: Date;
+}
+
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class NotificationSettings {
@@ -49,6 +60,9 @@ export class NotificationSettings {
 
     @prop({ default: true })
     channels!: boolean;
+
+    @prop({ default: true })
+    badges!: boolean;
 }
 
 @modelOptions({ schemaOptions: { _id: false } })
@@ -79,7 +93,8 @@ export class FeedSettings {
     }
 
     if (this.isModified("xp")) {
-        this.level = levelFromXp(this.xp);
+        this.level = levelUtils.fromXp(this.xp);
+        await emitBadgeEvent(this, "xp_updated");
     }
 })
 @modelOptions({ schemaOptions: { collection: "users", timestamps: true } })
@@ -143,6 +158,9 @@ export class User {
 
     @prop({ ref: "Ip" })
     lastIp?: Types.ObjectId;
+
+    @prop({ type: () => [UserBadge], default: [] })
+    badges!: UserBadge[];
 
     async matchPassword(this: DocumentType<User>, inputPassword: string): Promise<boolean> {
         return bcrypt.compare(inputPassword, this.password);

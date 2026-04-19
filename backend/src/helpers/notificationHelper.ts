@@ -21,6 +21,7 @@ export const notificationTypeToField: Record<NotificationTypeEnum, keyof Notific
     [NotificationTypeEnum.LESSON_COMMENT]: "lessonComment",
     [NotificationTypeEnum.LESSON_COMMENT_MENTION]: "lessonCommentMention",
     [NotificationTypeEnum.CHANNELS]: "channels",
+    [NotificationTypeEnum.BADGES]: "badges",
 };
 
 export interface SendNotificationsParams {

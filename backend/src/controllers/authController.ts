@@ -13,6 +13,8 @@ import UserFollowingModel from "../models/UserFollowing";
 import { formatAuthUser, getRequestIp, updateUserIp } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
 import IpModel from "../models/Ip";
+import { emitBadgeEvent } from "../helpers/badgeHelper";
+import { withTransaction } from "../utils/transaction";
 
 const login = asyncHandler(async (req, res) => {
     const {
@@ -40,6 +42,7 @@ const login = asyncHandler(async (req, res) => {
     }
 
     user.lastLoginAt = new Date();
+    await emitBadgeEvent(user, "email_verified");
     await user.save();
 
     if (ip) {
@@ -138,6 +141,10 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         catch (err) {
             console.log("Activation email error:", err);
         }
+    } else {
+        // DEVELOPMENT: EMAIL IS ALWAYS VERIFIED
+        await emitBadgeEvent(user, "email_verified");
+        await user.save();
     }
 
     res.json({

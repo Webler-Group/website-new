@@ -62,3 +62,10 @@ export const createIpSchema = z.object({
     })
 });
 
+
+export const updateUserXpSchema = z.object({
+    body: z.object({
+        userId: idSchema("userId"),
+        xp: z.number().min(0, "Xp cant be negative")
+    })
+});

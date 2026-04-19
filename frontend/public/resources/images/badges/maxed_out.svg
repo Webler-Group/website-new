@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#FAEEDA" stroke="#854F0B" stroke-width="1.5"/>
+  <polygon points="48,12 82,48 48,84 14,48" fill="none" stroke="#EF9F27" stroke-width="2"/>
+  <path d="M54 20 L36 52 L48 52 L42 76 L60 44 L48 44 Z" fill="#EF9F27" stroke="#BA7517" stroke-width="1"/>
+  <text x="14" y="28" font-size="10" fill="#EF9F27" font-family="sans-serif">★</text>
+  <text x="70" y="28" font-size="10" fill="#EF9F27" font-family="sans-serif">★</text>
+  <text x="48" y="92" text-anchor="middle" fill="#633806" font-size="10" font-family="sans-serif">maxed out</text>
+</svg>

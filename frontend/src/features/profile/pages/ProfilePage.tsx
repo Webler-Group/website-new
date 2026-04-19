@@ -18,7 +18,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
-import { GetProfileData, UserDetails } from "../types";
+import { GetProfileData, UserBadgeMinimal, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
 import { FeedDetails, FeedListData } from "../../feed/types";
@@ -26,10 +26,11 @@ import { CourseMinimal, UserCoursesListData } from "../../courses/types";
 import RolesEnum from "../../../data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
-import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
+import { FaBan, FaCode, FaCommentAlt, FaIdBadge, FaNewspaper } from "react-icons/fa";
 import { FaBookOpen } from "react-icons/fa6";
 import { LinkContainer } from "react-router-bootstrap";
 import "../profile.css";
+import BadgeSection from "../components/BadgeSection";
 
 const ProfilePage = () => {
     const { sendJsonRequest } = useApi();
@@ -55,6 +56,9 @@ const ProfilePage = () => {
     const [feedPosts, setFeedPosts] = useState<FeedDetails[]>([]);
     const [courses, setCourses] = useState<CourseMinimal[]>([]);
 
+    const [badges, setBadges] = useState<UserBadgeMinimal[]>([]);
+    const [badgeSectionVisible, setBadgeSectionVisible] = useState(false);
+
     const [pageTitle, setPageTitle] = useState("Webler Codes");
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -73,6 +77,7 @@ const ProfilePage = () => {
                 setCodes(result.data.userDetails.codes.slice(0, 3));
                 setQuestions(result.data.userDetails.questions.slice(0, 3));
                 setPageTitle(result.data.userDetails.name);
+                setBadges(result.data.userDetails.badges);
             } else {
                 setUserDetails(null);
             }
@@ -154,6 +159,9 @@ const ProfilePage = () => {
     const showChallengesSection = () => setChallengesSectionVisible(true);
     const closeChallengesSection = () => setChallengesSectionVisible(false);
 
+    const showBadgeSection = () => setBadgeSectionVisible(true);
+    const closeBadgeSection = () => setBadgeSectionVisible(false);
+
     const handleMessage = async () => {
         const result = await sendJsonRequest<CreateDirectMessagesData>("/Channels/CreateDirectMessages", "POST", { userId });
         if (result.data) {
@@ -207,6 +215,7 @@ const ProfilePage = () => {
                     {codesSectionVisible && <CodesSection userId={userDetails.id} onClose={closeCodesSection} />}
                     {questionsSectionVisible && <QuestionsSection userId={userDetails.id} onClose={closeQuestionsSection} />}
                     {challengesSectionVisible && <ChallengesSection userId={userDetails.id} onClose={closeChallengesSection} />}
+                    {badgeSectionVisible && <BadgeSection badges={badges} onClose={closeBadgeSection} />}
 
                     <FollowList
                         options={followListOptions}
@@ -520,6 +529,35 @@ const ProfilePage = () => {
                                         )}
                                     </Card>
                                 )}
+
+
+                                {/* Badges */}
+                                {(badges.length > 0) && (
+                                    <Card className="wb-p-section border mb-3">
+                                        <div className="wb-p-section__header">
+                                            <span className="wb-p-section__title">
+                                                <FaIdBadge className="text-muted me-2" /> Badges
+                                            </span>
+                                            {badges.length > 0 && (
+                                                <Button variant="link" size="sm" className="p-0" onClick={showBadgeSection}>
+                                                    Show All
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div>
+                                            {badges.length > 0 ? (
+                                                [...badges].splice(0, 4).map((badge, index) => (
+                                                    <img src={`/resources/images/badges/${badge.key}.svg`} className="p-1" key={index} />
+                                                ))
+                                            ) : (
+                                                <div className="wb-p-section__empty">
+                                                    <p>No Badge earned yet</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </Card>
+                                )}
+
 
                             </div>
                         </div>
