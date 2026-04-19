@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <ellipse cx="48" cy="48" rx="36" ry="10" fill="none" stroke="#AFA9EC" stroke-width="5" stroke-dasharray="56 16"/>
+  <circle cx="48" cy="48" r="22" fill="#7F77DD" stroke="#534AB7" stroke-width="1.5"/>
+  <ellipse cx="42" cy="44" rx="8" ry="4" fill="#AFA9EC" opacity="0.5" transform="rotate(-20 42 44)"/>
+  <ellipse cx="48" cy="48" rx="36" ry="10" fill="none" stroke="#534AB7" stroke-width="3" stroke-dasharray="0 56 16 999"/>
+  <text x="48" y="88" text-anchor="middle" fill="#3C3489" font-size="10" font-family="sans-serif">plutomania</text>
+</svg>

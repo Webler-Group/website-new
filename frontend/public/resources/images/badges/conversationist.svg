@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1.5"/>
+  <path d="M10 22 Q10 14 18 14 L52 14 Q60 14 60 22 L60 42 Q60 50 52 50 L32 50 L20 62 L24 50 L18 50 Q10 50 10 42 Z" fill="#378ADD" stroke="#185FA5" stroke-width="1.2"/>
+  <path d="M36 46 Q36 38 44 38 L72 38 Q80 38 80 46 L80 66 Q80 74 72 74 L62 74 L68 82 L56 74 L44 74 Q36 74 36 66 Z" fill="#85B7EB" stroke="#185FA5" stroke-width="1.2"/>
+  <circle cx="28" cy="32" r="3" fill="white"/>
+  <circle cx="36" cy="32" r="3" fill="white"/>
+  <circle cx="44" cy="32" r="3" fill="white"/>
+  <circle cx="52" cy="56" r="3" fill="#185FA5"/>
+  <circle cx="60" cy="56" r="3" fill="#185FA5"/>
+  <circle cx="68" cy="56" r="3" fill="#185FA5"/>
+  <text x="48" y="92" text-anchor="middle" fill="#0C447C" font-size="10" font-family="sans-serif">conversationist</text>
+</svg>

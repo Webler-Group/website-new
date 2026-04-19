@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#E6F1FB" stroke="#185FA5" stroke-width="1.5"/>
+  <path d="M16 24 Q16 16 24 16 L72 16 Q80 16 80 24 L80 56 Q80 64 72 64 L48 64 L32 80 L36 64 L24 64 Q16 64 16 56 Z" fill="#378ADD" stroke="#185FA5" stroke-width="1.5"/>
+  <text x="48" y="48" text-anchor="middle" fill="white" font-size="26" font-weight="700" font-family="sans-serif">1</text>
+  <text x="48" y="90" text-anchor="middle" fill="#0C447C" font-size="10" font-family="sans-serif">first voice</text>
+</svg>

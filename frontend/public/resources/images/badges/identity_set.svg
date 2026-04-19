@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <rect x="18" y="28" width="60" height="40" rx="5" fill="#AFA9EC" stroke="#534AB7" stroke-width="1.2"/>
+  <circle cx="32" cy="43" r="8" fill="#534AB7"/>
+  <line x1="46" y1="38" x2="70" y2="38" stroke="#534AB7" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="46" y1="44" x2="68" y2="44" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
+  <line x1="46" y1="50" x2="64" y2="50" stroke="#7F77DD" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="68" cy="62" r="9" fill="#534AB7" stroke="#EEEDFE" stroke-width="2"/>
+  <path d="M63 62 L66 65 L73 58" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="48" y="88" text-anchor="middle" fill="#3C3489" font-size="10" font-family="sans-serif">identity set</text>
+</svg>

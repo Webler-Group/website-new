@@ -42,6 +42,7 @@ const login = asyncHandler(async (req, res) => {
     }
 
     user.lastLoginAt = new Date();
+    await emitBadgeEvent(user, "email_verified");
     await user.save();
 
     if (ip) {
@@ -142,10 +143,8 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         }
     } else {
         // DEVELOPMENT: EMAIL IS ALWAYS VERIFIED
-        // await withTransaction(async (session) => {
-        //     await emitBadgeEvent(user, "email_verified");
-        //     await user.save({ session });
-        // });
+        await emitBadgeEvent(user, "email_verified");
+        await user.save();
     }
 
     res.json({

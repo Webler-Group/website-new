@@ -1,13 +1,6 @@
 export type badge_t = "first_step" |
-    "identity_set" |
-    "hello_world" |
-    "viral_spark" |
-    "first_voice" |
-    "crowd_builder" |
-    "influencer" |
-    "conversationist" |
-    "active_mind" |
     "creator" |
+    "identity_set" |
     "moderator" |
     "level_5" |
     "maxed_out" |
@@ -15,8 +8,16 @@ export type badge_t = "first_step" |
     "xp_grinder" |
     "dedicated" |
     "legend" |
-    "mentor" |
     "og_member" |
+
+    "hello_world" |
+    "viral_spark" |
+    "first_voice" |
+    "crowd_builder" |
+    "influencer" |
+    "conversationist" |
+    "active_mind" |
+    "mentor" |
     "marathoner" |
     "unstoppable";
 
@@ -38,58 +39,6 @@ const badges: iBadge[] = [
     },
     
     {
-        key: "identity_set",
-        description: "Upload avatar",
-        icon: "",
-        xpReward: 20
-    },
-    {
-        key: "hello_world",
-        description: "Start a discussion",
-        icon: "",
-        xpReward: 20
-    },
-
-    {
-        key: "viral_spark",
-        description: "post hit 5 likes",
-        icon: "",
-        xpReward: 20
-    },
-
-    {
-        key: "first_voice",
-        description: "First comment",
-        icon: "",
-        xpReward: 20
-    },
-    {
-        key: "crowd_builder",
-        description: "50 followers",
-        icon: "",
-        xpReward: 20
-    },
-    {
-        key: "influencer",
-        description: "1000 followers",
-        icon: "",
-        xpReward: 20
-    },
-
-    {
-        key: "conversationist",
-        description: "50 comments",
-        icon: "",
-        xpReward: 20
-    },
-    {
-        key: "active_mind",
-        description: "500 comments",
-        icon: "",
-        xpReward: 20
-    },
-
-    {
         key: "creator",
         description: "Become a webler creator",
         icon: "",
@@ -102,6 +51,22 @@ const badges: iBadge[] = [
         icon: "",
         xpReward: 500
     },
+
+
+    {
+        key: "identity_set",
+        description: "Complete your profile setup",
+        icon: "",
+        xpReward: 20
+    },
+
+    {
+        key: "og_member",
+        description: "First 500 users",
+        icon: "",
+        xpReward: 100
+    },
+
 
     {
         key: "level_5",
@@ -144,18 +109,61 @@ const badges: iBadge[] = [
         icon: "",
         xpReward: 0
     },
-    
 
     {
-        key: "mentor",
-        description: "500 liked comments",
+        key: "crowd_builder",
+        description: "50 followers",
         icon: "",
         xpReward: 20
     },
 
     {
-        key: "og_member",
-        description: "First 1000 users",
+        key: "influencer",
+        description: "1000 followers",
+        icon: "",
+        xpReward: 50
+    },
+
+    {
+        key: "hello_world",
+        description: "Start a discussion and earn 1 like",
+        icon: "",
+        xpReward: 2
+    },
+
+
+    {
+        key: "viral_spark",
+        description: "Discussion hit 5 likes",
+        icon: "",
+        xpReward: 20
+    },
+
+
+    {
+        key: "first_voice",
+        description: "First comment",
+        icon: "",
+        xpReward: 4
+    },
+
+    {
+        key: "conversationist",
+        description: "50 comments",
+        icon: "",
+        xpReward: 20
+    },
+
+    {
+        key: "active_mind",
+        description: "500 comments",
+        icon: "",
+        xpReward: 20
+    },
+
+    {
+        key: "mentor",
+        description: "500 liked comments",
         icon: "",
         xpReward: 20
     },

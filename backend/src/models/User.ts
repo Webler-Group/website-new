@@ -5,6 +5,7 @@ import countryCodesEnum from "../data/countryCodes";
 import RolesEnum from "../data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
 import { levelUtils } from "../helpers/userHelper";
+import { emitBadgeEvent } from "../helpers/badgeHelper";
 
 
 class UserBadge {
@@ -93,6 +94,7 @@ export class FeedSettings {
 
     if (this.isModified("xp")) {
         this.level = levelUtils.fromXp(this.xp);
+        await emitBadgeEvent(this, "xp_updated");
     }
 })
 @modelOptions({ schemaOptions: { collection: "users", timestamps: true } })

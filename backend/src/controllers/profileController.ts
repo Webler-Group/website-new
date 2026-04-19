@@ -31,6 +31,9 @@ import { formatCodeMinimal } from "../helpers/codesHelper";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
 import { getBlockedUserIds, hasBlocked, isBlocked } from "../helpers/blockHelper";
+import { emitBadgeEvent } from "../helpers/badgeHelper";
+import BadgeModel from "../models/Badge";
+
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -120,7 +123,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     for (const row of solvedAgg) {
         if (row._id) (solvedChallenges as Record<string, number>)[row._id] = row.count;
     }
-
+    
     res.json({
         success: true,
         data: {
@@ -144,11 +147,13 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 notifications: user.notifications ?? {},
                 codes: codes.map(x => formatCodeMinimal(x)),
                 questions: questions.map(x => formatQuestionMinimal(x)),
-                solvedChallenges
+                solvedChallenges,
+                badges: user.badges
             }
         }
     });
 });
+
 
 const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -173,6 +178,7 @@ const updateProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     user.bio = bio;
     user.countryCode = countryCode;
 
+    await emitBadgeEvent(user, "profile_updated");
     const updatedUser = await user.save();
 
     res.json({
@@ -317,7 +323,11 @@ const follow = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     await withTransaction(async (session) => {
+        const followedUser = await UserModel.findById(userId);
+        if(!followedUser) throw new HttpError("User not found", 404);
         await UserFollowingModel.create([{ user: currentUserId, following: userId }], { session });
+        await emitBadgeEvent(followedUser, "follower_updated");
+        await followedUser.save();
         await sendNotifications({
             title: "New follower",
             actionUser: new Types.ObjectId(currentUserId),
@@ -511,6 +521,8 @@ const uploadProfileAvatarImage = asyncHandler(async (req: IAuthRequest, res) => 
 
     user.avatarFileId = fileDoc._id;
     user.avatarHash = fileDoc.contenthash;
+
+    await emitBadgeEvent(user, "profile_updated");
     await user.save();
 
     res.json({

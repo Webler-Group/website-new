@@ -4,14 +4,28 @@ import UserModel, { User } from "../models/User";
 import BadgeModel from "../models/Badge";
 import { sendNotifications } from "./notificationHelper";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import RolesEnum from "../data/RolesEnum";
+import { getFollowingIds } from "./userHelper";
+import UserFollowingModel from "../models/UserFollowing";
 
 type user_t = User & {_id: Types.ObjectId };
 type badgeRule_t = (user: user_t) => Promise<boolean> | boolean;
 
-export type BadgeEventType = "email_verified";
+export type BadgeEventType = "email_verified" |
+    "role_updated" |
+    "profile_updated" |
+    "xp_updated" |
+    "post_liked" |
+    "follower_updated";
+
 
 const EVENT_BADGE_MAP: Record<BadgeEventType, badge_t[]> = {
-  email_verified: ["first_step"],
+    email_verified: ["first_step", "og_member"],
+    role_updated: ["creator", "moderator"],
+    profile_updated: ["identity_set"],
+    xp_updated: ["level_5", "maxed_out", "plutomania", "xp_grinder", "dedicated", "legend"],
+    follower_updated: ["crowd_builder", "influencer"],
+    post_liked: ["hello_world", "viral_spark"],
 };
 
 
@@ -21,9 +35,71 @@ const BADGE_RULES: Record<badge_t, badgeRule_t> = {
         return user.emailVerified;
     },
 
-    identity_set: (user: user_t) => {
-        return Promise.resolve(false);
+
+    creator: (user: user_t) => {
+        return user.roles.includes(RolesEnum.CREATOR);
     },
+
+
+    moderator: (user: user_t) => {
+        return user.roles.includes(RolesEnum.MODERATOR);
+    },
+
+
+    identity_set: (user: user_t) => {
+        return user.name.length > 0 &&
+            user.bio.length > 0 &&
+            (user.countryCode != undefined && user.countryCode.length > 0) &&
+            (user.avatarHash != undefined && user.avatarHash.length > 0);
+    },
+
+
+    og_member: async(user: user_t) => {
+        const userCount = await UserModel.estimatedDocumentCount();
+        return Promise.resolve((userCount <= 500));
+    },
+
+
+    level_5: (user: user_t) => {
+        return user.level >= 5;
+    },
+
+
+    maxed_out: (user: user_t) => {
+        return user.level >= 30;
+    },
+
+
+    plutomania: (user: user_t) => {
+        return user.xp >= 17000;
+    },
+
+
+    xp_grinder: (user: user_t) => {
+        return user.xp >= 25000;
+    },
+
+
+    dedicated: (user: user_t) => {
+        return user.xp >= 50000;
+    },
+
+
+    legend: (user: user_t) => {
+        return user.xp >= 75000;
+    },
+
+
+    crowd_builder: async(user: user_t) => {
+        const followers = await UserFollowingModel.countDocuments({ following: user._id });
+        return Promise.resolve(followers >= 2);
+    },
+
+    influencer: async(user: user_t) => {
+        const followers = await UserFollowingModel.countDocuments({ following: user._id });
+        return Promise.resolve(followers >= 3);
+    },
+
 
     hello_world: (user: user_t) => {
         return Promise.resolve(false);
@@ -37,14 +113,6 @@ const BADGE_RULES: Record<badge_t, badgeRule_t> = {
         return Promise.resolve(false);
     },
 
-    crowd_builder: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    influencer: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
     conversationist: (user: user_t) => {
         return Promise.resolve(false);
     },
@@ -53,49 +121,16 @@ const BADGE_RULES: Record<badge_t, badgeRule_t> = {
         return Promise.resolve(false);
     },
 
-    creator: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    moderator: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    level_5: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    maxed_out: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    plutomania: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    xp_grinder: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    dedicated: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
-    legend: (user: user_t) => {
-        return Promise.resolve(false);
-    },
-
+   
     mentor: (user: user_t) => {
         return Promise.resolve(false);
     },
 
-    og_member: (user: user_t) => {
-        return Promise.resolve(false);
-    },
 
     marathoner: (user: user_t) => {
         return Promise.resolve(false);
     },
+
 
     unstoppable: (user: user_t) => {
         return Promise.resolve(false);
@@ -103,7 +138,7 @@ const BADGE_RULES: Record<badge_t, badgeRule_t> = {
 }
 
 
-export const unlockUserBadges = async (user: user_t, keys: badge_t[]): Promise<badge_t[]> => {
+const unlockUserBadges = async (user: user_t, keys: badge_t[]): Promise<badge_t[]> => {
 
     const owned = new Set(user.badges.map(b => b.key));
     const unlocked: badge_t[] = [];
@@ -141,12 +176,12 @@ export const unlockUserBadges = async (user: user_t, keys: badge_t[]): Promise<b
             { _id: user._id },
             {
                 $push: {
-                badges: {
-                    $each: updates.map(u => ({
-                    key: u.key,
-                    earnedAt: new Date()
-                    }))
-                }
+                    badges: {
+                        $each: updates.map(u => ({
+                            key: u.key,
+                            earnedAt: new Date()
+                        }))
+                    }
                 },
                 $inc: {
                     xp: updates.reduce((sum, u) => sum + u.xp, 0)

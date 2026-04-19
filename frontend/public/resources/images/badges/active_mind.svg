@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#EEEDFE" stroke="#534AB7" stroke-width="1.5"/>
+  <path d="M22 54 Q14 50 14 40 Q14 28 24 26 Q26 18 34 18 Q38 16 42 20 L42 70 Q32 72 24 68 Q18 64 22 54Z" fill="#7F77DD" stroke="#534AB7" stroke-width="1.2"/>
+  <path d="M54 20 Q58 16 62 18 Q70 18 72 26 Q82 28 82 40 Q82 50 74 54 Q78 64 72 68 Q64 72 54 70 Z" fill="#7F77DD" stroke="#534AB7" stroke-width="1.2"/>
+  <line x1="48" y1="20" x2="48" y2="70" stroke="#534AB7" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M52 26 L42 48 L50 48 L44 70 L56 46 L48 46 Z" fill="#FCDE5A" stroke="#BA7517" stroke-width="1"/>
+  <text x="48" y="88" text-anchor="middle" fill="#3C3489" font-size="10" font-family="sans-serif">active mind</text>
+</svg>

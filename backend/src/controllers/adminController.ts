@@ -26,6 +26,7 @@ import HttpError from "../exceptions/HttpError";
 import FileModel from "../models/File";
 import { deleteSingleFile } from "../helpers/fileHelper";
 import IpModel, { Ip } from "../models/Ip";
+import { emitBadgeEvent } from "../helpers/badgeHelper";
 
 const getUsersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getUsersListSchema, req);
@@ -132,6 +133,8 @@ const updateRoles = asyncHandler(async (req: IAuthRequest, res: Response) => {
     }
 
     user.roles = roles;
+
+    await emitBadgeEvent(user, "role_updated");
     await user.save();
 
     res.json({ success: true, data: { roles: user.roles } });

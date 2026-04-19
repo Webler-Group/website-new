@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <rect width="96" height="96" rx="14" fill="#E1F5EE" stroke="#0F6E56" stroke-width="1.5"/>
+  <circle cx="48" cy="44" r="26" fill="#1D9E75" stroke="#0F6E56" stroke-width="1.5"/>
+  <circle cx="48" cy="44" r="20" fill="#5DCAA5" stroke="#0F6E56" stroke-width="1"/>
+  <text x="48" y="50" text-anchor="middle" fill="#04342C" font-size="18" font-weight="700" font-family="sans-serif">OG</text>
+  <path d="M30 64 L22 78 L36 72 L42 80 Z" fill="#1D9E75" stroke="#0F6E56" stroke-width="1"/>
+  <path d="M66 64 L74 78 L60 72 L54 80 Z" fill="#1D9E75" stroke="#0F6E56" stroke-width="1"/>
+  <text x="48" y="92" text-anchor="middle" fill="#085041" font-size="10" font-family="sans-serif">og member</text>
+</svg>

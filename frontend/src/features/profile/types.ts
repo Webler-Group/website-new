@@ -48,7 +48,8 @@ export interface UserDetails {
         easy: number;
         medium: number;
         hard: number;
-    }
+    };
+    badges: UserBadgeMinimal[];
 }
 
 export interface UserMinimal {
@@ -131,4 +132,8 @@ export interface PublicKeyData {
 
 export interface GetBlockedUsersData {
     users: UserMinimal[];
+}
+
+export interface UserBadgeMinimal {
+    key: string;
 }
