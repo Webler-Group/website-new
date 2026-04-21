@@ -6,7 +6,7 @@ import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, s
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "./userHelper";
 import UpvoteModel from "../models/Upvote";
-import { getBlockedUserIds, isBlocked } from "./blockHelper";
+import { getBlockedUserIds, isBlocked } from "./userHelper";
 
 type PopulatedPost = Post & { _id: Types.ObjectId; user: UserMinimal };
 

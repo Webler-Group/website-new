@@ -78,7 +78,7 @@ export const TagSearch = ({
     }, [input, validTags]);
 
     const getValidTags = async () => {
-        const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
+        const result = await sendJsonRequest<TagListData>(`/Discussion/GetTagList`, "POST");
         if (result.data) {
             setValidTags(result.data.tags);
         }
@@ -181,7 +181,7 @@ const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
     }, []);
 
     const getValidTags = async () => {
-        const result = await sendJsonRequest<TagListData>(`/Tag`, "POST");
+        const result = await sendJsonRequest<TagListData>(`/Discussion/GetTagList`, "POST");
         if (result.data) {
             setValidTags(result.data.tags);
         }

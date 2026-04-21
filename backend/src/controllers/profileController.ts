@@ -23,14 +23,15 @@ import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import { getImageUrl } from "./mediaController";
-import { deleteFollowAndCleanup, formatUserMinimal, generateEmailChangeRecord } from "../helpers/userHelper";
+import { canBlock, deleteFollowAndCleanup, formatUserMinimal, generateEmailChangeRecord, getBlockedUserIds, hasBlocked, isBlocked, MAX_BLOCK_COUNT } from "../helpers/userHelper";
 import { notificationTypeToField, sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { formatCodeMinimal } from "../helpers/codesHelper";
 import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
-import { getBlockedUserIds, hasBlocked, isBlocked } from "../helpers/blockHelper";
+import { BlockModel } from "../models/Block";
+import { blockUserSchema } from "../validation/blockSchema";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -758,6 +759,69 @@ const movePostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true });
 });
 
+const blockUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(blockUserSchema, req);
+    const { targetId } = body;
+    const userId = req.userId!;
+
+    const blocker = await UserModel.findById(userId).lean();
+    const target = await UserModel.findById(targetId).lean();
+
+    if (!blocker || !target) {
+        throw new HttpError("User not found", 404);
+    }
+
+    if (!canBlock(blocker, target)) {
+        throw new HttpError("You cannot block this user", 403);
+    }
+
+    const [exists, blockCount] = await Promise.all([
+        BlockModel.exists({ blocker: userId, blocked: targetId }),
+        BlockModel.countDocuments({ blocker: userId })
+    ]);
+
+    if (exists) {
+        throw new HttpError("Already blocked", 400);
+    }
+
+    if (blockCount >= MAX_BLOCK_COUNT) {
+        throw new HttpError(`Block list limit reached (max ${MAX_BLOCK_COUNT})`, 400);
+    }
+
+    await withTransaction(async (session) => {
+        await BlockModel.create([{ blocker: blocker._id, blocked: target._id }], { session });
+        await deleteFollowAndCleanup(blocker._id, target._id, session);
+        await deleteFollowAndCleanup(target._id, blocker._id, session);
+    });
+
+    res.json({ success: true });
+});
+
+const unblockUser = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(blockUserSchema, req);
+    const { targetId } = body;
+    const userId = req.userId!;
+
+    await BlockModel.deleteOne({ blocker: userId, blocked: targetId });
+
+    res.json({ success: true });
+});
+
+const getBlockedUsers = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const userId = req.userId!;
+
+    const blocked = await BlockModel.find({ blocker: userId })
+        .populate<{ blocked: UserMinimal }>({ path: "blocked", select: USER_MINIMAL_FIELDS })
+        .lean();
+
+    res.json({
+        success: true,
+        data: {
+            users: blocked.map(b => formatUserMinimal(b.blocked))
+        }
+    });
+});
+
 const controller = {
     getProfile,
     updateProfile,
@@ -781,7 +845,10 @@ const controller = {
     getPostImageList,
     deletePostImage,
     createPostImageFolder,
-    movePostImage
+    movePostImage,
+    blockUser,
+    unblockUser,
+    getBlockedUsers
 };
 
 export default controller;

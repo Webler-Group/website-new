@@ -7,6 +7,8 @@ import EmailChangeRecordModel from "../models/EmailChangeRecord";
 import UserFollowingModel from "../models/UserFollowing";
 import {deleteNotifications} from "./notificationHelper";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { BlockModel } from "../models/Block";
+import RolesEnum from "../data/RolesEnum";
 
 const MAX_IPS = 50;
 
@@ -149,6 +151,46 @@ export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId
 }
 
 
+
+export const MAX_BLOCK_COUNT = 100;
+
+export const isBlocked = async (userA: Types.ObjectId | string, userB: Types.ObjectId | string, session?: mongoose.ClientSession) => {
+    const exists = await BlockModel.exists({
+        $or: [
+            { blocker: userA, blocked: userB },
+            { blocker: userB, blocked: userA }
+        ]
+    }).session(session ?? null);
+    return exists !== null;
+}
+
+export const hasBlocked = async (blocker: Types.ObjectId | string, target: Types.ObjectId | string) => {
+    const exists = await BlockModel.exists({ blocker, blocked: target });
+    return exists !== null;
+}
+
+export const getBlockedUserIds = async (userId: Types.ObjectId | string) => {
+    const blocks = await BlockModel.find({
+        $or: [
+            { blocker: userId },
+            { blocked: userId }
+        ]
+    }).lean();
+
+    const ids = new Set<Types.ObjectId>();
+    for (const b of blocks) {
+        if (!b.blocker.equals(userId)) ids.add(b.blocker);
+        if (!b.blocked.equals(userId)) ids.add(b.blocked);
+    }
+    return Array.from(ids);
+}
+
+export const canBlock = (blocker: User & { _id: Types.ObjectId }, target: User & { _id: Types.ObjectId }) => {
+    if (blocker._id.equals(target._id)) return false;
+    if (target.roles.includes(RolesEnum.ADMIN)) return false;
+    if (target.roles.includes(RolesEnum.MODERATOR) && !blocker.roles.includes(RolesEnum.ADMIN)) return false;
+    return true;
+};
 
 export const getFollowingIds = async (userId: Types.ObjectId | string): Promise<Types.ObjectId[]> => {
     const relations = await UserFollowingModel.find({ user: userId })

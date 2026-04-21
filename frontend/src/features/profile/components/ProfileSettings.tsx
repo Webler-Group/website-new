@@ -105,14 +105,14 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     const fetchBlockedUsers = async () => {
         if (!userInfo || userInfo.id !== userDetails.id) return;
-        const result = await sendJsonRequest<GetBlockedUsersData>(`/Block/GetBlockedUsers`, "POST", {});
+        const result = await sendJsonRequest<GetBlockedUsersData>(`/Profile/GetBlockedUsers`, "POST", {});
         if (result.data) {
             setBlockedUsers(result.data.users);
         }
     };
 
     const unblockUser = async (targetId: string) => {
-        const result = await sendJsonRequest(`/Block/UnblockUser`, "POST", { targetId });
+        const result = await sendJsonRequest(`/Profile/UnblockUser`, "POST", { targetId });
         if (result.success) {
             setBlockedUsers(prev => prev.filter(u => u.id !== targetId));
         }

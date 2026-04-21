@@ -17,7 +17,7 @@ import { config } from "../confg";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import { Notification } from "../models/Notification";
-import { isBlocked } from "./blockHelper";
+import { isBlocked } from "./userHelper";
 
 export interface PostAttachmentDetails {
     id: Types.ObjectId;

@@ -36,7 +36,7 @@ import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
-import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
+import { getBlockedUserIds, isBlocked } from "../helpers/userHelper";
 import { getImageUrl } from "./mediaController";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {

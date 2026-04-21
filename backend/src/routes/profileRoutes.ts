@@ -58,5 +58,11 @@ router.route("/CreateFolder")
     .post(profileController.createPostImageFolder);
 router.route("/MoveFileEntry")
     .post(profileController.movePostImage);
+router.route("/BlockUser")
+    .post(profileController.blockUser);
+router.route("/UnblockUser")
+    .post(profileController.unblockUser);
+router.route("/GetBlockedUsers")
+    .post(profileController.getBlockedUsers);
 
 export default router;

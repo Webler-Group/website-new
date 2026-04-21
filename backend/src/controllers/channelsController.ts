@@ -41,7 +41,7 @@ import { getAttachmentsByPostId, PostAttachmentDetails } from "../helpers/postsH
 import { formatUserMinimal } from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { isBlocked } from "../helpers/blockHelper";
+import { isBlocked } from "../helpers/userHelper";
 
 interface ChannelResponse {
     id: Types.ObjectId;

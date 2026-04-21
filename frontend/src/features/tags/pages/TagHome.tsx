@@ -20,7 +20,7 @@ const TagHomePage = () => {
             e.preventDefault();
             setLoadingText("Running...");
             const tags = getJobEntry();
-            const result = await sendJsonRequest(`/Tag/ExecuteJobs`, "POST", {
+            const result = await sendJsonRequest(`/Discussion/ExecuteTagJobs`, "POST", {
                 tags,
                 action
             });

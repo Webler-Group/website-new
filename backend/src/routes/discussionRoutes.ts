@@ -4,6 +4,8 @@ import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import requestLimiter from "../middleware/requestLimiter";
 import verifyEmail from "../middleware/verifyEmail";
+import requireRoles from "../middleware/requireRoles";
+import RolesEnum from "../data/RolesEnum";
 
 const router = express.Router();
 
@@ -17,6 +19,10 @@ router.route("/GetQuestionReplies")
     .post(discussionController.getReplies);
 router.route("/GetVoters")
     .post(discussionController.getVotersList);
+router.route("/GetTagList")
+    .post(discussionController.getTagList);
+router.route("/GetTag")
+    .post(discussionController.getTag);
 
 router.use(protectRoute);
 
@@ -40,5 +46,7 @@ router.route("/FollowQuestion")
     .post(discussionController.followQuestion)
 router.route("/UnfollowQuestion")
     .post(discussionController.unfollowQuestion)
+router.route("/ExecuteTagJobs")
+    .post(requireRoles([RolesEnum.ADMIN, RolesEnum.MODERATOR]), discussionController.executeTagJobs);
 
 export default router;

@@ -20,7 +20,7 @@ import { sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
-import { getBlockedUserIds, isBlocked } from "../helpers/blockHelper";
+import { getBlockedUserIds, isBlocked } from "../helpers/userHelper";
 
 const createCode = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCodeSchema, req);

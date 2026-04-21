@@ -12,16 +12,16 @@ import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { createQuestionSchema, createReplySchema, deleteQuestionSchema, deleteReplySchema, editQuestionSchema, editReplySchema, followQuestionSchema, getQuestionListSchema, getQuestionSchema, getRepliesSchema, getVotersListSchema, toggleAcceptedAnswerSchema, unfollowQuestionSchema, votePostSchema } from "../validation/discussionSchema";
+import { executeTagJobsSchema, getTagSchema } from "../validation/tagsSchema";
 import RolesEnum from "../data/RolesEnum";
 import { getImageUrl } from "./mediaController";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { deletePostsAndCleanup, getAttachmentsByPostId, PostAttachmentDetails, savePost } from "../helpers/postsHelper";
 import { formatUserMinimal } from "../helpers/userHelper";
 import { sendNotifications } from "../helpers/notificationHelper";
-import { getOrCreateTagsByNames } from "../helpers/tagsHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { formatQuestionMinimal } from "../helpers/discussionHelper";
+import { formatQuestionMinimal, getOrCreateTagsByNames } from "../helpers/discussionHelper";
 
 const createQuestion = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createQuestionSchema, req);
@@ -581,6 +581,48 @@ const getVotersList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     res.json({ success: true, data: { users } });
 });
 
+const executeTagJobs = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(executeTagJobsSchema, req);
+    const { tags, action } = body;
+
+    if (action === "create") {
+        await getOrCreateTagsByNames(tags);
+    } else if (action === "delete") {
+        await TagModel.deleteMany({ name: { $in: tags } });
+    }
+
+    res.json({ success: true });
+});
+
+const getTagList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const tags = await TagModel.find().sort({ name: 1 }).lean();
+
+    res.json({
+        success: true,
+        data: {
+            tags: tags.map(tag => tag.name)
+        }
+    });
+});
+
+const getTag = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getTagSchema, req);
+    const { tagName } = body;
+
+    const tag = await TagModel.findOne({ name: tagName }).lean();
+
+    if (!tag) {
+        throw new HttpError("Tag not found", 404);
+    }
+
+    res.json({
+        success: true,
+        data: {
+            tag: { name: tag.name, id: tag._id }
+        }
+    });
+});
+
 const discussController = {
     createQuestion,
     getQuestionList,
@@ -595,7 +637,10 @@ const discussController = {
     votePost,
     followQuestion,
     unfollowQuestion,
-    getVotersList
+    getVotersList,
+    executeTagJobs,
+    getTagList,
+    getTag
 };
 
 export default discussController;

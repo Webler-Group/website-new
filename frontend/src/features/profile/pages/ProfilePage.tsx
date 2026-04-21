@@ -170,7 +170,7 @@ const ProfilePage = () => {
 
     const blockUser = async () => {
         if (!userDetails) return;
-        const result = await sendJsonRequest(`/Block/BlockUser`, "POST", { targetId: userDetails.id });
+        const result = await sendJsonRequest(`/Profile/BlockUser`, "POST", { targetId: userDetails.id });
         if (result.success) {
             setUserDetails((ud) => ud ? { ...ud, isBlocked: true } : null);
             showNotification("success", "User blocked successfully");
@@ -181,7 +181,7 @@ const ProfilePage = () => {
 
     const unblockUser = async () => {
         if (!userDetails) return;
-        const result = await sendJsonRequest(`/Block/UnblockUser`, "POST", { targetId: userDetails.id });
+        const result = await sendJsonRequest(`/Profile/UnblockUser`, "POST", { targetId: userDetails.id });
         if (result.success) {
             setUserDetails((ud) => ud ? { ...ud, isBlocked: false } : null);
             showNotification("success", "User unblocked successfully");
