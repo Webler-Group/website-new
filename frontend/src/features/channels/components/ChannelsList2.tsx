@@ -168,7 +168,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                             <Nav.Link className="border border-primary" eventKey="channels">Channels</Nav.Link>
                         </Nav.Item>
                         <Nav.Item className="position-relative">
-                            <Nav.Link className="border border-primary" eventKey="invites">Invites</Nav.Link>
+                            <Nav.Link size="sm" className="border border-primary" eventKey="invites">Invites</Nav.Link>
 
                             {invites.totalCount > 0 && (
                                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
