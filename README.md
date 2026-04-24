@@ -51,6 +51,3 @@ MongoDB Atlas connection URI requires `?directConnection=true`
 1. Open /backend directory (third terminal)
 2. Install ioi/isolate, compilers and other dependencies `node dist/cli/compiler-setup.js`
 3. Run worker `npm run codeRunner`
-
-## Contributers
-This project is open-souce and free to contribute. Full list of contributers to this project and its previous versions is soon collected and exhibited here; Since the GitHub list is flawed and incomplete plus not including previous versions.
