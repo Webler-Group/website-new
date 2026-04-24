@@ -165,7 +165,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
                 <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || "channels")}>
                     <Nav variant="pills" className="mb-3 gap-2">
                         <Nav.Item className="position-relative">
-                            <Nav.Link className="border border-primary" eventKey="channels">Channels</Nav.Link>
+                            <Nav.Link size="sm" className="border border-primary" eventKey="channels">Channels</Nav.Link>
                         </Nav.Item>
                         <Nav.Item className="position-relative">
                             <Nav.Link size="sm" className="border border-primary" eventKey="invites">Invites</Nav.Link>
