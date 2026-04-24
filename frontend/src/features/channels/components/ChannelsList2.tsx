@@ -157,7 +157,7 @@ const ChannelsList2 = ({ onChannelSelect, currentChannelId, onExit }: ChannelsLi
             <div className="d-flex flex-column p-2">
 
                 <div className="mb-3">
-                    <Button variant="primary" onClick={() => setCreateGroupModalVisible(true)}>
+                    <Button size="sm" variant="primary" onClick={() => setCreateGroupModalVisible(true)}>
                         + Create Group
                     </Button>
                 </div>
