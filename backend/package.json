@@ -44,14 +44,18 @@
     "mongoose": "^9.2.4",
     "multer": "^2.1.1",
     "node-cron": "^4.2.1",
-    "nodemailer": "^8.0.1",
-    "sharp": "^0.34.5",
-    "showdown": "^2.1.0",
+    "nodemailer": "^9.0.3",
+    "sharp": "^0.35.3",
     "sitemap": "^9.0.1",
     "socket.io": "^4.8.3",
     "socket.io-client": "^4.8.3",
     "uuid": "^13.0.0",
     "web-push": "^3.6.7",
     "zod": "^4.3.6"
+  },
+  "allowScripts": {
+    "bcrypt@6.0.0": true,
+    "canvas@3.2.3": true,
+    "sharp@0.34.5": true
   }
 }

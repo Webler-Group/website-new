@@ -8,7 +8,7 @@ export const getUsersListSchema = z.object({
         count: countPerPageSchema,
         page: pageSchema,
         filter: filterSchema([1, 2, 3, 4]).optional(),
-        role: z.enum(Object.values(RolesEnum) as [string, ...string[]]).optional(),
+        role: z.enum(RolesEnum, "Invalid role").optional(),
         active: z.boolean().optional()
     })
 });

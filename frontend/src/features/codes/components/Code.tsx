@@ -61,7 +61,7 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
             {/* Right: date + name + avatar */}
             {isUser(code.user) && (
                 <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-codes-user-meta">
-                    <small className="text-muted wb-code-timestamp">{DateUtils.format(new Date(code.updatedAt || code.createdAt!))}</small>
+                    <small className="text-muted wb-code-timestamp">{DateUtils.format(new Date(code.updatedAt))}</small>
                     {!isCompact && (
                         <div className="d-flex align-items-center gap-1 mt-1">
                             <ProfileName userId={code.user.id} userName={code.user.name} />

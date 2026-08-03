@@ -21,6 +21,7 @@ import UserSearch from "../../../components/UserSearch";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import { ChannelDetails, GroupChangeRoleData, GroupInviteUserData, GroupRenameData, InviteDetails, MuteChannelData } from "../types";
 import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
+import ChannelTypeEnum from "../../../data/ChannelTypeEnum";
 
 interface ChannelRoomSettingsProps {
     channel: ChannelDetails;
@@ -194,7 +195,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
-                <Modal.Body>You won't be able to join again unless you are reinvited.</Modal.Body>
+                <Modal.Body>If you are the only participant of this channel and leave, the channel will be deleted.</Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={closeLeaveModal}>Cancel</Button>
                     <Button variant="danger" onClick={handleLeave}>Leave</Button>
@@ -247,7 +248,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                             <Nav.Item>
                                 <Nav.Link eventKey="general">General</Nav.Link>
                             </Nav.Item>
-                            {channel.type == 2 && (
+                            {channel.type == ChannelTypeEnum.GROUP && (
                                 <Nav.Item>
                                     <Nav.Link eventKey="members">Members</Nav.Link>
                                 </Nav.Item>
@@ -258,7 +259,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                     <Col sm={9}>
                         <Tab.Content>
                             {/* Members Tab */}
-                            {channel.type == 2 && (
+                            {channel.type == ChannelTypeEnum.GROUP && (
                                 <Tab.Pane eventKey="members">
                                     {isAdmin && (
                                         <div className="mb-3">
@@ -347,7 +348,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
 
                             {/* General Tab */}
                             <Tab.Pane eventKey="general">
-                                {channel.type == 2 && isOwner && (
+                                {channel.type == ChannelTypeEnum.GROUP && isOwner && (
                                     <div className="mb-3">
                                         <Form.Label>Channel Name</Form.Label>
                                         <InputGroup>
@@ -369,7 +370,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
                                     <ToggleSwitch value={notificationsEnabled} onChange={(e) => toggleNotifications((e.target as HTMLInputElement).checked)} />
                                 </div>
 
-                                {(channel.type == 1 || isOwner) ? (
+                                {(channel.type == ChannelTypeEnum.GROUP && isOwner) ? (
                                     <div>
                                         <Button size="sm" variant="danger" onClick={() => setDeleteModalVisible(true)}>
                                             Delete Channel

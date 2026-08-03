@@ -30,14 +30,13 @@ import { parseWithZod } from "../utils/zodUtils";
 import RolesEnum from "../data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
-import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
+import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import {fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helpers/userHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
 import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/userHelper";
-import { getImageUrl } from "./mediaController";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createFeedSchema, req);
@@ -92,71 +91,53 @@ const getUserReactions = asyncHandler(async (req: IAuthRequest, res: Response) =
     const parentObjectId = new mongoose.Types.ObjectId(parentId);
     const currentUserObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-    const [reactions, totalCount] = await Promise.all([
-        UpvoteModel.aggregate<{
-            _id: Types.ObjectId;
-            user: UserMinimal;
-            reaction: ReactionsEnum;
-        }>([
-            { $match: { parentId: parentObjectId } },
-            { $sort: { _id: -1 } },
-            { $skip: skip },
-            { $limit: count },
-            {
-                $lookup: {
-                    from: "users",
-                    localField: "user",
-                    foreignField: "_id",
-                    as: "userDetails"
-                }
-            },
-            { $unwind: "$userDetails" },
-            {
-                $lookup: {
-                    from: "userfollowings",
-                    let: { targetUserId: "$user" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        { $eq: ["$user", currentUserObjectId] },
-                                        { $eq: ["$following", "$$targetUserId"] }
-                                    ]
-                                }
-                            }
-                        }
-                    ],
-                    as: "followingDetails"
-                }
-            },
-            {
-                $project: {
-                    reaction: { $ifNull: ["$reaction", ReactionsEnum.LIKE] },
-                    user: {
-                        _id: "$userDetails._id",
-                        name: "$userDetails.name",
-                        avatarHash: "$userDetails.avatarHash",
-                        level: "$userDetails.level",
-                        roles: "$userDetails.roles",
-                        countryCode: { $ifNull: ["$userDetails.countryCode", null] },
-                        isFollowing: { $gt: [{ $size: "$followingDetails" }, 0] }
-                    }
-                }
-            }
-        ]),
-        UpvoteModel.countDocuments({ parentId })
+    const [upvotes, totalCount] = await Promise.all([
+        UpvoteModel.find({ parentId: parentObjectId })
+            .sort({ _id: -1 })
+            .skip(skip)
+            .limit(count)
+            .lean(),
+        UpvoteModel.countDocuments({ parentId: parentObjectId })
     ]);
+
+    const reactorIds: Types.ObjectId[] = upvotes.map(u => u.user);
+
+    const [users, followings] = await Promise.all([
+        UserModel.find({ _id: { $in: reactorIds } })
+            .select(USER_MINIMAL_FIELDS)
+            .lean<UserMinimal[]>(),
+        UserFollowingModel.find({
+            user: currentUserObjectId,
+            following: { $in: reactorIds }
+        }).lean()
+    ]);
+
+    const usersById = new Map(users.map(u => [u._id.toString(), u]));
+    const followedSet = new Set(followings.map(f => f.following.toString()));
+
+    const userReactions = upvotes.reduce<Array<{ id: Types.ObjectId; user: ReturnType<typeof formatUserMinimal>; reaction: ReactionsEnum }>>((acc, upvote) => {
+        const user = usersById.get(upvote.user.toString());
+        if (!user) return acc;
+
+        const formattedUser = {
+            ...formatUserMinimal(user),
+            isFollowing: followedSet.has(upvote.user.toString())
+        };
+
+        acc.push({
+            id: upvote._id,
+            user: formattedUser,
+            reaction: upvote.reaction ?? ReactionsEnum.LIKE
+        });
+
+        return acc;
+    }, []);
 
     res.json({
         success: true,
         data: {
             count: totalCount,
-            userReactions: reactions.map(x => ({
-                id: x._id,
-                user: formatUserMinimal(x.user),
-                reaction: x.reaction
-            }))
+            userReactions
         }
     });
 });

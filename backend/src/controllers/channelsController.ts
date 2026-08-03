@@ -3,7 +3,7 @@ import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import ChannelModel, { Channel } from "../models/Channel";
 import ChannelInviteModel from "../models/ChannelInvite";
-import ChannelParticipantModel from "../models/ChannelParticipant";
+import ChannelParticipantModel, { ChannelParticipant } from "../models/ChannelParticipant";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import ChannelMessageModel, { ChannelMessage } from "../models/ChannelMessage";
 import { Socket } from "socket.io";
@@ -424,13 +424,18 @@ const leaveChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     await withTransaction(async (session) => {
         await ChannelParticipantModel.deleteOne({ _id: participant._id }, { session });
 
-        const leaveMessage = new ChannelMessageModel({
-            _type: ChannelMessageTypeEnum.USER_LEFT,
-            content: "{action_user} left",
-            channel: channelId,
-            user: currentUserId
-        });
-        await saveChannelMessage(leaveMessage, session);
+        const participantCount = await ChannelParticipantModel.countDocuments({ channel: channelId });
+        if (participantCount === 0) {
+            await deleteChannelAndCleanup(new Types.ObjectId(channelId), session);
+        } else {
+            const leaveMessage = new ChannelMessageModel({
+                _type: ChannelMessageTypeEnum.USER_LEFT,
+                content: "{action_user} left",
+                channel: channelId,
+                user: currentUserId
+            });
+            await saveChannelMessage(leaveMessage, session);
+        }
     });
 
     res.json({ success: true });
@@ -588,7 +593,7 @@ const deleteChannel = asyncHandler(async (req: IAuthRequest, res: Response) => {
     if (!participant) {
         throw new HttpError("Not a member of this channel", 403);
     }
-    if (channel._type !== ChannelTypeEnum.DM && participant.role !== ChannelRolesEnum.OWNER) {
+    if (channel._type === ChannelTypeEnum.DM || participant.role !== ChannelRolesEnum.OWNER) {
         throw new HttpError("Unauthorized", 403);
     }
 
@@ -685,7 +690,7 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
             throw new Error("Not a member of this channel");
         }
 
-        if(channel._type === ChannelTypeEnum.DM && await isBlocked(channel.createdBy, channel.DMUser!)) {
+        if (channel._type === ChannelTypeEnum.DM && await isBlocked(channel.createdBy, channel.DMUser!)) {
             throw new Error("You cannot send messages to this user");
         }
 

@@ -86,7 +86,7 @@ const getCodeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     switch (filter) {
         case 1:
-            dbQuery = dbQuery.where({ isPublic: true }).sort({ createdAt: "desc" });
+            dbQuery = dbQuery.where({ isPublic: true }).sort({ updatedAt: "desc" });
             break;
         case 2:
             dbQuery = dbQuery.where({ isPublic: true }).sort({ votes: "desc" });
