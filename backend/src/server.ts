@@ -19,7 +19,6 @@ import notificationRoutes from "./routes/notificationRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import http from "http";
 import { config } from "./confg";
-import { initCronJobs } from "./services/cronJobs";
 import { init } from "./config/socketServer";
 import { registerHandlersWS as channelsregisterHandlersWS } from "./controllers/channelsController";
 import { initKeystore } from "./services/pushService";
@@ -40,10 +39,6 @@ async function main() {
     await connectDB();
 
     await initKeystore();
-
-    if (config.nodeEnv == "production") {
-        initCronJobs();
-    }
 
     app.use("/media", mediaRoutes);
 
