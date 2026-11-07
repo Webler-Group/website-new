@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
@@ -17,6 +17,8 @@ import { WeblerBadge } from "../../../components/InputTags";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import ReactionsList from "../../../components/reactions/ReactionsList";
+import NotificationToast from "../../../components/NotificationToast";
+import { copyToClipboard } from "../../../utils/ClipboardUtils";
 import QuestionPlaceholder from "../components/QuestionPlaceholder";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import MdEditorField from "../../../components/MdEditorField";
@@ -30,6 +32,8 @@ const DiscussPostPage = () => {
     const { userInfo } = useAuth();
     const [question, setQuestion] = useState<QuestionDetails | null>(null);
     const [message, setMessage] = useState(["", ""]);
+    const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const closeNotification = useCallback(() => setNotification(null), []);
     const [loading, setLoading] = useState(false);
     const [answersLoading, setAnswersLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -355,6 +359,14 @@ const DiscussPostPage = () => {
         setVotesModalVisible(true);
     }
 
+    const handleShare = async () => {
+        if (await copyToClipboard(window.location.href)) {
+            setNotification({ type: "success", message: "Link copied to clipboard" });
+        } else {
+            setNotification({ type: "error", message: "Could not copy link" });
+        }
+    };
+
     let placeholders = [];
     for (let i = 0; i < answersPerPage; ++i) {
         placeholders.push(<QuestionPlaceholder key={i} />);
@@ -363,6 +375,7 @@ const DiscussPostPage = () => {
     return (
         question !== null ?
             <>
+                <NotificationToast notification={notification} onClose={closeNotification} />
                 <Modal show={deleteModalVisiblie} onHide={closeDeleteModal} centered>
                     <Modal.Header closeButton>
                         <Modal.Title>Are you sure?</Modal.Title>
@@ -401,7 +414,7 @@ const DiscussPostPage = () => {
                                             </Dropdown.Item>
                                         </>
                                     }
-                                    <Dropdown.Item onClick={() => navigator.clipboard.writeText(window.location.href)}>
+                                    <Dropdown.Item onClick={handleShare}>
                                         Share
                                     </Dropdown.Item>
                                     {

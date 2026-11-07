@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { FormLabel, Modal } from 'react-bootstrap';
 import { FaCopy, FaShare, FaShareNodes } from 'react-icons/fa6';
 import MdEditorField from '../../../components/MdEditorField';
+import { copyToClipboard } from '../../../utils/ClipboardUtils';
 
 interface ShareModalProps {
   show: boolean;
@@ -13,7 +14,7 @@ interface ShareModalProps {
 const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
   const [shareMessage, setShareMessage] = useState('');
   const [isSharing, setIsSharing] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
   const [tags] = useState<string[]>([]);
 
   const shareUrl = window.location.origin + `/feed/${feedId}`;
@@ -26,9 +27,8 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
   };
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopyState(await copyToClipboard(shareUrl) ? 'copied' : 'failed');
+    setTimeout(() => setCopyState('idle'), 2000);
   };
 
   return (
@@ -63,7 +63,7 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
             onClick={handleCopyLink}
           >
             <FaCopy />
-            {copied ? 'Copied!' : 'Copy'}
+            {copyState === 'copied' ? 'Copied!' : copyState === 'failed' ? 'Copy failed' : 'Copy'}
           </button>
         </div>
       </Modal.Body>

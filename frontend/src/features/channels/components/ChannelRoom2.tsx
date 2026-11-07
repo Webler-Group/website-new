@@ -16,6 +16,8 @@ import { ChannelDetails, ChannelMessageDetails, ChannelParticipantDetails, GetCh
 import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
 import ImagePreview from "../../../components/ImagePreview";
 import FileExplorer from "../../../components/file-explorer/FileExplorer";
+import NotificationToast from "../../../components/NotificationToast";
+import { copyToClipboard } from "../../../utils/ClipboardUtils";
 
 interface ChannelRoomProps {
     channelId: string;
@@ -70,6 +72,8 @@ const AttachDropdown = ({ onCode, onImage }: { onCode: () => void; onImage: () =
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [channel, setChannel] = useState<ChannelDetails | null>(null);
     const [messagesFromDate, setMessagesFromDate] = useState<Date | null>(null);
+    const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const closeNotification = useCallback(() => setNotification(null), []);
     const { userInfo } = useAuth();
     const onChannelJoin = (newParticipant: ChannelParticipantDetails) => {
         setChannel(prev => {
@@ -376,11 +380,15 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         setEditedMessage(null);
     }
 
-    const onContextCopy = () => {
-        if (selectedMessage) {
-            navigator.clipboard.writeText(selectedMessage.content);
-        }
+    const onContextCopy = async () => {
+        const content = selectedMessage?.content;
         setSelectedMessage(null);
+        if (content === undefined) return;
+        if (await copyToClipboard(content)) {
+            setNotification({ type: "success", message: "Message copied" });
+        } else {
+            setNotification({ type: "error", message: "Could not copy message" });
+        }
     }
 
     const onContextDelete = () => {
@@ -430,6 +438,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
     return (
         <div className="d-flex flex-column" style={{ height: "100dvh" }}>
+            <NotificationToast notification={notification} onClose={closeNotification} />
             {
                 channel !== null ?
                     <>

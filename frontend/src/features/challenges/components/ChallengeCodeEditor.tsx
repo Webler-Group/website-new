@@ -1,9 +1,11 @@
 import { Button, Dropdown, Modal } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
-import { useEffect, useState } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import CodeEditor from "../../compiler-playground/components/CodeEditor";
 import useEditorOptions from "../../compiler-playground/hooks/useEditorOptions";
+import useVisualViewport from "../../compiler-playground/hooks/useVisualViewport";
+import useUnsavedChangesGuard from "../../compiler-playground/hooks/useUnsavedChangesGuard";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import Loader from "../../../components/Loader";
 import { useSnackbar } from "../../../context/SnackbarProvider";
@@ -25,8 +27,14 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const [loading, setLoading] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
     const { editorOptions } = useEditorOptions();
+    const { viewport } = useVisualViewport();
     const { showMessage } = useSnackbar();
     const [title, setTitle] = useState(challenge.title);
+
+    // Guards tab close / reload and in-app navigation (e.g. browser back) while the editor is open
+    const hasUnsavedChanges = language !== null && code !== null && source !== code.source;
+    const { blocker } = useUnsavedChangesGuard(hasUnsavedChanges);
+    const navigationBlocked = blocker.state === "blocked";
 
     useEffect(() => {
         if (!language) return;
@@ -66,8 +74,9 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
         setLoading(false);
     }
 
+    /** Returns true when the code was saved */
     const handleSave = async () => {
-        if(!code) return;
+        if(!code) return false;
         setLoading(true);
 
         const result = await sendJsonRequest<SaveChallengeCodeData>("/Challenge/SaveChallengeCode", "POST", {
@@ -81,11 +90,13 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
             setSource(result.data.source);
 
             showMessage("Code saved successfully");
-        } else {
-            showMessage("Code failed to save");
+            setLoading(false);
+            return true;
         }
 
+        showMessage("Code failed to save");
         setLoading(false);
+        return false;
     }
 
     const handleExit = () => {
@@ -96,19 +107,35 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
         }
     }
 
+    const cancelExit = () => {
+        setShowExitModal(false);
+        if (navigationBlocked) blocker.reset?.();
+    };
+
     const confirmExit = () => {
         setShowExitModal(false);
-        onExit();
+        if (navigationBlocked) {
+            // Leaving the page entirely (browser back / link) - the page navigation closes the editor
+            blocker.proceed?.();
+        } else {
+            onExit();
+        }
     };
 
     const saveAndExit = async () => {
-        await handleSave();
-        confirmExit();
+        if (await handleSave()) {
+            confirmExit();
+        } else {
+            cancelExit();
+        }
     };
+
+    // Only expose the visible height (excludes the mobile virtual keyboard) to the editor tabs
+    const viewportStyle = viewport ? ({ "--wb-viewport-height": `${viewport.height}px` } as CSSProperties) : undefined;
 
     return (
         <>
-            <Modal style={{ zIndex: "1060" }} backdropClassName="wb-challenges-editor__exit-modal__backdrop" show={showExitModal} onHide={() => setShowExitModal(false)} centered>
+            <Modal style={{ zIndex: "1060" }} backdropClassName="wb-challenges-editor__exit-modal__backdrop" show={showExitModal || navigationBlocked} onHide={cancelExit} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Unsaved Changes</Modal.Title>
                 </Modal.Header>
@@ -131,7 +158,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                 className="p-0 m-0"
                 contentClassName="h-100"
             >
-                <Modal.Body className="p-0 m-0 d-flex flex-column">
+                <Modal.Body className="p-0 m-0 d-flex flex-column" style={viewportStyle}>
                     <div className="d-flex align-items-center justify-content-between border-bottom bg-white p-1" style={{ height: "44px" }}>
                         <div className="d-flex align-items-center">
                             <Button variant="link" className="text-secondary" onClick={handleExit}>
@@ -160,7 +187,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                                     js={js}
                                     setJs={setJs}
                                     options={editorOptions}
-                                    tabHeightStyle="calc(100dvh - 85px)"
+                                    tabHeightStyle="calc(var(--wb-viewport-height, 100dvh) - 85px)"
                                     challenge={challenge}
                                     submission={code.challenge.lastSubmission}
                                 />

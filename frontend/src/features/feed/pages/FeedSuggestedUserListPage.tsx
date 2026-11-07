@@ -7,6 +7,7 @@ import { FeedSuggestedUserData } from "../types";
 import { UserMinimal } from "../../profile/types";
 import { useAuth } from "../../auth/context/authContext.tsx";
 import NotificationToast from "../../../components/NotificationToast.tsx";
+import { copyToClipboard } from "../../../utils/ClipboardUtils";
 import FollowListProfile from "../../profile/components/FollowListProfile.tsx";
 import Loader from "../../../components/Loader.tsx";
 
@@ -51,9 +52,12 @@ const FeedSuggestedUserListPage = () => {
     };
 
     const handleInvite = async () => {
-        const link = `${window.location.host}/Profile/${userInfo?.id}`;
-        await navigator.clipboard.writeText(link);
-        setNotification({ type: "success", message: "Link copied!" });
+        const link = `${window.location.origin}/Profile/${userInfo?.id}`;
+        if (await copyToClipboard(link)) {
+            setNotification({ type: "success", message: "Link copied!" });
+        } else {
+            setNotification({ type: "error", message: "Could not copy link" });
+        }
     };
 
     return (

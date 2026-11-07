@@ -140,6 +140,33 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [editorTabs, toggleConsole, challenge]);
 
+    // When the available height changes (e.g. the virtual keyboard opens on mobile and the
+    // container shrinks), make Ace re-measure and keep the cursor visible above the keyboard.
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container || typeof ResizeObserver === "undefined") return;
+
+        let frame = 0;
+        const observer = new ResizeObserver(() => {
+            cancelAnimationFrame(frame);
+            frame = requestAnimationFrame(() => {
+                Object.values(aceRefs.current).forEach((aceComponent) => {
+                    const editor = aceComponent?.editor;
+                    if (!editor) return;
+                    editor.resize();
+                    if (editor.isFocused()) {
+                        editor.renderer.scrollCursorIntoView();
+                    }
+                });
+            });
+        });
+        observer.observe(container);
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+        };
+    }, []);
+
     const onTabSelect = (key: string | null) => {
         if (key) setActiveKey(key);
     };
@@ -168,6 +195,13 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                     showPrintMargin={false}
                     wrapEnabled={options.lineWrap}
                     setOptions={{ useWorker: false, tabSize: 2 }}
+                    onFocus={(_e, editor) => {
+                        // Keyboard animation finishes after focus; re-check once the viewport settled
+                        setTimeout(() => {
+                            editor?.resize();
+                            editor?.renderer.scrollCursorIntoView();
+                        }, 350);
+                    }}
                     editorProps={{ $blockScrolling: true }}
                     style={{ height: "100%", overscrollBehavior: "contain" }}
                 />

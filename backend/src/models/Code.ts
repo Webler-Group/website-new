@@ -46,10 +46,10 @@ export class Code {
     @prop({ ref: "Challenge", default: null })
     challenge!: Types.ObjectId | null;
 
-    @prop({ default: Date.now() })
+    @prop({ default: Date.now })
     createdAt!: Date;
     
-    @prop({ default: Date.now() })
+    @prop({ default: Date.now })
     updatedAt!: Date;
 }
 

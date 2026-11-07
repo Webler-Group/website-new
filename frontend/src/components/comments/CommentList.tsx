@@ -16,9 +16,19 @@ interface CommentListProps {
     findPost: { id: string; isReply: boolean } | null;
     options: UseCommentsOptions;
     setCommentCount?: (setter: (prev: number) => number) => void;
+    /**
+     * Store for unsent comment texts. Pass a store owned by the parent page to keep drafts
+     * even when CommentList unmounts (e.g. closing an offcanvas). Keys: "new", "reply:<id>", "edit:<id>".
+     */
+    drafts?: Map<string, string>;
 }
 
-const CommentList: React.FC<CommentListProps> = ({ findPost, options, setCommentCount }) => {
+const getDraftKey = (editedPost: CommmentDetails | null, parentId: string | null) =>
+    editedPost ? `edit:${editedPost.id}` : parentId ? `reply:${parentId}` : "new";
+
+const CommentList: React.FC<CommentListProps> = ({ findPost, options, setCommentCount, drafts }) => {
+    const localDraftsRef = useRef(new Map<string, string>());
+    const draftStore = drafts ?? localDraftsRef.current;
     const [showAllComments, setShowAllComments] = useState(findPost?.isReply ? false : true);
     const [filter, setFilter] = useState(findPost ? 2 : 1);
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
@@ -99,11 +109,23 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         setShowAllComments(true);
     };
 
+    // Remember what is typed so it can be restored when the form is opened again
+    useEffect(() => {
+        if (!answerFormVisible) return;
+        const key = getDraftKey(editedComment, parentCommentId);
+        if (answerFormMessage.length > 0) {
+            draftStore.set(key, answerFormMessage);
+        } else {
+            draftStore.delete(key);
+        }
+    }, [answerFormMessage, answerFormVisible, editedComment, parentCommentId, draftStore]);
+
     const showAnswerForm = (post: CommmentDetails | null, parentId: string | null, message: string = "") => {
         if (!userInfo) {
             navigate("/Users/Login");
+            return;
         }
-        setAnswerFormMessage(message);
+        setAnswerFormMessage(draftStore.get(getDraftKey(post, parentId)) ?? message);
         setEditedComment(post);
         setParentCommentId(parentId);
         setAnswerFormVisible(true);
@@ -116,6 +138,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     };
 
     const hideAnswerForm = () => {
+        draftStore.delete(getDraftKey(editedComment, parentCommentId));
         setAnswerFormVisible(false);
         setAnswerFormMessage('');
         setEditedComment(null);
