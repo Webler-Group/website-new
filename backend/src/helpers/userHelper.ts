@@ -24,7 +24,7 @@ export const updateUserIp = async (userId: Types.ObjectId, ip: string, session?:
     const ipDoc = await IpModel.findOneAndUpdate(
         { value: ip },
         { $setOnInsert: { value: ip } },
-        { upsert: true, new: true, session }
+        { upsert: true, returnDocument: "after", session }
     );
 
     await UserModel.updateOne(

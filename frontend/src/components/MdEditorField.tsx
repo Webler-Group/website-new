@@ -22,6 +22,8 @@ interface MdEditorFieldProps {
     section: string;
     rootAlias: string;
     required?: boolean;
+    /** Personal file library: allow any file type + Normal/HD image quality */
+    allowFiles?: boolean;
 }
 
 const MdEditorField = ({
@@ -35,7 +37,8 @@ const MdEditorField = ({
     isPost = true,
     section,
     rootAlias,
-    required = true
+    required = true,
+    allowFiles = false
 }: MdEditorFieldProps) => {
     const [mode, setMode] = useState<MDEditorMode>("write");
     const uid = useId();
@@ -115,7 +118,7 @@ const MdEditorField = ({
         { icon: "del", className: "text-decoration-line-through", action: () => insertMarkdown("~~", "~~") },
         { icon: "mark", action: () => insertMarkdown("`", "`") },
         { icon: "link", action: () => insertMarkdown("[text](", ")") },
-        { icon: "img", action: () => setShowImages(true) },
+        { icon: allowFiles ? "file" : "img", action: () => setShowImages(true) },
         { icon: "code", action: () => insertMarkdown("```bash\n", "\n```") },
         { icon: "div", action: () => insertMarkdown("---") },
         { icon: "quote", action: () => insertMarkdown("> ", "") },
@@ -126,12 +129,18 @@ const MdEditorField = ({
         <>
             <PostAttachmentSelect show={postAttachmentSelectVisible} onClose={() => setPostAttachmentSelectVisible(false)} onSubmit={handlePostAttachments} />
             <FileExplorer
-                title="Image Select"
+                title={allowFiles ? "File Select" : "Image Select"}
                 section={section}
                 rootAlias={rootAlias}
                 show={showImages}
                 onHide={() => setShowImages(false)}
-                onSelect={(url, alt) => insertMarkdown(`![${alt || "image"}](${url})`, "", true)}
+                allowFiles={allowFiles}
+                qualityOptions={allowFiles}
+                onSelect={(url, alt, type) => insertMarkdown(
+                    type === "file" ? `[${alt || "file"}](${url})` : `![${alt || "image"}](${url})`,
+                    "",
+                    true
+                )}
             />
             <div>
                 <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">

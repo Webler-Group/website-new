@@ -18,7 +18,8 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmissionModel from "../models/ChallengeSubmission";
-import { createFolder, deleteEntry, formatFileEntry, listDirectory, moveEntry, uploadImageToBlob } from "../helpers/fileHelper";
+import { createFolder, deleteEntry, formatFileEntry, formatUploadedFile, IMAGE_QUALITY_PRESETS, listDirectory, moveEntry, uploadImageToBlob, uploadRawFileToBlob } from "../helpers/fileHelper";
+import { isProcessableImageMime } from "../utils/fileTypes";
 import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
@@ -604,9 +605,10 @@ const searchProfiles = asyncHandler(async (req: IAuthRequest, res: Response) => 
     });
 });
 
+/** Uploads an image (compressed by quality preset) or any other file (stored as-is, max 5 MB) */
 const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body, file } = parseWithZod(uploadImageSchema, req);
-    const { name, subPath } = body;
+    const { name, subPath, quality = "normal" } = body;
 
     const currentUserId = req.userId!;
     const basePath = `users/${currentUserId}/post-images`;
@@ -615,36 +617,42 @@ const uploadPostImage = asyncHandler(async (req: IAuthRequest, res: Response) =>
         ? `${basePath}/${subPath}`
         : basePath;
 
-    const fileDoc = await uploadImageToBlob({
-        authorId: currentUserId,
-        buffer: file.buffer,
-        inputMime: file.mimetype,
-        path: finalPath,
-        name,
-        maxWidth: 720,
-        maxHeight: 720,
-        fit: "inside",
-        outputFormat: "webp",
-        quality: 70,
-    });
+    let fileDoc;
+    if (isProcessableImageMime(file.mimetype)) {
+        const preset = IMAGE_QUALITY_PRESETS[quality];
+        fileDoc = await uploadImageToBlob({
+            authorId: currentUserId,
+            buffer: file.buffer,
+            inputMime: file.mimetype,
+            path: finalPath,
+            name,
+            maxWidth: preset.maxDimension,
+            maxHeight: preset.maxDimension,
+            fit: "inside",
+            outputFormat: "webp",
+            quality: preset.quality,
+            effort: 2,
+            passthroughMaxBytes: preset.passthroughMaxBytes
+        });
+    } else {
+        fileDoc = await uploadRawFileToBlob({
+            authorId: currentUserId,
+            buffer: file.buffer,
+            path: finalPath,
+            name,
+            originalName: file.originalname
+        });
+    }
 
     res.json({
         success: true,
-        data: {
-            id: fileDoc._id,
-            name: fileDoc.name,
-            mimetype: fileDoc.mimetype,
-            size: fileDoc.size,
-            updatedAt: fileDoc.updatedAt,
-            url: getImageUrl(fileDoc.contenthash),
-            previewUrl: fileDoc.preview ? `/media/files/${fileDoc.contenthash}/preview` : null
-        }
+        data: formatUploadedFile(fileDoc)
     });
 });
 
 const postImageUploadMiddleware = uploadImage({
-    maxFileSizeBytes: 10 * 1024 * 1024,
-    allowedMimeRegex: /^image\/(png|jpe?g|webp|avif)$/i
+    maxFileSizeBytes: 10 * 1024 * 1024, // images; other files are limited to MAX_RAW_FILE_SIZE in uploadRawFileToBlob
+    allowedMimeRegex: /^.*$/
 });
 
 const getPostImageList = asyncHandler(async (req: IAuthRequest, res: Response) => {

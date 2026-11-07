@@ -3,23 +3,30 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import RepliedMessage from "./RepliedMessage";
-import { ChannelMessageDetails } from "../types";
+import { ChannelMessageDetails, PendingMessageStatus } from "../types";
 import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
 import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
 import { Link } from "react-router-dom";
+import { parseMediaUrl } from "../../../utils/FileUtils";
+import FileAttachmentLink from "../../../components/FileAttachmentLink";
 
 interface ChannelMessageProps {
     message: ChannelMessageDetails;
     showHeader: boolean;
     onContextMenu: (message: ChannelMessageDetails, target: HTMLElement | null) => void;
     onImagePreview: (preview: { src: string, alt?: string } | null) => void;
+    /** Set for optimistic messages not yet confirmed by the server */
+    pending?: {
+        status: PendingMessageStatus;
+        error?: string;
+        onRetry: () => void;
+        onCancel: () => void;
+    };
 }
 
 const AVATAR_SIZE = 42;
 
-const MEDIA_FILE_REGEX = /^\/media\/files\/[a-f0-9]+(\.[a-z0-9]+)?$/i;
-
-const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, onImagePreview }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
+const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, onImagePreview, pending }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const bodyRef = useRef<HTMLDivElement>(null);
     const touchTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -48,9 +55,9 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
             }
         };
 
-        const isMediaFile = (url: string): boolean => {
-            const path = url.startsWith('/') ? url : toHref(url);
-            return MEDIA_FILE_REGEX.test(path);
+        const getMediaInfo = (url: string) => {
+            if (!isInternal(url)) return null;
+            return parseMediaUrl(toHref(url));
         };
 
         while ((match = regex.exec(message)) !== null) {
@@ -59,8 +66,15 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
             }
             const url = match[0];
             const href = toHref(url);
+            const media = getMediaInfo(url);
 
-            if (isMediaFile(url)) {
+            if (media?.type === "file") {
+                parts.push(
+                    <span key={parts.length} className="d-block my-1">
+                        <FileAttachmentLink url={href} name={media.name} />
+                    </span>
+                );
+            } else if (media?.type === "image") {
                 parts.push(
                     <img
                         key={parts.length}
@@ -94,11 +108,13 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
 
     const handleContextMenu = (e: React.MouseEvent) => {
         e.preventDefault();
+        if (pending) return;
         if (message.type !== ChannelMessageTypeEnum.MESSAGE || message.deleted) return;
         onContextMenu(message, bodyRef.current);
     };
 
     const handleTouchStart = () => {
+        if (pending) return;
         touchTimer.current = setTimeout(() => {
             if (message.type !== 1 || message.deleted) return;
             onContextMenu(message, bodyRef.current);
@@ -146,7 +162,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
 
                     <div
                         ref={bodyRef}
-                        className={`p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5 indented" : ""}`}
+                        className={`p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5 indented" : ""} ${pending ? "wb-channels-message__body--" + pending.status : ""}`}
                         onContextMenu={handleContextMenu}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
@@ -166,6 +182,21 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
                             </div>
                         )}
                     </div>
+                    {pending && (
+                        <div className={`small mt-1 ${!showHeader ? "ms-5" : ""}`}>
+                            {pending.status === "sending" ? (
+                                <span className="text-muted">Sending…</span>
+                            ) : (
+                                <span className="d-inline-flex flex-wrap align-items-center gap-2">
+                                    <span className="text-danger">
+                                        Not sent{pending.error ? ` (${pending.error})` : ""}
+                                    </span>
+                                    <button type="button" className="btn btn-link btn-sm p-0" onClick={pending.onRetry}>Resend</button>
+                                    <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={pending.onCancel}>Cancel</button>
+                                </span>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         );

@@ -101,7 +101,16 @@ export const processChannelInvite = async (invite: ChannelInvite & { _id: Types.
     }
 }
 
-export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, session?: mongoose.ClientSession) => {
+export interface SaveChannelMessageOptions {
+    /** Client-generated id echoed back so the sender can match its optimistic (pending) message. */
+    clientId?: string;
+}
+
+/**
+ * Saves the message and broadcasts the change to channel participants.
+ * For new messages returns the formatted message (same shape as the "channels:new_message" payload).
+ */
+export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, session?: mongoose.ClientSession, options: SaveChannelMessageOptions = {}) => {
     const isNew = doc.isNew;
     const contentModified = isNew || doc.isModified("content");
     const isDeleted = doc.isModified("deleted") && doc.deleted === true;
@@ -164,28 +173,31 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             ? [...allParticipantRooms, uidRoom(user._id.toString())]
             : allParticipantRooms;
 
+        const formattedMessage = {
+            id: doc._id,
+            type: doc._type,
+            channel: formatChannelBase(channel),
+            content: doc.content,
+            createdAt: doc.createdAt,
+            updatedAt: doc.updatedAt,
+            viewed: false,
+            deleted: doc.deleted,
+            user: formatUserMinimal(user),
+            repliedTo: reply ? {
+                id: reply._id,
+                content: reply.content,
+                createdAt: reply.createdAt,
+                updatedAt: reply.updatedAt,
+                user: formatUserMinimal(reply.user),
+                deleted: reply.deleted
+            } : null,
+            attachments,
+            ...(options.clientId ? { clientId: options.clientId } : {})
+        };
+
         if (socketRooms.length > 0) {
             io?.to(socketRooms).emit("channels:new_message", {
-                message: {
-                    id: doc._id,
-                    type: doc._type,
-                    channel: formatChannelBase(channel),
-                    content: doc.content,
-                    createdAt: doc.createdAt,
-                    updatedAt: doc.updatedAt,
-                    viewed: false,
-                    deleted: doc.deleted,
-                    user: formatUserMinimal(user),
-                    repliedTo: reply ? {
-                        id: reply._id,
-                        content: reply.content,
-                        createdAt: reply.createdAt,
-                        updatedAt: reply.updatedAt,
-                        user: formatUserMinimal(reply.user),
-                        deleted: reply.deleted
-                    } : null,
-                    attachments
-                }
+                message: formattedMessage
             });
 
             const unmutedParticipantRooms = participants
@@ -216,6 +228,7 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             );
         }
 
+        return formattedMessage;
     } else {
         if (contentModified) {
             const attachments = await getAttachmentsByPostId({ channelMessage: doc._id });
@@ -239,6 +252,8 @@ export const saveChannelMessage = async (doc: DocumentType<ChannelMessage>, sess
             }
         }
     }
+
+    return null;
 };
 
 export const formatChannelBase = (channel: Channel & { _id: Types.ObjectId }) => {

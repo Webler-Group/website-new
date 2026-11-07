@@ -34,6 +34,14 @@
     background-color: #e9ecef;
 }
 
+.wb-channels-message__body--sending {
+    opacity: 0.6;
+}
+
+.wb-channels-message__body--failed {
+    outline: 1px solid var(--bs-danger);
+}
+
 .wb-channels-message__body.indented {
     max-width: calc(100% - 3rem);
     /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */

@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Alert, Button, Form, Modal, Nav, Spinner, Tab } from "react-bootstrap";
+import { Alert, Button, Form, Modal, Nav, Spinner, Tab, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import "./FileExplorer.css";
 import { useAuth } from "../../features/auth/context/authContext";
 import DateUtils from "../../utils/DateUtils";
 import ProfileName from "../../components/ProfileName";
 import { useApi } from "../../context/apiCommunication";
-import { formatSize } from "../../utils/FileUtils";
+import {
+    formatSize, IMAGE_QUALITY_PRESETS, ImageQualityPreset, isUploadableImage, MAX_FILE_UPLOAD_SIZE,
+    MAX_IMAGE_UPLOAD_SIZE, parseMediaUrl, prepareImageForUpload, sanitizeUploadName
+} from "../../utils/FileUtils";
+import { FileKindIcon } from "../FileAttachmentLink";
 import { CreateFolderData, FileEntriesData, FileEntry, UploadImageFileData } from "./types";
 import FileTypeEnum from "../../data/FileTypeEnum";
 
@@ -20,9 +24,13 @@ interface FileExplorerProps {
     section: string;
     show: boolean;
     onHide: () => void;
-    onSelect: (url: string, altText: string) => void;
+    onSelect: (url: string, altText: string, type: "image" | "file") => void;
     title?: string;
     rootAlias?: string;
+    /** Allow uploading non-image files (max 5 MB, shown as download links) */
+    allowFiles?: boolean;
+    /** Show the Normal / HD choice for image uploads */
+    qualityOptions?: boolean;
 }
 
 const FOLDER_ICON = "/resources/images/folder.svg";
@@ -30,7 +38,9 @@ const IMAGE_ICON = "/resources/images/image.svg";
 
 const CONFIRM_MODAL_Z = 1080;
 
-const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootAlias = "root" }: FileExplorerProps) => {
+const IMAGE_ACCEPT = "image/png,image/jpeg,image/jpg,image/webp,image/avif";
+
+const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootAlias = "root", allowFiles = false, qualityOptions = false }: FileExplorerProps) => {
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
 
@@ -45,6 +55,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
     // Upload
     const [uploadName, setUploadName] = useState("");
     const [uploadFile, setUploadFile] = useState<File | null>(null);
+    const [uploadQuality, setUploadQuality] = useState<ImageQualityPreset>("normal");
     const [uploading, setUploading] = useState(false);
     const [uploadErr, setUploadErr] = useState<string | null>(null);
 
@@ -104,6 +115,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         setErr(null);
         setUploadName("");
         setUploadFile(null);
+        setUploadQuality("normal");
         setUploadErr(null);
         setContextMenu(null);
         setDeleteTarget(null);
@@ -142,7 +154,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         if (item.type === 2) {
             navigateInto(item.name);
         } else if (item.url) {
-            onSelect(item.url, item.name);
+            onSelect(item.url, item.name, parseMediaUrl(item.url)?.type === "file" ? "file" : "image");
             onHide();
         }
     };
@@ -176,6 +188,13 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         }
     };
 
+    const handleFileChange = (file: File | null) => {
+        setUploadErr(null);
+        setUploadFile(file);
+        // Always prefill with the selected file's name (made backend-safe: [a-zA-Z0-9._-], max 40, extension kept)
+        setUploadName(file ? sanitizeUploadName(file.name) : "");
+    };
+
     const handleUpload = async () => {
         if (!userInfo) return;
         setUploadErr(null);
@@ -183,13 +202,36 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         if (!uploadFile) { setUploadErr("Select a file"); return; }
         if (!name) { setUploadErr("Enter a name"); return; }
         if (name.length > 40) { setUploadErr("Name is too long"); return; }
+        if (!/^[a-zA-Z0-9._-]+$/.test(name)) { setUploadErr("Name can contain only letters, numbers and .-_"); return; }
+
+        const isImage = isUploadableImage(uploadFile);
+        if (!isImage && !allowFiles) { setUploadErr("Unsupported image type"); return; }
+        if (!isImage && uploadFile.size > MAX_FILE_UPLOAD_SIZE) {
+            setUploadErr(`File is too large (max ${formatSize(MAX_FILE_UPLOAD_SIZE)})`);
+            return;
+        }
 
         setUploading(true);
+
+        const quality: ImageQualityPreset = qualityOptions ? uploadQuality : "normal";
+        // Profile uploads are compressed by preset; other sections (e.g. lesson images) keep originals server-side
+        const fileToSend = isImage && qualityOptions ? await prepareImageForUpload(uploadFile, quality) : uploadFile;
+
+        if (isImage && fileToSend.size > MAX_IMAGE_UPLOAD_SIZE) {
+            setUploadErr(`Image is too large (max ${formatSize(MAX_IMAGE_UPLOAD_SIZE)})`);
+            setUploading(false);
+            return;
+        }
 
         const result = (await sendJsonRequest<UploadImageFileData>(
             `/${section}/UploadImageFile`,
             "POST",
-            { image: uploadFile, name, ...(subPathStr ? { subPath: subPathStr } : {}) },
+            {
+                image: fileToSend,
+                name,
+                ...(subPathStr ? { subPath: subPathStr } : {}),
+                ...(isImage && qualityOptions ? { quality } : {})
+            },
             undefined,
             true
         ));
@@ -314,6 +356,9 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
         if (item.previewUrl) return item.previewUrl;
         return item.type === 2 ? FOLDER_ICON : IMAGE_ICON;
     };
+
+    const isNonImageFile = (item: FileEntry) =>
+        item.type === FileTypeEnum.FILE && !!item.url && parseMediaUrl(item.url)?.type === "file";
 
     const openNewFolder = () => {
         setFolderName("");
@@ -525,7 +570,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                         </div>
                                     ) : items.length === 0 ? (
                                         <div className="text-muted text-center py-4">
-                                            {subPath.length > 0 ? "Empty folder." : "No images yet."}
+                                            {subPath.length > 0 ? "Empty folder." : allowFiles ? "No files yet." : "No images yet."}
                                         </div>
                                     ) : (
                                         <div className="wb-file-explorer-list">
@@ -544,14 +589,18 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                                         title={item.name}
                                                     >
                                                         <div className="wb-file-explorer-thumb-wrapper">
-                                                            <img
-                                                                src={getThumbnail(item)}
-                                                                alt={item.name}
-                                                                className={`wb-file-explorer-thumb ${item.previewUrl
-                                                                    ? "wb-file-explorer-thumb--preview"
-                                                                    : "wb-file-explorer-thumb--icon"}`}
-                                                                draggable={false}
-                                                            />
+                                                            {isNonImageFile(item) ? (
+                                                                <FileKindIcon name={item.name} mimetype={item.mimetype} size={26} />
+                                                            ) : (
+                                                                <img
+                                                                    src={getThumbnail(item)}
+                                                                    alt={item.name}
+                                                                    className={`wb-file-explorer-thumb ${item.previewUrl
+                                                                        ? "wb-file-explorer-thumb--preview"
+                                                                        : "wb-file-explorer-thumb--icon"}`}
+                                                                    draggable={false}
+                                                                />
+                                                            )}
                                                         </div>
                                                         <div className="wb-file-explorer-item-info">
                                                             <div className="wb-file-explorer-row1">
@@ -593,13 +642,46 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                         <Form.Control
                                             size="sm"
                                             type="file"
-                                            accept="image/png,image/jpeg,image/jpg,image/webp,image/avif"
+                                            accept={allowFiles ? undefined : IMAGE_ACCEPT}
                                             onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                                                setUploadFile(e.target.files?.[0] ?? null)
+                                                handleFileChange(e.target.files?.[0] ?? null)
                                             }
                                             disabled={uploading}
                                         />
+                                        {allowFiles && (
+                                            <Form.Text muted>
+                                                Images are shown inline. Other files (max {formatSize(MAX_FILE_UPLOAD_SIZE)}) are shared as download links.
+                                            </Form.Text>
+                                        )}
                                     </Form.Group>
+
+                                    {qualityOptions && uploadFile && isUploadableImage(uploadFile) && uploadFile.type !== "image/gif" && (
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="d-block">Image quality</Form.Label>
+                                            <ToggleButtonGroup
+                                                type="radio"
+                                                name="wb-file-explorer-quality"
+                                                value={uploadQuality}
+                                                onChange={(v: ImageQualityPreset) => setUploadQuality(v)}
+                                            >
+                                                {(Object.keys(IMAGE_QUALITY_PRESETS) as ImageQualityPreset[]).map(key => (
+                                                    <ToggleButton
+                                                        key={key}
+                                                        id={`wb-file-explorer-quality-${key}`}
+                                                        value={key}
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        disabled={uploading}
+                                                    >
+                                                        {IMAGE_QUALITY_PRESETS[key].label}
+                                                    </ToggleButton>
+                                                ))}
+                                            </ToggleButtonGroup>
+                                            <Form.Text muted className="d-block">
+                                                {IMAGE_QUALITY_PRESETS[uploadQuality].description}
+                                            </Form.Text>
+                                        </Form.Group>
+                                    )}
 
                                     <Form.Group className="mb-3">
                                         <Form.Label>Name</Form.Label>

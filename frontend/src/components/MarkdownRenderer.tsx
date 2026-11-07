@@ -8,6 +8,8 @@ import ImagePreview from './ImagePreview';
 import { Link } from 'react-router-dom';
 import "./MarkdownRenderer.css";
 import remarkBreaks from 'remark-breaks';
+import FileAttachmentLink from './FileAttachmentLink';
+import { parseMediaUrl } from '../utils/FileUtils';
 
 const defaultAllowedUrls = [
     /^https?:\/\/.*/i,      // allow any http/https URL
@@ -58,6 +60,10 @@ const MarkdownRenderer = ({ content, allowedUrls = defaultAllowedUrls }: Markdow
                 return <span>{children}</span>;
             }
             if (href.startsWith("/")) {
+                const media = parseMediaUrl(href);
+                if (media?.type === "file") {
+                    return <FileAttachmentLink url={href} name={media.name} />;
+                }
                 return <Link to={href}>{children}</Link>;
             }
             const domain = "weblercodes.com";
@@ -76,6 +82,10 @@ const MarkdownRenderer = ({ content, allowedUrls = defaultAllowedUrls }: Markdow
         },
 
         img({ src, alt }) {
+            const media = typeof src === "string" && src.startsWith("/") ? parseMediaUrl(src) : null;
+            if (media?.type === "file") {
+                return <FileAttachmentLink url={src as string} name={media.name} />;
+            }
             if (isAllowedUrl(src)) {
                 return (
                     <img

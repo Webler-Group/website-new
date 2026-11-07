@@ -85,6 +85,7 @@ const FeedCreatePage = ({ feedId }: FeedCreatePageProps) => {
 
                 <MdEditorField
                     section="Profile"
+                    allowFiles
                     rootAlias="post-images"
                     text={message}
                     setText={setMessage}

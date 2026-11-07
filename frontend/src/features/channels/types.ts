@@ -29,9 +29,30 @@ export interface ChannelMessageMinimal {
 }
 
 export interface ChannelMessageDetails extends ChannelMessageMinimal {
-    repliedTo: ChannelMessageMinimal;
+    repliedTo: ChannelMessageMinimal | null;
     channel: ChannelBase;
     attachments: PostAttachmentDetails[];
+    /** Present on messages sent from this client (echoed back by the server); used as a stable render key */
+    clientId?: string;
+}
+
+export type PendingMessageStatus = "sending" | "failed";
+
+/** Message sent by the current user that the server has not confirmed yet */
+export interface PendingMessage {
+    clientId: string;
+    channelId: string;
+    content: string;
+    repliedTo: ChannelMessageDetails | null;
+    createdAt: string;
+    status: PendingMessageStatus;
+    error?: string;
+}
+
+export interface SendMessageAck {
+    success: boolean;
+    data?: { message: ChannelMessageDetails };
+    error?: { message: string }[];
 }
 
 export interface ChannelBase {

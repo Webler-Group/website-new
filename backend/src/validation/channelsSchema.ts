@@ -112,7 +112,8 @@ export const markMessagesSeenWSSchema = z.object({
 export const createMessageWSSchema = z.object({
     channelId: idSchema("channelId"),
     content: channelMessageSchema,
-    repliedTo: idSchema("repliedTo").nullish()
+    repliedTo: idSchema("repliedTo").nullish(),
+    clientId: z.string().min(1).max(64).regex(/^[a-zA-Z0-9_-]+$/).optional()
 });
 
 export const deleteMessageWSSchema = z.object({

@@ -7,7 +7,8 @@ const fileNameSchema = z.string().min(1, "Filename is required").max(40, "Filena
 export const uploadImageSchema = z.object({
     body: z.object({
         name: fileNameSchema,
-        subPath: pathSchema.optional()
+        subPath: pathSchema.optional(),
+        quality: z.enum(["normal", "hd"]).optional()
     }),
     file: multerFileSchema
 });

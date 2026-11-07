@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import fs from "fs/promises";
 import path from "path";
-import sharp from "sharp";
+import sharp, { Metadata } from "sharp";
 import FileModel, { File } from "../models/File";
 import { config } from "../confg";
 import FileTypeEnum from "../data/FileTypeEnum";
@@ -11,7 +11,7 @@ import mongoose from "mongoose";
 import { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import HttpError from "../exceptions/HttpError";
 import { formatUserMinimal } from "./userHelper";
-import { getImageUrl } from "../controllers/mediaController";
+import { isInlineSafeMime, isProcessableImageMime, mimeFromFilename } from "../utils/fileTypes";
 
 type ImageFit = "cover" | "inside";
 
@@ -26,11 +26,47 @@ export type UploadImageParams = {
     fit?: ImageFit;
     outputFormat?: "webp" | "jpeg" | "png" | "avif";
     quality?: number;
+    /** webp/avif encoder effort; lower is faster (webp 0-6, default 4) */
+    effort?: number;
     storeOriginal?: boolean;
+    /**
+     * Store the upload as-is (no re-encode) when it is already a webp within maxWidth/maxHeight
+     * and at most this many bytes. Lets clients pre-compress to skip the server-side encode.
+     */
+    passthroughMaxBytes?: number;
 };
+
+export type ImageQualityPreset = "normal" | "hd";
+
+/**
+ * Presets for user uploaded post/message images.
+ * - normal: good for photos & casual screenshots, ~100-300 KB
+ * - hd: keeps small text in screenshots/code readable, ~300 KB-1.5 MB
+ * The frontend pre-resizes/encodes to the same settings so the server usually just validates & stores.
+ */
+export const IMAGE_QUALITY_PRESETS: Record<ImageQualityPreset, { maxDimension: number; quality: number; passthroughMaxBytes: number }> = {
+    normal: { maxDimension: 1280, quality: 80, passthroughMaxBytes: 1024 * 1024 },
+    hd: { maxDimension: 2560, quality: 90, passthroughMaxBytes: 4 * 1024 * 1024 },
+};
+
+/** Max size of non-image files */
+export const MAX_RAW_FILE_SIZE = 5 * 1024 * 1024;
 
 const sha256 = (buf: Buffer) =>
     crypto.createHash("sha256").update(new Uint8Array(buf)).digest("hex");
+
+/** Writes a content-addressed blob (no-op if it already exists) and returns its hash */
+const writeBlob = async (buffer: Buffer) => {
+    const hash = sha256(buffer);
+    const absPath = absBlobPathFromHash(hash);
+    await fs.mkdir(path.dirname(absPath), { recursive: true });
+    try {
+        await fs.writeFile(absPath, new Uint8Array(buffer), { flag: "wx" });
+    } catch (e: unknown) {
+        if ((e as NodeJS.ErrnoException)?.code !== "EEXIST") throw e;
+    }
+    return hash;
+};
 
 export const absBlobPathFromHash = (hash: string) => {
     return path.join(
@@ -137,6 +173,20 @@ export const createFolder = async (authorId: string, virtualPath: string, name: 
     return doc;
 };
 
+const getWritableTarget = async (virtualPath: string, name: string, session?: mongoose.ClientSession) => {
+    const prevDoc = await FileModel.findOne({ path: virtualPath, name }).session(session ?? null);
+    if (prevDoc && prevDoc._type === FileTypeEnum.FOLDER) {
+        throw new HttpError("Cannot overwrite a folder with a file", 409);
+    }
+    return prevDoc;
+};
+
+const cleanupReplacedBlobs = async (prevDoc: File | null, hash: string, previewHash: string | null, session?: mongoose.ClientSession) => {
+    if (prevDoc?._type !== FileTypeEnum.FILE) return;
+    if (prevDoc.contenthash && prevDoc.contenthash !== hash) await deleteBlobIfUnreferenced(prevDoc.contenthash, session);
+    if (prevDoc.preview?.contenthash && prevDoc.preview.contenthash !== previewHash) await deleteBlobIfUnreferenced(prevDoc.preview.contenthash, session);
+};
+
 export const uploadImageToBlob = async ({
     authorId,
     buffer,
@@ -148,24 +198,38 @@ export const uploadImageToBlob = async ({
     fit = "inside",
     outputFormat = "webp",
     quality = 82,
-    storeOriginal = false
+    effort,
+    storeOriginal = false,
+    passthroughMaxBytes
 }: UploadImageParams, session?: mongoose.ClientSession) => {
-    if (!/^image\/(png|jpe?g|webp|avif)$/i.test(inputMime)) {
+    if (!isProcessableImageMime(inputMime)) {
         throw new HttpError("Unsupported image type", 415);
     }
 
-    const prevDoc = await FileModel.findOne({ path: virtualPath, name }).session(session ?? null);
-
-    if (prevDoc && prevDoc._type === FileTypeEnum.FOLDER) {
-        throw new HttpError("Cannot overwrite a folder with a file", 409);
-    }
+    const prevDoc = await getWritableTarget(virtualPath, name, session);
 
     let outBuffer: Buffer;
     let mimetype: string;
 
-    if (storeOriginal) {
+    let metadata: Metadata;
+    try {
+        metadata = await sharp(buffer).metadata(); // header only - cheap, also validates the image
+    } catch {
+        throw new HttpError("Invalid image file", 400);
+    }
+
+    const fitsBounds = (!maxWidth || (metadata.width ?? Infinity) <= maxWidth)
+        && (!maxHeight || (metadata.height ?? Infinity) <= maxHeight);
+    const canPassthrough = passthroughMaxBytes !== undefined
+        && metadata.format === "webp"
+        && fitsBounds
+        && buffer.length <= passthroughMaxBytes
+        && (metadata.orientation ?? 1) === 1;
+
+    // GIFs are kept as-is so animations survive
+    if (storeOriginal || canPassthrough || metadata.format === "gif") {
         outBuffer = buffer;
-        mimetype = inputMime;
+        mimetype = metadata.format === "gif" ? "image/gif" : canPassthrough ? "image/webp" : inputMime;
     } else {
         let pipeline = sharp(buffer).rotate();
 
@@ -174,49 +238,88 @@ export const uploadImageToBlob = async ({
         }
 
         switch (outputFormat) {
-            case "webp": pipeline = pipeline.webp({ quality }); mimetype = "image/webp"; break;
-            case "jpeg": pipeline = pipeline.jpeg({ quality }); mimetype = "image/jpeg"; break;
+            case "webp": pipeline = pipeline.webp({ quality, effort }); mimetype = "image/webp"; break;
+            case "jpeg": pipeline = pipeline.jpeg({ quality, mozjpeg: false }); mimetype = "image/jpeg"; break;
             case "png": pipeline = pipeline.png(); mimetype = "image/png"; break;
-            case "avif": pipeline = pipeline.avif({ quality }); mimetype = "image/avif"; break;
+            case "avif": pipeline = pipeline.avif({ quality, effort }); mimetype = "image/avif"; break;
         }
 
         outBuffer = await pipeline.toBuffer();
     }
 
-    const hash = sha256(outBuffer);
-    const absPath = absBlobPathFromHash(hash);
-    await fs.mkdir(path.dirname(absPath), { recursive: true });
+    const hash = await writeBlob(outBuffer);
 
-    try {
-        await fs.writeFile(absPath, new Uint8Array(outBuffer), { flag: "wx" });
-    } catch (e: unknown) {
-        if ((e as NodeJS.ErrnoException)?.code !== "EEXIST") throw e;
-    }
-
-    const previewBuffer = await sharp(buffer).rotate().resize({ width: 128, height: 128, fit: "inside" }).webp({ quality: 60 }).toBuffer();
-    const previewHash = sha256(previewBuffer);
-    const previewPath = absBlobPathFromHash(previewHash);
-    await fs.mkdir(path.dirname(previewPath), { recursive: true });
-
-    try {
-        await fs.writeFile(previewPath, new Uint8Array(previewBuffer), { flag: "wx" });
-    } catch (e: unknown) {
-        if ((e as NodeJS.ErrnoException)?.code !== "EEXIST") throw e;
-    }
+    // Build the thumbnail from the (usually much smaller) output instead of decoding the original again
+    const previewBuffer = await sharp(outBuffer).rotate().resize({ width: 128, height: 128, fit: "inside" }).webp({ quality: 60, effort: 2 }).toBuffer();
+    const previewHash = await writeBlob(previewBuffer);
 
     const fileDoc = await FileModel.findOneAndUpdate(
         { path: virtualPath, name },
         { $set: { _type: FileTypeEnum.FILE, author: authorId, mimetype, size: outBuffer.length, contenthash: hash, preview: { contenthash: previewHash, size: previewBuffer.length, mimetype: "image/webp" } } },
-        { upsert: true, new: true, session }
+        { upsert: true, returnDocument: "after", session }
     );
 
-    if (prevDoc?._type === FileTypeEnum.FILE) {
-        if (prevDoc.contenthash !== hash) await deleteBlobIfUnreferenced(prevDoc.contenthash!, session);
-        if (prevDoc.preview?.contenthash && prevDoc.preview.contenthash !== previewHash) await deleteBlobIfUnreferenced(prevDoc.preview.contenthash, session);
-    }
+    await cleanupReplacedBlobs(prevDoc, hash, previewHash, session);
 
     return fileDoc;
 };
+
+export type UploadRawFileParams = {
+    authorId: string;
+    buffer: Buffer;
+    path: string;
+    name: string;
+    /** Original filename, used for type detection when `name` has no extension */
+    originalName?: string;
+};
+
+/** Stores any (non-image) file as-is. Served only as a download. */
+export const uploadRawFileToBlob = async ({ authorId, buffer, path: virtualPath, name, originalName }: UploadRawFileParams, session?: mongoose.ClientSession) => {
+    if (buffer.length > MAX_RAW_FILE_SIZE) {
+        throw new HttpError(`File is too large (max ${MAX_RAW_FILE_SIZE / (1024 * 1024)} MB)`, 413);
+    }
+
+    // Keep the extension so the type stays recognizable (download name, icon)
+    const originalExt = originalName ? path.extname(originalName).toLowerCase() : "";
+    if (!path.extname(name) && /^\.[a-z0-9]{1,10}$/.test(originalExt)) {
+        name = name.slice(0, 40 - originalExt.length) + originalExt;
+    }
+
+    const prevDoc = await getWritableTarget(virtualPath, name, session);
+
+    const hash = await writeBlob(buffer);
+    const mimetype = mimeFromFilename(name);
+
+    const fileDoc = await FileModel.findOneAndUpdate(
+        { path: virtualPath, name },
+        { $set: { _type: FileTypeEnum.FILE, author: authorId, mimetype, size: buffer.length, contenthash: hash, preview: null } },
+        { upsert: true, returnDocument: "after", session }
+    );
+
+    await cleanupReplacedBlobs(prevDoc, hash, null, session);
+
+    return fileDoc;
+};
+
+/**
+ * Public URL of a stored file.
+ * Images: /media/files/<hash>, other files: /media/files/<hash>/<name> (the name drives download filename & icon).
+ */
+export const getFileUrl = (file: Pick<File, "contenthash" | "mimetype" | "name">) => {
+    if (!file.contenthash) return null;
+    if (isInlineSafeMime(file.mimetype)) return `/media/files/${file.contenthash}`;
+    return `/media/files/${file.contenthash}/${encodeURIComponent(file.name)}`;
+};
+
+export const formatUploadedFile = (fileDoc: File & { _id: Types.ObjectId }) => ({
+    id: fileDoc._id,
+    name: fileDoc.name,
+    mimetype: fileDoc.mimetype,
+    size: fileDoc.size,
+    updatedAt: fileDoc.updatedAt,
+    url: getFileUrl(fileDoc),
+    previewUrl: fileDoc.preview ? `/media/files/${fileDoc.contenthash}/preview` : null
+});
 
 export const listDirectory = async (virtualPath: string, session?: mongoose.ClientSession) => {
     return FileModel.find({ path: virtualPath })
@@ -235,7 +338,7 @@ export const formatFileEntry = (file: File & { _id: Types.ObjectId } & { author:
         mimetype: file.mimetype,
         size: file.size,
         updatedAt: file.updatedAt,
-        url: getImageUrl(file.contenthash),
+        url: file._type === FileTypeEnum.FILE ? getFileUrl(file) : null,
         previewUrl: (file._type === FileTypeEnum.FILE && file.preview) ? `/media/files/${file.contenthash}/preview` : null
     };
 }

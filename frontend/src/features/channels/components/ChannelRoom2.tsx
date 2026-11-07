@@ -12,8 +12,9 @@ import MessageContextMenu from "./MessageContextMenu";
 import RepliedMessage from "./RepliedMessage";
 import Loader from "../../../components/Loader";
 import PostAttachmentSelect from "../../../components/post-attachment-select/PostAttachmentSelect";
-import { ChannelDetails, ChannelMessageDetails, ChannelParticipantDetails, GetChannelData, InviteDetails } from "../types";
+import { ChannelDetails, ChannelMessageDetails, ChannelParticipantDetails, GetChannelData, InviteDetails, PendingMessage } from "../types";
 import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
+import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
 import ImagePreview from "../../../components/ImagePreview";
 import FileExplorer from "../../../components/file-explorer/FileExplorer";
 import NotificationToast from "../../../components/NotificationToast";
@@ -26,7 +27,7 @@ interface ChannelRoomProps {
 
 const MAX_ROWS = 5;
 
-const AttachDropdown = ({ onCode, onImage }: { onCode: () => void; onImage: () => void; }) => {
+const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => void; }) => {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 
@@ -53,7 +54,7 @@ const AttachDropdown = ({ onCode, onImage }: { onCode: () => void; onImage: () =
                 >
                     {[
                         { label: "Code", action: onCode },
-                        { label: "Image", action: onImage },
+                        { label: "File / Image", action: onFile },
                     ].map(({ label, action }) => (
                         <button
                             key={label}
@@ -232,17 +233,25 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }, [justChangedChannel, messages.isLoading, messages.results]);
 
     useEffect(() => {
-        const currentIds = new Set(messages.results.map(m => m.id));
+        const currentIds = new Set([
+            ...messages.results.map(getMessageKey),
+            ...messages.pending.map(m => m.clientId)
+        ]);
         for (const key of nodeRefs.current.keys()) {
             if (!currentIds.has(key)) {
                 nodeRefs.current.delete(key);
             }
         }
-    }, [messages.results]);
+    }, [messages.results, messages.pending]);
 
     const isMobileDevice = () => {
         return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     };
+
+    // Messages sent from this client keep their clientId as key, so the pending -> confirmed swap doesn't remount/animate
+    function getMessageKey(message: ChannelMessageDetails) {
+        return message.clientId ?? message.id;
+    }
 
     const getNodeRef = (id: string) => {
         if (!nodeRefs.current.has(id)) {
@@ -280,6 +289,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             setEditedMessage(null);
         } else {
             messages.sendMessage(newMessage, repliedMessage);
+            scrollToBottom("smooth");
         }
         setNewMessage("");
         setRepliedMessage(null);
@@ -434,7 +444,36 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     }
 
     let firstTime: number;
-    const renderMessages = messages.results.filter(x => allMessagesVisible || (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt)));
+    const renderMessages = messages.results.filter(x =>
+        allMessagesVisible ||
+        x.user.id === userInfo?.id ||
+        (channel?.lastActiveAt && new Date(channel.lastActiveAt) >= new Date(x.createdAt))
+    );
+
+    const toPendingDetails = (pending: PendingMessage): ChannelMessageDetails => ({
+        id: pending.clientId,
+        clientId: pending.clientId,
+        type: ChannelMessageTypeEnum.MESSAGE,
+        deleted: false,
+        content: pending.content,
+        createdAt: pending.createdAt,
+        updatedAt: pending.createdAt,
+        user: {
+            id: userInfo!.id,
+            name: userInfo!.name,
+            avatarUrl: userInfo!.avatarUrl,
+            level: userInfo!.level,
+            roles: userInfo!.roles,
+            countryCode: userInfo!.countryCode,
+            active: userInfo!.active
+        },
+        repliedTo: pending.repliedTo,
+        channel: channel!,
+        attachments: []
+    });
+
+    const latestRendered = renderMessages[0];
+    const pendingStartsGroup = !latestRendered || latestRendered.user.id !== userInfo?.id || latestRendered.type !== ChannelMessageTypeEnum.MESSAGE;
 
     return (
         <div className="d-flex flex-column" style={{ height: "100dvh" }}>
@@ -454,12 +493,14 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         </Modal>
                         <PostAttachmentSelect show={postAttachmentSelectVisible} onClose={() => setPostAttachmentSelectVisible(false)} onSubmit={handlePostAttachments} />
                         <FileExplorer
-                            title="Image Select"
+                            title="File Select"
                             section="Profile"
                             rootAlias="post-images"
                             show={showImages}
                             onHide={() => setShowImages(false)}
                             onSelect={handleImageSelect}
+                            allowFiles
+                            qualityOptions
                         />
                         {preview && (
                             <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
@@ -486,7 +527,35 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
                                 <TransitionGroup component={null}>
-                                    {renderMessages.map((message, i) => {
+                                    {/* single array so a pending message and its confirmed version share the key space */}
+                                    {[...(userInfo ? messages.pending.map((pending, i) => {
+                                        const message = toPendingDetails(pending);
+                                        const isOldestPending = i === messages.pending.length - 1;
+                                        return (
+                                            <CSSTransition
+                                                key={pending.clientId}
+                                                timeout={300}
+                                                classNames="wb-channels-message"
+                                                nodeRef={getNodeRef(pending.clientId)}
+                                            >
+                                                <div ref={getNodeRef(pending.clientId)} className="mt-2">
+                                                    <ChannelMessage
+                                                        message={message}
+                                                        showHeader={(isOldestPending && pendingStartsGroup) || message.repliedTo != null}
+                                                        onContextMenu={onContextMenu}
+                                                        onImagePreview={setPreview}
+                                                        pending={{
+                                                            status: pending.status,
+                                                            error: pending.error,
+                                                            onRetry: () => messages.retryMessage(pending.clientId),
+                                                            onCancel: () => messages.cancelMessage(pending.clientId)
+                                                        }}
+                                                    />
+                                                </div>
+                                            </CSSTransition>
+                                        );
+                                    }) : []),
+                                    ...renderMessages.map((message, i) => {
                                         const nextMessage = i < renderMessages.length - 1 ? renderMessages[i + 1] : null;
 
                                         let isLastFromUser = false;
@@ -510,12 +579,12 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
 
                                         return (
                                             <CSSTransition
-                                                key={message.id}
+                                                key={getMessageKey(message)}
                                                 timeout={300}
                                                 classNames={skipTransition ? "" : "wb-channels-message"}
-                                                nodeRef={getNodeRef(message.id)}
+                                                nodeRef={getNodeRef(getMessageKey(message))}
                                             >
-                                                <div ref={getNodeRef(message.id)} className="mt-2">
+                                                <div ref={getNodeRef(getMessageKey(message))} className="mt-2">
                                                     <ChannelMessage
                                                         ref={i === renderMessages.length - 1 ? lastMessageRef : undefined}
                                                         message={message}
@@ -526,7 +595,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                 </div>
                                             </CSSTransition>
                                         );
-                                    })}
+                                    })]}
                                 </TransitionGroup>
                             </div>
                             <div className="position-relative p-2 border-top">
@@ -581,7 +650,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         />
                                         <AttachDropdown
                                             onCode={() => setPostAttachmentSelectVisible(true)}
-                                            onImage={() => setShowImages(true)}
+                                            onFile={() => setShowImages(true)}
                                         />
                                         {newMessage.trim().length > 0 &&
                                             <Button variant="primary" onClick={handleSendMessage}>

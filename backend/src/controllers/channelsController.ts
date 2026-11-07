@@ -675,9 +675,22 @@ const markMessagesSeenWS = async (socket: Socket, payload: unknown) => {
     }
 };
 
-const createMessageWS = async (socket: Socket, payload: unknown) => {
+type WSAck = (response: { success: boolean; data?: unknown; error?: { message: string }[] }) => void;
+
+const toWSErrors = (err: unknown) => {
+    if (err instanceof z.ZodError) {
+        return err.issues.map(e => ({ message: e.message }));
+    }
+    if (err instanceof Error) {
+        return [{ message: err.message }];
+    }
+    return [{ message: "Something went wrong" }];
+};
+
+const createMessageWS = async (socket: Socket, payload: unknown, ack?: WSAck) => {
+    let acked = false;
     try {
-        const { channelId, content, repliedTo } = createMessageWSSchema.parse(payload);
+        const { channelId, content, repliedTo, clientId } = createMessageWSSchema.parse(payload);
         const currentUserId = socket.data.userId;
 
         const channel = await ChannelModel.findById(channelId).lean();
@@ -701,8 +714,10 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
             repliedTo: repliedTo,
             user: currentUserId
         });
-        await saveChannelMessage(newMessage);
+        const message = await saveChannelMessage(newMessage, undefined, { clientId });
 
+        ack?.({ success: true, data: { message } });
+        acked = true;
 
         if (channel._type === ChannelTypeEnum.DM) {
             const messages = await ChannelMessageModel.find({ channel: channel._id }, { _id: 1 }).limit(2).lean();
@@ -714,10 +729,12 @@ const createMessageWS = async (socket: Socket, payload: unknown) => {
             }
         }
     } catch (err) {
-        if (err instanceof z.ZodError) {
-            socket.emit("channels:error", { error: err.issues.map(e => ({ message: e.message })) });
-        } else if (err instanceof Error) {
-            socket.emit("channels:error", { error: [{ message: err.message }] });
+        const error = toWSErrors(err);
+        if (ack) {
+            // Message may already be saved and acked when a follow-up step (DM invite) fails
+            if (!acked) ack({ success: false, error });
+        } else {
+            socket.emit("channels:error", { error });
         }
     }
 };
@@ -766,7 +783,7 @@ const editMessageWS = async (socket: Socket, payload: unknown) => {
 
 const registerHandlersWS = (socket: Socket) => {
     socket.on("channels:messages_seen", (payload) => markMessagesSeenWS(socket, payload));
-    socket.on("channels:send_message", (payload) => createMessageWS(socket, payload));
+    socket.on("channels:send_message", (payload, ack) => createMessageWS(socket, payload, typeof ack === "function" ? ack : undefined));
     socket.on("channels:delete_message", (payload) => deleteMessageWS(socket, payload));
     socket.on("channels:edit_message", (payload) => editMessageWS(socket, payload));
 };

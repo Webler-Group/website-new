@@ -29,7 +29,7 @@ router.route("/UploadProfileAvatarImage").post(verifyEmail, requestLimiter(3600 
 router.route("/RemoveProfileAvatarImage").post(profileController.removeProfileAvatarImage);
 router.route("/UpdateNotifications").post(profileController.updateNotifications);
 router.route("/Search").post(profileController.searchProfiles);
-router.route("/UploadImageFile").post(verifyEmail, requestLimiter(3600 * 24, 5, "Too many requests, try again later"), 
+router.route("/UploadImageFile").post(verifyEmail, requestLimiter(3600 * 24, 10, "Too many requests, try again later"), 
     profileController.postImageUploadMiddleware.single("image"),
     profileController.uploadPostImage);
 router.route("/GetFileEntryList").post(profileController.getPostImageList);
