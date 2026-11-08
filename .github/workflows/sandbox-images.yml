@@ -25,7 +25,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        lang: [c, cpp, csharp, go, java, lua, node, python, ruby, rust]
+        lang: [c, cpp, csharp, go, java, kotlin, lua, node, python, ruby, rust, typescript]
     steps:
       - uses: actions/checkout@v4
 

@@ -95,6 +95,21 @@ func main() {
         cssSource: "", jsSource: ""
     },
     {
+        language: "kotlin",
+        source: `fun main() {
+    println("Hello World")
+}
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
+        language: "typescript",
+        source: `const message: string = "Hello World";
+console.log(message);
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
         language: "java",
         source: `public class Main {
     public static void main(String[] args) {

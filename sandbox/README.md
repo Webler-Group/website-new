@@ -7,8 +7,10 @@ Published as `ghcr.io/webler-group/website-new-runner-<lang>`.
 |-------------|----------|-----------------|---------------------------------------------------------|
 | python      | python   | `main.py`       | Python 3.13, numpy, pandas, scipy, matplotlib (Agg)     |
 | java        | java     | `Main.java`     | Temurin JDK 21                                          |
+| kotlin      | kotlin   | `main.kt`       | Kotlin 2.2 on JDK 21 (stdlib only), AppCDS-warmed compiler |
 | c           | c        | `main.c`        | clang 18, C17, libm (no -O, like before)                                     |
 | cpp         | cpp      | `main.cpp`      | clang 18, C++20 (no -O), Boost (headers), fmt, Eigen, GLM, Mesa (OSMesa/EGL, llvmpipe) |
+| typescript  | typescript | `main.ts`     | TypeScript 5.9 (strict, type errors fail the compile), Node 24, @types/node |
 | nodejs      | node     | `main.js`       | Node 24                                                 |
 | go          | go       | `main.go`       | Go 1.25 (stdlib only)                                   |
 | rust        | rust     | `main.rs`       | rustc 1.90, edition 2024 (std only, no crates)          |

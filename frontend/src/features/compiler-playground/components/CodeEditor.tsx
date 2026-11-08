@@ -18,6 +18,8 @@ import "ace-builds/src-noconflict/mode-java";
 import "ace-builds/src-noconflict/mode-golang";
 import "ace-builds/src-noconflict/mode-rust";
 import "ace-builds/src-noconflict/mode-csharp";
+import "ace-builds/src-noconflict/mode-kotlin";
+import "ace-builds/src-noconflict/mode-typescript";
 
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
@@ -47,6 +49,8 @@ const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "j
         case "go":         return "golang";
         case "rust":       return "rust";
         case "csharp":     return "csharp";
+        case "kotlin":     return "kotlin";
+        case "typescript": return "typescript";
         default:           return "text";
     }
 };

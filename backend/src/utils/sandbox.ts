@@ -25,6 +25,8 @@ const LANGUAGES: Record<string, LanguageSpec> = {
     csharp: { image: "csharp", sourceFile: "main.cs", compiled: true },
     go: { image: "go", sourceFile: "main.go", compiled: true },
     java: { image: "java", sourceFile: "Main.java", compiled: true },
+    kotlin: { image: "kotlin", sourceFile: "main.kt", compiled: true },
+    typescript: { image: "typescript", sourceFile: "main.ts", compiled: true },
     rust: { image: "rust", sourceFile: "main.rs", compiled: true },
     python: { image: "python", sourceFile: "main.py", compiled: false },
     nodejs: { image: "node", sourceFile: "main.js", compiled: false },

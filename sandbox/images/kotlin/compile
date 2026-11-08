@@ -1,0 +1,5 @@
+#!/bin/sh
+# Compile to a single jar: a META-INF/ subdirectory would be owned by uid 65534 and the host couldn't delete it.
+# The CDS archive (built in the Dockerfile with the same flags) cuts compiler startup by ~0.5 s.
+export JAVA_OPTS="$KOTLINC_JAVA_OPTS -XX:SharedArchiveFile=/opt/runner/kotlinc.jsa"
+exec "$KOTLIN_HOME/bin/kotlinc" -nowarn -d /box/main.jar /box/main.kt

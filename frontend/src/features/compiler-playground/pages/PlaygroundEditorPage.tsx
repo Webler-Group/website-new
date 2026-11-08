@@ -48,7 +48,9 @@ const getCreditsHeaders = (language: string, username: string): string[] => {
         case "cpp":
         case "csharp":
         case "java":
+        case "kotlin":
         case "nodejs":
+        case "typescript":
         case "go":
         case "rust":  return [`// ${message}`];
         case "python":

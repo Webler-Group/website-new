@@ -34,6 +34,7 @@ export default function codeRequiresInput(code: string, language: string): boole
 
     "typescript": [
       /\bprocess\.stdin/,
+      /\breadFileSync\s*\(\s*(0|["']\/dev\/stdin)/,
       /\breadline/,
       /\bprompt\s*\(/,
     ],

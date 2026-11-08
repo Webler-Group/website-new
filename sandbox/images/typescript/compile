@@ -1,0 +1,7 @@
+#!/bin/sh
+# Type-check and emit /box/main.js. Type errors fail the compile, like in other compiled languages.
+exec node /opt/runner/node_modules/typescript/bin/tsc \
+    --strict --target es2022 --lib es2023 --module commonjs --esModuleInterop \
+    --types node --typeRoots /opt/runner/node_modules/@types \
+    --skipLibCheck --noEmitOnError --pretty false \
+    --outDir /box /box/main.ts

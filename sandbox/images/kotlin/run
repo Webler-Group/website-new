@@ -1,0 +1,4 @@
+#!/bin/sh
+# Top-level `fun main` in main.kt compiles to class MainKt
+exec java -XX:+UseSerialGC -XX:-UsePerfData -XX:MaxRAMPercentage=75 -Xss64m \
+    -cp "/box/main.jar:$KOTLIN_HOME/lib/kotlin-stdlib.jar" MainKt
