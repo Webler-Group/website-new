@@ -22,6 +22,12 @@ int main() {
     std::vector<unsigned char> buf(64 * 64 * 4);
     bool gl = ctx && OSMesaMakeCurrent(ctx, buf.data(), GL_UNSIGNED_BYTE, 64, 64);
     if (gl) {
+        // A modern (GL 1.5+) function, straight from OSMesa: fails the test if it's missing
+        GLuint vbo = 0;
+        glGenBuffers(1, &vbo);
+        gl = vbo != 0;
+    }
+    if (gl) {
         glClearColor(0.1f, 0.1f, 0.2f, 1); glClear(GL_COLOR_BUFFER_BIT);
         glBegin(GL_TRIANGLES);
         glColor3f(1, 0, 0); glVertex2f(-0.8f, -0.8f);

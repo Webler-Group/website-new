@@ -1,2 +1,5 @@
 #!/bin/sh
-exec rustc-real --edition 2024 -O -o /box/main.out /box/main.rs
+# /opt/runner/externs holds `--extern image=...` etc. for the pre-built crates (see Dockerfile)
+exec rustc-real --edition 2024 -O \
+    -L dependency=/opt/runner/deps $(cat /opt/runner/externs) \
+    -o /box/main.out /box/main.rs

@@ -5,7 +5,12 @@
 # the same text itself, the last one in the stream is ours.
 mkdir -p /tmp/output
 
-/usr/local/bin/run-program
+# Start the program from perl instead of the shell: when a program dies from a signal, dash would
+# print its own "Segmentation fault" / "CPU time limit exceeded" line into the program's stderr.
+# The backend reports the reason itself. perl exits with the same status (128 + signal) and prints
+# nothing; perl-base is part of every Debian/Ubuntu image.
+perl -e 'my $p = fork // die "fork: $!"; if (!$p) { exec { $ARGV[0] } @ARGV or exit 127 }
+         waitpid($p, 0); exit($? & 127 ? 128 + ($? & 127) : $? >> 8)' /usr/local/bin/run-program
 status=$?
 
 printf '\n%s\n' '--website-new-images--'

@@ -1,0 +1,15 @@
+# Crates available to every Rust program on the site (compiled once into the image).
+# Only PNG support in `image` keeps compile and link times low. `gl` + `osmesa` give offscreen OpenGL.
+[package]
+name = "runner-crates"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+image = { version = "=0.25.6", default-features = false, features = ["png"] }
+imageproc = { version = "=0.25.0", default-features = false }
+gl = "=0.14.0"
+osmesa = { path = "osmesa" }
+
+[profile.release]
+debug = false

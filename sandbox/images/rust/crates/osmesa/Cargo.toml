@@ -1,0 +1,8 @@
+[package]
+name = "osmesa"
+version = "0.1.0"
+edition = "2024"
+description = "Raw bindings to Mesa's OSMesa (offscreen OpenGL), same names as <GL/osmesa.h>"
+
+[lib]
+path = "src/lib.rs"
