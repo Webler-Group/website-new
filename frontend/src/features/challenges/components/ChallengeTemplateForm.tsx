@@ -2,6 +2,7 @@ import { Dispatch, SetStateAction } from "react";
 import { Button, Form } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { ChallengeTemplate } from "../types";
+import { languagesInfo } from "../../../data/compilerLanguages";
 
 interface IChallengeLangFormProps {
   languages: ChallengeTemplate[];
@@ -33,14 +34,24 @@ const ChallengeTemplateForm = ({ languages, setLanguages }: IChallengeLangFormPr
           <div key={index} className="border rounded p-2 d-flex flex-column gap-2 shadow-sm">
             <Form.Group>
               <Form.Label>Language</Form.Label>
-              <Form.Control
-                type="text"
+              <Form.Select
                 value={tc.name}
-                placeholder="name"
                 onChange={(e) =>
                   handleChange(index, "name", e.target.value)
                 }
-              />
+              >
+                <option value="" disabled>Choose language...</option>
+                {Object.entries(languagesInfo).filter(([key]) => key !== "web").map(([key, info]) => (
+                  <option
+                    key={key}
+                    value={key}
+                    // One template per language
+                    disabled={key !== tc.name && languages.some(x => x.name === key)}
+                  >
+                    {info.displayName}
+                  </option>
+                ))}
+              </Form.Select>
             </Form.Group>
             <Form.Group>
               <Form.Label>Source</Form.Label>

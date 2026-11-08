@@ -7,9 +7,9 @@ Published as `ghcr.io/webler-group/website-new-runner-<lang>`.
 |-------------|----------|-----------------|---------------------------------------------------------|
 | python      | python   | `main.py`       | Python 3.13, numpy, pandas, scipy, matplotlib (Agg)     |
 | java        | java     | `Main.java`     | Temurin JDK 21                                          |
-| c           | c        | `main.c`        | clang 18, C17, libm                                     |
-| cpp         | cpp      | `main.cpp`      | clang 18, C++20, Boost (headers), fmt, Eigen, GLM, Mesa (OSMesa/EGL, llvmpipe) |
-| node        | node     | `main.js`       | Node 24                                                 |
+| c           | c        | `main.c`        | clang 18, C17, libm (no -O, like before)                                     |
+| cpp         | cpp      | `main.cpp`      | clang 18, C++20 (no -O), Boost (headers), fmt, Eigen, GLM, Mesa (OSMesa/EGL, llvmpipe) |
+| nodejs      | node     | `main.js`       | Node 24                                                 |
 | go          | go       | `main.go`       | Go 1.25 (stdlib only)                                   |
 | rust        | rust     | `main.rs`       | rustc 1.90, edition 2024 (std only, no crates)          |
 | csharp      | csharp   | `main.cs`       | .NET 10, Roslyn csc, implicit usings                    |
@@ -64,5 +64,7 @@ To add gVisor later, run `sudo ./setup-host.sh` and add `--runtime=runsc` to bot
 ./build.sh                # build all images (or: ./build.sh python cpp)
 ./test.sh                 # smoke-test with the production flags (RUNTIME=runsc ./test.sh for gVisor)
 ```
+
+Docker Desktop on WSL works for development but occasionally loses the job folder between the compile and run containers. Use Docker Engine installed directly on Linux in production.
 
 To add a library, edit the image's Dockerfile (or `python/requirements.txt`), rebuild and push. Nothing changes on the host.

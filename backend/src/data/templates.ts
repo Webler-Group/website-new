@@ -69,6 +69,32 @@ int main(int argc, char ** argv){
         cssSource: "", jsSource: ""
     },
     {
+        language: "csharp",
+        source: `Console.WriteLine("Hello World");
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
+        language: "go",
+        source: `package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello World")
+}
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
+        language: "rust",
+        source: `fn main() {
+    println!("Hello World");
+}
+`,
+        cssSource: "", jsSource: ""
+    },
+    {
         language: "java",
         source: `public class Main {
     public static void main(String[] args) {

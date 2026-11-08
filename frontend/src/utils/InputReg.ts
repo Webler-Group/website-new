@@ -28,6 +28,7 @@ export default function codeRequiresInput(code: string, language: string): boole
       /\bprocess\.stdin/,     // process.stdin
       /\breadline/,           // readline
       /\bprompt-sync/,        // prompt-sync
+      /\breadFileSync\s*\(\s*(0|["']\/dev\/stdin)/, // fs.readFileSync(0)
     ],
 
 
@@ -54,9 +55,10 @@ export default function codeRequiresInput(code: string, language: string): boole
       /\bBufferedReader\s*\(/,
     ],
 
-    "cs": [
+    "csharp": [
       /\bConsole\.ReadLine\s*\(/,
       /\bConsole\.Read\s*\(/,
+      /\bConsole\.In\b/,
     ],
 
     "swift": [
@@ -71,11 +73,12 @@ export default function codeRequiresInput(code: string, language: string): boole
     "go": [
       /\bfmt\.Scan/,
       /\bbufio\.NewReader/,
+      /\bbufio\.NewScanner/,
       /\bReadString\s*\(/,
     ],
 
     "ruby": [
-      /\bgets\s*\(/,
+      /\bgets\b/,             // gets / gets.chomp
       /\bSTDIN\.read/,
     ],
 

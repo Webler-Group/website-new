@@ -14,6 +14,10 @@ import "ace-builds/src-noconflict/mode-c_cpp";
 import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/mode-ruby";
 import "ace-builds/src-noconflict/mode-lua";
+import "ace-builds/src-noconflict/mode-java";
+import "ace-builds/src-noconflict/mode-golang";
+import "ace-builds/src-noconflict/mode-rust";
+import "ace-builds/src-noconflict/mode-csharp";
 
 import WebOutput from "./WebOutput";
 import useTab from "../hooks/useTab";
@@ -32,12 +36,17 @@ const compilerLangToAceMode = (lang: CompilerLanguagesEnum | "html" | "css" | "j
         case "web":
         case "html":       return "html";
         case "css":        return "css";
-        case "javascript": return "javascript";
+        case "javascript":
+        case "nodejs":     return "javascript";
         case "c":
         case "cpp":        return "c_cpp";
         case "python":     return "python";
         case "ruby":       return "ruby";
         case "lua":        return "lua";
+        case "java":       return "java";
+        case "go":         return "golang";
+        case "rust":       return "rust";
+        case "csharp":     return "csharp";
         default:           return "text";
     }
 };

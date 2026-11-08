@@ -1,13 +1,14 @@
 import { Job, Worker } from "bullmq";
 import connectDB from "../config/dbConn";
 import { config } from "../confg";
-import { cleanupBox, runInIsolate } from "../utils/isolate";
+import { cleanupSandboxLeftovers, ensureSandboxImages, runInSandbox } from "../utils/sandbox";
 import { logEvents } from "../middleware/logger";
 import ChallengeModel from "../models/Challenge";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
 import UserModel from "../models/User";
 import { DocumentType } from "@typegoose/typegoose";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import {
     EVALUATION_QUEUE_NAME,
     EvaluationJobData,
@@ -17,28 +18,6 @@ import {
 } from "../queues/evaluationQueue";
 
 const CONCURRENCY = config.codeRunnerConcurrency;
-
-/*
- * Each concurrent slot owns one fixed isolate box. The worker never runs more than
- * CONCURRENCY jobs at once, so a free box always exists, and because the ids are
- * deterministic, a restarted worker knows exactly which boxes to clean up.
- */
-const BOX_ID_BASE = config.codeRunnerWorkerId * CONCURRENCY;
-const BOX_IDS = Array.from({ length: CONCURRENCY }, (_, i) => BOX_ID_BASE + i);
-const freeBoxIds = [...BOX_IDS];
-
-function acquireBox() {
-    const boxId = freeBoxIds.pop();
-    if (boxId === undefined) {
-        // Can only happen if BullMQ ran more than CONCURRENCY jobs at once
-        throw new Error("No free isolate box");
-    }
-    return boxId;
-}
-
-function releaseBox(boxId: number) {
-    freeBoxIds.push(boxId);
-}
 
 async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResult) {
     const challenge = await ChallengeModel.findById(data.challengeId, { description: 0 });
@@ -131,17 +110,14 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
 
 async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Promise<EvaluationJobResult> {
     const data = job.data;
-    const boxId = acquireBox();
     let result: EvaluationResult;
 
     try {
-        console.log(`Running job ${job.id} in box ${boxId}`);
-        result = await runInIsolate(data.source, data.language, boxId, data.stdin);
+        console.log(`Running job ${job.id}`);
+        result = await runInSandbox(data.source, data.language, data.stdin);
     } catch (err) {
         logEvents(`Job ${job.id} failed with error: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
         throw err;
-    } finally {
-        releaseBox(boxId);
     }
 
     let submissionId: string | undefined;
@@ -161,8 +137,10 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
 async function main() {
     await connectDB();
 
-    // Boxes may be left initialized if the previous process crashed
-    await Promise.all(BOX_IDS.map(id => cleanupBox(id).catch(() => { })));
+    // Fail fast if Docker isn't usable, and download missing images before taking jobs
+    await ensureSandboxImages(Object.values(CompilerLanguagesEnum));
+    // Containers and job dirs may be left behind if the previous process crashed
+    await cleanupSandboxLeftovers();
 
     const worker = new Worker<EvaluationJobData, EvaluationJobResult>(EVALUATION_QUEUE_NAME, processJob, {
         connection: redisConnection,
@@ -176,7 +154,7 @@ async function main() {
         if (job) console.warn(`Job ${job.id} failed: ${err.message}`);
     });
 
-    console.log(`Code runner started (worker ${config.codeRunnerWorkerId}, boxes ${BOX_IDS.join(", ")})`);
+    console.log(`Code runner started (worker ${config.codeRunnerWorkerId}, concurrency ${CONCURRENCY})`);
 
     let shuttingDown = false;
     const shutdown = async () => {

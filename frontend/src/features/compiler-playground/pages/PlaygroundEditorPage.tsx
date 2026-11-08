@@ -45,7 +45,12 @@ const getCreditsHeaders = (language: string, username: string): string[] => {
     switch (language) {
         case "web":   return [`<!-- ${message} -->`, `/* ${message} */`, `// ${message}`];
         case "c":
-        case "cpp":   return [`// ${message}`];
+        case "cpp":
+        case "csharp":
+        case "java":
+        case "nodejs":
+        case "go":
+        case "rust":  return [`// ${message}`];
         case "python":
         case "ruby":  return [`# ${message}`];
         case "lua":   return [`-- ${message}`];

@@ -1,4 +1,6 @@
 import dotenv from "dotenv";
+import os from "os";
+import path from "path";
 dotenv.config();
 
 const config = {
@@ -23,13 +25,26 @@ const config = {
 
     redisUrl: process.env.REDIS_URL || "redis://127.0.0.1:6379",
 
-    // Number of jobs one code runner process executes in parallel (each gets its own isolate box)
+    // Number of jobs one code runner process executes in parallel (each in its own containers)
     codeRunnerConcurrency: Number(process.env.CODE_RUNNER_CONCURRENCY) || 4,
-    // Distinguishes code runner processes on the same machine so their isolate box ids don't overlap
+    // Distinguishes code runner processes on the same machine so they only clean up their own containers
     codeRunnerWorkerId: Number(process.env.CODE_RUNNER_WORKER_ID) || 0,
 
+    // Memory limit for running user programs (KB)
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
+    // Largest file / total output a user program may write before it is killed (KB)
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
+    // How much of stdout / stderr / compiler output is kept and returned to the user (bytes)
+    codeOutputLimit: Number(process.env.CODE_OUTPUT_LIMIT) || (4 * 1024),
+
+    // Sandbox images built from sandbox/images, named <prefix>-<lang>:<tag>
+    runnerImagePrefix: process.env.RUNNER_IMAGE_PREFIX || "ghcr.io/webler-group/website-new-runner",
+    // Pin to a commit sha in production so an image rebuild can't change behaviour unnoticed
+    runnerImageTag: process.env.RUNNER_IMAGE_TAG || "latest",
+    // Optional Docker runtime, e.g. "runsc" for gVisor
+    runnerRuntime: process.env.RUNNER_RUNTIME || "",
+    // Host directory for per-job source/build dirs; must be visible to the Docker daemon at the same path
+    runnerJobsDir: process.env.RUNNER_JOBS_DIR || path.join(os.tmpdir(), "website-new-runner"),
 
     emailHost: process.env.EMAIL_HOST as string,
     emailPort: (process.env.EMAIL_PORT ? Number(process.env.EMAIL_PORT) : undefined) as number,
