@@ -2,11 +2,16 @@ import { Queue } from "bullmq";
 import crypto from "crypto";
 import { config } from "../confg";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import HttpError from "../exceptions/HttpError";
 
 export const EVALUATION_QUEUE_NAME = "evaluation";
 
 // How long finished jobs stay in Redis so clients can still poll the result
 const FINISHED_JOB_TTL_SECONDS = 10 * 60;
+
+// Reject new jobs when this many are already waiting, so a flood of submissions
+// can't build an unbounded backlog that delays everyone
+const MAX_WAITING_JOBS = Number(process.env.MAX_WAITING_JOBS) || 200;
 
 export interface RunResult {
     stdout: string;
@@ -57,6 +62,9 @@ function getQueue() {
 export async function addEvaluationJob(data: EvaluationJobData) {
     // Random id so job results can't be enumerated by guessing sequential ids
     const jobId = crypto.randomUUID();
+    if (await getQueue().getWaitingCount() >= MAX_WAITING_JOBS) {
+        throw new HttpError("Code runner is busy, try again in a moment", 503);
+    }
     await getQueue().add("evaluate", data, { jobId });
     return jobId;
 }
