@@ -126,18 +126,6 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                     </div>
                 )}
                 {error && <div className="text-danger mt-2">{error}</div>}
-                {stdout && (
-                    <div className="mt-3 overflow-y-scroll" style={{ maxHeight: "calc(100vh - 200px)" }}>
-                        <h5>Stdout:</h5>
-                        <pre className="bg-secondary p-2 rounded">{stdout}</pre>
-                    </div>
-                )}
-                {stderr && (
-                    <div className="mt-3">
-                        <h5>Stderr:</h5>
-                        <pre className="bg-secondary p-2 rounded text-warning">{stderr}</pre>
-                    </div>
-                )}
                 {image && (
                     <figure className="mt-3 mb-0">
                         <h5>Image:</h5>
@@ -153,6 +141,18 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                             output/{image.name} ({image.width}x{image.height})
                         </figcaption>
                     </figure>
+                )}
+                {stdout && (
+                    <div className="mt-3 overflow-y-scroll" style={{ maxHeight: "calc(100vh - 200px)" }}>
+                        <h5>Stdout:</h5>
+                        <pre className="bg-secondary p-2 rounded">{stdout}</pre>
+                    </div>
+                )}
+                {stderr && (
+                    <div className="mt-3">
+                        <h5>Stderr:</h5>
+                        <pre className="bg-secondary p-2 rounded text-warning">{stderr}</pre>
+                    </div>
                 )}
             </div>
         </>
