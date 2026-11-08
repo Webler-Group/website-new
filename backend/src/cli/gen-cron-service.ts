@@ -31,7 +31,7 @@ IOSchedulingClass=idle
 WantedBy=multi-user.target
 `.trim();
 
-const outputPath = path.resolve("website-new-cron.service");
+const outputPath = path.resolve("webler-website-new-cron.service");
 fs.writeFileSync(outputPath, cronService, 'utf-8');
 
 console.log(`cron service generated successfully at ${outputPath}`);

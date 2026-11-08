@@ -30,7 +30,7 @@ WorkingDirectory=${path.join(projectDir, "backend")}
 WantedBy=multi-user.target
 `.trim();
 
-const outputPath = path.resolve("website-new-backend.service");
+const outputPath = path.resolve("webler-website-new-backend.service");
 fs.writeFileSync(outputPath, backendService, 'utf-8');
 
 console.log(`backend service generated successfully at ${outputPath}`);
