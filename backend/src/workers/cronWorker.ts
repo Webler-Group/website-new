@@ -1,6 +1,5 @@
 import cron from "node-cron";
 import connectDB from "../config/dbConn";
-import EvaluationJob from "../models/EvaluationJob";
 import { dump } from "../utils/dbUtils";
 import { config } from "../confg";
 import { logEvents } from "../middleware/logger";
@@ -25,13 +24,6 @@ function guarded(name: string, fn: () => Promise<void>) {
 
 async function main() {
     await connectDB();
-
-    cron.schedule("0 * * * *", guarded("cleanup-evaluation-jobs", async () => {
-        const result = await EvaluationJob.deleteMany({
-            createdAt: { $lt: new Date(Date.now() - 1000 * 60) }
-        });
-        logEvents(`Deleted ${result.deletedCount} old evaluation jobs`, "cronLog.log");
-    }), { timezone: "UTC" });
 
     cron.schedule("0 2 * * *", guarded("db-dump", async () => {
         await dump(config.dumpDir);

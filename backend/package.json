@@ -32,6 +32,7 @@
   "dependencies": {
     "@typegoose/typegoose": "^13.2.1",
     "bcrypt": "^6.0.0",
+    "bullmq": "6.4.2",
     "canvas": "^3.2.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
@@ -40,6 +41,7 @@
     "express": "^5.2.1",
     "express-async-handler": "^1.2.0",
     "express-rate-limit": "^8.3.0",
+    "ioredis": "5.11.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.4",
     "multer": "^2.1.1",

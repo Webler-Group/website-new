@@ -15,10 +15,24 @@ function spawnAsync(command: string, args: string[], options: any): Promise<{ co
     });
 }
 
+async function cleanupBox(boxId: number) {
+    await exec(`isolate --box-id=${boxId} --cleanup`);
+}
+
 async function runInIsolate(source: string, language: string, boxId: number, inputs: (string | Buffer)[]) {
+    // A box can be left over from a crashed run - make sure we start from a clean state
+    await cleanupBox(boxId);
     const { stdout: initOutput } = await exec(`isolate --box-id=${boxId} --init`);
-    const boxDir = initOutput.trim();
-    const boxPath = path.join(boxDir, "box");
+    const boxPath = path.join(initOutput.trim(), "box");
+
+    try {
+        return await runInBox(source, language, boxId, boxPath, inputs);
+    } finally {
+        await cleanupBox(boxId).catch(() => { });
+    }
+}
+
+async function runInBox(source: string, language: string, boxId: number, boxPath: string, inputs: (string | Buffer)[]) {
 
     for (let i = 0; i < inputs.length; ++i) {
         const inputPath = path.join(boxPath, `input${i}`);
@@ -202,12 +216,10 @@ async function runInIsolate(source: string, language: string, boxId: number, inp
         }
     }
 
-    await exec(`isolate --box-id=${boxId} --cleanup`);
-
     return {
         compileErr,
         runResults
     };
 }
 
-export { runInIsolate };
+export { runInIsolate, cleanupBox };

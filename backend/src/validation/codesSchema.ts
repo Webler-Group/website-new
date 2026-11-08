@@ -100,6 +100,6 @@ export const createJobSchema = z.object({
 
 export const getJobSchema = z.object({
     body: z.object({
-        jobId: idSchema("jobId")
+        jobId: z.uuid("jobId: Invalid job ID")
     })
 });

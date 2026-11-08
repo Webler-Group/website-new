@@ -7,7 +7,7 @@ import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, g
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
-import EvaluationJobModel from "../models/EvaluationJob";
+import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
 import RolesEnum from "../data/RolesEnum";
@@ -427,46 +427,49 @@ const createChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response)
         throw new HttpError("Challenge not found", 404);
     }
 
-    const job = await EvaluationJobModel.create({
-        challenge: challenge._id,
+    const jobId = await addEvaluationJob({
+        challengeId: challenge._id.toString(),
         language,
         source,
         stdin: challenge.testCases.map(x => x.input),
-        user: currentUserId,
-        deviceId
+        userId: currentUserId?.toString(),
+        deviceId: deviceId!
     });
 
-    res.json({ success: true, data: { jobId: job._id } });
+    res.json({ success: true, data: { jobId } });
 });
 
 const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJobModel.findById(jobId, { source: 0 })
-        .populate<{ submission: ChallengeSubmission }>("submission")
-        .lean();
+    const job = await getEvaluationJob(jobId);
 
     if (!job) {
         throw new HttpError("Job does not exist", 404);
     }
 
+    const submissionId = job.returnValue?.submissionId;
+    const submission = submissionId ?
+        await ChallengeSubmissionModel.findById(submissionId, { testResults: 1, passed: 1 }).lean() :
+        null;
+
     res.json({
         success: true,
         data: {
             job: {
-                id: job._id,
-                deviceId: job.deviceId,
+                id: job.id,
+                deviceId: job.data.deviceId,
                 status: job.status,
-                language: job.language,
-                submission: job.submission ? {
-                    testResults: job.submission.testResults.map(x => ({
+                language: job.data.language,
+                submission: submission ? {
+                    testResults: submission.testResults.map(x => ({
                         output: x.output,
                         stderr: x.stderr,
                         passed: x.passed,
                         time: x.time
                     })),
-                    passed: job.submission.passed
+                    passed: submission.passed
                 } : null
             }
         }

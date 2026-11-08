@@ -4,7 +4,7 @@ import asyncHandler from "express-async-handler";
 import CodeModel, { CODE_MINIMAL_FIELDS, CodeMinimal } from "../models/Code";
 import UpvoteModel from "../models/Upvote";
 import templates from "../data/templates";
-import EvaluationJobModel from "../models/EvaluationJob";
+import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
 import { escapeRegex } from "../utils/regexUtils";
 import PostModel from "../models/Post";
 import PostTypeEnum from "../data/PostTypeEnum";
@@ -401,21 +401,21 @@ const createJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { language, source, stdin } = body;
     const deviceId = req.deviceId;
 
-    const job = await EvaluationJobModel.create({
+    const jobId = await addEvaluationJob({
         language,
         source,
         stdin: [stdin || ""],
-        deviceId
+        deviceId: deviceId!
     });
 
-    res.json({ success: true, data: { jobId: job._id } });
+    res.json({ success: true, data: { jobId } });
 });
 
 const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getJobSchema, req);
     const { jobId } = body;
 
-    const job = await EvaluationJobModel.findById(jobId, { source: 0 }).lean();
+    const job = await getEvaluationJob(jobId);
     if (!job) {
         throw new HttpError("Job does not exist", 404);
     }
@@ -423,11 +423,12 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let stdout = "";
     let stderr = "";
 
-    if (job.result) {
-        stderr += job.result.compileErr ?? "";
-        if (job.result.runResults.length > 0) {
-            stdout = job.result.runResults[0].stdout ?? "";
-            stderr += job.result.runResults[0].stderr ?? "";
+    const result = job.returnValue?.result;
+    if (result) {
+        stderr += result.compileErr ?? "";
+        if (result.runResults.length > 0) {
+            stdout = result.runResults[0].stdout ?? "";
+            stderr += result.runResults[0].stderr ?? "";
         }
     }
 
@@ -435,11 +436,11 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         success: true,
         data: {
             job: {
-                id: job._id,
-                deviceId: job.deviceId,
+                id: job.id,
+                deviceId: job.data.deviceId,
                 status: job.status,
-                language: job.language,
-                stdin: job.stdin,
+                language: job.data.language,
+                stdin: job.data.stdin,
                 stdout,
                 stderr
             }

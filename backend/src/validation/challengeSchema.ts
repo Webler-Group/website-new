@@ -86,7 +86,7 @@ export const createChallengeJobSchema = z.object({
 
 export const getChallengeJobSchema = z.object({
   body: z.object({
-    jobId: idSchema("jobId")
+    jobId: z.uuid("jobId: Invalid job ID")
   })
 });
 

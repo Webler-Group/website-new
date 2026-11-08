@@ -50,4 +50,5 @@ MongoDB Atlas connection URI requires `?directConnection=true`
 
 1. Open /backend directory (third terminal)
 2. Install ioi/isolate, compilers and other dependencies `node dist/cli/compiler-setup.js`
-3. Run worker `npm run codeRunner`
+3. Install and start Redis (job queue), e.g. `sudo apt install redis-server`. Set `REDIS_URL` in .env if it is not on `redis://127.0.0.1:6379`
+4. Run worker `npm run codeRunner`

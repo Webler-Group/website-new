@@ -14,7 +14,8 @@ const projectDir = path.resolve(args[0]);
 const backendService = `
 [Unit]
 Description=Weblercodes coderunner
-After=network.target
+After=network.target redis-server.service
+Wants=redis-server.service
 
 [Service]
 ExecStart=${process.execPath} ${path.join(projectDir, "backend/dist/workers/codeRunner.js")}

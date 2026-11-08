@@ -21,6 +21,13 @@ const config = {
     dumpDir: process.env.DUMP_DIR as string,
     logDir: process.env.LOG_DIR as string,
 
+    redisUrl: process.env.REDIS_URL || "redis://127.0.0.1:6379",
+
+    // Number of jobs one code runner process executes in parallel (each gets its own isolate box)
+    codeRunnerConcurrency: Number(process.env.CODE_RUNNER_CONCURRENCY) || 4,
+    // Distinguishes code runner processes on the same machine so their isolate box ids don't overlap
+    codeRunnerWorkerId: Number(process.env.CODE_RUNNER_WORKER_ID) || 0,
+
     compilerMemLimit: Number(process.env.COMPILER_MEM_LIMIT) || (128 * 1024),
     compilerFsizeLimit: Number(process.env.COMPILER_FSIZE_LIMIT) || (4 * 1024),
 
