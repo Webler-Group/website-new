@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Install Docker Engine + gVisor (runsc) on an Ubuntu/Debian host (also works in WSL2 with systemd).
-# Usage: sudo ./setup-host.sh
+# Usage: sudo ./setup-host.sh [user ...]
+#   Each user is added to the docker group: pass the user the code runner service runs as
+#   (e.g. `sudo ./setup-host.sh webler`). Defaults to the user who ran sudo.
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
@@ -8,7 +10,15 @@ if [ "$(id -u)" -ne 0 ]; then
     exit 1
 fi
 
-TARGET_USER="${SUDO_USER:-}"
+TARGET_USERS=("$@")
+[ ${#TARGET_USERS[@]} -eq 0 ] && [ -n "${SUDO_USER:-}" ] && TARGET_USERS=("$SUDO_USER")
+
+for u in "${TARGET_USERS[@]}"; do
+    if ! id "$u" >/dev/null 2>&1; then
+        echo "user '$u' does not exist" >&2
+        exit 1
+    fi
+done
 . /etc/os-release
 DISTRO="$ID"                # ubuntu | debian
 CODENAME="$VERSION_CODENAME"
@@ -43,9 +53,13 @@ runsc install
 systemctl enable --now docker
 systemctl restart docker
 
-if [ -n "$TARGET_USER" ]; then
-    usermod -aG docker "$TARGET_USER"
-    echo "==> added $TARGET_USER to the docker group (log out/in, or run: wsl --shutdown, to apply)"
+for u in "${TARGET_USERS[@]}"; do
+    usermod -aG docker "$u"
+    echo "==> added $u to the docker group"
+done
+if [ ${#TARGET_USERS[@]} -gt 0 ]; then
+    echo "    Groups apply to new sessions only: restart services running as these users"
+    echo "    (e.g. systemctl restart <code runner service>), and log out/in for shells (WSL: wsl --shutdown)."
 fi
 
 echo "==> check"

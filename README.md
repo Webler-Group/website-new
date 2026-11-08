@@ -49,6 +49,6 @@ MongoDB Atlas connection URI requires `?directConnection=true`
 ### Extra steps for code playground
 
 1. Open /backend directory (third terminal)
-2. Install Docker: `sudo ../sandbox/setup-host.sh` installs Docker Engine and gVisor. Docker Desktop with WSL integration also works. Compilers live in the sandbox images (see [sandbox/README.md](sandbox/README.md)); the worker pulls missing images on startup
+2. Install Docker: `sudo ../sandbox/setup-host.sh <user>` installs Docker Engine and gVisor and adds `<user>` to the `docker` group. Pass the user the code runner runs as (e.g. `webler`); without an argument, it adds you. Docker Desktop with WSL integration also works. Compilers live in the sandbox images (see [sandbox/README.md](sandbox/README.md)); the worker pulls missing images on startup
 3. Install and start Redis (job queue), e.g. `sudo apt install redis-server`. Set `REDIS_URL` in .env if it is not on `redis://127.0.0.1:6379`
 4. Run worker `npm run codeRunner`
