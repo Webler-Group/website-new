@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
 import codeRequiresInput from "../../../utils/InputReg";
-import { CreateJobData, GetJobData } from "../../codes/types";
+import { CreateJobData, GetJobData, JobImage } from "../../codes/types";
+import { pollJob } from "../../../utils/pollJob";
+
+// Covers queueing, compiling and the run itself
+const RUN_TIMEOUT_MS = 30_000;
 
 interface CompileOutputProps {
     source: string;
@@ -20,6 +24,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
     const [loading, setLoading] = useState(false);
     const [stdout, setStdout] = useState<string | null>(null);
     const [stderr, setStderr] = useState<string | null>(null);
+    const [image, setImage] = useState<JobImage | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
@@ -46,6 +51,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         setLoading(true);
         setStdout(null);
         setStderr(null);
+        setImage(null);
         setError(null);
 
         const createJobResult = await sendJsonRequest<CreateJobData>("/Codes/CreateJob", "POST", {
@@ -55,26 +61,19 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
         });
 
         if (createJobResult.data) {
-            let getJobResult = null;
-            let status = "pending";
-            let attempt = 0;
+            const jobId = createJobResult.data.jobId;
+            const { result, status } = await pollJob(
+                async () => (await sendJsonRequest<GetJobData>("/Codes/GetJob", "POST", { jobId })).data ?? null,
+                data => data.job.status,
+                RUN_TIMEOUT_MS
+            );
 
-            while (status === "pending" || status === "running") {
-                await new Promise((resolve) => setTimeout(resolve, 1500));
-
-                ++attempt;
-                if (attempt > 5) {
-                    break;
-                }
-                getJobResult = await sendJsonRequest<GetJobData>("/Codes/GetJob", "POST", { jobId: createJobResult.data.jobId });
-                if (getJobResult.data) {
-                    status = getJobResult.data.job.status;
-                }
-            }
-
-            if (status === "done") {
-                setStdout(getJobResult!.data!.job.stdout || "");
-                setStderr(getJobResult!.data!.job.stderr || "");
+            if (status === "done" && result) {
+                setStdout(result.job.stdout || "");
+                setStderr(result.job.stderr || "");
+                setImage(result.job.image ?? null);
+            } else if (status === "timeout") {
+                setError("The code runner is taking too long, please try again in a moment.");
             } else {
                 setError("Something went wrong.");
             }
@@ -138,6 +137,22 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                         <h5>Stderr:</h5>
                         <pre className="bg-secondary p-2 rounded text-warning">{stderr}</pre>
                     </div>
+                )}
+                {image && (
+                    <figure className="mt-3 mb-0">
+                        <h5>Image:</h5>
+                        <img
+                            src={`data:image/png;base64,${image.data}`}
+                            alt={image.name}
+                            width={image.width}
+                            height={image.height}
+                            className="bg-secondary rounded d-block"
+                            style={{ maxWidth: "100%", height: "auto" }}
+                        />
+                        <figcaption className="small text-secondary mt-1">
+                            output/{image.name} ({image.width}x{image.height})
+                        </figcaption>
+                    </figure>
                 )}
             </div>
         </>

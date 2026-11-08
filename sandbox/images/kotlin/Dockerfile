@@ -15,11 +15,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip \
  && apt-get purge -y unzip && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 
 # Record the classes kotlinc loads into a CDS archive, so each compile starts faster
-COPY warmup.kt /opt/runner/warmup.kt
+COPY kotlin/warmup.kt /opt/runner/warmup.kt
 RUN JAVA_OPTS="$KOTLINC_JAVA_OPTS -XX:ArchiveClassesAtExit=/opt/runner/kotlinc.jsa" \
       "$KOTLIN_HOME/bin/kotlinc" -nowarn -d /tmp/warmup.jar /opt/runner/warmup.kt 2>/dev/null \
  && rm /tmp/warmup.jar && chmod 644 /opt/runner/kotlinc.jsa
 
-COPY --chmod=755 compile /usr/local/bin/compile
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 kotlin/compile /usr/local/bin/compile
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 kotlin/run /usr/local/bin/run-program
 WORKDIR /box

@@ -3,5 +3,6 @@ LABEL org.opencontainers.image.source=https://github.com/Webler-Group/website-ne
 
 ENV HOME=/tmp
 
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 ruby/run /usr/local/bin/run-program
 WORKDIR /box

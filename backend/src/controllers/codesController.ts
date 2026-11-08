@@ -4,7 +4,7 @@ import asyncHandler from "express-async-handler";
 import CodeModel, { CODE_MINIMAL_FIELDS, CodeMinimal } from "../models/Code";
 import UpvoteModel from "../models/Upvote";
 import templates from "../data/templates";
-import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
+import { addEvaluationJob, getEvaluationJob, RunImage } from "../queues/evaluationQueue";
 import { escapeRegex } from "../utils/regexUtils";
 import PostModel from "../models/Post";
 import PostTypeEnum from "../data/PostTypeEnum";
@@ -422,6 +422,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     let stdout = "";
     let stderr = "";
+    let image: RunImage | null = null;
 
     const result = job.returnValue?.result;
     if (result) {
@@ -429,6 +430,7 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (result.runResults.length > 0) {
             stdout = result.runResults[0].stdout ?? "";
             stderr += result.runResults[0].stderr ?? "";
+            image = result.runResults[0].image ?? null;
         }
     }
 
@@ -442,7 +444,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 language: job.data.language,
                 stdin: job.data.stdin,
                 stdout,
-                stderr
+                stderr,
+                image
             }
         }
     });

@@ -86,6 +86,14 @@ export interface VoteCodeData {
     vote: 0 | 1;
 }
 
+export interface JobImage {
+    name: string;
+    width: number;
+    height: number;
+    // Base64-encoded PNG
+    data: string;
+}
+
 export interface JobDetails {
     id: string;
     deviceId: string;
@@ -94,6 +102,8 @@ export interface JobDetails {
     stdin: string[];
     stdout: string;
     stderr: string;
+    // PNG file the program saved into ./output
+    image?: JobImage | null;
 }
 
 export interface GetJobData {

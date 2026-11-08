@@ -3,6 +3,12 @@ import { useApi } from "../../../context/apiCommunication";
 import { Button, Spinner } from "react-bootstrap";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { ChallengeDetails, ChallengeSubmissionDetails, CreateChallengeJobData, GetChallengeJobData } from "../types";
+import { pollJob } from "../../../utils/pollJob";
+
+// Covers queueing, compiling and every test case using its full time limit
+const BASE_TIMEOUT_MS = 30_000;
+// Each test may run up to 10 s, plus container start and the backend's kill allowance
+const PER_TEST_TIMEOUT_MS = 13_000;
 
 interface ChallengeCodeOutputProps {
     source: string;
@@ -31,25 +37,17 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
         });
 
         if (createJobResult.data) {
-            let getJobResult = null;
-            let status = "pending";
-            let attempt = 0;
-
-            while (status === "pending" || status === "running") {
-                await new Promise((resolve) => setTimeout(resolve, 1500));
-                ++attempt;
-                if (attempt > challenge.testCases.length + 4) break;
-
-                getJobResult = await sendJsonRequest<GetChallengeJobData>("/Challenge/GetChallengeJob", "POST", { jobId: createJobResult.data.jobId });
-                if (getJobResult.data) {
-                    status = getJobResult.data.job.status;
-                }
-            }
+            const jobId = createJobResult.data.jobId;
+            const { result: getJobResult, status } = await pollJob(
+                async () => (await sendJsonRequest<GetChallengeJobData>("/Challenge/GetChallengeJob", "POST", { jobId })).data ?? null,
+                data => data.job.status,
+                BASE_TIMEOUT_MS + PER_TEST_TIMEOUT_MS * challenge.testCases.length
+            );
 
             if (status === "error") {
                 setError("Something went wrong");
             } else if (status === "done") {
-                setLastSubmission(getJobResult?.data?.job.submission ?? null);
+                setLastSubmission(getJobResult?.job.submission ?? null);
             } else {
                 setError("Timeout");
                 setLastSubmission(null);

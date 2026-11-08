@@ -7,6 +7,7 @@ ENV HOME=/tmp \
 # Call the real rustc directly instead of the rustup proxy (faster, no writes to RUSTUP_HOME).
 RUN ln -s "$(rustc --print sysroot)/bin/rustc" /usr/local/bin/rustc-real
 
-COPY --chmod=755 compile /usr/local/bin/compile
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 rust/compile /usr/local/bin/compile
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 rust/run /usr/local/bin/run-program
 WORKDIR /box

@@ -18,7 +18,8 @@ ENV HOME=/tmp \
     DOTNET_gcServer=0
 
 COPY --from=sdk /out /opt/runner
-COPY GlobalUsings.cs main.runtimeconfig.json /opt/runner/
-COPY --chmod=755 compile /usr/local/bin/compile
-COPY --chmod=755 run /usr/local/bin/run
+COPY csharp/GlobalUsings.cs csharp/main.runtimeconfig.json /opt/runner/
+COPY --chmod=755 csharp/compile /usr/local/bin/compile
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 csharp/run /usr/local/bin/run-program
 WORKDIR /box

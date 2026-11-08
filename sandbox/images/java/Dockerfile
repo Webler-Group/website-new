@@ -3,6 +3,7 @@ LABEL org.opencontainers.image.source=https://github.com/Webler-Group/website-ne
 
 ENV HOME=/tmp
 
-COPY --chmod=755 compile /usr/local/bin/compile
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 java/compile /usr/local/bin/compile
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 java/run /usr/local/bin/run-program
 WORKDIR /box

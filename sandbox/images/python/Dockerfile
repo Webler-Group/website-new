@@ -8,7 +8,7 @@ ENV HOME=/tmp \
     OMP_NUM_THREADS=1 \
     MKL_NUM_THREADS=1
 
-COPY requirements.txt /opt/runner/requirements.txt
+COPY python/requirements.txt /opt/runner/requirements.txt
 RUN pip install --no-cache-dir -r /opt/runner/requirements.txt
 
 # Build matplotlib's font cache once at image build time; `run` copies it to /tmp
@@ -16,5 +16,6 @@ RUN pip install --no-cache-dir -r /opt/runner/requirements.txt
 RUN MPLCONFIGDIR=/opt/runner/mpl python3 -c "import matplotlib.pyplot" \
  && chmod -R a+rX /opt/runner/mpl
 
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 python/run /usr/local/bin/run-program
 WORKDIR /box

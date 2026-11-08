@@ -4,5 +4,6 @@ LABEL org.opencontainers.image.source=https://github.com/Webler-Group/website-ne
 ENV HOME=/tmp \
     NODE_ENV=production
 
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 node/run /usr/local/bin/run-program
 WORKDIR /box

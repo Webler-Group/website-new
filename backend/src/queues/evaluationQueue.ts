@@ -6,17 +6,28 @@ import HttpError from "../exceptions/HttpError";
 
 export const EVALUATION_QUEUE_NAME = "evaluation";
 
-// How long finished jobs stay in Redis so clients can still poll the result
-const FINISHED_JOB_TTL_SECONDS = 10 * 60;
+// How long finished jobs stay in Redis. Clients poll while the job runs and fetch the result
+// within ~1.5 s of it finishing, so this only needs to cover slow networks and retries.
+const FINISHED_JOB_TTL_SECONDS = 2 * 60;
 
 // Reject new jobs when this many are already waiting, so a flood of submissions
 // can't build an unbounded backlog that delays everyone
 const MAX_WAITING_JOBS = Number(process.env.MAX_WAITING_JOBS) || 200;
 
+export interface RunImage {
+    name: string;
+    width: number;
+    height: number;
+    // Base64-encoded PNG
+    data: string;
+}
+
 export interface RunResult {
     stdout: string;
     stderr: string;
     time?: number;
+    // PNG file the program saved into ./output
+    image?: RunImage;
 }
 
 export interface EvaluationResult {

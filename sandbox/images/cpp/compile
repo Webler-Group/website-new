@@ -1,5 +1,7 @@
 #!/bin/sh
 # --as-needed drops libraries the program doesn't use, so linking them all is free.
-exec clang++-18 -std=c++20 -Wall -I/usr/include/eigen3 \
+# libstb provides the stb implementations, so `#include <stb/stb_image_write.h>` works without
+# defining STB_IMAGE_WRITE_IMPLEMENTATION (defining it is harmless too).
+exec clang++-18 -std=c++20 -Wall -I/usr/include/eigen3 -I/usr/include/stb \
     -o /box/main.out /box/main.cpp \
-    -Wl,--as-needed -lfmt -lOSMesa -lGLU -lGL -lEGL -lm -lpthread
+    -Wl,--as-needed -lfmt -lstb -lOSMesa -lGLU -lGL -lEGL -lm -lpthread

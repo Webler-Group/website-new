@@ -9,10 +9,11 @@ ENV HOME=/tmp \
 
 # Go no longer ships a precompiled stdlib, so a cold build of "fmt" takes seconds.
 # Warm a build cache for common packages; `compile` copies it into /tmp (GOCACHE must be writable).
-COPY warm.go /opt/runner/warm.go
+COPY go/warm.go /opt/runner/warm.go
 RUN GOCACHE=/opt/runner/gocache go build -o /dev/null /opt/runner/warm.go \
  && chmod -R a+rX /opt/runner/gocache
 
-COPY --chmod=755 compile /usr/local/bin/compile
-COPY --chmod=755 run /usr/local/bin/run
+COPY --chmod=755 go/compile /usr/local/bin/compile
+COPY --chmod=755 common/run /usr/local/bin/run
+COPY --chmod=755 go/run /usr/local/bin/run-program
 WORKDIR /box

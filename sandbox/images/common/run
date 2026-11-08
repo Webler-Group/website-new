@@ -1,0 +1,35 @@
+#!/bin/sh
+# Shared entry point for every image: runs the language's program, then appends the PNG file it
+# saved into ./output (the working directory is /tmp) to stdout, after a marker line. The backend
+# splits stdout at the LAST marker. The marker is always written, so even if the program prints
+# the same text itself, the last one in the stream is ours.
+mkdir -p /tmp/output
+
+/usr/local/bin/run-program
+status=$?
+
+printf '\n%s\n' '--website-new-images--'
+count=0
+for f in /tmp/output/*.png; do
+    [ -f "$f" ] || continue
+    name=$(basename "$f")
+    case "$name" in
+        *[!A-Za-z0-9._-]*) echo "output/$name skipped: use only letters, digits, '.', '_' and '-' in image names" >&2; continue ;;
+    esac
+    if [ "$count" -ge 1 ]; then
+        echo "Only one image is shown per run (output/$shown); other images in output/ were ignored" >&2
+        break
+    fi
+    size=$(wc -c < "$f")
+    if [ "$size" -gt 1048576 ]; then
+        echo "output/$name skipped: images must be 1 MB or smaller" >&2
+        continue
+    fi
+    printf 'IMAGE %s %s\n' "$name" "$size"
+    base64 -w0 "$f"
+    printf '\n'
+    shown=$name
+    count=$((count + 1))
+done
+
+exit $status

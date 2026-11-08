@@ -42,7 +42,11 @@ for t in "${tests[@]}"; do
                 --tmpfs /tmp:size=64m -v "$job":/box:ro -w /tmp \
                 "$img" run)
         end=$(date +%s.%N)
-        echo "$out"
+        echo "$out" | cut -c1-120
+        # These tests save a PNG into output/; it must come back after the image marker
+        if [ "$t" = cpp ] || [ "$t" = python ]; then
+            echo "$out" | grep -q '^IMAGE ' || { echo "FAIL: no image in output"; fail=1; }
+        fi
         if echo "$out" | grep -q "hello website-new"; then
             awk -v s="$start" -v e="$end" 'BEGIN { printf "OK (%.2fs)\n", e - s }'
         else

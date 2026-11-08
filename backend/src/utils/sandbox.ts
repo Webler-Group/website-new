@@ -35,9 +35,9 @@ const LANGUAGES: Record<string, LanguageSpec> = {
 };
 
 // Run limits (seconds). CPU time is enforced by the kernel (RLIMIT_CPU), wall time by us.
-const RUN_CPU_TIME = 2;
-const RUN_WALL_TIME = 3;
-const COMPILE_WALL_TIME = 30;
+const RUN_CPU_TIME = 10;
+const RUN_WALL_TIME = 10;
+const COMPILE_WALL_TIME = 10;
 // Allowance for container start/stop on top of the program's own wall time before we kill it
 const CONTAINER_GRACE = 2;
 
@@ -53,10 +53,29 @@ const EXIT_SIGSEGV = 139;
 const EXIT_SIGXCPU = 152;
 const EXIT_SIGXFSZ = 153;
 
+// The PNG file a program saves into ./output comes back after this marker on stdout
+// (written by the images' shared `run` wrapper, sandbox/images/common/run)
+const IMAGE_MARKER = Buffer.from("\n--website-new-images--\n");
+const MAX_IMAGE_BYTES = 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 4096;
+// Upper bound for the marker + base64 image section, so we know how much of stdout's end to keep
+const IMAGE_SECTION_MAX = Math.ceil(MAX_IMAGE_BYTES / 3) * 4 + 128 + IMAGE_MARKER.length;
+const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+
+export interface SandboxImage {
+    name: string;
+    width: number;
+    height: number;
+    // Base64-encoded PNG
+    data: string;
+}
+
 export interface SandboxRunResult {
     stdout: string;
     stderr: string;
     time?: number;
+    // PNG file the program saved into ./output
+    image?: SandboxImage;
 }
 
 export interface SandboxResult {
@@ -97,10 +116,80 @@ class CappedOutput {
         }
     }
 
-    toString() {
-        const text = Buffer.concat(this.chunks).toString("utf-8");
-        return this.total > this.limit ? text + "[Output truncated]" : text;
+    /** `length` limits the result to the first bytes of the stream (e.g. before the image section). */
+    toString(length = this.total) {
+        const text = Buffer.concat(this.chunks).subarray(0, length).toString("utf-8");
+        return length > this.limit ? text + "[Output truncated]" : text;
     }
+}
+
+/**
+ * Captures stdout of a `run` container: keeps the first `limit` bytes for the user, plus the last
+ * IMAGE_SECTION_MAX bytes so the image section at the very end survives however much was printed.
+ */
+class RunStdout {
+    private head: CappedOutput;
+    private tail: Buffer[] = [];
+    private tailLength = 0;
+
+    constructor(limit: number) {
+        this.head = new CappedOutput(limit);
+    }
+
+    get total() {
+        return this.head.total;
+    }
+
+    push(chunk: Buffer) {
+        this.head.push(chunk);
+        this.tail.push(chunk);
+        this.tailLength += chunk.length;
+        while (this.tail.length > 1 && this.tailLength - this.tail[0].length >= IMAGE_SECTION_MAX) {
+            this.tailLength -= this.tail.shift()!.length;
+        }
+    }
+
+    /** Splits the stream into the program's own output and the image section after the last marker. */
+    split(): { stdout: string; imageSection: Buffer | null } {
+        const tail = Buffer.concat(this.tail);
+        const index = tail.lastIndexOf(IMAGE_MARKER);
+        if (index < 0) {
+            // Killed before the wrapper finished (timeout, output limit): everything is program output
+            return { stdout: this.head.toString(), imageSection: null };
+        }
+        const programBytes = this.total - (tail.length - index);
+        return {
+            stdout: this.head.toString(programBytes),
+            imageSection: tail.subarray(index + IMAGE_MARKER.length)
+        };
+    }
+}
+
+/** Parses and validates the image section written by the `run` wrapper (at most one image). */
+function parseImage(section: Buffer): { image?: SandboxImage; warning: string } {
+    const [headerLine = "", base64 = ""] = section.toString("latin1").split("\n");
+    const header = /^IMAGE ([A-Za-z0-9._-]{1,100}\.png) (\d+)$/.exec(headerLine);
+    if (!header) {
+        return { warning: "" };
+    }
+
+    const name = header[1];
+    const data = Buffer.from(base64, "base64");
+
+    if (data.length !== Number(header[2]) || data.length > MAX_IMAGE_BYTES) {
+        return { warning: `output/${name} skipped: incomplete or too large\n` };
+    }
+    if (data.length < 24 || !data.subarray(0, 8).equals(PNG_SIGNATURE)) {
+        return { warning: `output/${name} skipped: not a valid PNG file\n` };
+    }
+    // IHDR is always the first chunk: width and height are big-endian at bytes 16 and 20
+    const width = data.readUInt32BE(16);
+    const height = data.readUInt32BE(20);
+    if (width === 0 || height === 0 || width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+        return { warning: `output/${name} skipped: images must be at most ${MAX_IMAGE_DIMENSION}x${MAX_IMAGE_DIMENSION} pixels\n` };
+    }
+
+    return { image: { name, width, height, data: data.toString("base64") }, warning: "" };
 }
 
 /** Runs a docker CLI command to completion and returns its output. */
@@ -132,6 +221,8 @@ interface ContainerOptions {
     outputLimit: number;
     // Kill the container once stdout + stderr exceed this many bytes
     outputKillLimit: number;
+    // Split the image saved by the program off the end of stdout (run step)
+    collectImage?: boolean;
 }
 
 interface ContainerResult {
@@ -141,6 +232,7 @@ interface ContainerResult {
     oomKilled: boolean;
     timedOut: boolean;
     outputExceeded: boolean;
+    image?: SandboxImage;
     // Seconds between the program starting and exiting (excludes container setup)
     time?: number;
 }
@@ -163,7 +255,7 @@ async function runContainer(opts: ContainerOptions): Promise<ContainerResult> {
 
 async function runContainerOnce(opts: ContainerOptions): Promise<ContainerResult> {
     const name = `${LABEL}-${config.codeRunnerWorkerId}-${crypto.randomUUID()}`;
-    const stdout = new CappedOutput(opts.outputLimit);
+    const stdout = opts.collectImage ? new RunStdout(opts.outputLimit) : new CappedOutput(opts.outputLimit);
     const stderr = new CappedOutput(opts.outputLimit);
     let timedOut = false;
     let outputExceeded = false;
@@ -181,7 +273,7 @@ async function runContainerOnce(opts: ContainerOptions): Promise<ContainerResult
                 "run", "--name", name, "-i", ...opts.flags, opts.image, opts.command
             ], { stdio: ["pipe", "pipe", "pipe"] });
 
-            const onOutput = (target: CappedOutput) => (chunk: Buffer) => {
+            const onOutput = (target: CappedOutput | RunStdout) => (chunk: Buffer) => {
                 target.push(chunk);
                 if (stdout.total + stderr.total > opts.outputKillLimit) {
                     outputExceeded = true;
@@ -222,9 +314,13 @@ async function runContainerOnce(opts: ContainerOptions): Promise<ContainerResult
         const started = parseDockerTime(state.StartedAt);
         const finished = parseDockerTime(state.FinishedAt);
 
+        const out = stdout instanceof RunStdout ? stdout.split() : { stdout: stdout.toString(), imageSection: null };
+        const { image, warning } = out.imageSection ? parseImage(out.imageSection) : { image: undefined, warning: "" };
+
         return {
-            stdout: stdout.toString(),
-            stderr: stderr.toString(),
+            stdout: out.stdout,
+            stderr: stderr.toString() + warning,
+            image,
             exitCode: state.ExitCode,
             oomKilled: Boolean(state.OOMKilled),
             timedOut,
@@ -378,14 +474,17 @@ export async function runInSandbox(source: string, language: string, inputs: (st
                 input,
                 wallTime: RUN_WALL_TIME,
                 outputLimit,
-                outputKillLimit
+                // The image section comes on top of the program's own output
+                outputKillLimit: outputKillLimit + IMAGE_SECTION_MAX,
+                collectImage: true
             });
 
             const failure = describeRunFailure(r);
             runResults.push({
                 stdout: r.stdout,
                 stderr: failure ? r.stderr + failure + "\n" : r.stderr,
-                time: r.time
+                time: r.time,
+                ...(r.image ? { image: r.image } : {})
             });
 
             if (failure) {
