@@ -1,0 +1,5 @@
+#!/bin/sh
+# --as-needed drops libraries the program doesn't use, so linking them all is free.
+exec clang++-18 -std=c++20 -O2 -Wall -I/usr/include/eigen3 \
+    -o /box/main.out /box/main.cpp \
+    -Wl,--as-needed -lfmt -lOSMesa -lGLU -lGL -lEGL -lm -lpthread

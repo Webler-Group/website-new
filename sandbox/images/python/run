@@ -1,0 +1,4 @@
+#!/bin/sh
+cp -r /opt/runner/mpl /tmp/mpl 2>/dev/null
+export MPLCONFIGDIR=/tmp/mpl
+exec python3 /box/main.py

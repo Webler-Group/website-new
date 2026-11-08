@@ -1,0 +1,65 @@
+name: sandbox-images
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sandbox/**'
+      - '.github/workflows/sandbox-images.yml'
+  pull_request:
+    paths:
+      - 'sandbox/**'
+      - '.github/workflows/sandbox-images.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_PREFIX: ghcr.io/webler-group/website-new-runner
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        lang: [c, cpp, csharp, go, java, lua, node, python, ruby, rust]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Build into the local Docker daemon first so the smoke test runs before anything is pushed
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: sandbox/images/${{ matrix.lang }}
+          load: true
+          tags: ${{ env.IMAGE_PREFIX }}-${{ matrix.lang }}:latest
+          cache-from: type=gha,scope=${{ matrix.lang }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.lang }}
+
+      - name: Smoke test
+        run: sandbox/test.sh ${{ matrix.lang }}
+
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Same inputs as the Build step, so this is served entirely from cache
+      - name: Push
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v6
+        with:
+          context: sandbox/images/${{ matrix.lang }}
+          push: true
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.lang }}:latest
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.lang }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.lang }}

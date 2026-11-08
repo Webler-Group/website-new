@@ -1,0 +1,2 @@
+#!/bin/sh
+exec clang-18 -std=c17 -O2 -Wall -o /box/main.out /box/main.c -lm

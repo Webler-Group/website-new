@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+cp -r /opt/runner/gocache /tmp/gocache
+export GOCACHE=/tmp/gocache
+exec go build -o /box/main.out /box/main.go

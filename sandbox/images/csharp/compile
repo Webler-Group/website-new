@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+cp /opt/runner/main.runtimeconfig.json /box/main.runtimeconfig.json
+exec dotnet /opt/runner/roslyn/csc.dll @/opt/runner/csc.rsp \
+    -out:/box/main.dll /opt/runner/GlobalUsings.cs /box/main.cs

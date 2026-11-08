@@ -1,0 +1,4 @@
+#!/bin/sh
+# Output straight into /box: a subdirectory would be owned by uid 65534 and the host couldn't delete it.
+exec javac -J-XX:+UseSerialGC -J-XX:TieredStopAtLevel=1 -J-XX:-UsePerfData \
+    -encoding UTF-8 -d /box /box/Main.java

@@ -1,0 +1,2 @@
+#!/bin/sh
+exec rustc-real --edition 2024 -O -o /box/main.out /box/main.rs

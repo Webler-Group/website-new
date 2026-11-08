@@ -1,0 +1,3 @@
+#!/bin/sh
+exec java -XX:+UseSerialGC -XX:-UsePerfData -XX:MaxRAMPercentage=75 -Xss64m \
+    -cp /box Main

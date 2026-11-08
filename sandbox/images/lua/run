@@ -1,0 +1,2 @@
+#!/bin/sh
+exec lua5.4 /box/main.lua
