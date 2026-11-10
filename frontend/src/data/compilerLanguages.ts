@@ -1,7 +1,7 @@
 export const languagesInfo = {
-    web: { color: "rgb(221, 72, 36)", displayName: "Web", shortName: "Web" },
-    c: { color: "rgb(49, 124, 226)", displayName: "C", shortName: "C" },
-    cpp: { color: "rgb(49, 124, 226)", displayName: "C++", shortName: "Cpp" },
+    web: { color: "rgb(241, 101, 41)", displayName: "Web", shortName: "Web" },
+    c: { color: "rgb(69, 90, 100)", displayName: "C", shortName: "C" },
+    cpp: { color: "rgb(243, 75, 125)", displayName: "C++", shortName: "Cpp" },
     csharp: { color: "rgb(155, 79, 150)", displayName: "C#", shortName: "C#" },
     java: { color: "rgb(176, 114, 25)", displayName: "Java", shortName: "Java" },
     kotlin: { color: "rgb(169, 123, 255)", displayName: "Kotlin", shortName: "Kt" },
@@ -9,7 +9,7 @@ export const languagesInfo = {
     nodejs: { color: "rgb(95, 160, 78)", displayName: "Node.js", shortName: "Node" },
     typescript: { color: "rgb(49, 120, 198)", displayName: "TypeScript", shortName: "TS" },
     go: { color: "rgb(0, 173, 216)", displayName: "Go", shortName: "Go" },
-    rust: { color: "rgb(206, 66, 43)", displayName: "Rust", shortName: "Rust" },
+    rust: { color: "rgb(33, 33, 33)", displayName: "Rust", shortName: "Rust" },
     ruby: { color: "rgb(198, 42, 74)", displayName: "Ruby", shortName: "Ruby" },
-    lua: { color: "rgb(79, 45, 168)", displayName: "Lua", shortName: "Lua" }
+    lua: { color: "rgb(0, 0, 128)", displayName: "Lua", shortName: "Lua" }
 };

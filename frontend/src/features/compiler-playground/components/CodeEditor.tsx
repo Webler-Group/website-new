@@ -101,6 +101,31 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
 
     // One ref per tab so search always targets the visible editor
     const aceRefs = useRef<Record<string, AceEditor | null>>({});
+    // Line to jump to once the javascript tab has finished showing
+    const pendingJsLineRef = useRef<number | null>(null);
+
+    const revealPendingLine = (lang: string) => {
+        const line = pendingJsLineRef.current;
+        if (lang !== "javascript" || line === null) return;
+        pendingJsLineRef.current = null;
+        const editor = aceRefs.current[lang]?.editor;
+        if (!editor) return;
+        editor.resize(true);
+        editor.gotoLine(line, 0, true);
+        editor.scrollToLine(line, true, true, () => {});
+        editor.focus();
+    };
+
+    // Called from the web console when a message location is clicked
+    const goToJsLine = useCallback((line: number) => {
+        hideConsole?.();
+        pendingJsLineRef.current = line;
+        if (activeKey === "javascript") {
+            revealPendingLine("javascript");
+        } else {
+            setActiveKey("javascript");
+        }
+    }, [activeKey, hideConsole]);
 
     // Expose openSearch to parent via ref
     useImperativeHandle(ref, () => ({
@@ -131,21 +156,25 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            const isMac = navigator.userAgent.includes("Mac");
-            if ((isMac && e.metaKey) || (!isMac && e.ctrlKey)) {
-                const match = /^Digit(\d)$/.exec(e.code);
-                if (match) {
-                    e.preventDefault();
-                    const index = parseInt(match[1], 10) - 1;
-                    const allTabs = challenge
-                        ? ["description", ...editorTabs, "output"]
-                        : [...editorTabs, "output"];
-                    const tab = allTabs[index];
-                    if (tab) setActiveKey(tab);
-                } else if (e.key === "k") {
-                    e.preventDefault();
-                    toggleConsole?.();
-                }
+            // Playground shortcuts use Alt+Shift (Option+Shift on Mac) so they don't
+            // override browser shortcuts like Ctrl/Cmd+1..9 (tabs) or Ctrl/Cmd+K (search).
+            // e.code is used because Shift/Option change e.key (e.g. "!" or "⁄").
+            //   Alt+Shift+1..9  switch editor tab
+            //   Alt+Shift+K     toggle console
+            if (!e.altKey || !e.shiftKey || e.ctrlKey || e.metaKey) return;
+
+            const match = /^Digit(\d)$/.exec(e.code);
+            if (match) {
+                e.preventDefault();
+                const index = parseInt(match[1], 10) - 1;
+                const allTabs = challenge
+                    ? ["description", ...editorTabs, "output"]
+                    : [...editorTabs, "output"];
+                const tab = allTabs[index];
+                if (tab) setActiveKey(tab);
+            } else if (e.code === "KeyK") {
+                e.preventDefault();
+                toggleConsole?.();
             }
         };
 
@@ -248,6 +277,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             eventKey={lang}
                             title={lang}
                             style={{ height: tabHeightStyle }}
+                            onEntered={() => revealPendingLine(lang)}
                         >
                             {renderAce(lang)}
                         </Tab>
@@ -277,6 +307,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                                 consoleVisible={consoleVisible}
                                 hideConosole={hideConsole}
                                 setLogsCount={setLogsCount}
+                                onLocationClick={goToJsLine}
                             />
                         ) : (
                             <CompileOutput
