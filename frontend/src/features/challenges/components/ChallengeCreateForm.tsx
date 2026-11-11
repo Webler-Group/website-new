@@ -23,7 +23,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [description, setDescription] = useState("");
     const [testCases, setTestCases] = useState<ChallengeTestCase[]>([]);
     const [templates, setTemplates] = useState<ChallengeTemplate[]>([]);
-    const [xp, setXP] = useState(10);
     const [isVisible, setIsVisible] = useState(true);
     const [solution, setSolution] = useState("");
     const [tags, setTags] = useState<string[]>([]);
@@ -46,7 +45,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setDifficulty(result.data.challenge.difficulty);
             setTestCases(result.data.challenge.testCases);
             setTemplates(result.data.challenge.templates);
-            setXP(result.data.challenge.xp);
             setIsVisible(result.data.challenge.isPublic);
             setSolution(result.data.challenge.solution ?? "");
             setTags(result.data.challenge.tags ?? []);
@@ -61,7 +59,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             difficulty,
             testCases,
             templates,
-            xp,
             isVisible: isVisible ? 1 : 0,
             solution,
             tags
@@ -83,7 +80,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             difficulty,
             testCases,
             templates,
-            xp,
             isVisible: isVisible ? 1 : 0,
             solution,
             tags
@@ -179,19 +175,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         <option value="medium">Medium</option>
                         <option value="hard">Hard</option>
                     </Form.Select>
-                </Form.Group>
-
-                <Form.Group className="mt-3">
-                    <Form.Label>XP</Form.Label>
-                    <Form.Control
-                        type="number"
-                        min={0}
-                        value={xp}
-                        placeholder="XP"
-                        onChange={(e) =>
-                            setXP(Number(e.target.value))
-                        }
-                    />
                 </Form.Group>
 
                 <Form.Group className="mt-3">

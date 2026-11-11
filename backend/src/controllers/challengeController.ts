@@ -21,6 +21,7 @@ import ChallengeCollectionModel from "../models/ChallengeCollection";
 import { challengeSetSchema, importChallengeSet } from "../helpers/challengeImportHelper";
 import multer from "multer";
 import MulterFileTypeError from "../exceptions/MulterFileTypeError";
+import { getChallengeXp } from "../helpers/userHelper";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -53,7 +54,7 @@ const getPassedChallengeIds = async (userId: string | undefined, challengeIds: T
 
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates, xp, isVisible, solution, tags } = body;
+    const { title, description, difficulty, testCases, templates, isVisible, solution, tags } = body;
     const currentUserId = req.userId;
 
     const tagIds = (await getOrCreateTagsByNames(normalizeTags(tags ?? []))).map(x => x._id);
@@ -65,7 +66,6 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         testCases,
         templates,
         tags: tagIds,
-        xp,
         isPublic: Number(isVisible) === 1,
         author: currentUserId,
         solution
@@ -231,7 +231,7 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: challenge._id,
                 description: challenge.description,
                 difficulty: challenge.difficulty,
-                xp: challenge.xp ?? 0,
+                xp: getChallengeXp(challenge.difficulty),
                 totalSubmissions: challenge.totalSubmissions ?? 0,
                 title: challenge.title,
                 tags: (challenge.tags ?? []).map(t => t.name),
@@ -378,7 +378,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
                 difficulty: challenge.difficulty,
                 title: challenge.title,
                 tags: (challenge.tags ?? []).map(t => t.name),
-                xp: challenge.xp ?? 0,
+                xp: getChallengeXp(challenge.difficulty),
                 isPublic: challenge.isPublic ?? true,
                 solution: challenge.solution ?? "",
                 templates: challenge.templates.map(x => ({
@@ -398,7 +398,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editChallengeSchema, req);
-    const { challengeId, title, description, difficulty, testCases, templates, xp, isVisible, tags } = body;
+    const { challengeId, title, description, difficulty, testCases, templates, isVisible, tags } = body;
     const challenge = await ChallengeModel.findById(challengeId);
 
     if (!challenge) {
@@ -414,7 +414,6 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.difficulty = difficulty;
     challenge.testCases = testCases;
     challenge.templates = templates;
-    challenge.xp = xp;
     challenge.isPublic = Number(isVisible) === 1;
     challenge.solution = body.solution ?? "";
 
@@ -428,7 +427,7 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             difficulty: challenge.difficulty,
             testCases: challenge.testCases,
             templates: challenge.templates,
-            xp: challenge.xp,
+            xp: getChallengeXp(challenge.difficulty),
             isPublic: challenge.isPublic,
             solution: challenge.solution
         }
@@ -558,7 +557,7 @@ const getCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const allIds = collection.sections.flatMap(s => s.challenges);
     const [challenges, passed] = await Promise.all([
         ChallengeModel.find({ _id: { $in: allIds }, ...(isAuthorized ? {} : { isPublic: true }) })
-            .select("title difficulty xp tags isPublic")
+            .select("title difficulty tags isPublic")
             .populate<{ tags: Tag[] }>("tags", "name")
             .lean(),
         getPassedChallengeIds(req.userId, allIds)
@@ -583,7 +582,7 @@ const getCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
                             id: c._id,
                             title: c.title,
                             difficulty: c.difficulty,
-                            xp: c.xp ?? 0,
+                            xp: getChallengeXp(c.difficulty),
                             isPublic: c.isPublic,
                             tags: (c.tags ?? []).map(t => t.name),
                             isSolved: passed.has(String(c._id))

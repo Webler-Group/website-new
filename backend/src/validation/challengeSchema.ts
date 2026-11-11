@@ -26,7 +26,6 @@ export const createChallengeSchema = z.object({
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
     templates: z.array(templateSchema),
-    xp: z.number(),
     isVisible: z.number(),
     solution: z.string().optional(),
     tags: challengeTagsSchema
@@ -41,7 +40,6 @@ export const editChallengeSchema = createChallengeSchema.extend({
     difficulty: difficultySchema,
     testCases: z.array(testCaseSchema).min(1, "At least one test case is required"),
     templates: z.array(templateSchema),
-    xp: z.number(),
     isVisible: z.number(),
     solution: z.string().optional(),
     tags: challengeTagsSchema

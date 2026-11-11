@@ -26,9 +26,6 @@ export class ChallengeSubmission {
     @prop({ ref: "User", required: true })
     user!: Types.ObjectId;
 
-    @prop({ default: 0 })
-    reward!: number;
-
     @prop({ required: true, enum: CompilerLanguagesEnum })
     language!: CompilerLanguagesEnum;
 

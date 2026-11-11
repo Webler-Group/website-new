@@ -12,7 +12,6 @@ const importedChallengeSchema = z.object({
     title: z.string().trim().min(1).max(120),
     description: z.string().trim().min(1).max(8192),
     difficulty: z.enum(ChallengeDifficultyEnum),
-    xp: z.number().int().min(0).default(10),
     tags: z.array(z.string().trim().min(1).max(64)).max(10).default([]),
     solution: z.string().default(""),
     isPublic: z.boolean().default(true),
@@ -106,7 +105,6 @@ export const importChallengeSet = async (data: ChallengeSet, authorId: string, d
             const fields = {
                 description: resolveLinks(c.description),
                 difficulty: c.difficulty,
-                xp: c.xp,
                 tags,
                 solution: resolveLinks(c.solution),
                 isPublic: c.isPublic,

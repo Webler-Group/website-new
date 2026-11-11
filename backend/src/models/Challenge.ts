@@ -50,9 +50,6 @@ export class Challenge {
     @prop({ default: true })
     isPublic!: boolean;
 
-    @prop({ default: 10 })
-    xp!: number;
-
     @prop({ default: 0 })
     totalSubmissions!: number;
 
