@@ -6,6 +6,7 @@ import Notification from "./Notification"
 import useNotifications from "../hooks/useNotifications"
 import { useApi } from "../../../context/apiCommunication"
 import { useUserInfo } from "../../../context/userInfoContext"
+import Loader from "../../../components/Loader";
 import "./Notifications.css";
 
 const NotificationList = () => {
@@ -59,7 +60,7 @@ const NotificationList = () => {
             }
             return <Notification key={notification.id} notification={notification} onClose={() => setOpened(false)} onView={() => setUnseenCount(cout => cout - 1)} />
         })
-        :
+        : isLoading ? null :
         <div className="text-center my-4">
             <p>You have no notifications</p>
         </div>
@@ -97,6 +98,8 @@ const NotificationList = () => {
                                     {
                                         content
                                     }
+                                    {/* first load and loading of further pages */}
+                                    {isLoading && <Loader />}
                                 </div>
                         }
                     </div>

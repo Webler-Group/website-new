@@ -8,6 +8,7 @@ import LessonNode from "../components/LessonNode";
 import CommentList from "../../../components/comments/CommentList";
 import { GetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
 import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
+import Loader from "../../../components/Loader";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
@@ -21,6 +22,7 @@ const CourseLessonPage = () => {
     const [commentModalVisible, setCommentModalVisible] = useState(false);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Courses", params: { lessonId } });
     const [commentCount, setCommentCount] = useState(0);
+    const [loading, setLoading] = useState(true);
     const [findPost, setFindPost] = useState<{ id: string, isReply: boolean } | null>(null);
 
     useEffect(() => {
@@ -57,6 +59,7 @@ const CourseLessonPage = () => {
     }, [lesson]);
 
     const getLesson = async () => {
+        setLoading(true);
         const result = await sendJsonRequest<GetLessonData>(`/Courses/GetLesson`, "POST", {
             lessonId
         });
@@ -65,6 +68,7 @@ const CourseLessonPage = () => {
             setCss(result.data.css ?? "");
             setCommentCount(result.data.lesson.comments);
         }
+        setLoading(false);
     }
 
     const handleSelectNode = (index: number, unlocked: boolean) => {
@@ -139,6 +143,7 @@ const CourseLessonPage = () => {
     return (
 
         <div className="wb-courses-lesson-container d-flex flex-column">
+            {loading && !lesson && <Loader />}
             {lesson && (
                 <>
                     <Offcanvas show={commentModalVisible} onHide={closeCommentModal} className="wb-comments-offcanvas" placement="end">

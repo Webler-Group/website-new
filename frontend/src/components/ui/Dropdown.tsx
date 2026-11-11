@@ -7,6 +7,7 @@ import {
     ReactNode,
     RefObject,
     useContext,
+    useLayoutEffect,
     useRef,
     useState
 } from "react";
@@ -129,8 +130,50 @@ interface DropdownMenuProps extends Omit<HTMLAttributes<HTMLDivElement>, "style"
     align?: Align;
 }
 
+/** Distance (px) kept between an open menu and the viewport edges */
+const VIEWPORT_MARGIN = 8;
+
+/**
+ * Keeps an open menu inside the viewport (what Popper did for react-bootstrap): shifts it
+ * horizontally when it overflows the left/right edge and flips it above its toggle when it
+ * overflows the bottom and there is more room above.
+ */
+function useKeepInViewport(menuRef: RefObject<HTMLDivElement | null>, show: boolean) {
+    useLayoutEffect(() => {
+        const menu = menuRef.current;
+        if (!show || !menu) return;
+
+        const place = () => {
+            // Measure from the default position
+            menu.style.removeProperty("--wb-ui-dropdown-shift-x");
+            menu.classList.remove("wb-ui-dropdown-menu--flipped");
+
+            const viewportWidth = document.documentElement.clientWidth;
+            const viewportHeight = window.innerHeight;
+            const rect = menu.getBoundingClientRect();
+
+            let shiftX = 0;
+            if (rect.right > viewportWidth - VIEWPORT_MARGIN) shiftX = viewportWidth - VIEWPORT_MARGIN - rect.right;
+            if (rect.left + shiftX < VIEWPORT_MARGIN) shiftX = VIEWPORT_MARGIN - rect.left;
+            if (shiftX !== 0) menu.style.setProperty("--wb-ui-dropdown-shift-x", `${shiftX}px`);
+
+            const toggleRect = menu.parentElement?.getBoundingClientRect();
+            const isBelowToggle = toggleRect && rect.top >= toggleRect.bottom - 1;
+            if (isBelowToggle && rect.bottom > viewportHeight - VIEWPORT_MARGIN && toggleRect.top > viewportHeight - toggleRect.bottom) {
+                menu.classList.add("wb-ui-dropdown-menu--flipped");
+            }
+        };
+
+        place();
+        window.addEventListener("resize", place);
+        return () => window.removeEventListener("resize", place);
+    }, [menuRef, show]);
+}
+
 function DropdownMenu({ align: menuAlign, className, onClick, children, ...props }: DropdownMenuProps) {
     const { show, setShow, autoClose, align, menuRef } = useDropdown();
+
+    useKeepInViewport(menuRef, show);
 
     const handleClick = (e: MouseEvent<HTMLDivElement>) => {
         onClick?.(e);
@@ -144,7 +187,7 @@ function DropdownMenu({ align: menuAlign, className, onClick, children, ...props
         <div
             ref={menuRef}
             data-bs-popper="static"
-            className={cx("dropdown-menu", alignClasses(menuAlign ?? align), show && "show", className)}
+            className={cx("dropdown-menu wb-ui-dropdown-menu", alignClasses(menuAlign ?? align), show && "show", className)}
             onClick={handleClick}
             {...props}
         >

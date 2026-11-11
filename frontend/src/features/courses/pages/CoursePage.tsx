@@ -7,6 +7,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { CourseDetails, GetCourseData } from "../types";
+import Loader from "../../../components/Loader";
 
 const CoursePage = () => {
     const { courseCode } = useParams();
@@ -61,7 +62,7 @@ const CoursePage = () => {
         <Container>
             <div className="wb-courses-main pt-2">
                 {loading ? (
-                    <p>Loading...</p>
+                    <Loader />
                 ) : course ? (
                     <>
                         <div className="d-flex gap-2 py-2">

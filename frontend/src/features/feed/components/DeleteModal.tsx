@@ -35,7 +35,7 @@ const DeleteModal = ({ show, onConfirm, onClose }: DeleteModalProps) => {
             <Modal.Footer>
                 <button
                     onClick={onClose}
-                    className="btn btn-light px-4 rounded-3 shadow-sm"
+                    className="btn wb-ui-button--subtle px-4 rounded-3 shadow-sm"
                     disabled={isDeleting}
                 >
                     Cancel

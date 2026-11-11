@@ -3,11 +3,12 @@ import Course from "../components/Course";
 import { useEffect, useState } from "react";
 import {useApi} from "../../../context/apiCommunication";
 import { EditorCoursesListData } from "../types";
+import Loader from "../../../components/Loader";
 
 const CourseEditorListPage = () => {
     const { sendJsonRequest } = useApi();
     const [courses, setCourses] = useState<any[]>([]);
-    const [_, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         getCourses();
@@ -30,6 +31,9 @@ const CourseEditorListPage = () => {
             </div>
             <div className="my-3">
                 {
+                    loading ?
+                        <Loader />
+                        :
                     courses.length == 0 ?
                         <div className="wb-app-empty-list">
                             <h3>Nothing to show</h3>

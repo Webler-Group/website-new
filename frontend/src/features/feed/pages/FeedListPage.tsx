@@ -221,7 +221,7 @@ const FeedListPage = () => {
               <button
                 onClick={handleRefresh}
                 disabled={feeds.loading || loading}
-                className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
+                className="btn wb-ui-button--subtle rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
               >
                 <FaRotateRight
                   className="text-muted"

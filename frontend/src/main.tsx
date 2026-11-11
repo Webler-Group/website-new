@@ -1,8 +1,9 @@
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 
-import './styles/index.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
+// Our global styles load after Bootstrap so wb- classes can override Bootstrap defaults
+import './styles/index.css';
 import AuthProvider from './features/auth/context/authContext';
 import ApiProvider from './context/apiCommunication';
 import WSProvider from './context/wsCommunication';

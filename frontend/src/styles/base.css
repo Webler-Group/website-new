@@ -2,11 +2,7 @@
  * Base – element resets and generic utilities (wb-util-*)
  * ============================================================================================= */
 
-ul,
-p {
-    margin: 0;
-}
-
+/* Lists are unstyled by default (Bootstrap keeps its spacing); use .wb-util-list-disc for bullets */
 ul {
     list-style: none;
 }
