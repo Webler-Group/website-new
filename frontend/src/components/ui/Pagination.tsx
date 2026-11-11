@@ -8,44 +8,41 @@ interface PaginationProps {
     /** Items per page */
     limit: number;
     changePage: (page: number) => void;
-    /** Number of page links shown on each side of the current page */
+    /**
+     * Size of the page window: at most `between * 2 + 1` slots are shown, including the
+     * edge pages and ellipsis markers (same semantics as react-bootstrap-pagination-control).
+     */
     between?: number;
-    /** Number of page links shown at both ends, separated by an ellipsis */
+    /** Number of edge pages kept at each end, separated by an ellipsis (0 = no edges) */
     ellipsis?: number;
     className?: string;
 }
 
 type PageEntry = number | "ellipsis-start" | "ellipsis-end";
 
+const range = (from: number, to: number) => Array.from({ length: Math.max(0, to - from + 1) }, (_, i) => from + i);
+
 function getPages(page: number, pageCount: number, between: number, ellipsis: number): PageEntry[] {
-    const windowSize = between * 2 + 1 + ellipsis * 2 + 2;
-    if (pageCount <= windowSize) {
-        return Array.from({ length: pageCount }, (_, i) => i + 1);
-    }
+    between = Math.max(1, between);
+    // Edge pages + their ellipsis must leave room for the current page
+    ellipsis = Math.max(0, Math.min(ellipsis, between - 2));
+    const slots = between * 2 + 1;
 
-    let start = Math.max(1, page - between);
-    let end = Math.min(pageCount, page + between);
-    // Keep the middle window size constant near the edges
-    if (start <= ellipsis + 2) {
-        start = 1;
-        end = Math.max(end, between * 2 + ellipsis + 2);
-    }
-    if (end >= pageCount - ellipsis - 1) {
-        end = pageCount;
-        start = Math.min(start, pageCount - between * 2 - ellipsis - 1);
-    }
+    if (pageCount <= slots) return range(1, pageCount);
 
-    const pages: PageEntry[] = [];
-    if (start > 1) {
-        for (let i = 1; i <= ellipsis; i++) pages.push(i);
-        pages.push("ellipsis-start");
+    // Slots taken on one side by the edge pages and the "…" marker
+    const edge = ellipsis > 0 ? ellipsis + 1 : 0;
+    const startEdge: PageEntry[] = ellipsis > 0 ? [...range(1, ellipsis), "ellipsis-start"] : [];
+    const endEdge: PageEntry[] = ellipsis > 0 ? ["ellipsis-end", ...range(pageCount - ellipsis + 1, pageCount)] : [];
+
+    if (page - 1 <= between) {
+        return [...range(1, slots - edge), ...endEdge];
     }
-    for (let i = start; i <= end; i++) pages.push(i);
-    if (end < pageCount) {
-        pages.push("ellipsis-end");
-        for (let i = pageCount - ellipsis + 1; i <= pageCount; i++) pages.push(i);
+    if (page + between >= pageCount) {
+        return [...startEdge, ...range(pageCount - (slots - edge) + 1, pageCount)];
     }
-    return pages;
+    const side = between - edge;
+    return [...startEdge, ...range(page - side, page + side), ...endEdge];
 }
 
 function Pagination({ page, total, limit, changePage, between = 3, ellipsis = 1, className }: PaginationProps) {
