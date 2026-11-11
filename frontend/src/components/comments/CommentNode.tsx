@@ -1,4 +1,4 @@
-import { Button } from "react-bootstrap";
+import { Button } from "../ui";
 import Comment from "./Comment";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import useReplies from "./useReplies";
@@ -117,7 +117,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
     }
 
     return (
-        <div className="mb-4 position-relative wb-comment-node" ref={ref}>
+        <div className="mb-4 position-relative wb-comments-node" ref={ref}>
             <Comment
                 comment={comment}
                 handleDelete={handleDelete}
@@ -129,19 +129,19 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
             />
 
             {comment.answers > 0 && (
-                <div className="wb-thread-container">
-                    <div className="wb-thread-toggle">
+                <div className="wb-comments-thread">
+                    <div className="wb-comments-thread-toggle">
                         <button 
-                            className="wb-thread-toggle-btn" 
+                            className="wb-comments-thread-toggle-button" 
                             onClick={handleToggleReplies}
                         >
-                            <span className="wb-thread-curve"></span>
+                            <span className="wb-comments-thread-curve"></span>
                             {repliesVisible ? "Hide" : "View"} {comment.answers} {comment.answers === 1 ? 'reply' : 'replies'}
                         </button>
                     </div>
 
                     {repliesVisible && (
-                        <div className="wb-thread-replies-list">
+                        <div className="wb-comments-thread-replies">
                     {replies.length > 0 && getFirstValidReplyIndex() > 0 && (
                         <Button
                             variant="primary"
@@ -154,7 +154,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                         </Button>
                     )}
                     {replies.map((reply, index) => (
-                        <div key={reply.id} className="mb-1 wb-reply-item" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
+                        <div key={reply.id} className="mb-1 wb-comments-reply-item" ref={replies.length - 1 == index ? lastReplyNodeRef : undefined}>
                             <Comment
                                 comment={reply}
                                 isReply={true}

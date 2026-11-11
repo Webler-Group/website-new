@@ -6,6 +6,7 @@ import { reactionsInfo } from "../../data/ReactionsEnum";
 import ProfileAvatar from "../../components/ProfileAvatar";
 import ProfileName from "../../components/ProfileName";
 import { UserReaction } from "../../features/feed/types";
+import "./reactions.css";
 
 interface ReactionListItemProps {
     item: UserReaction;
@@ -53,13 +54,7 @@ const ReactionListItem = React.forwardRef<HTMLDivElement, ReactionListItemProps>
                                 <span className="me-1">
                                     {reactionInfo.emoji}
                                 </span>
-                                <span
-                                    style={{
-                                        fontSize: "15px",
-                                        color: reactionInfo.color,
-                                        fontWeight: 600
-                                    }}
-                                >
+                                <span className={`wb-reactions-list-label ${reactionInfo.colorClass}`}>
                                     {reactionInfo.label}
                                 </span>
                             </div>

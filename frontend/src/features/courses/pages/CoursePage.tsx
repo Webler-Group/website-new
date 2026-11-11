@@ -1,5 +1,5 @@
+import { Badge, Button, Card, Col, Container, cx, ProgressBar, Row } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Container, Card, Button, ProgressBar, Row, Col, Badge } from "react-bootstrap";
 import { useParams, Link } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
@@ -7,6 +7,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { CourseDetails, GetCourseData } from "../types";
+import Loader from "../../../components/Loader";
 
 const CoursePage = () => {
     const { courseCode } = useParams();
@@ -61,7 +62,7 @@ const CoursePage = () => {
         <Container>
             <div className="wb-courses-main pt-2">
                 {loading ? (
-                    <p>Loading...</p>
+                    <Loader />
                 ) : course ? (
                     <>
                         <div className="d-flex gap-2 py-2">
@@ -72,7 +73,7 @@ const CoursePage = () => {
 
                         <h3>{course.title}</h3>
 
-                        <p className="wb-courses-course__description">{course.description}</p>
+                        <p className="wb-courses-course-description">{course.description}</p>
 
                         {(lastUnlockedLesson && !course.userProgress.completed) && (
                             <Card className="mt-4 shadow-sm">
@@ -108,8 +109,7 @@ const CoursePage = () => {
                                     return (
                                         <Col md={6} lg={4} key={lesson.id} className="mb-3">
                                             <Card
-                                                className={`h-100 shadow-sm ${lesson.userProgress.unlocked ? '' : 'bg-light text-muted'}`}
-                                                style={{ cursor: lesson.userProgress.unlocked ? 'pointer' : 'not-allowed' }}
+                                                className={cx("h-100 shadow-sm", lesson.userProgress.unlocked ? "wb-util-clickable" : "bg-body-tertiary text-muted wb-util-not-allowed")}
                                             >
                                                 <Card.Body>
                                                     <Card.Title>{lesson.title}</Card.Title>

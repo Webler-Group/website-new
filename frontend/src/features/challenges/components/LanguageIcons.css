@@ -1,4 +1,8 @@
-.wb-challenge-lang-icon {
+/* =============================================================================================
+ * Challenges – language icons (solved state per language)
+ * ============================================================================================= */
+
+.wb-challenges-language-icon {
     width: 28px;
     height: 28px;
     border-radius: 6px;
@@ -6,7 +10,15 @@
     align-items: center;
     justify-content: center;
     color: white;
+    background-color: var(--wb-language-color);
     font-size: 10px;
     font-weight: bold;
     box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* Check mark of a language the user already solved the challenge in */
+.wb-challenges-language-icon-solved {
+    transform: translate(25%, 25%);
+    font-size: 10px;
+    padding: 1px;
 }

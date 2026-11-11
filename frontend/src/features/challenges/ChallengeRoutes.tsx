@@ -15,7 +15,7 @@ import RolesEnum from "../../data/RolesEnum";
 const ChallengeRoutes = () => {
     return (
         <Routes>
-            <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={<Footer />} wide />}>
+            <Route element={<SnackbarLayout Header={<Header />} Footer={<Footer />} wide />}>
                 <Route index element={<ChallengeList />} />
                 <Route path="Collection/:collectionId" element={<ChallengeCollectionPage />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>

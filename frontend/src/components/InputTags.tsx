@@ -1,8 +1,10 @@
+import { Badge, Button, cssVars, cx, FormControl } from "./ui";
 import { ChangeEvent, useEffect, useRef, useState } from 'react';
-import { Badge, Button, FormControl } from 'react-bootstrap';
 import { FaTimes } from 'react-icons/fa';
 import { useApi } from '../context/apiCommunication';
 import { TagListData } from '../features/tags/types';
+import "./InputTags.css";
+import "./Suggestions.css";
 
 interface WeblerBadgeProps {
     name: string,
@@ -15,23 +17,15 @@ export const WeblerBadge = ({ name, state, className, onClick }: WeblerBadgeProp
     const callback = () => {
         if (typeof onClick == "function") onClick();
     };
-    const _cls = 'bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-1 ' + (className ?? "");
     return (
-        <Badge className={_cls} style={{ cursor: "default", padding: "0.4rem 0.6rem" }}>
+        <Badge className={cx("wb-tags-badge bg-secondary-subtle text-secondary d-inline-flex align-items-center gap-1", className)}>
             <span>{name}</span>
             {
                 state === "cancellable" &&
                 <button
-                    className="d-flex align-items-center justify-content-center text-danger fw-bold"
+                    type="button"
+                    className="wb-tags-badge-remove d-flex align-items-center justify-content-center text-danger fw-bold"
                     onClick={callback}
-                    style={{
-                        outline: "none",
-                        background: "none",
-                        border: "none",
-                        fontSize: "1.1rem",
-                        lineHeight: 1,
-                        cursor: "pointer"
-                    }}
                 >
                     <FaTimes />
                 </button>
@@ -101,7 +95,7 @@ export const TagSearch = ({
 
     return (
         <div className='d-flex gap-2'>
-            <div className="position-relative" style={{ width: "100%" }}>
+            <div className="position-relative w-100">
                 <FormControl
                     id={id}
                     ref={inputRef}
@@ -112,7 +106,7 @@ export const TagSearch = ({
                     onChange={(e) => setInput(e.target.value)}
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => setIsFocused(false)}
-                    style={{ width: "100%" }}
+                    className="w-100"
                     aria-autocomplete="list"
                     aria-expanded={filtered.length > 0}
                     onKeyDown={(e) => {
@@ -127,28 +121,16 @@ export const TagSearch = ({
                 />
                 {isFocused && filtered.length > 0 && (
                     <ul
-                        className="position-absolute list-unstyled m-0 p-1"
-                        style={{
-                            top: "100%",
-                            left: 0,
-                            zIndex: 1000,
-                            background: "white",
-                            border: "1px solid #ccc",
-                            borderRadius: "0.25rem",
-                            maxHeight: "150px",
-                            overflowY: "auto",
-                            width: `min(100%, ${maxWidthPx}px)`,
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                        }}
+                        ref={cssVars({ "--wb-suggestions-max-width": maxWidthPx })}
+                        className="wb-suggestions-list wb-suggestions-list--capped-width position-absolute list-unstyled m-0 p-1"
                         role="listbox"
                     >
                         {filtered.map((tag) => (
                             <li
                                 key={`filtered-tag-${tag}`}
-                                style={{ cursor: "pointer", padding: "0.25rem 0.5rem", borderRadius: "0.25rem" }}
                                 onClick={() => handleSelectTag(tag)}
                                 onMouseDown={(e) => e.preventDefault()}
-                                className="hover-bg-light"
+                                className="wb-suggestions-item"
                                 role="option"
                                 aria-selected={false}
                             >
@@ -220,10 +202,7 @@ const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
     });
 
     return (
-        <div
-            className="d-flex flex-wrap align-items-center position-relative"
-            style={{ minWidth: "200px", gap: "0.25rem" }}
-        >
+        <div className="wb-tags-input-container d-flex flex-wrap align-items-center position-relative">
             {content}
 
             {values.length < 10 && (
@@ -232,38 +211,19 @@ const InputTags = ({ values, setValues, placeholder, id }: InputTagsProps) => {
                         id={id}
                         type="text"
                         size="sm"
-                        style={{ width: "120px", marginLeft: values.length > 0 ? "0.25rem" : "0" }}
+                        className={cx("wb-tags-input-field", values.length > 0 && "ms-1")}
                         value={input}
                         onChange={e => handleInputChange(e)}
                         placeholder={placeholder}
                     />
                     {filtered.length > 0 && input.length > 0 && (
-                        <ul
-                            className="position-absolute list-unstyled m-0 p-1"
-                            style={{
-                                top: "100%",
-                                left: 0,
-                                zIndex: 1000,
-                                background: "white",
-                                border: "1px solid #ccc",
-                                borderRadius: "0.25rem",
-                                maxHeight: "150px",
-                                overflowY: "auto",
-                                width: "150px",
-                                boxShadow: "0 2px 6px rgba(0,0,0,0.15)"
-                            }}
-                        >
+                        <ul className="wb-suggestions-list wb-suggestions-list--fixed-width position-absolute list-unstyled m-0 p-1">
                             {filtered.map(tagName => (
                                 <li
                                     key={"filtered-tag-" + tagName}
-                                    style={{
-                                        cursor: "pointer",
-                                        padding: "0.25rem 0.5rem",
-                                        borderRadius: "0.25rem"
-                                    }}
                                     onClick={() => appendTag(tagName)}
                                     onMouseDown={e => e.preventDefault()}
-                                    className="hover-bg-light"
+                                    className="wb-suggestions-item"
                                 >
                                     {tagName}
                                 </li>

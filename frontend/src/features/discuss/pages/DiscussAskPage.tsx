@@ -1,7 +1,6 @@
+import { Button, FormControl, FormGroup, FormLabel, Modal } from "../../../components/ui";
 import { useEffect, useState } from 'react'
-import { Button, FormControl, FormGroup, FormLabel, Modal } from 'react-bootstrap'
 import InputTags from '../../../components/InputTags';
-import { LinkContainer } from 'react-router-bootstrap';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../../context/apiCommunication';
 import RequestResultAlert from '../../../components/RequestResultAlert';
@@ -139,11 +138,9 @@ const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
                 </FormGroup>
 
                 <div className="mt-2 d-flex justify-content-end">
-                    <LinkContainer to={questionId ? "/Discuss/" + questionId : "/Discuss"}>
-                        <Button type="button" variant="secondary" disabled={loading}>
+                    <Button to={questionId ? "/Discuss/" + questionId : "/Discuss"} variant="secondary" disabled={loading}>
                             Cancel
                         </Button>
-                    </LinkContainer>
 
                     {questionId ? (
                         <>

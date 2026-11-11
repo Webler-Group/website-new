@@ -1,7 +1,7 @@
+import { Button } from "../../../components/ui";
 import React, { useState } from 'react'
 import Country from '../../../components/Country';
 import countries from '../../../data/countries';
-import { Button } from 'react-bootstrap';
 import { useApi } from '../../../context/apiCommunication';
 import { useAuth } from '../../auth/context/authContext';
 import ProfileName from '../../../components/ProfileName';

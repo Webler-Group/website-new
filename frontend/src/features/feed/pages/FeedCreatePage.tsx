@@ -1,5 +1,5 @@
+import { Button, Form } from "../../../components/ui";
 import { SubmitEvent, useEffect, useState } from "react";
-import { Button, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";

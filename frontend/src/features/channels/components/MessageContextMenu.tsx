@@ -1,3 +1,4 @@
+import { cssVars, mergeRefs } from "../../../components/ui";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { FaEdit } from "react-icons/fa";
 import { FaRegCopy, FaReply, FaTrash } from "react-icons/fa6";
@@ -84,10 +85,9 @@ const MessageContextMenu = ({
 
     return (
         <div
-            ref={menuRef}
+            ref={mergeRefs(menuRef, cssVars({ "--wb-channels-context-menu-top": pos.top, "--wb-channels-context-menu-left": pos.left }))}
             role="menu"
-            className="position-fixed bg-white border rounded shadow-sm fs-6"
-            style={{ top: pos.top, left: pos.left, zIndex: 2000, minWidth: 160 }}
+            className="wb-channels-context-menu position-fixed bg-body border rounded shadow-sm fs-6"
         >
             <button type="button" role="menuitem"
                 className="w-100 text-start d-flex align-items-center px-2 py-1 btn btn-link text-decoration-none"

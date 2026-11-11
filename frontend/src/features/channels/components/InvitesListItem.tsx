@@ -1,5 +1,5 @@
+import { Button, Card } from "../../../components/ui";
 import React from "react";
-import { Button, Card } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import { ChannelBase, InviteDetails } from "../types";

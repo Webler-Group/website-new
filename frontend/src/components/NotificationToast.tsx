@@ -33,8 +33,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
 
   return (
     <div
-      className="position-fixed top-0 end-0 p-3"
-      style={{ zIndex: 1055 }}
+      className="wb-app-notification-toast position-fixed top-0 end-0 p-3"
     >
       <div
         className={`alert ${

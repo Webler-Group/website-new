@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import { Link } from "react-router-dom";
 
 interface ChallengeTagsProps {
@@ -10,12 +11,12 @@ const ChallengeTags = ({ tags, className, onSelect }: ChallengeTagsProps) => {
     if (!tags || tags.length === 0) return null;
 
     return (
-        <div className={"wb-challenge-tags " + (className ?? "")}>
+        <div className={cx("wb-challenges-tags", className)}>
             {tags.map(tag => (
                 <Link
                     key={tag}
                     to={`/Challenge?tag=${encodeURIComponent(tag)}`}
-                    className="wb-challenge-tag"
+                    className="wb-challenges-tag"
                     onClick={(e) => {
                         e.stopPropagation();
                         if (onSelect) {

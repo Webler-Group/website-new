@@ -1,6 +1,4 @@
-import { Button, Form, FormControl } from "react-bootstrap";
-import { PaginationControl } from "react-bootstrap-pagination-control";
-import { LinkContainer } from "react-router-bootstrap";
+import { Button, Form, FormControl, Pagination } from "../../../components/ui";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import Code from "./Code";
 import QuestionPlaceholder from "../../discuss/components/QuestionPlaceholder";
@@ -124,9 +122,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                 {
                     showNewCodeBtn &&
                     <div className="mb-2 mb-sm-0 d-flex justify-content-end">
-                        <LinkContainer to="/Compiler-Playground">
-                            <Button size='sm'>New code</Button>
-                        </LinkContainer>
+                        <Button to="/Compiler-Playground" size='sm'>New code</Button>
                     </div>
                 }
                 <div className="d-flex gap-2 justify-content-between">
@@ -134,7 +130,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                         <Form.Label htmlFor="filter" className="visually-hidden">
                             Filter
                         </Form.Label>
-                        <Form.Select id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                        <Form.Select id="filter" size='sm' className="wb-form-filter-select" value={filter} onChange={handleFilterSelect}>
                             <option value="1">Most Recent</option>
                             <option value="2">Most Popular</option>
                             {
@@ -149,7 +145,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                         <Form.Label htmlFor="language" className="visually-hidden">
                             Language
                         </Form.Label>
-                        <Form.Select id="language" size='sm' style={{ width: "140px" }} value={language} onChange={handleLanguageSelect}>
+                        <Form.Select id="language" size='sm' className="wb-form-filter-select" value={language} onChange={handleLanguageSelect}>
                             <option key="all" value="all">All</option>
                             {
                                 Object.entries(languagesInfo).map(entry => {
@@ -168,7 +164,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                         placeholders
                         :
                         codesCount == 0 ?
-                            <div className="wb-empty-list">
+                            <div className="wb-app-empty-list">
                                 <h3>Nothing to show</h3>
                             </div>
                             :
@@ -187,7 +183,7 @@ const CodeList = ({ codesState, setCodesState, onCodeClick, isCodeSelected, show
                 }
             </div>
             <div className='my-3'>
-                <PaginationControl
+                <Pagination
                     page={currentPage}
                     between={3}
                     total={codesCount}

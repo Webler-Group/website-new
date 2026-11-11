@@ -1,5 +1,9 @@
+/* =============================================================================================
+ * Profile – profile page header, sections and course / feed items (wb-profile-*)
+ * ============================================================================================= */
+
 /* ── Container ── */
-.wb-p-container {
+.wb-profile-container {
     display: flex;
     flex-direction: column;
     max-width: 900px;
@@ -8,24 +12,24 @@
 }
 
 /* ── Profile Header Card ── */
-.wb-p-header {
+.wb-profile-header {
     position: relative;
     padding: 20px;
 }
 
-.wb-p-header__menu {
+.wb-profile-header-menu {
     position: absolute;
     top: 12px;
     right: 12px;
 }
 
-.wb-p-header__body {
+.wb-profile-header-body {
     display: flex;
     gap: 20px;
     align-items: flex-start;
 }
 
-.wb-p-header__avatar-wrap {
+.wb-profile-header-avatar-wrap {
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
@@ -33,16 +37,16 @@
     gap: 6px;
 }
 
-.wb-p-header__badge {
+.wb-profile-header-badge {
     font-size: 0.65rem;
 }
 
-.wb-p-header__info {
+.wb-profile-header-info {
     flex: 1;
     min-width: 0;
 }
 
-.wb-p-header__name-row {
+.wb-profile-header-name-row {
     display: flex;
     align-items: center;
     gap: 12px;
@@ -50,58 +54,62 @@
     margin-bottom: 6px;
 }
 
-.wb-p-header__name {
+.wb-profile-header-name {
     font-size: 1.25rem;
     font-weight: 700;
     font-family: monospace;
     line-height: 1.2;
 }
 
-.wb-p-header__bio {
+.wb-profile-header-bio {
     font-size: 0.9rem;
-    color: #555;
+    color: var(--bs-secondary-color);
     margin-bottom: 8px;
     word-break: break-word;
 }
 
-.wb-p-header__meta {
+.wb-profile-header-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 12px;
     font-size: 0.88rem;
-    color: #444;
+    color: var(--bs-secondary-color);
     margin-bottom: 10px;
 }
 
-.wb-p-header__stat {
+.wb-profile-header-xp-icon {
+    color: gold;
+}
+
+.wb-profile-header-stat {
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-.wb-p-follows-btn {
+.wb-profile-follows-btn {
     background: none;
     border: none;
     padding: 0;
     font-size: 0.88rem;
-    color: #444;
+    color: var(--bs-secondary-color);
     cursor: pointer;
 }
 
-.wb-p-follows-btn:hover {
+.wb-profile-follows-btn:hover {
     text-decoration: underline;
 }
 
 /* Challenges pills row */
-.wb-p-header__challenges {
+.wb-profile-header-challenges {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
 }
 
-.wb-p-challenges-pill {
+.wb-profile-challenges-pill {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -115,109 +123,109 @@
     transition: opacity 0.15s;
 }
 
-.wb-p-challenges-pill:hover {
+.wb-profile-challenges-pill:hover {
     opacity: 0.8;
 }
 
 /* ── Content Grid ── */
-.wb-p-grid {
+.wb-profile-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0 16px;
     align-items: start;
 }
 
-.wb-p-grid__col {
+.wb-profile-grid-col {
     min-width: 0;
 }
 
 @media (max-width: 640px) {
-    .wb-p-grid {
+    .wb-profile-grid {
         grid-template-columns: 1fr;
     }
 
-    .wb-p-header__body {
+    .wb-profile-header-body {
         flex-direction: column;
         align-items: center;
     }
 
-    .wb-p-header__info {
+    .wb-profile-header-info {
         width: 100%;
     }
 
-    .wb-p-header__name-row {
+    .wb-profile-header-name-row {
         justify-content: center;
         flex-direction: column;
         align-items: center;
     }
 
-    .wb-p-header__bio {
+    .wb-profile-header-bio {
         text-align: center;
     }
 
-    .wb-p-header__meta {
+    .wb-profile-header-meta {
         justify-content: center;
     }
 
-    .wb-p-header__challenges {
+    .wb-profile-header-challenges {
         justify-content: center;
     }
 }
 
 /* ── Section Cards ── */
-.wb-p-section {
+.wb-profile-section {
     overflow: hidden;
 }
 
-.wb-p-section__header {
+.wb-profile-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 
-.wb-p-section__title {
+.wb-profile-section-title {
     font-size: 0.95rem;
     font-weight: 600;
     display: flex;
     align-items: center;
 }
 
-.wb-p-section__empty {
+.wb-profile-section-empty {
     padding: 24px 16px;
     text-align: center;
-    color: #aaa;
+    color: var(--bs-tertiary-color);
     font-size: 0.88rem;
 }
 
-.wb-p-section__empty p {
+.wb-profile-section-empty p {
     margin: 0;
 }
 
-.wb-p-section__footer {
+.wb-profile-section-footer {
     padding: 10px 14px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--bs-border-color-translucent);
 }
 
 /* ── Feed Post Items ── */
-.wb-p-feed-item {
+.wb-profile-feed-item {
     padding: 10px 14px;
     cursor: pointer;
     transition: background 0.15s;
 }
 
-.wb-p-feed-item:last-child {
+.wb-profile-feed-item:last-child {
     border-bottom: none !important;
 }
 
-.wb-p-feed-item:hover {
-    background: #fafbfc;
+.wb-profile-feed-item:hover {
+    background: var(--bs-tertiary-bg);
 }
 
-.wb-p-feed-item__text {
+.wb-profile-feed-item-text {
     font-size: 0.9rem;
-    color: #212529;
+    color: var(--bs-body-color);
     margin: 0 0 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -227,76 +235,18 @@
     word-break: break-word;
 }
 
-.wb-p-feed-item__meta {
+.wb-profile-feed-item-meta {
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
 }
 
 /* ── Course Items ── */
-.wb-p-course-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.wb-p-course-item:last-child {
-    border-bottom: none !important;
-}
-
-.wb-p-course-item:hover {
-    background: #fafbfc;
-}
-
-.wb-p-course-item__img {
-    flex-shrink: 0;
-}
-
-.wb-p-course-item__img img {
-    width: 36px;
-    height: 36px;
-    border-radius: 6px;
-    object-fit: cover;
-    border: 1px solid #eee;
-}
-
-.wb-p-course-item__info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-}
-
-.wb-p-course-item__title {
-    font-size: 0.88rem;
-    font-weight: 500;
-    color: #212529;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-.wb-p-course-item__badge {
-    font-size: 0.65rem;
-    align-self: flex-start;
-}
-
-.wb-p-course-item__participants {
-    font-size: 0.78rem;
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    flex-shrink: 0;
-}
 
 /* ── Courses Horizontal Scroll ── */
-.wb-p-courses-scroll {
+.wb-profile-courses-scroll {
     display: flex;
     overflow-x: auto;
     gap: 10px;
@@ -304,20 +254,20 @@
     scrollbar-width: thin;
 }
 
-.wb-p-courses-scroll::-webkit-scrollbar {
+.wb-profile-courses-scroll::-webkit-scrollbar {
     height: 4px;
 }
 
-.wb-p-courses-scroll::-webkit-scrollbar-track {
+.wb-profile-courses-scroll::-webkit-scrollbar-track {
     background: transparent;
 }
 
-.wb-p-courses-scroll::-webkit-scrollbar-thumb {
-    background: #ddd;
+.wb-profile-courses-scroll::-webkit-scrollbar-thumb {
+    background: var(--bs-border-color);
     border-radius: 4px;
 }
 
-.wb-p-courses-card {
+.wb-profile-courses-card {
     flex-shrink: 0;
     width: 110px;
     display: flex;
@@ -326,28 +276,28 @@
     gap: 6px;
     padding: 10px 8px;
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--bs-border-color);
     cursor: pointer;
     transition: background 0.15s;
     text-align: center;
 }
 
-.wb-p-courses-card:hover {
-    background: #f5f5f5;
+.wb-profile-courses-card:hover {
+    background: var(--bs-secondary-bg);
 }
 
-.wb-p-courses-card__img img {
+.wb-profile-courses-card-img img {
     width: 52px;
     height: 52px;
     border-radius: 10px;
     object-fit: cover;
-    border: 1px solid #eee;
+    border: 1px solid var(--bs-border-color-translucent);
 }
 
-.wb-p-courses-card__title {
+.wb-profile-courses-card-title {
     font-size: 0.78rem;
     font-weight: 500;
-    color: #212529;
+    color: var(--bs-body-color);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -357,12 +307,9 @@
     width: 100%;
 }
 
-.wb-p-courses-card__badge {
+.wb-profile-courses-card-badge {
     font-size: 0.6rem;
     margin-top: auto;
 }
 
 /* ── Misc (kept from original) ── */
-.wb-p-details-delete-modal__backdrop {
-    z-index: 1059 !important;
-}

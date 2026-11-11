@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
 import ProfileAvatar from '../../../components/ProfileAvatar';
@@ -36,14 +37,14 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
         }
     }
 
-    return <div ref={ref ?? undefined} className="min-width-0 overflow-hidden">
-        <div className={`wb-codes-item border-bottom bg-white d-flex align-items-start p-2${isCompact ? " compact" : ""} ${selected ? "selected" : ""}`} onClick={handleClick}>
+    return <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
+        <div className={cx("wb-codes-item border-bottom bg-body d-flex align-items-start p-2", isCompact && "wb-codes-item--compact", selected && "wb-codes-item--selected")} onClick={handleClick}>
             {/* Left: title + language + stats */}
-            <div className="flex-grow-1 min-width-0">
-                <h3 className="text-truncate text-dark" style={{ fontSize: isCompact ? "0.92rem" : "1rem" }}>{title}</h3>
+            <div className="flex-grow-1 wb-util-min-w-0">
+                <h3 className="wb-codes-item-title text-truncate text-body-emphasis">{title}</h3>
 
                 <div className={`d-flex align-items-center gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
-                    <span className="wb-language-chip" style={{ backgroundColor: languagesInfo[code.language]?.color || "#6c757d" }}>
+                    <span className={`wb-codes-language-chip wb-language-${code.language}`}>
                         {languagesInfo[code.language]?.displayName || code.language}
                     </span>
                     <div className="d-flex align-items-center gap-1 opacity-75">
@@ -60,8 +61,8 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
 
             {/* Right: date + name + avatar */}
             {isUser(code.user) && (
-                <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-codes-user-meta">
-                    <small className="text-muted wb-code-timestamp">{DateUtils.format(new Date(code.updatedAt))}</small>
+                <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-codes-item-user-meta">
+                    <small className="text-muted wb-codes-item-timestamp">{DateUtils.format(new Date(code.updatedAt))}</small>
                     {!isCompact && (
                         <div className="d-flex align-items-center gap-1 mt-1">
                             <ProfileName userId={code.user.id} userName={code.user.name} />

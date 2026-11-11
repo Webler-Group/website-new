@@ -1,18 +1,15 @@
-import { Button, Form, FormControl, Badge, InputGroup, Table, ProgressBar, Row, Col, Modal } from "react-bootstrap";
+import { Badge, Button, Col, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table } from "../../../components/ui";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { PaginationControl } from "react-bootstrap-pagination-control";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { ChangeEvent, useEffect, useState } from "react";
-import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import { FaLock, FaSearch, FaPlus, FaCheck, FaLayerGroup, FaTrash } from "react-icons/fa";
 import { ChallengeCollectionListData, ChallengeCollectionMinimal, ChallengeListData, ChallengeMinimal, ChallengeTagCount, ChallengeTagsData } from "../types";
 import ChallengeTags from "../components/ChallengeTags";
 import ChallengeTagFilter from "../components/ChallengeTagFilter";
-import "../components/Challenge.css";
 
 
 const ChallengeList = () => {
@@ -149,8 +146,8 @@ const ChallengeList = () => {
 
     return (
         <div className="py-3">
-            <div className="wb-challenge-toolbar">
-                <InputGroup className="wb-challenge-search">
+            <div className="wb-challenges-toolbar">
+                <InputGroup className="wb-challenges-search">
                     <FormControl
                         placeholder="Search challenges..."
                         value={searchInput}
@@ -162,7 +159,7 @@ const ChallengeList = () => {
                     </Button>
                 </InputGroup>
 
-                <Form.Select value={difficulty} onChange={handleDifficultySelect} className="wb-challenge-difficulty-select">
+                <Form.Select value={difficulty} onChange={handleDifficultySelect} className="wb-challenges-difficulty-select">
                     <option value="all">All levels</option>
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
@@ -179,16 +176,12 @@ const ChallengeList = () => {
                             onChange={(e) => setIsPublic(e.target.checked)}
                             className="small text-muted text-nowrap me-1"
                         />
-                        <LinkContainer to="/Challenge/Create">
-                            <Button size="sm" className="d-flex align-items-center gap-2 text-nowrap">
-                                <FaPlus size={12} /> Create
-                            </Button>
-                        </LinkContainer>
-                        <LinkContainer to="/Challenge/Collection/Create">
-                            <Button size="sm" variant="outline-primary" className="d-flex align-items-center gap-2 text-nowrap">
-                                <FaLayerGroup size={12} /> New collection
-                            </Button>
-                        </LinkContainer>
+                        <Button to="/Challenge/Create" size="sm" className="d-flex align-items-center gap-2 text-nowrap">
+                            <FaPlus size={12} /> Create
+                        </Button>
+                        <Button to="/Challenge/Collection/Create" size="sm" variant="outline-primary" className="d-flex align-items-center gap-2 text-nowrap">
+                            <FaLayerGroup size={12} /> New collection
+                        </Button>
                     </div>
                 )}
             </div>
@@ -204,21 +197,21 @@ const ChallengeList = () => {
                     {loading ? (
                         <Loader />
                     ) : challengeCount === 0 ? (
-                        <div className="wb-empty-list py-5 text-center bg-light rounded-3 border">
+                        <div className="wb-app-empty-list py-5 text-center bg-body-tertiary rounded-3 border">
                             <FaSearch size={40} className="text-muted mb-3 opacity-25" />
                             <h3 className="text-muted">No challenges found</h3>
                             <p className="text-muted small">Try adjusting your filters or search terms</p>
                         </div>
                     ) : (
-                        <div className="wb-challenge-table-container">
-                            <Table hover className="wb-challenge-table mb-0">
+                        <div className="wb-challenges-table-container">
+                            <Table hover className="wb-challenges-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th className="wb-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
-                                        <th className="wb-col-title">Title</th>
-                                        <th className="wb-col-acc text-center d-none d-md-table-cell">Acceptance</th>
-                                        <th className="wb-col-diff text-center">Difficulty</th>
-                                        {isCreator && <th className="wb-col-actions"></th>}
+                                        <th className="wb-challenges-table-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
+                                        <th className="wb-challenges-table-col-title">Title</th>
+                                        <th className="wb-challenges-table-col-acceptance text-center d-none d-md-table-cell">Acceptance</th>
+                                        <th className="wb-challenges-table-col-difficulty text-center">Difficulty</th>
+                                        {isCreator && <th className="wb-challenges-table-col-actions"></th>}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -229,12 +222,12 @@ const ChallengeList = () => {
                                             </td>
                                             <td className="align-middle cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
                                                 <div className="d-flex flex-column">
-                                                    <span className="wb-table-title">
+                                                    <span className="wb-challenges-table-title">
                                                         {challenge.title}
                                                         {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                                     </span>
                                                     <ChallengeTags tags={challenge.tags} className="mt-1" onSelect={setTagFilter} />
-                                                    <span className="d-md-none text-muted" style={{ fontSize: '0.75rem' }}>
+                                                    <span className="d-md-none text-muted wb-util-text-xs">
                                                         Acceptance: {challenge.acceptance}%
                                                     </span>
                                                 </div>
@@ -244,7 +237,7 @@ const ChallengeList = () => {
                                             </td>
                                             <td className="text-center align-middle">
                                                 <Badge
-                                                    className={`wb-challenge-difficulty-mini ${challenge.difficulty === "easy"
+                                                    className={`wb-challenges-difficulty-mini ${challenge.difficulty === "easy"
                                                         ? "bg-success"
                                                         : challenge.difficulty === "medium"
                                                             ? "bg-warning text-dark"
@@ -270,7 +263,7 @@ const ChallengeList = () => {
                     )}
 
                     <div className="my-3">
-                        <PaginationControl
+                        <Pagination
                             page={currentPage}
                             between={3}
                             total={challengeCount}
@@ -284,23 +277,23 @@ const ChallengeList = () => {
                 {collections.length > 0 && (
                     <Col lg={4} xl={3} className="order-1 order-lg-2">
                         <h2 className="fs-6 fw-bold text-uppercase text-muted mb-2">Collections</h2>
-                        <div className="wb-collection-sidebar">
+                        <div className="wb-challenges-collection-sidebar">
                             {collections.map(collection => {
                                 const percent = collection.challengeCount > 0
                                     ? Math.round((collection.solvedCount / collection.challengeCount) * 100)
                                     : 0;
                                 return (
-                                    <Link key={collection.id} to={`/Challenge/Collection/${collection.id}`} className="wb-collection-card">
+                                    <Link key={collection.id} to={`/Challenge/Collection/${collection.id}`} className="wb-challenges-collection-card">
                                         <div className="d-flex align-items-center gap-2">
                                             <FaLayerGroup className="text-primary flex-shrink-0" />
-                                            <span className="wb-collection-card-title">{collection.title}</span>
+                                            <span className="wb-challenges-collection-card-title">{collection.title}</span>
                                             {!collection.isPublic && <FaLock size={10} className="text-muted" />}
                                         </div>
                                         <span className="small text-muted">
                                             {collection.challengeCount} problems · {collection.sectionCount} {collection.sectionCount === 1 ? "section" : "sections"}
                                         </span>
                                         <div className="d-flex align-items-center gap-2">
-                                            <ProgressBar now={percent} variant="success" className="flex-grow-1 wb-collection-progress" />
+                                            <ProgressBar now={percent} variant="success" className="flex-grow-1 wb-challenges-collection-progress" />
                                             <span className="small text-muted text-nowrap">{collection.solvedCount} / {collection.challengeCount}</span>
                                         </div>
                                     </Link>
@@ -320,7 +313,7 @@ const ChallengeList = () => {
                     removed from any collection that lists it.
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="light" className="border" onClick={() => setToDelete(null)}>Cancel</Button>
+                    <Button variant="subtle" className="border" onClick={() => setToDelete(null)}>Cancel</Button>
                     <Button variant="danger" onClick={handleDelete}>Delete</Button>
                 </Modal.Footer>
             </Modal>

@@ -1,3 +1,4 @@
+import { cx, Dropdown } from "../../../components/ui";
 import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,6 @@ import { FaClock, FaComment, FaMapPin, FaShareNodes, FaTrash } from 'react-icons
 import { FaEdit } from 'react-icons/fa';
 import DeleteModal from './DeleteModal';
 import PostAttachment from '../../../components/post-attachment-select/PostAttachment';
-import { Dropdown } from 'react-bootstrap';
 import EllipsisDropdownToggle from '../../../components/EllipsisDropdownToggle';
 import ProfileName from '../../../components/ProfileName';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
@@ -39,8 +39,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: FeedMinimal }) => {
   return (
     <div
       onClick={() => navigate(`/Feed/${originalPost.id}`)}
-      className="mt-2 border bg-light p-2 text-dark text-decoration-none mb-2"
-      style={{ cursor: "pointer" }}
+      className="mt-2 border bg-body-tertiary p-2 text-body-emphasis text-decoration-none mb-2 wb-util-clickable"
     >
       <div className='d-flex gap-2 align-items-center mb-2'>
         <ProfileAvatar size={28} avatarUrl={originalPost.user.avatarUrl} />
@@ -48,7 +47,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: FeedMinimal }) => {
         <span>wrote</span>
       </div>
 
-      <div className='wb-feed-content__message'>
+      <div className='wb-feed-content-message'>
         <i>{originalPost.message}</i>
       </div>
     </div>
@@ -213,7 +212,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
   const body = (
     <>
-      <article className="wb-feed-item">
+      <article>
         <NotificationToast notification={notification} onClose={() => setNotification(null)} />
 
         {/* Header */}
@@ -245,7 +244,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           {(canEdit || canModerate) && (
             <Dropdown>
               <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
-              <Dropdown.Menu style={{ width: "200px" }}>
+              <Dropdown.Menu className="wb-ui-dropdown-menu--wide">
                 {canEdit && (
                   <>
                     <Dropdown.Item
@@ -293,17 +292,17 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
         <div
           ref={contentRef}
-          className={`mt-2 wb-feed-content position-relative ${!showFullContent ? "truncated clickable" : ""}`}
+          className={cx("mt-2 wb-feed-content position-relative", !showFullContent && "wb-feed-content--truncated wb-feed-content--clickable")}
           onClick={!showFullContent ? handleShowFullContentClick : undefined}
         >
-          <div style={!showFullContent ? { pointerEvents: "none" } : {}}>
+          <div className={cx(!showFullContent && "pe-none")}>
             <MarkdownRenderer content={feed.message} />
           </div>
 
           {feed.attachments?.length > 0 && (
-            <div className="mt-2 rounded text-dark text-decoration-none">
+            <div className="mt-2 rounded text-body-emphasis text-decoration-none">
               {feed.attachments?.length > 0 && (
-                <div className="mt-2 rounded text-dark text-decoration-none">
+                <div className="mt-2 rounded text-body-emphasis text-decoration-none">
                   <div className="d-flex flex-column gap-2">
                     {feed.attachments.map(data => (
                       <div key={data.id} className='mt-1'>
@@ -316,21 +315,15 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             </div>
           )}
 
-          {!showFullContent && needsTruncation && <div className="fade-overlay"></div>}
+          {!showFullContent && needsTruncation && <div className="wb-feed-content-fade"></div>}
         </div>
 
         <div className="wb-feed-reactions mt-2 d-flex gap-1 align-items-center" onClick={handleShowUserReactions}>
           <div className='d-flex'>
             {feed.reactions.topReactions.map((r: any, index: number) => (
               <span
-                className='bg-white rounded-circle d-flex align-items-center justify-content-center'
+                className='wb-feed-reactions-icon bg-body rounded-circle d-flex align-items-center justify-content-center'
                 key={`${r.reaction}-${index}`}
-                style={{
-                  marginLeft: index === 0 ? "0" : "-6px",
-                  width: "18px",
-                  height: "18px",
-                  zIndex: (feed.reactions.topReactions.length - index).toString()
-                }}
               >
                 {reactionsInfo[(r.reaction ?? ReactionsEnum.LIKE) as ReactionsEnum].emoji}
               </span>
@@ -347,7 +340,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
 
           <ReactionPicker onReactionChange={handleLike} currentState={feed.reaction} />
 
-          <span className="wb-feed-action-btn" onClick={handleCommentsClick}>
+          <span className="wb-feed-action-button" onClick={handleCommentsClick}>
             <FaComment />
             <span>{commentCount}</span>
             <span>
@@ -355,7 +348,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
             </span>
           </span>
 
-          <span className="wb-feed-action-btn"
+          <span className="wb-feed-action-button"
             onClick={() => {
               if (!userInfo) {
                 navigate("/Users/Login");

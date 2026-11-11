@@ -1,3 +1,4 @@
+import { cx } from "./ui";
 import { Link } from 'react-router-dom'
 
 interface ProfileNameProps {
@@ -6,9 +7,9 @@ interface ProfileNameProps {
     className?: string;
 }
 
-const ProfileName = ({ userId, userName , className=""}: ProfileNameProps) => {
+const ProfileName = ({ userId, userName, className }: ProfileNameProps) => {
     return (
-        <Link to={"/Profile/" + userId} className={"text-nowrap "+className} style={{ fontFamily: "monospace", fontSize: "0.9rem" }}>{userName}</Link>
+        <Link to={"/Profile/" + userId} className={cx("wb-profile-name text-nowrap", className)}>{userName}</Link>
     )
 }
 

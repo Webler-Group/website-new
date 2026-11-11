@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import { FaPencil } from "react-icons/fa6";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
@@ -49,31 +50,29 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
 
     let isAccepted = acceptedAnswer === answer.id;
     let isNewlyCreated = newlyCreatedAnswer === answer.id;
-    let bg = isNewlyCreated ? "beige" : "white";
-
     let body = (
-        <div className="gap-3 d-flex flex-column border-bottom border-2 py-3" style={{ background: bg }}>
+        <div className={cx("wb-discuss-answer gap-3 d-flex flex-column border-bottom border-2 py-3", isNewlyCreated && "wb-discuss-answer--new")}>
             <div className="d-flex gap-3 align-items-start">
-                <div className="d-flex flex-column align-items-center flex-shrink-0" style={{ width: '40px' }}>
+                <div className="wb-discuss-answer-side d-flex flex-column align-items-center flex-shrink-0">
                     {
                         (isQuestionOwner || isAccepted) &&
-                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={"wb-discuss-reply__actions__best-answer-button mb-2" + (isAccepted ? " text-success" : " text-secondary")} style={{ cursor: isQuestionOwner ? "pointer" : "default" }}>
+                        <div onClick={() => toggleAcceptedAnswer(answer.id)} className={cx("wb-discuss-reply-best-answer-button mb-2", isAccepted ? "text-success" : "text-secondary", isQuestionOwner && "wb-util-clickable")}>
                             <FaCheckCircle />
                         </div>
                     }
                     <div className="wb-discuss-voting d-flex align-items-center">
-                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-black" : "")}>
+                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-body-emphasis" : "")}>
                             <FaThumbsUp />
                         </span>
-                        <b className="wb-icon-button text-black ms-1" onClick={showVoters}>{votes}</b>
+                        <b className="wb-icon-button text-body-emphasis ms-1" onClick={showVoters}>{votes}</b>
                     </div>
                 </div>
 
-                <div className="flex-grow-1 d-flex flex-column gap-2" style={{ minWidth: 0 }}>
+                <div className="flex-grow-1 d-flex flex-column gap-2 wb-util-min-w-0">
                     <div className="d-flex justify-content-end align-items-center">
                         {
                             isOwner &&
-                            <span style={{ cursor: "pointer" }} onClick={() => showEditAnswer(answer.id)}>
+                            <span className="wb-util-clickable" onClick={() => showEditAnswer(answer.id)}>
                                 <FaPencil />
                             </span>
                         }

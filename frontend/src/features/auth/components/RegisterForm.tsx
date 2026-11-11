@@ -1,7 +1,7 @@
+import { Button, Form, FormControl, FormGroup, FormLabel } from "../../../components/ui";
 import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
-import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { SubmitEvent, useEffect, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import RequestResultAlert from "../../../components/RequestResultAlert";
@@ -82,10 +82,10 @@ const RegisterForm = ({ onToggleClick, onRegister }: RegisterFormProps) => {
                     <FormLabel htmlFor="captcha">Captcha</FormLabel>
                     <FormControl id="captcha" type="text" required value={solution} onChange={(e) => setSolution(e.target.value)} />
                     <div className="mt-2 d-flex gap-2">
-                        <div style={{ height: "50px" }}>
+                        <div className="wb-auth-captcha">
                             {imageSrc && <img height="100%" src={imageSrc} alt="Captcha" />}
                         </div>
-                        <button disabled={captchaId === null} onClick={generateCaptcha} className="d-flex justify-content-center align-items-center" style={{ width: "25px", height: "25px" }} type="button">⟳</button>
+                        <button disabled={captchaId === null} onClick={generateCaptcha} className="wb-auth-captcha-refresh d-flex justify-content-center align-items-center" type="button">⟳</button>
                     </div>
                 </FormGroup>
                 <Button className="mt-4 w-100 d-block" type="submit" disabled={loading}>Sign up</Button>

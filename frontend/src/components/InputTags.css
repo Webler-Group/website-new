@@ -1,0 +1,26 @@
+/* =============================================================================================
+ * Tags – tag badges, tag input and tag search
+ * ============================================================================================= */
+
+.wb-tags-badge {
+    cursor: default;
+    padding: 0.4rem 0.6rem;
+}
+
+.wb-tags-badge-remove {
+    outline: none;
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.wb-tags-input-container {
+    min-width: 200px;
+    gap: 0.25rem;
+}
+
+.wb-tags-input-field {
+    width: 120px;
+}

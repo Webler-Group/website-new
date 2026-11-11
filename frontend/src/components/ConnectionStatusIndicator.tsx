@@ -29,8 +29,7 @@ const ConnectionStatusIndicator = () => {
         <div
             role="status"
             aria-live="polite"
-            className={"position-fixed start-50 translate-middle-x rounded-pill px-3 py-1 small text-white shadow " + (online ? "bg-success" : "bg-danger")}
-            style={{ bottom: "12px", zIndex: 2000, pointerEvents: "none" }}
+            className={"wb-app-connection-status position-fixed start-50 translate-middle-x rounded-pill px-3 py-1 small text-white shadow " + (online ? "bg-success" : "bg-danger")}
         >
             {online
                 ? "Back online"

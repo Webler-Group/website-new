@@ -1,4 +1,4 @@
-import { Form } from "react-bootstrap"
+import { Form } from "./ui";
 
 type Option_t = string | number | { label: string; value: any };
 
@@ -16,7 +16,7 @@ export const SelectFormField = ({ options, value, onChange }: ISelectFormFieldPr
         { label: String(opt), value: opt }: opt;
 
     return (
-        <Form.Select style={{ width: "140px" }} size='sm'  onChange={e=> onChange(e.target.value)} value={value ?? ""}>
+        <Form.Select className="wb-form-filter-select" size='sm' onChange={e=> onChange(e.target.value)} value={value ?? ""}>
             {
                 options.map((opt, idx) => {
                     const { label, value } = normalize(opt);

@@ -1,0 +1,41 @@
+/* =============================================================================================
+ * Image preview – fullscreen zoomable image overlay
+ * ============================================================================================= */
+
+.wb-image-preview-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    touch-action: auto;
+    color: #ccc;
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.wb-image-preview-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 10;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.8rem;
+    cursor: pointer;
+}
+
+/* transform (zoom / pan) is driven from JS while gesturing */
+.wb-image-preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    transform-origin: center;
+    touch-action: none;
+}

@@ -1,5 +1,5 @@
+import { Button, Container, Form, FormControl, FormGroup, FormLabel } from "../../../components/ui";
 import { SubmitEvent, useState } from "react";
-import { Button, Container, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap"
 import { Link, useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
@@ -35,8 +35,8 @@ const ForgotPasswordPage = () => {
 
     return (
         <>
-            <div className="wb-login-wrapper">
-                <Container className="wb-login-container">
+            <div className="wb-auth-page-wrapper">
+                <Container className="wb-auth-page-container">
                     <h1 className="text-center mb-4">Password Recovery</h1>
                     {
                         isSubmitted ?

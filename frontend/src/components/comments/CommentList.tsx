@@ -1,4 +1,4 @@
-import { Button, Form, FormGroup, FormLabel, Modal, Toast } from "react-bootstrap";
+import { Button, Form, FormGroup, FormLabel, Modal, Toast } from "../ui";
 import CommentNode from "./CommentNode";
 import { FaLeftLong, FaPlus } from "react-icons/fa6";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -286,7 +286,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
     return (
         <>
-            <Modal style={{ zIndex: 1070 }} backdropClassName="wb-reactions-modal__backdrop" size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
+            <Modal size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -347,8 +347,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 }
             </div>
             <Toast
-                className="position-absolute"
-                style={{ zIndex: '999', bottom: '68px', width: '90%' }}
+                className="wb-comments-toast position-absolute"
                 bg={message.success ? 'success' : 'danger'}
                 onClose={() => setMessage(prev => ({ success: prev.success }))}
                 show={(message.errors && message.errors.length > 0) || !!message.message}

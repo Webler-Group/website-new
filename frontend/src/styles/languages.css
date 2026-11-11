@@ -1,0 +1,18 @@
+/* =============================================================================================
+ * Languages – brand color of each compiler language, exposed as --wb-language-color
+ * (keys match languagesInfo in src/data/compilerLanguages.ts)
+ * ============================================================================================= */
+
+.wb-language-web { --wb-language-color: rgb(241, 101, 41); }
+.wb-language-c { --wb-language-color: rgb(69, 90, 100); }
+.wb-language-cpp { --wb-language-color: rgb(243, 75, 125); }
+.wb-language-csharp { --wb-language-color: rgb(155, 79, 150); }
+.wb-language-java { --wb-language-color: rgb(176, 114, 25); }
+.wb-language-kotlin { --wb-language-color: rgb(169, 123, 255); }
+.wb-language-python { --wb-language-color: rgb(230, 200, 70); }
+.wb-language-nodejs { --wb-language-color: rgb(95, 160, 78); }
+.wb-language-typescript { --wb-language-color: rgb(49, 120, 198); }
+.wb-language-go { --wb-language-color: rgb(0, 173, 216); }
+.wb-language-rust { --wb-language-color: rgb(33, 33, 33); }
+.wb-language-ruby { --wb-language-color: rgb(198, 42, 74); }
+.wb-language-lua { --wb-language-color: rgb(0, 0, 128); }

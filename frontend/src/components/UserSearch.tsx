@@ -1,8 +1,10 @@
+import { cssVars, cx, Form, ListGroup } from "./ui";
 import { useState, useEffect, useRef } from "react";
 import { useApi } from "../context/apiCommunication";
 import ProfileAvatar from "./ProfileAvatar";
-import { Form, ListGroup } from "react-bootstrap";
 import { SearchProfilesData, UserMinimal } from "../features/profile/types";
+import "./Suggestions.css";
+import "./UserSearch.css";
 
 interface UserSearchProps {
     value: string;
@@ -40,12 +42,11 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
         if (inputRef.current) inputRef.current.blur();
     };
 
-    const wrapperStyle = maxWidthPx
-        ? { width: "100%", maxWidth: `${maxWidthPx}px` }
-        : { width: "100%" };
-
     return (
-        <div className="position-relative" style={wrapperStyle}>
+        <div
+            ref={cssVars({ "--wb-user-search-max-width": maxWidthPx })}
+            className={cx("position-relative w-100", maxWidthPx && "wb-user-search--capped-width")}
+        >
             <Form.Control
                 autoComplete="off"
                 ref={inputRef}
@@ -59,28 +60,13 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
             />
 
             {isFocused && value && (
-                <ListGroup
-                    className="position-absolute"
-                    style={{
-                        top: "100%",
-                        left: 0,
-                        zIndex: 1000,
-                        background: "white",
-                        border: "1px solid #ccc",
-                        borderRadius: "0.25rem",
-                        maxHeight: "150px",
-                        overflowY: "auto",
-                        width: "100%",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                    }}
-                >
+                <ListGroup className="wb-suggestions-list position-absolute w-100">
                     {results.map((user) => (
                         <ListGroup.Item
                             key={user.id}
                             action
                             onClick={() => handleSelect(user)}
                             onMouseDown={(e) => e.preventDefault()}
-                            style={{ cursor: "pointer" }}
                             className="d-flex align-items-start gap-2"
                         >
                             <ProfileAvatar avatarUrl={user.avatarUrl} size={32} />
@@ -91,19 +77,7 @@ const UserSearch = ({ value, setValue, onSelect, placeholder, maxWidthPx }: User
             )}
 
             {isFocused && value && results.length === 0 && (
-                <div
-                    className="position-absolute text-muted small p-2"
-                    style={{
-                        top: "100%",
-                        left: 0,
-                        zIndex: 1000,
-                        background: "white",
-                        border: "1px solid #ccc",
-                        borderRadius: "0.25rem",
-                        width: "100%",
-                        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                    }}
-                >
+                <div className="wb-suggestions-list position-absolute w-100 text-muted small p-2">
                     No users found
                 </div>
             )}

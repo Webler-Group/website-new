@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import React from "react";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
@@ -14,9 +15,8 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
 
     let body = (
         <div
-            className={`d-flex align-items-center gap-2 p-2 border-bottom cursor-pointer ${selected ? "border border-2 border-dark" : "border-bottom"}`}
+            className={cx("d-flex align-items-center gap-2 p-2 border-bottom wb-util-clickable", selected ? "border border-2 border-secondary" : "border-bottom")}
             onClick={onClick}
-            style={{ cursor: "pointer" }}
         >
             {
                 channel.type == 2 ?
@@ -64,8 +64,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
                     <div>
                         {channel.unreadCount > 0 && (
                             <span
-                                className={"badge " + (channel.muted ? "bg-secondary" : "bg-danger")}
-                                style={{ fontSize: "0.7rem" }}
+                                className={cx("wb-channels-list-unread-badge badge", channel.muted ? "bg-secondary" : "bg-danger")}
                             >
                                 {channel.unreadCount > 99 ? "99+" : channel.unreadCount}
                             </span>

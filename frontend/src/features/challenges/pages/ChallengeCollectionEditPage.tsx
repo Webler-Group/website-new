@@ -1,6 +1,6 @@
+import { Alert, Badge, Button, Card, Container, Form, Modal } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Alert, Badge, Button, Card, Container, Form, Modal } from "react-bootstrap";
 import { FaArrowDown, FaArrowUp, FaChevronRight, FaLock, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import PageTitle from "../../../layouts/PageTitle";
@@ -9,7 +9,6 @@ import MdEditorField from "../../../components/MdEditorField";
 import ChallengeSearchBox from "../components/ChallengeSearchBox";
 import { GetChallengeCollectionData, SaveChallengeCollectionData } from "../types";
 import ChallengeDifficultyEnum from "../../../data/ChallengeDifficultyEnum";
-import "../components/Challenge.css";
 
 interface EditableChallenge {
     id: string;
@@ -133,7 +132,7 @@ const ChallengeCollectionEditPage = () => {
 
     return (
         <Container className="py-4">
-            <div className="wb-challenge-breadcrumb d-flex align-items-center gap-2">
+            <div className="wb-challenges-breadcrumb d-flex align-items-center gap-2">
                 <Link to="/Challenge">Challenges</Link>
                 <FaChevronRight size={10} className="text-muted opacity-50" />
                 {!isNew && (
@@ -142,7 +141,7 @@ const ChallengeCollectionEditPage = () => {
                         <FaChevronRight size={10} className="text-muted opacity-50" />
                     </>
                 )}
-                <span className="text-dark fw-medium">{isNew ? "New collection" : "Edit"}</span>
+                <span className="text-body-emphasis fw-medium">{isNew ? "New collection" : "Edit"}</span>
             </div>
 
             <h2 className="fs-3 fw-bold mb-4">{isNew ? "New collection" : "Edit collection"}</h2>
@@ -184,7 +183,7 @@ const ChallengeCollectionEditPage = () => {
                 const inSection = new Set(section.challenges.map(c => c.id));
                 return (
                     <Card key={section.key} className="mb-3">
-                        <Card.Header className="d-flex align-items-center gap-2 bg-white">
+                        <Card.Header className="d-flex align-items-center gap-2 bg-body">
                             <span className="text-muted fw-semibold">{index + 1}.</span>
                             <Form.Control
                                 size="sm"
@@ -193,11 +192,11 @@ const ChallengeCollectionEditPage = () => {
                                 placeholder="Section title"
                                 onChange={(e) => updateSection(section.key, { title: e.target.value })}
                             />
-                            <Button size="sm" variant="light" className="border" title="Move section up" disabled={index === 0}
+                            <Button size="sm" variant="subtle" className="border" title="Move section up" disabled={index === 0}
                                 onClick={() => setSections(list => move(list, index, -1))}>
                                 <FaArrowUp size={10} />
                             </Button>
-                            <Button size="sm" variant="light" className="border" title="Move section down" disabled={index === sections.length - 1}
+                            <Button size="sm" variant="subtle" className="border" title="Move section down" disabled={index === sections.length - 1}
                                 onClick={() => setSections(list => move(list, index, 1))}>
                                 <FaArrowDown size={10} />
                             </Button>
@@ -219,13 +218,13 @@ const ChallengeCollectionEditPage = () => {
                             />
 
                             {section.challenges.map((challenge, i) => (
-                                <div key={challenge.id} className="wb-collection-edit-row d-flex align-items-center gap-2">
-                                    <span className="text-muted small wb-collection-edit-index">{i + 1}</span>
+                                <div key={challenge.id} className="wb-challenges-collection-edit-row d-flex align-items-center gap-2">
+                                    <span className="text-muted small wb-challenges-collection-edit-index">{i + 1}</span>
                                     <span className="flex-grow-1 small">
                                         {challenge.title}
                                         {!challenge.isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                     </span>
-                                    <Badge bg="light" text="dark" className="border fw-normal">{challenge.difficulty}</Badge>
+                                    <Badge bg="body-tertiary" text="body-emphasis" className="border fw-normal">{challenge.difficulty}</Badge>
                                     <Button size="sm" variant="link" className="p-1 text-secondary" title="Move up" disabled={i === 0}
                                         onClick={() => updateSection(section.key, { challenges: move(section.challenges, i, -1) })}>
                                         <FaArrowUp size={10} />
@@ -272,7 +271,7 @@ const ChallengeCollectionEditPage = () => {
 
             <div className="d-flex gap-2">
                 <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : isNew ? "Create collection" : "Save changes"}</Button>
-                <Button variant="light" className="border" onClick={() => navigate(isNew ? "/Challenge" : `/Challenge/Collection/${collectionId}`)}>Cancel</Button>
+                <Button variant="subtle" className="border" onClick={() => navigate(isNew ? "/Challenge" : `/Challenge/Collection/${collectionId}`)}>Cancel</Button>
                 {!isNew && (
                     <Button variant="outline-danger" className="ms-auto d-flex align-items-center gap-2" onClick={() => setShowDelete(true)}>
                         <FaTrash size={12} /> Delete collection
@@ -288,7 +287,7 @@ const ChallengeCollectionEditPage = () => {
                     "{title}" will be deleted. The challenges in it are not deleted and stay available in the challenge list.
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="light" className="border" onClick={() => setShowDelete(false)}>Cancel</Button>
+                    <Button variant="subtle" className="border" onClick={() => setShowDelete(false)}>Cancel</Button>
                     <Button variant="danger" onClick={handleDelete}>Delete</Button>
                 </Modal.Footer>
             </Modal>

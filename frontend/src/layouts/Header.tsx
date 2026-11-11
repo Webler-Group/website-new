@@ -1,27 +1,27 @@
-import Container from 'react-bootstrap/Container';
-import Nav from 'react-bootstrap/Nav';
-import Navbar from 'react-bootstrap/Navbar';
-import { LinkContainer } from 'react-router-bootstrap';
+
+
+
+import { Container, Nav, Navbar } from "../components/ui";
 import AuthNavigation from '../features/auth/components/AuthNavigation';
 import NotificationList from '../features/profile/components/NotificationList';
 import { useAuth } from '../features/auth/context/authContext';
 import ChannelsButton from '../features/channels/components/ChannelsButton';
 import { Link } from 'react-router-dom';
+import AppLogo from '../components/AppLogo';
 
 interface HeaderProps {
-  variant?: string;
   hideChannelsButton?: boolean;
 }
 
-function Header({ variant, hideChannelsButton }: HeaderProps) {
+function Header({ hideChannelsButton }: HeaderProps) {
 
   const { userInfo } = useAuth();
 
   return (
-    <Navbar expand="lg" bg={variant} variant={variant} className="border-bottom w-100" collapseOnSelect>
+    <Navbar expand="lg" bg="body-tertiary" className="border-bottom w-100" collapseOnSelect>
       <Container>
         <Link to="/" aria-label="Home">
-          <Navbar.Brand><img src="/resources/images/logo.svg" alt="Webler logo" height="32px" width="96px" /></Navbar.Brand>
+          <Navbar.Brand><AppLogo /></Navbar.Brand>
         </Link>
         <div className="d-flex align-items-center gap-3">
           <Navbar.Toggle aria-controls="navbarScroll" />
@@ -35,26 +35,14 @@ function Header({ variant, hideChannelsButton }: HeaderProps) {
         </div>
         <Navbar.Collapse id="navbarScroll" className="text-center">
           <Nav className="me-auto">
-            <LinkContainer to="/Courses">
-              <Nav.Link>Courses</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/Codes">
-              <Nav.Link>Codes</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/Discuss">
-              <Nav.Link>Discuss</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/Feed">
-              <Nav.Link>Feed</Nav.Link>
-            </LinkContainer>
-            <LinkContainer to="/Challenge">
-              <Nav.Link>Challenges</Nav.Link>
-            </LinkContainer>
+            <Nav.Link to="/Courses">Courses</Nav.Link>
+            <Nav.Link to="/Codes">Codes</Nav.Link>
+            <Nav.Link to="/Discuss">Discuss</Nav.Link>
+            <Nav.Link to="/Feed">Feed</Nav.Link>
+            <Nav.Link to="/Challenge">Challenges</Nav.Link>
             {
               userInfo && userInfo.roles.some(role => role !== "User") &&
-              <LinkContainer to="/Tools">
-                <Nav.Link>Tools</Nav.Link>
-              </LinkContainer>
+              <Nav.Link to="/Tools">Tools</Nav.Link>
             }
           </Nav>
           <AuthNavigation />

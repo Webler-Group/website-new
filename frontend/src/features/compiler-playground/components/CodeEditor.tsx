@@ -1,5 +1,5 @@
+import { cssVars, mergeRefs, Tab, Tabs } from "../../../components/ui";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { Tab, Tabs } from "react-bootstrap";
 import AceEditor from "react-ace";
 import ace from "ace-builds";
 
@@ -30,6 +30,7 @@ import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
+import { useTheme } from "../../../utils/ThemeUtils";
 
 ace.config.set("basePath", new URL("ace-builds/src-noconflict", import.meta.url).pathname);
 
@@ -68,7 +69,8 @@ interface CodeEditorProps {
     js: string;
     setJs: (value: string) => void;
     options: { scale: number; lineWrap: boolean };
-    tabHeightStyle: string;
+    /** Height (px) of the UI above the editor tabs, subtracted from the visible viewport height */
+    tabHeightOffset: number;
     consoleVisible?: boolean;
     hideConsole?: () => void;
     toggleConsole?: () => void;
@@ -86,7 +88,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
     js,
     setJs,
     options,
-    tabHeightStyle,
+    tabHeightOffset,
     consoleVisible,
     hideConsole,
     toggleConsole,
@@ -94,6 +96,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
     challenge,
     submission,
 }, ref) => {
+    const { theme } = useTheme();
     const [editorTabs, setEditorTabs] = useState<string[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -245,7 +248,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                         }, 350);
                     }}
                     editorProps={{ $blockScrolling: true }}
-                    style={{ height: "100%", overscrollBehavior: "contain" }}
+                    className="wb-compiler-playground-ace-editor"
                 />
             );
         },
@@ -254,7 +257,11 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
 
 
     return (
-        <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
+        <div
+            ref={mergeRefs(containerRef, cssVars({ "--wb-compiler-playground-editor-offset": tabHeightOffset }))}
+            className="bg-dark"
+            data-bs-theme="dark"
+        >
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {challenge != null && (
@@ -262,10 +269,10 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             key="description"
                             eventKey="description"
                             title="description"
-                            className="bg-white"
-                            style={{ height: tabHeightStyle }}
+                            className="wb-compiler-playground-editor-tab"
                         >
-                            <div className="overflow-y-auto h-100 p-2">
+                            {/* The editor is always dark; the challenge description follows the app theme */}
+                            <div data-bs-theme={theme} className="overflow-y-auto h-100 p-2 bg-body text-body">
                                 <MarkdownRenderer content={challenge.description} />
                             </div>
                         </Tab>
@@ -276,7 +283,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             key={lang}
                             eventKey={lang}
                             title={lang}
-                            style={{ height: tabHeightStyle }}
+                        className="wb-compiler-playground-editor-tab"
                             onEntered={() => revealPendingLine(lang)}
                         >
                             {renderAce(lang)}
@@ -289,7 +296,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                         key="output"
                         eventKey="output"
                         title="output"
-                        style={{ height: tabHeightStyle }}
+                        className="wb-compiler-playground-editor-tab"
                     >
                         {challenge != null ? (
                             <ChallengeCodeOutput

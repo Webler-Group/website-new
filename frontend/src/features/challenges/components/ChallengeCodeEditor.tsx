@@ -1,6 +1,6 @@
-import { Button, Dropdown, Modal } from "react-bootstrap";
+import { Button, Dropdown, Modal } from "../../../components/ui";
 import { FaTimes } from "react-icons/fa";
-import { CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import CodeEditor from "../../compiler-playground/components/CodeEditor";
 import useEditorOptions from "../../compiler-playground/hooks/useEditorOptions";
@@ -27,7 +27,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const [loading, setLoading] = useState(false);
     const [showExitModal, setShowExitModal] = useState(false);
     const { editorOptions } = useEditorOptions();
-    const { viewport } = useVisualViewport();
+    const { viewportVars } = useVisualViewport();
     const { showMessage } = useSnackbar();
     const [title, setTitle] = useState(challenge.title);
 
@@ -130,12 +130,9 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
         }
     };
 
-    // Only expose the visible height (excludes the mobile virtual keyboard) to the editor tabs
-    const viewportStyle = viewport ? ({ "--wb-viewport-height": `${viewport.height}px` } as CSSProperties) : undefined;
-
     return (
         <>
-            <Modal style={{ zIndex: "1060" }} backdropClassName="wb-challenges-editor__exit-modal__backdrop" show={showExitModal || navigationBlocked} onHide={cancelExit} centered>
+            <Modal show={showExitModal || navigationBlocked} onHide={cancelExit} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Unsaved Changes</Modal.Title>
                 </Modal.Header>
@@ -158,8 +155,9 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                 className="p-0 m-0"
                 contentClassName="h-100"
             >
-                <Modal.Body className="p-0 m-0 d-flex flex-column" style={viewportStyle}>
-                    <div className="d-flex align-items-center justify-content-between border-bottom bg-white p-1" style={{ height: "44px" }}>
+                {/* Only expose the visible height (excludes the mobile virtual keyboard) to the editor tabs */}
+                <Modal.Body ref={viewportVars} className="p-0 m-0 d-flex flex-column">
+                    <div className="wb-app-toolbar d-flex align-items-center justify-content-between border-bottom bg-body p-1">
                         <div className="d-flex align-items-center">
                             <Button variant="link" className="text-secondary" onClick={handleExit}>
                                 <FaTimes />
@@ -169,7 +167,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                         <div>
                             <Dropdown>
                                 <Dropdown.Toggle as={EllipsisDropdownToggle}></Dropdown.Toggle>
-                                <Dropdown.Menu style={{ width: "200px" }}>
+                                <Dropdown.Menu className="wb-ui-dropdown-menu--wide">
                                     <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>
@@ -187,7 +185,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                                     js={js}
                                     setJs={setJs}
                                     options={editorOptions}
-                                    tabHeightStyle="calc(var(--wb-viewport-height, 100dvh) - 85px)"
+                                    tabHeightOffset={85}
                                     challenge={challenge}
                                     submission={code.challenge.lastSubmission}
                                 />

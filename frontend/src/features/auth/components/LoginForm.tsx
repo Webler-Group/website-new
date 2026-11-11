@@ -1,7 +1,7 @@
+import { Button, Form, FormControl, FormGroup, FormLabel } from "../../../components/ui";
 import { Link } from "react-router-dom";
 import {useApi} from "../../../context/apiCommunication";
 import { useAuth } from "../context/authContext";
-import { Button, Form, FormControl, FormGroup, FormLabel } from "react-bootstrap";
 import { SubmitEvent, useState } from "react";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import RequestResultAlert from "../../../components/RequestResultAlert";

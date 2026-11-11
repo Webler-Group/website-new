@@ -1,4 +1,4 @@
-import { Container } from "react-bootstrap";
+import { Container } from "../components/ui";
 import PageTitle from "../layouts/PageTitle";
 
 
@@ -7,9 +7,9 @@ const TermsOfUsePage = () => {
     PageTitle("Terms of Use", false);
 
     return (
-        <div className="bg-light py-4" style={{ minHeight: "100vh" }}>
+        <div className="bg-body-tertiary py-4 min-vh-100">
             <Container>
-                <div className="bg-white rounded p-3 shadow">
+                <div className="bg-body rounded p-3 shadow">
                     <div>
                         <h2 className="fw-bold">Terms & Conditions</h2>
                     </div>

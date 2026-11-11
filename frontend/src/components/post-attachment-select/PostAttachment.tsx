@@ -1,4 +1,4 @@
-import { LinkContainer } from "react-router-bootstrap";
+import { Link } from "react-router-dom";
 import { PostAttachmentDetails } from "./types";
 
 interface PostAttachmentProps {
@@ -38,15 +38,15 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
     }
 
     return (
-        <LinkContainer to={to} style={{ cursor: "pointer" }}>
-            <div className="d-flex flex-column border shadow-sm rounded-3 bg-white p-2">
+        <Link to={to} className="d-block text-reset text-decoration-none">
+            <div className="d-flex flex-column border shadow-sm rounded-3 bg-body p-2">
                 <div className="d-flex gap-2 justify-content-between">
-                    <h6 className="fw-semibold" style={{ wordBreak: "break-word", whiteSpace: "normal" }}>{title}</h6>
-                    <div className="small text-muted" style={{ whiteSpace: "nowrap" }}>{info}</div>
+                    <h6 className="fw-semibold text-break text-wrap">{title}</h6>
+                    <div className="small text-muted text-nowrap">{info}</div>
                 </div>
                 <div className="small text-muted">{subtitle}</div>
             </div>
-        </LinkContainer>
+        </Link>
     );
 }
 

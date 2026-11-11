@@ -1,5 +1,5 @@
+import { Badge, FormControl, ListGroup } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Badge, FormControl, ListGroup } from "react-bootstrap";
 import { FaLock, FaPlus } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import { ChallengeSearchItem, SearchChallengesData } from "../types";
@@ -33,13 +33,13 @@ const ChallengeSearchBox = ({ excludeIds, onSelect }: ChallengeSearchBoxProps) =
                 onChange={(e) => setQuery(e.target.value)}
                 autoFocus
             />
-            <ListGroup className="wb-collection-search-results mt-1">
+            <ListGroup className="wb-challenges-collection-search-results mt-1">
                 {visible.map(c => (
                     <ListGroup.Item key={c.id} action className="d-flex align-items-center gap-2 py-1 small" onClick={() => onSelect(c)}>
                         <FaPlus size={10} className="text-primary" />
                         <span className="flex-grow-1">{c.title}</span>
                         {!c.isPublic && <FaLock size={10} className="text-muted" />}
-                        <Badge bg="light" text="dark" className="border fw-normal">{c.difficulty}</Badge>
+                        <Badge bg="body-tertiary" text="body-emphasis" className="border fw-normal">{c.difficulty}</Badge>
                     </ListGroup.Item>
                 ))}
                 {visible.length === 0 && <ListGroup.Item className="small text-muted py-1">No matching challenges</ListGroup.Item>}

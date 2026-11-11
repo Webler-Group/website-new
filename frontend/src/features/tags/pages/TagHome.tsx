@@ -45,7 +45,7 @@ const TagHomePage = () => {
                 onChange={e => { setTagJobEntry(e.target.value) }}
                 placeholder="Enter tags seperated by comma... games,html,css,">
             </textarea>
-            <p className="">{ loadingText }</p>
+            <p>{ loadingText }</p>
             <div className="row">
                 <button className="col btn bg-success text-light w-100 m-1" 
                     onClick={e => executeTagJob(e, "create")}>

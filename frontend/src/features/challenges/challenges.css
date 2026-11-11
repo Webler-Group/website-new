@@ -1,6 +1,272 @@
-.wb-challenges-editor__exit-modal__backdrop {
-    z-index: 1059;
+/* =============================================================================================
+* Challenges – list,
+details {
+    background-color: var(--bs-tertiary-bg);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--bs-border-color);
 }
+.wb-challenges-table-container {
+    background: var(--bs-body-bg);
+    border-radius: 8px;
+    border: 1px solid var(--bs-border-color-translucent);
+    overflow: hidden;
+}
+
+.wb-challenges-table {
+    margin-bottom: 0;
+    border-collapse: separate;
+}
+
+.wb-challenges-table thead th {
+    background: var(--bs-body-bg);
+    border-bottom: 2px solid var(--bs-border-color-translucent);
+    padding: 10px 16px;
+    font-size: 0.85rem;
+    color: var(--bs-emphasis-color);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.wb-challenges-table tbody tr {
+    transition: background-color 0.15s ease-in-out;
+}
+
+.wb-challenges-table tbody tr:hover {
+    background-color: var(--bs-tertiary-bg) !important;
+}
+
+.wb-challenges-table tbody td {
+    padding: 10px 16px;
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+
+.wb-challenges-table-title {
+    font-weight: 500;
+    color: var(--bs-emphasis-color);
+    font-size: 0.95rem;
+}
+
+.wb-challenges-table-title:hover {
+    color: var(--bs-primary);
+}
+
+.wb-challenges-difficulty-mini {
+    font-size: 0.7rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    min-width: 60px;
+}
+
+.wb-challenges-icon-amber {
+    color: #ffb800;
+}
+
+/* Column Widths */
+.wb-challenges-table-col-status { width: 60px; }
+.wb-challenges-table-col-title { min-width: 150px; }
+.wb-challenges-table-col-acceptance { width: 110px; }
+.wb-challenges-table-col-difficulty { width: 110px; }
+
+@media (max-width: 768px) {
+    .wb-challenges-table thead th,
+    .wb-challenges-table tbody td {
+        padding: 8px 10px;
+    }
+    
+    .wb-challenges-table-col-status { width: 40px; }
+    .wb-challenges-table-col-difficulty { width: 90px; }
+    
+    .wb-challenges-table-title {
+        font-size: 0.9rem;
+    }
+    
+    .wb-challenges-difficulty-mini {
+        min-width: 50px;
+        padding: 3px 6px;
+        font-size: 0.65rem;
+    }
+
+    .wb-challenges-table-container {
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+}
+
+/* Desktop Specific Detail Header */
+
+.wb-challenges-breadcrumb {
+    font-size: 0.875rem;
+    color: var(--bs-secondary-color);
+    margin-bottom: 1rem;
+}
+
+.wb-challenges-breadcrumb a {
+    color: var(--bs-primary);
+    text-decoration: none;
+}
+
+.wb-challenges-breadcrumb a:hover {
+    text-decoration: underline;
+}
+
+/* Premium Redesign Classes */
+
+.wb-challenges-hero {
+    background: linear-gradient(135deg, var(--bs-tertiary-bg) 0%, var(--bs-secondary-bg) 100%);
+    border-radius: 12px;
+    padding: 24px 32px;
+    margin-bottom: 24px;
+    border: 1px solid var(--bs-border-color-translucent);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+}
+@media (max-width: 768px) {
+    .wb-challenges-hero {
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+}
+
+.wb-challenges-difficulty-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.wb-challenges-xp-badge {
+    background: rgba(255, 184, 0, 0.1);
+    color: var(--wb-challenges-xp-color);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.wb-challenges-tabs {
+    display: flex;
+    gap: 30px;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+    margin-bottom: 30px;
+}
+
+.wb-challenges-tab-item {
+    padding: 12px 0;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s;
+}
+
+.wb-challenges-tab-item:hover {
+    color: var(--bs-emphasis-color);
+}
+
+.wb-challenges-tab-item--active {
+    color: var(--bs-primary);
+}
+
+.wb-challenges-tab-item--active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--bs-primary);
+    border-radius: 2px;
+}
+
+.wb-challenges-stat-card {
+    background: var(--bs-body-bg);
+    border-radius: 12px;
+    border: 1px solid var(--bs-border-color-translucent);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.wb-challenges-solve-card {
+    background: var(--bs-body-bg);
+    border-radius: 12px;
+    border: 1px solid var(--bs-border-color-translucent);
+    padding: 24px;
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+}
+
+.wb-challenges-solve-card select {
+    border: 1px solid var(--bs-border-color);
+    height: 48px;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    padding: 0 15px;
+}
+
+.wb-challenges-solve-card .btn-primary {
+    height: 48px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(13, 110, 253, 0.2);
+}
+
+.wb-challenges-sidebar-stat-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.wb-challenges-sidebar-stat-item:not(:last-child) {
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.wb-challenges-sidebar-stat-label {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+
+.wb-challenges-sidebar-stat-value {
+    font-weight: 600;
+    color: var(--bs-body-color);
+    font-size: 0.9rem;
+}
+
+/* --- Solution tab --------------------------------------------------------------------------- */
+
+.wb-challenges-solution-message {
+    max-width: 420px;
+}
+
+/* --- Test output ---------------------------------------------------------------------------- */
+
+.wb-challenges-output-code-block {
+    background-color: #343a40;
+    color: #f8f9fa;
+    border-radius: 0.25rem;
+    padding: 0.5rem;
+    white-space: pre;
+    overflow: auto;
+    font-family: monospace;
+    font-size: 0.9rem;
+    line-height: 1.3em;
+    min-height: 1.5em;
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+/* --- Test case editor ----------------------------------------------------------------------- */
 
 .wb-challenges-testcase {
     overflow: hidden;
@@ -15,7 +281,7 @@
         padding 280ms ease;
 }
 
-.wb-challenges-testcase-deleting {
+.wb-challenges-testcase--deleting {
     max-height: 0;
     opacity: 0;
     transform: translateY(-6px);
@@ -23,4 +289,216 @@
     margin-bottom: 0 !important;
     padding-top: 0 !important;
     padding-bottom: 0 !important;
+}
+
+/* --- Toolbar, tags and collections ----------------------------------------------------------- */
+
+.wb-challenges-content-area .wb-markdown img {
+    display: block;
+    max-height: none;
+    object-fit: contain;
+    margin: 0.5rem 0;
+}
+
+.wb-challenges-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.wb-challenges-tag {
+    font-size: 0.7rem;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: var(--bs-secondary-bg-subtle);
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.wb-challenges-tag:hover {
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+}
+
+.wb-challenges-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wb-challenges-search {
+    flex: 1 1 280px;
+    max-width: 560px;
+}
+
+.wb-challenges-difficulty-select {
+    width: auto;
+    min-width: 130px;
+}
+
+.wb-challenges-tag-filter {
+    margin-bottom: 1.25rem;
+}
+
+.wb-challenges-tag-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.wb-challenges-tag-filter:not(.wb-challenges-tag-filter--expanded) .wb-challenges-tag-filter-chips {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+
+.wb-challenges-tag-filter--expanded .wb-challenges-tag-filter-chips {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.wb-challenges-tag-chip {
+    flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+    .wb-challenges-tag-filter:not(.wb-challenges-tag-filter--expanded) .wb-challenges-tag-filter-chips {
+        overflow-x: auto;
+        mask-image: none;
+        scrollbar-width: none;
+    }
+}
+
+.wb-challenges-tag-chip {
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+    line-height: 1.5;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.wb-challenges-tag-chip:hover {
+    border-color: var(--bs-primary);
+}
+
+.wb-challenges-tag-chip-count {
+    color: var(--bs-tertiary-color);
+    margin-left: 6px;
+}
+
+.wb-challenges-tag-chip--active {
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+}
+
+.wb-challenges-tag-chip--active .wb-challenges-tag-chip-count {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.wb-challenges-tag-filter-toggle {
+    border: none;
+    background: none;
+    padding: 0;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wb-challenges-collection-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 90px;
+}
+
+@media (max-width: 991.98px) {
+    .wb-challenges-collection-sidebar {
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .wb-challenges-collection-sidebar .wb-challenges-collection-card {
+        flex: 0 0 260px;
+    }
+}
+
+.wb-challenges-table-col-actions { width: 48px; }
+
+.wb-challenges-collection-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wb-challenges-collection-card:hover {
+    border-color: var(--bs-primary);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.12);
+}
+
+.wb-challenges-collection-card-title {
+    font-weight: 600;
+    color: var(--bs-body-color);
+}
+
+.wb-challenges-collection-progress {
+    height: 6px;
+}
+
+.wb-challenges-collection-description p:last-child {
+    margin-bottom: 0;
+}
+
+.wb-challenges-collection-section {
+    margin-bottom: 2rem;
+}
+
+.wb-challenges-collection-edit-row {
+    padding: 4px 0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+
+.wb-challenges-collection-edit-index {
+    width: 24px;
+    text-align: right;
+}
+
+.wb-challenges-collection-search-results {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.wb-challenges-collection-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.wb-challenges-collection-nav .btn {
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

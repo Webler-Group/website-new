@@ -1,3 +1,4 @@
+import { Alert, Button, Form, FormCheck, FormControl, FormGroup, FormLabel, FormSelect, Modal } from "../../../components/ui";
 import {
     Dispatch,
     forwardRef,
@@ -8,17 +9,6 @@ import {
     useMemo,
     useState,
 } from "react";
-import {
-    Alert,
-    Button,
-    Form,
-    FormCheck,
-    FormControl,
-    FormGroup,
-    FormLabel,
-    FormSelect,
-    Modal,
-} from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import MdEditorField, { MDEditorMode } from "../../../components/MdEditorField";
@@ -344,8 +334,8 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
             if (!previewNodeData) return undefined;
 
             return (
-                <div className="d-flex flex-column" style={{ height: "80vh" }}>
-                    <div className="flex-grow-1 border border-2 rounded" style={{ height: "100%" }}>
+                <div className="wb-courses-node-preview d-flex flex-column">
+                    <div className="flex-grow-1 h-100 border border-2 rounded">
                         <LessonNode
                             key={node!.id}
                             nodeData={previewNodeData}
@@ -379,7 +369,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         checked={answer.correct}
                                         onChange={(e) => toggleCorrectAnswer(i, e.target.checked, true)}
                                     />
-                                    <span className="wb-comments__options__item" onClick={() => handleRemoveAnswer(i)}>
+                                    <span className="wb-comments-options-item" onClick={() => handleRemoveAnswer(i)}>
                                         <FaTrash />
                                     </span>
                                 </div>
@@ -419,7 +409,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                         checked={answer.correct}
                                         onChange={(e) => toggleCorrectAnswer(i, e.target.checked, false)}
                                     />
-                                    <span className="wb-comments__options__item" onClick={() => handleRemoveAnswer(i)}>
+                                    <span className="wb-comments-options-item" onClick={() => handleRemoveAnswer(i)}>
                                         <FaTrash />
                                     </span>
                                 </div>
@@ -584,7 +574,7 @@ const LessonNodeEditor = forwardRef<LessonNodeEditorHandle, LessonNodeEditorProp
                                 <Modal.Header closeButton>
                                     <Modal.Title>Pick a Code Snippet</Modal.Title>
                                 </Modal.Header>
-                                <Modal.Body style={{ minHeight: "500px" }}>
+                                <Modal.Body className="wb-courses-code-picker-body">
                                     <CodeList
                                         codesState={codesState}
                                         setCodesState={setCodesState}

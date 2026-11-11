@@ -1,9 +1,9 @@
+import { Button, Offcanvas } from "../../../components/ui";
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import FeedItem from './FeedItem';
 import { useApi } from '../../../context/apiCommunication';
 import NotificationToast from '../../../components/NotificationToast';
-import { Button, Offcanvas } from 'react-bootstrap';
 import CommentList from '../../../components/comments/CommentList';
 import { FaArrowLeft } from 'react-icons/fa6';
 import Loader from '../../../components/Loader';
@@ -123,11 +123,11 @@ const Feed = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onToggle
 
   return (
     <>
-      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} backdropClassName="wb-feed-comment-modal__backdrop" className="wb-comments-offcanvas" style={{ zIndex: 1060 }} placement="end">
+      <Offcanvas show={commentModalVisible} onHide={closeCommentModal} className="wb-comments-offcanvas" placement="end">
         <Offcanvas.Header closeButton>
           <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
         </Offcanvas.Header>
-        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+        <Offcanvas.Body className="wb-comments-offcanvas-body d-flex flex-column">
           <CommentList
             findPost={findPost}
             options={commentListOptions}
@@ -137,7 +137,7 @@ const Feed = ({ feedId, onGeneralUpdate, onShowUserReactions, onDelete, onToggle
       </Offcanvas>
 
       <div className="wb-feed-details-container p-2">
-        <div className="wb-feed-main-content">
+        <div>
           {/* Back Button */}
           <button
             onClick={() => navigate('/Feed')}

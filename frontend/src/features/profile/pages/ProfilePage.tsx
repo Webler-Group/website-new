@@ -1,8 +1,8 @@
+import { Badge, Button, Card, Container, cx, Dropdown } from "../../../components/ui";
 import { useCallback, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
-import { Badge, Button, Card, Container, Dropdown } from "react-bootstrap";
 import ProfileSettings from "../components/ProfileSettings";
 import countries from "../../../data/countries";
 import { FaGear, FaHammer, FaStar } from "react-icons/fa6";
@@ -28,7 +28,6 @@ import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
 import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
 import { FaBookOpen } from "react-icons/fa6";
-import { LinkContainer } from "react-router-bootstrap";
 import "../profile.css";
 
 const ProfilePage = () => {
@@ -199,7 +198,7 @@ const ProfilePage = () => {
     const totalSolved = easySolved + mediumSolved + hardSolved;
 
     return (
-        <div className="wb-p-container">
+        <div className="wb-profile-container">
             {userDetails ? (
                 <>
                     <NotificationToast notification={notification} onClose={() => setNotification(null)} />
@@ -223,10 +222,10 @@ const ProfilePage = () => {
                     <Container className="py-3 px-2">
 
                         {/* ── Profile Header ── */}
-                        <Card className="wb-p-header border mb-3">
+                        <Card className="wb-profile-header border mb-3">
                             {
                                 userInfo &&
-                                <div className="wb-p-header__menu">
+                                <div className="wb-profile-header-menu">
                                     <Dropdown drop="start">
                                         <Dropdown.Toggle as={EllipsisDropdownToggle} />
                                         <Dropdown.Menu>
@@ -250,24 +249,23 @@ const ProfilePage = () => {
                                 </div>
                             }
 
-                            <div className="wb-p-header__body">
+                            <div className="wb-profile-header-body">
                                 {/* Avatar */}
-                                <div className="wb-p-header__avatar-wrap">
+                                <div className="wb-profile-header-avatar-wrap">
                                     <ProfileAvatar size={80} avatarUrl={userDetails.avatarUrl} />
                                     {userDetails.roles.includes(RolesEnum.MODERATOR) && (
-                                        <Badge className="wb-p-header__badge" bg="secondary">Moderator</Badge>
+                                        <Badge className="wb-profile-header-badge" bg="secondary">Moderator</Badge>
                                     )}
                                     {userDetails.isBlocked && (
-                                        <Badge className="wb-p-header__badge" bg="danger"><FaBan /> Blocked</Badge>
+                                        <Badge className="wb-profile-header-badge" bg="danger"><FaBan /> Blocked</Badge>
                                     )}
                                 </div>
 
                                 {/* Info */}
-                                <div className="wb-p-header__info">
-                                    <div className="wb-p-header__name-row">
+                                <div className="wb-profile-header-info">
+                                    <div className="wb-profile-header-name-row">
                                         <span
-                                            className="wb-p-header__name"
-                                            style={{ textDecoration: userDetails.active ? "none" : "line-through" }}
+                                            className={cx("wb-profile-header-name", !userDetails.active && "text-decoration-line-through")}
                                         >
                                             {userDetails.name}
                                         </span>
@@ -291,24 +289,24 @@ const ProfilePage = () => {
                                     </div>
 
                                     {userDetails.bio && (
-                                        <p className="wb-p-header__bio">{userDetails.bio}</p>
+                                        <p className="wb-profile-header-bio">{userDetails.bio}</p>
                                     )}
 
-                                    <div className="wb-p-header__meta">
-                                        <button className="wb-p-follows-btn" onClick={showFollowing}>
+                                    <div className="wb-profile-header-meta">
+                                        <button className="wb-profile-follows-btn" onClick={showFollowing}>
                                             <b>{followingCount}</b> Following
                                         </button>
-                                        <button className="wb-p-follows-btn" onClick={showFollowers}>
+                                        <button className="wb-profile-follows-btn" onClick={showFollowers}>
                                             <b>{followersCount}</b> Followers
                                         </button>
-                                        <span className="wb-p-header__stat">
-                                            <FaStar style={{ color: "gold" }} /> <b>{userDetails.xp}</b> XP
+                                        <span className="wb-profile-header-stat">
+                                            <FaStar className="wb-profile-header-xp-icon" /> <b>{userDetails.xp}</b> XP
                                         </span>
-                                        <span className="wb-p-header__stat text-muted">
+                                        <span className="wb-profile-header-stat text-muted">
                                             Lvl {userDetails.level}
                                         </span>
                                         {userDetails.countryCode && (
-                                            <span className="wb-p-header__stat">
+                                            <span className="wb-profile-header-stat">
                                                 <Country country={countries.find(c => c.code === userDetails.countryCode)!} />
                                             </span>
                                         )}
@@ -316,21 +314,21 @@ const ProfilePage = () => {
 
                                     {/* Challenges stats inline */}
                                     {(isCurrentUser || totalSolved > 0) && (
-                                        <div className="wb-p-header__challenges">
+                                        <div className="wb-profile-header-challenges">
                                             <button
-                                                className="wb-p-challenges-pill bg-success-subtle border-success-subtle text-success"
+                                                className="wb-profile-challenges-pill bg-success-subtle border-success-subtle text-success"
                                                 onClick={totalSolved > 0 ? showChallengesSection : undefined}
                                             >
                                                 <Badge bg="success">Easy</Badge> {easySolved}
                                             </button>
                                             <button
-                                                className="wb-p-challenges-pill bg-warning-subtle border-warning-subtle text-warning-emphasis"
+                                                className="wb-profile-challenges-pill bg-warning-subtle border-warning-subtle text-warning-emphasis"
                                                 onClick={totalSolved > 0 ? showChallengesSection : undefined}
                                             >
                                                 <Badge bg="warning" text="dark">Medium</Badge> {mediumSolved}
                                             </button>
                                             <button
-                                                className="wb-p-challenges-pill bg-danger-subtle border-danger-subtle text-danger"
+                                                className="wb-profile-challenges-pill bg-danger-subtle border-danger-subtle text-danger"
                                                 onClick={totalSolved > 0 ? showChallengesSection : undefined}
                                             >
                                                 <Badge bg="danger">Hard</Badge> {hardSolved}
@@ -353,36 +351,34 @@ const ProfilePage = () => {
 
                         {/* ── Courses Row ── */}
                         {(isCurrentUser || courses.length > 0) && (
-                            <Card className="wb-p-section border-0 mb-3">
-                                <div className="wb-p-section__header" style={{ borderBottom: "none" }}>
-                                    <span className="wb-p-section__title">
+                            <Card className="wb-profile-section border-0 mb-3">
+                                <div className="wb-profile-section-header border-bottom-0">
+                                    <span className="wb-profile-section-title">
                                         <FaBookOpen className="text-muted me-2" /> Courses
                                     </span>
                                     {courses.length > 0 && (
-                                        <LinkContainer to="/Courses">
-                                            <Button variant="link" size="sm" className="p-0">Browse</Button>
-                                        </LinkContainer>
+                                        <Button to="/Courses" variant="link" size="sm" className="p-0">Browse</Button>
                                     )}
                                 </div>
                                 {courses.length > 0 ? (
-                                    <div className="wb-p-courses-scroll">
+                                    <div className="wb-profile-courses-scroll">
                                         {courses.map((course) => (
                                             <div
                                                 key={course.id}
-                                                className="wb-p-courses-card"
+                                                className="wb-profile-courses-card"
                                                 onClick={() => navigate("/Courses/" + course.code)}
                                             >
-                                                <div className="wb-p-courses-card__img">
+                                                <div className="wb-profile-courses-card-img">
                                                     <img
                                                         src={course.coverImageUrl || "/resources/images/logoicon.svg"}
                                                         alt={course.title}
                                                     />
                                                 </div>
-                                                <span className="wb-p-courses-card__title">{course.title}</span>
+                                                <span className="wb-profile-courses-card-title">{course.title}</span>
                                                 <Badge
                                                     bg={course.completed ? "success" : "info"}
                                                     text={course.completed ? undefined : "dark"}
-                                                    className="wb-p-courses-card__badge"
+                                                    className="wb-profile-courses-card-badge"
                                                 >
                                                     {course.completed ? "Completed" : "In Progress"}
                                                 </Badge>
@@ -390,7 +386,7 @@ const ProfilePage = () => {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="wb-p-section__empty">
+                                    <div className="wb-profile-section-empty">
                                         <p>No courses enrolled yet</p>
                                     </div>
                                 )}
@@ -398,16 +394,16 @@ const ProfilePage = () => {
                         )}
 
                         {/* ── Content Grid ── */}
-                        <div className="wb-p-grid">
+                        <div className="wb-profile-grid">
 
                             {/* Left column */}
-                            <div className="wb-p-grid__col">
+                            <div className="wb-profile-grid-col">
 
                                 {/* Codes */}
                                 {(isCurrentUser || codes.length > 0) && (
-                                    <Card className="wb-p-section border mb-3">
-                                        <div className="wb-p-section__header">
-                                            <span className="wb-p-section__title">
+                                    <Card className="wb-profile-section border mb-3">
+                                        <div className="wb-profile-section-header">
+                                            <span className="wb-profile-section-title">
                                                 <FaCode className="text-muted me-2" /> Codes
                                             </span>
                                             {codes.length > 0 && (
@@ -422,13 +418,13 @@ const ProfilePage = () => {
                                                     <Code key={code.id} code={code} searchQuery="" />
                                                 ))
                                             ) : (
-                                                <div className="wb-p-section__empty">
+                                                <div className="wb-profile-section-empty">
                                                     <p>No codes saved yet</p>
                                                 </div>
                                             )}
                                         </div>
                                         {isCurrentUser && (
-                                            <div className="wb-p-section__footer">
+                                            <div className="wb-profile-section-footer">
                                                 <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Compiler-Playground")}>
                                                     Add New
                                                 </Button>
@@ -439,15 +435,13 @@ const ProfilePage = () => {
 
                                 {/* Feed Posts */}
                                 {(isCurrentUser || feedPosts.length > 0) && (
-                                    <Card className="wb-p-section border mb-3">
-                                        <div className="wb-p-section__header">
-                                            <span className="wb-p-section__title">
+                                    <Card className="wb-profile-section border mb-3">
+                                        <div className="wb-profile-section-header">
+                                            <span className="wb-profile-section-title">
                                                 <FaNewspaper className="text-muted me-2" /> Posts
                                             </span>
                                             {feedPosts.length > 0 && (
-                                                <LinkContainer to="/Feed">
-                                                    <Button variant="link" size="sm" className="p-0">View Feed</Button>
-                                                </LinkContainer>
+                                                <Button to="/Feed" variant="link" size="sm" className="p-0">View Feed</Button>
                                             )}
                                         </div>
                                         <div>
@@ -455,11 +449,11 @@ const ProfilePage = () => {
                                                 feedPosts.map((post) => (
                                                     <div
                                                         key={post.id}
-                                                        className="wb-p-feed-item border-bottom"
+                                                        className="wb-profile-feed-item border-bottom"
                                                         onClick={() => navigate("/Feed/" + post.id)}
                                                     >
-                                                        <p className="wb-p-feed-item__text">{post.message}</p>
-                                                        <div className="wb-p-feed-item__meta">
+                                                        <p className="wb-profile-feed-item-text">{post.message}</p>
+                                                        <div className="wb-profile-feed-item-meta">
                                                             <span className="d-flex align-items-center gap-1">
                                                                 <FaCommentAlt size={11} /> {post.answers}
                                                             </span>
@@ -468,13 +462,13 @@ const ProfilePage = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="wb-p-section__empty">
+                                                <div className="wb-profile-section-empty">
                                                     <p>No posts yet</p>
                                                 </div>
                                             )}
                                         </div>
                                         {isCurrentUser && (
-                                            <div className="wb-p-section__footer">
+                                            <div className="wb-profile-section-footer">
                                                 <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Feed")}>
                                                     Go to Feed
                                                 </Button>
@@ -485,13 +479,13 @@ const ProfilePage = () => {
                             </div>
 
                             {/* Right column */}
-                            <div className="wb-p-grid__col">
+                            <div className="wb-profile-grid-col">
 
                                 {/* Questions */}
                                 {(isCurrentUser || questions.length > 0) && (
-                                    <Card className="wb-p-section border mb-3">
-                                        <div className="wb-p-section__header">
-                                            <span className="wb-p-section__title">
+                                    <Card className="wb-profile-section border mb-3">
+                                        <div className="wb-profile-section-header">
+                                            <span className="wb-profile-section-title">
                                                 <FaCommentAlt className="text-muted me-2" /> Questions
                                             </span>
                                             {questions.length > 0 && (
@@ -506,13 +500,13 @@ const ProfilePage = () => {
                                                     <Question key={question.id} question={question} searchQuery="" showUserProfile={false} />
                                                 ))
                                             ) : (
-                                                <div className="wb-p-section__empty">
+                                                <div className="wb-profile-section-empty">
                                                     <p>No questions asked yet</p>
                                                 </div>
                                             )}
                                         </div>
                                         {isCurrentUser && (
-                                            <div className="wb-p-section__footer">
+                                            <div className="wb-profile-section-footer">
                                                 <Button variant="primary" size="sm" className="w-100" onClick={() => navigate("/Discuss/New")}>
                                                     Ask a Question
                                                 </Button>

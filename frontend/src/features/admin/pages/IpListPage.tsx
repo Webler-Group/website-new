@@ -1,8 +1,6 @@
+import { Badge, Breadcrumb, Button, Col, Container, Form, Modal, Pagination, Row, Table } from "../../../components/ui";
 import { useState, useEffect } from "react";
-import { Table, Form, Row, Col, Button, Container, Breadcrumb, Badge, Modal } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
-import { PaginationControl } from "react-bootstrap-pagination-control";
-import { Link } from "react-router-dom";
 import { useAuth } from "../../auth/context/authContext";
 import { IpRecord, IpListData, ToggleBanIpData, CreateIpData } from "../types";
 import RolesEnum from "../../../data/RolesEnum";
@@ -131,7 +129,7 @@ const IpListPage = () => {
             <Container className="mt-4">
                 <div className="d-flex justify-content-between align-items-start mb-2">
                     <Breadcrumb className="mb-0">
-                        <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Admin" }}>
+                        <Breadcrumb.Item to="/Admin">
                             Admin Panel
                         </Breadcrumb.Item>
                         <Breadcrumb.Item>
@@ -239,7 +237,7 @@ const IpListPage = () => {
                 </Table>
 
                 <div className="my-3">
-                    <PaginationControl
+                    <Pagination
                         page={page}
                         between={3}
                         total={totalCount}

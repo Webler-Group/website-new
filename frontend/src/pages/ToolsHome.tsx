@@ -1,8 +1,8 @@
+import { Container } from "../components/ui";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
 import PageTitle from "../layouts/PageTitle";
 import RolesEnum from "../data/RolesEnum";
-import { Container } from "react-bootstrap";
 
 export interface IPriviledgeInfo {
     name: string;
@@ -23,7 +23,7 @@ const ToolsHomePage = () => {
 
     return (
         <Container className="mt-4">
-            <ul style={{ listStyleType: "disc" }}>
+            <ul className="wb-util-list-disc">
                 {
                     tools
                         .filter(item => userInfo?.roles.some(role => [RolesEnum.ADMIN, ...item.roles].includes(role)))

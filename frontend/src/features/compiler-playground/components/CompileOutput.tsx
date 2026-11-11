@@ -1,6 +1,6 @@
+import { Button, FormControl, Modal, Spinner } from "../../../components/ui";
 import { useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { Button, FormControl, Modal, Spinner } from "react-bootstrap";
 import codeRequiresInput from "../../../utils/InputReg";
 import { CreateJobData, GetJobData, JobImage } from "../../codes/types";
 import { pollJob } from "../../../utils/pollJob";
@@ -92,10 +92,8 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                 keyboard={false}
                 centered
                 fullscreen="sm-down"
-                contentClassName="wb-modal__container bg-dark text-light"
-                backdropClassName="wb-stdin-modal__backdrop"
+                contentClassName="bg-dark text-light"
                 data-bs-theme="dark"
-                style={{ zIndex: "1060" }}
             >
                 <Modal.Header>
                         <Modal.Title>Input</Modal.Title>
@@ -134,8 +132,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                             alt={image.name}
                             width={image.width}
                             height={image.height}
-                            className="bg-secondary rounded d-block"
-                            style={{ maxWidth: "100%", height: "auto" }}
+                            className="wb-compiler-playground-output-image bg-secondary rounded d-block"
                         />
                         <figcaption className="small text-secondary mt-1">
                             output/{image.name} ({image.width}x{image.height})
@@ -143,7 +140,7 @@ const CompileOutput = ({ source, language, tabOpen }: CompileOutputProps) => {
                     </figure>
                 )}
                 {stdout && (
-                    <div className="mt-3 overflow-y-scroll" style={{ maxHeight: "calc(100vh - 200px)" }}>
+                    <div className="wb-compiler-playground-output-stdout mt-3 overflow-y-scroll">
                         <h5>Stdout:</h5>
                         <pre className="bg-secondary p-2 rounded">{stdout}</pre>
                     </div>

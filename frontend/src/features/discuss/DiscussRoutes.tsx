@@ -14,7 +14,7 @@ import RolesEnum from "../../data/RolesEnum"
 const DiscussRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<DiscussLayout MainPage={<DiscussListPage />} />} />
                 <Route path=":questionId" element={<DiscussLayout MainPage={<DiscussPostPage />} />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>

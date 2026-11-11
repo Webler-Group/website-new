@@ -1,6 +1,6 @@
+import { Button, Spinner } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import { Button, Spinner } from "react-bootstrap";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { ChallengeDetails, ChallengeSubmissionDetails, CreateChallengeJobData, GetChallengeJobData } from "../types";
 import { pollJob } from "../../../utils/pollJob";
@@ -59,33 +59,18 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
         setLoading(false);
     };
 
-    const codeBlockStyle: React.CSSProperties = {
-        backgroundColor: "#343a40",
-        color: "#f8f9fa",
-        borderRadius: "0.25rem",
-        padding: "0.5rem",
-        whiteSpace: "pre",
-        overflowX: "auto",
-        overflowY: "auto",
-        fontFamily: "monospace",
-        fontSize: "0.9rem",
-        lineHeight: "1.3em",
-        minHeight: "1.5em",
-        marginTop: "0.25rem",
-        marginBottom: "0.25rem",
-    };
 
     const renderCodeBlock = (content?: string) => {
         const text = content ?? "";
         const lines = text.split("\n");
         const lineElements = lines.map((line, i) => (
             <div key={i}>
-                <span style={{ color: "#6c757d" }}>→ </span>
+                <span className="text-secondary">→ </span>
                 {line || " "}
             </div>
         ));
 
-        return <div style={codeBlockStyle}>{lineElements}</div>;
+        return <div className="wb-challenges-output-code-block">{lineElements}</div>;
     };
 
     return (

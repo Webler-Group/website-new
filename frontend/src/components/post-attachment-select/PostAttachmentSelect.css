@@ -3,12 +3,9 @@
 }
 
 @media(min-width: 576px) {
-    .wb-post-attachment-select-modal__body {
+    .wb-post-attachment-select-modal-body {
         height: 720px;
         max-height: 68vh;
     }
 }
 
-.wb-post-attachment-select-modal__backdrop {
-    z-index: 1069 !important;
-}

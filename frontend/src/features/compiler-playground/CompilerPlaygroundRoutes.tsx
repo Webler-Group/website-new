@@ -11,7 +11,7 @@ import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
 const CompilerPlaygroundRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<PlaygroundMenuPage />} />
             </Route>
             {

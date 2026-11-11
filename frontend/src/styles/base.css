@@ -1,0 +1,36 @@
+/* =============================================================================================
+ * Base – element resets and generic utilities (wb-util-*)
+ * ============================================================================================= */
+
+/* Lists are unstyled by default (Bootstrap keeps its spacing); use .wb-util-list-disc for bullets */
+ul {
+    list-style: none;
+}
+
+/* --- Utilities ------------------------------------------------------------------------------ */
+
+.wb-util-clickable {
+    cursor: pointer;
+}
+
+.wb-util-not-allowed {
+    cursor: not-allowed;
+}
+
+/* Lets flex children shrink below their content width (needed for text-truncate) */
+.wb-util-min-w-0 {
+    min-width: 0;
+}
+
+.wb-util-min-h-0 {
+    min-height: 0;
+}
+
+.wb-util-list-disc {
+    list-style-type: disc;
+}
+
+.wb-util-text-xs {
+    font-size: 0.75rem;
+}
+

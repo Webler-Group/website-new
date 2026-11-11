@@ -1,11 +1,51 @@
-import { Row, Col, Card, Button, Container } from "react-bootstrap";
-import { LinkContainer } from "react-router-bootstrap";
+
+import { Button, Card, Col, Container, Row } from "../components/ui";
 import RegisterForm from "../features/auth/components/RegisterForm";
 import { useAuth } from "../features/auth/context/authContext";
 import { useState } from "react";
 import LoginForm from "../features/auth/components/LoginForm";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from 'react-helmet-async'; 
+
+interface Feature {
+  title: string;
+  description: string;
+  to: string;
+  action: string;
+}
+
+const features: Feature[] = [
+  {
+    title: "Code Playground",
+    description: "Create, edit, and run code in multiple programming languages — all within your browser. Our web-based IDE is perfect for testing ideas, learning syntax, or building small projects without any setup.",
+    to: "/Codes",
+    action: "Go to Playground"
+  },
+  {
+    title: "Feed",
+    description: "Stay connected with the Webler community! The Feed lets you see the latest project updates, shared snippets, discussions, and highlights from developers around the world.",
+    to: "/Feed",
+    action: "Check Feed"
+  },
+  {
+    title: "Courses",
+    description: "Learn by doing with our interactive courses! Each one includes hands-on content, quizzes, and coding tasks to help you master web technologies, programming languages, and software tools at your own pace.",
+    to: "/Courses",
+    action: "Explore Courses"
+  },
+  {
+    title: "Q&A Discussions",
+    description: "Have a question about code or tech? Join our community-driven forum to ask, answer, and explore real-world programming problems. It’s a place to learn, share knowledge, and grow together.",
+    to: "/Discuss",
+    action: "Visit Forum"
+  },
+  {
+    title: "Challenges",
+    description: "Put your skills to the test! Solve coding challenges of varying difficulty in the language of your choice, run your solution against test cases, and earn XP for every challenge you complete.",
+    to: "/Challenge",
+    action: "Start Solving"
+  }
+];
 
 const HomePage = () => {
 
@@ -20,17 +60,17 @@ const HomePage = () => {
         <meta name="description" content="Welcome to Webler! We're a global team of independent developers passionate about building high-quality, accessible software." />
       </Helmet>
 
-      <div className="wb-home-container">
+      <div className="wb-home-page">
 
-        <div className="wb-banner text-light d-flex flex-column justify-content-center gap-2">
-          <div className="wb-banner__logo">
-            <img className="wb-banner__logo__img" src="../resources/images/logotransparent.svg" alt="Webler logo" />
+        <div className="wb-home-banner text-light d-flex flex-column justify-content-center gap-2">
+          <div className="wb-home-banner-logo">
+            <img className="wb-home-banner-logo-image" src="../resources/images/logotransparent.svg" alt="Webler logo" />
           </div>
-          <h2 className="wb-banner__text">Software Engineering</h2>
-          <p className="wb-banner__slogan">- Building the future, one code at a time</p>
+          <h2 className="wb-home-banner-title">Software Engineering</h2>
+          <p className="wb-home-banner-slogan">- Building the future, one code at a time</p>
         </div>
 
-        <div className="bg-light wb-home-content">
+        <div className="bg-body-tertiary wb-home-content">
           <Container>
             <h1 className="text-center mb-3">Information</h1>
             <p className="text-center">
@@ -38,70 +78,21 @@ const HomePage = () => {
             </p>
             <p className="text-center mt-4">Explore some of our core features below:</p>
 
-            <Row xs="1" md="2" className="g-4 mt-2">
-              <Col>
-                <Card bg="light" text="dark" className="wb-home-card">
-                  <Card.Body className="d-flex flex-column justify-content-between">
-                    <Card.Title className="text-center py-4 border-bottom border-2">Code Playground</Card.Title>
-                    <Card.Text className="mt-4">
-                      Create, edit, and run code in multiple programming languages — all within your browser. Our web-based IDE is perfect for testing ideas, learning syntax, or building small projects without any setup.
-                    </Card.Text>
-                    <div className="text-center mt-4">
-                      <LinkContainer to="/Codes">
-                        <Button variant="primary">Go to Playground</Button>
-                      </LinkContainer>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col>
-                <Card bg="light" text="dark" className="wb-home-card">
-                  <Card.Body className="d-flex flex-column justify-content-between">
-                    <Card.Title className="text-center py-4 border-bottom border-2">Feed</Card.Title>
-                    <Card.Text className="mt-4">
-                      Stay connected with the Webler community! The Feed lets you see the latest project updates, shared snippets, discussions, and highlights from developers around the world.
-                    </Card.Text>
-                    <div className="text-center mt-4">
-                      <LinkContainer to="/Feed">
-                        <Button variant="primary">Check Feed</Button>
-                      </LinkContainer>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col>
-                <Card bg="light" text="dark" className="wb-home-card">
-                  <Card.Body className="d-flex flex-column justify-content-between">
-                    <Card.Title className="text-center py-4 border-bottom border-2">Courses</Card.Title>
-                    <Card.Text className="mt-4">
-                      Learn by doing with our interactive courses! Each one includes hands-on content, quizzes, and coding tasks to help you master web technologies, programming languages, and software tools at your own pace.
-                    </Card.Text>
-                    <div className="text-center mt-4">
-                      <LinkContainer to="/Courses">
-                        <Button variant="primary">Explore Courses</Button>
-                      </LinkContainer>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
-
-              <Col>
-                <Card bg="light" text="dark" className="wb-home-card">
-                  <Card.Body className="d-flex flex-column justify-content-between">
-                    <Card.Title className="text-center py-4 border-bottom border-2">Q&A Discussions</Card.Title>
-                    <Card.Text className="mt-4">
-                      Have a question about code or tech? Join our community-driven forum to ask, answer, and explore real-world programming problems. It’s a place to learn, share knowledge, and grow together.
-                    </Card.Text>
-                    <div className="text-center mt-4">
-                      <LinkContainer to="/Discuss">
-                        <Button variant="primary">Visit Forum</Button>
-                      </LinkContainer>
-                    </div>
-                  </Card.Body>
-                </Card>
-              </Col>
+            {/* justify-content-center keeps a lone card in the last row centered */}
+            <Row xs="1" md="2" className="g-4 mt-2 justify-content-center">
+              {features.map(feature => (
+                <Col key={feature.to}>
+                  <Card className="wb-home-feature-card h-100">
+                    <Card.Body className="d-flex flex-column justify-content-between">
+                      <Card.Title className="text-center py-4 border-bottom border-2">{feature.title}</Card.Title>
+                      <Card.Text className="mt-4">{feature.description}</Card.Text>
+                      <div className="text-center mt-4">
+                        <Button to={feature.to} variant="primary">{feature.action}</Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              ))}
             </Row>
           </Container>
         </div>
@@ -115,7 +106,8 @@ const HomePage = () => {
                   <h2 className="text-center mt-5">Join us right now!</h2>
                 </Col>
                 <Col>
-                  <div className="wb-home-sign-up-form">
+                  {/* Fixed light panel inside the always-dark band, so its form controls stay light too */}
+                  <div className="wb-home-sign-up-form" data-bs-theme="light">
                     {
                       isRegisterForm ?
                         <RegisterForm onRegister={() => navigate("/Profile")} onToggleClick={() => toggleForm(false)} />
@@ -134,4 +126,4 @@ const HomePage = () => {
   );
 }
 
-export default HomePage;
+export default HomePage;

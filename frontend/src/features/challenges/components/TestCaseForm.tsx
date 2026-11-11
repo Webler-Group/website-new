@@ -1,5 +1,5 @@
+import { Alert, Button, Collapse, Form } from "../../../components/ui";
 import { Dispatch, SetStateAction, ChangeEvent, useRef, useState } from "react";
-import { Button, Form, Alert, Collapse } from "react-bootstrap";
 import { FaTrash, FaPlus, FaFileUpload, FaInfoCircle } from "react-icons/fa";
 import { genMongooseId } from "../../../utils/StringUtils";
 import { ChallengeTestCase } from "../types";
@@ -116,7 +116,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
   };
 
   return (
-    <div className="wb-container">
+    <div>
       <h5 className="mb-3">Test Cases</h5>
 
       <div className="d-flex flex-column gap-3">
@@ -127,8 +127,8 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
             <div
               key={tc.id}
               className={[
-                "border rounded p-3 shadow-sm bg-light wb-challenges-testcase",
-                isDeleting ? "wb-challenges-testcase-deleting" : "",
+                "border rounded p-3 shadow-sm bg-body-tertiary wb-challenges-testcase",
+                isDeleting ? "wb-challenges-testcase--deleting" : "",
               ].join(" ")}
             >
               <div className="fw-semibold mb-2">Test Case #{index + 1}</div>
@@ -199,7 +199,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
           <div id="format-help" className="mt-2">
             <Alert variant="info" className="mb-0">
               <div className="fw-semibold mb-2">Expected file format (.txt):</div>
-              <pre className="bg-light p-2 rounded small mb-0">
+              <pre className="bg-body-tertiary p-2 rounded small mb-0">
                 {`TESTCASE
 INPUT
 1 2
@@ -233,7 +233,7 @@ world`}
           accept=".txt, text/plain"
           ref={fileInputRef}
           onChange={handleFileUpload}
-          style={{ display: "none" }}
+          className="d-none"
         />
 
         <Button variant="primary" onClick={() => fileInputRef.current?.click()}>

@@ -1,62 +1,49 @@
-.wb-comments__options {
+.wb-comments-options {
     position: absolute;
     right: 8px;
     top: 5px;
 }
 
-.wb-comments__options__item {
+.wb-comments-options-item {
     cursor: pointer;
 }
 
-.wb-comments__options__item:hover {
-    color: gray;
+.wb-comments-options-item:hover {
+    color: var(--bs-secondary-color);
 }
 
-.wb-comments__footer__replies,
-.wb-comments__footer__reply-btn {
-    background: none;
-    border: none;
-    padding: 0;
-}
-
-.wb-comments__footer__replies:hover,
-.wb-comments__footer__reply-btn:hover {
-    background: none;
-    text-shadow: -0.025rem -0.012rem 0 currentcolor, .025rem .012rem currentcolor;
-}
-
-.wb-comments__message {
+.wb-comments-message {
     font-size: 14px;
     line-height: 1.5;
     width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
-    color: #0f1419;
+    color: var(--bs-emphasis-color);
 }
 
-.wb-comment-item {
+.wb-comments-item {
     transition: background-color 0.2s ease;
     border-radius: 8px;
     margin-bottom: 4px;
     padding: 4px 8px; /* Slightly tighter padding */
 }
 
-.wb-comment-item.highlighted {
-    background-color: #fff9db !important;
+.wb-comments-item--highlighted {
+    background-color: var(--wb-highlight-bg) !important;
 }
 
 /* ----------------------
    YouTube Style Threads 
    ---------------------- */
 
-.wb-thread-container {
+.wb-comments-thread {
     /* Set left margin so the thread container starts at the right edge of the 32px avatar + its gap */
     margin-left: 48px;
     display: flex;
     flex-direction: column;
 }
 
-.wb-thread-toggle {
+.wb-comments-thread-toggle {
     margin-top: -4px;
     margin-bottom: 8px;
     position: relative;
@@ -64,12 +51,12 @@
     align-items: center;
 }
 
-.wb-thread-toggle-btn {
+.wb-comments-thread-toggle-button {
     display: flex;
     align-items: center;
     background: none;
     border: none;
-    color: #065fd4; /* YouTube blue link color */
+    color: var(--bs-link-color); /* YouTube blue link color */
     font-size: 0.85rem;
     font-weight: 600;
     padding: 4px 12px;
@@ -78,12 +65,12 @@
     transition: background-color 0.2s ease;
 }
 
-.wb-thread-toggle-btn:hover {
-    background-color: #def1ff;
+.wb-comments-thread-toggle-button:hover {
+    background-color: var(--bs-primary-bg-subtle);
 }
 
 /* Curved thread line from the left up to the parent avatar */
-.wb-thread-curve {
+.wb-comments-thread-curve {
     position: absolute;
     /* 48px margin - 16px (half of 32px avatar) = 32px offset. Then we need to align the line itself, so -33px */
     left: -33px; 
@@ -91,13 +78,13 @@
     top: -46px; 
     width: 33px;
     height: 66px;
-    border-left: 2px solid #e5e5e5;
-    border-bottom: 2px solid #e5e5e5;
+    border-left: 2px solid var(--bs-border-color);
+    border-bottom: 2px solid var(--bs-border-color);
     border-bottom-left-radius: 12px;
     pointer-events: none;
 }
 
-.wb-thread-replies-list {
+.wb-comments-thread-replies {
     position: relative;
     display: flex;
     flex-direction: column;
@@ -105,7 +92,7 @@
 }
 
 /* Vertical line for the replies list */
-.wb-thread-replies-list::before {
+.wb-comments-thread-replies::before {
     content: "";
     position: absolute;
     /* 48px parent indent - 16px (half avatar) = 32px.
@@ -114,16 +101,16 @@
     top: -54px; /* Pull it up to connect directly to the parent avatar */
     bottom: 24px; /* Don't go all the way to the bottom of the last reply */
     width: 2px;
-    background-color: #e5e5e5;
+    background-color: var(--bs-border-color);
     pointer-events: none;
 }
 
-.wb-reply-item {
+.wb-comments-reply-item {
     position: relative;
 }
 
 /* Curved thread line to each individual reply */
-.wb-reply-item::before {
+.wb-comments-reply-item::before {
     content: "";
     position: absolute;
     /* The vertical line is at -13px. */
@@ -134,8 +121,8 @@
     height: 20px; /* Curve height */
     /* Pull the box up so the bottom-left corner is at exactly top: 16px */
     transform: translateY(-100%);
-    border-left: 2px solid #e5e5e5;
-    border-bottom: 2px solid #e5e5e5;
+    border-left: 2px solid var(--bs-border-color);
+    border-bottom: 2px solid var(--bs-border-color);
     border-bottom-left-radius: 12px;
     pointer-events: none;
 }
@@ -144,11 +131,11 @@
    Action Buttons Footer 
    ---------------------- */
 
-.wb-comments-action-btn {
+.wb-comments-action-button {
     display: flex;
     align-items: center;
     font-size: 0.8rem;
-    color: #606060;
+    color: var(--bs-secondary-color);
     font-weight: 500;
     background: none;
     border: none;
@@ -158,43 +145,60 @@
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.wb-comments-action-btn:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #0f1419;
+.wb-comments-action-button:hover {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+    color: var(--bs-emphasis-color);
 }
 
-.wb-comments-action-btn.active {
-    color: #000;
+.wb-comments-action-button--active {
+    color: var(--bs-emphasis-color);
 }
 
 @media (max-width: 768px) {
-    .wb-comments-action-btn {
+    .wb-comments-action-button {
         padding: 4px 6px;
     }
 
-    .wb-comment-item {
+    .wb-comments-item {
         padding: 4px 0px;
         margin-bottom: 2px;
     }
 
-    .wb-comment-node {
+    .wb-comments-node {
         margin-bottom: 12px !important;
     }
     
-    .wb-thread-container {
+    .wb-comments-thread {
         margin-left: 40px;
     }
 }
 
-.wb-comment-avatar-container {
+.wb-comments-item-avatar {
     width: 32px;
     flex-shrink: 0;
     position: relative;
     z-index: 1;
 }
 
-.wb-comment-footer-icon {
-    position: relative;
-    top: -1px; /* Optical adjustment to center icons with text */
+/* ----------------------
+   Item parts
+   ---------------------- */
+
+.wb-comments-item-avatar {
+    width: 32px;
 }
-
+
+.wb-comments-item-avatar--reply {
+    width: 24px;
+}
+
+.wb-comments-footer-vote-count {
+    padding-left: 2px;
+}
+
+/* Feedback toast floating above the comment input */
+.wb-comments-toast {
+    z-index: 999;
+    bottom: 68px;
+    width: 90%;
+}

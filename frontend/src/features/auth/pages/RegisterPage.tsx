@@ -1,6 +1,6 @@
+import { Container } from "../../../components/ui";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
-import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
 
 const RegisterPage = () => {
@@ -20,8 +20,8 @@ const RegisterPage = () => {
     return (
         <>
 
-            <div className="wb-login-wrapper">
-                <Container className="wb-login-container">
+            <div className="wb-auth-page-wrapper">
+                <Container className="wb-auth-page-container">
                     <RegisterForm onToggleClick={toggle} onRegister={onRegister} />
                 </Container>
             </div>

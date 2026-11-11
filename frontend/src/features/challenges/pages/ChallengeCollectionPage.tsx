@@ -1,6 +1,6 @@
+import { Badge, Button, Container, Modal, ProgressBar, Table } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { Badge, Button, Container, Modal, ProgressBar, Table } from "react-bootstrap";
 import { FaCheck, FaChevronRight, FaLayerGroup, FaLock, FaPen, FaSearch, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
@@ -9,7 +9,6 @@ import Loader from "../../../components/Loader";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeTags from "../components/ChallengeTags";
 import { ChallengeCollectionDetails, GetChallengeCollectionData } from "../types";
-import "../components/Challenge.css";
 
 const difficultyClass = (difficulty: string) =>
     difficulty === "easy" ? "bg-success" : difficulty === "medium" ? "bg-warning text-dark" : "bg-danger";
@@ -73,17 +72,17 @@ const ChallengeCollectionPage = () => {
                     challenge list.
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="light" className="border" onClick={() => setShowDelete(false)}>Cancel</Button>
+                    <Button variant="subtle" className="border" onClick={() => setShowDelete(false)}>Cancel</Button>
                     <Button variant="danger" onClick={handleDelete}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-            <div className="wb-challenge-breadcrumb d-flex align-items-center gap-2">
+            <div className="wb-challenges-breadcrumb d-flex align-items-center gap-2">
                 <Link to="/Challenge">Challenges</Link>
                 <FaChevronRight size={10} className="text-muted opacity-50" />
-                <span className="text-dark fw-medium">{collection.title}</span>
+                <span className="text-body-emphasis fw-medium">{collection.title}</span>
             </div>
 
-            <div className="wb-challenge-hero">
+            <div className="wb-challenges-hero">
                 <div className="d-flex align-items-center justify-content-between gap-2 mb-2">
                     <div className="d-flex align-items-center gap-2 text-primary small fw-semibold text-uppercase">
                         <FaLayerGroup /> Collection
@@ -92,7 +91,7 @@ const ChallengeCollectionPage = () => {
                     {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
                         <div className="d-flex gap-2">
                             <Button
-                                variant="light"
+                                variant="subtle"
                                 size="sm"
                                 className="border d-flex align-items-center gap-2 px-2 fw-semibold"
                                 onClick={() => navigate(`/Challenge/Collection/Edit/${collection.id}`)}
@@ -110,12 +109,12 @@ const ChallengeCollectionPage = () => {
                         </div>
                     )}
                 </div>
-                <h2 className="fs-3 fw-bold text-dark">{collection.title}</h2>
-                <div className="wb-collection-description text-muted">
+                <h2 className="fs-3 fw-bold text-body-emphasis">{collection.title}</h2>
+                <div className="wb-challenges-collection-description text-muted">
                     <MarkdownRenderer content={collection.description} />
                 </div>
                 <div className="d-flex align-items-center gap-3 mt-3">
-                    <ProgressBar now={percent} variant="success" className="flex-grow-1 wb-collection-progress" />
+                    <ProgressBar now={percent} variant="success" className="flex-grow-1 wb-challenges-collection-progress" />
                     <span className="small fw-semibold text-nowrap">{solved} / {all.length} solved</span>
                 </div>
             </div>
@@ -123,7 +122,7 @@ const ChallengeCollectionPage = () => {
             {collection.sections.map((section, index) => {
                 const sectionSolved = section.challenges.filter(c => c.isSolved).length;
                 return (
-                    <section key={section.title} className="wb-collection-section">
+                    <section key={section.title} className="wb-challenges-collection-section">
                         <div className="d-flex align-items-baseline justify-content-between gap-3 mb-1">
                             <h3 className="fs-5 fw-bold mb-0">
                                 <span className="text-muted me-2">{index + 1}.</span>{section.title}
@@ -132,23 +131,23 @@ const ChallengeCollectionPage = () => {
                         </div>
                         {section.description && <p className="small text-muted mb-3">{section.description}</p>}
 
-                        <div className="wb-challenge-table-container">
-                            <Table hover className="wb-challenge-table mb-0">
+                        <div className="wb-challenges-table-container">
+                            <Table hover className="wb-challenges-table mb-0">
                                 <tbody>
                                     {section.challenges.map(challenge => (
                                         <tr key={challenge.id} className="cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}?collection=${collection.id}`)}>
-                                            <td className="wb-col-status text-center align-middle">
+                                            <td className="wb-challenges-table-col-status text-center align-middle">
                                                 {challenge.isSolved && <FaCheck className="text-success" size={14} />}
                                             </td>
                                             <td className="align-middle">
-                                                <span className="wb-table-title">
+                                                <span className="wb-challenges-table-title">
                                                     {challenge.title}
                                                     {!challenge.isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                                 </span>
                                                 <ChallengeTags tags={challenge.tags} className="mt-1" />
                                             </td>
-                                            <td className="wb-col-diff text-center align-middle">
-                                                <Badge className={`wb-challenge-difficulty-mini ${difficultyClass(challenge.difficulty)}`}>
+                                            <td className="wb-challenges-table-col-difficulty text-center align-middle">
+                                                <Badge className={`wb-challenges-difficulty-mini ${difficultyClass(challenge.difficulty)}`}>
                                                     {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
                                                 </Badge>
                                             </td>

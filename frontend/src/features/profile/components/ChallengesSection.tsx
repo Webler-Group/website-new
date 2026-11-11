@@ -1,4 +1,4 @@
-import { Modal, Badge } from "react-bootstrap";
+import { Badge, Modal } from "../../../components/ui";
 import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useSolvedChallenges from "../hooks/useSolvedChallenges";
@@ -51,9 +51,8 @@ const ChallengesSection = ({ userId, onClose }: ChallengesSectionProps) => {
 
         const card = (
             <div
-                className="shadow-sm border rounded p-2 wb-challenges__item"
+                className="shadow-sm border rounded p-2 wb-util-clickable"
                 onClick={() => navigate(`/Challenge/${challenge.id}`)}
-                style={{ cursor: "pointer" }}
             >
                 <div className="fw-semibold">
                     {challenge.title}
@@ -77,7 +76,7 @@ const ChallengesSection = ({ userId, onClose }: ChallengesSectionProps) => {
             onHide={onClose}
             className="d-flex justify-content-center align-items-center"
             fullscreen="sm-down"
-            contentClassName="wb-modal__container codes"
+            contentClassName="wb-app-modal-content-list"
         >
             <Modal.Header closeButton>
                 <Modal.Title>Challenges</Modal.Title>

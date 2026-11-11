@@ -38,7 +38,7 @@ function App() {
 
         <Route element={<NoAuth />}>
           <Route path="Users">
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
               <Route path="Login" element={<LoginPage />} />
               <Route path="Register" element={<RegisterPage />} />
               <Route path="Forgot-Password" element={<ForgotPasswordPage />} />
@@ -46,7 +46,7 @@ function App() {
           </Route>
         </Route>
 
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+        <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
           <Route index element={<HomePage />} />
           <Route path="Terms-of-use" element={<TermsOfUsePage />} />
           <Route path="Contact" element={<ContactPage />} />
@@ -61,7 +61,7 @@ function App() {
         </Route>
 
         <Route path="Tools">
-          <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+          <Route element={<Layout Header={<Header />} Footer={<></>} />}>
             <Route index element={<ToolsHomePage />} />
             <Route element={<RequireAuth allowedRoles={[RolesEnum.MODERATOR]} />}>
               <Route path="Tags" element={<TagHomePage />} />
@@ -79,7 +79,7 @@ function App() {
         <Route path="Feed/*" element={<FeedRoutes />} />
         <Route path="Profile/*" element={<ProfileRoutes />} />
 
-        <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+        <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
           <Route path="/*" element={<NotFoundPage />} />
         </Route>
       </Routes>

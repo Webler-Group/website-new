@@ -1,12 +1,11 @@
+import { Button, Form } from "../../../components/ui";
 import { SubmitEvent, useEffect, useState } from "react";
-import { Form, Button } from "react-bootstrap";
 import { FaPlus, FaAlignLeft, FaLevelUpAlt } from "react-icons/fa";
 import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
 import { useSnackbar } from "../../../context/SnackbarProvider";
-import { LinkContainer } from "react-router-bootstrap";
 import MdEditorField from "../../../components/MdEditorField";
 import InputTags from "../../../components/InputTags";
 import { ChallengeTemplate, ChallengeTestCase, CreateChallengeData, EditChallengeData, GetEditedChallengeData } from "../types";
@@ -207,11 +206,9 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                 <p className="col text-danger">{error}</p>
 
                 <div className="d-flex justify-content-end gap-2">
-                    <LinkContainer to={challengeId ? "/Challenge/" + challengeId : "/Challenge"}>
-                        <Button type="button" variant="secondary" disabled={loading}>
+                    <Button to={challengeId ? "/Challenge/" + challengeId : "/Challenge"} variant="secondary" disabled={loading}>
                             Cancel
                         </Button>
-                    </LinkContainer>
                     <Button type="submit" variant="primary" disabled={loading} >
                         {
                             challengeId ? "Update" : "Create"

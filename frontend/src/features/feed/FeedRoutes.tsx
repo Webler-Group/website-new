@@ -13,7 +13,7 @@ import FeedSuggestedUserListPage from "./pages/FeedSuggestedUserListPage"
 const FeedRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={null} />}>
+            <Route element={<Layout Header={<Header />} Footer={null} />}>
                 <Route index element={<FeedLayout MainPage={<FeedListPage />} />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path="New" element={<FeedLayout MainPage={<FeedCreatePage feedId={null} />} />} />

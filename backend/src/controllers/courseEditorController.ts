@@ -3,7 +3,7 @@ import { IAuthRequest } from "../middleware/verifyJWT";
 import { Response } from "express";
 import CourseModel from "../models/Course";
 import CourseLessonModel from "../models/CourseLesson";
-import LessonNodeModel from "../models/LessonNode";
+import LessonNodeModel, { LESSON_NODE_MINIMAL_FIELDS } from "../models/LessonNode";
 import QuizAnswerModel, { QuizAnswer } from "../models/QuizAnswer";
 import mongoose, { Types } from "mongoose";
 import {
@@ -185,7 +185,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const [lesson, lessonNodes] = await Promise.all([
         CourseLessonModel.findById(lessonId).lean(),
-        LessonNodeModel.find({ lessonId }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean()
+        LessonNodeModel.find({ lessonId }, LESSON_NODE_MINIMAL_FIELDS).sort({ index: "asc" }).lean()
     ]);
 
     if (!lesson) {

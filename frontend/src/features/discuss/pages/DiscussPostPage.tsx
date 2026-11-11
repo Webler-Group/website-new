@@ -1,12 +1,10 @@
+import { Alert, Button, cx, Dropdown, Form, FormGroup, FormLabel, Modal, Pagination } from "../../../components/ui";
 import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { Alert, Button, Dropdown, Form, FormGroup, FormLabel, Modal } from "react-bootstrap";
-import { PaginationControl } from "react-bootstrap-pagination-control";
 import { useAuth } from "../../auth/context/authContext";
 import Answer from "../components/Answer";
-import { LinkContainer } from "react-router-bootstrap";
 import { FaSearch, FaThumbsUp } from "react-icons/fa";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
@@ -395,7 +393,7 @@ const DiscussPostPage = () => {
                 <div className="wb-discuss-post mb-4">
                     {/* Title row */}
                     <div className="d-flex align-items-start gap-2 mb-2">
-                        <h2 className="wb-discuss-post__title flex-grow-1">{question.title}</h2>
+                        <h2 className="wb-discuss-post-title flex-grow-1">{question.title}</h2>
                         <div className="flex-shrink-0">
                             <Dropdown drop="start">
                                 <Dropdown.Toggle as={EllipsisDropdownToggle} />
@@ -405,9 +403,7 @@ const DiscussPostPage = () => {
                                         <>
                                             {
                                                 (question && question.user.id === userInfo.id) &&
-                                                <LinkContainer to={"/Discuss/Edit/" + questionId}>
-                                                    <Dropdown.Item>Edit</Dropdown.Item>
-                                                </LinkContainer>
+                                                <Dropdown.Item as={Link} to={"/Discuss/Edit/" + questionId}>Edit</Dropdown.Item>
                                             }
                                             <Dropdown.Item onClick={handleFollowQuestion}>
                                                 {question.isFollowed ? "Unfollow" : "Follow"}
@@ -436,7 +432,7 @@ const DiscussPostPage = () => {
                     )}
 
                     {/* Body */}
-                    <div className="wb-discuss-post__body">
+                    <div className="wb-discuss-post-body">
                         <MarkdownRenderer content={question.message} />
                         {question.attachments.map(attachment => (
                             <div key={attachment.id} className="mt-2">
@@ -446,17 +442,17 @@ const DiscussPostPage = () => {
                     </div>
 
                     {/* Footer: votes + author */}
-                    <div className="wb-discuss-post__footer d-flex align-items-center justify-content-between mt-3 pt-3">
+                    <div className="wb-discuss-post-footer d-flex align-items-center justify-content-between mt-3 pt-3">
                         <div className="d-flex align-items-center gap-3">
                             <button
-                                className={"wb-discuss-vote-btn" + (question.isUpvoted ? " active" : "")}
+                                className={cx("wb-discuss-vote-button", question.isUpvoted && "wb-discuss-vote-button--active")}
                                 onClick={voteQuestion}
                             >
                                 <FaThumbsUp size={13} />
                                 <span onClick={(e) => { e.stopPropagation(); handleShowVoters(); }}>{question.votes}</span>
                             </button>
                             <button
-                                className={"wb-discuss-follow-btn" + (question.isFollowed ? " active" : "")}
+                                className={cx("wb-discuss-follow-button", question.isFollowed && "wb-discuss-follow-button--active")}
                                 onClick={handleFollowQuestion}
                             >
                                 <FaStar size={13} />
@@ -467,13 +463,13 @@ const DiscussPostPage = () => {
                             <ProfileAvatar size={30} avatarUrl={question.user.avatarUrl} />
                             <div>
                                 <ProfileName userId={question.user.id} userName={question.user.name} />
-                                <div className="wb-discuss-post__date">{DateUtils.format(new Date(question.date))}</div>
+                                <div className="wb-discuss-post-date">{DateUtils.format(new Date(question.date))}</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
-                <div hidden={!formVisible} className="mt-2 border bg-white rounded p-2">
+                <div hidden={!formVisible} className="mt-2 border bg-body rounded p-2">
                     <Form ref={form}>
                         <FormGroup>
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>
@@ -506,7 +502,7 @@ const DiscussPostPage = () => {
                 <div className="d-flex align-items-center justify-content-between py-2">
                     <h5 className="mb-0 fw-semibold">{question.answers} {question.answers === 1 ? "Answer" : "Answers"}</h5>
                     <div className="d-flex align-items-center gap-2">
-                        <Form.Select size="sm" style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+                        <Form.Select size="sm" className="wb-form-filter-select" value={filter} onChange={handleFilterSelect}>
                             <option value="1">Sort by: Votes</option>
                             <option value="2">Sort by: Date</option>
                         </Form.Select>
@@ -544,7 +540,7 @@ const DiscussPostPage = () => {
                     }
                 </div>
                 <div className="my-3">
-                    <PaginationControl
+                    <Pagination
                         page={currentPage}
                         between={3}
                         total={question.answers}

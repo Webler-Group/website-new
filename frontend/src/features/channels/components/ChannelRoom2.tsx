@@ -1,7 +1,6 @@
+import { Badge, Button, cx, Form, Modal } from "../../../components/ui";
 import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
-import { TransitionGroup, CSSTransition } from "react-transition-group";
 import ChannelMessage from "./ChannelMessage";
-import { Button, Form, Badge, Modal } from "react-bootstrap";
 import { FaArrowCircleDown, FaCog, FaPlus, FaTimes } from "react-icons/fa";
 import ChannelRoomSettings from "./ChannelRoomSettings";
 import { useApi } from "../../../context/apiCommunication";
@@ -49,8 +48,7 @@ const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => 
             </Button>
             {open && (
                 <div
-                    className="position-absolute bg-white border rounded shadow-sm py-1"
-                    style={{ bottom: "100%", right: 0, minWidth: "120px", zIndex: 10 }}
+                    className="wb-channels-attach-menu position-absolute bg-body border rounded shadow-sm py-1"
                 >
                     {[
                         { label: "Code", action: onCode },
@@ -68,6 +66,15 @@ const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => 
             )}
         </div>
     );
+};
+
+/**
+ * Wraps a chat message; messages that appear after the room finished loading play a short
+ * enter animation. Whether to animate is decided once, at mount, so re-renders never replay it.
+ */
+const MessageEnter = ({ animate, children }: { animate: boolean; children: React.ReactNode }) => {
+    const [entering] = useState(animate);
+    return <div className={cx("mt-2", entering && "wb-channels-message-enter")}>{children}</div>;
 };
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
@@ -120,7 +127,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [skipTransition, setSkipTransition] = useState(true);
     const [loading, setLoading] = useState(false);
     const [repliedMessage, setRepliedMessage] = useState<ChannelMessageDetails | null>(null);
-    const nodeRefs = useRef<Map<string, React.RefObject<HTMLDivElement | null>>>(new Map());
     const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
     const [postAttachmentSelectVisible, setPostAttachmentSelectVisible] = useState(false);
     const [showImages, setShowImages] = useState(false);
@@ -232,17 +238,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         }
     }, [justChangedChannel, messages.isLoading, messages.results]);
 
-    useEffect(() => {
-        const currentIds = new Set([
-            ...messages.results.map(getMessageKey),
-            ...messages.pending.map(m => m.clientId)
-        ]);
-        for (const key of nodeRefs.current.keys()) {
-            if (!currentIds.has(key)) {
-                nodeRefs.current.delete(key);
-            }
-        }
-    }, [messages.results, messages.pending]);
 
     const isMobileDevice = () => {
         return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -253,12 +248,6 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         return message.clientId ?? message.id;
     }
 
-    const getNodeRef = (id: string) => {
-        if (!nodeRefs.current.has(id)) {
-            nodeRefs.current.set(id, { current: null });
-        }
-        return nodeRefs.current.get(id)!;
-    };
 
     const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
         setTimeout(() => {
@@ -476,7 +465,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const pendingStartsGroup = !latestRendered || latestRendered.user.id !== userInfo?.id || latestRendered.type !== ChannelMessageTypeEnum.MESSAGE;
 
     return (
-        <div className="d-flex flex-column" style={{ height: "100dvh" }}>
+        <div className="wb-channels-room d-flex flex-column">
             <NotificationToast notification={notification} onClose={closeNotification} />
             {
                 channel !== null ?
@@ -505,7 +494,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         {preview && (
                             <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
                         )}
-                        <div className="d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white" style={{ height: "44px" }}>
+                        <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-body">
                             <div className="d-flex align-items-center">
                                 <Button variant="link" className="text-secondary" onClick={onExit}>
                                     <FaTimes />
@@ -522,23 +511,16 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         </div>
 
                         <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-                            <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings__closed")}>
+                            <div className={"wb-channels-settings bg-body-tertiary p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings--closed")}>
                                 <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
-                                <TransitionGroup component={null}>
                                     {/* single array so a pending message and its confirmed version share the key space */}
                                     {[...(userInfo ? messages.pending.map((pending, i) => {
                                         const message = toPendingDetails(pending);
                                         const isOldestPending = i === messages.pending.length - 1;
                                         return (
-                                            <CSSTransition
-                                                key={pending.clientId}
-                                                timeout={300}
-                                                classNames="wb-channels-message"
-                                                nodeRef={getNodeRef(pending.clientId)}
-                                            >
-                                                <div ref={getNodeRef(pending.clientId)} className="mt-2">
+                                            <MessageEnter key={pending.clientId} animate>
                                                     <ChannelMessage
                                                         message={message}
                                                         showHeader={(isOldestPending && pendingStartsGroup) || message.repliedTo != null}
@@ -551,8 +533,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                             onCancel: () => messages.cancelMessage(pending.clientId)
                                                         }}
                                                     />
-                                                </div>
-                                            </CSSTransition>
+                                            </MessageEnter>
                                         );
                                     }) : []),
                                     ...renderMessages.map((message, i) => {
@@ -578,13 +559,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         }
 
                                         return (
-                                            <CSSTransition
-                                                key={getMessageKey(message)}
-                                                timeout={300}
-                                                classNames={skipTransition ? "" : "wb-channels-message"}
-                                                nodeRef={getNodeRef(getMessageKey(message))}
-                                            >
-                                                <div ref={getNodeRef(getMessageKey(message))} className="mt-2">
+                                            <MessageEnter key={getMessageKey(message)} animate={!skipTransition}>
                                                     <ChannelMessage
                                                         ref={i === renderMessages.length - 1 ? lastMessageRef : undefined}
                                                         message={message}
@@ -592,11 +567,9 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                                         onContextMenu={onContextMenu}
                                                         onImagePreview={setPreview}
                                                     />
-                                                </div>
-                                            </CSSTransition>
+                                            </MessageEnter>
                                         );
                                     })]}
-                                </TransitionGroup>
                             </div>
                             <div className="position-relative p-2 border-top">
                                 {editedMessage && (
@@ -611,7 +584,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 )}
                                 {repliedMessage &&
                                     <div className="d-flex align-items-center">
-                                        <div className="flex-grow-1" style={{ minWidth: 0 }}>
+                                        <div className="flex-grow-1 wb-util-min-w-0">
                                             <RepliedMessage message={repliedMessage} />
                                         </div>
                                         <Button size="sm" variant="link" className="text-muted ms-2 p-0 flex-shrink-0" onClick={() => setRepliedMessage(null)}>
@@ -625,8 +598,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                             <Button
                                                 size="sm"
                                                 variant="secondary"
-                                                className="position-absolute end-0 me-3 mt-1 z-1"
-                                                style={{ top: "-50px" }}
+                                                className="wb-channels-scroll-down-button position-absolute end-0 me-3 mt-1 z-1"
                                                 onClick={() => {
                                                     scrollToBottom('smooth');
                                                     setUnreadCount(0);
@@ -644,9 +616,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                             value={newMessage}
                                             onChange={(e) => setNewMessage(e.target.value)}
                                             onKeyDown={handleTextareaKeydown}
-                                            className="me-2 border-0"
+                                            className="wb-channels-message-input me-2 border-0"
                                             maxLength={1024}
-                                            style={{ resize: "none", boxShadow: "none" }}
                                         />
                                         <AttachDropdown
                                             onCode={() => setPostAttachmentSelectVisible(true)}

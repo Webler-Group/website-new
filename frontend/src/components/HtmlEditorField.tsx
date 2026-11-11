@@ -1,7 +1,8 @@
-import { FormGroup, Modal, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { cssVars, FormGroup, Modal, ToggleButton, ToggleButtonGroup } from "./ui";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useId, useRef, useState } from "react";
 import FileExplorer from "./file-explorer/FileExplorer";
 import HtmlRenderer from "./HtmlRenderer";
+import "./Editor.css";
 import { MDEditorMode } from "./MdEditorField";
 import AceEditor from "react-ace";
 import ace from "ace-builds";
@@ -145,16 +146,15 @@ const HtmlEditorField = ({
                 </Modal.Footer>
             </Modal>
 
-            <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
+            <div className="d-flex overflow-auto mb-2 p-2 bg-body-tertiary rounded border gap-2">
                 {toolbarButtons.map((btn, idx) => (
                     <button
                         key={idx}
-                        className="btn btn-sm btn-outline-secondary flex-shrink-0"
+                        className="wb-editor-toolbar-button btn btn-sm btn-outline-secondary flex-shrink-0"
                         onClick={(e) => {
                             e.preventDefault();
                             btn.action();
                         }}
-                        style={{ minWidth: "40px" }}
                     >
                         {btn.icon}
                     </button>
@@ -197,16 +197,7 @@ const HtmlEditorField = ({
                     />
                     <div
                         onPointerDown={handleDragStart}
-                        style={{
-                            height: "10px",
-                            cursor: "ns-resize",
-                            background: "#343a40",
-                            borderRadius: "0 0 4px 4px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            userSelect: "none"
-                        }}
+                        className="wb-editor-resize-handle"
                     >
                         <svg width="24" height="4" viewBox="0 0 24 4" fill="#6c757d">
                             <rect y="0" width="24" height="1.5" rx="1" />
@@ -220,7 +211,10 @@ const HtmlEditorField = ({
                 (customPreview != null ? (
                     customPreview
                 ) : (
-                    <div style={editorHeightRef.current ? { minHeight: editorHeightRef.current } : undefined}>
+                    <div
+                        ref={cssVars({ "--wb-editor-preview-min-height": editorHeightRef.current })}
+                        className="wb-editor-preview"
+                    >
                         <HtmlRenderer html={text} css={css} />
                     </div>
                 ))}

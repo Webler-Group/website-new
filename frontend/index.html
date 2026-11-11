@@ -11,6 +11,16 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, interactive-widget=resizes-content" />
 	<meta name="copyright" content="webler-group (all members of this organisation: https://github.com/WeblerGroup)" />
 
+	<!-- Apply the color theme before first paint (keep in sync with src/utils/ThemeUtils.ts) -->
+	<script>
+		(function () {
+			var t = null;
+			try { t = localStorage.getItem("wb-theme"); } catch (e) { }
+			if (t !== "light" && t !== "dark") t = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+			document.documentElement.setAttribute("data-bs-theme", t);
+		})();
+	</script>
+
 	<title>Webler Codes</title>
 	<meta name="title" content="Webler Codes" />
 	<meta name="description"

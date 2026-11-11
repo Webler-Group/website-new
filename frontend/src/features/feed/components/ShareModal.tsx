@@ -1,5 +1,5 @@
+import { FormLabel, Modal } from "../../../components/ui";
 import { useState } from 'react';
-import { FormLabel, Modal } from 'react-bootstrap';
 import { FaCopy, FaShare, FaShareNodes } from 'react-icons/fa6';
 import MdEditorField from '../../../components/MdEditorField';
 import { copyToClipboard } from '../../../utils/ClipboardUtils';
@@ -32,7 +32,7 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
   };
 
   return (
-    <Modal show={show} onHide={onClose} size='lg' centered backdropClassName='wb-feed-edit-modal__backdrop' fullscreen="sm-down" backdrop="static" style={{ zIndex: "1060" }}>
+    <Modal show={show} onHide={onClose} size='lg' centered fullscreen="sm-down" backdrop="static">
       <Modal.Header closeButton>
         <Modal.Title>
           <FaShare />
@@ -54,8 +54,8 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
           />
         </div>
 
-        <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
-          <span className="text-truncate me-2" style={{ maxWidth: '75%' }}>
+        <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-body-tertiary">
+          <span className="wb-feed-share-url text-truncate me-2">
             {shareUrl}
           </span>
           <button

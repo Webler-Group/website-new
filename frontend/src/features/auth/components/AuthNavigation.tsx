@@ -1,7 +1,6 @@
-import { Nav, NavDropdown, Button } from "react-bootstrap";
+import { Button, Nav, NavDropdown } from "../../../components/ui";
 import { FaQuestion, FaSignOutAlt } from "react-icons/fa";
 import { FaGear } from "react-icons/fa6";
-import { LinkContainer } from "react-router-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
@@ -28,13 +27,11 @@ const AuthNavigation = () => {
                         <>
                             <Nav.Item>
                                 <NavDropdown align="end" title={<> <ProfileAvatar size={32} avatarUrl={userInfo.avatarUrl} /> </>} menuVariant="light">
-                                    <LinkContainer to="/Profile">
-                                        <NavDropdown.Item>
-                                            <b style={{ fontFamily: "monospace" }}>{userInfo.name}</b>
-                                            <br />
-                                            <span className="text-secondary">Go to profile</span>
-                                        </NavDropdown.Item>
-                                    </LinkContainer>
+                                    <NavDropdown.Item as={Link} to="/Profile">
+                                        <b className="wb-app-header-user-name">{userInfo.name}</b>
+                                        <br />
+                                        <span className="text-secondary">Go to profile</span>
+                                    </NavDropdown.Item>
                                     <NavDropdown.Divider />
                                     <Link className="dropdown-item" to={"/Profile/" + userInfo.id + "?settings=true"}>
                                         <FaGear /> Settings
@@ -51,12 +48,8 @@ const AuthNavigation = () => {
                         :
                         <>
                             <Nav.Item>
-                                <LinkContainer to="/Users/Login">
-                                    <Button size="sm" variant="primary" className="me-2">Log in</Button>
-                                </LinkContainer>
-                                <LinkContainer to="/Users/Register">
-                                    <Button size="sm" variant="primary">Register</Button>
-                                </LinkContainer>
+                                <Button to="/Users/Login" size="sm" variant="primary" className="me-2">Log in</Button>
+                                <Button to="/Users/Register" size="sm" variant="primary">Register</Button>
                             </Nav.Item>
                         </>
                 }

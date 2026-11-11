@@ -1,5 +1,5 @@
+import { Modal } from "../../../components/ui";
 import { useState } from 'react';
-import { Modal } from 'react-bootstrap';
 import { FaTrash } from 'react-icons/fa';
 
 interface DeleteModalProps {
@@ -18,7 +18,7 @@ const DeleteModal = ({ show, onConfirm, onClose }: DeleteModalProps) => {
     };
 
     return (
-        <Modal show={show} onHide={onClose} centered backdropClassName='wb-feed-edit-modal__backdrop' style={{ zIndex: "1060" }}>
+        <Modal show={show} onHide={onClose} centered>
             <Modal.Header closeButton>
                 <Modal.Title>
                     <FaTrash />
@@ -35,7 +35,7 @@ const DeleteModal = ({ show, onConfirm, onClose }: DeleteModalProps) => {
             <Modal.Footer>
                 <button
                     onClick={onClose}
-                    className="btn btn-light px-4 rounded-3 shadow-sm"
+                    className="btn wb-ui-button--subtle px-4 rounded-3 shadow-sm"
                     disabled={isDeleting}
                 >
                     Cancel

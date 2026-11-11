@@ -1,5 +1,4 @@
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
-import { LinkContainer } from "react-router-bootstrap";
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "../../../components/ui";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import { ChangeEvent, SubmitEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -205,7 +204,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                     <div className="col-12 col-md-4">
                         <div className="d-flex justify-content-center">
                             <div className="rounded-circle">
-                                <img className="wb-courses-course__cover-image" src={coverImageUrl || "/resources/images/logoicon.svg"} alt="Cover image" />
+                                <img className="wb-courses-course-cover-image" src={coverImageUrl || "/resources/images/logoicon.svg"} alt="Cover image" />
                             </div>
                         </div>
                         <Form onSubmit={handleCoverImageUpload}>
@@ -223,7 +222,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                 <div className="col-12 col-md-8">
                     {
                         !courseId &&
-                        <div className="mb-4 p-3 border rounded bg-light">
+                        <div className="mb-4 p-3 border rounded bg-body-tertiary">
                             <div className="d-flex justify-content-between align-items-center mb-2">
                                 <h5>Load Course Data from JSON</h5>
                                 <Button variant="link" size="sm" onClick={() => setShowJsonHelp(true)}>JSON Format Guide</Button>
@@ -242,7 +241,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                         </Modal.Header>
                         <Modal.Body>
                             <p>To import a course, your JSON file must follow this structure:</p>
-                            <pre className="bg-light p-3 border rounded" style={{ maxHeight: '300px', overflowY: 'auto', fontSize: '0.85rem' }}>
+                            <pre className="wb-courses-import-example bg-body-tertiary p-3 border rounded">
                                 {`{
   "code": "course-code-unique",
   "title": "Course Title",
@@ -303,9 +302,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                             <ToggleSwitch value={visible} onChange={(e) => setVisible((e.target as HTMLInputElement).checked)} />
                         </FormGroup>
                         <div className="d-flex justify-content-end">
-                            <LinkContainer to={courseId ? "/Courses/Editor/" + courseId : "/Courses/Editor/"}>
-                                <Button size="sm" type="button" variant="secondary" disabled={loading}>Cancel</Button>
-                            </LinkContainer>
+                            <Button to={courseId ? "/Courses/Editor/" + courseId : "/Courses/Editor/"} size="sm" variant="secondary" disabled={loading}>Cancel</Button>
                             {
                                 courseId ?
                                     <>

@@ -1,0 +1,54 @@
+/* =============================================================================================
+ * Editor – shared styles of the Markdown / HTML editor fields and the post textarea
+ * ============================================================================================= */
+
+.wb-editor-toolbar-button {
+    min-width: 40px;
+}
+
+/* Character counter row below the textarea (height is part of the preview min-height) */
+.wb-editor-status-row {
+    height: 36px;
+}
+
+.wb-editor-textarea {
+    overscroll-behavior: contain;
+}
+
+/* Keeps the preview as tall as the editor was, so switching modes does not jump */
+.wb-editor-preview {
+    min-height: var(--wb-editor-preview-min-height, auto);
+}
+
+/* --- HTML editor resize handle -------------------------------------------------------------- */
+
+.wb-editor-resize-handle {
+    height: 10px;
+    cursor: ns-resize;
+    background: #343a40;
+    border-radius: 0 0 4px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
+/* --- Mention popup (post textarea) ---------------------------------------------------------- */
+
+.wb-editor-mention-popup {
+    position: absolute;
+    top: var(--wb-editor-mention-top, 0);
+    left: var(--wb-editor-mention-left, 0);
+    z-index: 2000;
+    min-width: 250px;
+    padding: 0.25rem;
+    background-color: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.wb-editor-mention-close {
+    line-height: 1;
+    padding: 0.1rem 0.25rem;
+}

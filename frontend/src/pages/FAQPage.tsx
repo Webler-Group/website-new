@@ -1,13 +1,13 @@
-import { Container } from "react-bootstrap";
+import { Container } from "../components/ui";
 import PageTitle from "../layouts/PageTitle";
 
 const FAQPage = () => {
     PageTitle("Frequently Asked Questions", false);
 
     return (
-        <div className="bg-light py-4" style={{ minHeight: "100vh" }}>
+        <div className="bg-body-tertiary py-4 min-vh-100">
             <Container>
-                <div className="bg-white rounded p-4 shadow">
+                <div className="bg-body rounded p-4 shadow">
                     <h2 className="mb-4">Frequently Asked Questions</h2>
 
                     <ul>
@@ -40,7 +40,7 @@ const FAQPage = () => {
                         <p>
                             You can mention users in QA discussions and comments using the following syntax:
                         </p>
-                        <pre className="bg-light p-2 rounded">
+                        <pre className="bg-body-tertiary p-2 rounded">
                             [user id="user_id"]username[/user]
                         </pre>
                         <p>

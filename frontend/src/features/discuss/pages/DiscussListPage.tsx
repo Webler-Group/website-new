@@ -1,10 +1,8 @@
+import { Button, Form, Pagination } from "../../../components/ui";
 import { ChangeEvent, useEffect, useState } from 'react'
-import { Button, Form } from 'react-bootstrap'
-import { LinkContainer } from 'react-router-bootstrap';
 import { useApi } from '../../../context/apiCommunication';
 import Question from '../components/Question';
 import { useAuth } from '../../auth/context/authContext';
-import { PaginationControl } from 'react-bootstrap-pagination-control';
 import QuestionPlaceholder from '../components/QuestionPlaceholder';
 import { useSearchParams } from 'react-router-dom';
 import { TagSearch } from '../../../components/InputTags';
@@ -109,7 +107,7 @@ const DiscussListPage = () => {
                     <Form.Label htmlFor="filter" className="visually-hidden">
                         Filter
                     </Form.Label>
-                    <Form.Select id="filter" style={{ width: "140px" }} size='sm' value={filter} onChange={handleFilterSelect}>
+                    <Form.Select id="filter" className="wb-form-filter-select" size='sm' value={filter} onChange={handleFilterSelect}>
                         <option value="1">Most Recent</option>
                         <option value="2">Unanswered</option>
                         <option value="6">Trending</option>
@@ -122,9 +120,7 @@ const DiscussListPage = () => {
                         }
                     </Form.Select>
                 </Form.Group>
-                <LinkContainer to="/Discuss/New">
-                    <Button size='sm'>Ask a question</Button>
-                </LinkContainer>
+                <Button to="/Discuss/New" size='sm'>Ask a question</Button>
             </div>
             <div className="mt-2">
                 {
@@ -132,7 +128,7 @@ const DiscussListPage = () => {
                         placeholders
                         :
                         questionCount == 0 ?
-                            <div className="wb-empty-list">
+                            <div className="wb-app-empty-list">
                                 <h3>Nothing to show</h3>
                             </div>
                             :
@@ -145,7 +141,7 @@ const DiscussListPage = () => {
                 }
             </div>
             <div className='my-3'>
-                <PaginationControl
+                <Pagination
                     page={currentPage}
                     between={3}
                     total={questionCount}

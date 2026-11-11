@@ -1,5 +1,4 @@
-import { Alert } from "react-bootstrap";
-
+import { Alert } from "./ui";
 interface RequestResultAlertProps {
     message?: string;
     errors?: { message: string }[];

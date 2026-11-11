@@ -1,3 +1,4 @@
+import { cx } from "../ui";
 import { FaPencil, FaThumbsUp, FaTrash } from "react-icons/fa6";
 import { useAuth } from "../../features/auth/context/authContext";
 import PostAttachment from "../post-attachment-select/PostAttachment";
@@ -50,16 +51,16 @@ const Comment: React.FC<CommentProps> = ({
   }
 
   return (
-    <div className={`d-flex position-relative gap-3 wb-comment-item ${isHighlighted ? "highlighted" : ""} ${isReply ? "wb-reply-comment" : ""}`}>
-      <div className="wb-comments__options">
+    <div className={cx("d-flex position-relative gap-3 wb-comments-item", isHighlighted && "wb-comments-item--highlighted")}>
+      <div className="wb-comments-options">
         <div className="d-flex gap-2">
           {
             (userInfo && userInfo.id === comment.user.id) &&
             <>
-              <span className="wb-comments__options__item text-muted" title="Edit" onClick={handleEdit}>
+              <span className="wb-comments-options-item text-muted" title="Edit" onClick={handleEdit}>
                 <FaPencil size={12} />
               </span>
-              <span className="wb-comments__options__item text-muted" title="Delete" onClick={handleDelete}>
+              <span className="wb-comments-options-item text-muted" title="Delete" onClick={handleDelete}>
                 <FaTrash size={12} />
               </span>
             </>
@@ -68,19 +69,19 @@ const Comment: React.FC<CommentProps> = ({
       </div>
       
       {/* Avatar Container aligned to the top */}
-      <div className="wb-comment-avatar-container" style={{ width: isReply ? '24px' : '32px' }}>
+      <div className={cx("wb-comments-item-avatar", isReply && "wb-comments-item-avatar--reply")}>
         <ProfileAvatar size={isReply ? 24 : 32} avatarUrl={comment.user.avatarUrl} />
       </div>
 
-      <div className="flex-grow-1" style={{ minWidth: 0 }}>
+      <div className="flex-grow-1 wb-util-min-w-0">
         {/* Username & Timestamp row */}
         <div className="d-flex align-items-center gap-2 mb-1">
           <ProfileName userId={comment.user.id} userName={comment.user.name} className={isReply ? "fs-6" : ""} />
-          <small className="text-secondary" style={{ fontSize: '0.75rem' }}>{DateUtils.format2(new Date(comment.date), true)}</small>
+          <small className="text-secondary wb-util-text-xs">{DateUtils.format2(new Date(comment.date), true)}</small>
         </div>
 
         {/* Message Content */}
-        <div className="wb-comments__message">
+        <div className="wb-comments-message">
           {parseMessage(comment.message)}
         </div>
         
@@ -98,13 +99,12 @@ const Comment: React.FC<CommentProps> = ({
         {/* Action Buttons Footer */}
         <div className="d-flex gap-3 align-items-center mt-2">
           <button 
-            className={`wb-comments-action-btn ${comment.isUpvoted ? "active" : ""}`} 
+            className={cx("wb-comments-action-button", comment.isUpvoted && "wb-comments-action-button--active")} 
             onClick={handleVote}
           >
             <FaThumbsUp size={14} className="me-1 mb-1" />
             <span 
-              className="fw-medium"
-              style={{ paddingLeft: '2px' }}
+              className="wb-comments-footer-vote-count fw-medium"
               onClick={(e) => {
                 if (comment.votes > 0) {
                   e.stopPropagation();
@@ -116,7 +116,7 @@ const Comment: React.FC<CommentProps> = ({
             </span>
           </button>
           
-          <button className="wb-comments-action-btn fw-medium" onClick={handleReply}>
+          <button className="wb-comments-action-button fw-medium" onClick={handleReply}>
             Reply
           </button>
 

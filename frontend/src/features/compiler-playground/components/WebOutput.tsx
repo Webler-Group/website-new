@@ -1,5 +1,5 @@
+import { Badge, Button, cx, Modal } from "../../../components/ui";
 import React, { memo, useCallback, useEffect, useRef, useState } from "react"
-import { Badge, Button, Modal } from "react-bootstrap";
 import { FaCircleInfo, FaCircleXmark, FaTriangleExclamation } from "react-icons/fa6";
 
 interface WebOutputProps {
@@ -349,13 +349,13 @@ const consoleOverrideSource = `
 
 const processDataItem = (item: any, depth: number, method: string): React.ReactNode => {
     if (typeof item === "undefined") {
-        return <span style={{ color: "gray" }}>{"undefined"}</span>
+        return <span className="wb-compiler-playground-console-token--muted">{"undefined"}</span>
     }
     if (typeof item === "bigint") {
-        return <span style={{ color: "forestgreen" }}>{item + "n"}</span>
+        return <span className="wb-compiler-playground-console-token--number">{item + "n"}</span>
     }
     if (typeof item === "number" || typeof item === "boolean") {
-        return <span style={{ color: "forestgreen" }}>{item.toString()}</span>
+        return <span className="wb-compiler-playground-console-token--number">{item.toString()}</span>
     }
     if (typeof item === "string") {
         if (depth === 0) {
@@ -371,66 +371,66 @@ const processDataItem = (item: any, depth: number, method: string): React.ReactN
                 <span className={textColorClass}>{item}</span> :
                 <i className={textColorClass}>&lt;empty string&gt;</i>
         }
-        return <span style={{ color: "violet" }}>{`"${item}"`}</span>
+        return <span className="wb-compiler-playground-console-token--string">{`"${item}"`}</span>
     }
     if (typeof item === "object") {
         if (item === null) {
-            return <span style={{ color: "gray" }}>{"null"}</span>
+            return <span className="wb-compiler-playground-console-token--muted">{"null"}</span>
         }
         if (item.__type === "function") {
             return <>
-                <span style={{ color: "orange" }}>{"f "}</span>
-                <span style={{ color: "orange" }}>{item.__name}</span>
+                <span className="wb-compiler-playground-console-token--function">{"f "}</span>
+                <span className="wb-compiler-playground-console-token--function">{item.__name}</span>
             </>
         }
         if (item.__type === "symbol") {
             let description = typeof item.__description === "undefined" ? "" : `"${item.__description}"`;
-            return <span style={{ color: "violet" }}>{`Symbol(${description})`}</span>
+            return <span className="wb-compiler-playground-console-token--string">{`Symbol(${description})`}</span>
         }
         if (item.__type === "more") {
-            return <i style={{ color: "gray" }}>{`… ${item.__count} more`}</i>
+            return <i className="wb-compiler-playground-console-token--muted">{`… ${item.__count} more`}</i>
         }
         if (item instanceof Date) {
             return <>
-                <span style={{ color: "dodgerblue" }}>Date </span>
-                <span style={{ color: "violet" }}>{item.toString()}</span>
+                <span className="wb-compiler-playground-console-token--structure">Date </span>
+                <span className="wb-compiler-playground-console-token--string">{item.toString()}</span>
             </>
         }
         if (item instanceof Array) {
             return <>
-                <span style={{ color: "dodgerblue" }}>{"["}</span>
+                <span className="wb-compiler-playground-console-token--structure">{"["}</span>
                 {
                     item.map((elem, idx) => {
                         return idx > 0 ?
                             <span key={idx}>
-                                <span style={{ color: "white" }}>{", "}</span>
+                                <span className="wb-compiler-playground-console-token--plain">{", "}</span>
                                 {processDataItem(elem, depth + 1, method)}
                             </span>
                             :
                             <span key={idx}>{processDataItem(elem, depth + 1, method)}</span>
                     })
                 }
-                <span style={{ color: "dodgerblue" }}>{"]"}</span>
+                <span className="wb-compiler-playground-console-token--structure">{"]"}</span>
             </>
         }
         if (item instanceof RegExp) {
-            return <span style={{ color: "dodgerblue" }}>{`${item.toString()}`}</span>
+            return <span className="wb-compiler-playground-console-token--structure">{`${item.toString()}`}</span>
         }
         if (item.__type == "object") {
-            return <i style={{ color: "dodgerblue" }}>{item.__constructor}</i>
+            return <i className="wb-compiler-playground-console-token--structure">{item.__constructor}</i>
         }
         return (<>
-            <span style={{ color: "dodgerblue" }}>{"{ "}</span>
+            <span className="wb-compiler-playground-console-token--structure">{"{ "}</span>
             {
                 Object.entries(item).map((entry, idx) => {
                     let content = <>
-                        <span style={{ color: "dodgerblue" }}>{entry[0]}</span>
-                        <span style={{ color: "gray" }}>{": "}</span>
+                        <span className="wb-compiler-playground-console-token--structure">{entry[0]}</span>
+                        <span className="wb-compiler-playground-console-token--muted">{": "}</span>
                         {processDataItem(entry[1], depth + 1, method)}
                     </>
                     return idx > 0 ?
                         <span key={idx}>
-                            <span style={{ color: "dodgerblue" }}>{", "}</span>
+                            <span className="wb-compiler-playground-console-token--structure">{", "}</span>
                             {content}
                         </span>
                         :
@@ -439,20 +439,18 @@ const processDataItem = (item: any, depth: number, method: string): React.ReactN
                         </span>
                 })
             }
-            <span style={{ color: "dodgerblue" }}>{" }"}</span>
+            <span className="wb-compiler-playground-console-token--structure">{" }"}</span>
         </>);
     }
-    return <span style={{ color: "white" }}>{item}</span>
+    return <span className="wb-compiler-playground-console-token--plain">{item}</span>
 }
-
-const dataItemStyle: React.CSSProperties = { whiteSpace: "pre-wrap", wordWrap: "break-word", wordBreak: "break-all", fontSize: "0.85rem" };
 
 // Memoized so that appending a message only renders the new row(s).
 const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: ConsoleEntry; borderTop: boolean; onLocationClick?: (line: number) => void }) => {
-    const messageContainer = <div className="flex-grow-1" style={{ minWidth: 0 }}>
+    const messageContainer = <div className="flex-grow-1 wb-util-min-w-0">
         {
             entry.data.map((itemData, idx) => (
-                <span key={idx} className="me-2" style={dataItemStyle}>
+                <span key={idx} className="wb-compiler-playground-console-data me-2">
                     {processDataItem(itemData, 0, entry.method)}
                 </span>
             ))
@@ -462,8 +460,7 @@ const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: Console
     const location = entry.line !== undefined &&
         <button
             type="button"
-            className="wb-console-location flex-shrink-0 ms-2 p-0 border-0 bg-transparent text-secondary text-decoration-underline"
-            style={{ fontSize: "0.75rem", fontFamily: "inherit", cursor: onLocationClick ? "pointer" : "default" }}
+            className="wb-compiler-playground-console-location flex-shrink-0 ms-2 p-0 border-0 bg-transparent text-secondary text-decoration-underline"
             title={`Go to line ${entry.line} in the JS tab`}
             disabled={!onLocationClick}
             onClick={() => onLocationClick?.(entry.line!)}
@@ -471,12 +468,12 @@ const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: Console
             JS:{entry.line}
         </button>
 
-    const leftPanelStyle = { width: entry.count > 1 ? "auto" : "20px" }
+    const iconClass = cx("wb-compiler-playground-console-icon flex-shrink-0", entry.count > 1 && "wb-compiler-playground-console-icon--count");
 
     switch (entry.method) {
         case "warn": return (
-            <div style={{ background: "#413A2A" }} className="d-flex align-items-start gap-1 text-small mb-1 px-2">
-                <div className="flex-shrink-0 text-warning" style={leftPanelStyle}>
+            <div className="wb-compiler-playground-console-row--warn d-flex align-items-start gap-1 text-small mb-1 px-2">
+                <div className={cx(iconClass, "text-warning")}>
                     {entry.count > 1 ? <Badge className="text-black bg-warning">{entry.count}</Badge> : <FaTriangleExclamation />}
                 </div>
                 {messageContainer}
@@ -484,8 +481,8 @@ const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: Console
             </div>
         )
         case "error": return (
-            <div style={{ background: "#4E3534" }} className="d-flex align-items-start gap-1 text-small mb-1 px-2">
-                <div className="flex-shrink-0 text-danger" style={leftPanelStyle}>
+            <div className="wb-compiler-playground-console-row--error d-flex align-items-start gap-1 text-small mb-1 px-2">
+                <div className={cx(iconClass, "text-danger")}>
                     {entry.count > 1 ? <Badge className="text-black bg-danger">{entry.count}</Badge> : <FaCircleXmark />}
                 </div>
                 {messageContainer}
@@ -493,8 +490,8 @@ const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: Console
             </div>
         )
         case "info": return (
-            <div style={{ background: "#2A3A41" }} className="d-flex align-items-start gap-1 text-small mb-1 px-2">
-                <div className="flex-shrink-0 text-info" style={leftPanelStyle}>
+            <div className="wb-compiler-playground-console-row--info d-flex align-items-start gap-1 text-small mb-1 px-2">
+                <div className={cx(iconClass, "text-info")}>
                     {entry.count > 1 ? <Badge className="text-black bg-info">{entry.count}</Badge> : <FaCircleInfo />}
                 </div>
                 {messageContainer}
@@ -503,7 +500,7 @@ const ConsoleRow = memo(({ entry, borderTop, onLocationClick }: { entry: Console
         )
         default: return (
             <div className={"d-flex align-items-start gap-1 text-small mb-1 px-2" + (borderTop ? " border-top" : "")}>
-                <div className="flex-shrink-0" style={leftPanelStyle}>
+                <div className={iconClass}>
                     {entry.count > 1 && <Badge className="text-light bg-black">{entry.count}</Badge>}
                 </div>
                 {messageContainer}
@@ -664,16 +661,16 @@ const WebOutput = ({ source, cssSource, jsSource, tabOpen, consoleVisible, hideC
 
     return (
         <>
-            <Modal show={consoleVisible} onHide={hideConosole} centered fullscreen="sm-down" contentClassName="wb-modal__container console bg-dark text-light" data-bs-theme="dark">
+            <Modal show={consoleVisible} onHide={hideConosole} centered fullscreen="sm-down" contentClassName="wb-app-modal-content-console bg-dark text-light" data-bs-theme="dark">
                 <Modal.Header closeButton>
                     <div className="d-flex">
                         <Button size="sm" variant="secondary" onClick={clearConsole}>Clear</Button>
                     </div>
                 </Modal.Header>
-                <Modal.Body className="overflow-auto" style={{ fontFamily: "monospace" }} ref={consoleRef}>
+                <Modal.Body className="overflow-auto font-monospace" ref={consoleRef}>
                     {
                         discarded > 0 &&
-                        <div className="text-secondary fst-italic px-2 mb-1" style={{ fontSize: "0.8rem" }}>
+                        <div className="wb-compiler-playground-console-discarded text-secondary fst-italic px-2 mb-1">
                             {discarded} older {discarded === 1 ? "message was" : "messages were"} discarded
                         </div>
                     }

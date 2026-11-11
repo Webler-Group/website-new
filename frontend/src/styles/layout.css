@@ -1,0 +1,174 @@
+/* =============================================================================================
+ * App layout – page shell, footer, shared modal sizes, empty states (wb-app-*)
+ * ============================================================================================= */
+
+/* --- Page ----------------------------------------------------------------------------------- */
+
+.wb-app-header-user-name {
+    font-family: monospace;
+}
+
+/* Fixed-height toolbar used at the top of editors and rooms */
+.wb-app-toolbar {
+    height: 44px;
+}
+
+.wb-app-empty-list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 160px auto;
+}
+
+/* --- Modal content sizes -------------------------------------------------------------------- */
+
+@media (min-width: 576px) {
+    .wb-app-modal-content-profile-settings {
+        width: 567px;
+        min-height: 544px;
+    }
+
+    .wb-app-modal-content-list {
+        width: 360px;
+        max-height: 80vh;
+    }
+
+    .wb-app-modal-content-console {
+        height: 923px;
+        max-height: 90vh;
+    }
+}
+
+/* --- Connection status / notification toast ------------------------------------------------- */
+
+.wb-app-connection-status {
+    bottom: 12px;
+    z-index: 2000;
+    pointer-events: none;
+}
+
+.wb-app-notification-toast {
+    z-index: 1055;
+}
+
+/* --- Footer --------------------------------------------------------------------------------- */
+
+.wb-app-footer {
+    background-color: #0d0d0d;
+    border-top: 1px solid #1f1f1f;
+}
+
+.wb-app-footer-inner {
+    padding: 48px 0 24px;
+}
+
+.wb-app-footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    padding-bottom: 36px;
+    border-bottom: 1px solid #1f1f1f;
+}
+
+.wb-app-footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wb-app-footer-logo {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+.wb-app-footer-tagline {
+    color: #555;
+    font-size: 0.85rem;
+    margin: 0;
+}
+
+.wb-app-footer-heading {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #444;
+    margin-bottom: 14px;
+}
+
+.wb-app-footer-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.wb-app-footer-links a {
+    color: #888;
+    text-decoration: none;
+    font-size: 0.875rem;
+    transition: color 0.15s;
+}
+
+.wb-app-footer-links a:hover {
+    color: #fff;
+}
+
+.wb-app-footer-social-icons {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.wb-app-footer-social-icons a {
+    color: #888;
+    font-size: 1.1rem;
+    transition: color 0.15s;
+    text-decoration: none;
+}
+
+.wb-app-footer-social-icons a:hover {
+    color: #fff;
+}
+
+.wb-app-footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 20px;
+    color: #444;
+    font-size: 0.8rem;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.wb-app-footer-bottom b {
+    color: #888;
+}
+
+.wb-app-footer-heart {
+    color: #e25555;
+    vertical-align: -2px;
+    margin: 0 2px;
+}
+
+@media (max-width: 576px) {
+    .wb-app-footer-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .wb-app-footer-brand {
+        grid-column: 1 / -1;
+    }
+
+    .wb-app-footer-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

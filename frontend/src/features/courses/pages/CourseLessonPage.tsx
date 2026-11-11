@@ -1,5 +1,5 @@
+import { Button, Nav, Offcanvas } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Button, Nav, Offcanvas } from "react-bootstrap";
 import { FaQuestionCircle, FaTimes, FaCode } from "react-icons/fa";
 import { FaBookOpen, FaComments } from "react-icons/fa6";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -8,6 +8,7 @@ import LessonNode from "../components/LessonNode";
 import CommentList from "../../../components/comments/CommentList";
 import { GetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
 import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
+import Loader from "../../../components/Loader";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
@@ -21,6 +22,7 @@ const CourseLessonPage = () => {
     const [commentModalVisible, setCommentModalVisible] = useState(false);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Courses", params: { lessonId } });
     const [commentCount, setCommentCount] = useState(0);
+    const [loading, setLoading] = useState(true);
     const [findPost, setFindPost] = useState<{ id: string, isReply: boolean } | null>(null);
 
     useEffect(() => {
@@ -57,6 +59,7 @@ const CourseLessonPage = () => {
     }, [lesson]);
 
     const getLesson = async () => {
+        setLoading(true);
         const result = await sendJsonRequest<GetLessonData>(`/Courses/GetLesson`, "POST", {
             lessonId
         });
@@ -65,6 +68,7 @@ const CourseLessonPage = () => {
             setCss(result.data.css ?? "");
             setCommentCount(result.data.lesson.comments);
         }
+        setLoading(false);
     }
 
     const handleSelectNode = (index: number, unlocked: boolean) => {
@@ -139,13 +143,14 @@ const CourseLessonPage = () => {
     return (
 
         <div className="wb-courses-lesson-container d-flex flex-column">
+            {loading && !lesson && <Loader />}
             {lesson && (
                 <>
                     <Offcanvas show={commentModalVisible} onHide={closeCommentModal} className="wb-comments-offcanvas" placement="end">
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
                         </Offcanvas.Header>
-                        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                        <Offcanvas.Body className="wb-comments-offcanvas-body d-flex flex-column">
                             <CommentList
                                 findPost={findPost}
                                 options={commentListOptions}
@@ -158,7 +163,7 @@ const CourseLessonPage = () => {
                             <Button variant="link" className="text-secondary p-1" onClick={handleExit}>
                                 <FaTimes size={18} />
                             </Button>
-                            <span className="text-secondary ms-2" style={{ fontSize: "18px", fontWeight: "bold" }} >{lesson.title}</span>
+                            <span className="wb-courses-lesson-title text-secondary ms-2">{lesson.title}</span>
                         </div>
                         <div className="d-flex align-items-center gap-1">
                             <span className="small text-secondary">{commentCount}</span>
@@ -189,7 +194,7 @@ const CourseLessonPage = () => {
                         </Nav>
                     </div>
 
-                    <div className="flex-grow-1 mt-2" style={{ minHeight: 0, overflow: "hidden" }}>
+                    <div className="flex-grow-1 mt-2 wb-util-min-h-0 overflow-hidden">
                         {
                             currentNodeIndex != 0 &&
                             <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} css={css} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />

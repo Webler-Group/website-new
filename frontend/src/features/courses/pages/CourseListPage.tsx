@@ -1,16 +1,17 @@
+import { Button, Container, Modal } from "../../../components/ui";
 import Course from "../components/Course";
-import { Button, Container, Modal } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { Helmet } from "react-helmet-async";
 import { CourseMinimal, CoursesListData, UserCoursesListData } from "../types";
+import Loader from "../../../components/Loader";
 
 const CourseListPage = () => {
     const { sendJsonRequest } = useApi();
     const [courses, setCourses] = useState<CourseMinimal[]>([]);
     const [myCourses, setMyCourses] = useState<CourseMinimal[]>([]);
-    const [_, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const { userInfo } = useAuth();
     const [resetModalVisible, setResetModalVisible] = useState(false);
     const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -76,6 +77,7 @@ const CourseListPage = () => {
 
             <Container>
                 <div className="wb-courses-main p-4">
+                    {loading && <Loader />}
                     {
                         userInfo !== null && myCourses.length > 0 &&
                         <>
