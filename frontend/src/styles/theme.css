@@ -1,0 +1,35 @@
+/* =============================================================================================
+ * Theme – color tokens that Bootstrap does not provide, in light and dark variants.
+ * The theme is selected by data-bs-theme on <html> (see src/utils/ThemeUtils.ts); everything
+ * else uses Bootstrap's own theme-aware variables (--bs-body-bg, --bs-border-color, …).
+ * ============================================================================================= */
+
+:root,
+[data-bs-theme="light"] {
+    /* Highlighted item, e.g. a comment opened from a notification */
+    --wb-highlight-bg: #fff9db;
+    /* Item the user just created, e.g. a freshly posted answer */
+    --wb-highlight-new-bg: beige;
+    --wb-challenges-xp-color: #b38100;
+}
+
+[data-bs-theme="dark"] {
+    --wb-highlight-bg: rgba(255, 193, 7, 0.15);
+    --wb-highlight-new-bg: rgba(245, 245, 220, 0.1);
+    --wb-challenges-xp-color: #ffc94d;
+}
+
+/* --- Logo ----------------------------------------------------------------------------------- */
+
+.wb-app-logo {
+    display: inline-flex;
+}
+
+.wb-app-logo-image--dark,
+[data-bs-theme="dark"] .wb-app-logo-image--light {
+    display: none;
+}
+
+[data-bs-theme="dark"] .wb-app-logo-image--dark {
+    display: inline;
+}

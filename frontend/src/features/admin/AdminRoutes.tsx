@@ -11,7 +11,7 @@ import RolesEnum from "../../data/RolesEnum"
 const AdminRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<></>} />}>
+            <Route element={<Layout Header={<Header />} Footer={<></>} />}>
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.ADMIN, RolesEnum.MODERATOR]} />}>
                     <Route index element={<AdminHomePage />} />
                     <Route path="UserSearch">

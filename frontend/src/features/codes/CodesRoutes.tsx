@@ -8,7 +8,7 @@ import Layout from "../../layouts/Layout"
 const CodesRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<CodesLayout MainPage={<CodesListPage />} />} />
             </Route>
         </Routes>

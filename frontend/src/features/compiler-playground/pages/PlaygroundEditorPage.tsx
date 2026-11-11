@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
+import AppLogo from "../../../components/AppLogo";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import { useAuth } from "../../auth/context/authContext";
 import LoginForm from "../../auth/components/LoginForm";
@@ -607,8 +608,8 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
             <div ref={viewportVars} className="wb-compiler-playground-container">
 
                 <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-2 border-bottom">
-                    <Link to="/">
-                        <img src="/resources/images/logo.svg" height="32px" width="96px" alt="Webler logo" />
+                    <Link to="/" aria-label="Home">
+                        <AppLogo />
                     </Link>
                     <AuthNavigation />
                 </div>
@@ -645,7 +646,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                         <div className="wb-compiler-playground-voting small">
                                             <span
                                                 onClick={voteCode}
-                                                className={"wb-icon-button" + (savedCode.isUpvoted ? " text-black" : "")}
+                                                className={"wb-icon-button" + (savedCode.isUpvoted ? " text-body-emphasis" : "")}
                                             >
                                                 <FaThumbsUp />
                                             </span>
@@ -675,7 +676,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                     <Button
                                         size="sm"
                                         variant="link"
-                                        className="text-dark position-relative"
+                                        className="text-body-emphasis position-relative"
                                         onClick={() => setConsoleVisible(true)}
                                     >
                                         <FaTerminal />

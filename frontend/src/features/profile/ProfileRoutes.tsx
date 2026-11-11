@@ -8,7 +8,7 @@ import "./profile.css"
 const ProfileRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route path=":userId" element={<ProfilePage />} />
                 <Route index element={<ProfileFromAuth />} />
             </Route>

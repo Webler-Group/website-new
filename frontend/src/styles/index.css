@@ -10,6 +10,7 @@
  * Feature / component specific styles live next to their components.
  * ============================================================================================= */
 
+@import "./theme.css";
 @import "./base.css";
 @import "./components.css";
 @import "./layout.css";

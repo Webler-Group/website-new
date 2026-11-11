@@ -13,7 +13,7 @@ import RolesEnum from "../../data/RolesEnum";
 const ChallengeRoutes = () => {
     return (
         <Routes>
-            <Route element={<SnackbarLayout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<SnackbarLayout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<ChallengeList />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                     <Route path=":challengeId" element={<ChallengeDetailsPage />} />

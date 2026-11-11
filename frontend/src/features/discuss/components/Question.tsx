@@ -34,9 +34,9 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
 
     return (
         <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
-            <div className={cx("wb-discuss-question-item border-bottom bg-white d-flex p-2", isCompact && "wb-discuss-question-item--compact")} onClick={handleClick}>
+            <div className={cx("wb-discuss-question-item border-bottom bg-body d-flex p-2", isCompact && "wb-discuss-question-item--compact")} onClick={handleClick}>
                 <div className="flex-grow-1 wb-util-min-w-0">
-                    <h3 className="wb-discuss-question-title text-truncate text-dark">{title}</h3>
+                    <h3 className="wb-discuss-question-title text-truncate text-body-emphasis">{title}</h3>
 
                     {!isCompact && question.tags.length > 0 && (
                         <div className="d-flex flex-wrap mt-1">

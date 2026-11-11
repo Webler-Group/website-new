@@ -8,7 +8,7 @@
 }
 
 .wb-discuss-question-item:hover {
-    background-color: #fafbfc !important;
+    background-color: var(--bs-tertiary-bg) !important;
 }
 
 .wb-discuss-question-title {
@@ -21,17 +21,17 @@
 
 /* Sidebar Specific */
 .wb-discuss-sidebar-card {
-    background: #ffffff;
+    background: var(--bs-body-bg);
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.08);
+    border: 1px solid var(--bs-border-color-translucent);
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0,0,0,0.03);
 }
 
 .wb-discuss-sidebar-header {
     padding: 16px 20px;
-    background: #fcfcfc;
-    border-bottom: 1px solid rgba(0,0,0,0.05);
+    background: var(--bs-tertiary-bg);
+    border-bottom: 1px solid var(--bs-border-color-translucent);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -41,7 +41,7 @@
     margin: 0;
     font-weight: 700;
     font-size: 1.1rem;
-    color: #212529;
+    color: var(--bs-body-color);
 }
 
 .wb-discuss-question-item--compact {

@@ -9,17 +9,17 @@
 }
 
 .wb-challenges-header {
-    background-color: #f8f9fa;
+    background-color: var(--bs-tertiary-bg);
     border-radius: 8px;
     padding: 1rem;
     margin-bottom: 2rem;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--bs-border-color);
 }
 
 .wb-challenges-table-container {
-    background: #fff;
+    background: var(--bs-body-bg);
     border-radius: 8px;
-    border: 1px solid #eee;
+    border: 1px solid var(--bs-border-color-translucent);
     overflow: hidden;
 }
 
@@ -29,11 +29,11 @@
 }
 
 .wb-challenges-table thead th {
-    background: #fff;
-    border-bottom: 2px solid #eee;
+    background: var(--bs-body-bg);
+    border-bottom: 2px solid var(--bs-border-color-translucent);
     padding: 10px 16px;
     font-size: 0.85rem;
-    color: #333;
+    color: var(--bs-emphasis-color);
     font-weight: 500;
     text-transform: none;
     letter-spacing: normal;
@@ -44,22 +44,22 @@
 }
 
 .wb-challenges-table tbody tr:hover {
-    background-color: #fcfcfc !important;
+    background-color: var(--bs-tertiary-bg) !important;
 }
 
 .wb-challenges-table tbody td {
     padding: 10px 16px;
-    border-top: 1px solid #f2f2f2;
+    border-top: 1px solid var(--bs-border-color-translucent);
 }
 
 .wb-challenges-table-title {
     font-weight: 500;
-    color: #333;
+    color: var(--bs-emphasis-color);
     font-size: 0.95rem;
 }
 
 .wb-challenges-table-title:hover {
-    color: #0d6efd;
+    color: var(--bs-primary);
 }
 
 .wb-challenges-difficulty-mini {
@@ -110,7 +110,7 @@
 
 .wb-challenges-breadcrumb {
     font-size: 0.875rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     margin-bottom: 1rem;
 }
 
@@ -126,11 +126,11 @@
 /* Premium Redesign Classes */
 
 .wb-challenges-hero {
-    background: linear-gradient(135deg, #fdfbfb 0%, #ebedee 100%);
+    background: linear-gradient(135deg, var(--bs-tertiary-bg) 0%, var(--bs-secondary-bg) 100%);
     border-radius: 12px;
     padding: 24px 32px;
     margin-bottom: 24px;
-    border: 1px solid rgba(0,0,0,0.05);
+    border: 1px solid var(--bs-border-color-translucent);
     box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
 }
 @media (max-width: 768px) {
@@ -151,7 +151,7 @@
 
 .wb-challenges-xp-badge {
     background: rgba(255, 184, 0, 0.1);
-    color: #b38100;
+    color: var(--wb-challenges-xp-color);
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.85rem;
@@ -164,7 +164,7 @@
 .wb-challenges-tabs {
     display: flex;
     gap: 30px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
     margin-bottom: 30px;
 }
 
@@ -172,14 +172,14 @@
     padding: 12px 0;
     font-weight: 600;
     font-size: 0.95rem;
-    color: #666;
+    color: var(--bs-secondary-color);
     cursor: pointer;
     position: relative;
     transition: color 0.2s;
 }
 
 .wb-challenges-tab-item:hover {
-    color: #333;
+    color: var(--bs-emphasis-color);
 }
 
 .wb-challenges-tab-item--active {
@@ -198,24 +198,24 @@
 }
 
 .wb-challenges-stat-card {
-    background: white;
+    background: var(--bs-body-bg);
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.06);
+    border: 1px solid var(--bs-border-color-translucent);
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .wb-challenges-solve-card {
-    background: white;
+    background: var(--bs-body-bg);
     border-radius: 12px;
-    border: 1px solid rgba(0,0,0,0.1);
+    border: 1px solid var(--bs-border-color-translucent);
     padding: 24px;
     box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
 }
 
 .wb-challenges-solve-card select {
-    border: 1px solid #ced4da;
+    border: 1px solid var(--bs-border-color);
     height: 48px;
     font-size: 0.95rem;
     border-radius: 8px;
@@ -238,17 +238,17 @@
 }
 
 .wb-challenges-sidebar-stat-item:not(:last-child) {
-    border-bottom: 1px solid #f8f9fa;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 
 .wb-challenges-sidebar-stat-label {
     font-size: 0.85rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
 }
 
 .wb-challenges-sidebar-stat-value {
     font-weight: 600;
-    color: #212529;
+    color: var(--bs-body-color);
     font-size: 0.9rem;
 }
 

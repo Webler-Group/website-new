@@ -9,7 +9,7 @@
 .wb-feed-list-header {
     position: sticky;
     top: 0;
-    background: white;
+    background: var(--bs-body-bg);
     z-index: 1000;
     transition: transform 0.3s ease;
     padding-top: 1rem;
@@ -24,7 +24,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background-color: #007bff;
+    background-color: var(--bs-primary);
     color: white;
     border: none;
     border-radius: 50px;
@@ -38,12 +38,12 @@
 }
 
 .wb-feed-new-post-button:hover {
-    background-color: #0056b3;
+    background-color: var(--bs-primary-text-emphasis);
 }
 
 .wb-feed-action-button,
 .wb-feed-reaction-picker-button {
-    color: var(--wb-reaction-color, #65676b);
+    color: var(--wb-reaction-color, var(--bs-secondary-color));
     display: flex;
     gap: 0.5rem;
     align-items: center;
@@ -63,12 +63,12 @@
 
 .wb-feed-action-button:hover,
 .wb-feed-reaction-picker-button:hover {
-    background: #e4e6ea;
+    background: var(--bs-secondary-bg);
 }
 
 .wb-feed-shared-post-unavailable {
-    background: linear-gradient(135deg, #fff5f5 0%, #fef2f2 100%);
-    border: 1px solid #fecaca;
+    background: var(--bs-danger-bg-subtle);
+    border: 1px solid var(--bs-danger-border-subtle);
     border-radius: 12px;
     padding: 32px 24px;
     margin-top: 16px;
@@ -78,7 +78,7 @@
 .wb-feed-back-button {
     background: none;
     border: none;
-    color: #1976d2;
+    color: var(--bs-link-color);
     font-size: 14px;
     font-weight: 600;
     padding: 8px 0;
@@ -91,7 +91,7 @@
 }
 
 .wb-feed-back-button:hover {
-    color: #1565c0;
+    color: var(--bs-link-hover-color);
     text-decoration: none;
 }
 
@@ -179,7 +179,7 @@
     width: 100%;
     height: 60px;
     /* gradient height */
-    background: linear-gradient(to bottom, transparent, #fff);
+    background: linear-gradient(to bottom, transparent, var(--bs-body-bg));
     pointer-events: none;
 }
 
@@ -188,7 +188,7 @@
 }
 
 .wb-feed-content--clickable:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
 }
 
 /* --- Share / suggested users ---------------------------------------------------------------- */

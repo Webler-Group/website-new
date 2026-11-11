@@ -4,7 +4,7 @@
     width: 100%;
     word-break: break-word;
     overflow-x: auto;
-    color: #222;
+    color: var(--bs-body-color);
 }
 
 /* restore readable spacing between elements */
@@ -40,24 +40,24 @@
 
 .wb-markdown th,
 .wb-markdown td {
-    border: 1px solid #ddd;
+    border: 1px solid var(--bs-border-color);
     padding: 0.6em 0.8em;
     text-align: left;
     vertical-align: middle;
 }
 
 .wb-markdown th {
-    background-color: #f8f9fa;
+    background-color: var(--bs-tertiary-bg);
     font-weight: 600;
-    color: #333;
+    color: var(--bs-emphasis-color);
 }
 
 .wb-markdown tr:nth-child(even) {
-    background-color: #fafafa;
+    background-color: var(--bs-tertiary-bg);
 }
 
 .wb-markdown tr:hover {
-    background-color: #f2f2f2;
+    background-color: var(--bs-secondary-bg);
 }
 
 .wb-markdown img {

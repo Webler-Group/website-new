@@ -469,7 +469,7 @@ const DiscussPostPage = () => {
                     </div>
                 </div>
                 {message[1] && <Alert variant={message[0]} onClose={() => setMessage(["", ""])} dismissible>{message[1]}</Alert>}
-                <div hidden={!formVisible} className="mt-2 border bg-white rounded p-2">
+                <div hidden={!formVisible} className="mt-2 border bg-body rounded p-2">
                     <Form ref={form}>
                         <FormGroup>
                             <FormLabel><b>{userInfo?.name}</b></FormLabel>

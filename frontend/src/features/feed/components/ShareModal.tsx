@@ -54,7 +54,7 @@ const ShareModal = ({ show, feedId, onShare, onClose }: ShareModalProps) => {
           />
         </div>
 
-        <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-light">
+        <div className="d-flex align-items-center justify-content-between p-2 border rounded bg-body-tertiary">
           <span className="wb-feed-share-url text-truncate me-2">
             {shareUrl}
           </span>

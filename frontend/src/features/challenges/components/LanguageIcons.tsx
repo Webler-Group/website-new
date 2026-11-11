@@ -19,7 +19,7 @@ const LanguageIcons = ({ challenge }: LanguageIconsProps) => {
                     {info.shortName}
                     {challenge.submissions?.some(sub => sub.language === key && sub.passed) && (
                         <div
-                            className="wb-challenges-language-icon-solved position-absolute bottom-0 end-0 text-success bg-white rounded-circle d-flex">
+                            className="wb-challenges-language-icon-solved position-absolute bottom-0 end-0 text-success bg-body rounded-circle d-flex">
                             <FaCheckCircle />
                         </div>
                     )}

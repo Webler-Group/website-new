@@ -48,7 +48,7 @@ const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => 
             </Button>
             {open && (
                 <div
-                    className="wb-channels-attach-menu position-absolute bg-white border rounded shadow-sm py-1"
+                    className="wb-channels-attach-menu position-absolute bg-body border rounded shadow-sm py-1"
                 >
                     {[
                         { label: "Code", action: onCode },
@@ -494,7 +494,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         {preview && (
                             <ImagePreview src={preview.src} alt={preview.alt} onClose={() => setPreview(null)} />
                         )}
-                        <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-white">
+                        <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-3 border-bottom z-3 bg-body">
                             <div className="d-flex align-items-center">
                                 <Button variant="link" className="text-secondary" onClick={onExit}>
                                     <FaTimes />
@@ -511,7 +511,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                         </div>
 
                         <div className="d-flex flex-column flex-grow-1 overflow-hidden">
-                            <div className={"wb-channels-settings bg-light p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings--closed")}>
+                            <div className={"wb-channels-settings bg-body-tertiary p-3 z-2 " + (settingsVisible ? "" : " wb-channels-settings--closed")}>
                                 <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>

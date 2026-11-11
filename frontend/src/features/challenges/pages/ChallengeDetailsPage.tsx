@@ -87,7 +87,7 @@ const ChallengeDetailsPage = () => {
                 <div className="wb-challenges-breadcrumb d-flex align-items-center gap-2 mb-3">
                     <Link to="/Challenge">Challenges</Link>
                     <FaChevronRight size={10} className="text-muted opacity-50" />
-                    <span className="text-dark fw-medium">{truncate(challenge.title, 40)}</span>
+                    <span className="text-body-emphasis fw-medium">{truncate(challenge.title, 40)}</span>
                 </div>
 
                 <div className="wb-challenges-hero d-md-flex justify-content-between align-items-center">
@@ -106,7 +106,7 @@ const ChallengeDetailsPage = () => {
                                 {challenge.xp} XP
                             </div>
                         </div>
-                        <h2 className="fs-3 fw-bold mb-0 text-dark">{challenge.title}</h2>
+                        <h2 className="fs-3 fw-bold mb-0 text-body-emphasis">{challenge.title}</h2>
                     </div>
                     <div className="mt-4 mt-md-0 d-flex gap-2">
                         {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
@@ -141,7 +141,7 @@ const ChallengeDetailsPage = () => {
 
                         <div className="min-vh-50">
                             {activeTab === "description" && (
-                                <div className="bg-white rounded-3 border p-4 p-md-5 shadow-sm mb-4">
+                                <div className="bg-body rounded-3 border p-4 p-md-5 shadow-sm mb-4">
                                     <MarkdownRenderer content={challenge.description} />
                                 </div>
                             )}
@@ -149,7 +149,7 @@ const ChallengeDetailsPage = () => {
                             {activeTab === "solution" && (
                                 <div>
                                     {challenge.solution ? (
-                                        <div className="bg-white rounded-3 border p-4 p-md-5 shadow-sm mb-4 animate__animated animate__fadeIn">
+                                        <div className="bg-body rounded-3 border p-4 p-md-5 shadow-sm mb-4 animate__animated animate__fadeIn">
                                             <div className="d-flex align-items-center gap-3 mb-4 pb-3 border-bottom">
                                                 <FaLightbulb size={24} className="wb-challenges-icon-amber" />
                                                 <h3 className="mb-0 fw-bold">Official Solution</h3>
@@ -157,7 +157,7 @@ const ChallengeDetailsPage = () => {
                                             <MarkdownRenderer content={challenge.solution} />
                                         </div>
                                     ) : challenge.solution === null ? (
-                                        <div className="bg-white rounded-3 border p-5 shadow-sm text-center">
+                                        <div className="bg-body rounded-3 border p-5 shadow-sm text-center">
                                             <div className="mb-4 opacity-25"><FaLock size={64} className="text-muted" /></div>
                                             <h3 className="fw-bold mb-3">Solution Locked</h3>
                                             <p className="wb-challenges-solution-message text-muted mx-auto mb-4">
@@ -169,7 +169,7 @@ const ChallengeDetailsPage = () => {
                                             </Button>
                                         </div>
                                     ) : (
-                                        <div className="bg-white rounded-3 border p-5 shadow-sm text-center">
+                                        <div className="bg-body rounded-3 border p-5 shadow-sm text-center">
                                             <div className="mb-4 opacity-25"><FaLightbulb size={64} className="text-muted" /></div>
                                             <h3 className="fw-bold mb-3">No Solution Available</h3>
                                             <p className="wb-challenges-solution-message text-muted mx-auto">

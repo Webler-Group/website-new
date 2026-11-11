@@ -39,7 +39,7 @@ const PostAttachment = ({ data }: PostAttachmentProps) => {
 
     return (
         <Link to={to} className="d-block text-reset text-decoration-none">
-            <div className="d-flex flex-column border shadow-sm rounded-3 bg-white p-2">
+            <div className="d-flex flex-column border shadow-sm rounded-3 bg-body p-2">
                 <div className="d-flex gap-2 justify-content-between">
                     <h6 className="fw-semibold text-break text-wrap">{title}</h6>
                     <div className="small text-muted text-nowrap">{info}</div>

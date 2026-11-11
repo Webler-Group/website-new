@@ -9,7 +9,7 @@
     max-height: 150px;
     overflow-y: auto;
     background-color: var(--bs-body-bg);
-    border: 1px solid #ccc;
+    border: 1px solid var(--bs-border-color);
     border-radius: 0.25rem;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }

@@ -2,7 +2,7 @@ import { Placeholder } from "../../../components/ui";
 const QuestionPlaceholder = () => {
 
     return (
-        <div className="rounded border p-2 mb-2 bg-white d-flex">
+        <div className="rounded border p-2 mb-2 bg-body d-flex">
             <div className="flex-grow-1">
                 <Placeholder as="h3" animation="glow">
                     <Placeholder xs={4} />

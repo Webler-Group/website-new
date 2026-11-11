@@ -5,7 +5,7 @@
 /*Webler discuss page*/
 
 .wb-discuss-post {
-    border-bottom: 1px solid #e9ecef;
+    border-bottom: 1px solid var(--bs-border-color);
     padding-bottom: 4px;
 }
 
@@ -15,25 +15,25 @@
     line-height: 1.35;
     word-break: break-word;
     margin: 0;
-    color: #1a1a1a;
+    color: var(--bs-emphasis-color);
 }
 
 .wb-discuss-post-body {
     font-size: 0.97rem;
     line-height: 1.6;
-    color: #212529;
+    color: var(--bs-body-color);
     white-space: pre-wrap;
     word-wrap: break-word;
     overflow-x: auto;
 }
 
 .wb-discuss-post-footer {
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--bs-border-color-translucent);
 }
 
 .wb-discuss-post-date {
     font-size: 0.72rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
 }
 
 .wb-discuss-vote-button,
@@ -42,33 +42,33 @@
     align-items: center;
     gap: 5px;
     background: none;
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--bs-border-color);
     border-radius: 20px;
     padding: 4px 12px;
     font-size: 0.82rem;
     font-weight: 500;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
     cursor: pointer;
     transition: all 0.15s ease;
 }
 
 .wb-discuss-vote-button:hover,
 .wb-discuss-follow-button:hover {
-    background-color: #f8f9fa;
-    border-color: #adb5bd;
-    color: #495057;
+    background-color: var(--bs-tertiary-bg);
+    border-color: var(--bs-secondary-color);
+    color: var(--bs-secondary-color);
 }
 
 .wb-discuss-vote-button--active {
-    background-color: #e8f0fe;
+    background-color: var(--bs-primary-bg-subtle);
     border-color: #4285f4;
     color: #4285f4;
 }
 
 .wb-discuss-follow-button--active {
-    background-color: #fff8e1;
+    background-color: var(--bs-warning-bg-subtle);
     border-color: #ffc107;
-    color: #e6a800;
+    color: var(--bs-warning-text-emphasis);
 }
 
 .wb-discuss-reply-best-answer-button {
@@ -100,12 +100,12 @@
 /* --- Answer --------------------------------------------------------------------------------- */
 
 .wb-discuss-answer {
-    background: white;
+    background: var(--bs-body-bg);
 }
 
 /* Highlights the answer the user just posted */
 .wb-discuss-answer--new {
-    background: beige;
+    background: var(--wb-highlight-new-bg);
 }
 
 /* Voting / accepted-answer column */

@@ -18,7 +18,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: gray;
+    background: var(--bs-secondary-color);
     transition: 0.3s;
     border-radius: 20px;
 }
@@ -36,7 +36,7 @@
 }
 
 .wb-toggle-switch-input:checked+.wb-toggle-switch-slider {
-    background-color: dodgerblue;
+    background-color: var(--bs-primary);
 }
 
 .wb-toggle-switch-input:checked+.wb-toggle-switch-slider:before {

@@ -143,7 +143,7 @@ const ChallengeList = () => {
                 {loading ? (
                     <Loader />
                 ) : challengeCount === 0 ? (
-                    <div className="wb-app-empty-list py-5 text-center bg-light rounded-3 border">
+                    <div className="wb-app-empty-list py-5 text-center bg-body-tertiary rounded-3 border">
                         <FaSearch size={40} className="text-muted mb-3 opacity-25" />
                         <h3 className="text-muted">No challenges found</h3>
                         <p className="text-muted small">Try adjusting your filters or search terms</p>

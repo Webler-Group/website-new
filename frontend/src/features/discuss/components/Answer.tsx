@@ -61,10 +61,10 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                         </div>
                     }
                     <div className="wb-discuss-voting d-flex align-items-center">
-                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-black" : "")}>
+                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-body-emphasis" : "")}>
                             <FaThumbsUp />
                         </span>
-                        <b className="wb-icon-button text-black ms-1" onClick={showVoters}>{votes}</b>
+                        <b className="wb-icon-button text-body-emphasis ms-1" onClick={showVoters}>{votes}</b>
                     </div>
                 </div>
 

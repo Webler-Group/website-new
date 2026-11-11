@@ -5,9 +5,9 @@ const ContactPage = () => {
   PageTitle("Contact", false);
 
   return (
-    <div className="bg-light py-4 min-vh-100">
+    <div className="bg-body-tertiary py-4 min-vh-100">
       <Container>
-        <div className="bg-white rounded p-4 shadow">
+        <div className="bg-body rounded p-4 shadow">
           <h2 className="mb-3">Contact Us</h2>
           <p className="mb-2">
             We'd love to hear from you! For support or any inquiries, feel free to reach out to us.

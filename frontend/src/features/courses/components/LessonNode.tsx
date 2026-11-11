@@ -226,7 +226,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                     )}
                 </div>
 
-                <div className="text-center bg-light p-2">
+                <div className="text-center bg-body-tertiary p-2">
                     {(activeNode.type === LessonNodeTypeEnum.TEXT || activeNode.type === LessonNodeTypeEnum.CODE) ?
                         <Button variant="success" onClick={handleSubmit}>
                             Continue

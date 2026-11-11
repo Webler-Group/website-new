@@ -38,10 +38,10 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
     }
 
     return <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
-        <div className={cx("wb-codes-item border-bottom bg-white d-flex align-items-start p-2", isCompact && "wb-codes-item--compact", selected && "wb-codes-item--selected")} onClick={handleClick}>
+        <div className={cx("wb-codes-item border-bottom bg-body d-flex align-items-start p-2", isCompact && "wb-codes-item--compact", selected && "wb-codes-item--selected")} onClick={handleClick}>
             {/* Left: title + language + stats */}
             <div className="flex-grow-1 wb-util-min-w-0">
-                <h3 className="wb-codes-item-title text-truncate text-dark">{title}</h3>
+                <h3 className="wb-codes-item-title text-truncate text-body-emphasis">{title}</h3>
 
                 <div className={`d-flex align-items-center gap-2 small text-secondary ${isCompact ? "mt-1" : "mt-2"}`}>
                     <span className={`wb-codes-language-chip wb-language-${code.language}`}>

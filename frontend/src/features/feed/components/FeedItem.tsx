@@ -39,7 +39,7 @@ const OriginalPostCard = ({ originalPost }: { originalPost: FeedMinimal }) => {
   return (
     <div
       onClick={() => navigate(`/Feed/${originalPost.id}`)}
-      className="mt-2 border bg-light p-2 text-dark text-decoration-none mb-2 wb-util-clickable"
+      className="mt-2 border bg-body-tertiary p-2 text-body-emphasis text-decoration-none mb-2 wb-util-clickable"
     >
       <div className='d-flex gap-2 align-items-center mb-2'>
         <ProfileAvatar size={28} avatarUrl={originalPost.user.avatarUrl} />
@@ -300,9 +300,9 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           </div>
 
           {feed.attachments?.length > 0 && (
-            <div className="mt-2 rounded text-dark text-decoration-none">
+            <div className="mt-2 rounded text-body-emphasis text-decoration-none">
               {feed.attachments?.length > 0 && (
-                <div className="mt-2 rounded text-dark text-decoration-none">
+                <div className="mt-2 rounded text-body-emphasis text-decoration-none">
                   <div className="d-flex flex-column gap-2">
                     {feed.attachments.map(data => (
                       <div key={data.id} className='mt-1'>
@@ -322,7 +322,7 @@ const FeedItem = React.forwardRef<HTMLDivElement, FeedItemProps>(({
           <div className='d-flex'>
             {feed.reactions.topReactions.map((r: any, index: number) => (
               <span
-                className='wb-feed-reactions-icon bg-white rounded-circle d-flex align-items-center justify-content-center'
+                className='wb-feed-reactions-icon bg-body rounded-circle d-flex align-items-center justify-content-center'
                 key={`${r.reaction}-${index}`}
               >
                 {reactionsInfo[(r.reaction ?? ReactionsEnum.LIKE) as ReactionsEnum].emoji}

@@ -87,7 +87,7 @@ const MessageContextMenu = ({
         <div
             ref={mergeRefs(menuRef, cssVars({ "--wb-channels-context-menu-top": pos.top, "--wb-channels-context-menu-left": pos.left }))}
             role="menu"
-            className="wb-channels-context-menu position-fixed bg-white border rounded shadow-sm fs-6"
+            className="wb-channels-context-menu position-fixed bg-body border rounded shadow-sm fs-6"
         >
             <button type="button" role="menuitem"
                 className="w-100 text-start d-flex align-items-center px-2 py-1 btn btn-link text-decoration-none"

@@ -83,7 +83,7 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
       {showPicker && (
         <div
-          className="wb-feed-reaction-picker-popup position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
+          className="wb-feed-reaction-picker-popup position-absolute bg-body border rounded-pill shadow-lg d-flex align-items-center gap-1"
         >
           {Object.entries(reactionsInfo).map(([key, reaction]) => {
             const id = Number(key);

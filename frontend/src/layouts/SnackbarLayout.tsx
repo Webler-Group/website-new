@@ -40,7 +40,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
           <Row className="justify-content-center">
             {/* Side Menu (desktop) */}
             {SideMenu && (
-              <Col xs={12} md={2} className="bg-light border-end d-none d-md-block">
+              <Col xs={12} md={2} className="bg-body-tertiary border-end d-none d-md-block">
                 {SideMenu}
               </Col>
             )}
@@ -52,7 +52,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
 
             {/* Aside Menu (desktop) */}
             {AsideMenu && (
-              <Col xs={12} md={2} className="bg-white border-start d-none d-md-block">
+              <Col xs={12} md={2} className="bg-body border-start d-none d-md-block">
                 {AsideMenu}
               </Col>
             )}

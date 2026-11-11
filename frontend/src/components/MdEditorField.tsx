@@ -145,7 +145,7 @@ const MdEditorField = ({
                 )}
             />
             <div>
-                <div className="d-flex overflow-auto mb-2 p-2 bg-light rounded border gap-2">
+                <div className="d-flex overflow-auto mb-2 p-2 bg-body-tertiary rounded border gap-2">
                     {toolbarButtons.map((btn, idx) => (
                         <button
                             key={idx}

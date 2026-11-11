@@ -183,7 +183,7 @@ const FeedListPage = () => {
       <div className="wb-feed-list-container">
         <div className="p-2 wb-feed-list-header wb-feed-list-header--visible">
           <div className="d-flex flex-column gap-2">
-            <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
+            <h2 className="h4 fw-bold text-body-emphasis mb-0">Feed</h2>
             <div className="d-flex gap-2">
               <FormLabel htmlFor="search" className="visually-hidden">
                 Search
@@ -248,7 +248,7 @@ const FeedListPage = () => {
             :
             <>
               {pinnedFeeds.length > 0 && (
-                <div className="px-2 bg-light">
+                <div className="px-2 bg-body-tertiary">
                   <div className="d-flex justify-content-between align-items-center py-2">
                     <h6 className="text-warning mb-0"><FaMapPin /> Pinned Posts</h6>
                     <Button size='sm' variant='link' className='text-secondary' onClick={togglePinnedVisibility}>{pinnedVisible ? <FaEye /> : <FaEyeSlash />}</Button>

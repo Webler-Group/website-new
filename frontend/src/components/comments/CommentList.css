@@ -9,7 +9,7 @@
 }
 
 .wb-comments-options-item:hover {
-    color: gray;
+    color: var(--bs-secondary-color);
 }
 
 .wb-comments-message {
@@ -18,7 +18,7 @@
     width: 100%;
     word-break: break-word;
     white-space: pre-wrap;
-    color: #0f1419;
+    color: var(--bs-emphasis-color);
 }
 
 .wb-comments-item {
@@ -29,7 +29,7 @@
 }
 
 .wb-comments-item--highlighted {
-    background-color: #fff9db !important;
+    background-color: var(--wb-highlight-bg) !important;
 }
 
 /* ----------------------
@@ -56,7 +56,7 @@
     align-items: center;
     background: none;
     border: none;
-    color: #065fd4; /* YouTube blue link color */
+    color: var(--bs-link-color); /* YouTube blue link color */
     font-size: 0.85rem;
     font-weight: 600;
     padding: 4px 12px;
@@ -66,7 +66,7 @@
 }
 
 .wb-comments-thread-toggle-button:hover {
-    background-color: #def1ff;
+    background-color: var(--bs-primary-bg-subtle);
 }
 
 /* Curved thread line from the left up to the parent avatar */
@@ -78,8 +78,8 @@
     top: -46px; 
     width: 33px;
     height: 66px;
-    border-left: 2px solid #e5e5e5;
-    border-bottom: 2px solid #e5e5e5;
+    border-left: 2px solid var(--bs-border-color);
+    border-bottom: 2px solid var(--bs-border-color);
     border-bottom-left-radius: 12px;
     pointer-events: none;
 }
@@ -101,7 +101,7 @@
     top: -54px; /* Pull it up to connect directly to the parent avatar */
     bottom: 24px; /* Don't go all the way to the bottom of the last reply */
     width: 2px;
-    background-color: #e5e5e5;
+    background-color: var(--bs-border-color);
     pointer-events: none;
 }
 
@@ -121,8 +121,8 @@
     height: 20px; /* Curve height */
     /* Pull the box up so the bottom-left corner is at exactly top: 16px */
     transform: translateY(-100%);
-    border-left: 2px solid #e5e5e5;
-    border-bottom: 2px solid #e5e5e5;
+    border-left: 2px solid var(--bs-border-color);
+    border-bottom: 2px solid var(--bs-border-color);
     border-bottom-left-radius: 12px;
     pointer-events: none;
 }
@@ -135,7 +135,7 @@
     display: flex;
     align-items: center;
     font-size: 0.8rem;
-    color: #606060;
+    color: var(--bs-secondary-color);
     font-weight: 500;
     background: none;
     border: none;
@@ -146,12 +146,12 @@
 }
 
 .wb-comments-action-button:hover {
-    background-color: rgba(0, 0, 0, 0.05);
-    color: #0f1419;
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.05);
+    color: var(--bs-emphasis-color);
 }
 
 .wb-comments-action-button--active {
-    color: #000;
+    color: var(--bs-emphasis-color);
 }
 
 @media (max-width: 768px) {

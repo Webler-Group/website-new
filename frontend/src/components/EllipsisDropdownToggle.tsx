@@ -7,7 +7,7 @@ interface EllipsisDropdownToggleProps {
 
 const EllipsisDropdownToggle = React.forwardRef(({ onClick }: EllipsisDropdownToggleProps, ref: React.ForwardedRef<HTMLAnchorElement>) => (
     <a
-        className="text-dark p-1"
+        className="text-body-emphasis p-1"
         href=""
         ref={ref}
         onClick={(e) => {

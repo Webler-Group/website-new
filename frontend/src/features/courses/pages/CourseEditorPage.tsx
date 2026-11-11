@@ -239,7 +239,7 @@ const CourseEditorPage = () => {
                 <div className="mb-3">
                     <h3 className="text-break">{course.title}</h3>
                 </div>
-                <div hidden={!formVisible} className="mb-2 border bg-white rounded p-2">
+                <div hidden={!formVisible} className="mb-2 border bg-body rounded p-2">
                     <Form>
                         <h4>{editedLessonId === null ? "New lesson" : "Edit lesson"}</h4>
                         <FormGroup>

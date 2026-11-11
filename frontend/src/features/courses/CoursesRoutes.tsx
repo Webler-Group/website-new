@@ -17,7 +17,7 @@ import RolesEnum from "../../data/RolesEnum";
 const CoursesRoutes = () => {
     return (
         <Routes>
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.CREATOR]} />}>
                     <Route path="Editor">
                         <Route index element={<CoursesEditorLayout MainPage={<CourseEditorListPage />} />} />
@@ -31,13 +31,13 @@ const CoursesRoutes = () => {
                 </Route>
             </Route>
 
-            <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<CourseListPage />} />
             </Route>
 
             <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
                 <Route path=":courseCode">
-                    <Route element={<Layout Header={<Header variant="light" />} Footer={<Footer />} />}>
+                    <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                         <Route index element={<CoursePage />} />
                     </Route>
                     <Route path="Lesson/:lessonId" element={<CourseLessonPage />} />

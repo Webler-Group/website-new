@@ -27,7 +27,7 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
     return (
         <div
             role="link"
-            className="wb-courses-course-card wb-util-clickable rounded border p-2 bg-white d-sm-flex gap-3 position-relative"
+            className="wb-courses-course-card wb-util-clickable rounded border p-2 bg-body d-sm-flex gap-3 position-relative"
             onClick={(e) => {
                 // Clicks handled by the course menu call preventDefault
                 if (!e.defaultPrevented) navigate(to);

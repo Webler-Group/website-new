@@ -41,7 +41,7 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onExport, onChangeIndex, i
     };
 
     return (
-        <div className="border p-2 bg-white d-flex justify-content-between gap-3 align-items-center">
+        <div className="border p-2 bg-body d-flex justify-content-between gap-3 align-items-center">
             <div className="d-flex gap-2">
                 <span
                     className={cx("wb-comments-options-item", isFirst ? "text-muted wb-util-not-allowed" : "wb-util-clickable")}

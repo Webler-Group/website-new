@@ -30,6 +30,7 @@ import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
+import { useTheme } from "../../../utils/ThemeUtils";
 
 ace.config.set("basePath", new URL("ace-builds/src-noconflict", import.meta.url).pathname);
 
@@ -95,6 +96,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
     challenge,
     submission,
 }, ref) => {
+    const { theme } = useTheme();
     const [editorTabs, setEditorTabs] = useState<string[]>([]);
     const [activeKey, setActiveKey] = useState<string>();
     const { tabOpen, onTabEnter, onTabLeave } = useTab(false);
@@ -267,9 +269,10 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             key="description"
                             eventKey="description"
                             title="description"
-                            className="wb-compiler-playground-editor-tab bg-white"
+                            className="wb-compiler-playground-editor-tab"
                         >
-                            <div className="overflow-y-auto h-100 p-2">
+                            {/* The editor is always dark; the challenge description follows the app theme */}
+                            <div data-bs-theme={theme} className="overflow-y-auto h-100 p-2 bg-body text-body">
                                 <MarkdownRenderer content={challenge.description} />
                             </div>
                         </Tab>

@@ -157,7 +157,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
             >
                 {/* Only expose the visible height (excludes the mobile virtual keyboard) to the editor tabs */}
                 <Modal.Body ref={viewportVars} className="p-0 m-0 d-flex flex-column">
-                    <div className="wb-app-toolbar d-flex align-items-center justify-content-between border-bottom bg-white p-1">
+                    <div className="wb-app-toolbar d-flex align-items-center justify-content-between border-bottom bg-body p-1">
                         <div className="d-flex align-items-center">
                             <Button variant="link" className="text-secondary" onClick={handleExit}>
                                 <FaTimes />

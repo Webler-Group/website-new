@@ -81,12 +81,12 @@
 }
 
 .wb-courses-lesson-answer {
-    background-color: #fff;
-    border: 2px solid #c8d2db;
+    background-color: var(--bs-body-bg);
+    border: 2px solid var(--bs-border-color);
     border-radius: 4px;
     width: 100%;
     font-family: "Fira Mono", sans-serif;
-    color: #2d3846;
+    color: var(--bs-body-color);
 }
 
 .wb-courses-lesson-answer--text {
@@ -94,7 +94,7 @@
 }
 
 .wb-courses-lesson-answer--initial {
-    box-shadow: 0 2px 0 1px #c8d2db;
+    box-shadow: 0 2px 0 1px var(--bs-border-color);
 }
 
 .wb-courses-lesson-answer--selected {

@@ -108,7 +108,7 @@ const CoursePage = () => {
                                     return (
                                         <Col md={6} lg={4} key={lesson.id} className="mb-3">
                                             <Card
-                                                className={cx("h-100 shadow-sm", lesson.userProgress.unlocked ? "wb-util-clickable" : "bg-light text-muted wb-util-not-allowed")}
+                                                className={cx("h-100 shadow-sm", lesson.userProgress.unlocked ? "wb-util-clickable" : "bg-body-tertiary text-muted wb-util-not-allowed")}
                                             >
                                                 <Card.Body>
                                                     <Card.Title>{lesson.title}</Card.Title>

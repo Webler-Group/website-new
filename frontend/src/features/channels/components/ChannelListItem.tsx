@@ -15,7 +15,7 @@ const ChannelListItem = React.forwardRef(({ channel, onClick, selected }: Channe
 
     let body = (
         <div
-            className={cx("d-flex align-items-center gap-2 p-2 border-bottom wb-util-clickable", selected ? "border border-2 border-dark" : "border-bottom")}
+            className={cx("d-flex align-items-center gap-2 p-2 border-bottom wb-util-clickable", selected ? "border border-2 border-secondary" : "border-bottom")}
             onClick={onClick}
         >
             {

@@ -30,7 +30,7 @@
 .wb-loader span {
     width: 10px;
     height: 10px;
-    background: #6c757d; /* bootstrap secondary color */
+    background: var(--bs-secondary-color);
     border-radius: 50%;
     animation: wb-loader-bounce 0.6s infinite alternate;
 }

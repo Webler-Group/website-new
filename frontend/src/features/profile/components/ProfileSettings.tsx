@@ -8,6 +8,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { FaCircleXmark } from "react-icons/fa6";
 import { useApi } from "../../../context/apiCommunication";
 import NotificationsTab from "./NotificationsTab";
+import AppearanceTab from "./AppearanceTab";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
@@ -448,6 +449,12 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                         <Tab eventKey="notifications" title="Notifications">
                             <NotificationsTab userId={userInfo?.id || ""} userNotifications={userDetails.notifications} onUpdate={onUserNotificationsUpdate} />
                         </Tab>
+                        {/* Theme is a per-device preference, only offered on the user's own profile */}
+                        {userInfo?.id === userDetails.id && (
+                            <Tab eventKey="appearance" title="Appearance">
+                                <AppearanceTab />
+                            </Tab>
+                        )}
                         <Tab eventKey="blockedUsers" title="Blocked" onEnter={fetchBlockedUsers}>
                             {blockedUsers.length === 0 ? (
                                 <p className="text-muted text-center">No blocked users</p>

@@ -222,7 +222,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                 <div className="col-12 col-md-8">
                     {
                         !courseId &&
-                        <div className="mb-4 p-3 border rounded bg-light">
+                        <div className="mb-4 p-3 border rounded bg-body-tertiary">
                             <div className="d-flex justify-content-between align-items-center mb-2">
                                 <h5>Load Course Data from JSON</h5>
                                 <Button variant="link" size="sm" onClick={() => setShowJsonHelp(true)}>JSON Format Guide</Button>
@@ -241,7 +241,7 @@ const CreateCoursePage = ({ courseId }: CreateCoursePageProps) => {
                         </Modal.Header>
                         <Modal.Body>
                             <p>To import a course, your JSON file must follow this structure:</p>
-                            <pre className="wb-courses-import-example bg-light p-3 border rounded">
+                            <pre className="wb-courses-import-example bg-body-tertiary p-3 border rounded">
                                 {`{
   "code": "course-code-unique",
   "title": "Course Title",

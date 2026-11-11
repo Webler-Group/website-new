@@ -63,7 +63,7 @@
 
 .wb-profile-header-bio {
     font-size: 0.9rem;
-    color: #555;
+    color: var(--bs-secondary-color);
     margin-bottom: 8px;
     word-break: break-word;
 }
@@ -74,7 +74,7 @@
     align-items: center;
     gap: 12px;
     font-size: 0.88rem;
-    color: #444;
+    color: var(--bs-secondary-color);
     margin-bottom: 10px;
 }
 
@@ -93,7 +93,7 @@
     border: none;
     padding: 0;
     font-size: 0.88rem;
-    color: #444;
+    color: var(--bs-secondary-color);
     cursor: pointer;
 }
 
@@ -182,7 +182,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 14px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
 }
 
 .wb-profile-section-title {
@@ -195,7 +195,7 @@
 .wb-profile-section-empty {
     padding: 24px 16px;
     text-align: center;
-    color: #aaa;
+    color: var(--bs-tertiary-color);
     font-size: 0.88rem;
 }
 
@@ -205,7 +205,7 @@
 
 .wb-profile-section-footer {
     padding: 10px 14px;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--bs-border-color-translucent);
 }
 
 /* ── Feed Post Items ── */
@@ -220,12 +220,12 @@
 }
 
 .wb-profile-feed-item:hover {
-    background: #fafbfc;
+    background: var(--bs-tertiary-bg);
 }
 
 .wb-profile-feed-item-text {
     font-size: 0.9rem;
-    color: #212529;
+    color: var(--bs-body-color);
     margin: 0 0 4px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
@@ -240,7 +240,7 @@
     align-items: center;
     justify-content: space-between;
     font-size: 0.75rem;
-    color: #6c757d;
+    color: var(--bs-secondary-color);
 }
 
 /* ── Course Items ── */
@@ -263,7 +263,7 @@
 }
 
 .wb-profile-courses-scroll::-webkit-scrollbar-thumb {
-    background: #ddd;
+    background: var(--bs-border-color);
     border-radius: 4px;
 }
 
@@ -276,14 +276,14 @@
     gap: 6px;
     padding: 10px 8px;
     border-radius: 8px;
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--bs-border-color);
     cursor: pointer;
     transition: background 0.15s;
     text-align: center;
 }
 
 .wb-profile-courses-card:hover {
-    background: #f5f5f5;
+    background: var(--bs-secondary-bg);
 }
 
 .wb-profile-courses-card-img img {
@@ -291,13 +291,13 @@
     height: 52px;
     border-radius: 10px;
     object-fit: cover;
-    border: 1px solid #eee;
+    border: 1px solid var(--bs-border-color-translucent);
 }
 
 .wb-profile-courses-card-title {
     font-size: 0.78rem;
     font-weight: 500;
-    color: #212529;
+    color: var(--bs-body-color);
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;

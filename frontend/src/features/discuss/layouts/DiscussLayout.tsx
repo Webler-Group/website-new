@@ -35,7 +35,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
     return (
         <>
             <Helmet> <title>Q&A Discussions | Webler Codes</title> <meta name="description" content="Join Webler’s programming forum to ask questions, share knowledge, and solve real-world coding challenges with a global community of developers." /> </Helmet>
-            <div className="bg-white">
+            <div className="bg-body">
                 <Container>
                     <div className="row pt-2 min-vh-100">
                         <div className="col-12 col-md-8">{MainPage}</div>
