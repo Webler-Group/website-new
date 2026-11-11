@@ -1,4 +1,4 @@
-import { Alert, Button, Form } from "react-bootstrap";
+import { Alert, Button, Form } from "../../../components/ui";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import { ChangeEvent, useState, useEffect } from "react";
 import ToggleSwitch from "../../../components/ToggleSwitch";

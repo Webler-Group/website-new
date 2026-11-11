@@ -1,9 +1,8 @@
+import { Alert, Badge, Breadcrumb, Button, Card, Container, Form, Modal, Spinner } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { Modal, Button, Form, Card, Spinner, Alert, Breadcrumb, Badge, Container } from "react-bootstrap";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, IpRecord, ToggleBanIpData, UpdateRolesData } from "../types";
@@ -172,10 +171,10 @@ const ModViewPage = () => {
 
             <Container className="mt-4">
                 <Breadcrumb>
-                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Admin" }}>
+                    <Breadcrumb.Item to="/Admin">
                         Admin Panel
                     </Breadcrumb.Item>
-                    <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Admin/UserSearch" }}>
+                    <Breadcrumb.Item to="/Admin/UserSearch">
                         User Search
                     </Breadcrumb.Item>
                     <Breadcrumb.Item active>{user.name}</Breadcrumb.Item>
@@ -199,9 +198,7 @@ const ModViewPage = () => {
                             <div>Registered: {new Date(user.registerDate).toLocaleDateString("en")}</div>
                             <div>Last Login: {user.lastLoginDate ? new Date(user.lastLoginDate).toLocaleDateString("en") : "Never"}</div>
                             <div className="mt-3">
-                                <LinkContainer to={`/Profile/${user.id}`}>
-                                    <Button variant="primary">View Profile</Button>
-                                </LinkContainer>
+                                <Button to={`/Profile/${user.id}`} variant="primary">View Profile</Button>
                             </div>
                         </div>
                     </Card.Body>

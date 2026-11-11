@@ -1,8 +1,8 @@
+import { Badge, Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "../../../components/ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
 import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
-import { Badge, Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from "react-bootstrap";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AuthNavigation from "../../auth/components/AuthNavigation";
 import { useAuth } from "../../auth/context/authContext";
@@ -107,7 +107,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     const [commentDrafts, setCommentDrafts] = useState(() => new Map<string, string>());
 
     const { online } = useConnectionStatus();
-    const { containerStyle } = useVisualViewport();
+    const { viewportVars } = useVisualViewport();
 
     const hasUnsavedChanges = !!code && !!baseline &&
         (source !== baseline.source || css !== baseline.css || js !== baseline.js);
@@ -536,7 +536,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
                         </Offcanvas.Header>
-                        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                        <Offcanvas.Body className="wb-comments-offcanvas-body d-flex flex-column">
                             <CommentList
                                 findPost={findPost}
                                 options={commentListOptions}
@@ -604,9 +604,9 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                 </Modal.Footer>
             </Modal>
 
-            <div className="wb-compiler-playground-container" style={containerStyle}>
+            <div ref={viewportVars} className="wb-compiler-playground-container">
 
-                <div className="d-flex align-items-center justify-content-between p-2 border-bottom" style={{ height: "44px" }}>
+                <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-2 border-bottom">
                     <Link to="/">
                         <img src="/resources/images/logo.svg" height="32px" width="96px" alt="Webler logo" />
                     </Link>
@@ -614,8 +614,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                 </div>
 
                 <Toast
-                    className="position-absolute bottom-0 end-0 m-2"
-                    style={{ zIndex: 9999 }}
+                    className="wb-compiler-playground-toast position-absolute bottom-0 end-0 m-2"
                     bg={message.success ? "success" : "danger"}
                     onClose={() => setMessage(prev => ({ success: prev.success }))}
                     show={(message.errors && message.errors.length > 0) || !!message.message}
@@ -629,7 +628,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
 
                 {code ? (
                     <>
-                        <div className="d-flex align-items-center justify-content-between p-1" style={{ height: "44px" }}>
+                        <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-1">
                             <div className="d-flex align-items-center">
                                 {savedCode && (
                                     <>
@@ -650,13 +649,13 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                             >
                                                 <FaThumbsUp />
                                             </span>
-                                            <span style={{ cursor: "pointer" }} onClick={() => showCodeVotesModal(savedCode.id ?? null)}>
+                                            <span className="wb-util-clickable" onClick={() => showCodeVotesModal(savedCode.id ?? null)}>
                                                 {savedCode.votes}
                                             </span>
                                         </div>
 
                                         <div className="wb-compiler-playground-comments small">
-                                            <span style={{ cursor: "pointer" }} onClick={openCommentModal}>
+                                            <span className="wb-util-clickable" onClick={openCommentModal}>
                                                 <FaComment />
                                             </span>
                                             <span>{commentCount}</span>
@@ -690,7 +689,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
 
                                 <Dropdown>
                                     <Dropdown.Toggle as={EllipsisDropdownToggle} />
-                                    <Dropdown.Menu style={{ width: "200px" }}>
+                                    <Dropdown.Menu className="wb-ui-dropdown-menu--wide">
                                         <Dropdown.Item onClick={handleSave}>Save</Dropdown.Item>
                                         <Dropdown.Item onClick={handleSaveAs}>Save As</Dropdown.Item>
 
@@ -711,11 +710,11 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                         <Dropdown.ItemText className="border-top d-flex justify-content-between">
                                             <div>Font</div>
                                             <div className="d-flex gap-1">
-                                                <span className="wb-compiler-playground-options__button" onClick={zoomOut}>-</span>
-                                                <span className="d-flex justify-content-center" style={{ width: "32px" }}>
+                                                <span className="wb-compiler-playground-options-button" onClick={zoomOut}>-</span>
+                                                <span className="wb-compiler-playground-zoom-value d-flex justify-content-center">
                                                     {(editorOptions.scale * 100).toFixed(0)}%
                                                 </span>
-                                                <span className="wb-compiler-playground-options__button" onClick={zoomIn}>+</span>
+                                                <span className="wb-compiler-playground-options-button" onClick={zoomIn}>+</span>
                                             </div>
                                         </Dropdown.ItemText>
 
@@ -753,7 +752,7 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                             js={js}
                             setJs={(value: string) => setJs(value)}
                             options={editorOptions}
-                            tabHeightStyle="calc(var(--wb-viewport-height, 100dvh) - 130px)"
+                            tabHeightOffset={130}
                             consoleVisible={consoleVisible}
                             hideConsole={() => setConsoleVisible(false)}
                             toggleConsole={() => setConsoleVisible(prev => !prev)}

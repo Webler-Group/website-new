@@ -1,3 +1,7 @@
+/* =============================================================================================
+ * Discuss – question page, answers and voting (wb-discuss-*)
+ * ============================================================================================= */
+
 /*Webler discuss page*/
 
 .wb-discuss-post {
@@ -5,7 +9,7 @@
     padding-bottom: 4px;
 }
 
-.wb-discuss-post__title {
+.wb-discuss-post-title {
     font-size: 1.4rem;
     font-weight: 700;
     line-height: 1.35;
@@ -14,7 +18,7 @@
     color: #1a1a1a;
 }
 
-.wb-discuss-post__body {
+.wb-discuss-post-body {
     font-size: 0.97rem;
     line-height: 1.6;
     color: #212529;
@@ -23,17 +27,17 @@
     overflow-x: auto;
 }
 
-.wb-discuss-post__footer {
+.wb-discuss-post-footer {
     border-top: 1px solid #f0f0f0;
 }
 
-.wb-discuss-post__date {
+.wb-discuss-post-date {
     font-size: 0.72rem;
     color: #6c757d;
 }
 
-.wb-discuss-vote-btn,
-.wb-discuss-follow-btn {
+.wb-discuss-vote-button,
+.wb-discuss-follow-button {
     display: inline-flex;
     align-items: center;
     gap: 5px;
@@ -48,40 +52,26 @@
     transition: all 0.15s ease;
 }
 
-.wb-discuss-vote-btn:hover,
-.wb-discuss-follow-btn:hover {
+.wb-discuss-vote-button:hover,
+.wb-discuss-follow-button:hover {
     background-color: #f8f9fa;
     border-color: #adb5bd;
     color: #495057;
 }
 
-.wb-discuss-vote-btn.active {
+.wb-discuss-vote-button--active {
     background-color: #e8f0fe;
     border-color: #4285f4;
     color: #4285f4;
 }
 
-.wb-discuss-follow-btn.active {
+.wb-discuss-follow-button--active {
     background-color: #fff8e1;
     border-color: #ffc107;
     color: #e6a800;
 }
 
-.wb-discuss-question__description {
-    white-space: pre-wrap;
-    word-wrap: break-word;
-    font-size: 1rem;
-    line-height: 1.3;
-    width: 100%;
-    overflow-x: auto;
-}
-
-.wb-discuss-reply__actions {
-    width: 40px;
-    text-align: center;
-}
-
-.wb-discuss-reply__actions__best-answer-button {
+.wb-discuss-reply-best-answer-button {
     font-size: 26px;
 }
 
@@ -105,4 +95,20 @@
 .wb-discuss-voting b {
     font-size: 0.95rem;
     font-weight: 700;
+}
+
+/* --- Answer --------------------------------------------------------------------------------- */
+
+.wb-discuss-answer {
+    background: white;
+}
+
+/* Highlights the answer the user just posted */
+.wb-discuss-answer--new {
+    background: beige;
+}
+
+/* Voting / accepted-answer column */
+.wb-discuss-answer-side {
+    width: 40px;
 }

@@ -1,11 +1,11 @@
-import { Container } from "react-bootstrap";
+import { Container } from "../components/ui";
 import PageTitle from "../layouts/PageTitle";
 
 const FAQPage = () => {
     PageTitle("Frequently Asked Questions", false);
 
     return (
-        <div className="bg-light py-4" style={{ minHeight: "100vh" }}>
+        <div className="bg-light py-4 min-vh-100">
             <Container>
                 <div className="bg-white rounded p-4 shadow">
                     <h2 className="mb-4">Frequently Asked Questions</h2>

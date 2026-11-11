@@ -1,5 +1,5 @@
-import { LinkContainer } from "react-router-bootstrap";
-import { Dropdown, Badge } from "react-bootstrap";
+import { Badge, Dropdown } from "../../../components/ui";
+import { useNavigate } from "react-router-dom";
 import { FaEyeSlash, FaUsers } from "react-icons/fa6";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { CourseMinimal } from "../types";
@@ -18,16 +18,24 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
         onRestart?.(course.id);
     };
 
+    const navigate = useNavigate();
+
     const to = isEditor
         ? "/Courses/Editor/" + course.id
         : "/Courses/" + course.code;
 
     return (
-        <LinkContainer to={to}>
-            <div className={`wb-courses-course-card rounded border p-2 bg-white d-sm-flex gap-3 position-relative ${isMyCourse && course.completed ? "wb-course-completed" : ""}`}>
+        <div
+            role="link"
+            className="wb-courses-course-card wb-util-clickable rounded border p-2 bg-white d-sm-flex gap-3 position-relative"
+            onClick={(e) => {
+                // Clicks handled by the course menu call preventDefault
+                if (!e.defaultPrevented) navigate(to);
+            }}
+        >
 
                 {isMyCourse && (
-                    <div className="wb-courses-course__edit-button">
+                    <div className="wb-courses-course-edit-button">
                         <Dropdown drop="start">
                             <Dropdown.Toggle as={EllipsisDropdownToggle} />
                             <Dropdown.Menu>
@@ -42,7 +50,7 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
                 <div className="d-flex justify-content-center">
                     <div className="rounded-circle">
                         <img
-                            className="wb-courses-course__cover-image"
+                            className="wb-courses-course-cover-image"
                             src={course.coverImageUrl || "/resources/images/logoicon.svg"}
                             alt="Cover image"
                         />
@@ -50,12 +58,12 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
                 </div>
 
                 <div className="d-flex flex-column align-items-sm-start align-items-center flex-grow-1">
-                    <h5 style={{ wordBreak: "break-word" }}>
+                    <h5 className="text-break">
                         {course.title} {!course.visible && <FaEyeSlash />}
                     </h5>
 
                     {!isMyCourse && (
-                        <p className="wb-courses-course__description">{course.description}</p>
+                        <p className="wb-courses-course-description">{course.description}</p>
                     )}
 
                     {isMyCourse && (
@@ -73,8 +81,7 @@ const Course = ({ course, isEditor, isMyCourse, onRestart }: CourseProps) => {
                     )}
                 </div>
 
-            </div>
-        </LinkContainer>
+        </div>
     );
 };
 

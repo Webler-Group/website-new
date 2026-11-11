@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { FaTimes } from "react-icons/fa";
+import "./ImagePreview.css";
 
 interface ImagePreviewProps {
     src: string;
@@ -145,20 +146,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, alt, onClose }) => {
 
     return (
         <div
-            style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100vw",
-                height: "100vh",
-                background: "rgba(0, 0, 0, 0.9)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 9999,
-                touchAction: "auto",
-                color: "#ccc"
-            }}
+            className="wb-image-preview-overlay"
             onClick={onClose}
         >
             <button
@@ -166,17 +154,8 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, alt, onClose }) => {
                     e.stopPropagation();
                     onClose();
                 }}
-                style={{
-                    position: "absolute",
-                    top: "20px",
-                    right: "20px",
-                    background: "transparent",
-                    border: "none",
-                    color: "#fff",
-                    fontSize: "1.8rem",
-                    cursor: "pointer",
-                    zIndex: 10,
-                }}
+                type="button"
+                className="wb-image-preview-close"
             >
                 <FaTimes />
             </button>
@@ -185,16 +164,7 @@ const ImagePreview: React.FC<ImagePreviewProps> = ({ src, alt, onClose }) => {
                 ref={imgRef}
                 src={src}
                 alt={alt || ""}
-                style={{
-                    maxWidth: "100%",
-                    maxHeight: "100%",
-                    width: "auto",
-                    height: "auto",
-                    objectFit: "contain",
-                    transform: `scale(${currentScale.current}) translate(${translation.current.x / currentScale.current}px, ${translation.current.y / currentScale.current}px)`,
-                    transformOrigin: "center",
-                    touchAction: "none",
-                }}
+                className="wb-image-preview-image"
                 onClick={(e) => e.stopPropagation()}
                 onLoad={() => setLoaded(true)}
             />

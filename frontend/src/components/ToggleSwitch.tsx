@@ -11,9 +11,9 @@ export const ToggleSwitch = ({ value, onChange, disabled, ...props }: ToggleSwit
 
     return (
         <span {...props}>
-            <label className="toggle-switch">
-                <input className="toggle-switch__input" type="checkbox" checked={value} onChange={onChange} disabled={disabled} />
-                <span className="toggle-switch__span" />
+            <label className="wb-toggle-switch">
+                <input className="wb-toggle-switch-input" type="checkbox" checked={value} onChange={onChange} disabled={disabled} />
+                <span className="wb-toggle-switch-slider" />
             </label>
         </span>
     )

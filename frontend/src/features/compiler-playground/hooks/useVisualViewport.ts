@@ -1,4 +1,5 @@
-import { CSSProperties, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import { cssVars } from "../../../components/ui";
 
 interface ViewportBox {
     height: number;
@@ -17,8 +18,8 @@ const readViewport = (): ViewportBox | null => {
  * On mobile the virtual keyboard shrinks the visual viewport, but on many browsers
  * not the layout viewport (100vh / 100dvh), so full-height layouts end up under the keyboard.
  *
- * Returns style for a `position: fixed` full-screen container plus the
- * `--wb-viewport-height` CSS variable descendants can use in calc().
+ * Returns a ref callback exposing the visible area as CSS variables on an element:
+ * `--wb-viewport-top` and `--wb-viewport-height` (descendants can use them in calc()).
  */
 const useVisualViewport = () => {
     const [viewport, setViewport] = useState<ViewportBox | null>(readViewport);
@@ -48,11 +49,12 @@ const useVisualViewport = () => {
         };
     }, []);
 
-    const containerStyle = (viewport
-        ? { top: viewport.offsetTop, height: viewport.height, "--wb-viewport-height": `${viewport.height}px` }
-        : {}) as CSSProperties;
+    const viewportVars = cssVars({
+        "--wb-viewport-top": viewport ? viewport.offsetTop : null,
+        "--wb-viewport-height": viewport ? viewport.height : null
+    });
 
-    return { viewport, containerStyle };
+    return { viewport, viewportVars };
 };
 
 export default useVisualViewport;

@@ -1,5 +1,5 @@
+import { Button, Modal } from "../ui";
 import { useCallback, useEffect, useState } from "react";
-import { Button, Modal } from "react-bootstrap";
 import CodeList, { ICodesState } from "../../features/codes/components/CodeList";
 import "./PostAttachmentSelect.css";
 import { CodeMinimal } from "../../features/codes/types";
@@ -49,11 +49,11 @@ const PostAttachmentSelect = ({ show, onClose, onSubmit }: PostAttachmentSelectP
     }
 
     return (
-        <Modal className="wb-post-attachment-select-modal" backdropClassName="wb-post-attachment-select-modal__backdrop" show={show} onHide={onClose} centered fullscreen="sm-down">
+        <Modal className="wb-post-attachment-select-modal" show={show} onHide={onClose} centered fullscreen="sm-down">
             <Modal.Header closeButton>
                 <Modal.Title>Codes</Modal.Title>
             </Modal.Header>
-            <Modal.Body className="overflow-auto wb-post-attachment-select-modal__body">
+            <Modal.Body className="overflow-auto wb-post-attachment-select-modal-body">
                 <CodeList codesState={codesState} setCodesState={setCodesState} onCodeClick={handleCodeSelect} isCodeSelected={isCodeSelected} showNewCodeBtn={false} />
             </Modal.Body>
             <Modal.Footer>

@@ -1,15 +1,19 @@
+/* =============================================================================================
+ * Courses – course list, course page, lesson player and course editor (wb-courses-*)
+ * ============================================================================================= */
+
 .wb-courses-main {
     min-height: 100vh;
 }
 
-.wb-courses-course__edit-button {
+.wb-courses-course-edit-button {
     cursor: pointer;
     position: absolute;
     right: 16px;
     top: 16px;
 }
 
-.wb-courses-course__description {
+.wb-courses-course-description {
     white-space: pre-wrap;
     word-wrap: break-word;
     font-size: 14px;
@@ -17,7 +21,7 @@
     width: 100%;
 }
 
-.wb-courses-course__cover-image {
+.wb-courses-course-cover-image {
     width: 72px;
     height: 72px;
     border-radius: 50%;
@@ -57,7 +61,6 @@
     /* Firefox */
 }
 
-
 .wb-courses-lesson-node-question {
     width: 100%;
     max-width: 552px;
@@ -69,11 +72,11 @@
     overflow: hidden;
 }
 
-.wb-courses-lesson-main:has(.wb-code-mode) {
+.wb-courses-lesson-main:has(.wb-courses-code-mode) {
     max-width: 1200px;
 }
 
-.wb-courses-lesson-node-question.wb-code-mode {
+.wb-courses-lesson-node-question.wb-courses-code-mode {
     max-width: 100%;
 }
 
@@ -86,21 +89,25 @@
     color: #2d3846;
 }
 
-.wb-courses-lesson-answer.initial {
+.wb-courses-lesson-answer--text {
+    width: 240px;
+}
+
+.wb-courses-lesson-answer--initial {
     box-shadow: 0 2px 0 1px #c8d2db;
 }
 
-.wb-courses-lesson-answer.selected {
+.wb-courses-lesson-answer--selected {
     background: rgba(20, 158, 242, .1);
     border-color: #149ef2;
 }
 
-.wb-courses-lesson-answer.correct {
+.wb-courses-lesson-answer--correct {
     background: rgba(64, 175, 12, .1);
     border-color: #40af0c;
 }
 
-.wb-courses-lesson-answer.incorrect {
+.wb-courses-lesson-answer--incorrect {
     background: rgba(242, 0, 87, .1);
     border-color: #f20057;
 }
@@ -126,4 +133,27 @@
 
 .wb-courses-lesson-arrow-pill.bg-warning {
     box-shadow: 0 0 8px rgba(255, 193, 7, 0.4);
+}
+
+/* --- Lesson player -------------------------------------------------------------------------- */
+
+.wb-courses-lesson-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* --- Course editor -------------------------------------------------------------------------- */
+
+.wb-courses-import-example {
+    max-height: 300px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+
+.wb-courses-node-preview {
+    height: 80vh;
+}
+
+.wb-courses-code-picker-body {
+    min-height: 500px;
 }

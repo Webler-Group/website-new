@@ -1,8 +1,8 @@
+import { Container, Modal } from "../../../components/ui";
 import { useParams, useNavigate } from "react-router-dom";
 import ChannelsList2 from "../components/ChannelsList2";
 import ChannelRoom2 from "../components/ChannelRoom2";
 import PageTitle from "../../../layouts/PageTitle";
-import { Container, Modal } from "react-bootstrap";
 
 const ChannelsPage = () => {
     const { channelId } = useParams<{ channelId?: string }>();

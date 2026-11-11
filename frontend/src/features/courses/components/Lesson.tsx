@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import { FaPencil, FaTrash, FaArrowUp, FaArrowDown, FaFileExport } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import { LessonDetails } from "../types";
@@ -43,16 +44,14 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onExport, onChangeIndex, i
         <div className="border p-2 bg-white d-flex justify-content-between gap-3 align-items-center">
             <div className="d-flex gap-2">
                 <span
-                    className={`wb-comments__options__item ${isFirst ? "text-muted" : ""}`}
+                    className={cx("wb-comments-options-item", isFirst ? "text-muted wb-util-not-allowed" : "wb-util-clickable")}
                     onClick={handleMoveUp}
-                    style={{ cursor: isFirst ? "not-allowed" : "pointer" }}
                 >
                     <FaArrowUp />
                 </span>
                 <span
-                    className={`wb-comments__options__item ${isLast ? "text-muted" : ""}`}
+                    className={cx("wb-comments-options-item", isLast ? "text-muted wb-util-not-allowed" : "wb-util-clickable")}
                     onClick={handleMoveDown}
-                    style={{ cursor: isLast ? "not-allowed" : "pointer" }}
                 >
                     <FaArrowDown />
                 </span>
@@ -64,13 +63,13 @@ const Lesson = ({ lesson, courseId, onEdit, onDelete, onExport, onChangeIndex, i
                 </div>
             </div>
             <div className="d-flex gap-2">
-                <span className="wb-comments__options__item" onClick={handleExport}>
+                <span className="wb-comments-options-item" onClick={handleExport}>
                     <FaFileExport />
                 </span>
-                <span className="wb-comments__options__item" onClick={handleEdit}>
+                <span className="wb-comments-options-item" onClick={handleEdit}>
                     <FaPencil />
                 </span>
-                <span className="wb-comments__options__item" onClick={handleDelete}>
+                <span className="wb-comments-options-item" onClick={handleDelete}>
                     <FaTrash />
                 </span>
             </div>

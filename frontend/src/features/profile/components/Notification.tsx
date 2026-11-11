@@ -7,6 +7,7 @@ import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { NotificationDetails } from "../types";
 import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
+import "./Notifications.css";
 
 interface NotificationProps {
     notification: NotificationDetails;
@@ -81,12 +82,12 @@ const Notification = React.forwardRef(({ notification, onClose, onView }: Notifi
     const messageParts = notification.message.split("{action_user}");
 
     const body = (
-        <div className="d-flex p-2 border-bottom gap-2 align-items-center" onClick={viewNotification} style={{ cursor: "pointer" }}>
+        <div className="d-flex p-2 border-bottom gap-2 align-items-center wb-util-clickable" onClick={viewNotification}>
             <div>
                 <ProfileAvatar size={32} avatarUrl={notification.actionUser.avatarUrl} />
             </div>
             <div className="flex-grow-1">
-                <div style={{ wordBreak: "break-word", fontSize: "14px" }}>
+                <div className="wb-profile-notification-message text-break">
                     {messageParts[0]}
                     <ProfileName userId={notification.actionUser.id} userName={notification.actionUser.name} />
                     {messageParts[1]}

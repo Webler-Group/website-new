@@ -1,5 +1,5 @@
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal } from "react-bootstrap";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Lesson from "../components/Lesson";
 import LessonEditor from "../components/LessonEditor";
@@ -237,7 +237,7 @@ const CourseEditorPage = () => {
                     }
                 </div>
                 <div className="mb-3">
-                    <h3 className="wb-courses-course__title" style={{ wordBreak: "break-word" }}>{course.title}</h3>
+                    <h3 className="text-break">{course.title}</h3>
                 </div>
                 <div hidden={!formVisible} className="mb-2 border bg-white rounded p-2">
                     <Form>

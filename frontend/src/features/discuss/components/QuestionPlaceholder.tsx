@@ -1,6 +1,4 @@
-
-import { Placeholder } from 'react-bootstrap';
-
+import { Placeholder } from "../../../components/ui";
 const QuestionPlaceholder = () => {
 
     return (

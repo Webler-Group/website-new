@@ -1,16 +1,5 @@
+import { Badge, Button, Col, Form, InputGroup, ListGroup, Modal, Nav, Row, Tab } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import {
-    Button,
-    Form,
-    ListGroup,
-    Nav,
-    Tab,
-    Row,
-    Col,
-    Badge,
-    InputGroup,
-    Modal
-} from "react-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
@@ -179,7 +168,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
     return (
         <>
             {/* Delete Channel Modal */}
-            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={deleteModalVisible} onHide={closeDeleteModal} centered>
+            <Modal show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -191,7 +180,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             </Modal>
 
             {/* Leave Channel Modal */}
-            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={leaveModalVisible} onHide={closeLeaveModal} centered>
+            <Modal show={leaveModalVisible} onHide={closeLeaveModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -203,7 +192,7 @@ const ChannelRoomSettings = ({ channel, onUserInvite, onUserRemove, onCancelInvi
             </Modal>
 
             {/* Edit Participant Modal */}
-            <Modal style={{ zIndex: "1070" }} backdropClassName="wb-channels-room-modal__backdrop" show={editedParticipantId !== null} onHide={closeParticipantModal} centered>
+            <Modal show={editedParticipantId !== null} onHide={closeParticipantModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>{selectedParticipant?.user.name}</Modal.Title>
                 </Modal.Header>

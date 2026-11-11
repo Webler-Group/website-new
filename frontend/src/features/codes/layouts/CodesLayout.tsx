@@ -1,4 +1,4 @@
-import { Container } from "react-bootstrap";
+import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import Code from "../components/Code";
@@ -37,7 +37,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
         <>
             <Helmet> <title>Code Playground | Webler Codes</title> <meta name="description" content="Experiment with code in multiple programming languages using Webler’s browser-based IDE. No setup required — just create, edit, and run instantly." /> </Helmet>
             <Container>
-                <div className="row mt-2" style={{ minHeight: "100vh" }}>
+                <div className="row mt-2 min-vh-100">
                     <div className="col-12 col-md-8">{MainPage}</div>
                     <div className="col-12 col-md-4 mb-4">
                         <div className="wb-codes-sidebar-card">
@@ -45,7 +45,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
                                 <span className="text-danger"><FaFire /></span>
                                 <h5>Hot today</h5>
                             </div>
-                            <div className="wb-codes-sidebar-content">
+                            <div>
                                 {
                                     codes.map(code => {
                                         return (

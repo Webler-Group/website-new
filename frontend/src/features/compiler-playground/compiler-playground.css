@@ -1,19 +1,33 @@
+/* =============================================================================================
+ * Compiler playground – language menu, editor page, outputs and web console
+ * (wb-compiler-playground-*)
+ * ============================================================================================= */
+
 .wb-compiler-playground-wrapper {
     min-height: 100vh;
 }
 
+/* Fixed full-screen editor following the visual viewport (see useVisualViewport) */
 .wb-compiler-playground-container {
     position: fixed;
+    top: var(--wb-viewport-top, 0);
     width: 100%;
-    height: 100%;
+    height: var(--wb-viewport-height, 100%);
 }
 
-.wb-compiler-playground__language-types__item {
+/* Editor tab panes fill the visible height minus the toolbars above them */
+.wb-compiler-playground-editor-tab {
+    height: calc(var(--wb-viewport-height, 100dvh) - var(--wb-compiler-playground-editor-offset, 0px));
+}
+
+.wb-compiler-playground-language-item {
     display: flex;
     justify-content: center;
 }
 
-.wb-compiler-playground__language-types__language-button {
+.wb-compiler-playground-language-button {
+    color: var(--wb-language-color);
+    border-color: var(--wb-language-color);
     width: 364px;
     max-width: 100%;
     border-radius: 8px;
@@ -22,12 +36,12 @@
     box-shadow: 0 4px 0;
 }
 
-.wb-compiler-playground__language-types__language-button:hover {
+.wb-compiler-playground-language-button:hover {
     box-shadow: 0 10px 0;
     transform: translateY(-6px);
 }
 
-.wb-compiler-playground__language-types__language-button a {
+.wb-compiler-playground-language-button a {
     font-size: 24px;
     height: 100%;
     letter-spacing: -0.01em;
@@ -39,22 +53,12 @@
     color: #fff;
 }
 
-
 .wb-compiler-playground-voting {
     display: flex;
     flex-direction: row;
     align-items: center;
     gap: 4px;
     padding: 0 6px;
-}
-
-.wb-compiler-playground-voting__button {
-    cursor: pointer;
-    color: silver;
-}
-
-.wb-compiler-playground-voting__button:hover {
-    color: gray;
 }
 
 .wb-compiler-playground-comments {
@@ -86,7 +90,7 @@
     width: 100%;
 }
 
-.wb-compiler-playground-options__button {
+.wb-compiler-playground-options-button {
     cursor: pointer;
     width: 24px;
     height: 24px;
@@ -96,3 +100,80 @@
     user-select: none;
     -webkit-user-select: none;
 }
+
+/* --- Editor page ---------------------------------------------------------------------------- */
+
+.wb-compiler-playground-ace-editor {
+    overscroll-behavior: contain;
+}
+
+.wb-compiler-playground-toast {
+    z-index: 9999;
+}
+
+.wb-compiler-playground-zoom-value {
+    width: 32px;
+}
+
+/* --- Compile output ------------------------------------------------------------------------- */
+
+.wb-compiler-playground-output-image {
+    max-width: 100%;
+    height: auto;
+}
+
+.wb-compiler-playground-output-stdout {
+    max-height: calc(100vh - 200px);
+}
+
+/* --- Web console ---------------------------------------------------------------------------- */
+
+.wb-compiler-playground-console-row--warn {
+    background: #413a2a;
+}
+
+.wb-compiler-playground-console-row--error {
+    background: #4e3534;
+}
+
+.wb-compiler-playground-console-row--info {
+    background: #2a3a41;
+}
+
+/* Left column with the level icon or the repeat counter */
+.wb-compiler-playground-console-icon {
+    width: 20px;
+}
+
+.wb-compiler-playground-console-icon--count {
+    width: auto;
+}
+
+.wb-compiler-playground-console-data {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-all;
+    font-size: 0.85rem;
+}
+
+.wb-compiler-playground-console-location {
+    font-size: 0.75rem;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.wb-compiler-playground-console-location:disabled {
+    cursor: default;
+}
+
+.wb-compiler-playground-console-discarded {
+    font-size: 0.8rem;
+}
+
+/* Syntax colors of logged values */
+.wb-compiler-playground-console-token--muted { color: gray; }
+.wb-compiler-playground-console-token--number { color: forestgreen; }
+.wb-compiler-playground-console-token--string { color: violet; }
+.wb-compiler-playground-console-token--function { color: orange; }
+.wb-compiler-playground-console-token--structure { color: dodgerblue; }
+.wb-compiler-playground-console-token--plain { color: white; }

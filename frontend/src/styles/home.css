@@ -1,0 +1,108 @@
+/* =============================================================================================
+ * Home – landing page (wb-home-*)
+ * ============================================================================================= */
+
+.wb-home-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.wb-home-content {
+    padding: 80px 0 80px 0;
+}
+
+.wb-home-feature-card {
+    min-height: 360px;
+}
+
+.wb-home-sign-up-form {
+    padding: 24px;
+    color: rgb(61, 76, 88);
+    background-color: rgb(236, 236, 236);
+    border-radius: 5px;
+    min-height: 720px;
+}
+
+/* --- Banner --------------------------------------------------------------------------------- */
+
+.wb-home-banner::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100dvw;
+    height: 100dvh;
+    background-image: url("/resources/images/collageBlurred.webp");
+    background-size: min(100%, 1200px);
+    background-repeat: repeat;
+    background-attachment: fixed;
+    z-index: -10;
+}
+
+.wb-home-banner {
+    position: relative;
+    height: calc(100dvh - 60px);
+    min-height: 360px;
+    padding: 48px;
+}
+
+.wb-home-banner-logo {
+    display: flex;
+    width: 100%;
+}
+
+.wb-home-banner-logo-image {
+    width: 480px;
+}
+
+.wb-home-banner-title {
+    font-size: 60px;
+    font-weight: 600;
+}
+
+.wb-home-banner-slogan {
+    border-top: 2px solid #f2f2f2;
+    font-size: 40px;
+}
+
+@media (max-width: 720px) {
+    .wb-home-banner {
+        padding: 24px;
+    }
+
+    .wb-home-banner-logo {
+        justify-content: center;
+    }
+
+    .wb-home-banner-logo-image {
+        width: 360px;
+    }
+
+    .wb-home-banner-title {
+        font-size: 45px;
+    }
+
+    .wb-home-banner-slogan {
+        font-size: 30px;
+    }
+}
+
+@media (max-width: 480px) {
+    .wb-home-banner {
+        padding: 12px;
+    }
+
+    .wb-home-banner-logo-image {
+        width: 240px;
+    }
+
+    .wb-home-banner-title {
+        font-size: 30px;
+        font-weight: 600;
+    }
+
+    .wb-home-banner-slogan {
+        font-size: 20px;
+    }
+}

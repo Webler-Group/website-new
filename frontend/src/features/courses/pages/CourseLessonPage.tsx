@@ -1,5 +1,5 @@
+import { Button, Nav, Offcanvas } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Button, Nav, Offcanvas } from "react-bootstrap";
 import { FaQuestionCircle, FaTimes, FaCode } from "react-icons/fa";
 import { FaBookOpen, FaComments } from "react-icons/fa6";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -145,7 +145,7 @@ const CourseLessonPage = () => {
                         <Offcanvas.Header closeButton>
                             <Offcanvas.Title>{commentCount} Comments</Offcanvas.Title>
                         </Offcanvas.Header>
-                        <Offcanvas.Body className="d-flex flex-column" style={{ height: "calc(100% - 62px)" }}>
+                        <Offcanvas.Body className="wb-comments-offcanvas-body d-flex flex-column">
                             <CommentList
                                 findPost={findPost}
                                 options={commentListOptions}
@@ -158,7 +158,7 @@ const CourseLessonPage = () => {
                             <Button variant="link" className="text-secondary p-1" onClick={handleExit}>
                                 <FaTimes size={18} />
                             </Button>
-                            <span className="text-secondary ms-2" style={{ fontSize: "18px", fontWeight: "bold" }} >{lesson.title}</span>
+                            <span className="wb-courses-lesson-title text-secondary ms-2">{lesson.title}</span>
                         </div>
                         <div className="d-flex align-items-center gap-1">
                             <span className="small text-secondary">{commentCount}</span>
@@ -189,7 +189,7 @@ const CourseLessonPage = () => {
                         </Nav>
                     </div>
 
-                    <div className="flex-grow-1 mt-2" style={{ minHeight: 0, overflow: "hidden" }}>
+                    <div className="flex-grow-1 mt-2 wb-util-min-h-0 overflow-hidden">
                         {
                             currentNodeIndex != 0 &&
                             <LessonNode nodeId={lesson.nodes.find(x => x.index == currentNodeIndex)?.id!} mock={false} css={css} onContinue={onNodeContinue} onAnswered={onNodeAnswered} />

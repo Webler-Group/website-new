@@ -1,5 +1,5 @@
+import { Button, Form } from "../../../components/ui";
 import { Dispatch, SetStateAction } from "react";
-import { Button, Form } from "react-bootstrap";
 import { FaPlus, FaTrash } from "react-icons/fa";
 import { ChallengeTemplate } from "../types";
 import { languagesInfo } from "../../../data/compilerLanguages";

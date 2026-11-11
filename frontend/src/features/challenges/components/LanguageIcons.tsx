@@ -13,15 +13,13 @@ const LanguageIcons = ({ challenge }: LanguageIconsProps) => {
             {Object.entries(languagesInfo).filter(([key]) => key !== "web").map(([key, info]) => (
                 <div
                     key={key}
-                    className="wb-challenge-lang-icon position-relative"
-                    style={{ backgroundColor: info.color }}
+                    className={`wb-challenges-language-icon wb-language-${key} position-relative`}
                     title={info.displayName}
                 >
                     {info.shortName}
                     {challenge.submissions?.some(sub => sub.language === key && sub.passed) && (
                         <div
-                            className="position-absolute bottom-0 end-0 text-success bg-white rounded-circle d-flex"
-                            style={{ transform: "translate(25%, 25%)", fontSize: "10px", padding: "1px" }}>
+                            className="wb-challenges-language-icon-solved position-absolute bottom-0 end-0 text-success bg-white rounded-circle d-flex">
                             <FaCheckCircle />
                         </div>
                     )}

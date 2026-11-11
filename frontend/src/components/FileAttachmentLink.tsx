@@ -41,11 +41,11 @@ const FileAttachmentLink = ({ url, name }: FileAttachmentLinkProps) => {
             onClick={e => e.stopPropagation()}
         >
             <FileKindIcon name={name} size={22} />
-            <span className="wb-file-attachment__info">
-                <span className="wb-file-attachment__name">{name}</span>
-                {ext && <span className="wb-file-attachment__ext">{ext.toUpperCase()} file</span>}
+            <span className="wb-file-attachment-info">
+                <span className="wb-file-attachment-name">{name}</span>
+                {ext && <span className="wb-file-attachment-extension">{ext.toUpperCase()} file</span>}
             </span>
-            <FaDownload className="wb-file-attachment__download" aria-hidden />
+            <FaDownload className="wb-file-attachment-download" aria-hidden />
         </a>
     );
 };

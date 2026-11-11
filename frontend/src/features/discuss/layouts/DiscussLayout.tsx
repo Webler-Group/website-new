@@ -1,4 +1,4 @@
-import { Container } from "react-bootstrap";
+import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import Question from "../components/Question";
 import { useApi } from "../../../context/apiCommunication";
@@ -37,7 +37,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
             <Helmet> <title>Q&A Discussions | Webler Codes</title> <meta name="description" content="Join Webler’s programming forum to ask questions, share knowledge, and solve real-world coding challenges with a global community of developers." /> </Helmet>
             <div className="bg-white">
                 <Container>
-                    <div className="row pt-2" style={{ minHeight: "100vh" }}>
+                    <div className="row pt-2 min-vh-100">
                         <div className="col-12 col-md-8">{MainPage}</div>
                         <div className="col-12 col-md-4 mb-4">
                             <div className="wb-discuss-sidebar-card">
@@ -45,7 +45,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
                                     <span className="text-danger"><FaFire /></span>
                                     <h5>Hot today</h5>
                                 </div>
-                                <div className="wb-discuss-sidebar-content">
+                                <div>
                                     {
                                         questions.map(question => {
                                             return (

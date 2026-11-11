@@ -1,0 +1,30 @@
+/* =============================================================================================
+ * Auth – login / register / password reset pages (wb-auth-*)
+ * ============================================================================================= */
+
+.wb-auth-page-wrapper {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.wb-auth-page-container {
+    width: 392px !important;
+}
+
+@media (max-width: 449px) {
+    .wb-auth-page-container {
+        width: 100%;
+        padding: 32px 24px;
+    }
+}
+
+.wb-auth-captcha {
+    height: 50px;
+}
+
+.wb-auth-captcha-refresh {
+    width: 25px;
+    height: 25px;
+}

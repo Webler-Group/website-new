@@ -1,9 +1,8 @@
+import { Breadcrumb, Button, Col, Container, Form, Pagination, Row, Table } from "../../../components/ui";
 import { useState, useEffect } from "react";
-import { Table, Form, Row, Col, Button, Container, Breadcrumb } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import RolesEnum from "../../../data/RolesEnum";
-import { PaginationControl } from "react-bootstrap-pagination-control";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
 
 const rolesOptions = ["All", ...Object.values(RolesEnum)];
@@ -108,7 +107,7 @@ const AdminUserListPage = () => {
     return (
         <Container className="mt-4">
             <Breadcrumb>
-                <Breadcrumb.Item linkAs={Link} linkProps={{ to: "/Admin" }}>
+                <Breadcrumb.Item to="/Admin">
                     Admin Panel
                 </Breadcrumb.Item>
                 <Breadcrumb.Item>
@@ -226,7 +225,7 @@ const AdminUserListPage = () => {
                         users.map((u) => (
                             <tr key={u.id}
                                 onClick={() => navigate(`/Admin/UserSearch/${u.id}`)}
-                                style={{ cursor: "pointer" }}>
+                                className="wb-util-clickable">
                                 <td>{u.id}</td>
                                 <td>{u.name}</td>
                                 <td>{u.email}</td>
@@ -242,7 +241,7 @@ const AdminUserListPage = () => {
             </Table>
 
             <div className="my-3">
-                <PaginationControl
+                <Pagination
                     page={page}
                     between={3}
                     total={totalCount}

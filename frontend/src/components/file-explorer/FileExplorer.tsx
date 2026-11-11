@@ -1,6 +1,6 @@
+import { Alert, Button, cssVars, Form, mergeRefs, Modal, Nav, Spinner, Tab, ToggleButton, ToggleButtonGroup } from "../ui";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Alert, Button, Form, Modal, Nav, Spinner, Tab, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import "./FileExplorer.css";
 import { useAuth } from "../../features/auth/context/authContext";
 import DateUtils from "../../utils/DateUtils";
@@ -36,7 +36,6 @@ interface FileExplorerProps {
 const FOLDER_ICON = "/resources/images/folder.svg";
 const IMAGE_ICON = "/resources/images/image.svg";
 
-const CONFIRM_MODAL_Z = 1080;
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/jpg,image/webp,image/avif";
 
@@ -375,8 +374,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
     return (
         <>
             <Modal
-                style={{ zIndex: CONFIRM_MODAL_Z }}
-                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!deleteTarget}
                 onHide={() => { if (!deleting) setDeleteTarget(null); }}
                 centered
@@ -402,8 +399,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 </Modal.Footer>
             </Modal>
             <Modal
-                style={{ zIndex: CONFIRM_MODAL_Z }}
-                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!renameTarget}
                 onHide={() => { if (!renaming) setRenameTarget(null); }}
                 centered
@@ -432,8 +427,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 </Modal.Footer>
             </Modal>
             <Modal
-                style={{ zIndex: CONFIRM_MODAL_Z }}
-                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={!!moveTarget}
                 onHide={() => { if (!moving) setMoveTarget(null); }}
                 centered
@@ -465,8 +458,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
             {/* ── Create folder ─────────────────────────────────────────── */}
             <Modal
-                style={{ zIndex: CONFIRM_MODAL_Z }}
-                backdropClassName="wb-file-explorer-confirm-backdrop"
                 show={createFolderOpen}
                 onHide={() => { if (!creatingFolder) setCreateFolderOpen(false); }}
                 centered
@@ -501,8 +492,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                 size="lg"
                 fullscreen="sm-down"
                 dialogClassName="wb-file-explorer-modal"
-                backdropClassName="wb-file-explorer-backdrop"
-                style={{ zIndex: 1070 }}
             >
                 <Modal.Header closeButton>
                     <Modal.Title>{title}</Modal.Title>
@@ -521,7 +510,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
                         <Tab.Content className="wb-file-explorer-tabcontent">
 
-                            <Tab.Pane eventKey="library" className="wb-file-explorer-library-pane">
+                            <Tab.Pane eventKey="library">
 
                                 <div className="wb-file-explorer-toolbar">
                                     <div className="wb-file-explorer-breadcrumb">
@@ -549,7 +538,6 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                             <Button
                                                 size="sm"
                                                 variant="outline-secondary"
-                                                className="wb-file-explorer-back-btn"
                                                 onClick={() => navigateTo(subPath.length - 1)}
                                             >
                                                 ← Back
@@ -633,7 +621,7 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
                                 </div>
                             </Tab.Pane>
 
-                            <Tab.Pane eventKey="upload" className="wb-file-explorer-upload-pane">
+                            <Tab.Pane eventKey="upload">
                                 {uploadErr && <Alert variant="danger">{uploadErr}</Alert>}
 
                                 <Form>
@@ -716,9 +704,8 @@ const FileExplorer = ({ section, show, onHide, onSelect, title = "Images", rootA
 
             {contextMenu && createPortal(
                 <div
-                    ref={contextMenuRef}
+                    ref={mergeRefs(contextMenuRef, cssVars({ "--wb-file-explorer-context-menu-x": contextMenu.x, "--wb-file-explorer-context-menu-y": contextMenu.y }))}
                     className="wb-file-explorer-context-menu"
-                    style={{ top: contextMenu.y, left: contextMenu.x }}
                 >
                     <button
                         className="wb-file-explorer-ctx-item"

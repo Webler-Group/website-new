@@ -1,0 +1,73 @@
+/* =============================================================================================
+ * UI kit – styles needed by the custom Bootstrap-class components in src/components/ui
+ * ============================================================================================= */
+
+/* --- Body ----------------------------------------------------------------------------------- */
+
+.wb-ui-body--locked {
+    overflow: hidden;
+}
+
+/* --- Modal ---------------------------------------------------------------------------------- */
+
+/* The backdrop lives inside its modal, so it must paint below the dialog of the same modal */
+.wb-ui-modal > .wb-ui-modal-backdrop {
+    z-index: auto;
+    animation: wb-ui-fade-in 0.15s linear;
+}
+
+.wb-ui-modal-dialog {
+    animation: wb-ui-modal-slide-in 0.3s ease-out;
+}
+
+@keyframes wb-ui-fade-in {
+    from { opacity: 0; }
+}
+
+@keyframes wb-ui-modal-slide-in {
+    from { transform: translate(0, -50px); }
+}
+
+/* --- Offcanvas ------------------------------------------------------------------------------ */
+
+/* Stacking context on the modal z-index level; offcanvas + backdrop keep their order inside it */
+.wb-ui-overlay-layer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1055;
+}
+
+.wb-ui-offcanvas.offcanvas-end {
+    animation: wb-ui-offcanvas-slide-in-end 0.3s ease-in-out;
+}
+
+.wb-ui-offcanvas.offcanvas-start {
+    animation: wb-ui-offcanvas-slide-in-start 0.3s ease-in-out;
+}
+
+@keyframes wb-ui-offcanvas-slide-in-end {
+    from { transform: translateX(100%); }
+}
+
+@keyframes wb-ui-offcanvas-slide-in-start {
+    from { transform: translateX(-100%); }
+}
+
+/* --- Progress bar --------------------------------------------------------------------------- */
+
+.wb-ui-progress-bar {
+    width: var(--wb-ui-progress-value, 0%);
+}
+
+/* --- Toast ---------------------------------------------------------------------------------- */
+
+.wb-ui-toast-container {
+    z-index: 1090;
+}
+
+/* --- Dropdown ------------------------------------------------------------------------------- */
+
+.wb-ui-dropdown-menu--wide {
+    width: 200px;
+}

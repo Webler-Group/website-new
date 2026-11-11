@@ -1,6 +1,6 @@
+import { Button, Col, Container, Form, InputGroup, Row } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { FaArrowLeft, FaRedo } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import { FeedSuggestedUserData } from "../types";
@@ -61,7 +61,7 @@ const FeedSuggestedUserListPage = () => {
     };
 
     return (
-        <Container className="py-4" style={{ maxWidth: "700px" }}>
+        <Container className="wb-feed-suggested-users py-4">
             <NotificationToast notification={notification} onClose={() => setNotification(null)} />
 
             <Row className="mb-2">

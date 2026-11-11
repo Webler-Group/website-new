@@ -1,4 +1,4 @@
-import { Modal } from "react-bootstrap";
+import { Modal } from "../../../components/ui";
 import useCodes from "../hooks/useCodes";
 import { useCallback, useRef, useState } from "react";
 import Code from "../../codes/components/Code";
@@ -51,7 +51,7 @@ const CodesSection = ({ userId, onClose }: CodesSectionProps) => {
     })
 
     return (
-        <Modal show={true} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container codes">
+        <Modal show={true} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-app-modal-content-list">
             <Modal.Header closeButton>
                 <Modal.Title>Codes</Modal.Title>
             </Modal.Header>

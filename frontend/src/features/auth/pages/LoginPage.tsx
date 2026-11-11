@@ -1,6 +1,6 @@
+import { Container } from "../../../components/ui";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
-import { Container } from "react-bootstrap";
 import PageTitle from "../../../layouts/PageTitle";
 
 const LoginPage = () => {
@@ -20,8 +20,8 @@ const LoginPage = () => {
     return (
         <>
 
-            <div className="wb-login-wrapper">
-                <Container className="wb-login-container">
+            <div className="wb-auth-page-wrapper">
+                <Container className="wb-auth-page-container">
                     <LoginForm onToggleClick={toggle} onLogin={onLogin} />
                 </Container>
             </div>

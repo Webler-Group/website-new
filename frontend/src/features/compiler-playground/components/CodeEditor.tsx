@@ -1,5 +1,5 @@
+import { cssVars, mergeRefs, Tab, Tabs } from "../../../components/ui";
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
-import { Tab, Tabs } from "react-bootstrap";
 import AceEditor from "react-ace";
 import ace from "ace-builds";
 
@@ -68,7 +68,8 @@ interface CodeEditorProps {
     js: string;
     setJs: (value: string) => void;
     options: { scale: number; lineWrap: boolean };
-    tabHeightStyle: string;
+    /** Height (px) of the UI above the editor tabs, subtracted from the visible viewport height */
+    tabHeightOffset: number;
     consoleVisible?: boolean;
     hideConsole?: () => void;
     toggleConsole?: () => void;
@@ -86,7 +87,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
     js,
     setJs,
     options,
-    tabHeightStyle,
+    tabHeightOffset,
     consoleVisible,
     hideConsole,
     toggleConsole,
@@ -245,7 +246,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                         }, 350);
                     }}
                     editorProps={{ $blockScrolling: true }}
-                    style={{ height: "100%", overscrollBehavior: "contain" }}
+                    className="wb-compiler-playground-ace-editor"
                 />
             );
         },
@@ -254,7 +255,11 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
 
 
     return (
-        <div ref={containerRef} className="bg-dark" data-bs-theme="dark">
+        <div
+            ref={mergeRefs(containerRef, cssVars({ "--wb-compiler-playground-editor-offset": tabHeightOffset }))}
+            className="bg-dark"
+            data-bs-theme="dark"
+        >
             {editorTabs.length > 0 && (
                 <Tabs activeKey={activeKey} onSelect={onTabSelect} fill justify>
                     {challenge != null && (
@@ -262,8 +267,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             key="description"
                             eventKey="description"
                             title="description"
-                            className="bg-white"
-                            style={{ height: tabHeightStyle }}
+                            className="wb-compiler-playground-editor-tab bg-white"
                         >
                             <div className="overflow-y-auto h-100 p-2">
                                 <MarkdownRenderer content={challenge.description} />
@@ -276,7 +280,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                             key={lang}
                             eventKey={lang}
                             title={lang}
-                            style={{ height: tabHeightStyle }}
+                        className="wb-compiler-playground-editor-tab"
                             onEntered={() => revealPendingLine(lang)}
                         >
                             {renderAce(lang)}
@@ -289,7 +293,7 @@ const CodeEditor = forwardRef<CodeEditorHandle, CodeEditorProps>(({
                         key="output"
                         eventKey="output"
                         title="output"
-                        style={{ height: tabHeightStyle }}
+                        className="wb-compiler-playground-editor-tab"
                     >
                         {challenge != null ? (
                             <ChallengeCodeOutput

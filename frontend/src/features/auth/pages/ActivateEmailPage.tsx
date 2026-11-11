@@ -1,5 +1,5 @@
+import { Button, Container } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Button, Container } from "react-bootstrap"
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 
@@ -22,8 +22,8 @@ const ActivateEmailPage = () => {
 
     return (
         <>
-            <div className="wb-login-wrapper">
-                <Container className="wb-login-container">
+            <div className="wb-auth-page-wrapper">
+                <Container className="wb-auth-page-container">
                     {
                         submitState !== 0 &&
                             submitState === 1 ?

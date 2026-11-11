@@ -1,5 +1,5 @@
+import { Modal } from "../../../components/ui";
 import { useCallback, useRef } from "react";
-import { Modal } from "react-bootstrap";
 import useFollows from "../hooks/useFollows";
 import FollowListProfile from "./FollowListProfile";
 import Loader from "../../../components/Loader";
@@ -41,7 +41,7 @@ const FollowList = ({ options, visible, title, onClose, setCount }: FollowListPr
     }, [isLoading, hasNextPage, results])
 
     return (
-        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-modal__container follows">
+        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-app-modal-content-list">
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>

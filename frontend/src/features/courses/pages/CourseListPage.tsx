@@ -1,5 +1,5 @@
+import { Button, Container, Modal } from "../../../components/ui";
 import Course from "../components/Course";
-import { Button, Container, Modal } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";

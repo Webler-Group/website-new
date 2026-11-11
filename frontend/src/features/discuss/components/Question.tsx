@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import { FaComment } from "react-icons/fa6";
 import ProfileName from '../../../components/ProfileName';
 import DateUtils from '../../../utils/DateUtils';
@@ -32,10 +33,10 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
     }
 
     return (
-        <div ref={ref ?? undefined} className="min-width-0 overflow-hidden">
-            <div className={`wb-question-item border-bottom bg-white d-flex p-2${isCompact ? " compact" : ""}`} onClick={handleClick}>
-                <div className="flex-grow-1 min-width-0">
-                    <h3 className="text-truncate text-dark" style={{ fontSize: isCompact ? "0.95rem" : "1.02rem" }}>{title}</h3>
+        <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
+            <div className={cx("wb-discuss-question-item border-bottom bg-white d-flex p-2", isCompact && "wb-discuss-question-item--compact")} onClick={handleClick}>
+                <div className="flex-grow-1 wb-util-min-w-0">
+                    <h3 className="wb-discuss-question-title text-truncate text-dark">{title}</h3>
 
                     {!isCompact && question.tags.length > 0 && (
                         <div className="d-flex flex-wrap mt-1">
@@ -55,15 +56,15 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
                             <span>{question.answers}</span>
                         </div>
                         {!showUserProfile && (
-                            <span className="wb-question-date ms-1">{DateUtils.format(new Date(question.date))}</span>
+                            <span className="wb-discuss-question-date ms-1">{DateUtils.format(new Date(question.date))}</span>
                         )}
                     </div>
                 </div>
 
                 {/* Right: date + name + avatar */}
                 {showUserProfile && isUser(question.user) && (
-                    <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-question-user-meta">
-                        <small className="text-muted wb-question-date">{DateUtils.format(new Date(question.date))}</small>
+                    <div className="flex-shrink-0 ms-2 d-flex flex-column align-items-end justify-content-between wb-discuss-question-user-meta">
+                        <small className="text-muted wb-discuss-question-date">{DateUtils.format(new Date(question.date))}</small>
                         <div className="d-flex align-items-center gap-1 mt-1">
                             <ProfileName userId={question.user.id} userName={question.user.name} />
                             <ProfileAvatar size={isCompact ? 24 : 28} avatarUrl={question.user.avatarUrl} />

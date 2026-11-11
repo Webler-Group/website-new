@@ -1,11 +1,12 @@
+import { Button, cssVars, FormControl, mergeRefs } from "./ui";
 import { forwardRef, useRef, useState, useLayoutEffect } from "react";
-import { FormControl, Button } from "react-bootstrap";
 import { FaTimes } from "react-icons/fa";
 import UserSearch from "./UserSearch";
 import React from "react";
 import { Link } from "react-router-dom";
 import { JSX } from "react/jsx-runtime";
 import { UserMinimal } from "../features/profile/types";
+import "./Editor.css";
 
 interface PostTextareaControlProps {
     value: string;
@@ -121,7 +122,7 @@ const PostTextareaControl = forwardRef<HTMLTextAreaElement, PostTextareaControlP
         };
 
         return (
-            <div style={{ position: "relative" }}>
+            <div className="position-relative">
                 <FormControl
                     ref={textareaRef}
                     as="textarea"
@@ -132,24 +133,13 @@ const PostTextareaControl = forwardRef<HTMLTextAreaElement, PostTextareaControlP
                     size={size}
                     required={required}
                     maxLength={maxLength}
-                    style={{ overscrollBehavior: "contain" }}
+                    className="wb-editor-textarea"
                 />
 
                 {showUserSearch && (
                     <div
-                        ref={popupRef}
-                        style={{
-                            position: "absolute",
-                            top: popupPos.top,
-                            left: popupPos.left,
-                            zIndex: 2000,
-                            background: "white",
-                            border: "1px solid #ccc",
-                            borderRadius: "0.25rem",
-                            padding: "0.25rem",
-                            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                            minWidth: "250px",
-                        }}
+                        ref={mergeRefs(popupRef, cssVars({ "--wb-editor-mention-top": popupPos.top, "--wb-editor-mention-left": popupPos.left }))}
+                        className="wb-editor-mention-popup"
                     >
                         <div className="d-flex justify-content-between align-items-center mb-1">
                             <small className="text-muted">Mention user</small>
@@ -157,7 +147,7 @@ const PostTextareaControl = forwardRef<HTMLTextAreaElement, PostTextareaControlP
                                 size="sm"
                                 variant="light"
                                 onClick={() => setShowUserSearch(false)}
-                                style={{ lineHeight: "1", padding: "0.1rem 0.25rem" }}
+                                className="wb-editor-mention-close"
                             >
                                 <FaTimes />
                             </Button>

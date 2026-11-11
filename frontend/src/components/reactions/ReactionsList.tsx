@@ -1,7 +1,7 @@
+import { Modal } from "../ui";
 import { useCallback, useRef } from 'react';
 import useReactions from './useReactions';
 import ReactionListItem from './ReactionListItem';
-import { Modal } from 'react-bootstrap';
 import Loader from '../Loader';
 
 interface ReactionsListProps {
@@ -35,7 +35,7 @@ const ReactionsList = ({ options, visible, onClose, title, showReactions, countP
     );
 
     return (
-        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" style={{ zIndex: 1070 }} backdropClassName="wb-reactions-modal__backdrop" fullscreen="sm-down" contentClassName="wb-modal__container follows">
+        <Modal show={visible} onHide={onClose} className="d-flex justify-content-center align-items-center" fullscreen="sm-down" contentClassName="wb-app-modal-content-list">
             <Modal.Header closeButton>
                 <Modal.Title>{title}</Modal.Title>
             </Modal.Header>

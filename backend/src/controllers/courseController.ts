@@ -4,7 +4,7 @@ import { IAuthRequest } from "../middleware/verifyJWT";
 import CourseModel, { Course } from "../models/Course";
 import CourseProgressModel, { CourseProgress } from "../models/CourseProgress";
 import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
-import LessonNodeModel from "../models/LessonNode";
+import LessonNodeModel, { LESSON_NODE_MINIMAL_FIELDS } from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import User from "../models/User";
 import RolesEnum from "../data/RolesEnum";
@@ -172,7 +172,7 @@ const getLesson = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Lesson is not unlocked", 400);
     }
 
-    const nodes = await LessonNodeModel.find({ lessonId: lesson._id }, { _type: 1, index: 1 }).sort({ index: "asc" }).lean();
+    const nodes = await LessonNodeModel.find({ lessonId: lesson._id }, LESSON_NODE_MINIMAL_FIELDS).sort({ index: "asc" }).lean();
 
     const lessonProgressInfo: LessonProgressInfo = {
         unlocked: lesson.index <= lastUnlockedLessonIndex,

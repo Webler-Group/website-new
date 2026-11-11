@@ -1,10 +1,6 @@
-.wb-reactions-modal__backdrop {
-    z-index: 1069 !important;
-}
-
-.wb-feed-comment-modal__backdrop {
-    z-index: 1059 !important;
-}
+/* =============================================================================================
+ * Feed – post list, post details, reactions and sharing (wb-feed-*)
+ * ============================================================================================= */
 
 .wb-feed-list-container {
     position: relative;
@@ -20,12 +16,8 @@
     padding-bottom: 1rem;
 }
 
-.wb-feed-list-header.wb-feed-visible {
+.wb-feed-list-header--visible {
     transform: translateY(0);
-}
-
-.wb-feed-list-header.wb-feed-hidden {
-    transform: translateY(-100%);
 }
 
 .wb-feed-new-post-button {
@@ -49,21 +41,9 @@
     background-color: #0056b3;
 }
 
-.wb-feed-author-name {
-    font-weight: 600;
-    font-size: 15px;
-    color: #1a1a1a;
-    text-decoration: none;
-    transition: color 0.2s ease;
-}
-
-.wb-feed-author-name:hover {
-    color: #1976d2;
-}
-
-.wb-feed-action-btn,
-.wb-reaction-picker-btn {
-    color: #65676b;
+.wb-feed-action-button,
+.wb-feed-reaction-picker-button {
+    color: var(--wb-reaction-color, #65676b);
     display: flex;
     gap: 0.5rem;
     align-items: center;
@@ -75,14 +55,14 @@
 }
 
 @media (max-width: 768px) {
-    .wb-feed-action-btn,
-    .wb-reaction-picker-btn {
+    .wb-feed-action-button,
+    .wb-feed-reaction-picker-button {
         padding: 8px 12px; /* Increased for mobile touch targets */
     }
 }
 
-.wb-feed-action-btn:hover,
-.wb-reaction-picker-btn:hover {
+.wb-feed-action-button:hover,
+.wb-feed-reaction-picker-button:hover {
     background: #e4e6ea;
 }
 
@@ -115,52 +95,7 @@
     text-decoration: none;
 }
 
-.wb-feed-loading-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background: #f8f9fa;
-}
-
-.wb-feed-error-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background: #f8f9fa;
-}
-
-.wb-feed-error-content {
-    text-align: center;
-    padding: 32px;
-}
-
-.wb-feed-error-title {
-    font-weight: 600;
-    color: #1a1a1a;
-    margin-bottom: 16px;
-    font-size: 24px;
-}
-
-.wb-feed-error-back-button {
-    background: #1976d2;
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.2s ease;
-}
-
-.wb-feed-error-back-button:hover {
-    background: #1565c0;
-}
-
-.wb-feed-content__message {
+.wb-feed-content-message {
     font-size: 1rem;
     line-height: 1.3;
     width: 100%;
@@ -182,18 +117,63 @@
     font-weight: 600;
 }
 
+/* Overlapping emoji bubbles of the top reactions, the first one on top */
+.wb-feed-reactions-icon {
+    width: 18px;
+    height: 18px;
+}
+
+.wb-feed-reactions-icon + .wb-feed-reactions-icon {
+    margin-left: -6px;
+}
+
+.wb-feed-reactions-icon:nth-child(1) { z-index: 6; }
+.wb-feed-reactions-icon:nth-child(2) { z-index: 5; }
+.wb-feed-reactions-icon:nth-child(3) { z-index: 4; }
+.wb-feed-reactions-icon:nth-child(4) { z-index: 3; }
+.wb-feed-reactions-icon:nth-child(5) { z-index: 2; }
+.wb-feed-reactions-icon:nth-child(6) { z-index: 1; }
+
+/* --- Reaction picker ------------------------------------------------------------------------ */
+
+.wb-feed-reaction-picker-popup {
+    bottom: 100%;
+    left: 0;
+    margin-bottom: 8px;
+    z-index: 1000;
+    white-space: nowrap;
+    animation: wb-feed-reaction-picker-slide-up 0.2s ease-out;
+}
+
+@keyframes wb-feed-reaction-picker-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
+.wb-feed-reaction-picker-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.wb-feed-reaction-picker-option--selected {
+    background-color: color-mix(in srgb, var(--wb-reaction-color) 12.5%, transparent);
+}
+
 .wb-feed-content {
     padding: 0.5rem;
 }
 
-.wb-feed-content.truncated {
+.wb-feed-content--truncated {
     max-height: 300px;
     /* adjust */
     overflow: hidden;
     position: relative;
 }
 
-.wb-feed-content.truncated .fade-overlay {
+.wb-feed-content--truncated .wb-feed-content-fade {
     position: absolute;
     bottom: 0;
     width: 100%;
@@ -203,14 +183,20 @@
     pointer-events: none;
 }
 
-.wb-feed-content.clickable {
+.wb-feed-content--clickable {
     cursor: pointer;
 }
 
-.wb-feed-content.clickable:hover {
+.wb-feed-content--clickable:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
-.wb-feed-edit-modal__backdrop {
-    z-index: 1059 !important;
+/* --- Share / suggested users ---------------------------------------------------------------- */
+
+.wb-feed-share-url {
+    max-width: 75%;
+}
+
+.wb-feed-suggested-users {
+    max-width: 700px;
 }

@@ -1,7 +1,7 @@
+import { Button, FormControl, FormLabel, FormSelect, Modal } from "../../../components/ui";
 import { useState, useEffect, useRef, useCallback, ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FeedItem from '../components/FeedItem';
-import { Button, FormControl, FormLabel, FormSelect, Modal } from 'react-bootstrap';
 import Feed from '../components/Feed';
 import ReactionsList from '../../../components/reactions/ReactionsList';
 import { FaPlus, FaRotateRight, FaMapPin, FaEye, FaEyeSlash } from 'react-icons/fa6';
@@ -181,7 +181,7 @@ const FeedListPage = () => {
       </Modal>
       <ReactionsList title="Reactions" options={votesModalOptions} visible={votesModalVisible} onClose={closeVotesModal} showReactions={true} countPerPage={10} />
       <div className="wb-feed-list-container">
-        <div className="p-2 wb-feed-list-header wb-feed-visible">
+        <div className="p-2 wb-feed-list-header wb-feed-list-header--visible">
           <div className="d-flex flex-column gap-2">
             <h2 className="h4 fw-bold text-dark mb-0">Feed</h2>
             <div className="d-flex gap-2">
@@ -208,7 +208,7 @@ const FeedListPage = () => {
               <FormLabel htmlFor="filter" className="visually-hidden">
                 Filter
               </FormLabel>
-              <FormSelect id="filter" size='sm' style={{ width: "140px" }} value={filter} onChange={handleFilterSelect}>
+              <FormSelect id="filter" size='sm' className="wb-form-filter-select" value={filter} onChange={handleFilterSelect}>
                 {
                   FILTER_OPTIONS
                     .filter(x => !x.requireLogin || userInfo != null)
@@ -221,7 +221,7 @@ const FeedListPage = () => {
               <button
                 onClick={handleRefresh}
                 disabled={feeds.loading || loading}
-                className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2 wb-feed-control-button"
+                className="btn btn-light rounded-pill shadow-sm d-flex align-items-center justify-content-center gap-2"
               >
                 <FaRotateRight
                   className="text-muted"
@@ -248,7 +248,7 @@ const FeedListPage = () => {
             :
             <>
               {pinnedFeeds.length > 0 && (
-                <div className="px-2 wb-pinned-feeds-section bg-light">
+                <div className="px-2 bg-light">
                   <div className="d-flex justify-content-between align-items-center py-2">
                     <h6 className="text-warning mb-0"><FaMapPin /> Pinned Posts</h6>
                     <Button size='sm' variant='link' className='text-secondary' onClick={togglePinnedVisibility}>{pinnedVisible ? <FaEye /> : <FaEyeSlash />}</Button>
@@ -275,7 +275,7 @@ const FeedListPage = () => {
                 </div>
               )}
 
-              <div className="px-2 wb-feed-items">
+              <div className="px-2">
                 {feeds.error.length > 0 && (
                   <div className="alert alert-danger rounded-4 border-0 d-flex align-items-center gap-3">
                     <FaExclamationCircle />

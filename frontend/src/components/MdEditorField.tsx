@@ -1,14 +1,16 @@
-import { Button, FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
+import { Button, cssVars, cx, FormControl, FormGroup, ToggleButton, ToggleButtonGroup } from "./ui";
 import { Dispatch, ReactNode, SetStateAction, useEffect, useId, useRef, useState } from "react";
 import PostTextareaControl from "./PostTextareaControl";
 import PostAttachmentSelect from "./post-attachment-select/PostAttachmentSelect";
 import MarkdownRenderer from "./MarkdownRenderer";
 import FileExplorer from "./file-explorer/FileExplorer";
 import { FaPlus } from "react-icons/fa";
+import "./Editor.css";
 
 export type MDEditorMode = "write" | "preview";
 
-const BOTTOM_ROW_HEIGHT = 36;
+/** Height of the character counter row, see .wb-editor-status-row */
+const BOTTOM_ROW_HEIGHT_CSS = "36px";
 
 interface MdEditorFieldProps {
     row: number;
@@ -147,12 +149,11 @@ const MdEditorField = ({
                     {toolbarButtons.map((btn, idx) => (
                         <button
                             key={idx}
-                            className={"btn btn-sm btn-outline-secondary flex-shrink-0" + (btn.className ? " " + btn.className : "")}
+                            className={cx("wb-editor-toolbar-button btn btn-sm btn-outline-secondary flex-shrink-0", btn.className)}
                             onClick={(e) => {
                                 e.preventDefault();
                                 btn.action();
                             }}
-                            style={{ minWidth: "40px" }}
                         >
                             {btn.icon}
                         </button>
@@ -184,7 +185,7 @@ const MdEditorField = ({
                                     maxLength={maxCharacters}
                                 />
 
-                                <div className="d-flex justify-content-between align-items-center" style={{ height: BOTTOM_ROW_HEIGHT }}>
+                                <div className="wb-editor-status-row d-flex justify-content-between align-items-center">
                                     <div className="text-muted small">
                                         {text.length}/{maxCharacters} characters
                                     </div>
@@ -204,9 +205,9 @@ const MdEditorField = ({
                                     onChange={(e) => setText(e.target.value)}
                                     required={required}
                                     maxLength={maxCharacters}
-                                    style={{ overscrollBehavior: "contain" }}
+                                    className="wb-editor-textarea"
                                 />
-                                <div className="d-flex justify-content-between align-items-center" style={{ height: BOTTOM_ROW_HEIGHT }}>
+                                <div className="wb-editor-status-row d-flex justify-content-between align-items-center">
                                     <div className="mt-2 text-muted small">
                                         {text.length}/{maxCharacters} characters
                                     </div>
@@ -220,7 +221,14 @@ const MdEditorField = ({
                     (customPreview != null ? (
                         customPreview
                     ) : (
-                        <div style={textareaHeightRef.current ? { minHeight: textareaHeightRef.current + BOTTOM_ROW_HEIGHT } : undefined}>
+                        <div
+                            ref={cssVars({
+                                "--wb-editor-preview-min-height": textareaHeightRef.current !== null
+                                    ? `calc(${textareaHeightRef.current}px + ${BOTTOM_ROW_HEIGHT_CSS})`
+                                    : null
+                            })}
+                            className="wb-editor-preview"
+                        >
                             <MarkdownRenderer content={text} />
                         </div>
                     ))}

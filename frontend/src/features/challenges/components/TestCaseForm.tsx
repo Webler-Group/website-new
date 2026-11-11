@@ -1,5 +1,5 @@
+import { Alert, Button, Collapse, Form } from "../../../components/ui";
 import { Dispatch, SetStateAction, ChangeEvent, useRef, useState } from "react";
-import { Button, Form, Alert, Collapse } from "react-bootstrap";
 import { FaTrash, FaPlus, FaFileUpload, FaInfoCircle } from "react-icons/fa";
 import { genMongooseId } from "../../../utils/StringUtils";
 import { ChallengeTestCase } from "../types";
@@ -116,7 +116,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
   };
 
   return (
-    <div className="wb-container">
+    <div>
       <h5 className="mb-3">Test Cases</h5>
 
       <div className="d-flex flex-column gap-3">
@@ -128,7 +128,7 @@ const TestCaseForm = ({ testCases, setTestCases }: ITestCaseFormProps) => {
               key={tc.id}
               className={[
                 "border rounded p-3 shadow-sm bg-light wb-challenges-testcase",
-                isDeleting ? "wb-challenges-testcase-deleting" : "",
+                isDeleting ? "wb-challenges-testcase--deleting" : "",
               ].join(" ")}
             >
               <div className="fw-semibold mb-2">Test Case #{index + 1}</div>
@@ -233,7 +233,7 @@ world`}
           accept=".txt, text/plain"
           ref={fileInputRef}
           onChange={handleFileUpload}
-          style={{ display: "none" }}
+          className="d-none"
         />
 
         <Button variant="primary" onClick={() => fileInputRef.current?.click()}>

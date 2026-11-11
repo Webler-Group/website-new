@@ -1,15 +1,12 @@
-import { Button, Form, FormControl, Badge, InputGroup, Table } from "react-bootstrap";
+import { Badge, Button, Form, FormControl, InputGroup, Pagination, Table } from "../../../components/ui";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { PaginationControl } from "react-bootstrap-pagination-control";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
 import { ChangeEvent, useEffect, useState } from "react";
-import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
 import { FaLock, FaSearch, FaPlus, FaCheck } from "react-icons/fa";
 import { ChallengeListData, ChallengeMinimal } from "../types";
-import "../components/Challenge.css";
 
 
 const ChallengeList = () => {
@@ -97,9 +94,9 @@ const ChallengeList = () => {
 
     return (
         <div className="py-2">
-            <div className="wb-challenge-header d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
+            <div className="wb-challenges-header d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
                 <div className="d-flex flex-grow-1 gap-2 align-items-center">
-                    <InputGroup size="sm" style={{ maxWidth: "300px" }}>
+                    <InputGroup size="sm" className="wb-challenges-search">
                         <FormControl
                             placeholder="Search challenges..."
                             value={searchInput}
@@ -115,7 +112,7 @@ const ChallengeList = () => {
                         size='sm' 
                         value={difficulty} 
                         onChange={handleDifficultySelect}
-                        style={{ width: "120px" }}
+                        className="wb-form-filter-select wb-form-filter-select--narrow"
                     >
                         <option value="all">Level</option>
                         <option value="easy">Easy</option>
@@ -134,11 +131,9 @@ const ChallengeList = () => {
                                 onChange={(e) => setIsPublic(e.target.checked)}
                                 className="small text-muted"
                             />
-                            <LinkContainer to="/Challenge/Create">
-                                <Button size='sm' className="d-flex align-items-center gap-2">
+                            <Button to="/Challenge/Create" size='sm' className="d-flex align-items-center gap-2">
                                     <FaPlus size={12} /> Create
                                 </Button>
-                            </LinkContainer>
                         </>
                     )}
                 </div>
@@ -148,20 +143,20 @@ const ChallengeList = () => {
                 {loading ? (
                     <Loader />
                 ) : challengeCount === 0 ? (
-                    <div className="wb-empty-list py-5 text-center bg-light rounded-3 border">
+                    <div className="wb-app-empty-list py-5 text-center bg-light rounded-3 border">
                         <FaSearch size={40} className="text-muted mb-3 opacity-25" />
                         <h3 className="text-muted">No challenges found</h3>
                         <p className="text-muted small">Try adjusting your filters or search terms</p>
                     </div>
                 ) : (
-                    <div className="wb-challenge-table-container">
-                        <Table hover className="wb-challenge-table mb-0">
+                    <div className="wb-challenges-table-container">
+                        <Table hover className="wb-challenges-table mb-0">
                             <thead>
                                 <tr>
-                                    <th className="wb-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
-                                    <th className="wb-col-title">Title</th>
-                                    <th className="wb-col-acc text-center d-none d-md-table-cell">Acceptance</th>
-                                    <th className="wb-col-diff text-center">Difficulty</th>
+                                    <th className="wb-challenges-table-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
+                                    <th className="wb-challenges-table-col-title">Title</th>
+                                    <th className="wb-challenges-table-col-acceptance text-center d-none d-md-table-cell">Acceptance</th>
+                                    <th className="wb-challenges-table-col-difficulty text-center">Difficulty</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -170,13 +165,13 @@ const ChallengeList = () => {
                                         <td className="text-center align-middle">
                                             {challenge.isSolved && <FaCheck className="text-success" size={14} />}
                                         </td>
-                                        <td className="align-middle cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
+                                        <td className="align-middle wb-util-clickable" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
                                             <div className="d-flex flex-column">
-                                                <span className="wb-table-title">
+                                                <span className="wb-challenges-table-title">
                                                     {challenge.title}
                                                     {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                                 </span>
-                                                <span className="d-md-none text-muted" style={{ fontSize: '0.75rem' }}>
+                                                <span className="d-md-none text-muted wb-util-text-xs">
                                                     Acceptance: {challenge.acceptance}%
                                                 </span>
                                             </div>
@@ -186,7 +181,7 @@ const ChallengeList = () => {
                                         </td>
                                         <td className="text-center align-middle">
                                             <Badge
-                                                className={`wb-challenge-difficulty-mini ${challenge.difficulty === "easy"
+                                                className={`wb-challenges-difficulty-mini ${challenge.difficulty === "easy"
                                                     ? "bg-success"
                                                     : challenge.difficulty === "medium"
                                                         ? "bg-warning text-dark"
@@ -205,7 +200,7 @@ const ChallengeList = () => {
             </div>
 
             <div className='my-3'>
-                <PaginationControl
+                <Pagination
                     page={currentPage}
                     between={3}
                     total={challengeCount}

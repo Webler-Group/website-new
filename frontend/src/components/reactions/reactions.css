@@ -1,0 +1,20 @@
+/* =============================================================================================
+ * Reactions – reaction colors and the list of users who reacted
+ * ============================================================================================= */
+
+/* --- Reaction colors (exposed as --wb-reaction-color) --------------------------------------- */
+
+.wb-reaction-like { --wb-reaction-color: #1877f2; }
+.wb-reaction-love { --wb-reaction-color: #e91e63; }
+.wb-reaction-haha { --wb-reaction-color: #f39c12; }
+.wb-reaction-wow { --wb-reaction-color: #f39c12; }
+.wb-reaction-sad { --wb-reaction-color: #f39c12; }
+.wb-reaction-angry { --wb-reaction-color: #e74c3c; }
+
+/* --- Reactions list ------------------------------------------------------------------------- */
+
+.wb-reactions-list-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wb-reaction-color);
+}

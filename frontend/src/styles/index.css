@@ -1,0 +1,18 @@
+/* =============================================================================================
+ * Global stylesheets
+ *
+ * Naming convention for custom classes:  wb-{section}[-{component}]-{meaning}[--{modifier}]
+ *   section   – feature (challenges, profile, …), shared component (comments, editor, …),
+ *               "app" for the page shell, "util" for single-purpose helpers, "ui" for the UI kit
+ *   component – optional part of the section (header, sidebar, card, …)
+ *   meaning   – what the element is / does (title, avatar, action-button, …)
+ *   modifier  – state or variant (--active, --compact, --danger, …)
+ * Feature / component specific styles live next to their components.
+ * ============================================================================================= */
+
+@import "./base.css";
+@import "./components.css";
+@import "./layout.css";
+@import "./home.css";
+@import "./auth.css";
+@import "./languages.css";

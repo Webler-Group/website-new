@@ -1,0 +1,33 @@
+/* =============================================================================================
+ * Suggestions – autocomplete popup rendered below a search / tag input
+ * ============================================================================================= */
+
+.wb-suggestions-list {
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    max-height: 150px;
+    overflow-y: auto;
+    background-color: var(--bs-body-bg);
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+.wb-suggestions-list--fixed-width {
+    width: 150px;
+}
+
+.wb-suggestions-list--capped-width {
+    width: min(100%, var(--wb-suggestions-max-width, 360px));
+}
+
+.wb-suggestions-item {
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.wb-suggestions-item:hover {
+    background-color: var(--bs-tertiary-bg);
+}

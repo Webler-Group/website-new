@@ -1,6 +1,6 @@
+import { Container } from "../../../components/ui";
 import { ReactNode } from "react"
 import PageTitle from "../../../layouts/PageTitle";
-import { Container } from "react-bootstrap";
 
 interface CoursesEditorLayoutProps {
     MainPage: ReactNode;

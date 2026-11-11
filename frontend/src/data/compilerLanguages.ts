@@ -1,15 +1,16 @@
+/** Brand colors of the languages are defined in src/styles/languages.css (.wb-language-{key}) */
 export const languagesInfo = {
-    web: { color: "rgb(241, 101, 41)", displayName: "Web", shortName: "Web" },
-    c: { color: "rgb(69, 90, 100)", displayName: "C", shortName: "C" },
-    cpp: { color: "rgb(243, 75, 125)", displayName: "C++", shortName: "Cpp" },
-    csharp: { color: "rgb(155, 79, 150)", displayName: "C#", shortName: "C#" },
-    java: { color: "rgb(176, 114, 25)", displayName: "Java", shortName: "Java" },
-    kotlin: { color: "rgb(169, 123, 255)", displayName: "Kotlin", shortName: "Kt" },
-    python: { color: "rgb(230, 200, 70)", displayName: "Python", shortName: "Py" },
-    nodejs: { color: "rgb(95, 160, 78)", displayName: "Node.js", shortName: "Node" },
-    typescript: { color: "rgb(49, 120, 198)", displayName: "TypeScript", shortName: "TS" },
-    go: { color: "rgb(0, 173, 216)", displayName: "Go", shortName: "Go" },
-    rust: { color: "rgb(33, 33, 33)", displayName: "Rust", shortName: "Rust" },
-    ruby: { color: "rgb(198, 42, 74)", displayName: "Ruby", shortName: "Ruby" },
-    lua: { color: "rgb(0, 0, 128)", displayName: "Lua", shortName: "Lua" }
+    web: { displayName: "Web", shortName: "Web" },
+    c: { displayName: "C", shortName: "C" },
+    cpp: { displayName: "C++", shortName: "Cpp" },
+    csharp: { displayName: "C#", shortName: "C#" },
+    java: { displayName: "Java", shortName: "Java" },
+    kotlin: { displayName: "Kotlin", shortName: "Kt" },
+    python: { displayName: "Python", shortName: "Py" },
+    nodejs: { displayName: "Node.js", shortName: "Node" },
+    typescript: { displayName: "TypeScript", shortName: "TS" },
+    go: { displayName: "Go", shortName: "Go" },
+    rust: { displayName: "Rust", shortName: "Rust" },
+    ruby: { displayName: "Ruby", shortName: "Ruby" },
+    lua: { displayName: "Lua", shortName: "Lua" }
 };

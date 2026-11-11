@@ -1,5 +1,5 @@
+import { Button, cx, FormControl } from "../../../components/ui";
 import { useEffect, useRef, useState } from "react";
-import { Button, FormControl } from "react-bootstrap";
 import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import HtmlRenderer from "../../../components/HtmlRenderer";
@@ -127,13 +127,15 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
     const getAnswerClass = (answerId: string) => {
         const selected = selectedAnswers.includes(answerId);
         if (!selected) {
-            return "initial";
+            return "wb-courses-lesson-answer--initial";
         }
 
         if (isCorrect === null) {
-            return "selected";
+            return "wb-courses-lesson-answer--selected";
         }
-        return isCorrect ? "selected correct" : "selected incorrect";
+        return isCorrect
+            ? "wb-courses-lesson-answer--selected wb-courses-lesson-answer--correct"
+            : "wb-courses-lesson-answer--selected wb-courses-lesson-answer--incorrect";
     };
 
     let content = <></>;
@@ -180,12 +182,12 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
                 };
 
                 return (
-                    <div style={{ flex: 1, minHeight: 0 }}>
+                    <div className="flex-fill wb-util-min-h-0">
                         <iframe
                             key={code.name + "_" + code.source.length}
                             title={code.name}
                             srcDoc={genOutput()}
-                            style={{ width: "100%", height: "100%", border: "none" }}
+                            className="w-100 h-100 border-0"
                             sandbox="allow-scripts"
                         />
                     </div>
@@ -193,7 +195,7 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
             }
 
             return (
-                <div ref={scrollRef} style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+                <div ref={scrollRef} className="flex-fill wb-util-min-h-0 overflow-y-auto">
                     {activeNode.mode === LessonNodeModeEnum.HTML
                         ? <HtmlRenderer html={activeNode.text} css={css} />
                         : <MarkdownRenderer content={activeNode.text} />
@@ -204,15 +206,18 @@ const LessonNode = ({ nodeData, nodeId, mock, css, onAnswered, onContinue }: Les
 
         content = (
             <div className="h-100 d-flex flex-column">
-                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === LessonNodeTypeEnum.CODE ? " wb-code-mode" : " px-2")}>
+                <div className={"wb-courses-lesson-node-question flex-grow-1" + (activeNode.type === LessonNodeTypeEnum.CODE ? " wb-courses-code-mode" : " px-2")}>
                     {renderContent()}
 
                     {(activeNode.type === LessonNodeTypeEnum.SINGLECHOICE_QUESTION || activeNode.type === LessonNodeTypeEnum.MULTICHOICE_QUESTION) && <div className="my-3">{renderAnswers()}</div>}
                     {activeNode.type === LessonNodeTypeEnum.TEXT_QUESTION && (
                         <div className="d-flex justify-content-center my-3">
                             <FormControl
-                                className={"wb-courses-lesson-answer" + (isCorrect === null ? "" : isCorrect ? " correct" : " incorrect")}
-                                style={{ width: "240px" }}
+                                className={cx(
+                                    "wb-courses-lesson-answer wb-courses-lesson-answer--text",
+                                    isCorrect === true && "wb-courses-lesson-answer--correct",
+                                    isCorrect === false && "wb-courses-lesson-answer--incorrect"
+                                )}
                                 value={textAnswer}
                                 readOnly={isCorrect !== null}
                                 onChange={(e) => handleTextAnswer(e.target.value)}

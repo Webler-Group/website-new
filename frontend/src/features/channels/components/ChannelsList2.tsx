@@ -1,4 +1,4 @@
-import { Button, Tab, Nav, Modal, FormControl, Alert } from "react-bootstrap";
+import { Alert, Button, FormControl, Modal, Nav, Tab } from "../../../components/ui";
 import ChannelListItem from "./ChannelListItem";
 import { useCallback, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";

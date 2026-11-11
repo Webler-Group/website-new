@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import { useState, useRef, useEffect } from 'react';
 import ProfileAvatar from '../../../components/ProfileAvatar';
 import ProfileName from '../../../components/ProfileName';
@@ -39,9 +40,8 @@ const RepliedMessage = ({ message }: RepliedMessageProps) => {
                         <i className="text-muted">Deleted</i>
                     ) : (
                         <span
-                            className={`wb-channels-reply__text ${isExpanded ? 'wb-channels-reply__text--expanded' : ''}`}
+                            className={cx("wb-channels-reply-text wb-util-clickable", isExpanded && "wb-channels-reply-text--expanded")}
                             onClick={handleTextClick}
-                            style={{ cursor: 'pointer' }}
                         >
                             {message.content}
                         </span>
@@ -49,9 +49,8 @@ const RepliedMessage = ({ message }: RepliedMessageProps) => {
                 </div>
                 {isExpanded && !message.deleted && (
                     <div 
-                        className="wb-channels-reply__full-content"
+                        className="wb-channels-reply-full-content wb-util-clickable"
                         onClick={handleTextClick}
-                        style={{ cursor: 'pointer' }}
                     >
                         {message.content}
                     </div>

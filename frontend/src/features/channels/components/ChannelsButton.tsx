@@ -1,4 +1,4 @@
-import { Badge } from "react-bootstrap";
+import { Badge } from "../../../components/ui";
 import { FaComment } from "react-icons/fa6";
 import { Link } from "react-router-dom";
 import { useUserInfo } from "../../../context/userInfoContext";

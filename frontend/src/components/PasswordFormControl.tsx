@@ -1,5 +1,5 @@
+import { Button, FormControl, InputGroup } from "./ui";
 import React, { useState } from "react";
-import { Button, FormControl, InputGroup } from "react-bootstrap";
 import { FaEye, FaEyeSlash } from "react-icons/fa6";
 
 interface PasswordFormControlProps {

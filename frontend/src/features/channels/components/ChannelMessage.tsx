@@ -1,3 +1,4 @@
+import { cx } from "../../../components/ui";
 import React, { JSX, useRef } from "react";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
@@ -80,15 +81,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
                         key={parts.length}
                         src={href}
                         alt="Image"
-                        style={{
-                            maxWidth: '100%',
-                            height: 'auto',
-                            maxHeight: '320px',
-                            cursor: 'pointer',
-                            borderRadius: '4px',
-                            objectFit: 'cover',
-                            display: 'block',
-                        }}
+                        className="wb-channels-message-image"
                         onClick={() => onImagePreview({ src: url, alt: "Image" })}
                     />
                 );
@@ -134,7 +127,7 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
         const messageParts = message.content.split("{action_user}");
         body = (
             <div className="d-flex justify-content-center">
-                <div className="p-2 rounded text-center wb-channels-message__body">
+                <div className="p-2 rounded text-center wb-channels-message-body">
                     {messageParts[0]}
                     <ProfileName userId={message.user.id} userName={message.user.name} />
                     {messageParts[1]}
@@ -162,7 +155,11 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
 
                     <div
                         ref={bodyRef}
-                        className={`p-2 rounded wb-channels-message__body ${!showHeader ? "ms-5 indented" : ""} ${pending ? "wb-channels-message__body--" + pending.status : ""}`}
+                        className={cx(
+                            "p-2 rounded wb-channels-message-body",
+                            !showHeader && "ms-5 wb-channels-message-body--indented",
+                            pending && `wb-channels-message-body--${pending.status}`
+                        )}
                         onContextMenu={handleContextMenu}
                         onTouchStart={handleTouchStart}
                         onTouchMove={handleTouchMove}
@@ -202,9 +199,9 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
         );
     }
 
-    body = <div style={{ maxWidth: "720px" }}>
+    body = <div className="wb-channels-message">
         {message.repliedTo &&
-            <div className="ms-5 indented">
+            <div className="ms-5">
                 <RepliedMessage message={message.repliedTo} />
             </div>
         }

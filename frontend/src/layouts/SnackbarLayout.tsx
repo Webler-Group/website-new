@@ -1,6 +1,6 @@
+import { Button, Col, Container, Offcanvas, Row } from "../components/ui";
 import React, { ReactNode, useState } from "react";
 import { Outlet } from "react-router-dom";
-import { Container, Row, Col, Button, Offcanvas } from "react-bootstrap";
 import SnackbarProvider from "../context/SnackbarProvider";
 
 interface LayoutProps {
@@ -36,7 +36,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
           </header>
         )}
 
-        <Container className="py-2" style={{ minHeight: "100vh" }}>
+        <Container className="py-2 min-vh-100">
           <Row className="justify-content-center">
             {/* Side Menu (desktop) */}
             {SideMenu && (

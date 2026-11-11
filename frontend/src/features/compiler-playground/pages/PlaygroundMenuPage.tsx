@@ -1,4 +1,4 @@
-import { Container } from "react-bootstrap"
+import { Container } from "../../../components/ui";
 import { Link } from "react-router-dom"
 import { languagesInfo } from "../../../data/compilerLanguages"
 import PageTitle from "../../../layouts/PageTitle"
@@ -18,8 +18,8 @@ const PlaygroundMenuPage = () => {
                             {
                                 Object.entries(languagesInfo).map((entry, i) => {
                                     return (
-                                        <div key={i} className="wb-compiler-playground__language-types__item">
-                                            <h3 style={{ borderColor: entry[1].color, color: entry[1].color }} className="wb-compiler-playground__language-types__language-button">
+                                        <div key={i} className="wb-compiler-playground-language-item">
+                                            <h3 className={`wb-compiler-playground-language-button wb-language-${entry[0]}`}>
                                                 <Link to={"/Compiler-Playground/" + entry[0]}>{entry[1].displayName}</Link>
                                             </h3>
                                         </div>

@@ -59,7 +59,7 @@ const HtmlRenderer = ({ html, css }: HtmlRendererProps) => {
         <iframe
             ref={iframeRef}
             title="HTML Preview"
-            style={{ width: "100%", height: "100%", border: "none", display: "flex" }}
+            className="wb-html-renderer-frame"
             sandbox=""
         />
     );

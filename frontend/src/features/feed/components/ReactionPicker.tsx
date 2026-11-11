@@ -3,6 +3,8 @@ import { ReactionsEnum, reactionsInfo } from "../../../data/ReactionsEnum";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa6";
+import { cx } from "../../../components/ui";
+import "../../../components/reactions/reactions.css";
 
 interface ReactionPickerProps {
   onReactionChange: (reaction: ReactionsEnum | null) => void;
@@ -64,13 +66,8 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
       className="position-relative d-flex align-items-center"
     >
       <span
-        className="wb-reaction-picker-btn"
+        className={cx("wb-feed-reaction-picker-button", selectedReaction && reactionsInfo[selectedReaction].colorClass)}
         onClick={handleMainClick}
-        style={{
-          color: selectedReaction
-            ? reactionsInfo[selectedReaction].color
-            : "#65676b",
-        }}
       >
         <span>
           {selectedReaction
@@ -86,16 +83,7 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
 
       {showPicker && (
         <div
-          className="position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
-          style={{
-            bottom: "100%",
-            left: "0",
-            marginBottom: "8px",
-            zIndex: 1000,
-            animation: "slideUp 0.2s ease-out",
-            whiteSpace: "nowrap",
-            borderColor: "#dadde1",
-          }}
+          className="wb-feed-reaction-picker-popup position-absolute bg-white border rounded-pill shadow-lg d-flex align-items-center gap-1"
         >
           {Object.entries(reactionsInfo).map(([key, reaction]) => {
             const id = Number(key);
@@ -104,16 +92,11 @@ const ReactionPicker: React.FC<ReactionPickerProps> = ({
               <button
                 key={id}
                 type="button"
-                className="btn p-1 border-0 d-flex align-items-center justify-content-center"
-                style={{
-                  width: "32px",
-                  height: "32px",
-                  borderRadius: "50%",
-                  backgroundColor:
-                    selectedReaction === id
-                      ? `${reaction.color}20`
-                      : "transparent",
-                }}
+                className={cx(
+                  "wb-feed-reaction-picker-option btn p-1 border-0 d-flex align-items-center justify-content-center",
+                  reaction.colorClass,
+                  selectedReaction === id && "wb-feed-reaction-picker-option--selected"
+                )}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleReactionClick(id);

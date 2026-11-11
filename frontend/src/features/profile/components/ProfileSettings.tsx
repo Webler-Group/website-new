@@ -1,5 +1,5 @@
+import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "../../../components/ui";
 import { ChangeEvent, FormEvent, SubmitEvent, useEffect, useState } from "react";
-import { Button, Form, FormControl, FormGroup, FormLabel, Modal, Tab, Tabs } from "react-bootstrap";
 import { useSearchParams } from "react-router-dom";
 import countries from "../../../data/countries";
 import { useAuth } from "../../auth/context/authContext";
@@ -295,7 +295,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
 
     return (
         <>
-            <Modal size="sm" backdropClassName="wb-p-details-delete-modal__backdrop" style={{ zIndex: 1060 }} show={deleteModalVisible} onHide={closeDeleteModal} centered>
+            <Modal size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>
                 </Modal.Header>
@@ -305,7 +305,7 @@ const ProfileSettings = ({ userDetails, onUpdate }: ProfileSettingsProps) => {
                     <Button variant="danger" onClick={handleAvatarRemove}>Remove</Button>
                 </Modal.Footer>
             </Modal>
-            <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-modal__container edit-profile">
+            <Modal show={visible} onHide={onClose} fullscreen="sm-down" centered contentClassName="wb-app-modal-content-profile-settings">
                 <Modal.Header closeButton>
                     <Modal.Title>Edit Profile</Modal.Title>
                 </Modal.Header>

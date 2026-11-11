@@ -1,6 +1,5 @@
-import { LinkContainer } from "react-router-bootstrap";
+import { Button } from "../../../components/ui";
 import Course from "../components/Course";
-import { Button } from "react-bootstrap";
 import { useEffect, useState } from "react";
 import {useApi} from "../../../context/apiCommunication";
 import { EditorCoursesListData } from "../types";
@@ -27,14 +26,12 @@ const CourseEditorListPage = () => {
         <>
             <h2>Course Editor</h2>
             <div className="mt-4 d-flex justify-content-end">
-                <LinkContainer to="/Courses/Editor/New">
-                    <Button size='sm'>Create course</Button>
-                </LinkContainer>
+                <Button to="/Courses/Editor/New" size='sm'>Create course</Button>
             </div>
             <div className="my-3">
                 {
                     courses.length == 0 ?
-                        <div className="wb-empty-list">
+                        <div className="wb-app-empty-list">
                             <h3>Nothing to show</h3>
                         </div>
                         :
