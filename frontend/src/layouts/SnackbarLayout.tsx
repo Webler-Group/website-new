@@ -8,9 +8,11 @@ interface LayoutProps {
   Footer?: ReactNode;
   SideMenu?: ReactNode;
   AsideMenu?: ReactNode;
+  /** Use the full container width for the page (no side columns) */
+  wide?: boolean;
 }
 
-const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, AsideMenu }) => {
+const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, AsideMenu, wide = false }) => {
   const [showSide, setShowSide] = useState(false);
   const [showAside, setShowAside] = useState(false);
 
@@ -46,7 +48,7 @@ const SnackbarLayout: React.FC<LayoutProps> = ({ Header, Footer, SideMenu, Aside
             )}
 
             {/* Main Content */}
-            <Col xs={12} md={AsideMenu ? 8 : 10} lg={AsideMenu ? 8 : 9}>
+            <Col xs={12} md={wide ? 12 : AsideMenu ? 8 : 10} lg={wide ? 12 : AsideMenu ? 8 : 9}>
               <Outlet />
             </Col>
 

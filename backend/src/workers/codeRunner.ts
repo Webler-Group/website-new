@@ -28,13 +28,19 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
     const testResults = challenge.testCases.map((x, i) => {
         const runResult = result.runResults[i] ?? null;
         return (i == 0 || runResult != null) ? {
-            passed: runResult ? x.expectedOutput.trim() == runResult.stdout.trim() : false,
+            passed: runResult ? !runResult.failed && x.expectedOutput.trim() == runResult.stdout.trim() : false,
             output: runResult ? runResult.stdout.trim() : "",
             stderr: (result.compileErr ?? "") + (runResult ? runResult.stderr : ""),
             time: runResult?.time
         } : null
     }).filter(x => x != null);
-    const passed = testResults.every(x => x!.passed);
+    const passed = result.runResults.length === challenge.testCases.length && testResults.every(x => x!.passed);
+
+    const passedBefore = await ChallengeSubmissionModel.exists({
+        challenge: data.challengeId,
+        user: data.userId,
+        $or: [{ passed: true }, { everPassed: true }]
+    });
 
     const submissions = await ChallengeSubmissionModel.find({
         challenge: data.challengeId,
@@ -62,6 +68,7 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
         submission.passed = passed;
         if (passed) {
             submission.source = data.source;
+            submission.everPassed = true;
         }
         await submission.save();
     } else {
@@ -71,20 +78,14 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
             language: data.language,
             testResults,
             passed,
+            everPassed: passed,
             source: passed ? data.source : undefined
         });
     }
 
     // Award XP if passed for the first time
     if (passed) {
-        const alreadyPassed = await ChallengeSubmissionModel.exists({
-            challenge: data.challengeId,
-            user: data.userId,
-            passed: true,
-            _id: { $ne: submission._id }
-        });
-
-        if (!alreadyPassed) {
+        if (!passedBefore) {
             const hasUnlocked = await ChallengeUnlockModel.exists({
                 challenge: data.challengeId,
                 user: data.userId

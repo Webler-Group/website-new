@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { FaPen, FaSearch, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode } from "react-icons/fa";
+import { FaPen, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
@@ -10,8 +10,9 @@ import { useAuth } from "../../auth/context/authContext";
 import { Button, Container, FormSelect, Modal, Badge } from "react-bootstrap";
 import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import LanguageIcons from "../components/LanguageIcons";
+import ChallengeTags from "../components/ChallengeTags";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
-import { ChallengeDetails, GetChallengeData } from "../types";
+import { ChallengeCollectionItem, ChallengeDetails, GetChallengeCollectionData, GetChallengeData } from "../types";
 import "../components/Challenge.css";
 
 const ChallengeDetailsPage = () => {
@@ -26,10 +27,37 @@ const ChallengeDetailsPage = () => {
     const [selectedLanguage, setSelectedLanguage] = useState<CompilerLanguagesEnum | null>(null);
     const [activeTab, setActiveTab] = useState("description");
     const [showUnlockModal, setShowUnlockModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [searchParams] = useSearchParams();
+    const collectionId = searchParams.get("collection");
+    const [collection, setCollection] = useState<{ id: string; title: string; items: ChallengeCollectionItem[] } | null>(null);
 
     useEffect(() => {
+        setActiveTab("description");
+        setSelectedLanguage(null);
         getChallenge();
     }, [challengeId]);
+
+    useEffect(() => {
+        getCollection();
+    }, [collectionId]);
+
+    const getCollection = async () => {
+        if (!collectionId) {
+            setCollection(null);
+            return;
+        }
+        const result = await sendJsonRequest<GetChallengeCollectionData>("/Challenge/GetCollection", "POST", { collectionId });
+        const data = result.data?.collection;
+        if (!data) {
+            setCollection(null);
+            return;
+        }
+        // A challenge listed in several sections is visited once, at its first place
+        const seen = new Set<string>();
+        const items = data.sections.flatMap(s => s.challenges).filter(c => !seen.has(c.id) && seen.add(c.id));
+        setCollection({ id: data.id, title: data.title, items });
+    };
 
     const getChallenge = async () => {
         if (!challengeId) return;
@@ -52,6 +80,14 @@ const ChallengeDetailsPage = () => {
         if (result.success) {
             setShowUnlockModal(false);
             getChallenge(); // Refresh to get the solution
+        }
+    };
+
+    const handleDelete = async () => {
+        const result = await sendJsonRequest("/Challenge/Delete", "POST", { challengeId });
+        setShowDeleteModal(false);
+        if (result.success) {
+            navigate(collectionId ? `/Challenge/Collection/${collectionId}` : "/Challenge");
         }
     };
 
@@ -81,15 +117,63 @@ const ChallengeDetailsPage = () => {
         );
     }
 
+    const position = collection ? collection.items.findIndex(c => c.id === challenge.id) : -1;
+    const previous = position > 0 ? collection!.items[position - 1] : null;
+    const next = position >= 0 && position < collection!.items.length - 1 ? collection!.items[position + 1] : null;
+    const collectionNav = position >= 0 && (
+        <div className="wb-collection-nav">
+            <Button
+                variant="light"
+                size="sm"
+                className="border d-flex align-items-center gap-2"
+                disabled={!previous}
+                onClick={() => previous && navigate(`/Challenge/${previous.id}?collection=${collection!.id}`)}
+            >
+                <FaChevronLeft size={10} /> {previous ? previous.title : "Previous"}
+            </Button>
+            <span className="small text-muted text-nowrap">{position + 1} / {collection!.items.length}</span>
+            <Button
+                variant="light"
+                size="sm"
+                className="border d-flex align-items-center gap-2"
+                disabled={!next}
+                onClick={() => next && navigate(`/Challenge/${next.id}?collection=${collection!.id}`)}
+            >
+                {next ? next.title : "Next"} <FaChevronRight size={10} />
+            </Button>
+        </div>
+    );
+
     return (
         <>
             <ChallengeCodeEditor challenge={challenge} language={selectedLanguage} onExit={closeCodeEditorModal} />
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="fs-5">Delete challenge?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    "{challenge.title}" will be deleted for good, together with all its submissions and saved code. It is
+                    also removed from any collection that lists it.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="light" className="border" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                </Modal.Footer>
+            </Modal>
             <Container className="py-4">
                 <div className="wb-challenge-breadcrumb d-flex align-items-center gap-2 mb-3">
                     <Link to="/Challenge">Challenges</Link>
                     <FaChevronRight size={10} className="text-muted opacity-50" />
+                    {collection && (
+                        <>
+                            <Link to={`/Challenge/Collection/${collection.id}`}>{truncate(collection.title, 40)}</Link>
+                            <FaChevronRight size={10} className="text-muted opacity-50" />
+                        </>
+                    )}
                     <span className="text-dark fw-medium">{truncate(challenge.title, 40)}</span>
                 </div>
+
+                {collectionNav}
 
                 <div className="wb-challenge-hero d-md-flex justify-content-between align-items-center">
                     <div>
@@ -108,6 +192,7 @@ const ChallengeDetailsPage = () => {
                             </div>
                         </div>
                         <h2 className="fs-3 fw-bold mb-0 text-dark">{challenge.title}</h2>
+                        <ChallengeTags tags={challenge.tags} className="mt-2" />
                     </div>
                     <div className="mt-4 mt-md-0 d-flex gap-2">
                         {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
@@ -118,6 +203,16 @@ const ChallengeDetailsPage = () => {
                                 onClick={() => navigate(`/Challenge/Edit/${challenge.id}`)}
                             >
                                 <FaPen size={10} /> Edit Challenge
+                            </Button>
+                        )}
+                        {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
+                            <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="d-flex align-items-center gap-2 px-2 fw-semibold"
+                                onClick={() => setShowDeleteModal(true)}
+                            >
+                                <FaTrash size={10} /> Delete
                             </Button>
                         )}
                     </div>
@@ -224,6 +319,7 @@ const ChallengeDetailsPage = () => {
                                 {Object.entries(languagesInfo).filter(([key]) => key !== "web").map(([key, info]) => (
                                     <option key={key} value={key}>
                                         {info.displayName}
+                                        {challenge.templates?.some(t => t.name === key) ? " (starter code)" : ""}
                                     </option>
                                 ))}
                             </FormSelect>

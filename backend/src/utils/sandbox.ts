@@ -76,6 +76,8 @@ export interface SandboxRunResult {
     time?: number;
     // PNG file the program saved into ./output
     image?: SandboxImage;
+    // Crashed or hit a limit; later inputs were not run
+    failed?: boolean;
 }
 
 export interface SandboxResult {
@@ -484,6 +486,7 @@ export async function runInSandbox(source: string, language: string, inputs: (st
                 stdout: r.stdout,
                 stderr: failure ? r.stderr + failure + "\n" : r.stderr,
                 time: r.time,
+                failed: failure !== null,
                 ...(r.image ? { image: r.image } : {})
             });
 

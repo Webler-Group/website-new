@@ -8,6 +8,7 @@ import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { LinkContainer } from "react-router-bootstrap";
 import MdEditorField from "../../../components/MdEditorField";
+import InputTags from "../../../components/InputTags";
 import { ChallengeTemplate, ChallengeTestCase, CreateChallengeData, EditChallengeData, GetEditedChallengeData } from "../types";
 
 interface IChallengeCreateFormProps {
@@ -26,6 +27,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [xp, setXP] = useState(10);
     const [isVisible, setIsVisible] = useState(true);
     const [solution, setSolution] = useState("");
+    const [tags, setTags] = useState<string[]>([]);
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -48,6 +50,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setXP(result.data.challenge.xp);
             setIsVisible(result.data.challenge.isPublic);
             setSolution(result.data.challenge.solution ?? "");
+            setTags(result.data.challenge.tags ?? []);
         }
         setLoading(false);
     }
@@ -61,7 +64,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             templates,
             xp,
             isVisible: isVisible ? 1 : 0,
-            solution
+            solution,
+            tags
         });
         if (result.data) {
             showMessage(`Challenge created Successfully`);
@@ -82,7 +86,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             templates,
             xp,
             isVisible: isVisible ? 1 : 0,
-            solution
+            solution,
+            tags
         });
         if (result.data) {
             showMessage(`Challenge updated Successfully`);
@@ -123,6 +128,11 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                 </Form.Group>
 
                 <Form.Group className="mb-3">
+                    <Form.Label htmlFor="challenge-tags">Tags</Form.Label>
+                    <InputTags id="challenge-tags" values={tags} setValues={setTags} placeholder="Add tag..." />
+                </Form.Group>
+
+                <Form.Group className="mb-3">
                     <Form.Label>
                         <FaAlignLeft className="me-2" /> Description
                     </Form.Label>
@@ -132,6 +142,7 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         text={description}
                         setText={setDescription}
                         placeHolder="Describe the challenge..."
+                        maxCharacters={8192}
                         row={10}
                         isPost={false}
                     />

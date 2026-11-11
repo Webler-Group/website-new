@@ -27,7 +27,7 @@ export class Challenge {
     @prop({ required: true, unique: true, trim: true, minlength: 1, maxlength: 120 })
     title!: string;
 
-    @prop({ required: true, trim: true, minlength: 1, maxlength: 4096 })
+    @prop({ required: true, trim: true, minlength: 1, maxlength: 8192 })
     description!: string;
 
     @prop({ enum: ChallengeDifficultyEnum, default: ChallengeDifficultyEnum.EASY })
@@ -38,6 +38,14 @@ export class Challenge {
 
     @prop({ type: () => [ChallengeTemplate], default: [] })
     templates!: ChallengeTemplate[];
+
+    @prop({
+        type: () => [Types.ObjectId],
+        ref: "Tag",
+        default: [],
+        validate: [(val: Types.ObjectId[]) => val.length <= 10, "tags exceed limit of 10"]
+    })
+    tags!: Types.ObjectId[];
 
     @prop({ default: true })
     isPublic!: boolean;

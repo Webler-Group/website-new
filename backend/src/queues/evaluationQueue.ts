@@ -28,6 +28,8 @@ export interface RunResult {
     time?: number;
     // PNG file the program saved into ./output
     image?: RunImage;
+    // Crashed or hit a limit; later inputs were not run
+    failed?: boolean;
 }
 
 export interface EvaluationResult {

@@ -1,14 +1,17 @@
-import { Button, Form, FormControl, Badge, InputGroup, Table } from "react-bootstrap";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button, Form, FormControl, Badge, InputGroup, Table, ProgressBar, Row, Col, Modal } from "react-bootstrap";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { PaginationControl } from "react-bootstrap-pagination-control";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
+import { useSnackbar } from "../../../context/SnackbarProvider";
 import { ChangeEvent, useEffect, useState } from "react";
 import { LinkContainer } from "react-router-bootstrap";
 import { useAuth } from "../../auth/context/authContext";
-import { FaLock, FaSearch, FaPlus, FaCheck } from "react-icons/fa";
-import { ChallengeListData, ChallengeMinimal } from "../types";
+import { FaLock, FaSearch, FaPlus, FaCheck, FaLayerGroup, FaTrash } from "react-icons/fa";
+import { ChallengeCollectionListData, ChallengeCollectionMinimal, ChallengeListData, ChallengeMinimal, ChallengeTagCount, ChallengeTagsData } from "../types";
+import ChallengeTags from "../components/ChallengeTags";
+import ChallengeTagFilter from "../components/ChallengeTagFilter";
 import "../components/Challenge.css";
 
 
@@ -16,10 +19,12 @@ const ChallengeList = () => {
     PageTitle("Challenges");
 
     const { sendJsonRequest } = useApi();
+    const { showMessage } = useSnackbar();
     const { userInfo } = useAuth();
     const navigate = useNavigate();
+    const isCreator = !!userInfo?.roles.some(x => ["Admin", "Creator"].includes(x));
     const [challenges, setChallenges] = useState<ChallengeMinimal[]>([]);
-    const challengesPerPage = 12;
+    const challengesPerPage = 20;
     const [currentPage, setCurrentPage] = useState(1);
     const [challengeCount, setChallengeCount] = useState(0);
     const [loading, setLoading] = useState(false);
@@ -28,11 +33,45 @@ const ChallengeList = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
     const [isPublic, setIsPublic] = useState(true);
-
+    const [collections, setCollections] = useState<ChallengeCollectionMinimal[]>([]);
+    const [tags, setTags] = useState<ChallengeTagCount[]>([]);
+    const [toDelete, setToDelete] = useState<ChallengeMinimal | null>(null);
+    const activeTag = searchParams.get("tag");
 
     useEffect(() => {
         getChallenges();
     }, [searchParams, isPublic]);
+
+    useEffect(() => {
+        getTags();
+    }, [isPublic]);
+
+    useEffect(() => {
+        getCollections();
+    }, []);
+
+    const getCollections = async () => {
+        const result = await sendJsonRequest<ChallengeCollectionListData>("/Challenge/Collections", "POST");
+        if (result.data) {
+            setCollections(result.data.collections);
+        }
+    }
+
+    const getTags = async () => {
+        const result = await sendJsonRequest<ChallengeTagsData>("/Challenge/Tags", "POST", { isVisible: isPublic ? 1 : 0 });
+        setTags(result.data?.tags ?? []);
+    }
+
+    const setTagFilter = (tag: string | null) => {
+        if (tag) {
+            searchParams.set("tag", tag);
+        } else {
+            searchParams.delete("tag");
+        }
+        searchParams.set("page", "1");
+        setSearchParams(searchParams, { replace: true });
+        setCurrentPage(1);
+    }
 
     useEffect(() => {
         handlePageChange(1);
@@ -75,6 +114,7 @@ const ChallengeList = () => {
             count: challengesPerPage,
             difficulty: searchParams.has("difficulty") ? searchParams.get("difficulty") : null,
             searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
+            tag: searchParams.get("tag"),
             isVisible: isPublic ? 1 : 0,
         });
         if (result.data) {
@@ -95,126 +135,195 @@ const ChallengeList = () => {
         setDifficulty(value);
     }
 
+    const handleDelete = async () => {
+        if (!toDelete) return;
+        const result = await sendJsonRequest("/Challenge/Delete", "POST", { challengeId: toDelete.id });
+        showMessage(result.success ? `Deleted "${toDelete.title}"` : result.error?.[0]?.message ?? "Could not delete the challenge");
+        setToDelete(null);
+        if (result.success) {
+            getChallenges();
+            getTags();
+            getCollections();
+        }
+    }
+
     return (
-        <div className="py-2">
-            <div className="wb-challenge-header d-flex flex-column flex-md-row gap-3 align-items-md-center justify-content-between">
-                <div className="d-flex flex-grow-1 gap-2 align-items-center">
-                    <InputGroup size="sm" style={{ maxWidth: "300px" }}>
-                        <FormControl
-                            placeholder="Search challenges..."
-                            value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+        <div className="py-3">
+            <div className="wb-challenge-toolbar">
+                <InputGroup className="wb-challenge-search">
+                    <FormControl
+                        placeholder="Search challenges..."
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                    />
+                    <Button variant="primary" onClick={handleSearch} aria-label="Search">
+                        <FaSearch />
+                    </Button>
+                </InputGroup>
+
+                <Form.Select value={difficulty} onChange={handleDifficultySelect} className="wb-challenge-difficulty-select">
+                    <option value="all">All levels</option>
+                    <option value="easy">Easy</option>
+                    <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
+                </Form.Select>
+
+                {isCreator && (
+                    <div className="d-flex flex-wrap align-items-center gap-2 ms-lg-auto">
+                        <Form.Check
+                            type="switch"
+                            id="public-only"
+                            label="Public only"
+                            checked={isPublic}
+                            onChange={(e) => setIsPublic(e.target.checked)}
+                            className="small text-muted text-nowrap me-1"
                         />
-                        <Button variant="outline-primary" onClick={handleSearch}>
-                            <FaSearch />
-                        </Button>
-                    </InputGroup>
-
-                    <Form.Select 
-                        size='sm' 
-                        value={difficulty} 
-                        onChange={handleDifficultySelect}
-                        style={{ width: "120px" }}
-                    >
-                        <option value="all">Level</option>
-                        <option value="easy">Easy</option>
-                        <option value="medium">Medium</option>
-                        <option value="hard">Hard</option>
-                    </Form.Select>
-                </div>
-
-                <div className="d-flex align-items-center gap-3">
-                    {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
-                        <>
-                            <Form.Check
-                                type="switch"
-                                label="Public only"
-                                checked={isPublic}
-                                onChange={(e) => setIsPublic(e.target.checked)}
-                                className="small text-muted"
-                            />
-                            <LinkContainer to="/Challenge/Create">
-                                <Button size='sm' className="d-flex align-items-center gap-2">
-                                    <FaPlus size={12} /> Create
-                                </Button>
-                            </LinkContainer>
-                        </>
-                    )}
-                </div>
-            </div>
-
-            <div className="mt-4">
-                {loading ? (
-                    <Loader />
-                ) : challengeCount === 0 ? (
-                    <div className="wb-empty-list py-5 text-center bg-light rounded-3 border">
-                        <FaSearch size={40} className="text-muted mb-3 opacity-25" />
-                        <h3 className="text-muted">No challenges found</h3>
-                        <p className="text-muted small">Try adjusting your filters or search terms</p>
-                    </div>
-                ) : (
-                    <div className="wb-challenge-table-container">
-                        <Table hover className="wb-challenge-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th className="wb-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
-                                    <th className="wb-col-title">Title</th>
-                                    <th className="wb-col-acc text-center d-none d-md-table-cell">Acceptance</th>
-                                    <th className="wb-col-diff text-center">Difficulty</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {challenges.map((challenge) => (
-                                    <tr key={challenge.id}>
-                                        <td className="text-center align-middle">
-                                            {challenge.isSolved && <FaCheck className="text-success" size={14} />}
-                                        </td>
-                                        <td className="align-middle cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
-                                            <div className="d-flex flex-column">
-                                                <span className="wb-table-title">
-                                                    {challenge.title}
-                                                    {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
-                                                </span>
-                                                <span className="d-md-none text-muted" style={{ fontSize: '0.75rem' }}>
-                                                    Acceptance: {challenge.acceptance}%
-                                                </span>
-                                            </div>
-                                        </td>
-                                        <td className="text-center align-middle d-none d-md-table-cell">
-                                            <span className="small">{challenge.acceptance}%</span>
-                                        </td>
-                                        <td className="text-center align-middle">
-                                            <Badge
-                                                className={`wb-challenge-difficulty-mini ${challenge.difficulty === "easy"
-                                                    ? "bg-success"
-                                                    : challenge.difficulty === "medium"
-                                                        ? "bg-warning text-dark"
-                                                        : "bg-danger"
-                                                    }`}
-                                            >
-                                                {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
-                                            </Badge>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </Table>
+                        <LinkContainer to="/Challenge/Create">
+                            <Button size="sm" className="d-flex align-items-center gap-2 text-nowrap">
+                                <FaPlus size={12} /> Create
+                            </Button>
+                        </LinkContainer>
+                        <LinkContainer to="/Challenge/Collection/Create">
+                            <Button size="sm" variant="outline-primary" className="d-flex align-items-center gap-2 text-nowrap">
+                                <FaLayerGroup size={12} /> New collection
+                            </Button>
+                        </LinkContainer>
                     </div>
                 )}
             </div>
 
-            <div className='my-3'>
-                <PaginationControl
-                    page={currentPage}
-                    between={3}
-                    total={challengeCount}
-                    limit={challengesPerPage}
-                    changePage={handlePageChange}
-                    ellipsis={1}
-                />
-            </div>
+            <ChallengeTagFilter tags={tags} active={activeTag} onSelect={setTagFilter} />
 
+            <Row className="g-4">
+                <Col lg={8} xl={9} className="order-2 order-lg-1">
+                    <div className="d-flex align-items-baseline justify-content-between mb-2">
+                        <h2 className="fs-6 fw-bold text-uppercase text-muted mb-0">Problems</h2>
+                        {!loading && <span className="small text-muted">{challengeCount} {challengeCount === 1 ? "problem" : "problems"}</span>}
+                    </div>
+                    {loading ? (
+                        <Loader />
+                    ) : challengeCount === 0 ? (
+                        <div className="wb-empty-list py-5 text-center bg-light rounded-3 border">
+                            <FaSearch size={40} className="text-muted mb-3 opacity-25" />
+                            <h3 className="text-muted">No challenges found</h3>
+                            <p className="text-muted small">Try adjusting your filters or search terms</p>
+                        </div>
+                    ) : (
+                        <div className="wb-challenge-table-container">
+                            <Table hover className="wb-challenge-table mb-0">
+                                <thead>
+                                    <tr>
+                                        <th className="wb-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
+                                        <th className="wb-col-title">Title</th>
+                                        <th className="wb-col-acc text-center d-none d-md-table-cell">Acceptance</th>
+                                        <th className="wb-col-diff text-center">Difficulty</th>
+                                        {isCreator && <th className="wb-col-actions"></th>}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {challenges.map((challenge) => (
+                                        <tr key={challenge.id}>
+                                            <td className="text-center align-middle">
+                                                {challenge.isSolved && <FaCheck className="text-success" size={14} />}
+                                            </td>
+                                            <td className="align-middle cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
+                                                <div className="d-flex flex-column">
+                                                    <span className="wb-table-title">
+                                                        {challenge.title}
+                                                        {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
+                                                    </span>
+                                                    <ChallengeTags tags={challenge.tags} className="mt-1" onSelect={setTagFilter} />
+                                                    <span className="d-md-none text-muted" style={{ fontSize: '0.75rem' }}>
+                                                        Acceptance: {challenge.acceptance}%
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="text-center align-middle d-none d-md-table-cell">
+                                                <span className="small">{challenge.acceptance}%</span>
+                                            </td>
+                                            <td className="text-center align-middle">
+                                                <Badge
+                                                    className={`wb-challenge-difficulty-mini ${challenge.difficulty === "easy"
+                                                        ? "bg-success"
+                                                        : challenge.difficulty === "medium"
+                                                            ? "bg-warning text-dark"
+                                                            : "bg-danger"
+                                                        }`}
+                                                >
+                                                    {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
+                                                </Badge>
+                                            </td>
+                                            {isCreator && (
+                                                <td className="text-center align-middle">
+                                                    <Button variant="link" size="sm" className="p-1 text-danger" title="Delete challenge"
+                                                        onClick={() => setToDelete(challenge)}>
+                                                        <FaTrash size={12} />
+                                                    </Button>
+                                                </td>
+                                            )}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+
+                    <div className="my-3">
+                        <PaginationControl
+                            page={currentPage}
+                            between={3}
+                            total={challengeCount}
+                            limit={challengesPerPage}
+                            changePage={handlePageChange}
+                            ellipsis={1}
+                        />
+                    </div>
+                </Col>
+
+                {collections.length > 0 && (
+                    <Col lg={4} xl={3} className="order-1 order-lg-2">
+                        <h2 className="fs-6 fw-bold text-uppercase text-muted mb-2">Collections</h2>
+                        <div className="wb-collection-sidebar">
+                            {collections.map(collection => {
+                                const percent = collection.challengeCount > 0
+                                    ? Math.round((collection.solvedCount / collection.challengeCount) * 100)
+                                    : 0;
+                                return (
+                                    <Link key={collection.id} to={`/Challenge/Collection/${collection.id}`} className="wb-collection-card">
+                                        <div className="d-flex align-items-center gap-2">
+                                            <FaLayerGroup className="text-primary flex-shrink-0" />
+                                            <span className="wb-collection-card-title">{collection.title}</span>
+                                            {!collection.isPublic && <FaLock size={10} className="text-muted" />}
+                                        </div>
+                                        <span className="small text-muted">
+                                            {collection.challengeCount} problems · {collection.sectionCount} {collection.sectionCount === 1 ? "section" : "sections"}
+                                        </span>
+                                        <div className="d-flex align-items-center gap-2">
+                                            <ProgressBar now={percent} variant="success" className="flex-grow-1 wb-collection-progress" />
+                                            <span className="small text-muted text-nowrap">{collection.solvedCount} / {collection.challengeCount}</span>
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    </Col>
+                )}
+            </Row>
+
+            <Modal show={toDelete !== null} onHide={() => setToDelete(null)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="fs-5">Delete challenge?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    "{toDelete?.title}" will be deleted for good, together with all its submissions and saved code. It is also
+                    removed from any collection that lists it.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="light" className="border" onClick={() => setToDelete(null)}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                </Modal.Footer>
+            </Modal>
         </div>
     );
 };

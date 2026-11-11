@@ -72,6 +72,186 @@
     cursor: pointer;
 }
 
+.wb-challenge-content-area .wb-markdown img {
+    display: block;
+    max-height: none;
+    object-fit: contain;
+    margin: 0.5rem 0;
+}
+
+.wb-challenge-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.wb-challenge-tag {
+    font-size: 0.7rem;
+    line-height: 1;
+    padding: 4px 7px;
+    border-radius: 4px;
+    background: var(--bs-secondary-bg-subtle);
+    color: var(--bs-secondary-color);
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.wb-challenge-tag:hover {
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+}
+
+.wb-challenge-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.wb-challenge-search {
+    flex: 1 1 280px;
+    max-width: 560px;
+}
+
+.wb-challenge-difficulty-select {
+    width: auto;
+    min-width: 130px;
+}
+
+.wb-tag-filter {
+    margin-bottom: 1.25rem;
+}
+
+.wb-tag-filter-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.wb-tag-filter:not(.expanded) .wb-tag-filter-chips {
+    flex-wrap: nowrap;
+    overflow: hidden;
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+
+.wb-tag-filter.expanded .wb-tag-filter-chips {
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.wb-tag-chip {
+    flex-shrink: 0;
+}
+
+@media (max-width: 767.98px) {
+    .wb-tag-filter:not(.expanded) .wb-tag-filter-chips {
+        overflow-x: auto;
+        mask-image: none;
+        scrollbar-width: none;
+    }
+}
+
+.wb-tag-chip {
+    border: 1px solid #dee2e6;
+    background: #fff;
+    border-radius: 999px;
+    padding: 3px 12px;
+    font-size: 0.8rem;
+    color: #495057;
+    line-height: 1.5;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.wb-tag-chip:hover {
+    border-color: var(--bs-primary);
+}
+
+.wb-tag-chip-count {
+    color: #adb5bd;
+    margin-left: 6px;
+}
+
+.wb-tag-chip.active {
+    background: var(--bs-primary);
+    border-color: var(--bs-primary);
+    color: #fff;
+}
+
+.wb-tag-chip.active .wb-tag-chip-count {
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.wb-tag-filter-toggle {
+    border: none;
+    background: none;
+    padding: 0;
+    margin-top: 6px;
+    font-size: 0.8rem;
+    color: var(--bs-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.wb-collection-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    top: 90px;
+}
+
+@media (max-width: 991.98px) {
+    .wb-collection-sidebar {
+        position: static;
+        flex-direction: row;
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .wb-collection-sidebar .wb-collection-card {
+        flex: 0 0 260px;
+    }
+}
+
+.wb-col-actions { width: 48px; }
+
+.wb-collection-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+    background: #fff;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.wb-collection-card:hover {
+    border-color: var(--bs-primary);
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.12);
+}
+
+.wb-collection-card-title {
+    font-weight: 600;
+    color: #212529;
+}
+
+.wb-collection-progress {
+    height: 6px;
+}
+
+.wb-collection-description p:last-child {
+    margin-bottom: 0;
+}
+
+.wb-collection-section {
+    margin-bottom: 2rem;
+}
+
 /* Column Widths */
 .wb-col-status { width: 60px; }
 .wb-col-title { min-width: 150px; }
@@ -263,4 +443,34 @@
     font-weight: 600;
     color: #212529;
     font-size: 0.9rem;
+}
+
+.wb-collection-edit-row {
+    padding: 4px 0;
+    border-bottom: 1px solid #f1f3f5;
+}
+
+.wb-collection-edit-index {
+    width: 24px;
+    text-align: right;
+}
+
+.wb-collection-search-results {
+    max-height: 260px;
+    overflow-y: auto;
+}
+
+.wb-collection-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 1rem;
+}
+
+.wb-collection-nav .btn {
+    max-width: 40%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }

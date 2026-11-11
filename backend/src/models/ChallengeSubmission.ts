@@ -38,6 +38,9 @@ export class ChallengeSubmission {
     @prop({ default: false })
     passed!: boolean;
 
+    @prop({ default: false })
+    everPassed!: boolean;
+
     @prop()
     source?: string;
 
