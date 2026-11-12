@@ -15,7 +15,6 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { truncate } from "../../../utils/StringUtils";
 import PageTitle from "../../../layouts/PageTitle";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import CommentList from "../../../components/comments/CommentList";
@@ -631,50 +630,45 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
 
                 {code ? (
                     <>
-                        <div className="wb-app-toolbar d-flex align-items-center justify-content-between p-1">
-                            <div className="d-flex align-items-center">
-                                {savedCode && (
-                                    <>
-                                        <div className="d-flex align-items-center gap-2">
-                                            <ProfileAvatar size={32} avatarUrl={savedCode.user.avatarUrl} />
-                                            <div>
-                                                <div><b>{truncate(savedCode.name!, 10)}</b></div>
-                                                <div className="d-flex justify-content-start small">
-                                                    <ProfileName userId={savedCode.user.id} userName={savedCode.user.name} />
-                                                </div>
+                        <div className="wb-app-toolbar d-flex align-items-center gap-2 p-1">
+                            {savedCode && (
+                                <>
+                                    {/* Shrinks first: title and author get an ellipsis to keep the toolbar on one line */}
+                                    <div className="wb-compiler-playground-code-info d-flex align-items-center gap-2">
+                                        <ProfileAvatar size={32} avatarUrl={savedCode.user.avatarUrl} />
+                                        <div className="wb-util-min-w-0">
+                                            <div className="text-truncate fw-bold" title={savedCode.name}>{savedCode.name}</div>
+                                            <div className="text-truncate small">
+                                                <ProfileName userId={savedCode.user.id} userName={savedCode.user.name} />
                                             </div>
                                         </div>
+                                    </div>
 
-                                        <div className="wb-compiler-playground-voting">
-                                            <UpvoteButton
-                                                size="sm"
-                                                votes={savedCode.votes}
-                                                isUpvoted={!!savedCode.isUpvoted}
-                                                onVote={voteCode}
-                                                onShowVoters={() => showCodeVotesModal(savedCode.id ?? null)}
-                                            />
-                                        </div>
-
-                                        <div className="wb-compiler-playground-comments">
-                                            <CountButton
-                                                size="sm"
-                                                icon={<FaComment />}
-                                                count={commentCount}
-                                                onClick={openCommentModal}
-                                                title="Comments"
-                                            />
-                                        </div>
-
+                                    <div className="d-flex align-items-center gap-1 flex-shrink-0">
+                                        <UpvoteButton
+                                            size="sm"
+                                            votes={savedCode.votes}
+                                            isUpvoted={!!savedCode.isUpvoted}
+                                            onVote={voteCode}
+                                            onShowVoters={() => showCodeVotesModal(savedCode.id ?? null)}
+                                        />
+                                        <CountButton
+                                            size="sm"
+                                            icon={<FaComment />}
+                                            count={commentCount}
+                                            onClick={openCommentModal}
+                                            title="Comments"
+                                        />
                                         {!savedCode.isPublic && (
-                                            <div className="wb-compiler-playground-public small">
+                                            <span className="wb-compiler-playground-private text-secondary" title="Private">
                                                 <FaLock />
-                                            </div>
+                                            </span>
                                         )}
-                                    </>
-                                )}
-                            </div>
+                                    </div>
+                                </>
+                            )}
 
-                            <div className="d-flex gap-2 align-items-center">
+                            <div className="d-flex gap-2 align-items-center flex-shrink-0 ms-auto">
                                 {code.language === "web" && (
                                     <Button
                                         size="sm"
