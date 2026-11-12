@@ -3,6 +3,7 @@ import crypto from "crypto";
 import { config } from "../confg";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import HttpError from "../exceptions/HttpError";
+import type { AwardedXp } from "../helpers/xpHelper";
 
 export const EVALUATION_QUEUE_NAME = "evaluation";
 
@@ -49,6 +50,8 @@ export interface EvaluationJobData {
 export interface EvaluationJobResult {
     result: EvaluationResult;
     submissionId?: string;
+    /** XP awarded to the submitting user for this evaluation (only when some XP was awarded) */
+    xpAwarded?: AwardedXp;
 }
 
 export type EvaluationJobStatus = "pending" | "running" | "done" | "error";

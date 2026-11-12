@@ -36,9 +36,10 @@ export interface AwardedXp {
     /** Total XP added to the user (0 when nothing was awarded) */
     total: number;
     rewards: Pick<XpLog, "type" | "amount">[];
+    /** User's XP total and level after the award (unchanged values when nothing was awarded) */
+    xp: number;
+    level: number;
 }
-
-const NOTHING_AWARDED: AwardedXp = { total: 0, rewards: [] };
 
 /** Staff can see every solution without unlocking it, so they don't earn challenge XP */
 const ROLES_WITHOUT_XP: RolesEnum[] = [RolesEnum.ADMIN, RolesEnum.CREATOR];
@@ -76,7 +77,8 @@ export const awardChallengeXp = async (params: AwardChallengeXpParams): Promise<
             return await withTransaction(async (session) => {
                 const user = await UserModel.findById(userId).session(session);
                 if (!user) throw new Error(`User ${userId} not found`);
-                if (user.roles.some(role => ROLES_WITHOUT_XP.includes(role))) return NOTHING_AWARDED;
+                const nothingAwarded: AwardedXp = { total: 0, rewards: [], xp: user.xp, level: user.level };
+                if (user.roles.some(role => ROLES_WITHOUT_XP.includes(role))) return nothingAwarded;
 
                 const alreadyRewarded = await XpLogModel.exists({
                     user: userId,
@@ -84,10 +86,10 @@ export const awardChallengeXp = async (params: AwardChallengeXpParams): Promise<
                     language: params.language,
                     type: { $lte: XpRewardTypeEnum.CHALLENGE_OTHER_LANGUAGE }
                 }).session(session);
-                if (alreadyRewarded) return NOTHING_AWARDED;
+                if (alreadyRewarded) return nothingAwarded;
 
                 const hasUnlockedSolution = await ChallengeUnlockModel.exists({ challenge: challengeId, user: userId }).session(session);
-                if (hasUnlockedSolution) return NOTHING_AWARDED;
+                if (hasUnlockedSolution) return nothingAwarded;
 
                 const isFirstSolve = !(await XpLogModel.exists({
                     user: userId,
@@ -128,7 +130,7 @@ export const awardChallengeXp = async (params: AwardChallengeXpParams): Promise<
                 user.xp += total;
                 await user.save({ session }); // pre-save hook recalculates the level
 
-                return { total, rewards };
+                return { total, rewards, xp: user.xp, level: user.level };
             });
         } catch (err) {
             if (attempt >= MAX_AWARD_ATTEMPTS || !isRetryable(err)) throw err;

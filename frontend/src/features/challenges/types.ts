@@ -1,3 +1,4 @@
+import type { XpAward } from "../../context/xpRewardContext";
 import ChallengeDifficultyEnum from "../../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
 import { CodeDetails } from "../codes/types";
@@ -132,6 +133,8 @@ export interface ChallengeJobDetails {
   status: string;
   language: CompilerLanguagesEnum;
   submission: ChallengeSubmissionDetails | null;
+  /** XP the current user gained by this evaluation */
+  xpAwarded: XpAward | null;
 }
 
 export interface CreateChallengeData {

@@ -12,6 +12,8 @@ router.use(verifyJWT);
 router.route("/GetProfile").post(profileController.getProfile);
 router.route("/GetFollowing").post(profileController.getFollowing);
 router.route("/GetFollowers").post(profileController.getFollowers);
+router.route("/GetLeaderboard").post(profileController.getLeaderboard);
+router.route("/GetLeaderboardRank").post(profileController.getLeaderboardRank);
 
 router.use(protectRoute);
 router.route("/UpdateProfile").put(profileController.updateProfile);

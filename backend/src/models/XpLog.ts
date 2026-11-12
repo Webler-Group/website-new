@@ -25,6 +25,8 @@ import XpRewardTypeEnum from "../data/XpRewardTypeEnum";
     { user: 1, day: 1 },
     { unique: true, partialFilterExpression: { type: XpRewardTypeEnum.DAILY_ACTIVITY_BONUS } }
 )
+// Monthly / daily leaderboards (covers the per-user XP sums of a day range)
+@index({ day: 1, user: 1, amount: 1 })
 // User XP history, newest first
 @index({ user: 1, createdAt: -1 })
 @modelOptions({ schemaOptions: { collection: "xplogs", timestamps: { createdAt: true, updatedAt: false } } })

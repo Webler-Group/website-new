@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { countPerPageSchema, countryCodeSchema, emailSchema, idSchema, multerFileSchema, pageSchema, passwordSchema, searchQuerySchema, usernameSchema } from "./commonSchema";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import { LEADERBOARD_PERIODS } from "../helpers/leaderboardHelper";
 
 export const getProfileSchema = z.object({
   body: z.object({
@@ -102,5 +103,19 @@ export const updateNotificationsSchema = z.object({
 export const searchProfilesSchema = z.object({
   body: z.object({
     searchQuery: searchQuerySchema
+  }),
+});
+export const getLeaderboardSchema = z.object({
+  body: z.object({
+    period: z.enum(LEADERBOARD_PERIODS),
+    page: pageSchema,
+    count: countPerPageSchema
+  }),
+});
+
+export const getLeaderboardRankSchema = z.object({
+  body: z.object({
+    period: z.enum(LEADERBOARD_PERIODS),
+    userId: idSchema("userId")
   }),
 });

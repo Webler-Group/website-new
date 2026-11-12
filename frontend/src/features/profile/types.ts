@@ -132,3 +132,29 @@ export interface PublicKeyData {
 export interface GetBlockedUsersData {
     users: UserMinimal[];
 }
+export type LeaderboardPeriod = "overall" | "monthly" | "daily";
+
+export const LEADERBOARD_PERIODS: { key: LeaderboardPeriod; label: string }[] = [
+    { key: "overall", label: "Overall" },
+    { key: "monthly", label: "Monthly" },
+    { key: "daily", label: "Daily" },
+];
+
+export const isLeaderboardPeriod = (value: string | null): value is LeaderboardPeriod =>
+    LEADERBOARD_PERIODS.some(p => p.key === value);
+
+export interface LeaderboardEntry {
+    /** null when the user has no XP in the period */
+    rank: number | null;
+    /** XP gained in the period (total XP for "overall") */
+    xp: number;
+    user: UserMinimal;
+}
+
+export interface LeaderboardData {
+    entries: LeaderboardEntry[];
+}
+
+export interface LeaderboardRankData {
+    entry: LeaderboardEntry;
+}

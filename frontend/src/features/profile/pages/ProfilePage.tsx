@@ -18,6 +18,7 @@ import PageTitle from "../../../layouts/PageTitle";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
+import ProfileRankCard from "../components/ProfileRankCard";
 import { GetProfileData, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
@@ -348,6 +349,9 @@ const ProfilePage = () => {
                                 </div>
                             </div>
                         </Card>
+
+                        {/* ── Monthly Leaderboard Rank ── */}
+                        <ProfileRankCard userId={userDetails.id} />
 
                         {/* ── Courses Row ── */}
                         {(isCurrentUser || courses.length > 0) && (

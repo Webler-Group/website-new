@@ -16,7 +16,7 @@ import RolesEnum from "../data/RolesEnum";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
-import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
+import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getLeaderboardRankSchema, getLeaderboardSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmissionModel from "../models/ChallengeSubmission";
 import { createFolder, deleteEntry, formatFileEntry, formatUploadedFile, IMAGE_QUALITY_PRESETS, listDirectory, moveEntry, uploadImageToBlob, uploadRawFileToBlob } from "../helpers/fileHelper";
 import { isProcessableImageMime } from "../utils/fileTypes";
@@ -33,6 +33,7 @@ import { formatQuestionMinimal } from "../helpers/discussionHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
 import { BlockModel } from "../models/Block";
 import { blockUserSchema } from "../validation/blockSchema";
+import { getLeaderboardEntry, getLeaderboardPage } from "../helpers/leaderboardHelper";
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -409,6 +410,27 @@ const getFollowing = asyncHandler(async (req: IAuthRequest, res: Response) => {
     await Promise.all(promises);
 
     res.json({ success: true, data: { users } })
+});
+
+const getLeaderboard = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getLeaderboardSchema, req);
+    const { period, page, count } = body;
+
+    const entries = await getLeaderboardPage(period, page, count);
+
+    res.json({ success: true, data: { entries } });
+});
+
+const getLeaderboardRank = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getLeaderboardRankSchema, req);
+    const { period, userId } = body;
+
+    const entry = await getLeaderboardEntry(period, userId);
+    if (!entry) {
+        throw new HttpError("Profile not found", 404);
+    }
+
+    res.json({ success: true, data: { entry } });
 });
 
 const getNotifications = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -838,6 +860,8 @@ const controller = {
     unfollow,
     getFollowers,
     getFollowing,
+    getLeaderboard,
+    getLeaderboardRank,
     getNotifications,
     getUnseenNotificationCount,
     markNotificationsClicked,

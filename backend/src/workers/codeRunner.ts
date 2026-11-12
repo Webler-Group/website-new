@@ -5,7 +5,7 @@ import { cleanupSandboxLeftovers, ensureSandboxImages, runInSandbox } from "../u
 import { logEvents } from "../middleware/logger";
 import ChallengeModel from "../models/Challenge";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
-import { awardChallengeXp } from "../helpers/xpHelper";
+import { AwardedXp, awardChallengeXp } from "../helpers/xpHelper";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import {
@@ -18,7 +18,10 @@ import {
 
 const CONCURRENCY = config.codeRunnerConcurrency;
 
-async function evaluateChallenge(data: EvaluationJobData & { challengeId: string; userId: string }, result: EvaluationResult) {
+async function evaluateChallenge(
+    data: EvaluationJobData & { challengeId: string; userId: string },
+    result: EvaluationResult
+): Promise<{ submissionId: string; xpAwarded?: AwardedXp } | undefined> {
     const challenge = await ChallengeModel.findById(data.challengeId, { description: 0 });
     if (!challenge) {
         return undefined;
@@ -77,6 +80,7 @@ async function evaluateChallenge(data: EvaluationJobData & { challengeId: string
     }
 
     // XP for every newly solved challenge + language combination (idempotent, see awardChallengeXp)
+    let xpAwarded: AwardedXp | undefined;
     if (passed) {
         const awarded = await awardChallengeXp({
             userId: data.userId,
@@ -86,10 +90,11 @@ async function evaluateChallenge(data: EvaluationJobData & { challengeId: string
         });
         if (awarded.total > 0) {
             console.log(`Awarded ${awarded.total} XP to user ${data.userId} for challenge ${challenge.title} (${data.language})`);
+            xpAwarded = awarded;
         }
     }
 
-    return submission._id.toString();
+    return { submissionId: submission._id.toString(), xpAwarded };
 }
 
 async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Promise<EvaluationJobResult> {
@@ -104,11 +109,11 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
         throw err;
     }
 
-    let submissionId: string | undefined;
+    let evaluation: Awaited<ReturnType<typeof evaluateChallenge>>;
     const { challengeId, userId } = data;
     if (challengeId && userId) {
         try {
-            submissionId = await evaluateChallenge({ ...data, challengeId, userId }, result);
+            evaluation = await evaluateChallenge({ ...data, challengeId, userId }, result);
         } catch (err) {
             logEvents(`Job ${job.id} failed to save submission: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
             throw err;
@@ -116,7 +121,7 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
     }
 
     console.log(`Job ${job.id} is done`);
-    return { result, submissionId };
+    return { result, submissionId: evaluation?.submissionId, xpAwarded: evaluation?.xpAwarded };
 }
 
 async function main() {

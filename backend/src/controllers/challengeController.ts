@@ -485,6 +485,8 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     const submissionId = job.returnValue?.submissionId;
+    // XP rewards are private to the user who submitted the solution
+    const xpAwarded = req.userId && job.data.userId === req.userId.toString() ? job.returnValue?.xpAwarded : undefined;
     const submission = submissionId ?
         await ChallengeSubmissionModel.findById(submissionId, { testResults: 1, passed: 1 }).lean() :
         null;
@@ -505,6 +507,12 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
                         time: x.time
                     })),
                     passed: submission.passed
+                } : null,
+                xpAwarded: xpAwarded ? {
+                    total: xpAwarded.total,
+                    rewards: xpAwarded.rewards,
+                    xp: xpAwarded.xp,
+                    level: xpAwarded.level
                 } : null
             }
         }
