@@ -36,7 +36,6 @@
     color: var(--bs-secondary-color);
 }
 
-.wb-discuss-vote-button,
 .wb-discuss-follow-button {
     display: inline-flex;
     align-items: center;
@@ -49,20 +48,15 @@
     font-weight: 500;
     color: var(--bs-secondary-color);
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
     transition: all 0.15s ease;
 }
 
-.wb-discuss-vote-button:hover,
 .wb-discuss-follow-button:hover {
     background-color: var(--bs-tertiary-bg);
     border-color: var(--bs-secondary-color);
     color: var(--bs-secondary-color);
-}
-
-.wb-discuss-vote-button--active {
-    background-color: var(--bs-primary-bg-subtle);
-    border-color: #4285f4;
-    color: #4285f4;
 }
 
 .wb-discuss-follow-button--active {
@@ -73,28 +67,6 @@
 
 .wb-discuss-reply-best-answer-button {
     font-size: 26px;
-}
-
-.wb-discuss-voting {
-    user-select: none;
-    line-height: 1;
-}
-
-.wb-discuss-voting .wb-icon-button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    transition: transform 0.1s ease;
-}
-
-.wb-discuss-voting .wb-icon-button:active {
-    transform: scale(0.9);
-}
-
-.wb-discuss-voting b {
-    font-size: 0.95rem;
-    font-weight: 700;
 }
 
 /* --- Answer --------------------------------------------------------------------------------- */

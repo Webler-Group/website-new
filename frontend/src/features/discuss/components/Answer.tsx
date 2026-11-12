@@ -2,7 +2,8 @@ import { cx } from "../../../components/ui";
 import { FaPencil } from "react-icons/fa6";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
-import { FaCheckCircle, FaThumbsUp } from "react-icons/fa";
+import { FaCheckCircle } from "react-icons/fa";
+import UpvoteButton from "../../../components/UpvoteButton";
 import { useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
@@ -60,12 +61,13 @@ const Answer = React.forwardRef(({ answer, acceptedAnswer, toggleAcceptedAnswer,
                             <FaCheckCircle />
                         </div>
                     }
-                    <div className="wb-discuss-voting d-flex align-items-center">
-                        <span onClick={voteAnswer} className={"wb-icon-button p-0" + (upvoted ? " text-body-emphasis" : "")}>
-                            <FaThumbsUp />
-                        </span>
-                        <b className="wb-icon-button text-body-emphasis ms-1" onClick={showVoters}>{votes}</b>
-                    </div>
+                    <UpvoteButton
+                        vertical
+                        votes={votes}
+                        isUpvoted={upvoted}
+                        onVote={voteAnswer}
+                        onShowVoters={showVoters}
+                    />
                 </div>
 
                 <div className="flex-grow-1 d-flex flex-column gap-2 wb-util-min-w-0">

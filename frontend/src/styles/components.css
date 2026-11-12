@@ -115,6 +115,22 @@ button.wb-pill:hover,
     color: var(--bs-primary) !important;
 }
 
+/* Vertical: thumb above the count */
+.wb-upvote--vertical {
+    flex-direction: column;
+    border-radius: 14px;
+}
+
+.wb-upvote--vertical .wb-pill-part {
+    padding: 0 6px;
+    min-width: 34px;
+}
+
+.wb-upvote--vertical .wb-upvote-count {
+    border-left: none;
+    border-top: 1px solid var(--bs-border-color);
+}
+
 /* --- Loader --------------------------------------------------------------------------------- */
 
 .wb-loader {
