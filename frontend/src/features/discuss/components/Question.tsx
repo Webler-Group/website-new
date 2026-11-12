@@ -32,9 +32,24 @@ const Question = React.forwardRef(({ question, showUserProfile, variant = "defau
         navigate("/Discuss/" + question.id);
     }
 
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            navigate("/Discuss/" + question.id);
+        }
+    }
+
     return (
         <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
-            <div className={cx("wb-discuss-question-item border-bottom bg-body d-flex p-2", isCompact && "wb-discuss-question-item--compact")} onClick={handleClick}>
+            <div className={cx("wb-discuss-question-item border-bottom bg-body d-flex p-2", isCompact && "wb-discuss-question-item--compact")}
+                // Interactive role + focusable: real semantics, and stops mobile Chrome's "Touch to Search"
+                // from treating a tap as a tap on plain text (a real <a> can't be used: it contains a profile link)
+                role="link"
+                tabIndex={0}
+                onClick={handleClick}
+                onKeyDown={handleKeyDown}
+            >
                 <div className="flex-grow-1 wb-util-min-w-0">
                     <h3 className="wb-discuss-question-title text-truncate text-body-emphasis">{title}</h3>
 

@@ -26,10 +26,7 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
 
     let title = code.name;
 
-    const handleClick = (e: React.MouseEvent) => {
-        if ((e.target as HTMLElement).closest("a")) {
-            return;
-        }
+    const activate = () => {
         if (onClick) {
             onClick();
         } else {
@@ -37,8 +34,31 @@ const Code = React.forwardRef(({ code, onClick, selected, variant = "default" }:
         }
     }
 
+    const handleClick = (e: React.MouseEvent) => {
+        if ((e.target as HTMLElement).closest("a")) {
+            return;
+        }
+        activate();
+    }
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            activate();
+        }
+    }
+
     return <div ref={ref ?? undefined} className="wb-util-min-w-0 overflow-hidden">
-        <div className={cx("wb-codes-item border-bottom bg-body d-flex align-items-start p-2", isCompact && "wb-codes-item--compact", selected && "wb-codes-item--selected")} onClick={handleClick}>
+        <div className={cx("wb-codes-item border-bottom bg-body d-flex align-items-start p-2", isCompact && "wb-codes-item--compact", selected && "wb-codes-item--selected")}
+            // Interactive role + focusable: real semantics, and stops mobile Chrome's "Touch to Search"
+            // from treating a tap as a tap on plain text (a real <a> can't be used: it contains a profile link)
+            role={onClick ? "button" : "link"}
+            tabIndex={0}
+            aria-pressed={onClick ? !!selected : undefined}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+        >
             {/* Left: title + language + stats */}
             <div className="flex-grow-1 wb-util-min-w-0">
                 <h3 className="wb-codes-item-title text-truncate text-body-emphasis">{title}</h3>

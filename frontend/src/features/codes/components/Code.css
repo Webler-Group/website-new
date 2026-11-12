@@ -7,8 +7,19 @@
     user-select: none;
     -webkit-user-select: none;
     -moz-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
     background-color: var(--bs-body-bg);
     transition: all 0.2s ease-in-out;
+}
+
+.wb-codes-item:focus {
+    outline: none;
+}
+
+.wb-codes-item:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
 }
 
 .wb-codes-item--selected {
