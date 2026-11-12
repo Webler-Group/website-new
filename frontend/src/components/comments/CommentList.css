@@ -192,13 +192,78 @@
     width: 24px;
 }
 
-.wb-comments-footer-vote-count {
-    padding-left: 2px;
+/* Comment the open reply/edit form belongs to */
+.wb-comments-item--active {
+    background-color: var(--wb-highlight-bg);
 }
 
-/* Feedback toast floating above the comment input */
+/* ----------------------
+   Reply / edit context above the form
+   ---------------------- */
+
+.wb-comments-form-context {
+    display: flex;
+    margin-bottom: 4px;
+    font-size: 0.8rem;
+    min-width: 0;
+}
+
+.wb-comments-form-context-body {
+    flex-grow: 1;
+    min-width: 0;
+    background: none;
+    border: none;
+    padding: 0;
+    text-align: left;
+    color: var(--bs-secondary-color);
+    cursor: pointer;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.wb-comments-form-context-body b {
+    color: var(--bs-emphasis-color);
+}
+
+/* ----------------------
+   Layout: scrolling list + toast, form pinned below
+   ---------------------- */
+
+.wb-comments-list-area {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.wb-comments-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+/* Feedback toast floating at the bottom of the comment list, above the comments */
 .wb-comments-toast {
-    z-index: 999;
-    bottom: 68px;
-    width: 90%;
+    position: absolute;
+    left: 50%;
+    bottom: 8px;
+    transform: translateX(-50%);
+    width: calc(100% - 16px);
+    max-width: 360px;
+    z-index: 20;
+}
+
+.wb-comments-form {
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    /* Keep the list visible while writing (incl. with the on-screen keyboard) */
+    .wb-comments-form textarea {
+        height: 4.75em;
+        min-height: 3.5em;
+    }
+
 }

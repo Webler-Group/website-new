@@ -2,7 +2,9 @@ import { Badge, Button, Dropdown, FormControl, Modal, Offcanvas, Toast } from ".
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import ProfileName from "../../../components/ProfileName";
-import { FaComment, FaLock, FaTerminal, FaThumbsUp } from "react-icons/fa6";
+import { FaComment, FaLock, FaTerminal } from "react-icons/fa6";
+import UpvoteButton from "../../../components/UpvoteButton";
+import CountButton from "../../../components/CountButton";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import AppLogo from "../../../components/AppLogo";
 import AuthNavigation from "../../auth/components/AuthNavigation";
@@ -643,23 +645,24 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
                                             </div>
                                         </div>
 
-                                        <div className="wb-compiler-playground-voting small">
-                                            <span
-                                                onClick={voteCode}
-                                                className={"wb-icon-button" + (savedCode.isUpvoted ? " text-body-emphasis" : "")}
-                                            >
-                                                <FaThumbsUp />
-                                            </span>
-                                            <span className="wb-util-clickable" onClick={() => showCodeVotesModal(savedCode.id ?? null)}>
-                                                {savedCode.votes}
-                                            </span>
+                                        <div className="wb-compiler-playground-voting">
+                                            <UpvoteButton
+                                                size="sm"
+                                                votes={savedCode.votes}
+                                                isUpvoted={!!savedCode.isUpvoted}
+                                                onVote={voteCode}
+                                                onShowVoters={() => showCodeVotesModal(savedCode.id ?? null)}
+                                            />
                                         </div>
 
-                                        <div className="wb-compiler-playground-comments small">
-                                            <span className="wb-util-clickable" onClick={openCommentModal}>
-                                                <FaComment />
-                                            </span>
-                                            <span>{commentCount}</span>
+                                        <div className="wb-compiler-playground-comments">
+                                            <CountButton
+                                                size="sm"
+                                                icon={<FaComment />}
+                                                count={commentCount}
+                                                onClick={openCommentModal}
+                                                title="Comments"
+                                            />
                                         </div>
 
                                         {!savedCode.isPublic && (
