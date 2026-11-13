@@ -90,7 +90,7 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         {
             $match: {
                 user: user._id,
-                passed: true
+                everPassed: true
             }
         },
         {
