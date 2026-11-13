@@ -25,18 +25,37 @@ const ChallengeCollectionNavigator = ({ collection, currentId, onHide }: Challen
         }
     }, [collection, currentId]);
 
-    // Scroll the panel (not the page) so the current challenge is visible
+    // What the panel should scroll to after the next render: the current challenge, or a section the user just opened
+    const scrollTarget = useRef<"current" | number | null>("current");
+
+    useEffect(() => {
+        scrollTarget.current = "current";
+    }, [currentId]);
+
+    // Scroll the panel (not the page)
     useEffect(() => {
         const body = bodyRef.current;
-        const active = body?.querySelector<HTMLElement>(".wb-challenges-navigator-problem--active");
-        if (!body || !active) return;
-        const top = active.offsetTop - body.offsetTop;
-        if (top < body.scrollTop || top + active.offsetHeight > body.scrollTop + body.clientHeight) {
-            body.scrollTop = top - body.clientHeight / 2 + active.offsetHeight / 2;
+        const target = scrollTarget.current;
+        if (!body || target === null) return;
+        const offsetIn = (element: HTMLElement) =>
+            element.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
+
+        if (target === "current") {
+            const active = body.querySelector<HTMLElement>(".wb-challenges-navigator-problem--active");
+            if (!active) return; // its section opens on the next render
+            const top = offsetIn(active);
+            if (top < body.scrollTop || top + active.offsetHeight > body.scrollTop + body.clientHeight) {
+                body.scrollTop = top - body.clientHeight / 2 + active.offsetHeight / 2;
+            }
+        } else {
+            const header = body.querySelector<HTMLElement>(`[data-section="${target}"]`);
+            if (header) body.scrollTop = offsetIn(header) - 4;
         }
+        scrollTarget.current = null;
     }, [currentId, openSections]);
 
     const toggle = (index: number) => {
+        scrollTarget.current = openSections.has(index) ? null : index;
         setOpenSections(open => {
             const next = new Set(open);
             if (next.has(index)) next.delete(index); else next.add(index);
@@ -63,7 +82,8 @@ const ChallengeCollectionNavigator = ({ collection, currentId, onHide }: Challen
                     const sectionSolved = section.challenges.filter(c => c.isSolved).length;
                     return (
                         <div key={section.title}>
-                            <button type="button" className="wb-challenges-navigator-section" onClick={() => toggle(index)} aria-expanded={open}>
+                            <button type="button" className="wb-challenges-navigator-section" onClick={() => toggle(index)} aria-expanded={open}
+                                data-section={index}>
                                 {open ? <FaChevronDown size={10} /> : <FaChevronRight size={10} />}
                                 <span className="flex-grow-1 text-truncate">{index + 1}. {section.title}</span>
                                 <span className="wb-challenges-navigator-count">{sectionSolved}/{section.challenges.length}</span>
