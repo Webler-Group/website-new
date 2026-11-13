@@ -13,6 +13,10 @@ import ScrollToTop from './components/ScrollToTop';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import UserInfoProvider from './context/userInfoContext';
+import { patchDomForTranslators } from './utils/patchDomForTranslators';
+
+// Prevent "insertBefore"/"removeChild" crashes when the page is machine-translated by the browser
+patchDomForTranslators();
 import XpRewardProvider from './context/xpRewardContext';
 
 const Root = () => (
