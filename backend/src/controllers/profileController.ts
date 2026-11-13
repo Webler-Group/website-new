@@ -18,6 +18,7 @@ import PostTypeEnum from "../data/PostTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getLeaderboardRankSchema, getLeaderboardSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
 import ChallengeSubmissionModel from "../models/ChallengeSubmission";
+import ChallengeModel from "../models/Challenge";
 import { createFolder, deleteEntry, formatFileEntry, formatUploadedFile, IMAGE_QUALITY_PRESETS, listDirectory, moveEntry, uploadImageToBlob, uploadRawFileToBlob } from "../helpers/fileHelper";
 import { isProcessableImageMime } from "../utils/fileTypes";
 import uploadImage from "../middleware/uploadImage";
@@ -124,6 +125,32 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         if (row._id) (solvedChallenges as Record<string, number>)[row._id] = row.count;
     }
 
+    // How many public challenges exist per difficulty, for "solved / total"
+    const totalsAgg = await ChallengeModel.aggregate([
+        { $match: { isPublic: true } },
+        { $group: { _id: "$difficulty", count: { $sum: 1 } } }
+    ]);
+
+    const challengeTotals = {
+        easy: 0,
+        medium: 0,
+        hard: 0
+    };
+
+    for (const row of totalsAgg) {
+        if (row._id) (challengeTotals as Record<string, number>)[row._id] = row.count;
+    }
+
+    // Challenges the user has submitted to but not solved yet
+    const attemptingAgg = await ChallengeSubmissionModel.aggregate([
+        { $match: { user: user._id } },
+        { $group: { _id: "$challenge", solved: { $max: "$passed" } } },
+        { $match: { solved: false } },
+        { $count: "count" }
+    ]);
+
+    const attemptingChallenges: number = attemptingAgg[0]?.count ?? 0;
+
     res.json({
         success: true,
         data: {
@@ -147,7 +174,9 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 notifications: user.notifications ?? {},
                 codes: codes.map(x => formatCodeMinimal(x)),
                 questions: questions.map(x => formatQuestionMinimal(x)),
-                solvedChallenges
+                solvedChallenges,
+                challengeTotals,
+                attemptingChallenges
             }
         }
     });

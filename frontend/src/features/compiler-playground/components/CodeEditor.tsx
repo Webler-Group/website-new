@@ -31,6 +31,7 @@ import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
 import { useTheme } from "../../../utils/ThemeUtils";
+import "../compiler-playground.css";
 
 ace.config.set("basePath", new URL("ace-builds/src-noconflict", import.meta.url).pathname);
 

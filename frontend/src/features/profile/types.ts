@@ -49,6 +49,12 @@ export interface UserDetails {
         medium: number;
         hard: number;
     }
+    challengeTotals: {
+        easy: number;
+        medium: number;
+        hard: number;
+    }
+    attemptingChallenges: number;
 }
 
 export interface UserMinimal {

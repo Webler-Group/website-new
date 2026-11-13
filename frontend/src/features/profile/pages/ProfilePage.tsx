@@ -19,6 +19,7 @@ import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
 import ProfileRankCard from "../components/ProfileRankCard";
+import ProfileChallengesCard from "../components/ProfileChallengesCard";
 import { GetProfileData, UserDetails } from "../types";
 import { CodeMinimal } from "../../codes/types";
 import { QuestionMinimal } from "../../discuss/types";
@@ -312,40 +313,6 @@ const ProfilePage = () => {
                                             </span>
                                         )}
                                     </div>
-
-                                    {/* Challenges stats inline */}
-                                    {(isCurrentUser || totalSolved > 0) && (
-                                        <div className="wb-profile-header-challenges">
-                                            <button
-                                                className="wb-profile-challenges-pill bg-success-subtle border-success-subtle text-success"
-                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
-                                            >
-                                                <Badge bg="success">Easy</Badge> {easySolved}
-                                            </button>
-                                            <button
-                                                className="wb-profile-challenges-pill bg-warning-subtle border-warning-subtle text-warning-emphasis"
-                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
-                                            >
-                                                <Badge bg="warning" text="dark">Medium</Badge> {mediumSolved}
-                                            </button>
-                                            <button
-                                                className="wb-profile-challenges-pill bg-danger-subtle border-danger-subtle text-danger"
-                                                onClick={totalSolved > 0 ? showChallengesSection : undefined}
-                                            >
-                                                <Badge bg="danger">Hard</Badge> {hardSolved}
-                                            </button>
-                                            {isCurrentUser && (
-                                                <Button
-                                                    variant="link"
-                                                    size="sm"
-                                                    className="p-0 ms-1"
-                                                    onClick={() => navigate("/Challenge")}
-                                                >
-                                                    Solve more
-                                                </Button>
-                                            )}
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         </Card>
@@ -484,6 +451,17 @@ const ProfilePage = () => {
 
                             {/* Right column */}
                             <div className="wb-profile-grid-col">
+
+                                {/* Challenges */}
+                                {(isCurrentUser || totalSolved > 0) && (
+                                    <ProfileChallengesCard
+                                        solved={userDetails.solvedChallenges}
+                                        totals={userDetails.challengeTotals ?? { easy: 0, medium: 0, hard: 0 }}
+                                        attempting={userDetails.attemptingChallenges ?? 0}
+                                        isCurrentUser={isCurrentUser}
+                                        onShowSolved={showChallengesSection}
+                                    />
+                                )}
 
                                 {/* Questions */}
                                 {(isCurrentUser || questions.length > 0) && (

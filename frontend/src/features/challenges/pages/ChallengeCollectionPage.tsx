@@ -1,4 +1,4 @@
-import { Badge, Button, Container, Modal, ProgressBar, Table } from "../../../components/ui";
+import { Button, Container, cx, Modal, ProgressBar, Table } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaCheck, FaChevronRight, FaLayerGroup, FaLock, FaPen, FaSearch, FaTrash } from "react-icons/fa";
@@ -10,9 +10,6 @@ import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeTags from "../components/ChallengeTags";
 import { ChallengeCollectionDetails, GetChallengeCollectionData } from "../types";
 
-const difficultyClass = (difficulty: string) =>
-    difficulty === "easy" ? "bg-success" : difficulty === "medium" ? "bg-warning text-dark" : "bg-danger";
-
 const ChallengeCollectionPage = () => {
     const { collectionId } = useParams<{ collectionId: string }>();
     const { sendJsonRequest } = useApi();
@@ -21,12 +18,37 @@ const ChallengeCollectionPage = () => {
     const [collection, setCollection] = useState<ChallengeCollectionDetails | null>(null);
     const [loading, setLoading] = useState(true);
     const [showDelete, setShowDelete] = useState(false);
+    const [activeSection, setActiveSection] = useState(0);
 
     PageTitle(collection?.title ?? "Collection");
 
     useEffect(() => {
         getCollection();
     }, [collectionId]);
+
+    // Highlight the last section whose heading has scrolled past the top
+    useEffect(() => {
+        if (!collection) return;
+        const onScroll = () => {
+            let current = 0;
+            collection.sections.forEach((_, index) => {
+                const element = document.getElementById(`collection-section-${index}`);
+                if (element && element.getBoundingClientRect().top <= 140) current = index;
+            });
+            // The last sections may be too short to reach the top; at the bottom of the page, the last one is active
+            if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) {
+                current = collection.sections.length - 1;
+            }
+            setActiveSection(current);
+        };
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, [collection]);
+
+    const jumpToSection = (index: number) => {
+        document.getElementById(`collection-section-${index}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const getCollection = async () => {
         setLoading(true);
@@ -119,46 +141,72 @@ const ChallengeCollectionPage = () => {
                 </div>
             </div>
 
-            {collection.sections.map((section, index) => {
-                const sectionSolved = section.challenges.filter(c => c.isSolved).length;
-                return (
-                    <section key={section.title} className="wb-challenges-collection-section">
-                        <div className="d-flex align-items-baseline justify-content-between gap-3 mb-1">
-                            <h3 className="fs-5 fw-bold mb-0">
-                                <span className="text-muted me-2">{index + 1}.</span>{section.title}
-                            </h3>
-                            <span className="small text-muted text-nowrap">{sectionSolved} / {section.challenges.length}</span>
-                        </div>
-                        {section.description && <p className="small text-muted mb-3">{section.description}</p>}
+            <div className="wb-challenges-detail-layout">
+                <aside className="wb-challenges-navigator d-none d-xl-flex">
+                    <div className="wb-challenges-navigator-header">
+                        <div className="wb-challenges-navigator-title">Sections</div>
+                        <div className="small text-muted mt-1">{collection.sections.length} sections, {all.length} problems</div>
+                    </div>
+                    <div className="wb-challenges-navigator-body">
+                        {collection.sections.map((section, index) => (
+                            <button
+                                key={section.title}
+                                type="button"
+                                className={cx("wb-challenges-navigator-section",
+                                    index === activeSection && "wb-challenges-navigator-section--active")}
+                                onClick={() => jumpToSection(index)}
+                            >
+                                <span className="flex-grow-1 text-truncate">{index + 1}. {section.title}</span>
+                                <span className="wb-challenges-navigator-count">
+                                    {section.challenges.filter(c => c.isSolved).length}/{section.challenges.length}
+                                </span>
+                            </button>
+                        ))}
+                    </div>
+                </aside>
+                <div className="wb-challenges-detail-main">
+                    {collection.sections.map((section, index) => {
+                        const sectionSolved = section.challenges.filter(c => c.isSolved).length;
+                        return (
+                            <section key={section.title} id={`collection-section-${index}`} className="wb-challenges-collection-section">
+                                <div className="d-flex align-items-baseline justify-content-between gap-3 mb-1">
+                                    <h3 className="fs-5 fw-bold mb-0">
+                                        <span className="text-muted me-2">{index + 1}.</span>{section.title}
+                                    </h3>
+                                    <span className="small text-muted text-nowrap">{sectionSolved} / {section.challenges.length}</span>
+                                </div>
+                                {section.description && <p className="small text-muted mb-3">{section.description}</p>}
 
-                        <div className="wb-challenges-table-container">
-                            <Table hover className="wb-challenges-table mb-0">
-                                <tbody>
-                                    {section.challenges.map(challenge => (
-                                        <tr key={challenge.id} className="cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}?collection=${collection.id}`)}>
-                                            <td className="wb-challenges-table-col-status text-center align-middle">
-                                                {challenge.isSolved && <FaCheck className="text-success" size={14} />}
-                                            </td>
-                                            <td className="align-middle">
-                                                <span className="wb-challenges-table-title">
-                                                    {challenge.title}
-                                                    {!challenge.isPublic && <FaLock size={10} className="text-muted ms-2" />}
-                                                </span>
-                                                <ChallengeTags tags={challenge.tags} className="mt-1" />
-                                            </td>
-                                            <td className="wb-challenges-table-col-difficulty text-center align-middle">
-                                                <Badge className={`wb-challenges-difficulty-mini ${difficultyClass(challenge.difficulty)}`}>
-                                                    {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
-                                                </Badge>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </Table>
-                        </div>
-                    </section>
-                );
-            })}
+                                <div className="wb-challenges-table-container">
+                                    <Table hover className="wb-challenges-table mb-0">
+                                        <tbody>
+                                            {section.challenges.map(challenge => (
+                                                <tr key={challenge.id} className="wb-challenges-row" onClick={() => navigate(`/Challenge/${challenge.id}?collection=${collection.id}`)}>
+                                                    <td className="wb-challenges-table-col-status text-center align-middle">
+                                                        {challenge.isSolved && <FaCheck className="text-success" size={14} />}
+                                                    </td>
+                                                    <td className="align-middle">
+                                                        <span className="wb-challenges-table-title">
+                                                            {challenge.title}
+                                                            {!challenge.isPublic && <FaLock size={10} className="text-muted ms-2" />}
+                                                        </span>
+                                                        <ChallengeTags tags={challenge.tags} className="mt-1" max={3} />
+                                                    </td>
+                                                    <td className="wb-challenges-table-col-difficulty text-center align-middle">
+                                                        <span className={`wb-challenges-difficulty wb-challenges-difficulty--${challenge.difficulty}`}>
+                                                            {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
+                                                        </span>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+                                </div>
+                            </section>
+                        );
+                    })}
+                </div>
+            </div>
         </Container>
     );
 };

@@ -1,4 +1,4 @@
-import { Badge, Button, Col, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table } from "../../../components/ui";
+import { Button, Col, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table } from "../../../components/ui";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
@@ -6,7 +6,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { useSnackbar } from "../../../context/SnackbarProvider";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAuth } from "../../auth/context/authContext";
-import { FaLock, FaSearch, FaPlus, FaCheck, FaLayerGroup, FaTrash } from "react-icons/fa";
+import { FaLock, FaSearch, FaPlus, FaCheckCircle, FaLayerGroup, FaTrash } from "react-icons/fa";
 import { ChallengeCollectionListData, ChallengeCollectionMinimal, ChallengeListData, ChallengeMinimal, ChallengeTagCount, ChallengeTagsData } from "../types";
 import ChallengeTags from "../components/ChallengeTags";
 import ChallengeTagFilter from "../components/ChallengeTagFilter";
@@ -207,7 +207,7 @@ const ChallengeList = () => {
                             <Table hover className="wb-challenges-table mb-0">
                                 <thead>
                                     <tr>
-                                        <th className="wb-challenges-table-col-status text-center"><span className="d-none d-md-inline">Status</span></th>
+                                        <th className="wb-challenges-table-col-status"></th>
                                         <th className="wb-challenges-table-col-title">Title</th>
                                         <th className="wb-challenges-table-col-acceptance text-center d-none d-md-table-cell">Acceptance</th>
                                         <th className="wb-challenges-table-col-difficulty text-center">Difficulty</th>
@@ -216,17 +216,17 @@ const ChallengeList = () => {
                                 </thead>
                                 <tbody>
                                     {challenges.map((challenge) => (
-                                        <tr key={challenge.id}>
+                                        <tr key={challenge.id} className="wb-challenges-row" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
                                             <td className="text-center align-middle">
-                                                {challenge.isSolved && <FaCheck className="text-success" size={14} />}
+                                                {challenge.isSolved && <FaCheckCircle className="text-success" size={15} title="Solved" />}
                                             </td>
-                                            <td className="align-middle cursor-pointer" onClick={() => navigate(`/Challenge/${challenge.id}`)}>
+                                            <td className="align-middle">
                                                 <div className="d-flex flex-column">
                                                     <span className="wb-challenges-table-title">
                                                         {challenge.title}
                                                         {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                                     </span>
-                                                    <ChallengeTags tags={challenge.tags} className="mt-1" onSelect={setTagFilter} />
+                                                    <ChallengeTags tags={challenge.tags} className="mt-1" onSelect={setTagFilter} max={3} />
                                                     <span className="d-md-none text-muted wb-util-text-xs">
                                                         Acceptance: {challenge.acceptance}%
                                                     </span>
@@ -236,21 +236,14 @@ const ChallengeList = () => {
                                                 <span className="small">{challenge.acceptance}%</span>
                                             </td>
                                             <td className="text-center align-middle">
-                                                <Badge
-                                                    className={`wb-challenges-difficulty-mini ${challenge.difficulty === "easy"
-                                                        ? "bg-success"
-                                                        : challenge.difficulty === "medium"
-                                                            ? "bg-warning text-dark"
-                                                            : "bg-danger"
-                                                        }`}
-                                                >
+                                                <span className={`wb-challenges-difficulty wb-challenges-difficulty--${challenge.difficulty}`}>
                                                     {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
-                                                </Badge>
+                                                </span>
                                             </td>
                                             {isCreator && (
                                                 <td className="text-center align-middle">
-                                                    <Button variant="link" size="sm" className="p-1 text-danger" title="Delete challenge"
-                                                        onClick={() => setToDelete(challenge)}>
+                                                    <Button variant="link" size="sm" className="p-1 text-danger wb-challenges-row-action" title="Delete challenge"
+                                                        onClick={(e) => { e.stopPropagation(); setToDelete(challenge); }}>
                                                         <FaTrash size={12} />
                                                     </Button>
                                                 </td>

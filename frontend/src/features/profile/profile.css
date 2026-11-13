@@ -101,30 +101,83 @@
     text-decoration: underline;
 }
 
-/* Challenges pills row */
-.wb-profile-header-challenges {
+/* Challenges card: solved count, then a progress bar per difficulty */
+.wb-profile-challenges {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px 16px 16px;
 }
 
-.wb-profile-challenges-pill {
+.wb-profile-challenges-summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-bottom: 2px;
+}
+
+.wb-profile-challenges-count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--bs-emphasis-color);
+}
+
+.wb-profile-challenges-caption {
+    font-size: 0.85rem;
+    color: var(--bs-secondary-color);
+}
+
+.wb-profile-challenges-attempting {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
-    border: 1px solid;
-    border-radius: 8px;
-    font-size: 0.82rem;
-    font-weight: 500;
-    background: none;
-    cursor: pointer;
-    transition: opacity 0.15s;
+    gap: 5px;
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
 }
 
-.wb-profile-challenges-pill:hover {
-    opacity: 0.8;
+.wb-profile-challenges-level {
+    --wb-level-color: #00a88a;
+}
+
+.wb-profile-challenges--medium { --wb-level-color: #e7a100; }
+.wb-profile-challenges--hard { --wb-level-color: #e5484d; }
+
+.wb-profile-challenges-level-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+    font-size: 0.85rem;
+}
+
+.wb-profile-challenges-level-label {
+    font-weight: 600;
+    color: var(--wb-level-color);
+}
+
+.wb-profile-challenges-level-value {
+    color: var(--bs-secondary-color);
+}
+
+.wb-profile-challenges-level-value strong {
+    color: var(--bs-emphasis-color);
+}
+
+.wb-profile-challenges-track {
+    height: 6px;
+    border-radius: 999px;
+    background: rgba(var(--bs-emphasis-color-rgb), 0.08);
+    overflow: hidden;
+}
+
+.wb-profile-challenges-fill {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--wb-level-color);
+    transition: width 0.4s ease;
 }
 
 /* ── Content Grid ── */
