@@ -7,6 +7,7 @@ import { createChallengeCollectionSchema, createChallengeJobSchema, createChalle
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
+import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
 import ChallengeSubmissionModel, { ChallengeSubmission, TestResult } from "../models/ChallengeSubmission";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
@@ -232,14 +233,31 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Challenge not found", 404);
     }
 
-    const [submissions, hasUnlocked] = await Promise.all([
+    const [submissions, hasUnlocked, latestSubmission, latestCode] = await Promise.all([
         ChallengeSubmissionModel.aggregate<SubmissionEntry>([
             { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(userId), everPassed: true } },
             { $group: { _id: "$language", passed: { $max: "$everPassed" } } },
             { $project: { language: "$_id", passed: 1, _id: 0 } }
         ]),
-        userId ? ChallengeUnlockModel.exists({ challenge: challenge._id, user: userId }) : Promise.resolve(null)
+        userId ? ChallengeUnlockModel.exists({ challenge: challenge._id, user: userId }) : Promise.resolve(null),
+        // The user's latest test run (one submission per language, updated on every run)
+        userId ? ChallengeSubmissionModel.findOne({ challenge: challenge._id, user: userId }, { language: 1, updatedAt: 1 })
+            .sort({ updatedAt: -1 })
+            .lean<{ language: CompilerLanguagesEnum; updatedAt: Date }>() : Promise.resolve(null),
+        // ... and latest saved code (one code per language, updated on every save)
+        userId ? CodeModel.findOne({ challenge: challenge._id, user: userId }, { language: 1, updatedAt: 1 })
+            .sort({ updatedAt: -1 })
+            .lean() : Promise.resolve(null)
     ]);
+
+    // Whichever is newer is the language the user last worked in; it's only offered while unsolved,
+    // older attempts in other languages are not considered
+    const latestAttempt = [latestSubmission, latestCode]
+        .filter(x => x != null)
+        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+    const lastAttemptLanguage = latestAttempt && !submissions.some(x => x.language === latestAttempt.language)
+        ? latestAttempt.language
+        : null;
 
     const isSolved = submissions.length > 0;
     const showSolution = isSolved || hasUnlocked || isAuthorized;
@@ -271,7 +289,8 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                     })),
                 submissions,
                 solution: showSolution ? (challenge.solution ?? "") : null,
-                isUnlocked: !!hasUnlocked
+                isUnlocked: !!hasUnlocked,
+                lastAttemptLanguage
             }
         }
     });

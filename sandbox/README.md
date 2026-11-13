@@ -49,7 +49,7 @@ The last line after the marker is `STATS <cpu> <wall> <memory>`, measured by the
 | `wall` | Wall time of the program, in milliseconds (10 ms resolution) |
 | `memory` | Peak resident memory of the largest process, in KB, or `-` if unavailable |
 
-The values come from `getrusage(RUSAGE_CHILDREN)`, called by raw syscall number from perl (x86_64 and aarch64). The backend uses `cpu` as the test's time and compares it, and `memory`, with a challenge's limits. Images without the STATS line still work: the backend then falls back to the container's start-to-finish time and reports no memory.
+The values come from `getrusage(RUSAGE_CHILDREN)`, called by raw syscall number from perl (x86_64 and aarch64). The program is forked from perl, and Linux counts that copy in the program's peak, so `memory` is never below about 3.5 MB (a C++ program using the standard library needs about 3 MB on its own anyway). The backend uses `cpu` as the test's time and compares it, and `memory`, with a challenge's limits. Images without the STATS line still work: the backend then falls back to the container's start-to-finish time and reports no memory.
 
 Python: `plt.savefig("output/plot.png")`, or draw pixels with Pillow:
 

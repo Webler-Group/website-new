@@ -29,6 +29,8 @@ export interface ChallengeDetails {
   isPublic: boolean;
   solution?: string;
   isUnlocked?: boolean;
+  /** Language of the user's latest test run, when that language isn't solved yet */
+  lastAttemptLanguage?: CompilerLanguagesEnum | null;
   /** CPU time limit per test in ms; absent when the challenge has none */
   timeLimit?: number | null;
   /** Memory limit per test in MB; absent when the challenge has none */
