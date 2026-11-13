@@ -8,7 +8,7 @@ import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
 import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
-import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
+import ChallengeSubmissionModel, { ChallengeSubmission, TestResult } from "../models/ChallengeSubmission";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
 import RolesEnum from "../data/RolesEnum";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
@@ -33,12 +33,30 @@ interface ChallengeCode {
     updatedAt?: Date;
     challenge: {
         id: string;
-        lastSubmission?: {
-            passed: boolean;
-            testResults: { output?: string; stderr?: string; passed: boolean; time?: number }[];
-        };
+        lastSubmission?: ReturnType<typeof formatSubmission>;
     }
 };
+
+/**
+ * Test results as shown to the submitting user. Hidden tests keep their verdict, time and memory,
+ * but not their input and expected output.
+ */
+const formatSubmission = (submission: Pick<ChallengeSubmission, "passed" | "testResults" | "timeLimit" | "memoryLimit">) => ({
+    passed: submission.passed,
+    timeLimit: submission.timeLimit,
+    memoryLimit: submission.memoryLimit,
+    testResults: submission.testResults.map((x: TestResult) => ({
+        passed: x.passed,
+        verdict: x.verdict,
+        isHidden: x.isHidden,
+        input: x.isHidden ? undefined : x.input,
+        expectedOutput: x.isHidden ? undefined : x.expectedOutput,
+        output: x.output,
+        stderr: x.stderr,
+        time: x.time,
+        memory: x.memory
+    }))
+});
 
 const normalizeTags = (tags: string[]) => tags.map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
 
@@ -54,7 +72,7 @@ const getPassedChallengeIds = async (userId: string | undefined, challengeIds: T
 
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates, isVisible, solution, tags } = body;
+    const { title, description, difficulty, testCases, templates, isVisible, solution, tags, timeLimit, memoryLimit } = body;
     const currentUserId = req.userId;
 
     const tagIds = (await getOrCreateTagsByNames(normalizeTags(tags ?? []))).map(x => x._id);
@@ -65,6 +83,8 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         difficulty,
         testCases,
         templates,
+        timeLimit: timeLimit ?? undefined,
+        memoryLimit: memoryLimit ?? undefined,
         tags: tagIds,
         isPublic: Number(isVisible) === 1,
         author: currentUserId,
@@ -236,6 +256,8 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 title: challenge.title,
                 tags: (challenge.tags ?? []).map(t => t.name),
                 templates: challenge.templates.map(x => ({ name: x.name })),
+                timeLimit: challenge.timeLimit,
+                memoryLimit: challenge.memoryLimit,
                 testCases: (challenge.testCases as (TestCase & { _id: Types.ObjectId })[]).map((x) => (x.isHidden ?
                     {
                         id: x._id,
@@ -312,15 +334,7 @@ const getChallengeCode = asyncHandler(async (req: IAuthRequest, res: Response) =
         .lean();
 
     if (submissions.length > 0) {
-        data.challenge.lastSubmission = {
-            passed: submissions[0].passed,
-            testResults: submissions[0].testResults.map(x => ({
-                output: x.output,
-                stderr: x.stderr,
-                passed: x.passed,
-                time: x.time
-            }))
-        };
+        data.challenge.lastSubmission = formatSubmission(submissions[0]);
     }
 
     res.json({ success: true, data: { code: data } });
@@ -381,6 +395,8 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
                 xp: getChallengeXp(challenge.difficulty),
                 isPublic: challenge.isPublic ?? true,
                 solution: challenge.solution ?? "",
+                timeLimit: challenge.timeLimit,
+                memoryLimit: challenge.memoryLimit,
                 templates: challenge.templates.map(x => ({
                     name: x.name,
                     source: x.source
@@ -398,7 +414,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editChallengeSchema, req);
-    const { challengeId, title, description, difficulty, testCases, templates, isVisible, tags } = body;
+    const { challengeId, title, description, difficulty, testCases, templates, isVisible, tags, timeLimit, memoryLimit } = body;
     const challenge = await ChallengeModel.findById(challengeId);
 
     if (!challenge) {
@@ -414,6 +430,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.difficulty = difficulty;
     challenge.testCases = testCases;
     challenge.templates = templates;
+    challenge.timeLimit = timeLimit ?? undefined;
+    challenge.memoryLimit = memoryLimit ?? undefined;
     challenge.isPublic = Number(isVisible) === 1;
     challenge.solution = body.solution ?? "";
 
@@ -427,6 +445,8 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             difficulty: challenge.difficulty,
             testCases: challenge.testCases,
             templates: challenge.templates,
+            timeLimit: challenge.timeLimit,
+            memoryLimit: challenge.memoryLimit,
             xp: getChallengeXp(challenge.difficulty),
             isPublic: challenge.isPublic,
             solution: challenge.solution
@@ -457,7 +477,7 @@ const createChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response)
     const deviceId = req.deviceId;
     const currentUserId = req.userId;
 
-    const challenge = await ChallengeModel.findById(challengeId, "testCases").lean();
+    const challenge = await ChallengeModel.findById(challengeId, "testCases timeLimit memoryLimit").lean();
     if (!challenge) {
         throw new HttpError("Challenge not found", 404);
     }
@@ -467,6 +487,9 @@ const createChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response)
         language,
         source,
         stdin: challenge.testCases.map(x => x.input),
+        testCases: challenge.testCases.map(x => ({ input: x.input, expectedOutput: x.expectedOutput, isHidden: x.isHidden })),
+        timeLimit: challenge.timeLimit,
+        memoryLimit: challenge.memoryLimit,
         userId: currentUserId?.toString(),
         deviceId: deviceId!
     });
@@ -488,7 +511,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
     // XP rewards are private to the user who submitted the solution
     const xpAwarded = req.userId && job.data.userId === req.userId.toString() ? job.returnValue?.xpAwarded : undefined;
     const submission = submissionId ?
-        await ChallengeSubmissionModel.findById(submissionId, { testResults: 1, passed: 1 }).lean() :
+        await ChallengeSubmissionModel.findById(submissionId, { testResults: 1, passed: 1, timeLimit: 1, memoryLimit: 1 }).lean() :
         null;
 
     res.json({
@@ -499,15 +522,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 deviceId: job.data.deviceId,
                 status: job.status,
                 language: job.data.language,
-                submission: submission ? {
-                    testResults: submission.testResults.map(x => ({
-                        output: x.output,
-                        stderr: x.stderr,
-                        passed: x.passed,
-                        time: x.time
-                    })),
-                    passed: submission.passed
-                } : null,
+                submission: submission ? formatSubmission(submission) : null,
                 xpAwarded: xpAwarded ? {
                     total: xpAwarded.total,
                     rewards: xpAwarded.rewards,

@@ -7,6 +7,7 @@ import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import HttpError from "../exceptions/HttpError";
 import { withTransaction } from "../utils/transaction";
 import { getOrCreateTagsByNames } from "./discussionHelper";
+import { challengeMemoryLimitSchema, challengeTimeLimitSchema } from "../validation/challengeSchema";
 
 const importedChallengeSchema = z.object({
     title: z.string().trim().min(1).max(120),
@@ -15,6 +16,9 @@ const importedChallengeSchema = z.object({
     tags: z.array(z.string().trim().min(1).max(64)).max(10).default([]),
     solution: z.string().default(""),
     isPublic: z.boolean().default(true),
+    // Milliseconds of CPU time and megabytes of memory per test; omit for no limit
+    timeLimit: challengeTimeLimitSchema,
+    memoryLimit: challengeMemoryLimitSchema,
     testCases: z.array(z.object({
         input: z.string().max(500).default(""),
         expectedOutput: z.string().min(1).max(500),
@@ -109,7 +113,9 @@ export const importChallengeSet = async (data: ChallengeSet, authorId: string, d
                 solution: resolveLinks(c.solution),
                 isPublic: c.isPublic,
                 testCases: c.testCases,
-                templates: c.templates
+                templates: c.templates,
+                timeLimit: c.timeLimit ?? undefined,
+                memoryLimit: c.memoryLimit ?? undefined
             };
             const doc = await ChallengeModel.findOne({ title: c.title }).session(session);
             if (doc) {

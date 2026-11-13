@@ -4,7 +4,8 @@ import { config } from "../confg";
 import { cleanupSandboxLeftovers, ensureSandboxImages, runInSandbox } from "../utils/sandbox";
 import { logEvents } from "../middleware/logger";
 import ChallengeModel from "../models/Challenge";
-import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
+import ChallengeSubmissionModel, { ChallengeSubmission, TestResult } from "../models/ChallengeSubmission";
+import TestVerdictEnum from "../data/TestVerdictEnum";
 import { AwardedXp, awardChallengeXp } from "../helpers/xpHelper";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
@@ -27,16 +28,39 @@ async function evaluateChallenge(
         return undefined;
     }
 
-    const testResults = challenge.testCases.map((x, i) => {
-        const runResult = result.runResults[i] ?? null;
-        return (i == 0 || runResult != null) ? {
-            passed: runResult ? !runResult.failed && x.expectedOutput.trim() == runResult.stdout.trim() : false,
-            output: runResult ? runResult.stdout.trim() : "",
-            stderr: (result.compileErr ?? "") + (runResult ? runResult.stderr : ""),
-            time: runResult?.time
-        } : null
-    }).filter(x => x != null);
-    const passed = result.runResults.length === challenge.testCases.length && testResults.every(x => x!.passed);
+    // Judge against the test cases and limits the job was created with (older jobs don't carry them)
+    const testCases = data.testCases ?? challenge.testCases;
+    const timeLimit = data.testCases ? data.timeLimit : challenge.timeLimit;
+    const memoryLimit = data.testCases ? data.memoryLimit : challenge.memoryLimit;
+
+    const testResults: TestResult[] = testCases.map((x, i) => {
+        const runResult = result.runResults[i];
+        const testCase = { input: x.input, expectedOutput: x.expectedOutput, isHidden: x.isHidden };
+        if (!runResult) {
+            // Compile errors are shown with the first test
+            const compileFailed = i === 0 && !!result.compileErr;
+            return {
+                ...testCase,
+                passed: false,
+                verdict: compileFailed ? TestVerdictEnum.COMPILE_ERROR : TestVerdictEnum.NOT_RUN,
+                output: "",
+                stderr: compileFailed ? result.compileErr : ""
+            };
+        }
+        const correct = x.expectedOutput.trim() == runResult.stdout.trim();
+        const verdict = runResult.verdict as TestVerdictEnum | undefined
+            ?? (runResult.failed ? TestVerdictEnum.RUNTIME_ERROR : correct ? TestVerdictEnum.ACCEPTED : TestVerdictEnum.WRONG_ANSWER);
+        return {
+            ...testCase,
+            passed: verdict === TestVerdictEnum.ACCEPTED,
+            verdict,
+            output: runResult.stdout.trim(),
+            stderr: (result.compileErr ?? "") + runResult.stderr,
+            time: runResult.time,
+            memory: runResult.memory
+        };
+    });
+    const passed = testResults.length > 0 && testResults.every(x => x.passed);
 
     const submissions = await ChallengeSubmissionModel.find({
         challenge: data.challengeId,
@@ -61,6 +85,8 @@ async function evaluateChallenge(
 
     if (submission) {
         submission.testResults = testResults;
+        submission.timeLimit = timeLimit;
+        submission.memoryLimit = memoryLimit;
         submission.passed = passed;
         if (passed) {
             submission.source = data.source;
@@ -73,6 +99,8 @@ async function evaluateChallenge(
             user: data.userId,
             language: data.language,
             testResults,
+            timeLimit,
+            memoryLimit,
             passed,
             everPassed: passed,
             source: passed ? data.source : undefined
@@ -103,7 +131,10 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
 
     try {
         console.log(`Running job ${job.id}`);
-        result = await runInSandbox(data.source, data.language, data.stdin);
+        result = await runInSandbox(data.source, data.language, data.stdin, {
+            timeLimit: data.timeLimit,
+            memoryLimit: data.memoryLimit
+        });
     } catch (err) {
         logEvents(`Job ${job.id} failed with error: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
         throw err;

@@ -29,6 +29,10 @@ export interface ChallengeDetails {
   isPublic: boolean;
   solution?: string;
   isUnlocked?: boolean;
+  /** CPU time limit per test in ms; absent when the challenge has none */
+  timeLimit?: number | null;
+  /** Memory limit per test in MB; absent when the challenge has none */
+  memoryLimit?: number | null;
 }
 
 export interface ChallengeMinimal {
@@ -110,11 +114,33 @@ export interface GetChallengeCollectionData {
   collection: ChallengeCollectionDetails;
 }
 
+export type ChallengeTestVerdict =
+  | "accepted"
+  | "wrongAnswer"
+  | "timeLimitExceeded"
+  | "memoryLimitExceeded"
+  | "outputLimitExceeded"
+  | "runtimeError"
+  | "compileError"
+  | "notRun";
+
 export interface ChallengeTestResult {
+  passed: boolean;
+  /** Missing in results saved before verdicts were stored */
+  verdict?: ChallengeTestVerdict;
+  /**
+   * Copy of the test case the result belongs to. Missing in results saved before the copy was
+   * stored; input and expected output are also missing for hidden tests.
+   */
+  isHidden?: boolean;
+  input?: string;
+  expectedOutput?: string;
   output?: string;
   stderr?: string;
-  passed: boolean;
+  /** Seconds of CPU time */
   time?: number;
+  /** Peak memory in KB */
+  memory?: number;
 }
 
 export interface ChallengeSubmissionMinimal {
@@ -125,6 +151,9 @@ export interface ChallengeSubmissionMinimal {
 export interface ChallengeSubmissionDetails {
   passed: boolean;
   testResults: ChallengeTestResult[];
+  /** Limits the results were judged with (ms and MB) */
+  timeLimit?: number;
+  memoryLimit?: number;
 }
 
 export interface ChallengeJobDetails {
@@ -181,6 +210,8 @@ export interface EditChallengeData {
   xp: number;
   isPublic: boolean;
   solution: string;
+  timeLimit?: number;
+  memoryLimit?: number;
 }
 
 export interface CreateChallengeJobData {

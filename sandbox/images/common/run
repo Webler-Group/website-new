@@ -2,16 +2,46 @@
 # Shared entry point for every image: runs the language's program, then appends the PNG file it
 # saved into ./output (the working directory is /tmp) to stdout, after a marker line. The backend
 # splits stdout at the LAST marker. The marker is always written, so even if the program prints
-# the same text itself, the last one in the stream is ours.
+# the same text itself, the last one in the stream is ours. The last line of the section is
+# `STATS <cpu microseconds> <wall milliseconds> <peak memory KB|->`, measured for the program alone.
 mkdir -p /tmp/output
 
 # Start the program from perl instead of the shell: when a program dies from a signal, dash would
 # print its own "Segmentation fault" / "CPU time limit exceeded" line into the program's stderr.
 # The backend reports the reason itself. perl exits with the same status (128 + signal) and prints
 # nothing; perl-base is part of every Debian/Ubuntu image.
-perl -e 'my $p = fork // die "fork: $!"; if (!$p) { exec { $ARGV[0] } @ARGV or exit 127 }
-         waitpid($p, 0); exit($? & 127 ? 128 + ($? & 127) : $? >> 8)' /usr/local/bin/run-program
+#
+# perl also measures the program: CPU time (user + system) and peak resident memory come from
+# getrusage(RUSAGE_CHILDREN) after it exits, so container start-up, this wrapper and the image
+# encoding below are not counted. perl-base has no Time::HiRes or BSD::Resource, hence the raw
+# syscall (getrusage is 98 on x86_64, 165 on aarch64); without it, times() gives CPU time only.
+#
+# The program writes to fd 3 (the real stdout); perl writes the STATS line to fd 4, which is
+# captured here. The program gets neither fd 3 nor fd 4.
+exec 3>&1
+stats=$(perl -e '
+    use POSIX ();
+    my $tck = POSIX::sysconf(POSIX::_SC_CLK_TCK()) || 100;
+    my $start = (POSIX::times())[0];
+    my $p = fork // die "fork: $!";
+    if (!$p) { POSIX::close(4); exec { $ARGV[0] } @ARGV or exit 127 }
+    waitpid($p, 0);
+    my $st = $?;
+    my @t = POSIX::times();
+    my $wall = int(($t[0] - $start) * 1000 / $tck);
+    my $cpu = int(($t[3] + $t[4]) * 1000000 / $tck);
+    my $rss = "-";
+    my $nr = { x86_64 => 98, aarch64 => 165 }->{(POSIX::uname())[4]};
+    my $ru = "\0" x 256;
+    if (defined $nr && syscall($nr, -1, $ru) == 0) {
+        my @r = unpack("q5", $ru);
+        $cpu = $r[0] * 1000000 + $r[1] + $r[2] * 1000000 + $r[3];
+        $rss = $r[4];
+    }
+    if (open(my $fh, ">&=", 4)) { print $fh "STATS $cpu $wall $rss\n"; close $fh }
+    exit($st & 127 ? 128 + ($st & 127) : $st >> 8)' /usr/local/bin/run-program 4>&1 1>&3 3>&-)
 status=$?
+exec 3>&-
 
 printf '\n%s\n' '--website-new-images--'
 count=0
@@ -36,5 +66,8 @@ for f in /tmp/output/*.png; do
     shown=$name
     count=$((count + 1))
 done
+
+# After the image, so backends that read only the first two lines of the section still work
+[ -n "$stats" ] && printf '%s\n' "$stats"
 
 exit $status

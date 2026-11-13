@@ -2,7 +2,7 @@ import { Badge, Button, Container, cx, FormSelect, Modal } from "../../../compon
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { FaPen, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode, FaListUl } from "react-icons/fa";
+import { FaPen, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode, FaListUl, FaStopwatch, FaMemory } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
@@ -249,6 +249,18 @@ const ChallengeDetailsPage = () => {
                                 <FaTrophy size={14} />
                                 {challenge.xp} XP
                             </div>
+                            {challenge.timeLimit ? (
+                                <span className="wb-challenges-limit small text-muted" title="CPU time limit per test">
+                                    <FaStopwatch size={12} />
+                                    {challenge.timeLimit < 1000 ? `${challenge.timeLimit} ms` : `${challenge.timeLimit / 1000} s`}
+                                </span>
+                            ) : null}
+                            {challenge.memoryLimit ? (
+                                <span className="wb-challenges-limit small text-muted" title="Memory limit per test">
+                                    <FaMemory size={12} />
+                                    {challenge.memoryLimit} MB
+                                </span>
+                            ) : null}
                         </div>
                         <h2 className="fs-3 fw-bold mb-0 text-body-emphasis">{challenge.title}</h2>
                         <ChallengeTags tags={challenge.tags} className="mt-2" />

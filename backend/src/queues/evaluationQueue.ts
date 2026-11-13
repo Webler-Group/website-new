@@ -4,6 +4,7 @@ import { config } from "../confg";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import HttpError from "../exceptions/HttpError";
 import type { AwardedXp } from "../helpers/xpHelper";
+import type { RunVerdict } from "../utils/sandbox";
 
 export const EVALUATION_QUEUE_NAME = "evaluation";
 
@@ -26,7 +27,12 @@ export interface RunImage {
 export interface RunResult {
     stdout: string;
     stderr: string;
+    // Seconds of CPU time
     time?: number;
+    // Peak memory in KB
+    memory?: number;
+    // Why the run failed, when it did
+    verdict?: RunVerdict;
     // PNG file the program saved into ./output
     image?: RunImage;
     // Crashed or hit a limit; later inputs were not run
@@ -45,6 +51,12 @@ export interface EvaluationJobData {
     deviceId: string;
     challengeId?: string;
     userId?: string;
+    // Challenge test cases and limits when the job was created, so the results are judged
+    // against the test cases that were run even if the challenge is edited meanwhile.
+    // Missing in jobs queued before these fields were added.
+    testCases?: { input: string; expectedOutput: string; isHidden: boolean }[];
+    timeLimit?: number;
+    memoryLimit?: number;
 }
 
 export interface EvaluationJobResult {

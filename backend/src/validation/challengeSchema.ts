@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { compilerLanguageSchema, countPerPageSchema, filterSchema, idSchema, multerFileSchema, pageSchema, questionTitleSchema, tagNameSchema } from "./commonSchema";
 import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
+import { config } from "../confg";
 
 export const challengeDescriptionSchema = z.string().min(1, "Description is required").max(8192, "Description cannot exceed 8192 characters");
 
@@ -19,6 +20,23 @@ const templateSchema = z.object({
 
 const challengeTagsSchema = z.array(tagNameSchema).max(10, "Maximum 10 tags allowed").optional();
 
+// The code runner never allows more than 10 s of CPU time or its container's memory
+export const MAX_CHALLENGE_TIME_LIMIT_MS = 10_000;
+export const MAX_CHALLENGE_MEMORY_LIMIT_MB = Math.floor(config.compilerMemLimit / 1024);
+
+// Optional; null or missing means no limit beyond the code runner's own
+export const challengeTimeLimitSchema = z.number()
+  .int("Time limit must be a whole number of milliseconds")
+  .min(10, "Time limit must be at least 10 ms")
+  .max(MAX_CHALLENGE_TIME_LIMIT_MS, `Time limit cannot exceed ${MAX_CHALLENGE_TIME_LIMIT_MS} ms`)
+  .nullish();
+
+export const challengeMemoryLimitSchema = z.number()
+  .int("Memory limit must be a whole number of megabytes")
+  .min(1, "Memory limit must be at least 1 MB")
+  .max(MAX_CHALLENGE_MEMORY_LIMIT_MB, `Memory limit cannot exceed ${MAX_CHALLENGE_MEMORY_LIMIT_MB} MB`)
+  .nullish();
+
 export const createChallengeSchema = z.object({
   body: z.object({
     title: questionTitleSchema,
@@ -28,7 +46,9 @@ export const createChallengeSchema = z.object({
     templates: z.array(templateSchema),
     isVisible: z.number(),
     solution: z.string().optional(),
-    tags: challengeTagsSchema
+    tags: challengeTagsSchema,
+    timeLimit: challengeTimeLimitSchema,
+    memoryLimit: challengeMemoryLimitSchema
   })
 });
 
@@ -42,7 +62,9 @@ export const editChallengeSchema = createChallengeSchema.extend({
     templates: z.array(templateSchema),
     isVisible: z.number(),
     solution: z.string().optional(),
-    tags: challengeTagsSchema
+    tags: challengeTagsSchema,
+    timeLimit: challengeTimeLimitSchema,
+    memoryLimit: challengeMemoryLimitSchema
   })
 });
 

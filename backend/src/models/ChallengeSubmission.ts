@@ -1,11 +1,26 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import TestVerdictEnum from "../data/TestVerdictEnum";
 
 // --- Nested: TestResult ---
 export class TestResult {
     @prop({ required: true })
     passed!: boolean;
+
+    // Copy of the test case at the time of the submission, so editing the challenge later doesn't
+    // pair new test cases with old results. Missing in results saved before the copy was added.
+    @prop()
+    input?: string;
+
+    @prop()
+    expectedOutput?: string;
+
+    @prop()
+    isHidden?: boolean;
+
+    @prop({ enum: TestVerdictEnum })
+    verdict?: TestVerdictEnum;
 
     @prop()
     output?: string;
@@ -13,8 +28,13 @@ export class TestResult {
     @prop()
     stderr?: string;
 
+    // Seconds of CPU time
     @prop()
     time?: number;
+
+    // Peak memory in KB
+    @prop()
+    memory?: number;
 }
 
 // --- Main: ChallengeSubmission ---
@@ -31,6 +51,13 @@ export class ChallengeSubmission {
 
     @prop({ type: () => [TestResult], default: [] })
     testResults!: TestResult[];
+
+    // The challenge's limits the latest test results were judged with (ms and MB)
+    @prop()
+    timeLimit?: number;
+
+    @prop()
+    memoryLimit?: number;
 
     @prop({ default: false })
     passed!: boolean;

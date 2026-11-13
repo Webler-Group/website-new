@@ -22,7 +22,7 @@ Published as `ghcr.io/webler-group/website-new-runner-<lang>`.
 
 - The job directory is mounted at `/box` and holds the source file.
 - `compile` (only in compiled languages) writes its output into `/box`. It exits non-zero on failure and prints diagnostics to stderr.
-- `run` is the shared wrapper `images/common/run`. It runs the language's `run-program`, then appends the program's images to stdout (see below). stdin, stdout and stderr otherwise belong to the user program.
+- `run` is the shared wrapper `images/common/run`. It runs the language's `run-program`, then appends the program's images and measurements to stdout (see below). stdin, stdout and stderr otherwise belong to the user program.
 - Scripts use absolute paths, so the caller picks the working directory.
 - `HOME=/tmp`. The images expect a writable tmpfs at `/tmp`, because the root filesystem is read-only.
 
@@ -38,6 +38,18 @@ Programs in any language can save a PNG file into `output/` (relative to the wor
 | File names | letters, digits, `.`, `_`, `-` |
 
 If the program is killed (time or output limit), no image is returned.
+
+## Measurements
+
+The last line after the marker is `STATS <cpu> <wall> <memory>`, measured by the wrapper for the program alone (container start-up, the wrapper and the image encoding are not counted; the language runtime's own start-up is):
+
+| Field | Meaning |
+|---|---|
+| `cpu` | CPU time (user + system) of the program and the processes it waited for, in microseconds |
+| `wall` | Wall time of the program, in milliseconds (10 ms resolution) |
+| `memory` | Peak resident memory of the largest process, in KB, or `-` if unavailable |
+
+The values come from `getrusage(RUSAGE_CHILDREN)`, called by raw syscall number from perl (x86_64 and aarch64). The backend uses `cpu` as the test's time and compares it, and `memory`, with a challenge's limits. Images without the STATS line still work: the backend then falls back to the container's start-to-finish time and reports no memory.
 
 Python: `plt.savefig("output/plot.png")`, or draw pixels with Pillow:
 
