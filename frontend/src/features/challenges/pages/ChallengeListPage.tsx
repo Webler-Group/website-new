@@ -29,7 +29,6 @@ const ChallengeList = () => {
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();
-    const [isPublic, setIsPublic] = useState(true);
     const [collections, setCollections] = useState<ChallengeCollectionMinimal[]>([]);
     const [tags, setTags] = useState<ChallengeTagCount[]>([]);
     const [toDelete, setToDelete] = useState<ChallengeMinimal | null>(null);
@@ -37,11 +36,11 @@ const ChallengeList = () => {
 
     useEffect(() => {
         getChallenges();
-    }, [searchParams, isPublic]);
+    }, [searchParams]);
 
     useEffect(() => {
         getTags();
-    }, [isPublic]);
+    }, []);
 
     useEffect(() => {
         getCollections();
@@ -55,7 +54,7 @@ const ChallengeList = () => {
     }
 
     const getTags = async () => {
-        const result = await sendJsonRequest<ChallengeTagsData>("/Challenge/Tags", "POST", { isVisible: isPublic ? 1 : 0 });
+        const result = await sendJsonRequest<ChallengeTagsData>("/Challenge/Tags", "POST", { isVisible: 1 });
         setTags(result.data?.tags ?? []);
     }
 
@@ -112,7 +111,7 @@ const ChallengeList = () => {
             difficulty: searchParams.has("difficulty") ? searchParams.get("difficulty") : null,
             searchQuery: searchParams.has("query") ? searchParams.get("query")! : "",
             tag: searchParams.get("tag"),
-            isVisible: isPublic ? 1 : 0,
+            isVisible: 1,
         });
         if (result.data) {
             setChallenges(result.data.challenges);
@@ -168,14 +167,6 @@ const ChallengeList = () => {
 
                 {isCreator && (
                     <div className="d-flex flex-wrap align-items-center gap-2 ms-lg-auto">
-                        <Form.Check
-                            type="switch"
-                            id="public-only"
-                            label="Public only"
-                            checked={isPublic}
-                            onChange={(e) => setIsPublic(e.target.checked)}
-                            className="small text-muted text-nowrap me-1"
-                        />
                         <Button to="/Challenge/Create" size="sm" className="d-flex align-items-center gap-2 text-nowrap">
                             <FaPlus size={12} /> Create
                         </Button>
@@ -224,7 +215,6 @@ const ChallengeList = () => {
                                                 <div className="d-flex flex-column">
                                                     <span className="wb-challenges-table-title">
                                                         {challenge.title}
-                                                        {!isPublic && <FaLock size={10} className="text-muted ms-2" />}
                                                     </span>
                                                     <ChallengeTags tags={challenge.tags} className="mt-1" onSelect={setTagFilter} max={3} />
                                                     <span className="d-md-none text-muted wb-util-text-xs">
