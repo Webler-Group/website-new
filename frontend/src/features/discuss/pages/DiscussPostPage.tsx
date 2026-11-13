@@ -5,7 +5,8 @@ import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
 import { useAuth } from "../../auth/context/authContext";
 import Answer from "../components/Answer";
-import { FaSearch, FaThumbsUp } from "react-icons/fa";
+import { FaSearch } from "react-icons/fa";
+import UpvoteButton from "../../../components/UpvoteButton";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import { FaStar } from "react-icons/fa6";
 import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
@@ -444,13 +445,12 @@ const DiscussPostPage = () => {
                     {/* Footer: votes + author */}
                     <div className="wb-discuss-post-footer d-flex align-items-center justify-content-between mt-3 pt-3">
                         <div className="d-flex align-items-center gap-3">
-                            <button
-                                className={cx("wb-discuss-vote-button", question.isUpvoted && "wb-discuss-vote-button--active")}
-                                onClick={voteQuestion}
-                            >
-                                <FaThumbsUp size={13} />
-                                <span onClick={(e) => { e.stopPropagation(); handleShowVoters(); }}>{question.votes}</span>
-                            </button>
+                            <UpvoteButton
+                                votes={question.votes}
+                                isUpvoted={question.isUpvoted}
+                                onVote={voteQuestion}
+                                onShowVoters={handleShowVoters}
+                            />
                             <button
                                 className={cx("wb-discuss-follow-button", question.isFollowed && "wb-discuss-follow-button--active")}
                                 onClick={handleFollowQuestion}

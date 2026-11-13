@@ -53,30 +53,22 @@
     color: #fff;
 }
 
-.wb-compiler-playground-voting {
-    display: flex;
-    flex-direction: row;
+/* Avatar + title/author in the editor toolbar; gives way to the buttons on narrow screens */
+.wb-compiler-playground-code-info {
+    flex: 0 1 auto;
+    min-width: 0;
+    line-height: 1.25;
+}
+
+.wb-compiler-playground-code-info > :first-child {
+    flex-shrink: 0; /* avatar keeps its size */
+}
+
+.wb-compiler-playground-private {
+    display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 0 6px;
-}
-
-.wb-compiler-playground-comments {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 4px;
-    padding: 0 6px;
-}
-
-.wb-compiler-playground-public {
-    min-width: 35px;
-    display: flex;
-    justify-content: center;
-}
-
-.wb-compiler-playground-public>span {
     padding: 0 4px;
+    font-size: 0.8rem;
 }
 
 .wb-compiler-playground-output-web {

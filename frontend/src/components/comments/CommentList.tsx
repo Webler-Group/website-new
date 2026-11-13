@@ -18,13 +18,13 @@ interface CommentListProps {
     setCommentCount?: (setter: (prev: number) => number) => void;
     /**
      * Store for unsent comment texts. Pass a store owned by the parent page to keep drafts
-     * even when CommentList unmounts (e.g. closing an offcanvas). Keys: "new", "reply:<id>", "edit:<id>".
+     * even when CommentList unmounts (e.g. closing an offcanvas). Keys: "new", "reply:<target id>", "edit:<id>".
      */
     drafts?: Map<string, string>;
 }
 
-const getDraftKey = (editedPost: CommmentDetails | null, parentId: string | null) =>
-    editedPost ? `edit:${editedPost.id}` : parentId ? `reply:${parentId}` : "new";
+const getDraftKey = (editedPost: CommmentDetails | null, replyTarget: CommmentDetails | null) =>
+    editedPost ? `edit:${editedPost.id}` : replyTarget ? `reply:${replyTarget.id}` : "new";
 
 const CommentList: React.FC<CommentListProps> = ({ findPost, options, setCommentCount, drafts }) => {
     const localDraftsRef = useRef(new Map<string, string>());
@@ -37,6 +37,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     const [answerFormLoading, setAnswerFormLoading] = useState(false);
     const [editedComment, setEditedComment] = useState<CommmentDetails | null>(null);
     const [parentCommentId, setParentCommentId] = useState<string | null>(null);
+    const [replyTarget, setReplyTarget] = useState<CommmentDetails | null>(null);
     const activeParentCommentRef = useRef<HTMLDivElement>(null);
     const [onReplyCallback, setOnReplyCallback] = useState<(post: CommmentDetails) => void>();
     const [onEditCallback, setOnEditCallback] = useState<(id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void>();
@@ -112,36 +113,60 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
     // Remember what is typed so it can be restored when the form is opened again
     useEffect(() => {
         if (!answerFormVisible) return;
-        const key = getDraftKey(editedComment, parentCommentId);
+        const key = getDraftKey(editedComment, replyTarget);
         if (answerFormMessage.length > 0) {
             draftStore.set(key, answerFormMessage);
         } else {
             draftStore.delete(key);
         }
-    }, [answerFormMessage, answerFormVisible, editedComment, parentCommentId, draftStore]);
+    }, [answerFormMessage, answerFormVisible, editedComment, replyTarget, draftStore]);
 
-    const showAnswerForm = (post: CommmentDetails | null, parentId: string | null, message: string = "") => {
+    const showAnswerForm = (post: CommmentDetails | null, parentId: string | null, message: string = "", target: CommmentDetails | null = null) => {
         if (!userInfo) {
             navigate("/Users/Login");
             return;
         }
-        setAnswerFormMessage(draftStore.get(getDraftKey(post, parentId)) ?? message);
+        setAnswerFormMessage(draftStore.get(getDraftKey(post, target)) ?? message);
         setEditedComment(post);
         setParentCommentId(parentId);
+        setReplyTarget(target);
         setAnswerFormVisible(true);
 
         setTimeout(() => {
             if (formInputRef.current) {
-                formInputRef.current.focus();
+                // Don't let the browser scroll on focus; the list keeps the target comment visible itself
+                formInputRef.current.focus({ preventScroll: true });
             }
         });
     };
 
     const hideAnswerForm = () => {
-        draftStore.delete(getDraftKey(editedComment, parentCommentId));
+        draftStore.delete(getDraftKey(editedComment, replyTarget));
         setAnswerFormVisible(false);
         setAnswerFormMessage('');
         setEditedComment(null);
+        setReplyTarget(null);
+    };
+
+    /** Scrolls the comment list (only the list, not the page) so the comment is fully visible */
+    const scrollToComment = (id: string, behavior: ScrollBehavior = "smooth") => {
+        const container = commentContainerRef.current;
+        const element = container?.querySelector<HTMLElement>(`[data-comment-id="${id}"]`);
+        if (!container || !element) return;
+        const containerRect = container.getBoundingClientRect();
+        const elementRect = element.getBoundingClientRect();
+        const margin = 8;
+        let delta = 0;
+        if (elementRect.top < containerRect.top + margin || elementRect.height > containerRect.height - 2 * margin) {
+            // Above the view, or taller than the view: align its top
+            delta = elementRect.top - containerRect.top - margin;
+        } else if (elementRect.bottom > containerRect.bottom - margin) {
+            // Below the view (e.g. covered by the form): align its bottom
+            delta = elementRect.bottom - containerRect.bottom + margin;
+        }
+        if (delta !== 0) {
+            container.scrollBy({ top: delta, behavior });
+        }
     };
 
     const handlePostAnswer = async () => {
@@ -249,9 +274,9 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
         }));
     };
 
-    const onReply = (id: string, replyCallback: (post: CommmentDetails) => void, message?: string) => {
+    const onReply = (parentId: string, target: CommmentDetails, replyCallback: (post: CommmentDetails) => void, message?: string) => {
         setOnReplyCallback(() => replyCallback);
-        showAnswerForm(null, id, message);
+        showAnswerForm(null, parentId, message, target);
     }
 
     const onEdit = (post: CommmentDetails, editCallback?: (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void) => {
@@ -284,6 +309,34 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
 
     let loading = answerFormLoading || commentsLoading;
 
+    // Comment the open form refers to (being edited or replied to)
+    const formContextComment = answerFormVisible ? (editedComment ?? replyTarget) : null;
+    const formContextCommentId = formContextComment?.id ?? null;
+
+    // Keep the replied/edited comment visible: when the form opens, and whenever the list shrinks
+    // afterwards (form growing, on-screen keyboard opening, window resize)
+    useEffect(() => {
+        const container = commentContainerRef.current;
+        if (!formContextCommentId || !container) return;
+
+        const frame = requestAnimationFrame(() => scrollToComment(formContextCommentId));
+
+        let lastHeight = container.clientHeight;
+        const observer = new ResizeObserver(() => {
+            const height = container.clientHeight;
+            if (height < lastHeight) {
+                scrollToComment(formContextCommentId, "auto");
+            }
+            lastHeight = height;
+        });
+        observer.observe(container);
+
+        return () => {
+            cancelAnimationFrame(frame);
+            observer.disconnect();
+        };
+    }, [formContextCommentId]);
+
     return (
         <>
             <Modal size="sm" show={deleteModalVisible} onHide={closeDeleteModal} centered>
@@ -314,7 +367,8 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     </Button>
                 )}
             </div>
-            <div className="mt-1 pe-1 flex-grow-1 overflow-auto" ref={commentContainerRef}>
+            <div className="wb-comments-list-area">
+            <div className="wb-comments-list pt-1 pe-1" ref={commentContainerRef}>
                 {results.length > 0 && getFirstValidCommentIndex() > 0 && showAllComments && (
                     <Button
                         variant="primary"
@@ -338,6 +392,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                             onReply={onReply}
                             onShowVotes={onShowVotes}
                             highlightedCommentId={highlightedCommentId}
+                            activeCommentId={formContextComment?.id ?? null}
                             onVote={onVote}
                         />)
                         return comment.id == parentCommentId ?
@@ -347,7 +402,7 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 }
             </div>
             <Toast
-                className="wb-comments-toast position-absolute"
+                className="wb-comments-toast"
                 bg={message.success ? 'success' : 'danger'}
                 onClose={() => setMessage(prev => ({ success: prev.success }))}
                 show={(message.errors && message.errors.length > 0) || !!message.message}
@@ -358,7 +413,8 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                     <b>{message.success ? message.message : message.errors ? message.errors[0]?.message : ""}</b>
                 </Toast.Body>
             </Toast>
-            <div className="py-2 border-top">
+            </div>
+            <div className="wb-comments-form py-2 border-top">
                 <Button
                     hidden={answerFormVisible}
                     size="sm"
@@ -370,19 +426,34 @@ const CommentList: React.FC<CommentListProps> = ({ findPost, options, setComment
                 </Button>
                 <div hidden={!answerFormVisible}>
                     <FormGroup>
-                        <FormLabel>
-                            <b>{userInfo?.name}</b>
-                        </FormLabel>
+                        {formContextComment ? (
+                            <div className="wb-comments-form-context">
+                                <button
+                                    type="button"
+                                    className="wb-comments-form-context-body"
+                                    onClick={() => scrollToComment(formContextComment.id)}
+                                    title="Show comment"
+                                >
+                                    {editedComment
+                                        ? <>Editing your {editedComment.parentId ? "reply" : "comment"}</>
+                                        : <>Replying to <b>{formContextComment.user.name}</b></>}
+                                </button>
+                            </div>
+                        ) : (
+                            <FormLabel className="d-none d-md-block mb-1">
+                                <b>{userInfo?.name}</b>
+                            </FormLabel>
+                        )}
                         <PostTextareaControl
                             ref={formInputRef}
                             size="sm"
                             value={answerFormMessage}
                             setValue={setAnswerFormMessage}
-                            placeholder="Write your comment here..."
-                            rows={5}
+                            placeholder={replyTarget ? `Reply to ${replyTarget.user.name}...` : "Write your comment here..."}
+                            rows={4}
                         />
                     </FormGroup>
-                    <div className="d-flex justify-content-end mt-2">
+                    <div className="d-flex justify-content-end align-items-center mt-1">
                         <Button variant="link" className="text-secondary" onClick={() => setPostAttachmentSelectVisible(true)}>
                             <FaPlus />
                         </Button>

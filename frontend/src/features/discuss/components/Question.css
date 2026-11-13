@@ -4,7 +4,20 @@
 
 .wb-discuss-question-item {
     cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
     transition: all 0.2s ease-in-out;
+}
+
+.wb-discuss-question-item:focus {
+    outline: none;
+}
+
+.wb-discuss-question-item:focus-visible {
+    outline: 2px solid var(--bs-primary);
+    outline-offset: -2px;
 }
 
 .wb-discuss-question-item:hover {

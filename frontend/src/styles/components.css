@@ -20,6 +20,117 @@
     color: gray;
 }
 
+/* --- Pill buttons (UpvoteButton, CountButton) ---------------------------------------------- */
+
+.wb-pill {
+    display: inline-flex;
+    align-items: stretch;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 999px;
+    overflow: hidden;
+    font-size: 0.82rem;
+    line-height: 1;
+    color: var(--bs-secondary-color);
+    background: none;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    flex-shrink: 0;
+}
+
+.wb-pill-part {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: inherit;
+    min-height: 28px;
+    padding: 0 10px;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+/* Single-part pill is the button itself */
+button.wb-pill:hover,
+.wb-pill button.wb-pill-part:not(:disabled):hover {
+    background-color: rgba(var(--bs-emphasis-color-rgb), 0.07);
+    color: var(--bs-emphasis-color);
+}
+
+.wb-pill-count {
+    font-weight: 600;
+}
+
+.wb-pill--sm {
+    font-size: 0.75rem;
+}
+
+.wb-pill--sm .wb-pill-part {
+    min-height: 24px;
+}
+
+@media (max-width: 768px) {
+    /* Bigger touch targets */
+    .wb-pill-part {
+        min-height: 32px;
+        padding: 0 12px;
+    }
+
+    .wb-pill--sm .wb-pill-part {
+        min-height: 30px;
+    }
+}
+
+/* Upvote: thumb toggles vote, count opens upvoters – two separate hit areas */
+.wb-upvote-toggle {
+    padding-right: 8px;
+}
+
+.wb-upvote-toggle svg {
+    transition: transform 0.1s ease;
+}
+
+.wb-upvote-toggle:active svg {
+    transform: scale(0.85);
+}
+
+.wb-upvote-count {
+    padding-left: 8px;
+    min-width: 32px;
+    border-left: 1px solid var(--bs-border-color);
+}
+
+.wb-upvote-count:disabled {
+    cursor: default;
+}
+
+.wb-upvote--active {
+    color: var(--bs-emphasis-color);
+}
+
+/* Only the icon turns blue when upvoted, the border stays neutral */
+.wb-upvote--active .wb-upvote-toggle,
+.wb-upvote--active .wb-upvote-toggle:hover {
+    color: var(--bs-primary) !important;
+}
+
+/* Vertical: thumb above the count */
+.wb-upvote--vertical {
+    flex-direction: column;
+    border-radius: 14px;
+}
+
+.wb-upvote--vertical .wb-pill-part {
+    padding: 0 6px;
+    min-width: 34px;
+}
+
+.wb-upvote--vertical .wb-upvote-count {
+    border-left: none;
+    border-top: 1px solid var(--bs-border-color);
+}
+
 /* --- Loader --------------------------------------------------------------------------------- */
 
 .wb-loader {
@@ -106,17 +217,27 @@
 
 .offcanvas.wb-comments-offcanvas {
     --bs-offcanvas-width: 100% !important;
+    --bs-offcanvas-padding-x: 0.75rem;
+    --bs-offcanvas-padding-y: 0.5rem;
 }
 
 @media (min-width: 768px) {
     .offcanvas.wb-comments-offcanvas {
-        --bs-offcanvas-width: 50% !important;
+        --bs-offcanvas-width: 480px !important;
+        --bs-offcanvas-padding-x: 1rem;
+        --bs-offcanvas-padding-y: 0.75rem;
     }
 }
 
-/* Offcanvas body below a 62px header that fills the remaining height */
+.wb-comments-offcanvas .offcanvas-title {
+    font-size: 1.1rem;
+}
+
+/* Body fills the rest of the (flex column) offcanvas; the comment list scrolls inside it */
 .wb-comments-offcanvas-body {
-    height: calc(100% - 62px);
+    min-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
 }
 
 /* --- Profile name link ---------------------------------------------------------------------- */

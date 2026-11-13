@@ -1,5 +1,6 @@
 import { cx } from "../ui";
-import { FaPencil, FaThumbsUp, FaTrash } from "react-icons/fa6";
+import { FaPencil, FaTrash } from "react-icons/fa6";
+import UpvoteButton from "../UpvoteButton";
 import { useAuth } from "../../features/auth/context/authContext";
 import PostAttachment from "../post-attachment-select/PostAttachment";
 import DateUtils from "../../utils/DateUtils";
@@ -15,6 +16,8 @@ interface CommentProps {
   comment: CommmentDetails;
   isReply?: boolean;
   isHighlighted: boolean;
+  /** The comment is the target of the open reply/edit form */
+  isActive?: boolean;
   handleReply?: () => void;
   handleEdit: () => void;
   handleDelete: () => void;
@@ -30,6 +33,7 @@ const Comment: React.FC<CommentProps> = ({
   handleDelete,
   handleShowVotes,
   isHighlighted,
+  isActive = false,
   onVote
 }) => {
   const { userInfo } = useAuth();
@@ -51,7 +55,10 @@ const Comment: React.FC<CommentProps> = ({
   }
 
   return (
-    <div className={cx("d-flex position-relative gap-3 wb-comments-item", isHighlighted && "wb-comments-item--highlighted")}>
+    <div
+      data-comment-id={comment.id}
+      className={cx("d-flex position-relative gap-3 wb-comments-item", isHighlighted && "wb-comments-item--highlighted", isActive && "wb-comments-item--active")}
+    >
       <div className="wb-comments-options">
         <div className="d-flex gap-2">
           {
@@ -98,24 +105,14 @@ const Comment: React.FC<CommentProps> = ({
 
         {/* Action Buttons Footer */}
         <div className="d-flex gap-3 align-items-center mt-2">
-          <button 
-            className={cx("wb-comments-action-button", comment.isUpvoted && "wb-comments-action-button--active")} 
-            onClick={handleVote}
-          >
-            <FaThumbsUp size={14} className="me-1 mb-1" />
-            <span 
-              className="wb-comments-footer-vote-count fw-medium"
-              onClick={(e) => {
-                if (comment.votes > 0) {
-                  e.stopPropagation();
-                  handleShowVotes();
-                }
-              }}
-            >
-              {comment.votes > 0 ? comment.votes : ""}
-            </span>
-          </button>
-          
+          <UpvoteButton
+            size="sm"
+            votes={comment.votes}
+            isUpvoted={comment.isUpvoted}
+            onVote={handleVote}
+            onShowVoters={handleShowVotes}
+          />
+
           <button className="wb-comments-action-button fw-medium" onClick={handleReply}>
             Reply
           </button>

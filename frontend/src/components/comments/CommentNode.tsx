@@ -11,9 +11,10 @@ interface CommentNodeProps {
     defaultReplies: CommmentDetails[] | null;
     onDelete: (post: CommmentDetails, onDeleteCallback?: (id: string) => void) => void;
     onEdit: (post: CommmentDetails, onEditCallback?: (id: string, setter: (prev: CommmentDetails) => CommmentDetails) => void) => void;
-    onReply: (id: string, onReplyCallback: (post: CommmentDetails) => void, message?: string) => void;
+    onReply: (parentId: string, target: CommmentDetails, onReplyCallback: (post: CommmentDetails) => void, message?: string) => void;
     onShowVotes: (id: string) => void;
     highlightedCommentId: string | null;
+    activeCommentId: string | null;
     onVote: (id: string, vote: number, error?: { message: string }[]) => void;
 }
 
@@ -26,6 +27,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
     onReply,
     onShowVotes,
     highlightedCommentId,
+    activeCommentId,
     onVote
 }, ref) => {
     const [repliesVisible, setRepliesVisible] = useState(defaultReplies !== null);
@@ -78,7 +80,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const handleReply = () => {
         setRepliesVisible(true);
-        onReply(comment.id, (post: CommmentDetails) => {
+        onReply(comment.id, comment, (post: CommmentDetails) => {
             createReply(post);
         });
     }
@@ -101,7 +103,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
 
     const onReplyReply = (reply: CommmentDetails) => {
         setRepliesVisible(true);
-        onReply(comment.id, (post: CommmentDetails) => {
+        onReply(comment.id, reply, (post: CommmentDetails) => {
             createReply(post);
         }, `[user id="${reply.user.id}"]${reply.user.name}[/user] `);
     }
@@ -125,6 +127,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                 handleReply={handleReply}
                 handleShowVotes={() => onShowVotes(comment.id)}
                 isHighlighted={highlightedCommentId === comment.id}
+                isActive={activeCommentId === comment.id}
                 onVote={onVote}
             />
 
@@ -163,6 +166,7 @@ const CommentNode = React.forwardRef<HTMLDivElement, CommentNodeProps>(({
                                 handleReply={() => onReplyReply(reply)}
                                 handleShowVotes={() => onShowVotes(reply.id)}
                                 isHighlighted={highlightedCommentId === reply.id}
+                                isActive={activeCommentId === reply.id}
                                 onVote={onReplyVote}
                             />
                         </div>
