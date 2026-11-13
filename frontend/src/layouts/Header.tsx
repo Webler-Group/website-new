@@ -40,6 +40,7 @@ function Header({ hideChannelsButton }: HeaderProps) {
             <Nav.Link to="/Discuss">Discuss</Nav.Link>
             <Nav.Link to="/Feed">Feed</Nav.Link>
             <Nav.Link to="/Challenge">Challenges</Nav.Link>
+            <Nav.Link to="/Profile/Leaderboard">Leaderboard</Nav.Link>
             {
               userInfo && userInfo.roles.some(role => role !== "User") &&
               <Nav.Link to="/Tools">Tools</Nav.Link>

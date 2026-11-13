@@ -13,15 +13,18 @@ import ScrollToTop from './components/ScrollToTop';
 import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import UserInfoProvider from './context/userInfoContext';
+import XpRewardProvider from './context/xpRewardContext';
 
 const Root = () => (
   <ApiProvider baseUrl='/api'>
     <WSProvider>
       <ConnectionStatusProvider>
         <UserInfoProvider>
-          <ScrollToTop excludePaths={["/feed"]} />
-          <ConnectionStatusIndicator />
-          <App />
+          <XpRewardProvider>
+            <ScrollToTop excludePaths={["/feed"]} />
+            <ConnectionStatusIndicator />
+            <App />
+          </XpRewardProvider>
         </UserInfoProvider>
       </ConnectionStatusProvider>
     </WSProvider>

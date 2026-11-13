@@ -1,9 +1,9 @@
 import { HTMLAttributes } from "react";
-import { cx, Variant } from "./utils";
+import { cx, ThemeColor, Variant } from "./utils";
 
 interface BadgeProps extends Omit<HTMLAttributes<HTMLSpanElement>, "style"> {
-    bg?: Exclude<Variant, "link">;
-    text?: Exclude<Variant, "link">;
+    bg?: Exclude<Variant, "link"> | ThemeColor;
+    text?: Exclude<Variant, "link"> | ThemeColor;
     pill?: boolean;
 }
 

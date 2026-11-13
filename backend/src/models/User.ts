@@ -1,4 +1,4 @@
-import { prop, getModelForClass, modelOptions, pre, DocumentType } from "@typegoose/typegoose";
+import { prop, getModelForClass, modelOptions, pre, DocumentType, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../data/countryCodes";
@@ -82,6 +82,8 @@ export class FeedSettings {
         this.level = levelFromXp(this.xp);
     }
 })
+// Overall XP leaderboard
+@index({ active: 1, xp: -1, _id: 1 })
 @modelOptions({ schemaOptions: { collection: "users", timestamps: true } })
 export class User {
     @prop({ required: true, unique: true, trim: true, lowercase: true, validate: [isEmail, "invalid email"] })

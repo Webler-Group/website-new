@@ -22,7 +22,8 @@ type ButtonAsLinkProps = BaseButtonProps & Omit<ComponentProps<typeof Link>, "st
 export type ButtonProps = ButtonAsButtonProps | ButtonAsLinkProps;
 
 export function buttonClasses({ variant = "primary", size, active, disabled }: BaseButtonProps & { disabled?: boolean }) {
-    return cx("btn", `btn-${variant}`, size && `btn-${size}`, active && "active", disabled && "disabled");
+    const variantClass = variant === "subtle" ? "wb-ui-button--subtle" : `btn-${variant}`;
+    return cx("btn", variantClass, size && `btn-${size}`, active && "active", disabled && "disabled");
 }
 
 function Button(props: ButtonProps) {

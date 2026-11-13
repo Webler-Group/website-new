@@ -1,3 +1,4 @@
+import type { XpAward } from "../../context/xpRewardContext";
 import ChallengeDifficultyEnum from "../../data/ChallengeDifficultyEnum";
 import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
 import { CodeDetails } from "../codes/types";
@@ -22,6 +23,7 @@ export interface ChallengeDetails {
   difficulty: ChallengeDifficultyEnum;
   templates: ChallengeTemplate[];
   testCases: ChallengeTestCase[];
+  tags: string[];
   submissions?: ChallengeSubmissionMinimal[];
   totalSubmissions?: number;
   isPublic: boolean;
@@ -39,6 +41,73 @@ export interface ChallengeMinimal {
     hasSolution?: boolean;
     submissions?: { language: string; passed: boolean }[];
     totalSubmissions?: number;
+    tags?: string[];
+}
+
+export interface ChallengeCollectionMinimal {
+  id: string;
+  title: string;
+  description: string;
+  isPublic: boolean;
+  sectionCount: number;
+  challengeCount: number;
+  solvedCount: number;
+}
+
+export interface ChallengeCollectionItem {
+  id: string;
+  title: string;
+  difficulty: ChallengeDifficultyEnum;
+  xp: number;
+  isPublic: boolean;
+  tags: string[];
+  isSolved: boolean;
+}
+
+export interface ChallengeCollectionSection {
+  title: string;
+  description: string;
+  challenges: ChallengeCollectionItem[];
+}
+
+export interface ChallengeCollectionDetails {
+  id: string;
+  title: string;
+  description: string;
+  isPublic: boolean;
+  sections: ChallengeCollectionSection[];
+}
+
+export interface ChallengeTagCount {
+  name: string;
+  count: number;
+}
+
+export interface ChallengeTagsData {
+  tags: ChallengeTagCount[];
+}
+
+export interface ChallengeSearchItem {
+  id: string;
+  title: string;
+  difficulty: ChallengeDifficultyEnum;
+  isPublic: boolean;
+}
+
+export interface SearchChallengesData {
+  challenges: ChallengeSearchItem[];
+}
+
+export interface SaveChallengeCollectionData {
+  collection: { id: string };
+}
+
+export interface ChallengeCollectionListData {
+  collections: ChallengeCollectionMinimal[];
+}
+
+export interface GetChallengeCollectionData {
+  collection: ChallengeCollectionDetails;
 }
 
 export interface ChallengeTestResult {
@@ -64,6 +133,8 @@ export interface ChallengeJobDetails {
   status: string;
   language: CompilerLanguagesEnum;
   submission: ChallengeSubmissionDetails | null;
+  /** XP the current user gained by this evaluation */
+  xpAwarded: XpAward | null;
 }
 
 export interface CreateChallengeData {

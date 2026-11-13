@@ -1,8 +1,8 @@
 import { Badge, Button, Container, cx, FormSelect, Modal } from "../../../components/ui";
 import { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
-import { FaPen, FaSearch, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode } from "react-icons/fa";
+import { FaPen, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode, FaListUl } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import { truncate } from "../../../utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
@@ -10,8 +10,20 @@ import Loader from "../../../components/Loader";
 import { useAuth } from "../../auth/context/authContext";
 import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import LanguageIcons from "../components/LanguageIcons";
+import ChallengeTags from "../components/ChallengeTags";
+import ChallengeCollectionNavigator from "../components/ChallengeCollectionNavigator";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
-import { ChallengeDetails, GetChallengeData } from "../types";
+import { ChallengeCollectionDetails, ChallengeCollectionItem, ChallengeDetails, GetChallengeCollectionData, GetChallengeData } from "../types";
+
+const NAVIGATOR_KEY = "wb-challenges-navigator-hidden";
+
+const readNavigatorHidden = () => {
+    try {
+        return localStorage.getItem(NAVIGATOR_KEY) === "1";
+    } catch {
+        return false;
+    }
+};
 
 const ChallengeDetailsPage = () => {
     const { challengeId } = useParams<{ challengeId: string }>();
@@ -25,10 +37,47 @@ const ChallengeDetailsPage = () => {
     const [selectedLanguage, setSelectedLanguage] = useState<CompilerLanguagesEnum | null>(null);
     const [activeTab, setActiveTab] = useState("description");
     const [showUnlockModal, setShowUnlockModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [searchParams] = useSearchParams();
+    const collectionId = searchParams.get("collection");
+    const [collection, setCollection] = useState<{ id: string; title: string; items: ChallengeCollectionItem[]; details: ChallengeCollectionDetails } | null>(null);
+    const [navigatorHidden, setNavigatorHidden] = useState(readNavigatorHidden);
+
+    const changeNavigatorHidden = (hidden: boolean) => {
+        setNavigatorHidden(hidden);
+        try {
+            localStorage.setItem(NAVIGATOR_KEY, hidden ? "1" : "0");
+        } catch {
+            // storage unavailable: keep the default
+        }
+    };
 
     useEffect(() => {
+        setActiveTab("description");
+        setSelectedLanguage(null);
         getChallenge();
     }, [challengeId]);
+
+    useEffect(() => {
+        getCollection();
+    }, [collectionId]);
+
+    const getCollection = async () => {
+        if (!collectionId) {
+            setCollection(null);
+            return;
+        }
+        const result = await sendJsonRequest<GetChallengeCollectionData>("/Challenge/GetCollection", "POST", { collectionId });
+        const data = result.data?.collection;
+        if (!data) {
+            setCollection(null);
+            return;
+        }
+        // A challenge listed in several sections is visited once, at its first place
+        const seen = new Set<string>();
+        const items = data.sections.flatMap(s => s.challenges).filter(c => !seen.has(c.id) && seen.add(c.id));
+        setCollection({ id: data.id, title: data.title, items, details: data });
+    };
 
     const getChallenge = async () => {
         if (!challengeId) return;
@@ -54,16 +103,46 @@ const ChallengeDetailsPage = () => {
         }
     };
 
+    const handleDelete = async () => {
+        const result = await sendJsonRequest("/Challenge/Delete", "POST", { challengeId });
+        setShowDeleteModal(false);
+        if (result.success) {
+            navigate(collectionId ? `/Challenge/Collection/${collectionId}` : "/Challenge");
+        }
+    };
+
     const closeCodeEditorModal = () => {
         setSelectedLanguage(null);
+        getCollection(); // refresh the solved marks in the problem list
     }
 
     const handleLanguageSelect = (key: CompilerLanguagesEnum) => {
         setSelectedLanguage(key);
     }
 
+    // Same outer structure in every state, so the problem list stays mounted between challenges
+    const showNavigator = !!collection && !navigatorHidden && !!challengeId && collection.items.some(c => c.id === challengeId);
+    const layout = (main: React.ReactNode, before: React.ReactNode = null, after: React.ReactNode = null) => (
+        <>
+            {before}
+            <Container className="py-4">
+                <div className={cx(showNavigator && "wb-challenges-detail-layout")}>
+                    {showNavigator && (
+                        <ChallengeCollectionNavigator
+                            collection={collection!.details}
+                            currentId={challengeId!}
+                            onHide={() => changeNavigatorHidden(true)}
+                        />
+                    )}
+                    <div className="wb-challenges-detail-main">{main}</div>
+                </div>
+            </Container>
+            {after}
+        </>
+    );
+
     if (loading) {
-        return (
+        return layout(
             <div className="d-flex justify-content-center align-items-center py-5">
                 <Loader />
             </div>
@@ -71,7 +150,7 @@ const ChallengeDetailsPage = () => {
     }
 
     if (!challenge) {
-        return (
+        return layout(
             <div className="d-flex h-100 py-5 flex-column align-items-center justify-content-center text-center">
                 <h4><FaSearch /></h4>
                 <h5>Challenge not found</h5>
@@ -80,15 +159,80 @@ const ChallengeDetailsPage = () => {
         );
     }
 
-    return (
+    const position = collection ? collection.items.findIndex(c => c.id === challenge.id) : -1;
+    const previous = position > 0 ? collection!.items[position - 1] : null;
+    const next = position >= 0 && position < collection!.items.length - 1 ? collection!.items[position + 1] : null;
+    const collectionNav = position >= 0 && (
+        <div className="wb-challenges-collection-nav">
+            <Button
+                variant="subtle"
+                size="sm"
+                className="border d-flex align-items-center gap-2"
+                disabled={!previous}
+                onClick={() => previous && navigate(`/Challenge/${previous.id}?collection=${collection!.id}`)}
+            >
+                <FaChevronLeft size={10} /> {previous ? previous.title : "Previous"}
+            </Button>
+            <span className="small text-muted text-nowrap d-flex align-items-center gap-2">
+                {navigatorHidden && (
+                    <Button
+                        variant="subtle"
+                        size="sm"
+                        className="wb-challenges-navigator-show border d-none d-xl-inline-flex align-items-center gap-2"
+                        onClick={() => changeNavigatorHidden(false)}
+                        title="Show the problem list"
+                    >
+                        <FaListUl size={11} /> Problems
+                    </Button>
+                )}
+                {position + 1} / {collection!.items.length}
+            </span>
+            <Button
+                variant="subtle"
+                size="sm"
+                className="border d-flex align-items-center gap-2"
+                disabled={!next}
+                onClick={() => next && navigate(`/Challenge/${next.id}?collection=${collection!.id}`)}
+            >
+                {next ? next.title : "Next"} <FaChevronRight size={10} />
+            </Button>
+        </div>
+    );
+
+    const beforeContent = (
         <>
             <ChallengeCodeEditor challenge={challenge} language={selectedLanguage} onExit={closeCodeEditorModal} />
-            <Container className="py-4">
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="fs-5">Delete challenge?</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    "{challenge.title}" will be deleted for good, together with all its submissions and saved code. It is
+                    also removed from any collection that lists it.
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="subtle" className="border" onClick={() => setShowDeleteModal(false)}>Cancel</Button>
+                    <Button variant="danger" onClick={handleDelete}>Delete</Button>
+                </Modal.Footer>
+            </Modal>
+        </>
+    );
+
+    const mainContent = (
+        <>
                 <div className="wb-challenges-breadcrumb d-flex align-items-center gap-2 mb-3">
                     <Link to="/Challenge">Challenges</Link>
                     <FaChevronRight size={10} className="text-muted opacity-50" />
+                    {collection && (
+                        <>
+                            <Link to={`/Challenge/Collection/${collection.id}`}>{truncate(collection.title, 40)}</Link>
+                            <FaChevronRight size={10} className="text-muted opacity-50" />
+                        </>
+                    )}
                     <span className="text-body-emphasis fw-medium">{truncate(challenge.title, 40)}</span>
                 </div>
+
+                {collectionNav}
 
                 <div className="wb-challenges-hero d-md-flex justify-content-between align-items-center">
                     <div>
@@ -107,11 +251,12 @@ const ChallengeDetailsPage = () => {
                             </div>
                         </div>
                         <h2 className="fs-3 fw-bold mb-0 text-body-emphasis">{challenge.title}</h2>
+                        <ChallengeTags tags={challenge.tags} className="mt-2" />
                     </div>
                     <div className="mt-4 mt-md-0 d-flex gap-2">
                         {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
                             <Button 
-                                variant="light" 
+                                variant="subtle" 
                                 size="sm"
                                 className="border d-flex align-items-center gap-2 px-2 fw-semibold"
                                 onClick={() => navigate(`/Challenge/Edit/${challenge.id}`)}
@@ -119,10 +264,20 @@ const ChallengeDetailsPage = () => {
                                 <FaPen size={10} /> Edit Challenge
                             </Button>
                         )}
+                        {userInfo?.roles.some(x => ["Admin", "Creator"].includes(x)) && (
+                            <Button
+                                variant="outline-danger"
+                                size="sm"
+                                className="d-flex align-items-center gap-2 px-2 fw-semibold"
+                                onClick={() => setShowDeleteModal(true)}
+                            >
+                                <FaTrash size={10} /> Delete
+                            </Button>
+                        )}
                     </div>
                 </div>
 
-                <div className="row g-4">
+                <div className={cx("row g-4", showNavigator && "wb-challenges-body--with-nav")}>
                     <div className="col-lg-8">
                         <div className="wb-challenges-tabs">
                             <div 
@@ -139,7 +294,7 @@ const ChallengeDetailsPage = () => {
                             </div>
                         </div>
 
-                        <div className="min-vh-50">
+                        <div className="wb-challenges-content-area min-vh-50">
                             {activeTab === "description" && (
                                 <div className="bg-body rounded-3 border p-4 p-md-5 shadow-sm mb-4">
                                     <MarkdownRenderer content={challenge.description} />
@@ -223,6 +378,7 @@ const ChallengeDetailsPage = () => {
                                 {Object.entries(languagesInfo).filter(([key]) => key !== "web").map(([key, info]) => (
                                     <option key={key} value={key}>
                                         {info.displayName}
+                                        {challenge.templates?.some(t => t.name === key) ? " (starter code)" : ""}
                                     </option>
                                 ))}
                             </FormSelect>
@@ -239,8 +395,10 @@ const ChallengeDetailsPage = () => {
                         </div>
                     </div>
                 </div>
-            </Container>
+        </>
+    );
 
+    return layout(mainContent, beforeContent, (
             <Modal show={showUnlockModal} onHide={() => setShowUnlockModal(false)} centered>
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold d-flex align-items-center gap-2">
@@ -257,12 +415,11 @@ const ChallengeDetailsPage = () => {
                     </p>
                 </Modal.Body>
                 <Modal.Footer className="border-0 pt-0">
-                    <Button variant="light" onClick={() => setShowUnlockModal(false)}>Cancel</Button>
+                    <Button variant="subtle" className="border" onClick={() => setShowUnlockModal(false)}>Cancel</Button>
                     <Button variant="primary" onClick={handleConfirmUnlock}>Unlock Solution</Button>
                 </Modal.Footer>
             </Modal>
-        </>
-    );
+    ));
 };
 
 export default ChallengeDetailsPage;

@@ -3,12 +3,14 @@ import Layout from "../../layouts/Layout"
 import Header from "../../layouts/Header"
 import Footer from "../../layouts/Footer"
 import ProfilePage, { ProfileFromAuth } from "./pages/ProfilePage"
+import LeaderboardPage from "./pages/LeaderboardPage"
 import "./profile.css"
 
 const ProfileRoutes = () => {
     return (
         <Routes>
             <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
+                <Route path="Leaderboard" element={<LeaderboardPage />} />
                 <Route path=":userId" element={<ProfilePage />} />
                 <Route index element={<ProfileFromAuth />} />
             </Route>

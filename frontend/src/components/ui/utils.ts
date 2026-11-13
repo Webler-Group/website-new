@@ -3,7 +3,11 @@ import { Ref, RefCallback, useEffect, useId, useRef } from "react";
 export type Variant =
     | "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
 
-export type ButtonVariant = Variant | `outline-${Exclude<Variant, "link">}`;
+/** "subtle" is a theme-aware light button (see .wb-ui-button--subtle), unlike "light" which stays light in dark mode */
+export type ButtonVariant = Variant | `outline-${Exclude<Variant, "link">}` | "subtle";
+
+/** Bootstrap theme-aware surface / text colors usable as bg / text of badges and cards */
+export type ThemeColor = "body" | "body-secondary" | "body-tertiary" | "body-emphasis";
 
 export type Size = "sm" | "lg";
 

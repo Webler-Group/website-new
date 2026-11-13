@@ -4,6 +4,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { FaCheck, FaTimes } from "react-icons/fa";
 import { ChallengeDetails, ChallengeSubmissionDetails, CreateChallengeJobData, GetChallengeJobData } from "../types";
 import { pollJob } from "../../../utils/pollJob";
+import { useXpReward } from "../../../context/xpRewardContext";
 
 // Covers queueing, compiling and every test case using its full time limit
 const BASE_TIMEOUT_MS = 30_000;
@@ -19,6 +20,7 @@ interface ChallengeCodeOutputProps {
 
 const ChallengeCodeOutput = ({ source, language, challenge, submission }: ChallengeCodeOutputProps) => {
     const { sendJsonRequest } = useApi();
+    const { showXpReward } = useXpReward();
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [lastSubmission, setLastSubmission] = useState(submission ?? null);
@@ -48,6 +50,7 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                 setError("Something went wrong");
             } else if (status === "done") {
                 setLastSubmission(getJobResult?.job.submission ?? null);
+                showXpReward(getJobResult?.job.xpAwarded);
             } else {
                 setError("Timeout");
                 setLastSubmission(null);

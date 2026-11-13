@@ -9,6 +9,7 @@ import {deleteNotifications} from "./notificationHelper";
 import NotificationTypeEnum from "../data/NotificationTypeEnum";
 import { BlockModel } from "../models/Block";
 import RolesEnum from "../data/RolesEnum";
+import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
 
 const MAX_IPS = 50;
 
@@ -127,6 +128,37 @@ export const generateEmailChangeRecord = async (userId: Types.ObjectId, newEmail
     await EmailChangeRecordModel.create({ userId, newEmail, code });
     return code;
 }
+
+/* ---------------------------------------------------------------------------------------------
+ * XP rewards
+ *
+ * Calibrated against totalXpToReachLevel (25 * (x + x^2), x = level - 1) for the initial set of
+ * ~200 challenges and 12 challenge languages (assuming ~40 % easy, 40 % medium, 20 % hard):
+ *   - level 2 (50 XP) after e.g. two medium challenges or a single hard one
+ *   - all challenges in one language           ->  ~5 200 XP  ->  level 14
+ *   - all challenges in all 12 languages       -> ~16 200 XP  ->  level 25
+ *   - one year of daily activity bonus         ->  +3 650 XP
+ * so dedicated users keep progressing for a long time and level 30+ stays rare.
+ *
+ * XP is never taken back: rewards for challenges that are deleted later stay in the XP log.
+ * ------------------------------------------------------------------------------------------- */
+
+/** XP for solving a challenge for the first time (in any language), by difficulty */
+export const XP_CHALLENGE_FIRST_SOLVE: Record<ChallengeDifficultyEnum, number> = {
+    [ChallengeDifficultyEnum.EASY]: 10,
+    [ChallengeDifficultyEnum.MEDIUM]: 25,
+    [ChallengeDifficultyEnum.HARD]: 60
+};
+
+/** XP for solving an already solved challenge in another language */
+export const XP_CHALLENGE_OTHER_LANGUAGE = 5;
+
+/** Bonus XP for the first newly solved challenge + language combination of a (UTC) day */
+export const XP_DAILY_ACTIVITY_BONUS = 10;
+
+/** XP awarded for solving a challenge for the first time; shown to users as the challenge's XP */
+export const getChallengeXp = (difficulty: ChallengeDifficultyEnum): number =>
+    XP_CHALLENGE_FIRST_SOLVE[difficulty] ?? XP_CHALLENGE_FIRST_SOLVE[ChallengeDifficultyEnum.EASY];
 
 export const totalXpToReachLevel = (level: number): number => {
     const x = level - 1;

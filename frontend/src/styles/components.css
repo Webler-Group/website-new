@@ -253,10 +253,6 @@ button.wb-pill:hover,
     width: 140px;
 }
 
-.wb-form-filter-select--narrow {
-    width: 120px;
-}
-
 /* --- HTML renderer -------------------------------------------------------------------------- */
 
 .wb-html-renderer-frame {

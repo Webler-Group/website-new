@@ -3,7 +3,7 @@ import ChallengeModel, { Challenge, TestCase } from "../models/Challenge";
 import { IAuthRequest } from "../middleware/verifyJWT";
 import asyncHandler from "express-async-handler";
 import { escapeRegex } from "../utils/regexUtils";
-import { createChallengeJobSchema, createChallengeSchema, editChallengeSchema, getChallengeCodeSchema, getChallengeJobSchema, getChallengeListSchema, getChallengeSchema, saveChallengeCodeSchema, unlockChallengeSolutionSchema } from "../validation/challengeSchema";
+import { createChallengeCollectionSchema, createChallengeJobSchema, createChallengeSchema, deleteChallengeCollectionSchema, editChallengeCollectionSchema, editChallengeSchema, getChallengeCodeSchema, getChallengeCollectionSchema, getChallengeJobSchema, importChallengesSchema, getChallengeListSchema, getChallengeSchema, getChallengeTagsSchema, saveChallengeCodeSchema, searchChallengesSchema, unlockChallengeSolutionSchema } from "../validation/challengeSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
@@ -15,6 +15,13 @@ import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import UserModel from "../models/User";
+import TagModel, { Tag } from "../models/Tag";
+import { getOrCreateTagsByNames } from "../helpers/discussionHelper";
+import ChallengeCollectionModel from "../models/ChallengeCollection";
+import { challengeSetSchema, importChallengeSet } from "../helpers/challengeImportHelper";
+import multer from "multer";
+import MulterFileTypeError from "../exceptions/MulterFileTypeError";
+import { getChallengeXp } from "../helpers/userHelper";
 
 type SubmissionEntry = Pick<ChallengeSubmission, "language" | "passed">;
 
@@ -33,10 +40,24 @@ interface ChallengeCode {
     }
 };
 
+const normalizeTags = (tags: string[]) => tags.map(t => t.trim().toLowerCase()).filter(t => t.length > 0);
+
+const getPassedChallengeIds = async (userId: string | undefined, challengeIds: Types.ObjectId[]) => {
+    if (!userId || challengeIds.length === 0) return new Set<string>();
+    const ids = await ChallengeSubmissionModel.distinct("challenge", {
+        challenge: { $in: challengeIds },
+        user: userId,
+        passed: true
+    });
+    return new Set(ids.map(String));
+};
+
 const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createChallengeSchema, req);
-    const { title, description, difficulty, testCases, templates, xp, isVisible, solution } = body;
+    const { title, description, difficulty, testCases, templates, isVisible, solution, tags } = body;
     const currentUserId = req.userId;
+
+    const tagIds = (await getOrCreateTagsByNames(normalizeTags(tags ?? []))).map(x => x._id);
 
     const challenge = await ChallengeModel.create({
         title,
@@ -44,7 +65,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
         difficulty,
         testCases,
         templates,
-        xp,
+        tags: tagIds,
         isPublic: Number(isVisible) === 1,
         author: currentUserId,
         solution
@@ -55,7 +76,7 @@ const createChallenge = asyncHandler(async (req: IAuthRequest, res: Response) =>
 
 const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(getChallengeListSchema, req);
-    const { page, count, difficulty, searchQuery, isVisible, userId, filter } = body;
+    const { page, count, difficulty, searchQuery, isVisible, userId, filter, tag } = body;
 
     const isPublic = Number(isVisible) === 1;
     const isAuthorized =
@@ -74,6 +95,11 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
     if (searchQuery && searchQuery.trim()) {
         const safe = escapeRegex(searchQuery.trim());
         challengeQuery.title = new RegExp(`(^|\\b)${safe}`, "i");
+    }
+
+    if (tag) {
+        const tagDoc = await TagModel.findOne({ name: tag.trim().toLowerCase() }, { _id: 1 }).lean();
+        challengeQuery.tags = tagDoc ? tagDoc._id : { $in: [] };
     }
 
     if (filter === 2 || filter === 3) {
@@ -95,9 +121,11 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
     const [total, challenges] = await Promise.all([
         ChallengeModel.countDocuments(challengeQuery),
         ChallengeModel.find(challengeQuery)
-            .select("title difficulty totalSubmissions passedSubmissions solution")
+            .select("title difficulty totalSubmissions passedSubmissions solution tags")
+            .sort({ _id: 1 })
             .skip((page - 1) * count)
             .limit(count)
+            .populate<{ tags: Tag[] }>("tags", "name")
             .lean()
     ]);
 
@@ -154,7 +182,8 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
             isUnlocked: userId ? !!unlockedMap.get(String(c._id)) : false,
             hasSolution: !!(c as any).solution && (c as any).solution.trim().length > 0,
             submissions: userId ? submissionsMap.get(String(c._id)) : undefined,
-            totalSubmissions: total
+            totalSubmissions: total,
+            tags: (c.tags ?? []).map(t => t.name)
         };
     });
 
@@ -172,7 +201,7 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { challengeId } = body;
     const userId = req.userId;
 
-    const challenge = await ChallengeModel.findById(challengeId).lean();
+    const challenge = await ChallengeModel.findById(challengeId).populate<{ tags: Tag[] }>("tags", "name").lean();
 
     const isAuthorized = req.roles && req.roles.some(i => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(i));
     if (!challenge?.isPublic && !isAuthorized) {
@@ -202,9 +231,11 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 id: challenge._id,
                 description: challenge.description,
                 difficulty: challenge.difficulty,
-                xp: challenge.xp ?? 0,
+                xp: getChallengeXp(challenge.difficulty),
                 totalSubmissions: challenge.totalSubmissions ?? 0,
                 title: challenge.title,
+                tags: (challenge.tags ?? []).map(t => t.name),
+                templates: challenge.templates.map(x => ({ name: x.name })),
                 testCases: (challenge.testCases as (TestCase & { _id: Types.ObjectId })[]).map((x) => (x.isHidden ?
                     {
                         id: x._id,
@@ -332,7 +363,7 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
     const { body } = parseWithZod(getChallengeSchema, req);
     const { challengeId } = body;
 
-    const challenge = await ChallengeModel.findById(challengeId).lean();
+    const challenge = await ChallengeModel.findById(challengeId).populate<{ tags: Tag[] }>("tags", "name").lean();
 
     if (!challenge) {
         throw new HttpError("Challenge not found", 404);
@@ -346,7 +377,8 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
                 description: challenge.description,
                 difficulty: challenge.difficulty,
                 title: challenge.title,
-                xp: challenge.xp ?? 0,
+                tags: (challenge.tags ?? []).map(t => t.name),
+                xp: getChallengeXp(challenge.difficulty),
                 isPublic: challenge.isPublic ?? true,
                 solution: challenge.solution ?? "",
                 templates: challenge.templates.map(x => ({
@@ -366,11 +398,15 @@ const getEditedChallenge = asyncHandler(async (req: IAuthRequest, res: Response)
 
 const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(editChallengeSchema, req);
-    const { challengeId, title, description, difficulty, testCases, templates, xp, isVisible } = body;
+    const { challengeId, title, description, difficulty, testCases, templates, isVisible, tags } = body;
     const challenge = await ChallengeModel.findById(challengeId);
 
     if (!challenge) {
         throw new HttpError("Challenge not found", 404);
+    }
+
+    if (tags) {
+        challenge.tags = (await getOrCreateTagsByNames(normalizeTags(tags))).map(x => x._id);
     }
 
     challenge.title = title;
@@ -378,7 +414,6 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
     challenge.difficulty = difficulty;
     challenge.testCases = testCases;
     challenge.templates = templates;
-    challenge.xp = xp;
     challenge.isPublic = Number(isVisible) === 1;
     challenge.solution = body.solution ?? "";
 
@@ -392,7 +427,7 @@ const editChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
             difficulty: challenge.difficulty,
             testCases: challenge.testCases,
             templates: challenge.templates,
-            xp: challenge.xp,
+            xp: getChallengeXp(challenge.difficulty),
             isPublic: challenge.isPublic,
             solution: challenge.solution
         }
@@ -450,6 +485,8 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
     }
 
     const submissionId = job.returnValue?.submissionId;
+    // XP rewards are private to the user who submitted the solution
+    const xpAwarded = req.userId && job.data.userId === req.userId.toString() ? job.returnValue?.xpAwarded : undefined;
     const submission = submissionId ?
         await ChallengeSubmissionModel.findById(submissionId, { testResults: 1, passed: 1 }).lean() :
         null;
@@ -470,13 +507,242 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
                         time: x.time
                     })),
                     passed: submission.passed
+                } : null,
+                xpAwarded: xpAwarded ? {
+                    total: xpAwarded.total,
+                    rewards: xpAwarded.rewards,
+                    xp: xpAwarded.xp,
+                    level: xpAwarded.level
                 } : null
             }
         }
     });
 });
 
+const getCollectionList = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const isAuthorized = req.roles && req.roles.some(r => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(r));
+
+    const collections = await ChallengeCollectionModel.find(isAuthorized ? {} : { isPublic: true })
+        .sort({ _id: 1 })
+        .lean();
+
+    const allIds = collections.flatMap(c => c.sections.flatMap(s => s.challenges));
+    const visibleIds = new Set(
+        (await ChallengeModel.find({ _id: { $in: allIds }, ...(isAuthorized ? {} : { isPublic: true }) }, { _id: 1 }).lean())
+            .map(x => String(x._id))
+    );
+    const passed = await getPassedChallengeIds(req.userId, allIds);
+
+    res.json({
+        success: true,
+        data: {
+            collections: collections.map(c => {
+                const ids = [...new Set(c.sections.flatMap(s => s.challenges).map(String))].filter(id => visibleIds.has(id));
+                return {
+                    id: c._id,
+                    title: c.title,
+                    description: c.description,
+                    isPublic: c.isPublic,
+                    sectionCount: c.sections.length,
+                    challengeCount: ids.length,
+                    solvedCount: ids.filter(id => passed.has(id)).length
+                };
+            })
+        }
+    });
+});
+
+const getCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getChallengeCollectionSchema, req);
+    const { collectionId } = body;
+    const isAuthorized = req.roles && req.roles.some(r => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(r));
+
+    const collection = await ChallengeCollectionModel.findById(collectionId).lean();
+    if (!collection || (!collection.isPublic && !isAuthorized)) {
+        throw new HttpError("Collection not found", 404);
+    }
+
+    const allIds = collection.sections.flatMap(s => s.challenges);
+    const [challenges, passed] = await Promise.all([
+        ChallengeModel.find({ _id: { $in: allIds }, ...(isAuthorized ? {} : { isPublic: true }) })
+            .select("title difficulty tags isPublic")
+            .populate<{ tags: Tag[] }>("tags", "name")
+            .lean(),
+        getPassedChallengeIds(req.userId, allIds)
+    ]);
+    const byId = new Map(challenges.map(c => [String(c._id), c]));
+
+    res.json({
+        success: true,
+        data: {
+            collection: {
+                id: collection._id,
+                title: collection.title,
+                description: collection.description,
+                isPublic: collection.isPublic,
+                sections: collection.sections.map(s => ({
+                    title: s.title,
+                    description: s.description,
+                    challenges: s.challenges
+                        .map(id => byId.get(String(id)))
+                        .filter(c => c !== undefined)
+                        .map(c => ({
+                            id: c._id,
+                            title: c.title,
+                            difficulty: c.difficulty,
+                            xp: getChallengeXp(c.difficulty),
+                            isPublic: c.isPublic,
+                            tags: (c.tags ?? []).map(t => t.name),
+                            isSolved: passed.has(String(c._id))
+                        }))
+                }))
+            }
+        }
+    });
+});
+
+type CollectionFields = { title: string; description: string; isPublic: boolean; sections: { title: string; description: string; challenges: string[] }[] };
+
+const validateCollection = async (fields: CollectionFields, collectionId?: string) => {
+    const sectionTitles = fields.sections.map(s => s.title.toLowerCase());
+    if (new Set(sectionTitles).size !== sectionTitles.length) {
+        throw new HttpError("Section titles must be different from each other", 400);
+    }
+
+    const sameTitle = await ChallengeCollectionModel.exists({
+        title: fields.title,
+        ...(collectionId ? { _id: { $ne: collectionId } } : {})
+    });
+    if (sameTitle) {
+        throw new HttpError("A collection with this title already exists", 400);
+    }
+
+    const ids = [...new Set(fields.sections.flatMap(s => s.challenges))];
+    const found = await ChallengeModel.countDocuments({ _id: { $in: ids } });
+    if (found !== ids.length) {
+        throw new HttpError("Some of the selected challenges no longer exist", 400);
+    }
+};
+
+const createCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(createChallengeCollectionSchema, req);
+    await validateCollection(body);
+
+    const collection = await ChallengeCollectionModel.create({ ...body, author: req.userId });
+
+    res.json({ success: true, data: { collection: { id: collection._id } } });
+});
+
+const editCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(editChallengeCollectionSchema, req);
+    const { collectionId, ...fields } = body;
+
+    const collection = await ChallengeCollectionModel.findById(collectionId);
+    if (!collection) {
+        throw new HttpError("Collection not found", 404);
+    }
+    await validateCollection(fields, collectionId);
+
+    collection.set(fields);
+    await collection.save();
+
+    res.json({ success: true, data: { collection: { id: collection._id } } });
+});
+
+const deleteCollection = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(deleteChallengeCollectionSchema, req);
+
+    const result = await ChallengeCollectionModel.deleteOne({ _id: body.collectionId });
+    if (result.deletedCount === 0) {
+        throw new HttpError("Collection not found", 404);
+    }
+
+    res.json({ success: true });
+});
+
+const getChallengeTags = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(getChallengeTagsSchema, req);
+    const isPublic = body.isVisible === 1;
+    const isAuthorized = req.roles && req.roles.some(r => [RolesEnum.ADMIN, RolesEnum.CREATOR].includes(r));
+    if (!isPublic && !isAuthorized) {
+        throw new HttpError("Unauthorized User", 404);
+    }
+
+    const counts = await ChallengeModel.aggregate<{ _id: Types.ObjectId; count: number }>([
+        { $match: { $or: [{ isPublic }, { isPublic: { $exists: false } }] } },
+        { $unwind: "$tags" },
+        { $group: { _id: "$tags", count: { $sum: 1 } } }
+    ]);
+    const tags = await TagModel.find({ _id: { $in: counts.map(c => c._id) } }, { name: 1 }).lean();
+    const names = new Map(tags.map(t => [String(t._id), t.name]));
+
+    res.json({
+        success: true,
+        data: {
+            tags: counts
+                .filter(c => names.has(String(c._id)))
+                .map(c => ({ name: names.get(String(c._id))!, count: c.count }))
+                .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
+        }
+    });
+});
+
+const searchChallenges = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body } = parseWithZod(searchChallengesSchema, req);
+
+    const challenges = await ChallengeModel.find(body.query ? { title: new RegExp(escapeRegex(body.query), "i") } : {})
+        .select("title difficulty isPublic")
+        .sort({ title: 1 })
+        .limit(15)
+        .lean();
+
+    res.json({
+        success: true,
+        data: {
+            challenges: challenges.map(c => ({ id: c._id, title: c.title, difficulty: c.difficulty, isPublic: c.isPublic }))
+        }
+    });
+});
+
+const importUploadMiddleware = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    fileFilter(_req, file, cb) {
+        if (file.mimetype === "application/json" || file.originalname.toLowerCase().endsWith(".json")) {
+            cb(null, true);
+        } else {
+            cb(new MulterFileTypeError("Only .json files can be imported"));
+        }
+    }
+});
+
+const importChallenges = asyncHandler(async (req: IAuthRequest, res: Response) => {
+    const { body, file } = parseWithZod(importChallengesSchema, req);
+
+    let parsed: unknown;
+    try {
+        parsed = JSON.parse(file.buffer.toString("utf8"));
+    } catch (err) {
+        throw new HttpError(`The file is not valid JSON: ${err instanceof Error ? err.message : err}`, 400);
+    }
+
+    const data = challengeSetSchema.parse(parsed);
+    const dryRun = body.dryRun === "1";
+    const summary = await importChallengeSet(data, req.userId!, dryRun);
+
+    res.json({ success: true, data: { dryRun, summary } });
+});
+
 const ChallengeController = {
+    importUploadMiddleware,
+    importChallenges,
+    getCollectionList,
+    getCollection,
+    getChallengeTags,
+    createCollection,
+    editCollection,
+    deleteCollection,
+    searchChallenges,
     createChallenge,
     getChallengeList,
     getChallenge,

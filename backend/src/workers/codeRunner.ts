@@ -5,8 +5,7 @@ import { cleanupSandboxLeftovers, ensureSandboxImages, runInSandbox } from "../u
 import { logEvents } from "../middleware/logger";
 import ChallengeModel from "../models/Challenge";
 import ChallengeSubmissionModel, { ChallengeSubmission } from "../models/ChallengeSubmission";
-import ChallengeUnlockModel from "../models/ChallengeUnlock";
-import UserModel from "../models/User";
+import { AwardedXp, awardChallengeXp } from "../helpers/xpHelper";
 import { DocumentType } from "@typegoose/typegoose";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import {
@@ -19,7 +18,10 @@ import {
 
 const CONCURRENCY = config.codeRunnerConcurrency;
 
-async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResult) {
+async function evaluateChallenge(
+    data: EvaluationJobData & { challengeId: string; userId: string },
+    result: EvaluationResult
+): Promise<{ submissionId: string; xpAwarded?: AwardedXp } | undefined> {
     const challenge = await ChallengeModel.findById(data.challengeId, { description: 0 });
     if (!challenge) {
         return undefined;
@@ -28,13 +30,13 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
     const testResults = challenge.testCases.map((x, i) => {
         const runResult = result.runResults[i] ?? null;
         return (i == 0 || runResult != null) ? {
-            passed: runResult ? x.expectedOutput.trim() == runResult.stdout.trim() : false,
+            passed: runResult ? !runResult.failed && x.expectedOutput.trim() == runResult.stdout.trim() : false,
             output: runResult ? runResult.stdout.trim() : "",
             stderr: (result.compileErr ?? "") + (runResult ? runResult.stderr : ""),
             time: runResult?.time
         } : null
     }).filter(x => x != null);
-    const passed = testResults.every(x => x!.passed);
+    const passed = result.runResults.length === challenge.testCases.length && testResults.every(x => x!.passed);
 
     const submissions = await ChallengeSubmissionModel.find({
         challenge: data.challengeId,
@@ -62,6 +64,7 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
         submission.passed = passed;
         if (passed) {
             submission.source = data.source;
+            submission.everPassed = true;
         }
         await submission.save();
     } else {
@@ -71,41 +74,27 @@ async function evaluateChallenge(data: EvaluationJobData, result: EvaluationResu
             language: data.language,
             testResults,
             passed,
+            everPassed: passed,
             source: passed ? data.source : undefined
         });
     }
 
-    // Award XP if passed for the first time
+    // XP for every newly solved challenge + language combination (idempotent, see awardChallengeXp)
+    let xpAwarded: AwardedXp | undefined;
     if (passed) {
-        const alreadyPassed = await ChallengeSubmissionModel.exists({
-            challenge: data.challengeId,
-            user: data.userId,
-            passed: true,
-            _id: { $ne: submission._id }
+        const awarded = await awardChallengeXp({
+            userId: data.userId,
+            challengeId: data.challengeId,
+            difficulty: challenge.difficulty,
+            language: data.language
         });
-
-        if (!alreadyPassed) {
-            const hasUnlocked = await ChallengeUnlockModel.exists({
-                challenge: data.challengeId,
-                user: data.userId
-            });
-
-            const xpToAward = hasUnlocked ? 0 : (challenge.xp ?? 0);
-
-            if (xpToAward > 0) {
-                const user = await UserModel.findById(data.userId);
-                if (user) {
-                    user.xp += xpToAward;
-                    await user.save(); // pre-save hook updates level
-                    console.log(`Awarded ${xpToAward} XP to user ${user.name} for challenge ${challenge.title}`);
-                }
-            } else if (hasUnlocked) {
-                console.log(`User ${data.userId} passed challenge ${challenge.title} but XP is 0 (solution unlocked)`);
-            }
+        if (awarded.total > 0) {
+            console.log(`Awarded ${awarded.total} XP to user ${data.userId} for challenge ${challenge.title} (${data.language})`);
+            xpAwarded = awarded;
         }
     }
 
-    return submission._id.toString();
+    return { submissionId: submission._id.toString(), xpAwarded };
 }
 
 async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Promise<EvaluationJobResult> {
@@ -120,10 +109,11 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
         throw err;
     }
 
-    let submissionId: string | undefined;
-    if (data.challengeId && data.userId) {
+    let evaluation: Awaited<ReturnType<typeof evaluateChallenge>>;
+    const { challengeId, userId } = data;
+    if (challengeId && userId) {
         try {
-            submissionId = await evaluateChallenge(data, result);
+            evaluation = await evaluateChallenge({ ...data, challengeId, userId }, result);
         } catch (err) {
             logEvents(`Job ${job.id} failed to save submission: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
             throw err;
@@ -131,7 +121,7 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
     }
 
     console.log(`Job ${job.id} is done`);
-    return { result, submissionId };
+    return { result, submissionId: evaluation?.submissionId, xpAwarded: evaluation?.xpAwarded };
 }
 
 async function main() {
