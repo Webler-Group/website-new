@@ -50,14 +50,10 @@ export class Challenge {
     @prop({ default: true })
     isPublic!: boolean;
 
-    // Optional limits for each test run; without them only the code runner's global limits apply
-    // CPU time in milliseconds
+    // Optional CPU time limit for each test run in milliseconds; without it only the code runner's
+    // global limits apply
     @prop({ min: 1 })
     timeLimit?: number;
-
-    // Peak memory in megabytes
-    @prop({ min: 1 })
-    memoryLimit?: number;
 
     @prop({ default: 0 })
     totalSubmissions!: number;

@@ -75,8 +75,6 @@ export interface SandboxImage {
 export interface RunLimits {
     // Milliseconds of CPU time
     timeLimit?: number;
-    // Megabytes of peak memory (resident set size)
-    memoryLimit?: number;
 }
 
 export type RunVerdict = "timeLimitExceeded" | "memoryLimitExceeded" | "outputLimitExceeded" | "runtimeError";
@@ -465,19 +463,14 @@ async function removeDir(dir: string, image: string) {
 /* ------------------------------------------------------------------ */
 
 /**
- * `timeLimit` is in seconds, `memoryLimit` in KB. Limits are checked against the measured usage too,
- * because the kernel limits are coarser (RLIMIT_CPU counts whole seconds, the container's memory
- * limit includes /tmp and the wrapper).
+ * `timeLimit` is in seconds. It's checked against the measured time too, because RLIMIT_CPU counts
+ * whole seconds. Memory is only limited by the container (out of memory -> killed).
  */
-function describeRunFailure(
-    r: ContainerResult,
-    timeLimit: number,
-    memoryLimit?: number
-): { verdict: RunVerdict; message: string } | null {
+function describeRunFailure(r: ContainerResult, timeLimit: number): { verdict: RunVerdict; message: string } | null {
     if (r.outputExceeded || r.exitCode === EXIT_SIGXFSZ) {
         return { verdict: "outputLimitExceeded", message: "Output limit exceeded" };
     }
-    if (r.oomKilled || (memoryLimit !== undefined && r.memory !== undefined && r.memory > memoryLimit)) {
+    if (r.oomKilled) {
         return { verdict: "memoryLimitExceeded", message: "Memory limit exceeded" };
     }
     // Docker's start-to-finish time includes container start-up, so only the measured time is compared
@@ -515,7 +508,6 @@ export async function runInSandbox(
     // the measured time decides the verdict
     const cpuTime = Math.min(Math.max(Math.ceil(timeLimit), 1), RUN_CPU_TIME);
     const wallTime = limits.timeLimit ? Math.min(timeLimit * 2 + 1, RUN_WALL_TIME) : RUN_WALL_TIME;
-    const memoryLimit = limits.memoryLimit ? limits.memoryLimit * 1024 : undefined;
 
     try {
         fs.writeFileSync(path.join(jobDir, spec.sourceFile), source);
@@ -557,7 +549,7 @@ export async function runInSandbox(
                 collectImage: true
             });
 
-            const failure = describeRunFailure(r, timeLimit, memoryLimit);
+            const failure = describeRunFailure(r, timeLimit);
             runResults.push({
                 stdout: r.stdout,
                 stderr: failure ? r.stderr + failure.message + "\n" : r.stderr,

@@ -52,12 +52,9 @@ export class ChallengeSubmission {
     @prop({ type: () => [TestResult], default: [] })
     testResults!: TestResult[];
 
-    // The challenge's limits the latest test results were judged with (ms and MB)
+    // The challenge's time limit (ms) the latest test results were judged with
     @prop()
     timeLimit?: number;
-
-    @prop()
-    memoryLimit?: number;
 
     @prop({ default: false })
     passed!: boolean;

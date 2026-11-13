@@ -1,6 +1,6 @@
 import { Button, Form } from "../../../components/ui";
 import { SubmitEvent, useEffect, useState } from "react";
-import { FaPlus, FaAlignLeft, FaLevelUpAlt, FaStopwatch, FaMemory } from "react-icons/fa";
+import { FaPlus, FaAlignLeft, FaLevelUpAlt, FaStopwatch } from "react-icons/fa";
 import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
@@ -28,7 +28,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [tags, setTags] = useState<string[]>([]);
     // Empty means no limit
     const [timeLimit, setTimeLimit] = useState("");
-    const [memoryLimit, setMemoryLimit] = useState("");
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -52,14 +51,12 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setSolution(result.data.challenge.solution ?? "");
             setTags(result.data.challenge.tags ?? []);
             setTimeLimit(result.data.challenge.timeLimit?.toString() ?? "");
-            setMemoryLimit(result.data.challenge.memoryLimit?.toString() ?? "");
         }
         setLoading(false);
     }
 
     const limits = () => ({
-        timeLimit: timeLimit.trim() ? Number(timeLimit) : null,
-        memoryLimit: memoryLimit.trim() ? Number(memoryLimit) : null
+        timeLimit: timeLimit.trim() ? Number(timeLimit) : null
     });
 
     const handleCreateChallenge = async () => {
@@ -205,23 +202,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                             onChange={(e) => setTimeLimit(e.target.value)}
                         />
                         <Form.Text className="text-muted">CPU time per test, up to 10000 ms. Leave empty for no limit.</Form.Text>
-                    </Form.Group>
-                    <Form.Group className="col-sm-6">
-                        <Form.Label htmlFor="challenge-memory-limit">
-                            <FaMemory className="me-2" /> Memory limit (MB)
-                        </Form.Label>
-                        <Form.Control
-                            id="challenge-memory-limit"
-                            type="number"
-                            min={1}
-                            step={1}
-                            placeholder="No limit"
-                            value={memoryLimit}
-                            onChange={(e) => setMemoryLimit(e.target.value)}
-                        />
-                        <Form.Text className="text-muted">
-                            Peak memory per test. Runtimes need some on their own: about 4 MB for C, C++, Go, Rust and Lua, 8 MB for Python, 13 MB for Ruby, 24 MB for C#, 38 MB for Java and Kotlin, 42 MB for JavaScript and TypeScript.
-                        </Form.Text>
                     </Form.Group>
                 </div>
 

@@ -28,10 +28,9 @@ async function evaluateChallenge(
         return undefined;
     }
 
-    // Judge against the test cases and limits the job was created with (older jobs don't carry them)
+    // Judge against the test cases and time limit the job was created with (older jobs don't carry them)
     const testCases = data.testCases ?? challenge.testCases;
     const timeLimit = data.testCases ? data.timeLimit : challenge.timeLimit;
-    const memoryLimit = data.testCases ? data.memoryLimit : challenge.memoryLimit;
 
     const testResults: TestResult[] = testCases.map((x, i) => {
         const runResult = result.runResults[i];
@@ -86,7 +85,6 @@ async function evaluateChallenge(
     if (submission) {
         submission.testResults = testResults;
         submission.timeLimit = timeLimit;
-        submission.memoryLimit = memoryLimit;
         submission.passed = passed;
         if (passed) {
             submission.source = data.source;
@@ -100,7 +98,6 @@ async function evaluateChallenge(
             language: data.language,
             testResults,
             timeLimit,
-            memoryLimit,
             passed,
             everPassed: passed,
             source: passed ? data.source : undefined
@@ -131,10 +128,7 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
 
     try {
         console.log(`Running job ${job.id}`);
-        result = await runInSandbox(data.source, data.language, data.stdin, {
-            timeLimit: data.timeLimit,
-            memoryLimit: data.memoryLimit
-        });
+        result = await runInSandbox(data.source, data.language, data.stdin, { timeLimit: data.timeLimit });
     } catch (err) {
         logEvents(`Job ${job.id} failed with error: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
         throw err;

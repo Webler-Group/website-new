@@ -51,12 +51,11 @@ export interface EvaluationJobData {
     deviceId: string;
     challengeId?: string;
     userId?: string;
-    // Challenge test cases and limits when the job was created, so the results are judged
+    // Challenge test cases and time limit when the job was created, so the results are judged
     // against the test cases that were run even if the challenge is edited meanwhile.
     // Missing in jobs queued before these fields were added.
     testCases?: { input: string; expectedOutput: string; isHidden: boolean }[];
     timeLimit?: number;
-    memoryLimit?: number;
 }
 
 export interface EvaluationJobResult {

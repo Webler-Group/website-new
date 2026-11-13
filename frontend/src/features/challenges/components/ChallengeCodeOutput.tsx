@@ -88,9 +88,8 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                 testCase,
                 result: lastSubmission.testResults[index] ?? null
             }));
-    // Older submissions didn't store their limits; the challenge has had none before them either
+    // Older submissions didn't store the limit; the challenge had none before them either
     const timeLimit = lastSubmission?.timeLimit;
-    const memoryLimit = lastSubmission?.memoryLimit;
 
     return (
         <div className="h-100 p-3 bg-dark text-light overflow-y-scroll">
@@ -101,15 +100,11 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
             {(lastSubmission && !loading) && (
                 <div className="mt-3">
                     <h4>Test Results</h4>
-                    {(timeLimit || memoryLimit) && (
+                    {timeLimit ? (
                         <div className="small text-secondary mb-2">
-                            Limits per test:{" "}
-                            {[
-                                timeLimit && `${formatTime(timeLimit / 1000)} CPU time`,
-                                memoryLimit && `${formatMemory(memoryLimit * 1024)} memory`
-                            ].filter(Boolean).join(" · ")}
+                            Time limit per test: {formatTime(timeLimit / 1000)} of CPU time
                         </div>
-                    )}
+                    ) : null}
                     {rows.map(({ testCase, result }, index) => {
                         const passed = result?.passed ?? false;
                         const color = result ? (passed ? "success" : "danger") : "warning";
@@ -126,7 +121,7 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                                 </h5>
 
                                 {result && result.verdict !== "compileError" && (
-                                    <ResourceUsage result={result} timeLimit={timeLimit} memoryLimit={memoryLimit} />
+                                    <ResourceUsage result={result} timeLimit={timeLimit} />
                                 )}
 
                                 {testCase.isHidden ? (
@@ -209,11 +204,10 @@ const formatMemory = (kb: number) =>
 interface ResourceUsageProps {
     result: ChallengeTestResult;
     timeLimit?: number;
-    memoryLimit?: number;
 }
 
-/** CPU time and peak memory of one test, compared with the challenge's limits when it has them */
-const ResourceUsage = ({ result, timeLimit, memoryLimit }: ResourceUsageProps) => {
+/** CPU time and peak memory of one test; time is compared with the challenge's limit when it has one */
+const ResourceUsage = ({ result, timeLimit }: ResourceUsageProps) => {
     const metrics = [
         {
             label: "Time",
@@ -225,7 +219,8 @@ const ResourceUsage = ({ result, timeLimit, memoryLimit }: ResourceUsageProps) =
         {
             label: "Memory",
             used: result.memory,
-            limit: memoryLimit ? memoryLimit * 1024 : undefined,
+            // Only the code runner's container limit applies, reached when the program runs out of memory
+            limit: undefined,
             exceeded: result.verdict === "memoryLimitExceeded",
             format: formatMemory
         }

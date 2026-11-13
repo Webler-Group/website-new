@@ -33,8 +33,6 @@ export interface ChallengeDetails {
   lastAttemptLanguage?: CompilerLanguagesEnum | null;
   /** CPU time limit per test in ms; absent when the challenge has none */
   timeLimit?: number | null;
-  /** Memory limit per test in MB; absent when the challenge has none */
-  memoryLimit?: number | null;
 }
 
 export interface ChallengeMinimal {
@@ -153,9 +151,8 @@ export interface ChallengeSubmissionMinimal {
 export interface ChallengeSubmissionDetails {
   passed: boolean;
   testResults: ChallengeTestResult[];
-  /** Limits the results were judged with (ms and MB) */
+  /** Time limit the results were judged with (ms) */
   timeLimit?: number;
-  memoryLimit?: number;
 }
 
 export interface ChallengeJobDetails {
@@ -213,7 +210,6 @@ export interface EditChallengeData {
   isPublic: boolean;
   solution: string;
   timeLimit?: number;
-  memoryLimit?: number;
 }
 
 export interface CreateChallengeJobData {
