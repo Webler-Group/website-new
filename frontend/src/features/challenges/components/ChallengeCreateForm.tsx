@@ -1,6 +1,6 @@
 import { Button, Form } from "../../../components/ui";
 import { SubmitEvent, useEffect, useState } from "react";
-import { FaPlus, FaAlignLeft, FaLevelUpAlt } from "react-icons/fa";
+import { FaPlus, FaAlignLeft, FaLevelUpAlt, FaStopwatch, FaMemory } from "react-icons/fa";
 import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
@@ -26,6 +26,9 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     const [isVisible, setIsVisible] = useState(true);
     const [solution, setSolution] = useState("");
     const [tags, setTags] = useState<string[]>([]);
+    // Empty means no limit
+    const [timeLimit, setTimeLimit] = useState("");
+    const [memoryLimit, setMemoryLimit] = useState("");
     const [error, setError] = useState("");
     const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
@@ -48,9 +51,16 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             setIsVisible(result.data.challenge.isPublic);
             setSolution(result.data.challenge.solution ?? "");
             setTags(result.data.challenge.tags ?? []);
+            setTimeLimit(result.data.challenge.timeLimit?.toString() ?? "");
+            setMemoryLimit(result.data.challenge.memoryLimit?.toString() ?? "");
         }
         setLoading(false);
     }
+
+    const limits = () => ({
+        timeLimit: timeLimit.trim() ? Number(timeLimit) : null,
+        memoryLimit: memoryLimit.trim() ? Number(memoryLimit) : null
+    });
 
     const handleCreateChallenge = async () => {
         const result = await sendJsonRequest<CreateChallengeData>(`/Challenge/Create`, "POST", {
@@ -61,7 +71,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             templates,
             isVisible: isVisible ? 1 : 0,
             solution,
-            tags
+            tags,
+            ...limits()
         });
         if (result.data) {
             showMessage(`Challenge created Successfully`);
@@ -82,7 +93,8 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             templates,
             isVisible: isVisible ? 1 : 0,
             solution,
-            tags
+            tags,
+            ...limits()
         });
         if (result.data) {
             showMessage(`Challenge updated Successfully`);
@@ -176,6 +188,42 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
                         <option value="hard">Hard</option>
                     </Form.Select>
                 </Form.Group>
+
+                <div className="row g-3 mt-0">
+                    <Form.Group className="col-sm-6">
+                        <Form.Label htmlFor="challenge-time-limit">
+                            <FaStopwatch className="me-2" /> Time limit (ms)
+                        </Form.Label>
+                        <Form.Control
+                            id="challenge-time-limit"
+                            type="number"
+                            min={10}
+                            max={10000}
+                            step={1}
+                            placeholder="No limit"
+                            value={timeLimit}
+                            onChange={(e) => setTimeLimit(e.target.value)}
+                        />
+                        <Form.Text className="text-muted">CPU time per test, up to 10000 ms. Leave empty for no limit.</Form.Text>
+                    </Form.Group>
+                    <Form.Group className="col-sm-6">
+                        <Form.Label htmlFor="challenge-memory-limit">
+                            <FaMemory className="me-2" /> Memory limit (MB)
+                        </Form.Label>
+                        <Form.Control
+                            id="challenge-memory-limit"
+                            type="number"
+                            min={1}
+                            step={1}
+                            placeholder="No limit"
+                            value={memoryLimit}
+                            onChange={(e) => setMemoryLimit(e.target.value)}
+                        />
+                        <Form.Text className="text-muted">
+                            Peak memory per test. Runtimes need some on their own: about 4 MB for C, C++, Go, Rust and Lua, 8 MB for Python, 13 MB for Ruby, 24 MB for C#, 38 MB for Java and Kotlin, 42 MB for JavaScript and TypeScript.
+                        </Form.Text>
+                    </Form.Group>
+                </div>
 
                 <Form.Group className="mt-3">
                     <Form.Check

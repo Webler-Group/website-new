@@ -232,6 +232,12 @@ details {
     font-size: 0.9rem;
 }
 
+.wb-challenges-limit {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
 /* --- Solution tab --------------------------------------------------------------------------- */
 
 .wb-challenges-solution-message {
@@ -253,6 +259,21 @@ details {
     min-height: 1.5em;
     margin-top: 0.25rem;
     margin-bottom: 0.25rem;
+}
+
+.wb-challenges-usage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+}
+
+.wb-challenges-usage-item {
+    min-width: 9rem;
+}
+
+.progress.wb-challenges-usage-bar {
+    height: 4px;
+    margin-top: 0.15rem;
 }
 
 /* --- Test case editor ----------------------------------------------------------------------- */

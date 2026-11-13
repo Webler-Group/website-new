@@ -35,6 +35,7 @@ const LANGUAGES: Record<string, LanguageSpec> = {
 };
 
 // Run limits (seconds). CPU time is enforced by the kernel (RLIMIT_CPU), wall time by us.
+// A challenge can set a lower time limit (see RunLimits).
 const RUN_CPU_TIME = 10;
 const RUN_WALL_TIME = 10;
 const COMPILE_WALL_TIME = 10;
@@ -70,10 +71,25 @@ export interface SandboxImage {
     data: string;
 }
 
+/** Optional per-run limits (a challenge's limits); the global run limits always apply as well. */
+export interface RunLimits {
+    // Milliseconds of CPU time
+    timeLimit?: number;
+    // Megabytes of peak memory (resident set size)
+    memoryLimit?: number;
+}
+
+export type RunVerdict = "timeLimitExceeded" | "memoryLimitExceeded" | "outputLimitExceeded" | "runtimeError";
+
 export interface SandboxRunResult {
     stdout: string;
     stderr: string;
+    // Seconds of CPU time the program used (container start-up excluded)
     time?: number;
+    // Peak memory in KB
+    memory?: number;
+    // Why the run failed, when it did
+    verdict?: RunVerdict;
     // PNG file the program saved into ./output
     image?: SandboxImage;
     // Crashed or hit a limit; later inputs were not run
@@ -167,9 +183,32 @@ class RunStdout {
     }
 }
 
-/** Parses and validates the image section written by the `run` wrapper (at most one image). */
-function parseImage(section: Buffer): { image?: SandboxImage; warning: string } {
-    const [headerLine = "", base64 = ""] = section.toString("latin1").split("\n");
+interface RunStats {
+    // Seconds of CPU time (user + system)
+    cpuTime: number;
+    // Peak memory in KB
+    memory?: number;
+}
+
+/**
+ * Parses the section written by the `run` wrapper after the marker: at most one image
+ * (`IMAGE <name> <bytes>` + base64 line) and the program's measurements (`STATS ...`, last line).
+ * Images built before the STATS line existed simply have no stats.
+ */
+function parseImageSection(section: Buffer): { image?: SandboxImage; warning: string; stats?: RunStats } {
+    const lines = section.toString("latin1").split("\n");
+    const statsMatch = lines
+        .map(line => /^STATS (\d+) (\d+) (\d+|-)$/.exec(line))
+        .find(match => match !== null);
+    const stats = statsMatch ? {
+        cpuTime: Number(statsMatch[1]) / 1_000_000,
+        memory: statsMatch[3] === "-" ? undefined : Number(statsMatch[3])
+    } : undefined;
+    return { ...parseImage(lines[0] ?? "", lines[1] ?? ""), stats };
+}
+
+/** Validates the image from the image section (at most one image). */
+function parseImage(headerLine: string, base64: string): { image?: SandboxImage; warning: string } {
     const header = /^IMAGE ([A-Za-z0-9._-]{1,100}\.png) (\d+)$/.exec(headerLine);
     if (!header) {
         return { warning: "" };
@@ -235,8 +274,13 @@ interface ContainerResult {
     timedOut: boolean;
     outputExceeded: boolean;
     image?: SandboxImage;
-    // Seconds between the program starting and exiting (excludes container setup)
+    // Seconds of CPU time the program used, measured by the `run` wrapper; for images without
+    // the wrapper's STATS line, seconds between the container starting and exiting
     time?: number;
+    // `time` and `memory` come from the `run` wrapper (not from Docker)
+    measured: boolean;
+    // Peak memory in KB, measured by the `run` wrapper
+    memory?: number;
 }
 
 /** Docker itself failed to start the container (not the user's program). */
@@ -317,7 +361,9 @@ async function runContainerOnce(opts: ContainerOptions): Promise<ContainerResult
         const finished = parseDockerTime(state.FinishedAt);
 
         const out = stdout instanceof RunStdout ? stdout.split() : { stdout: stdout.toString(), imageSection: null };
-        const { image, warning } = out.imageSection ? parseImage(out.imageSection) : { image: undefined, warning: "" };
+        const { image, warning, stats } = out.imageSection
+            ? parseImageSection(out.imageSection)
+            : { image: undefined, warning: "", stats: undefined };
 
         return {
             stdout: out.stdout,
@@ -327,16 +373,18 @@ async function runContainerOnce(opts: ContainerOptions): Promise<ContainerResult
             oomKilled: Boolean(state.OOMKilled),
             timedOut,
             outputExceeded,
-            time: started !== undefined && finished !== undefined
+            time: stats ? stats.cpuTime : started !== undefined && finished !== undefined
                 ? Math.max(0, Math.round(finished - started) / 1000)
-                : undefined
+                : undefined,
+            measured: stats !== undefined,
+            memory: stats?.memory
         };
     } finally {
         await docker(["rm", "-f", name]).catch(() => { });
     }
 }
 
-function sandboxFlags(jobDir: string, mode: "compile" | "run"): string[] {
+function sandboxFlags(jobDir: string, mode: "compile" | "run", cpuTime = RUN_CPU_TIME): string[] {
     const memory = mode === "compile" ? COMPILE_MEMORY : `${config.compilerMemLimit}k`;
     const fsize = mode === "compile" ? COMPILE_FSIZE_BYTES : config.compilerFsizeLimit * 1024;
 
@@ -374,8 +422,8 @@ function sandboxFlags(jobDir: string, mode: "compile" | "run"): string[] {
     } else {
         flags.push(
             "--pids-limit=128",
-            // Soft limit sends SIGXCPU, hard limit SIGKILL
-            "--ulimit", `cpu=${RUN_CPU_TIME}:${RUN_CPU_TIME + 1}`,
+            // Soft limit sends SIGXCPU, hard limit SIGKILL (whole seconds only)
+            "--ulimit", `cpu=${cpuTime}:${cpuTime + 1}`,
             "--tmpfs", "/tmp:size=64m",
             "-v", `${jobDir}:/box:ro`,
             "-w", "/tmp"
@@ -416,20 +464,39 @@ async function removeDir(dir: string, image: string) {
 /* Public API                                                           */
 /* ------------------------------------------------------------------ */
 
-function describeRunFailure(r: ContainerResult): string | null {
-    if (r.outputExceeded || r.exitCode === EXIT_SIGXFSZ) return "Output limit exceeded";
-    if (r.oomKilled) return "Memory limit exceeded";
-    if (r.timedOut || r.exitCode === EXIT_SIGXCPU || (r.time !== undefined && r.time > RUN_WALL_TIME)) {
-        return "Time limit exceeded";
+/**
+ * `timeLimit` is in seconds, `memoryLimit` in KB. Limits are checked against the measured usage too,
+ * because the kernel limits are coarser (RLIMIT_CPU counts whole seconds, the container's memory
+ * limit includes /tmp and the wrapper).
+ */
+function describeRunFailure(
+    r: ContainerResult,
+    timeLimit: number,
+    memoryLimit?: number
+): { verdict: RunVerdict; message: string } | null {
+    if (r.outputExceeded || r.exitCode === EXIT_SIGXFSZ) {
+        return { verdict: "outputLimitExceeded", message: "Output limit exceeded" };
     }
-    if (r.exitCode === EXIT_SIGKILL) return "Time limit exceeded";
-    if (r.exitCode === EXIT_SIGSEGV) return "Segmentation fault (core dumped)";
-    if (r.exitCode > 128) return `Program terminated by signal ${r.exitCode - 128}`;
-    if (r.exitCode !== 0) return `Exited with error status ${r.exitCode}`;
+    if (r.oomKilled || (memoryLimit !== undefined && r.memory !== undefined && r.memory > memoryLimit)) {
+        return { verdict: "memoryLimitExceeded", message: "Memory limit exceeded" };
+    }
+    // Docker's start-to-finish time includes container start-up, so only the measured time is compared
+    const timeExceeded = r.time !== undefined && r.time > (r.measured ? timeLimit : RUN_WALL_TIME);
+    if (r.timedOut || r.exitCode === EXIT_SIGXCPU || r.exitCode === EXIT_SIGKILL || timeExceeded) {
+        return { verdict: "timeLimitExceeded", message: "Time limit exceeded" };
+    }
+    if (r.exitCode === EXIT_SIGSEGV) return { verdict: "runtimeError", message: "Segmentation fault (core dumped)" };
+    if (r.exitCode > 128) return { verdict: "runtimeError", message: `Program terminated by signal ${r.exitCode - 128}` };
+    if (r.exitCode !== 0) return { verdict: "runtimeError", message: `Exited with error status ${r.exitCode}` };
     return null;
 }
 
-export async function runInSandbox(source: string, language: string, inputs: (string | Buffer)[]): Promise<SandboxResult> {
+export async function runInSandbox(
+    source: string,
+    language: string,
+    inputs: (string | Buffer)[],
+    limits: RunLimits = {}
+): Promise<SandboxResult> {
     const spec = LANGUAGES[language];
     if (!spec) {
         throw new Error("Unsupported language");
@@ -440,6 +507,15 @@ export async function runInSandbox(source: string, language: string, inputs: (st
     const outputLimit = config.codeOutputLimit;
     // Same cap isolate enforced on its stdout file via --fsize
     const outputKillLimit = config.compilerFsizeLimit * 1024;
+
+    // A time limit means CPU time; a program that sleeps or waits instead is stopped after twice
+    // the limit plus a second of wall time
+    const timeLimit = limits.timeLimit ? Math.min(limits.timeLimit / 1000, RUN_CPU_TIME) : RUN_CPU_TIME;
+    // RLIMIT_CPU counts whole seconds, so a program over a shorter limit runs up to a second;
+    // the measured time decides the verdict
+    const cpuTime = Math.min(Math.max(Math.ceil(timeLimit), 1), RUN_CPU_TIME);
+    const wallTime = limits.timeLimit ? Math.min(timeLimit * 2 + 1, RUN_WALL_TIME) : RUN_WALL_TIME;
+    const memoryLimit = limits.memoryLimit ? limits.memoryLimit * 1024 : undefined;
 
     try {
         fs.writeFileSync(path.join(jobDir, spec.sourceFile), source);
@@ -472,20 +548,23 @@ export async function runInSandbox(source: string, language: string, inputs: (st
             const r = await runContainer({
                 image,
                 command: "run",
-                flags: sandboxFlags(jobDir, "run"),
+                flags: sandboxFlags(jobDir, "run", cpuTime),
                 input,
-                wallTime: RUN_WALL_TIME,
+                wallTime,
                 outputLimit,
                 // The image section comes on top of the program's own output
                 outputKillLimit: outputKillLimit + IMAGE_SECTION_MAX,
                 collectImage: true
             });
 
-            const failure = describeRunFailure(r);
+            const failure = describeRunFailure(r, timeLimit, memoryLimit);
             runResults.push({
                 stdout: r.stdout,
-                stderr: failure ? r.stderr + failure + "\n" : r.stderr,
-                time: r.time,
+                stderr: failure ? r.stderr + failure.message + "\n" : r.stderr,
+                // A program we killed has no measurement, and Docker's time would include container start-up
+                time: r.timedOut && !r.measured ? undefined : r.time,
+                memory: r.memory,
+                verdict: failure?.verdict,
                 failed: failure !== null,
                 ...(r.image ? { image: r.image } : {})
             });

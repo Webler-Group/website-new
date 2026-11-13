@@ -47,6 +47,8 @@ for t in "${tests[@]}"; do
         if [ "$t" = cpp ] || [ "$t" = python ] || [ "$t" = rust ]; then
             echo "$out" | grep -q '^IMAGE ' || { echo "FAIL: no image in output"; fail=1; }
         fi
+        # The run wrapper's measurements end the output
+        echo "$out" | grep -q '^STATS [0-9]* [0-9]* [0-9]*$' || { echo "FAIL: no STATS line in output"; fail=1; }
         if echo "$out" | grep -q "hello website-new"; then
             awk -v s="$start" -v e="$end" 'BEGIN { printf "OK (%.2fs)\n", e - s }'
         else
