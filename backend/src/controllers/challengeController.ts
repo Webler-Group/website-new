@@ -47,7 +47,7 @@ const getPassedChallengeIds = async (userId: string | undefined, challengeIds: T
     const ids = await ChallengeSubmissionModel.distinct("challenge", {
         challenge: { $in: challengeIds },
         user: userId,
-        passed: true
+        everPassed: true
     });
     return new Set(ids.map(String));
 };
@@ -108,7 +108,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
         }
         const passedIds = await ChallengeSubmissionModel.distinct("challenge", {
             user: userId,
-            passed: true
+            everPassed: true
         });
 
         if (filter === 2) {
@@ -139,7 +139,7 @@ const getChallengeList = asyncHandler(async (req: IAuthRequest, res: Response) =
             ChallengeSubmissionModel.find({
                 challenge: { $in: ids },
                 user: userId,
-                passed: true
+                everPassed: true
             })
                 .select({ challenge: 1, language: 1, passed: 1 })
                 .lean(),
@@ -214,8 +214,8 @@ const getChallenge = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const [submissions, hasUnlocked] = await Promise.all([
         ChallengeSubmissionModel.aggregate<SubmissionEntry>([
-            { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(userId), passed: true } },
-            { $group: { _id: "$language", passed: { $max: "$passed" } } },
+            { $match: { challenge: challenge._id, user: new mongoose.Types.ObjectId(userId), everPassed: true } },
+            { $group: { _id: "$language", passed: { $max: "$everPassed" } } },
             { $project: { language: "$_id", passed: 1, _id: 0 } }
         ]),
         userId ? ChallengeUnlockModel.exists({ challenge: challenge._id, user: userId }) : Promise.resolve(null)
