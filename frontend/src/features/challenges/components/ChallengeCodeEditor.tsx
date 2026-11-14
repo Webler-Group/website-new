@@ -1,4 +1,4 @@
-import { Button, Dropdown, Modal } from "../../../components/ui";
+import { Button, Dropdown, Modal, Toast } from "../../../components/ui";
 import { FaTimes } from "react-icons/fa";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
@@ -8,7 +8,6 @@ import useVisualViewport from "../../compiler-playground/hooks/useVisualViewport
 import useUnsavedChangesGuard from "../../compiler-playground/hooks/useUnsavedChangesGuard";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import Loader from "../../../components/Loader";
-import { useSnackbar } from "../../../context/SnackbarProvider";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { ChallengeCodeDetails, ChallengeDetails, GetChallengeCodeData, SaveChallengeCodeData } from "../types";
 
@@ -28,7 +27,7 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
     const [showExitModal, setShowExitModal] = useState(false);
     const { editorOptions } = useEditorOptions();
     const { viewportVars } = useVisualViewport();
-    const { showMessage } = useSnackbar();
+    const [message, setMessage] = useState<{ success: boolean; text: string } | null>(null);
     const [title, setTitle] = useState(challenge.title);
 
     // Guards tab close / reload and in-app navigation (e.g. browser back) while the editor is open
@@ -89,12 +88,12 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
             setCode(prev => prev ? { ...prev, ...result.data } : null);
             setSource(result.data.source);
 
-            showMessage("Code saved successfully");
+            setMessage({ success: true, text: "Code saved successfully" });
             setLoading(false);
             return true;
         }
 
-        showMessage("Code failed to save");
+        setMessage({ success: false, text: result?.error?.[0]?.message ?? "Code failed to save" });
         setLoading(false);
         return false;
     }
@@ -156,7 +155,17 @@ const ChallengeCodeEditor = ({ challenge, language, onExit }: ChallengeCodeEdito
                 contentClassName="h-100"
             >
                 {/* Only expose the visible height (excludes the mobile virtual keyboard) to the editor tabs */}
-                <Modal.Body ref={viewportVars} className="p-0 m-0 d-flex flex-column">
+                <Modal.Body ref={viewportVars} className="p-0 m-0 d-flex flex-column position-relative">
+                    <Toast
+                        className="wb-compiler-playground-toast position-absolute bottom-0 end-0 m-2"
+                        bg={message?.success ? "success" : "danger"}
+                        show={!!message}
+                        onClose={() => setMessage(null)}
+                        delay={1500}
+                        autohide
+                    >
+                        <Toast.Body className="text-white"><b>{message?.text}</b></Toast.Body>
+                    </Toast>
                     <div className="wb-app-toolbar d-flex align-items-center justify-content-between border-bottom bg-body p-1">
                         <div className="d-flex align-items-center">
                             <Button variant="link" className="text-secondary" onClick={handleExit}>

@@ -267,6 +267,10 @@ details {
     gap: 0.25rem 1.5rem;
 }
 
+.wb-challenges-test-progress {
+    max-width: 20rem;
+}
+
 .wb-challenges-usage-item {
     min-width: 9rem;
 }

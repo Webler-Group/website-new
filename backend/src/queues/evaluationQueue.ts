@@ -4,7 +4,7 @@ import { config } from "../confg";
 import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
 import HttpError from "../exceptions/HttpError";
 import type { AwardedXp } from "../helpers/xpHelper";
-import type { RunVerdict } from "../utils/sandbox";
+import type { RunVerdict, SandboxProgress } from "../utils/sandbox";
 
 export const EVALUATION_QUEUE_NAME = "evaluation";
 
@@ -130,6 +130,8 @@ export async function getEvaluationJob(jobId: string) {
         id: job.id as string,
         status,
         data: job.data as EvaluationJobData,
+        // Set by the worker while the job runs (see runInSandbox); absent before it starts
+        progress: (typeof job.progress === "object" ? job.progress : null) as SandboxProgress | null,
         returnValue: (status === "done" ? job.returnvalue : null) as EvaluationJobResult | null
     };
 }

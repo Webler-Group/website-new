@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import PageTitle from "../../../layouts/PageTitle";
+import { Container } from "../../../components/ui";
 import ChallengeCreateForm from "../components/ChallengeCreateForm";
 
 const ChallengeEdit = () => {
@@ -9,7 +10,9 @@ const ChallengeEdit = () => {
     const { challengeId } = useParams();
 
     return (
-        <ChallengeCreateForm challengeId={challengeId} />
+        <Container className="py-4">
+            <ChallengeCreateForm challengeId={challengeId} />
+        </Container>
     )
 }
 

@@ -104,6 +104,10 @@ export interface JobDetails {
     stderr: string;
     // PNG file the program saved into ./output
     image?: JobImage | null;
+    /** Seconds of CPU time */
+    time?: number;
+    /** Peak memory in KB */
+    memory?: number;
 }
 
 export interface GetJobData {

@@ -1,15 +1,18 @@
-import { Button, cx, ProgressBar, Spinner } from "../../../components/ui";
+import { Button, cx, FormControl, ProgressBar, Spinner } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { FaCheck, FaTimes } from "react-icons/fa";
-import { ChallengeDetails, ChallengeSubmissionDetails, ChallengeTestCase, ChallengeTestResult, ChallengeTestVerdict, CreateChallengeJobData, GetChallengeJobData } from "../types";
+import { ChallengeDetails, ChallengeJobDetails, ChallengeSubmissionDetails, ChallengeTestCase, ChallengeTestResult, ChallengeTestVerdict, CreateChallengeJobData, GetChallengeJobData } from "../types";
 import { pollJob } from "../../../utils/pollJob";
 import { useXpReward } from "../../../context/xpRewardContext";
+import { CreateJobData, GetJobData, JobDetails } from "../../codes/types";
 
-// Covers queueing, compiling and every test case using its full time limit
-const BASE_TIMEOUT_MS = 30_000;
-// Each test may run up to 10 s, plus container start and the backend's kill allowance
-const PER_TEST_TIMEOUT_MS = 13_000;
+// How long one step may take before we give up: waiting in the queue, compiling, or one test
+// (up to 10 s plus container start and the backend's kill allowance). It starts over whenever the
+// job makes progress, so a stopped code runner is noticed after this long, however many tests there are.
+const STEP_TIMEOUT_MS = 30_000;
+// A single run with custom input, as in the playground
+const CUSTOM_RUN_TIMEOUT_MS = 30_000;
 
 interface ChallengeCodeOutputProps {
     source: string;
@@ -24,14 +27,54 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [lastSubmission, setLastSubmission] = useState(submission ?? null);
+    // State of the test run in progress, shown while loading
+    const [testJob, setTestJob] = useState<Pick<ChallengeJobDetails, "status" | "progress"> | null>(null);
+    // "tests" runs the challenge's test cases, "custom" runs the code once with the user's own input
+    const [mode, setMode] = useState<"tests" | "custom">("tests");
+    // Starts with the first visible test case's input as an example
+    const [stdin, setStdin] = useState(() => challenge.testCases.find(x => !x.isHidden)?.input ?? "");
+    const [customRun, setCustomRun] = useState<Pick<JobDetails, "stdout" | "stderr" | "image" | "time" | "memory"> | null>(null);
 
     useEffect(() => {
         setLastSubmission(submission ?? null);
     }, [submission]);
 
-    const handleRunTests = async () => {
+    const handleRunCustom = async () => {
         setLoading(true);
         setError("");
+        setCustomRun(null);
+        const createJobResult = await sendJsonRequest<CreateJobData>("/Codes/CreateJob", "POST", {
+            source,
+            language,
+            stdin
+        });
+
+        if (createJobResult.data) {
+            const jobId = createJobResult.data.jobId;
+            const { result, status } = await pollJob(
+                async () => (await sendJsonRequest<GetJobData>("/Codes/GetJob", "POST", { jobId })).data ?? null,
+                data => data.job.status,
+                CUSTOM_RUN_TIMEOUT_MS
+            );
+
+            if (status === "done" && result) {
+                setCustomRun(result.job);
+            } else if (status === "timeout") {
+                setError("The code runner is taking too long, please try again in a moment.");
+            } else {
+                setError("Something went wrong");
+            }
+        } else {
+            setError(createJobResult.error?.[0].message ?? "Something went wrong");
+        }
+        setLoading(false);
+    };
+
+    const handleRunTests = async () => {
+        setMode("tests");
+        setLoading(true);
+        setError("");
+        setTestJob({ status: "pending", progress: null });
         const createJobResult = await sendJsonRequest<CreateChallengeJobData>("/Challenge/CreateChallengeJob", "POST", {
             source,
             language,
@@ -43,7 +86,14 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
             const { result: getJobResult, status } = await pollJob(
                 async () => (await sendJsonRequest<GetChallengeJobData>("/Challenge/GetChallengeJob", "POST", { jobId })).data ?? null,
                 data => data.job.status,
-                BASE_TIMEOUT_MS + PER_TEST_TIMEOUT_MS * challenge.testCases.length
+                STEP_TIMEOUT_MS,
+                {
+                    onUpdate: data => setTestJob({ status: data.job.status, progress: data.job.progress }),
+                    getProgressKey: data => {
+                        const p = data.job.progress;
+                        return `${data.job.status}:${p?.stage ?? ""}:${p?.stage === "running" ? p.completed : ""}`;
+                    }
+                }
             );
 
             if (status === "error") {
@@ -51,8 +101,11 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
             } else if (status === "done") {
                 setLastSubmission(getJobResult?.job.submission ?? null);
                 showXpReward(getJobResult?.job.xpAwarded);
+            } else if (!getJobResult || getJobResult.job.status === "pending") {
+                setError("The code runner is not responding right now, please try again in a moment.");
+                setLastSubmission(null);
             } else {
-                setError("Timeout");
+                setError("A test is taking too long, please try again.");
                 setLastSubmission(null);
             }
         } else {
@@ -93,11 +146,66 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
 
     return (
         <div className="h-100 p-3 bg-dark text-light overflow-y-scroll">
-            <Button onClick={handleRunTests} disabled={loading}>Run tests</Button>
-            {loading && <Spinner animation="border" className="ms-3" />}
+            <div className="d-flex flex-wrap align-items-center gap-2">
+                <Button onClick={handleRunTests} disabled={loading}>Run tests</Button>
+                <Button
+                    variant={mode === "custom" ? "light" : "outline-light"}
+                    onClick={() => { setMode("custom"); setError(""); }}
+                    disabled={loading}
+                    title="Run the code once with your own input, like in the code playground"
+                >
+                    Run with input
+                </Button>
+                {loading && <Spinner animation="border" className="ms-2" />}
+            </div>
+            {loading && testJob && <TestProgress job={testJob} testCount={challenge.testCases.length} />}
             {error && <div className="text-danger mt-3">{error}</div>}
 
-            {(lastSubmission && !loading) && (
+            {mode === "custom" && (
+                <div className="mt-3">
+                    <h4>Custom Input</h4>
+                    <FormControl
+                        as="textarea"
+                        rows={5}
+                        value={stdin}
+                        onChange={(e) => setStdin(e.target.value)}
+                        placeholder="Input for your program (stdin)"
+                        className="font-monospace"
+                    />
+                    <Button className="mt-2" onClick={handleRunCustom} disabled={loading}>Run</Button>
+
+                    {customRun && !loading && (
+                        <div className="mt-3">
+                            <ResourceUsage result={{ passed: true, time: customRun.time, memory: customRun.memory }} />
+                            {customRun.image && (
+                                <figure className="mt-2 mb-0">
+                                    <div>Image:</div>
+                                    <img
+                                        src={`data:image/png;base64,${customRun.image.data}`}
+                                        alt={customRun.image.name}
+                                        width={customRun.image.width}
+                                        height={customRun.image.height}
+                                        className="wb-compiler-playground-output-image bg-secondary rounded d-block"
+                                    />
+                                    <figcaption className="small text-secondary mt-1">
+                                        output/{customRun.image.name} ({customRun.image.width}x{customRun.image.height})
+                                    </figcaption>
+                                </figure>
+                            )}
+                            <div>Output:</div>
+                            {renderCodeBlock(customRun.stdout)}
+                            {customRun.stderr && customRun.stderr.trim() !== "" && (
+                                <div className="text-warning mt-2">
+                                    <strong>Stderr:</strong>
+                                    {renderCodeBlock(customRun.stderr)}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {(mode === "tests" && lastSubmission && !loading) && (
                 <div className="mt-3">
                     <h4>Test Results</h4>
                     {timeLimit ? (
@@ -167,6 +275,24 @@ const ChallengeCodeOutput = ({ source, language, challenge, submission }: Challe
                     })}
                 </div>
             )}
+        </div>
+    );
+};
+
+/** Where a test run is: in the queue, compiling, or how many tests have finished */
+const TestProgress = ({ job, testCount }: { job: Pick<ChallengeJobDetails, "status" | "progress">; testCount: number }) => {
+    const progress = job.progress;
+    if (job.status === "pending" || !progress) {
+        return <div className="small text-secondary mt-2">Waiting for the code runner...</div>;
+    }
+    if (progress.stage === "compiling") {
+        return <div className="small text-secondary mt-2">Compiling...</div>;
+    }
+    const total = progress.total || testCount;
+    return (
+        <div className="mt-2 wb-challenges-test-progress">
+            <div className="small text-secondary">Running tests: {progress.completed} / {total} done</div>
+            <ProgressBar now={total > 0 ? (progress.completed / total) * 100 : 0} variant="success" className="wb-challenges-usage-bar" />
         </div>
     );
 };

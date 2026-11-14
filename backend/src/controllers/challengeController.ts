@@ -534,6 +534,7 @@ const getChallengeJob = asyncHandler(async (req: IAuthRequest, res: Response) =>
                 deviceId: job.data.deviceId,
                 status: job.status,
                 language: job.data.language,
+                progress: job.status === "running" ? job.progress : null,
                 submission: submission ? formatSubmission(submission) : null,
                 xpAwarded: xpAwarded ? {
                     total: xpAwarded.total,

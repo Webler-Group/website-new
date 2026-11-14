@@ -128,7 +128,9 @@ async function processJob(job: Job<EvaluationJobData, EvaluationJobResult>): Pro
 
     try {
         console.log(`Running job ${job.id}`);
-        result = await runInSandbox(data.source, data.language, data.stdin, { timeLimit: data.timeLimit });
+        // Progress is only for the user waiting on the result, so a failed update must not fail the job
+        result = await runInSandbox(data.source, data.language, data.stdin, { timeLimit: data.timeLimit },
+            progress => job.updateProgress(progress).catch(() => { }));
     } catch (err) {
         logEvents(`Job ${job.id} failed with error: ${err instanceof Error ? err.message : err}`, "codeRunnerErrLog.log");
         throw err;

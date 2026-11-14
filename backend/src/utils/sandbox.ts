@@ -484,11 +484,15 @@ function describeRunFailure(r: ContainerResult, timeLimit: number): { verdict: R
     return null;
 }
 
+/** Progress of a run: compiling, then how many inputs have finished running */
+export type SandboxProgress = { stage: "compiling" } | { stage: "running"; completed: number; total: number };
+
 export async function runInSandbox(
     source: string,
     language: string,
     inputs: (string | Buffer)[],
-    limits: RunLimits = {}
+    limits: RunLimits = {},
+    onProgress?: (progress: SandboxProgress) => void | Promise<void>
 ): Promise<SandboxResult> {
     const spec = LANGUAGES[language];
     if (!spec) {
@@ -515,6 +519,7 @@ export async function runInSandbox(
         let compileErr = "";
 
         if (spec.compiled) {
+            await onProgress?.({ stage: "compiling" });
             const r = await runContainer({
                 image,
                 command: "compile",
@@ -535,6 +540,7 @@ export async function runInSandbox(
         }
 
         const runResults: SandboxRunResult[] = [];
+        await onProgress?.({ stage: "running", completed: 0, total: inputs.length });
 
         for (const input of inputs) {
             const r = await runContainer({
@@ -564,6 +570,7 @@ export async function runInSandbox(
             if (failure) {
                 break;
             }
+            await onProgress?.({ stage: "running", completed: runResults.length, total: inputs.length });
         }
 
         return { compileErr, runResults };

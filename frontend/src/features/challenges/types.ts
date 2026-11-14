@@ -155,10 +155,16 @@ export interface ChallengeSubmissionDetails {
   timeLimit?: number;
 }
 
+/** Progress of a running evaluation; null while it waits in the queue */
+export type ChallengeJobProgress =
+  | { stage: "compiling" }
+  | { stage: "running"; completed: number; total: number };
+
 export interface ChallengeJobDetails {
   id: string;
   deviceId: string;
   status: string;
+  progress: ChallengeJobProgress | null;
   language: CompilerLanguagesEnum;
   submission: ChallengeSubmissionDetails | null;
   /** XP the current user gained by this evaluation */

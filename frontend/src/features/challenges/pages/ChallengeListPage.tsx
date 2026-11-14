@@ -1,9 +1,8 @@
-import { Button, Col, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table } from "../../../components/ui";
+import { Button, Col, Container, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table, Toast, ToastContainer } from "../../../components/ui";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Loader from "../../../components/Loader";
 import PageTitle from "../../../layouts/PageTitle";
 import { useApi } from "../../../context/apiCommunication";
-import { useSnackbar } from "../../../context/SnackbarProvider";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAuth } from "../../auth/context/authContext";
 import { FaLock, FaSearch, FaPlus, FaCheckCircle, FaLayerGroup, FaTrash } from "react-icons/fa";
@@ -16,7 +15,6 @@ const ChallengeList = () => {
     PageTitle("Challenges");
 
     const { sendJsonRequest } = useApi();
-    const { showMessage } = useSnackbar();
     const { userInfo } = useAuth();
     const navigate = useNavigate();
     const isCreator = !!userInfo?.roles.some(x => ["Admin", "Creator"].includes(x));
@@ -32,6 +30,7 @@ const ChallengeList = () => {
     const [collections, setCollections] = useState<ChallengeCollectionMinimal[]>([]);
     const [tags, setTags] = useState<ChallengeTagCount[]>([]);
     const [toDelete, setToDelete] = useState<ChallengeMinimal | null>(null);
+    const [message, setMessage] = useState<{ success: boolean; text: string } | null>(null);
     const activeTag = searchParams.get("tag");
 
     useEffect(() => {
@@ -134,7 +133,9 @@ const ChallengeList = () => {
     const handleDelete = async () => {
         if (!toDelete) return;
         const result = await sendJsonRequest("/Challenge/Delete", "POST", { challengeId: toDelete.id });
-        showMessage(result.success ? `Deleted "${toDelete.title}"` : result.error?.[0]?.message ?? "Could not delete the challenge");
+        setMessage(result.success
+            ? { success: true, text: `Deleted "${toDelete.title}"` }
+            : { success: false, text: result.error?.[0]?.message ?? "Could not delete the challenge" });
         setToDelete(null);
         if (result.success) {
             getChallenges();
@@ -144,7 +145,18 @@ const ChallengeList = () => {
     }
 
     return (
-        <div className="py-3">
+        <Container className="py-4">
+            <ToastContainer position="bottom-end" className="p-3">
+                <Toast
+                    bg={message?.success ? "success" : "danger"}
+                    show={!!message}
+                    onClose={() => setMessage(null)}
+                    delay={2500}
+                    autohide
+                >
+                    <Toast.Body className="text-white"><b>{message?.text}</b></Toast.Body>
+                </Toast>
+            </ToastContainer>
             <div className="wb-challenges-toolbar">
                 <InputGroup className="wb-challenges-search">
                     <FormControl
@@ -300,7 +312,7 @@ const ChallengeList = () => {
                     <Button variant="danger" onClick={handleDelete}>Delete</Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Container>
     );
 };
 

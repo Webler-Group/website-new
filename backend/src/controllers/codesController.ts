@@ -423,6 +423,9 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
     let stdout = "";
     let stderr = "";
     let image: RunImage | null = null;
+    // Seconds of CPU time and peak memory in KB
+    let time: number | undefined;
+    let memory: number | undefined;
 
     const result = job.returnValue?.result;
     if (result) {
@@ -431,6 +434,8 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
             stdout = result.runResults[0].stdout ?? "";
             stderr += result.runResults[0].stderr ?? "";
             image = result.runResults[0].image ?? null;
+            time = result.runResults[0].time;
+            memory = result.runResults[0].memory;
         }
     }
 
@@ -445,7 +450,9 @@ const getJob = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 stdin: job.data.stdin,
                 stdout,
                 stderr,
-                image
+                image,
+                time,
+                memory
             }
         }
     });

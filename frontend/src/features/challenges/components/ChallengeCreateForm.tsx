@@ -5,7 +5,6 @@ import { useApi } from '../../../context/apiCommunication';
 import { useNavigate } from "react-router-dom";
 import TestCaseForm from "../components/TestCaseForm";
 import ChallengeTemplateForm from "../components/ChallengeTemplateForm";
-import { useSnackbar } from "../../../context/SnackbarProvider";
 import MdEditorField from "../../../components/MdEditorField";
 import InputTags from "../../../components/InputTags";
 import { ChallengeTemplate, ChallengeTestCase, CreateChallengeData, EditChallengeData, GetEditedChallengeData } from "../types";
@@ -29,7 +28,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
     // Empty means no limit
     const [timeLimit, setTimeLimit] = useState("");
     const [error, setError] = useState("");
-    const { showMessage } = useSnackbar();
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -72,8 +70,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             ...limits()
         });
         if (result.data) {
-            showMessage(`Challenge created Successfully`);
-
             navigate("/Challenge/" + result.data.challenge.id);
         } else {
             setError(result.error?.[0].message ?? "Something went wrong");
@@ -94,8 +90,6 @@ const ChallengeCreateForm = ({ challengeId }: IChallengeCreateFormProps) => {
             ...limits()
         });
         if (result.data) {
-            showMessage(`Challenge updated Successfully`);
-
             navigate("/Challenge/" + result.data.id);
         } else {
             setError(result.error?.[0].message ?? "Something went wrong");

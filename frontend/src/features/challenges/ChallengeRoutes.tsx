@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import SnackbarLayout from "../../layouts/SnackbarLayout";
+import Layout from "../../layouts/Layout";
 import Header from "../../layouts/Header";
 import Footer from "../../layouts/Footer";
 import ChallengeList from "./pages/ChallengeListPage";
@@ -15,7 +15,7 @@ import RolesEnum from "../../data/RolesEnum";
 const ChallengeRoutes = () => {
     return (
         <Routes>
-            <Route element={<SnackbarLayout Header={<Header />} Footer={<Footer />} wide />}>
+            <Route element={<Layout Header={<Header />} Footer={<Footer />} />}>
                 <Route index element={<ChallengeList />} />
                 <Route path="Collection/:collectionId" element={<ChallengeCollectionPage />} />
                 <Route element={<RequireAuth allowedRoles={[RolesEnum.USER]} />}>
