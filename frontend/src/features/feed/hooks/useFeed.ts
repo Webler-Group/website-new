@@ -10,7 +10,7 @@ interface UseFeedState {
 const useFeed = (filter: number, searchQuery: string, countPerPage: number) => {
     const [state, setState] = useState<UseFeedState>({ page: 0 });
     const [results, setResults] = useState<FeedDetails[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<{ message: string }[]>([]);
     const [hasNextPage, setHasNextPage] = useState(false);
     const [totalCount, setTotalCount] = useState(0);

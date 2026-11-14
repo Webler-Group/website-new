@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Components } from 'react-markdown';
 import remarkGfm from "remark-gfm";
 import ImagePreview from './ImagePreview';
+import SafeImage from './SafeImage';
 import { Link } from 'react-router-dom';
 import "./MarkdownRenderer.css";
 import remarkBreaks from 'remark-breaks';
@@ -24,82 +25,87 @@ interface MarkdownRendererProps {
 const MarkdownRenderer = ({ content, allowedUrls = defaultAllowedUrls }: MarkdownRendererProps) => {
     const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
 
-    const isAllowedUrl = (url?: string) => {
-        if (!url) return false;
-
-        return allowedUrls.some(pattern =>
-            typeof pattern === "string" ? url.startsWith(pattern) : pattern.test(url)
-        );
-    };
-
     const transformedContent = content.replace(
         /\[user id="([^"]+)"\](.*?)\[\/user\]/g,
         (_match, userId, username) => `[@${username}](/Profile/${userId})`
     );
 
-    const components: Components = {
-        code({ className, children }) {
-            const match = /language-(\w+)/.exec(className || '');
-            return match ? (
-                <SyntaxHighlighter
-                    style={oneDark}
-                    language={match[1]}
-                    PreTag="div"
-                >
-                    {String(children).replace(/\n$/, '')}
-                </SyntaxHighlighter>
-            ) : (
-                <code className={className}>
-                    {children}
-                </code>
+    // Memoized so ReactMarkdown doesn't see new component types on every render,
+    // which would remount all <img> elements and re-request images.
+    const components: Components = useMemo(() => {
+        const isAllowedUrl = (url?: string) => {
+            if (!url) return false;
+
+            return allowedUrls.some(pattern =>
+                typeof pattern === "string" ? url.startsWith(pattern) : pattern.test(url)
             );
-        },
+        };
 
-        a({ href, children }) {
-            if (!href) {
-                return <span>{children}</span>;
-            }
-            if (href.startsWith("/")) {
-                const media = parseMediaUrl(href);
-                if (media?.type === "file") {
-                    return <FileAttachmentLink url={href} name={media.name} />;
-                }
-                return <Link to={href}>{children}</Link>;
-            }
-            const domain = "weblercodes.com";
-            if (href.includes(domain)) {
-                const relativePath = href.split(domain)[1] || "/";
-                return <Link to={relativePath}>{children}</Link>;
-            }
-            if (isAllowedUrl(href)) {
-                return (
-                    <a href={href} target="_blank" rel="noopener noreferrer">
+        return {
+            code({ className, children }) {
+                const match = /language-(\w+)/.exec(className || '');
+                return match ? (
+                    <SyntaxHighlighter
+                        style={oneDark}
+                        language={match[1]}
+                        PreTag="div"
+                    >
+                        {String(children).replace(/\n$/, '')}
+                    </SyntaxHighlighter>
+                ) : (
+                    <code className={className}>
                         {children}
-                    </a>
+                    </code>
                 );
-            }
-            return <span>{children}</span>;
-        },
+            },
 
-        img({ src, alt }) {
-            const media = typeof src === "string" && src.startsWith("/") ? parseMediaUrl(src) : null;
-            if (media?.type === "file") {
-                return <FileAttachmentLink url={src as string} name={media.name} />;
+            a({ href, children }) {
+                if (!href) {
+                    return <span>{children}</span>;
+                }
+                if (href.startsWith("/")) {
+                    const media = parseMediaUrl(href);
+                    if (media?.type === "file") {
+                        return <FileAttachmentLink url={href} name={media.name} />;
+                    }
+                    return <Link to={href}>{children}</Link>;
+                }
+                const domain = "weblercodes.com";
+                if (href.includes(domain)) {
+                    const relativePath = href.split(domain)[1] || "/";
+                    return <Link to={relativePath}>{children}</Link>;
+                }
+                if (isAllowedUrl(href)) {
+                    return (
+                        <a href={href} target="_blank" rel="noopener noreferrer">
+                            {children}
+                        </a>
+                    );
+                }
+                return <span>{children}</span>;
+            },
+
+            img({ src, alt }) {
+                const media = typeof src === "string" && src.startsWith("/") ? parseMediaUrl(src) : null;
+                if (media?.type === "file") {
+                    return <FileAttachmentLink url={src as string} name={media.name} />;
+                }
+                if (isAllowedUrl(src)) {
+                    return (
+                        <SafeImage
+                            src={src}
+                            fallbackSrc="/resources/images/image.svg"
+                            alt={alt || ""}
+                            onClick={() => {
+                                setPreview(src ? { src, alt } : null);
+                            }}
+                        />
+                    );
+                }
+                return <span>{alt || "Image not allowed"}</span>;
             }
-            if (isAllowedUrl(src)) {
-                return (
-                    <img
-                        src={src}
-                        alt={alt || ""}
-                        onClick={() => {
-                            setPreview(src ? { src, alt } : null);
-                        }}
-                    />
-                );
-            }
-            return <span>{alt || "Image not allowed"}</span>;
-        }
-    };
+        };
+    }, [allowedUrls]);
 
     return (
         <div className='wb-markdown'>

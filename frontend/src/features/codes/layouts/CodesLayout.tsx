@@ -2,6 +2,7 @@ import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import Code from "../components/Code";
+import ListSkeleton from "../../../components/ListSkeleton";
 import { useSeo } from "../../../components/Seo";
 import { CodeMinimal, CodesListData } from "../types";
 import { UserMinimal } from "../../profile/types";
@@ -20,6 +21,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
 
     const { sendJsonRequest } = useApi();
     const [codes, setCodes] = useState<CodeMinimal<UserMinimal>[]>([]);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         getCodes();
@@ -36,6 +38,7 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
         if (result.data) {
             setCodes(result.data.codes);
         }
+        setLoaded(true);
     }
 
     return (
@@ -63,7 +66,8 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
                                         );
                                     })
                                 }
-                                {codes.length === 0 && (
+                                {!loaded && <ListSkeleton count={5} variant="compact" />}
+                                {loaded && codes.length === 0 && (
                                     <div className="p-4 text-center text-muted">
                                         <small>No trending codes yet</small>
                                     </div>

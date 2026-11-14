@@ -9,7 +9,7 @@ import { FaExclamationCircle, FaSearch } from 'react-icons/fa';
 import useFeed from '../hooks/useFeed';
 import { useAuth } from '../../auth/context/authContext';
 import { useApi } from '../../../context/apiCommunication';
-import Loader from '../../../components/Loader';
+import ListSkeleton from '../../../components/ListSkeleton';
 import { FeedDetails, FeedListData } from '../types';
 
 const FILTER_OPTIONS = [
@@ -44,7 +44,7 @@ const FeedListPage = () => {
   const { sendJsonRequest } = useApi();
   const feeds = useFeed(filter, searchQuery, 10);
   const [pinnedFeeds, setPinnedFeeds] = useState<FeedDetails[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const intObserver = useRef<IntersectionObserver>(null);
   const lastFeedRef = useCallback(
@@ -241,10 +241,9 @@ const FeedListPage = () => {
         </div>
 
         {
-          loading ?
-            <div className="d-flex justify-content-center mt-5 text-center">
-              <Loader />
-            </div>
+          // Wait for pinned posts and the first page together so they don't pop in one after another
+          loading || (feeds.loading && feeds.results.length === 0) ?
+            <ListSkeleton count={5} className="px-2 mt-3" />
             :
             <>
               {pinnedFeeds.length > 0 && (

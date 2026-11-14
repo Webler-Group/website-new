@@ -2,6 +2,7 @@ import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import Question from "../components/Question";
 import { useApi } from "../../../context/apiCommunication";
+import ListSkeleton from "../../../components/ListSkeleton";
 import { useSeo } from "../../../components/Seo";
 import { QuestionListData, QuestionMinimal } from "../types";
 import { UserMinimal } from "../../profile/types";
@@ -19,6 +20,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
     });
     const { sendJsonRequest } = useApi();
     const [questions, setQuestions] = useState<QuestionMinimal<UserMinimal>[]>([]);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         getQuestions();
@@ -35,6 +37,7 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
         if (result.data) {
             setQuestions(result.data.questions);
         }
+        setLoaded(true);
     }
 
     return (
@@ -64,7 +67,8 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
                                             );
                                         })
                                     }
-                                    {questions.length === 0 && (
+                                    {!loaded && <ListSkeleton count={5} variant="compact" />}
+                                    {loaded && questions.length === 0 && (
                                         <div className="p-4 text-center text-muted">
                                             <small>No trending questions yet</small>
                                         </div>

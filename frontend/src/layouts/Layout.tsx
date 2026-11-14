@@ -8,13 +8,14 @@ interface LayoutProps {
 
 const Layout = ({ Header, Footer }: LayoutProps) => {
     return (
-        <>
+        <div className="d-flex flex-column min-vh-100">
             {Header !== null && Header}
-            <main>
+            {/* flex-grow keeps the footer at the bottom while the page is still loading */}
+            <main className="flex-grow-1">
                 <Outlet />
             </main>
             {Footer !== null && Footer}
-        </>
+        </div>
     )
 }
 export default Layout;

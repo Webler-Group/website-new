@@ -1,6 +1,6 @@
 import { Button, Col, Container, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table, Toast, ToastContainer } from "../../../components/ui";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Loader from "../../../components/Loader";
+import ListSkeleton from "../../../components/ListSkeleton";
 import { useSeo } from "../../../components/Seo";
 import { useApi } from "../../../context/apiCommunication";
 import { ChangeEvent, useEffect, useState } from "react";
@@ -22,7 +22,9 @@ const ChallengeList = () => {
     const challengesPerPage = 20;
     const [currentPage, setCurrentPage] = useState(1);
     const [challengeCount, setChallengeCount] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    // Tags and collections change the page layout, so reveal them together with the first list load
+    const [metaLoaded, setMetaLoaded] = useState(false);
     const [difficulty, setDifficulty] = useState("all");
     const [searchInput, setSearchInput] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
@@ -38,11 +40,7 @@ const ChallengeList = () => {
     }, [searchParams]);
 
     useEffect(() => {
-        getTags();
-    }, []);
-
-    useEffect(() => {
-        getCollections();
+        Promise.all([getTags(), getCollections()]).finally(() => setMetaLoaded(true));
     }, []);
 
     const getCollections = async () => {
@@ -189,16 +187,16 @@ const ChallengeList = () => {
                 )}
             </div>
 
-            <ChallengeTagFilter tags={tags} active={activeTag} onSelect={setTagFilter} />
+            {metaLoaded && <ChallengeTagFilter tags={tags} active={activeTag} onSelect={setTagFilter} />}
 
             <Row className="g-4">
                 <Col lg={8} xl={9} className="order-2 order-lg-1">
                     <div className="d-flex align-items-baseline justify-content-between mb-2">
                         <h2 className="fs-6 fw-bold text-uppercase text-muted mb-0">Problems</h2>
-                        {!loading && <span className="small text-muted">{challengeCount} {challengeCount === 1 ? "problem" : "problems"}</span>}
+                        {!loading && metaLoaded && <span className="small text-muted">{challengeCount} {challengeCount === 1 ? "problem" : "problems"}</span>}
                     </div>
-                    {loading ? (
-                        <Loader />
+                    {loading || !metaLoaded ? (
+                        <ListSkeleton count={10} variant="row" className="border rounded" />
                     ) : challengeCount === 0 ? (
                         <div className="wb-app-empty-list py-5 text-center bg-body-tertiary rounded-3 border">
                             <FaSearch size={40} className="text-muted mb-3 opacity-25" />
@@ -269,7 +267,7 @@ const ChallengeList = () => {
                     </div>
                 </Col>
 
-                {collections.length > 0 && (
+                {metaLoaded && collections.length > 0 && (
                     <Col lg={4} xl={3} className="order-1 order-lg-2">
                         <h2 className="fs-6 fw-bold text-uppercase text-muted mb-2">Collections</h2>
                         <div className="wb-challenges-collection-sidebar">

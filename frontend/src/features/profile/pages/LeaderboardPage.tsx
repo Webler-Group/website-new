@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { FaTrophy } from "react-icons/fa";
 import { Alert, Card, Container, Nav } from "../../../components/ui";
 import Loader from "../../../components/Loader";
+import ListSkeleton from "../../../components/ListSkeleton";
 import { useSeo } from "../../../components/Seo";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
@@ -110,7 +111,7 @@ const LeaderboardPage = () => {
                             ))
                         )}
 
-                        {isLoading && <Loader />}
+                        {isLoading && (entries.length === 0 ? <ListSkeleton count={10} variant="row" /> : <Loader />)}
 
                         {!isLoading && !error && entries.length === 0 && (
                             <div className="wb-profile-section-empty">

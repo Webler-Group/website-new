@@ -5,7 +5,7 @@ import { LeaderboardData, LeaderboardEntry, LeaderboardPeriod } from "../types";
 const useLeaderboard = (period: LeaderboardPeriod, countPerPage: number) => {
     const { sendJsonRequest } = useApi();
     const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState("");
     const [hasNextPage, setHasNextPage] = useState(false);
     // The page belongs to a period, so switching the period starts at page 1 in the same render

@@ -15,7 +15,7 @@ const DiscussListPage = () => {
     const questionsPerPage = 10;
     const [currentPage, setCurrentPage] = useState(1);
     const [questionCount, setQuestionCount] = useState(0);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState(1);
     const [searchQuery, setSearchQuery] = useState("");
     const [searchParams, setSearchParams] = useSearchParams();

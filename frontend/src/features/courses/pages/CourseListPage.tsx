@@ -5,7 +5,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { useSeo } from "../../../components/Seo";
 import { CourseMinimal, CoursesListData, UserCoursesListData } from "../types";
-import Loader from "../../../components/Loader";
+import ListSkeleton from "../../../components/ListSkeleton";
 
 const CourseListPage = () => {
 
@@ -81,7 +81,7 @@ const CourseListPage = () => {
 
             <Container>
                 <div className="wb-courses-main p-4">
-                    {loading && <Loader />}
+                    {loading && <ListSkeleton count={4} className="mt-3" />}
                     {
                         userInfo !== null && myCourses.length > 0 &&
                         <>
