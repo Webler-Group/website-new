@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions, post, pre } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 
 @modelOptions({ schemaOptions: { collection: "notifications", timestamps: true } })
 export class Notification {

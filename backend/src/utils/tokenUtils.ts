@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import { config } from "../confg";
 import bcrypt from "bcrypt";
 import User from "../models/User";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import HttpError from "../exceptions/HttpError";
 
 export interface RefreshTokenPayload {

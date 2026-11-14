@@ -9,8 +9,8 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import UserSearch from "../../../components/UserSearch";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import { ChannelDetails, GroupChangeRoleData, GroupInviteUserData, GroupRenameData, InviteDetails, MuteChannelData } from "../types";
-import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
-import ChannelTypeEnum from "../../../data/ChannelTypeEnum";
+import ChannelRolesEnum from "@shared/data/ChannelRolesEnum";
+import ChannelTypeEnum from "@shared/data/ChannelTypeEnum";
 
 interface ChannelRoomSettingsProps {
     channel: ChannelDetails;

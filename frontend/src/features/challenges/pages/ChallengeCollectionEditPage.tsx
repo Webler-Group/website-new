@@ -8,7 +8,7 @@ import Loader from "../../../components/Loader";
 import MdEditorField from "../../../components/MdEditorField";
 import ChallengeSearchBox from "../components/ChallengeSearchBox";
 import { GetChallengeCollectionData, SaveChallengeCollectionData } from "../types";
-import ChallengeDifficultyEnum from "../../../data/ChallengeDifficultyEnum";
+import ChallengeDifficultyEnum from "@shared/data/ChallengeDifficultyEnum";
 
 interface EditableChallenge {
     id: string;

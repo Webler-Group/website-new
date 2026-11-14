@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import FileTypeEnum from "../data/FileTypeEnum";
+import FileTypeEnum from "../shared/data/FileTypeEnum";
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class FilePreview {

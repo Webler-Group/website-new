@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, messageSchema, indexSchema, filterSchema, commentMessageSchema } from "./commonSchema";
-import ReactionsEnum from "../data/ReactionsEnum";
+import ReactionsEnum from "../shared/data/ReactionsEnum";
 
 export const createFeedSchema = z.object({
     body: z.object({

@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import TestVerdictEnum from "../data/TestVerdictEnum";
 
 // --- Nested: TestResult ---

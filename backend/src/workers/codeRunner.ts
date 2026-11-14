@@ -8,7 +8,7 @@ import ChallengeSubmissionModel, { ChallengeSubmission, TestResult } from "../mo
 import TestVerdictEnum from "../data/TestVerdictEnum";
 import { AwardedXp, awardChallengeXp } from "../helpers/xpHelper";
 import { DocumentType } from "@typegoose/typegoose";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import {
     EVALUATION_QUEUE_NAME,
     EvaluationJobData,

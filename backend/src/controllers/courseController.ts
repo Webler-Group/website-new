@@ -7,11 +7,11 @@ import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
 import LessonNodeModel, { LESSON_NODE_MINIMAL_FIELDS } from "../models/LessonNode";
 import QuizAnswer from "../models/QuizAnswer";
 import User from "../models/User";
-import RolesEnum from "../data/RolesEnum";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import RolesEnum from "../shared/data/RolesEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
 import PostModel from "../models/Post";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import PostTypeEnum from "../data/PostTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
+import PostTypeEnum from "../shared/data/PostTypeEnum";
 import mongoose, { Types } from "mongoose";
 import {
     getCourseListSchema,
@@ -37,6 +37,7 @@ import {
     formatLessonNodeMinimal,
     getLessonNodeInfo,
     getUnlockedIndexes,
+    getUserCourses,
     isCourseCompleted,
     LessonProgressInfo,
     LessonResponse
@@ -72,17 +73,9 @@ const getUserCourseList = asyncHandler(async (req: IAuthRequest, res: Response) 
     const { body } = parseWithZod(getUserCourseListSchema, req);
     const { userId } = body;
 
-    const result = await CourseProgressModel.find({ userId })
-        .sort({ updatedAt: "desc" })
-        .populate<{ course: Course & { _id: Types.ObjectId } }>("course")
-        .lean();
+    const courses = await getUserCourses(userId);
 
-    res.json({
-        success: true,
-        data: {
-            courses: result.map(x => formatCourseMinimal(x.course, x.completed))
-        }
-    });
+    res.json({ success: true, data: { courses } });
 });
 
 const getCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {

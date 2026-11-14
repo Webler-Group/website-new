@@ -3,7 +3,7 @@ import courseEditorController from "../controllers/courseEditorController";
 import protectRoute from "../middleware/protectRoute";
 import requireRoles from "../middleware/requireRoles";
 import { Router } from "express";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 
 const router = Router();
 

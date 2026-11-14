@@ -1,11 +1,4 @@
-export enum ReactionsEnum {
-    LIKE = 1,
-    HAHA = 2,
-    ANGRY = 3,
-    LOVE = 4,
-    SAD = 5,
-    WOW = 6
-}
+import ReactionsEnum from "@shared/data/ReactionsEnum";
 
 /** `colorClass` sets --wb-reaction-color, see components/reactions/reactions.css */
 export const reactionsInfo = {

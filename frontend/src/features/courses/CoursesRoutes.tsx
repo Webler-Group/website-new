@@ -12,7 +12,7 @@ import CourseLessonPage from "./pages/CourseLessonPage";
 import CreateCoursePage from "./pages/CreateCoursePage";
 import EditCoursePage from "./pages/EditCoursePage";
 import "./courses.css"
-import RolesEnum from "../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 
 const CoursesRoutes = () => {
     return (

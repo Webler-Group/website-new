@@ -5,7 +5,7 @@ import protectRoute from "../middleware/protectRoute";
 import requestLimiter from "../middleware/requestLimiter";
 import verifyEmail from "../middleware/verifyEmail";
 import requireRoles from "../middleware/requireRoles";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 
 const router = express.Router();
 

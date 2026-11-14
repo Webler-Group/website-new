@@ -1,4 +1,4 @@
-import RolesEnum from "../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 
 export interface Ban {
     author: string;

@@ -10,7 +10,7 @@ import ChallengeEdit from "./pages/ChallengeEditPage";
 import ChallengeCollectionPage from "./pages/ChallengeCollectionPage";
 import ChallengeCollectionEditPage from "./pages/ChallengeCollectionEditPage";
 import "./challenges.css";
-import RolesEnum from "../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 
 const ChallengeRoutes = () => {
     return (

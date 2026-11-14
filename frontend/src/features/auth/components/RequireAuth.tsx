@@ -1,6 +1,6 @@
 import { useLocation, Navigate, Outlet } from "react-router-dom"
 import { useAuth } from "../context/authContext"
-import RolesEnum from "../../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 
 interface RequireAuthProps {
     allowedRoles: RolesEnum[];

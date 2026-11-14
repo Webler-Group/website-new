@@ -7,7 +7,7 @@ import RequireAuth from "../auth/components/RequireAuth"
 import FeedCreatePage from "./pages/FeedCreatePage"
 import "./feed.css"
 import FeedEditPage from "./pages/FeedEditPage"
-import RolesEnum from "../../data/RolesEnum"
+import RolesEnum from "@shared/data/RolesEnum";
 import FeedSuggestedUserListPage from "./pages/FeedSuggestedUserListPage"
 
 const FeedRoutes = () => {

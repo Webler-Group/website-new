@@ -4,7 +4,7 @@ import Header from "../../layouts/Header"
 import RequireAuth from "../auth/components/RequireAuth"
 import ChannelsPage from "./pages/ChannelsPage"
 import "./channels.css"
-import RolesEnum from "../../data/RolesEnum"
+import RolesEnum from "@shared/data/RolesEnum";
 
 const ChannelsRoutes = () => {
     return (

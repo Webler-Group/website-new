@@ -4,7 +4,7 @@ import path from "path";
 import sharp, { Metadata } from "sharp";
 import FileModel, { File } from "../models/File";
 import { config } from "../confg";
-import FileTypeEnum from "../data/FileTypeEnum";
+import FileTypeEnum from "../shared/data/FileTypeEnum";
 import { escapeRegex } from "../utils/regexUtils";
 import { Types } from "mongoose";
 import mongoose from "mongoose";

@@ -8,7 +8,7 @@ import useVisualViewport from "../../compiler-playground/hooks/useVisualViewport
 import useUnsavedChangesGuard from "../../compiler-playground/hooks/useUnsavedChangesGuard";
 import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import Loader from "../../../components/Loader";
-import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { ChallengeCodeDetails, ChallengeDetails, GetChallengeCodeData, SaveChallengeCodeData } from "../types";
 
 interface ChallengeCodeEditorProps {

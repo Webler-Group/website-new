@@ -370,6 +370,7 @@
 /* ── Monthly rank card ── */
 .wb-profile-rank-card {
     display: flex;
+    height: 100%;
     align-items: center;
     gap: 14px;
     padding: 12px 14px;
@@ -379,6 +380,35 @@
 
 .wb-profile-rank-card:hover {
     background-color: var(--bs-tertiary-bg);
+}
+
+/* Level progress + monthly rank cards: side by side, stacked (level first) on small screens */
+.wb-profile-cards-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 640px) {
+    .wb-profile-cards-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.wb-profile-level-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 14px;
+    height: 100%;
+}
+
+.wb-profile-level-card-body {
+    min-width: 0;
+}
+
+.wb-profile-level-card-bar {
+    height: 8px;
 }
 
 .wb-profile-rank-card-value {

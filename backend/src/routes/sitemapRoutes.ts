@@ -1,11 +1,11 @@
 import express from "express";
 import { EnumChangefreq, SitemapItemLoose, SitemapStream, streamToPromise } from "sitemap";
 import PostModel from "../models/Post";
-import PostTypeEnum from "../data/PostTypeEnum";
+import PostTypeEnum from "../shared/data/PostTypeEnum";
 import CodeModel from "../models/Code";
 import ChallengeCollectionModel from "../models/ChallengeCollection";
 import UserModel from "../models/User";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 
 const router = express.Router();
 

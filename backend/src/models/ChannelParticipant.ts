@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import ChannelRolesEnum from "../data/ChannelRolesEnum";
+import ChannelRolesEnum from "../shared/data/ChannelRolesEnum";
 
 @modelOptions({ schemaOptions: { collection: "channelparticipants" } })
 @index({ user: 1, channel: 1 }, { unique: true })

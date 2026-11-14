@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { FaStar } from "react-icons/fa6";
-import { xpRewardTypeLabels } from "../data/XpRewardTypeEnum";
+import { xpRewardTypeLabels } from "../data/xpRewardTypeLabels";
 import type { XpRewardAlertItem } from "../context/xpRewardContext";
 
 interface XpRewardAlertProps {

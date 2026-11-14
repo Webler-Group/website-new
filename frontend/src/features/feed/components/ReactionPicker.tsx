@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ReactionsEnum, reactionsInfo } from "../../../data/ReactionsEnum";
+import ReactionsEnum from "@shared/data/ReactionsEnum";
+import { reactionsInfo } from "../../../data/reactionsInfo";
 import { useAuth } from "../../auth/context/authContext";
 import { useNavigate } from "react-router-dom";
 import { FaThumbsUp } from "react-icons/fa6";

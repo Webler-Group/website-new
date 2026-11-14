@@ -4,7 +4,7 @@ import UserModel, { User, USER_ADMIN_MINIMAL_FIELDS, UserAdminMinimal } from "..
 import asyncHandler from "express-async-handler";
 import mongoose, { Types } from "mongoose";
 import { escapeRegex } from "../utils/regexUtils";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import {
     getUsersListSchema,
     getUserSchema,

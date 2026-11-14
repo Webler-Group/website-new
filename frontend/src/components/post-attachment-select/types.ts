@@ -1,5 +1,5 @@
-import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
-import PostAttachmentTypeEnum from "../../data/PostAttachmentTypeEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
+import PostAttachmentTypeEnum from "@shared/data/PostAttachmentTypeEnum";
 import { UserMinimal } from "../../features/profile/types";
 
 export interface PostAttachmentDetails {

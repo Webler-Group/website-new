@@ -6,10 +6,10 @@ import {getImageUrl} from "../controllers/mediaController";
 import EmailChangeRecordModel from "../models/EmailChangeRecord";
 import UserFollowingModel from "../models/UserFollowing";
 import {deleteNotifications} from "./notificationHelper";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 import { BlockModel } from "../models/Block";
-import RolesEnum from "../data/RolesEnum";
-import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
+import RolesEnum from "../shared/data/RolesEnum";
+import ChallengeDifficultyEnum from "../shared/data/ChallengeDifficultyEnum";
 
 const MAX_IPS = 50;
 
@@ -160,19 +160,6 @@ export const XP_DAILY_ACTIVITY_BONUS = 10;
 export const getChallengeXp = (difficulty: ChallengeDifficultyEnum): number =>
     XP_CHALLENGE_FIRST_SOLVE[difficulty] ?? XP_CHALLENGE_FIRST_SOLVE[ChallengeDifficultyEnum.EASY];
 
-export const totalXpToReachLevel = (level: number): number => {
-    const x = level - 1;
-    return 25 * (x + x * x);
-}
-
-export const levelFromXp = (xp: number): number => {
-    const x = Math.floor(
-        (-1 + Math.sqrt(1 + (4 * xp) / 25)) / 2
-    );
-
-    return x + 1;
-}
-
 export const deleteFollowAndCleanup = async (userId: Types.ObjectId, followingId: Types.ObjectId, session?: mongoose.ClientSession) => {
     await UserFollowingModel.deleteOne({ user: userId, following: followingId }, { session });
     await deleteNotifications({
@@ -298,3 +285,13 @@ export const fetchSuggestedUsers = async ({ excludedIds, followingIds, limit, se
         }
     ]);
 };
+
+/** Follower/following counts of a user and whether the viewer follows them */
+export const getFollowStats = async (userId: Types.ObjectId | string, currentUserId?: string) => {
+    const [followers, following, isFollowing] = await Promise.all([
+        UserFollowingModel.countDocuments({ following: userId }),
+        UserFollowingModel.countDocuments({ user: userId }),
+        currentUserId ? UserFollowingModel.exists({ user: currentUserId, following: userId }).then(x => x !== null) : false
+    ]);
+    return { followers, following, isFollowing };
+}

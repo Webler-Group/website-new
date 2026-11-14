@@ -3,7 +3,7 @@ import { usePushNotifications } from "../hooks/usePushNotifications";
 import { ChangeEvent, useState, useEffect } from "react";
 import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
-import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
+import NotificationTypeEnum from "@shared/data/NotificationTypeEnum";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import { NotificationSettings, UpdateNotificationsData } from "../types";
 

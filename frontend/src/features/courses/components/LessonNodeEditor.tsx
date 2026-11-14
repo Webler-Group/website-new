@@ -17,8 +17,8 @@ import CodeList, { ICodesState } from "../../codes/components/CodeList";
 import HtmlEditorField from "../../../components/HtmlEditorField";
 import { EditorChangeLessonNodeIndexData, EditorEditCourseCssData, EditorEditLessonNodeData, EditorGetLessonNodeData, LessonNodeAnswerDetails, LessonNodeDetails } from "../types";
 import LessonNode from "./LessonNode";
-import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
-import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
+import LessonNodeTypeEnum from "@shared/data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "@shared/data/LessonNodeModeEnum";
 
 export interface LessonNodeEditorHandle {
     saveIfDirty: () => Promise<boolean>;

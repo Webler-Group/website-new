@@ -19,13 +19,10 @@ import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
 import ProfileRankCard from "../components/ProfileRankCard";
+import ProfileLevelCard from "../components/ProfileLevelCard";
 import ProfileChallengesCard from "../components/ProfileChallengesCard";
-import { GetProfileData, UserDetails } from "../types";
-import { CodeMinimal } from "../../codes/types";
-import { QuestionMinimal } from "../../discuss/types";
-import { FeedDetails, FeedListData } from "../../feed/types";
-import { CourseMinimal, UserCoursesListData } from "../../courses/types";
-import RolesEnum from "../../../data/RolesEnum";
+import { GetProfileData, ProfileOverview, UserDetails } from "../types";
+import RolesEnum from "@shared/data/RolesEnum";
 import { CreateDirectMessagesData } from "../../channels/types";
 import DateUtils from "../../../utils/DateUtils";
 import { FaBan, FaCode, FaCommentAlt, FaNewspaper } from "react-icons/fa";
@@ -45,16 +42,17 @@ const ProfilePage = () => {
     const [followListOptions, setFollowListOptions] = useState({ path: "", userId: "" });
     const [followListTitle, setFollowListTitle] = useState("");
 
-    const [codes, setCodes] = useState<CodeMinimal[]>([]);
+    const [overview, setOverview] = useState<ProfileOverview | null>(null);
+    const codes = overview?.codes ?? [];
+    const questions = overview?.questions ?? [];
+    const feedPosts = overview?.feeds ?? [];
+    const courses = overview?.courses ?? [];
+
     const [codesSectionVisible, setCodesSectionVisible] = useState(false);
 
-    const [questions, setQuestions] = useState<QuestionMinimal[]>([]);
     const [questionsSectionVisible, setQuestionsSectionVisible] = useState(false);
 
     const [challengesSectionVisible, setChallengesSectionVisible] = useState(false);
-
-    const [feedPosts, setFeedPosts] = useState<FeedDetails[]>([]);
-    const [courses, setCourses] = useState<CourseMinimal[]>([]);
 
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
@@ -76,29 +74,13 @@ const ProfilePage = () => {
                 setUserDetails(result.data.userDetails);
                 setFollowingCount(result.data.userDetails.following);
                 setFollowersCount(result.data.userDetails.followers);
-                setCodes(result.data.userDetails.codes.slice(0, 3));
-                setQuestions(result.data.userDetails.questions.slice(0, 3));
+                setOverview(result.data.overview);
             } else {
                 setUserDetails(null);
+                setOverview(null);
             }
         };
         fetchProfile();
-    }, [userId]);
-
-    useEffect(() => {
-        if (!userId) return;
-        const fetchFeed = async () => {
-            const result = await sendJsonRequest<FeedListData>(`/Feed`, "POST", {
-                page: 1, count: 3, filter: 2, userId
-            });
-            if (result.data) setFeedPosts(result.data.feeds);
-        };
-        const fetchCourses = async () => {
-            const result = await sendJsonRequest<UserCoursesListData>(`/Courses/GetUserCourses`, "POST", { userId });
-            if (result.data) setCourses(result.data.courses);
-        };
-        fetchFeed();
-        fetchCourses();
     }, [userId]);
 
     const showNotification = useCallback((type: "success" | "error", message: string) => {
@@ -198,9 +180,10 @@ const ProfilePage = () => {
     const isCurrentUser = !!userInfo && userInfo.id === userId;
     const isAdmin = !!userInfo && userInfo.roles.includes(RolesEnum.ADMIN);
 
-    const easySolved = userDetails?.solvedChallenges.easy ?? 0;
-    const mediumSolved = userDetails?.solvedChallenges.medium ?? 0;
-    const hardSolved = userDetails?.solvedChallenges.hard ?? 0;
+    const solved = overview?.challenges.solved;
+    const easySolved = solved?.easy ?? 0;
+    const mediumSolved = solved?.medium ?? 0;
+    const hardSolved = solved?.hard ?? 0;
     const totalSolved = easySolved + mediumSolved + hardSolved;
 
     return (
@@ -305,24 +288,30 @@ const ProfilePage = () => {
                                         <button className="wb-profile-follows-btn" onClick={showFollowers}>
                                             <b>{followersCount}</b> Followers
                                         </button>
-                                        <span className="wb-profile-header-stat">
-                                            <FaStar className="wb-profile-header-xp-icon" /> <b>{userDetails.xp}</b> XP
-                                        </span>
-                                        <span className="wb-profile-header-stat text-muted">
-                                            Lvl {userDetails.level}
-                                        </span>
                                         {userDetails.countryCode && (
                                             <span className="wb-profile-header-stat">
                                                 <Country country={countries.find(c => c.code === userDetails.countryCode)!} />
                                             </span>
                                         )}
                                     </div>
+
+                                    <div className="wb-profile-header-meta mt-2">
+                                        <span className="wb-profile-header-stat">
+                                            Lvl <b>{userDetails.level}</b>
+                                        </span>
+                                        <span className="wb-profile-header-stat">
+                                            <FaStar className="wb-profile-header-xp-icon" /> <b>{userDetails.xp.toLocaleString()}</b> XP
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         </Card>
 
-                        {/* ── Monthly Leaderboard Rank ── */}
-                        <ProfileRankCard userId={userDetails.id} />
+                        {/* ── Level Progress + Monthly Leaderboard Rank (stacked on small screens) ── */}
+                        <div className="wb-profile-cards-row mb-3">
+                            <ProfileLevelCard xp={userDetails.xp} />
+                            <ProfileRankCard userId={userDetails.id} entry={overview?.monthlyRank ?? null} />
+                        </div>
 
                         {/* ── Courses Row ── */}
                         {(isCurrentUser || courses.length > 0) && (
@@ -457,11 +446,11 @@ const ProfilePage = () => {
                             <div className="wb-profile-grid-col">
 
                                 {/* Challenges */}
-                                {(isCurrentUser || totalSolved > 0) && (
+                                {overview && (isCurrentUser || totalSolved > 0) && (
                                     <ProfileChallengesCard
-                                        solved={userDetails.solvedChallenges}
-                                        totals={userDetails.challengeTotals ?? { easy: 0, medium: 0, hard: 0 }}
-                                        attempting={userDetails.attemptingChallenges ?? 0}
+                                        solved={overview.challenges.solved}
+                                        totals={overview.challenges.totals}
+                                        attempting={overview.challenges.attempting}
                                         isCurrentUser={isCurrentUser}
                                         onShowSolved={showChallengesSection}
                                     />

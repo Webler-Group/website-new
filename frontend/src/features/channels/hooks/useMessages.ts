@@ -2,8 +2,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
 import { ChannelMessageDetails, ChannelMessagesListData, ChannelParticipantDetails, MessageDeletedData, MessageEditedData, MessagesSeenData, NewMessageData, PendingMessage, SendMessageAck } from "../types";
-import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
-import ChannelRolesEnum from "../../../data/ChannelRolesEnum";
+import ChannelMessageTypeEnum from "@shared/data/ChannelMessageTypeEnum";
+import ChannelRolesEnum from "@shared/data/ChannelRolesEnum";
 
 const SEND_TIMEOUT_MS = 15_000;
 

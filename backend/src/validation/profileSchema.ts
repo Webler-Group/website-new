@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { countPerPageSchema, countryCodeSchema, emailSchema, idSchema, multerFileSchema, pageSchema, passwordSchema, searchQuerySchema, usernameSchema } from "./commonSchema";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 import { LEADERBOARD_PERIODS } from "../helpers/leaderboardHelper";
 
 export const getProfileSchema = z.object({

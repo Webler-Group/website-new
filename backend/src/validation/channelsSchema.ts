@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, countPerPageSchema, messageSchema, titleSchema, channelMessageSchema, isoDateTimeSchema, channelTitleSchema } from "./commonSchema";
-import ChannelRolesEnum from "../data/ChannelRolesEnum";
+import ChannelRolesEnum from "../shared/data/ChannelRolesEnum";
 
 export const createGroupSchema = z.object({
     body: z.object({

@@ -1,21 +1,21 @@
 import mongoose, { isObjectIdOrHexString, Types, TypesAreEqual } from "mongoose";
 import PostModel, { Post } from "../models/Post";
-import PostTypeEnum from "../data/PostTypeEnum";
+import PostTypeEnum from "../shared/data/PostTypeEnum";
 import { deleteNotifications, sendNotifications } from "./notificationHelper";
 import PostFollowingModel from "../models/PostFollowing";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 import CodeModel, { Code } from "../models/Code";
 import CourseLessonModel from "../models/CourseLesson";
 import Upvote from "../models/Upvote";
 import PostAttachmentModel, { PostAttachment } from "../models/PostAttachment";
-import PostAttachmentTypeEnum from "../data/PostAttachmentTypeEnum";
+import PostAttachmentTypeEnum from "../shared/data/PostAttachmentTypeEnum";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import { formatUserMinimal } from "./userHelper";
-import { truncate } from "../utils/StringUtils";
+import { truncate } from "../shared/utils/StringUtils";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import { config } from "../confg";
 import { DocumentType } from "@typegoose/typegoose";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import { Notification } from "../models/Notification";
 import { isBlocked } from "./userHelper";
 

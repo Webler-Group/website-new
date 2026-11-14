@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { courseCodeSchema, courseDescriptionSchema, idSchema, indexSchema, multerFileSchema, pageSchema, titleSchema } from "./commonSchema";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "../shared/data/LessonNodeModeEnum";
 
 const nodeCorrectAnswerSchema = z.string().max(80, "Correct answer must not exceed 80 characters");
 const nodeTextSchema = z.string().max(8000, "Text must not exceed 8000 characters");

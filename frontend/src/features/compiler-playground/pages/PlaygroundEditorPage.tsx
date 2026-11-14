@@ -22,7 +22,7 @@ import ReactionsList from "../../../components/reactions/ReactionsList";
 import { FaSearch } from "react-icons/fa";
 import CodeEditor, { CodeEditorHandle } from "../components/CodeEditor";
 import useEditorOptions from "../hooks/useEditorOptions";
-import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { CodeDetails, CreateCodeData, EditCodeData, GetCodeData, GetTemplateData, isCodeSaved, UnsavedCode, VoteCodeData } from "../../codes/types";
 import { useConnectionStatus } from "../../../context/connectionStatus";
 import useUnsavedChangesGuard from "../hooks/useUnsavedChangesGuard";

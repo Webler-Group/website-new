@@ -4,7 +4,7 @@ import FileModel from "../models/File";
 import { parseWithZod } from "../utils/zodUtils";
 import { getFileByHashSchema, getFileByHashWithNameSchema } from "../validation/mediaSchema";
 import { absBlobPathFromHash } from "../helpers/fileHelper";
-import FileTypeEnum from "../data/FileTypeEnum";
+import FileTypeEnum from "../shared/data/FileTypeEnum";
 import { ZodError } from "zod";
 import { isInlineSafeMime, toDownloadFilename } from "../utils/fileTypes";
 

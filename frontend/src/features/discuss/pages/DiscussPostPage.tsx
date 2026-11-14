@@ -13,7 +13,7 @@ import PostAttachment from "../../../components/post-attachment-select/PostAttac
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
-import { truncate } from "../../../utils/StringUtils";
+import { truncate } from "@shared/utils/StringUtils";
 import { useSeo, toExcerpt } from "../../../components/Seo";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import NotificationToast from "../../../components/NotificationToast";

@@ -1,7 +1,7 @@
 import { config } from "../confg";
 import connectDB from "../config/dbConn";
 import tags from "../data/tags";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import Tag from "../models/Tag";
 import User from "../models/User";
 

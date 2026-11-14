@@ -2,9 +2,9 @@ import { prop, getModelForClass, modelOptions, pre, DocumentType, index } from "
 import { Types } from "mongoose";
 import bcrypt from "bcrypt";
 import countryCodesEnum from "../data/countryCodes";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import { isEmail } from "../utils/regexUtils";
-import { levelFromXp } from "../helpers/userHelper";
+import { levelFromXp } from "../shared/utils/levels";
 
 @modelOptions({ schemaOptions: { _id: false } })
 export class NotificationSettings {

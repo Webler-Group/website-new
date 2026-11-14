@@ -1,7 +1,7 @@
 import { prop, getModelForClass, modelOptions, Severity, mongoose } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import ChallengeDifficultyEnum from "../shared/data/ChallengeDifficultyEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 
 export class TestCase {
     @prop({ maxlength: 500, default: "" })

@@ -3,7 +3,7 @@ import adminController from "../controllers/adminController";
 import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import requireRoles from "../middleware/requireRoles";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 
 const router = Router();
 

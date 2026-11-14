@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { idSchema, pageSchema, countPerPageSchema, searchQuerySchema, isoDateTimeSchema, filterSchema } from "./commonSchema";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 
 export const getUsersListSchema = z.object({
     body: z.object({

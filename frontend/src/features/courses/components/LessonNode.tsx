@@ -4,8 +4,8 @@ import { useApi } from "../../../context/apiCommunication";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import HtmlRenderer from "../../../components/HtmlRenderer";
 import { GetLessonNodeData, LessonNodeDetails, SolveData } from "../types";
-import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
-import LessonNodeModeEnum from "../../../data/LessonNodeModeEnum";
+import LessonNodeTypeEnum from "@shared/data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "@shared/data/LessonNodeModeEnum";
 import { CodeDetails, GetCodeData } from "../../codes/types";
 
 interface LessonNodeProps {

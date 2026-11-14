@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions, pre } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 
 @pre<Code>("save", function () {
     if (

@@ -6,10 +6,10 @@ import UpvoteModel from "../models/Upvote";
 import mongoose, {Types} from "mongoose";
 import { escapeMarkdown, escapeRegex } from "../utils/regexUtils";
 import UserFollowingModel from "../models/UserFollowing";
-import { truncate } from "../utils/StringUtils";
-import PostTypeEnum from "../data/PostTypeEnum";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import ReactionsEnum from "../data/ReactionsEnum";
+import { truncate } from "../shared/utils/StringUtils";
+import PostTypeEnum from "../shared/data/PostTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
+import ReactionsEnum from "../shared/data/ReactionsEnum";
 import {
     createFeedSchema,
     editFeedSchema,
@@ -27,7 +27,7 @@ import {
     getSuggestedUsersSchema
 } from "../validation/feedSchema";
 import { parseWithZod } from "../utils/zodUtils";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import { deleteNotifications, sendNotifications } from "../helpers/notificationHelper";
 import { deletePostsAndCleanup, getAttachmentsByPostId, savePost } from "../helpers/postsHelper";
 import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
@@ -35,7 +35,7 @@ import {fetchSuggestedUsers, formatUserMinimal, getFollowingIds} from "../helper
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
 import { deleteComment, editComment, findParentCommentToReply, getCommmentsList } from "../helpers/commentsHelper";
-import { FeedDetails, formatFeedDetails, getReactionsForPost } from "../helpers/feedHelper";
+import { FeedDetails, formatFeedDetails, formatFeedDetailsList, getReactionsForPost, populateFeedQuery } from "../helpers/feedHelper";
 import { getBlockedUserIds, isBlocked } from "../helpers/userHelper";
 
 const createFeed = asyncHandler(async (req: IAuthRequest, res: Response) => {
@@ -447,27 +447,10 @@ const getFeedList = asyncHandler(async (req: IAuthRequest, res: Response) => {
 
     const [feedCount, feeds] = await Promise.all([
         dbQuery.clone().countDocuments(),
-        dbQuery
-            .clone()
-            .skip((page - 1) * count)
-            .limit(count)
-            .populate("user", USER_MINIMAL_FIELDS)
-            .populate({
-                path: "parentId",
-                populate: { path: "user", select: USER_MINIMAL_FIELDS }
-            })
-            .lean<FeedDetails[]>()
+        populateFeedQuery(dbQuery.clone().skip((page - 1) * count).limit(count)).lean<FeedDetails[]>()
     ]);
 
-    const data = await Promise.all(feeds.map(async x => {
-        const [reactions, attachments, upvote] = await Promise.all([
-            getReactionsForPost(x._id),
-            getAttachmentsByPostId({ post: x._id }),
-            currentUserId ? UpvoteModel.findOne({ parentId: x._id, user: currentUserId }).lean() : null
-        ]);
-
-        return formatFeedDetails(x, upvote, attachments, reactions);
-    }));
+    const data = await formatFeedDetailsList(feeds, currentUserId);
 
     res.json({ success: true, data: { count: feedCount, feeds: data } });
 });

@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { useApi } from "../../../context/apiCommunication";
 import { FaPen, FaTrash, FaSearch, FaChevronLeft, FaChevronRight, FaTrophy, FaCheckCircle, FaExclamationTriangle, FaLock, FaLightbulb, FaCode, FaListUl, FaStopwatch, FaPlay } from "react-icons/fa";
 import { languagesInfo } from "../../../data/compilerLanguages";
-import { truncate } from "../../../utils/StringUtils";
+import { truncate } from "@shared/utils/StringUtils";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import Loader from "../../../components/Loader";
 import { useAuth } from "../../auth/context/authContext";
@@ -12,7 +12,7 @@ import ChallengeCodeEditor from "../components/ChallengeCodeEditor";
 import LanguageIcons from "../components/LanguageIcons";
 import ChallengeTags from "../components/ChallengeTags";
 import ChallengeCollectionNavigator from "../components/ChallengeCollectionNavigator";
-import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { ChallengeCollectionDetails, ChallengeCollectionItem, ChallengeDetails, GetChallengeCollectionData, GetChallengeData } from "../types";
 import { useSeo } from "../../../components/Seo";
 

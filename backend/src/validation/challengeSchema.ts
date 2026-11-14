@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { compilerLanguageSchema, countPerPageSchema, filterSchema, idSchema, multerFileSchema, pageSchema, questionTitleSchema, tagNameSchema } from "./commonSchema";
-import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
+import ChallengeDifficultyEnum from "../shared/data/ChallengeDifficultyEnum";
 
 export const challengeDescriptionSchema = z.string().min(1, "Description is required").max(8192, "Description cannot exceed 8192 characters");
 

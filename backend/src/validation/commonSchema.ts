@@ -1,7 +1,7 @@
 
 import { z } from "zod";
 import countryCodes from "../data/countryCodes";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 
 export const emailSchema = z.email("Invalid email").max(120, "Invalid email");
 export const passwordSchema = z.string("Password is required").min(6, "Password is required and must be atleast 6 characters long").max(120, "Password cannot exceed 60 characters");

@@ -1,5 +1,5 @@
-import LessonNodeModeEnum from "../../data/LessonNodeModeEnum";
-import LessonNodeTypeEnum from "../../data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "@shared/data/LessonNodeModeEnum";
+import LessonNodeTypeEnum from "@shared/data/LessonNodeTypeEnum";
 
 export interface LessonNodeAnswerDetails {
     id: string;

@@ -27,7 +27,7 @@ import CompileOutput from "./CompileOutput";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeCodeOutput from "../../challenges/components/ChallengeCodeOutput";
 
-import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { CodeDetails, isCodeSaved, UnsavedCode } from "../../codes/types";
 import { ChallengeDetails, ChallengeSubmissionDetails } from "../../challenges/types";
 import { useTheme } from "../../../utils/ThemeUtils";

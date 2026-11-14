@@ -7,7 +7,8 @@ import { useAuth } from '../../auth/context/authContext';
 import NotificationToast from '../../../components/NotificationToast';
 import { useApi } from '../../../context/apiCommunication';
 import ReactionPicker from './ReactionPicker';
-import { ReactionsEnum, reactionsInfo } from '../../../data/ReactionsEnum';
+import ReactionsEnum from '@shared/data/ReactionsEnum';
+import { reactionsInfo } from '../../../data/reactionsInfo';
 import DateUtils from '../../../utils/DateUtils';
 import { FaClock, FaComment, FaMapPin, FaShareNodes, FaTrash } from 'react-icons/fa6';
 import { FaEdit } from 'react-icons/fa';
@@ -18,8 +19,8 @@ import ProfileName from '../../../components/ProfileName';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
 import React from 'react';
 import { FeedDetails, FeedMinimal, ShareFeedData, TogglePinFeedData, VotePostData } from '../types';
-import RolesEnum from '../../../data/RolesEnum';
-import PostTypeEnum from '../../../data/PostTypeEnum';
+import RolesEnum from '@shared/data/RolesEnum';
+import PostTypeEnum from '@shared/data/PostTypeEnum';
 
 interface FeedItemProps {
   feed: FeedDetails;

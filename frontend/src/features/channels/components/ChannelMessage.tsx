@@ -6,7 +6,7 @@ import DateUtils from "../../../utils/DateUtils";
 import RepliedMessage from "./RepliedMessage";
 import { ChannelMessageDetails, PendingMessageStatus } from "../types";
 import PostAttachment from "../../../components/post-attachment-select/PostAttachment";
-import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
+import ChannelMessageTypeEnum from "@shared/data/ChannelMessageTypeEnum";
 import { Link } from "react-router-dom";
 import { parseMediaUrl } from "../../../utils/FileUtils";
 import FileAttachmentLink from "../../../components/FileAttachmentLink";

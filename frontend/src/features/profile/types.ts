@@ -1,7 +1,9 @@
-import NotificationTypeEnum from "../../data/NotificationTypeEnum";
-import RolesEnum from "../../data/RolesEnum";
+import NotificationTypeEnum from "@shared/data/NotificationTypeEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 import { CodeMinimal } from "../codes/types";
 import { QuestionMinimal } from "../discuss/types";
+import { FeedDetails } from "../feed/types";
+import { CourseMinimal } from "../courses/types";
 
 export const notificationTypeToField: Record<NotificationTypeEnum, string> = {
     [NotificationTypeEnum.PROFILE_FOLLOW]: "profileFollow",
@@ -42,19 +44,26 @@ export interface UserDetails {
     roles: RolesEnum[];
     registerDate: string;
     notifications: UserNotificationSettings;
+}
+
+export interface ChallengeDifficultyCounts {
+    easy: number;
+    medium: number;
+    hard: number;
+}
+
+/** Content sections of a profile, loaded together with the profile */
+export interface ProfileOverview {
     codes: CodeMinimal[];
     questions: QuestionMinimal[];
-    solvedChallenges: {
-        easy: number;
-        medium: number;
-        hard: number;
-    }
-    challengeTotals: {
-        easy: number;
-        medium: number;
-        hard: number;
-    }
-    attemptingChallenges: number;
+    feeds: FeedDetails[];
+    courses: CourseMinimal[];
+    challenges: {
+        solved: ChallengeDifficultyCounts;
+        totals: ChallengeDifficultyCounts;
+        attempting: number;
+    };
+    monthlyRank: LeaderboardEntry | null;
 }
 
 export interface UserMinimal {
@@ -71,6 +80,7 @@ export interface UserMinimal {
 
 export interface GetProfileData {
     userDetails: UserDetails;
+    overview: ProfileOverview;
 }
 
 export interface UpdateProfileData {

@@ -3,6 +3,8 @@ import { QuestionMinimal } from "../models/Post"
 import { UserMinimal } from "../models/User"
 import { formatUserMinimal } from "./userHelper"
 import TagModel from "../models/Tag"
+import PostModel, { QUESTION_MINIMAL_FIELDS } from "../models/Post"
+import PostTypeEnum from "../shared/data/PostTypeEnum";
 
 export const getOrCreateTagsByNames = async (tagNames: string[], session?: ClientSession) => {
     const uniqueNames = [...new Set(tagNames)];
@@ -28,4 +30,16 @@ export const formatQuestionMinimal = (question: QuestionMinimal & { _id: Types.O
         isUpvoted: false,
         isAccepted: question.isAccepted
     }
+}
+
+/** A user's latest questions */
+export const getUserQuestions = async (userId: Types.ObjectId | string, count: number) => {
+    const questions = await PostModel.find({ user: userId, _type: PostTypeEnum.QUESTION, hidden: false })
+        .select(QUESTION_MINIMAL_FIELDS)
+        .sort({ createdAt: "desc" })
+        .limit(count)
+        .populate("tags")
+        .lean<(QuestionMinimal & { _id: Types.ObjectId })[]>();
+
+    return questions.map(x => formatQuestionMinimal(x));
 }

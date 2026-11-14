@@ -1,5 +1,5 @@
 import mongoose, { Types } from "mongoose";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 import UserModel, { NotificationSettings } from "../models/User";
 import { getIO, onlineUsers, uidRoom } from "../config/socketServer";
 import { sendPushToUsers } from "../services/pushService";

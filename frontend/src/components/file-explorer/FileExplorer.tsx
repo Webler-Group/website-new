@@ -12,7 +12,7 @@ import {
 } from "../../utils/FileUtils";
 import { FileKindIcon } from "../FileAttachmentLink";
 import { CreateFolderData, FileEntriesData, FileEntry, UploadImageFileData } from "./types";
-import FileTypeEnum from "../../data/FileTypeEnum";
+import FileTypeEnum from "@shared/data/FileTypeEnum";
 
 interface FileExplorerContextMenuState {
     item: FileEntry;

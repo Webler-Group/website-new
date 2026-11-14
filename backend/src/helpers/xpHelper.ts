@@ -2,10 +2,10 @@ import mongoose, { Types } from "mongoose";
 import XpLogModel, { XpLog } from "../models/XpLog";
 import UserModel from "../models/User";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
-import XpRewardTypeEnum from "../data/XpRewardTypeEnum";
-import RolesEnum from "../data/RolesEnum";
-import ChallengeDifficultyEnum from "../data/ChallengeDifficultyEnum";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import XpRewardTypeEnum from "../shared/data/XpRewardTypeEnum";
+import RolesEnum from "../shared/data/RolesEnum";
+import ChallengeDifficultyEnum from "../shared/data/ChallengeDifficultyEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import { getChallengeXp, XP_CHALLENGE_OTHER_LANGUAGE, XP_DAILY_ACTIVITY_BONUS } from "./userHelper";
 import { withTransaction } from "../utils/transaction";
 

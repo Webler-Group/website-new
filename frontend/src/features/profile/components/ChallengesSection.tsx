@@ -3,7 +3,7 @@ import { useCallback, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import useSolvedChallenges from "../hooks/useSolvedChallenges";
 import LanguageIcons from "../../challenges/components/LanguageIcons";
-import ChallengeDifficultyEnum from "../../../data/ChallengeDifficultyEnum";
+import ChallengeDifficultyEnum from "@shared/data/ChallengeDifficultyEnum";
 
 interface ChallengesSectionProps {
     userId: string;

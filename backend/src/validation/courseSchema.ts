@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { commentMessageSchema, countPerPageSchema, courseCodeSchema, filterSchema, idSchema, indexSchema } from "./commonSchema";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
 
 const quizAnswerSchema = z.object({
     id: idSchema("answerId"),

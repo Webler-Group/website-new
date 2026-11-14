@@ -1,31 +1,18 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FaChevronRight, FaTrophy } from "react-icons/fa";
 import { Card } from "../../../components/ui";
-import { useApi } from "../../../context/apiCommunication";
-import { LeaderboardEntry, LeaderboardRankData } from "../types";
+import { LeaderboardEntry } from "../types";
 
 interface ProfileRankCardProps {
     userId: string;
+    /** Loaded with the profile (GetProfile), null while loading */
+    entry: LeaderboardEntry | null;
 }
 
 /** Monthly leaderboard rank of a user, opens the leaderboard with the user highlighted */
-const ProfileRankCard = ({ userId }: ProfileRankCardProps) => {
-    const { sendJsonRequest } = useApi();
-    const [entry, setEntry] = useState<LeaderboardEntry | null>(null);
-
-    useEffect(() => {
-        setEntry(null);
-        let cancelled = false;
-        sendJsonRequest<LeaderboardRankData>("/Profile/GetLeaderboardRank", "POST", { period: "monthly", userId })
-            .then(result => {
-                if (!cancelled && result.data) setEntry(result.data.entry);
-            });
-        return () => { cancelled = true; };
-    }, [userId]);
-
+const ProfileRankCard = ({ userId, entry }: ProfileRankCardProps) => {
     return (
-        <Card className="wb-profile-section border mb-3">
+        <Card className="wb-profile-section border h-100">
             <Link
                 to={`/Profile/Leaderboard?period=monthly&userId=${userId}`}
                 className="wb-profile-rank-card"

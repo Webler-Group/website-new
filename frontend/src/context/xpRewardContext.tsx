@@ -1,5 +1,5 @@
 import { createContext, ReactNode, useCallback, useContext, useRef, useState } from "react";
-import XpRewardTypeEnum from "../data/XpRewardTypeEnum";
+import XpRewardTypeEnum from "@shared/data/XpRewardTypeEnum";
 import { useAuth } from "../features/auth/context/authContext";
 import XpRewardAlert from "../components/XpRewardAlert";
 

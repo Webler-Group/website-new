@@ -6,7 +6,7 @@ import PlaygroundMenuPage from "./pages/PlaygroundMenuPage";
 import PlaygroundEditorPage from "./pages/PlaygroundEditorPage";
 import Footer from "../../layouts/Footer";
 import "./compiler-playground.css"
-import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 
 const CompilerPlaygroundRoutes = () => {
     return (

@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import PostTypeEnum from "../data/PostTypeEnum";
+import PostTypeEnum from "../shared/data/PostTypeEnum";
 import { keyof } from "zod";
 import { Tag } from "./Tag";
 

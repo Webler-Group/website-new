@@ -4,37 +4,38 @@ import { Response } from "express";
 import asyncHandler from "express-async-handler";
 import UserFollowingModel from "../models/UserFollowing";
 import NotificationModel from "../models/Notification";
-import CodeModel, { CODE_MINIMAL_FIELDS } from "../models/Code";
 import { signEmailToken } from "../utils/tokenUtils";
 import { sendActivationEmail, sendEmailChangeVerification } from "../services/email";
 import { config } from "../confg";
-import PostModel, { QUESTION_MINIMAL_FIELDS, QuestionMinimal } from "../models/Post";
 import { escapeRegex } from "../utils/regexUtils";
 import EmailChangeRecord from "../models/EmailChangeRecord";
 import mongoose, { Types } from "mongoose";
-import RolesEnum from "../data/RolesEnum";
-import NotificationTypeEnum from "../data/NotificationTypeEnum";
-import PostTypeEnum from "../data/PostTypeEnum";
+import RolesEnum from "../shared/data/RolesEnum";
+import NotificationTypeEnum from "../shared/data/NotificationTypeEnum";
 import { parseWithZod } from "../utils/zodUtils";
 import { changeEmailSchema, followSchema, getFollowersSchema, getFollowingSchema, getLeaderboardRankSchema, getLeaderboardSchema, getNotificationsSchema, getProfileSchema, markNotificationsClickedSchema, removeProfileImageSchema, searchProfilesSchema, unfollowSchema, updateNotificationsSchema, updateProfileSchema, uploadProfileAvatarImageSchema, verifyEmailChangeSchema } from "../validation/profileSchema";
-import ChallengeSubmissionModel from "../models/ChallengeSubmission";
-import ChallengeModel from "../models/Challenge";
 import { createFolder, deleteEntry, formatFileEntry, formatUploadedFile, IMAGE_QUALITY_PRESETS, listDirectory, moveEntry, uploadImageToBlob, uploadRawFileToBlob } from "../helpers/fileHelper";
 import { isProcessableImageMime } from "../utils/fileTypes";
 import uploadImage from "../middleware/uploadImage";
 import FileModel from "../models/File";
 import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveImageSchema, uploadImageSchema } from "../validation/imagesSchema";
 import { getImageUrl } from "./mediaController";
-import { canBlock, deleteFollowAndCleanup, formatUserMinimal, generateEmailChangeRecord, getBlockedUserIds, hasBlocked, isBlocked, MAX_BLOCK_COUNT } from "../helpers/userHelper";
+import { canBlock, deleteFollowAndCleanup, getFollowStats, formatUserMinimal, generateEmailChangeRecord, getBlockedUserIds, hasBlocked, isBlocked, MAX_BLOCK_COUNT } from "../helpers/userHelper";
 import { notificationTypeToField, sendNotifications } from "../helpers/notificationHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import { formatCodeMinimal } from "../helpers/codesHelper";
-import { formatQuestionMinimal } from "../helpers/discussionHelper";
+import { getUserCodes } from "../helpers/codesHelper";
+import { getUserQuestions } from "../helpers/discussionHelper";
+import { getUserFeeds } from "../helpers/feedHelper";
+import { getUserCourses } from "../helpers/courseHelper";
+import { getUserChallengeStats } from "../helpers/challengeHelper";
 import EmailDeliveryError from "../exceptions/EmailDeliveryError";
 import { BlockModel } from "../models/Block";
 import { blockUserSchema } from "../validation/blockSchema";
 import { getLeaderboardEntry, getLeaderboardPage } from "../helpers/leaderboardHelper";
+
+// Number of latest codes, questions and feed posts shown on the profile
+const PROFILE_SECTION_COUNT = 3;
 
 const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const currentUserId = req.userId;
@@ -46,110 +47,16 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
         throw new HttpError("Profile not found", 404);
     }
 
-    const isFollowing = currentUserId ?
-        await UserFollowingModel.findOne({ user: currentUserId, following: userId }) !== null :
-        false;
-
-    const isBlocked = currentUserId ?
-        await hasBlocked(currentUserId, userId) :
-        false;
-
-    const followers = await UserFollowingModel.countDocuments({ following: userId });
-    const following = await UserFollowingModel.countDocuments({ user: userId });
-
-    let codesQuery = CodeModel
-        .find({
-            user: userId,
-            $or: [
-                { challenge: null },
-                { challenge: { $exists: false } }
-            ]
-        })
-        .sort({ updatedAt: "desc" });
-
-    if (currentUserId !== userId) {
-        codesQuery = codesQuery.where({ isPublic: true })
-    }
-
-    codesQuery = codesQuery
-        .sort({ updatedAt: "desc" })
-
-    const codes = await codesQuery
-        .limit(5)
-        .select(CODE_MINIMAL_FIELDS)
-        .lean();
-
-    const questions = await PostModel.find({ user: userId, _type: PostTypeEnum.QUESTION }, { message: 0 })
-        .select(QUESTION_MINIMAL_FIELDS)
-        .sort({ createdAt: "desc" })
-        .limit(5)
-        .populate("tags")
-        .lean<(QuestionMinimal & { _id: Types.ObjectId })[]>();
-
-    const solvedAgg = await ChallengeSubmissionModel.aggregate([
-        {
-            $match: {
-                user: user._id,
-                everPassed: true
-            }
-        },
-        {
-            $group: {
-                _id: "$challenge",
-            }
-        },
-        {
-            $lookup: {
-                from: "challenges",
-                localField: "_id",
-                foreignField: "_id",
-                as: "challenge"
-            }
-        },
-        { $unwind: "$challenge" },
-        {
-            $group: {
-                _id: "$challenge.difficulty",
-                count: { $sum: 1 }
-            }
-        }
+    const [followStats, isBlocked, codes, questions, feeds, courses, challenges, monthlyRank] = await Promise.all([
+        getFollowStats(userId, currentUserId),
+        currentUserId ? hasBlocked(currentUserId, userId) : false,
+        getUserCodes(userId, currentUserId, PROFILE_SECTION_COUNT),
+        getUserQuestions(userId, PROFILE_SECTION_COUNT),
+        getUserFeeds(userId, currentUserId, PROFILE_SECTION_COUNT),
+        getUserCourses(userId),
+        getUserChallengeStats(userId),
+        getLeaderboardEntry("monthly", userId)
     ]);
-
-    const solvedChallenges = {
-        easy: 0,
-        medium: 0,
-        hard: 0
-    };
-
-    for (const row of solvedAgg) {
-        if (row._id) (solvedChallenges as Record<string, number>)[row._id] = row.count;
-    }
-
-    // How many public challenges exist per difficulty, for "solved / total"
-    const totalsAgg = await ChallengeModel.aggregate([
-        { $match: { isPublic: true } },
-        { $group: { _id: "$difficulty", count: { $sum: 1 } } }
-    ]);
-
-    const challengeTotals = {
-        easy: 0,
-        medium: 0,
-        hard: 0
-    };
-
-    for (const row of totalsAgg) {
-        if (row._id) (challengeTotals as Record<string, number>)[row._id] = row.count;
-    }
-
-    // Challenges the user has submitted to but not solved yet
-    const attemptingAgg = await ChallengeSubmissionModel.aggregate([
-        { $match: { user: user._id } },
-        { $group: { _id: "$challenge", solved: { $max: "$passed" } } },
-        { $match: { solved: false } },
-        { $count: "count" }
-    ]);
-
-    const attemptingChallenges: number = attemptingAgg[0]?.count ?? 0;
 
     res.json({
         success: true,
@@ -163,20 +70,21 @@ const getProfile = asyncHandler(async (req: IAuthRequest, res: Response) => {
                 roles: user.roles,
                 emailVerified: user.emailVerified,
                 countryCode: user.countryCode,
-                followers,
-                following,
-                isFollowing,
+                ...followStats,
                 isBlocked,
                 registerDate: user.createdAt,
                 level: user.level,
                 xp: user.xp,
                 active: user.active,
-                notifications: user.notifications ?? {},
-                codes: codes.map(x => formatCodeMinimal(x)),
-                questions: questions.map(x => formatQuestionMinimal(x)),
-                solvedChallenges,
-                challengeTotals,
-                attemptingChallenges
+                notifications: user.notifications ?? {}
+            },
+            overview: {
+                codes,
+                questions,
+                feeds,
+                courses,
+                challenges,
+                monthlyRank
             }
         }
     });

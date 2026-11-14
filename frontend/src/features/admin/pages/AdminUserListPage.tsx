@@ -1,7 +1,7 @@
 import { Breadcrumb, Button, Col, Container, Form, Pagination, Row, Table } from "../../../components/ui";
 import { useState, useEffect } from "react";
 import { useApi } from "../../../context/apiCommunication";
-import RolesEnum from "../../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
 import { useSeo } from "../../../components/Seo";

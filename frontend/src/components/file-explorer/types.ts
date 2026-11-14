@@ -1,4 +1,4 @@
-import FileTypeEnum from "../../data/FileTypeEnum";
+import FileTypeEnum from "@shared/data/FileTypeEnum";
 import { UserMinimal } from "../../features/profile/types";
 
 export interface FileEntry {

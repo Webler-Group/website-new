@@ -6,7 +6,7 @@ import AdminHomePage from "./pages/AdminHomePage"
 import AdminUserListPage from "./pages/AdminUserListPage"
 import ModViewPage from "./pages/ModViewPage"
 import IpListPage from "./pages/IpListPage"
-import RolesEnum from "../../data/RolesEnum"
+import RolesEnum from "@shared/data/RolesEnum";
 
 const AdminRoutes = () => {
     return (

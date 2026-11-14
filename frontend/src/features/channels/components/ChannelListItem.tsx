@@ -2,7 +2,7 @@ import { cx } from "../../../components/ui";
 import React from "react";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import { truncate } from "../../../utils/StringUtils";
+import { truncate } from "@shared/utils/StringUtils";
 import { ChannelMinimal } from "../types";
 
 interface ChannelListItemProps {

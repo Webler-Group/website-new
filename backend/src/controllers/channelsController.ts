@@ -8,9 +8,9 @@ import UserModel, { USER_MINIMAL_FIELDS, UserMinimal } from "../models/User";
 import ChannelMessageModel, { ChannelMessage } from "../models/ChannelMessage";
 import { Socket } from "socket.io";
 import mongoose, { Types } from "mongoose";
-import ChannelRolesEnum from "../data/ChannelRolesEnum";
-import ChannelTypeEnum from "../data/ChannelTypeEnum";
-import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import ChannelRolesEnum from "../shared/data/ChannelRolesEnum";
+import ChannelTypeEnum from "../shared/data/ChannelTypeEnum";
+import ChannelMessageTypeEnum from "../shared/data/ChannelMessageTypeEnum";
 import {
     createGroupSchema,
     createDirectMessagesSchema,
@@ -34,7 +34,7 @@ import {
 } from "../validation/channelsSchema";
 import { parseWithZod } from "../utils/zodUtils";
 import z from "zod";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import { getImageUrl } from "./mediaController";
 import { deleteChannelAndCleanup, formatChannelBase, inviteToChannel, joinChannel, processChannelInvite, saveChannelMessage } from "../helpers/channelsHelper";
 import { getAttachmentsByPostId, PostAttachmentDetails } from "../helpers/postsHelper";

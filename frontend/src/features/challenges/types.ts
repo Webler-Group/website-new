@@ -1,6 +1,6 @@
 import type { XpAward } from "../../context/xpRewardContext";
-import ChallengeDifficultyEnum from "../../data/ChallengeDifficultyEnum";
-import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
+import ChallengeDifficultyEnum from "@shared/data/ChallengeDifficultyEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { CodeDetails } from "../codes/types";
 
 export interface ChallengeTestCase {

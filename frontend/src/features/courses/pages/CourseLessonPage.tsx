@@ -7,7 +7,7 @@ import { useApi } from "../../../context/apiCommunication";
 import LessonNode from "../components/LessonNode";
 import CommentList from "../../../components/comments/CommentList";
 import { GetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
-import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
+import LessonNodeTypeEnum from "@shared/data/LessonNodeTypeEnum";
 import Loader from "../../../components/Loader";
 import { useSeo } from "../../../components/Seo";
 

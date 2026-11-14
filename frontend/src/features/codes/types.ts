@@ -1,4 +1,4 @@
-import CompilerLanguagesEnum from "../../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "@shared/data/CompilerLanguagesEnum";
 import { UserMinimal } from "../profile/types";
 
 export interface CodeDetails<T = undefined> {

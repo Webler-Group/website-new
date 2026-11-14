@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import ChannelMessageTypeEnum from "../data/ChannelMessageTypeEnum";
+import ChannelMessageTypeEnum from "../shared/data/ChannelMessageTypeEnum";
 
 @modelOptions({ schemaOptions: { collection: "channelmessages", timestamps: true } })
 export class ChannelMessage {

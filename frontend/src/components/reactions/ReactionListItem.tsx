@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../features/auth/context/authContext";
 import { useApi } from "../../context/apiCommunication";
-import { reactionsInfo } from "../../data/ReactionsEnum";
+import { reactionsInfo } from "../../data/reactionsInfo";
 import ProfileAvatar from "../../components/ProfileAvatar";
 import ProfileName from "../../components/ProfileName";
 import { UserReaction } from "../../features/feed/types";

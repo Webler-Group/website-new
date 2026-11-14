@@ -50,7 +50,7 @@ import { createImageFolderSchema, deleteImageSchema, getImageListSchema, moveIma
 import { getImageUrl } from "./mediaController";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
 
 const createCourse = asyncHandler(async (req: IAuthRequest, res: Response) => {
     const { body } = parseWithZod(createCourseSchema, req);

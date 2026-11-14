@@ -1,7 +1,7 @@
 import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
-import XpRewardTypeEnum from "../data/XpRewardTypeEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
+import XpRewardTypeEnum from "../shared/data/XpRewardTypeEnum";
 
 /**
  * One XP reward. The user's total (User.xp) is a cached sum of these records and is always

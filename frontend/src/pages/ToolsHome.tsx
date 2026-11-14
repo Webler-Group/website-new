@@ -2,7 +2,7 @@ import { Container } from "../components/ui";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
 import { useSeo } from "../components/Seo";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 
 export interface IPriviledgeInfo {
     name: string;

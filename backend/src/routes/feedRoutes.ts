@@ -4,7 +4,7 @@ import verifyJWT from "../middleware/verifyJWT";
 import protectRoute from "../middleware/protectRoute";
 import requestLimiter from "../middleware/requestLimiter";
 import verifyEmail from "../middleware/verifyEmail";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import requireRoles from "../middleware/requireRoles";
 
 const router = express.Router();

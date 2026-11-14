@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import PostAttachmentTypeEnum from "../data/PostAttachmentTypeEnum";
+import PostAttachmentTypeEnum from "../shared/data/PostAttachmentTypeEnum";
 
 @modelOptions({ schemaOptions: { collection: "postattachments" } })
 export class PostAttachment {

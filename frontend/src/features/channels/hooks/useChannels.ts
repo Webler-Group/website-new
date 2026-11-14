@@ -3,7 +3,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { useWS } from "../../../context/wsCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { ChannelDeletedData, ChannelMinimal, ChannelsListData, GetChannelData, MessageDeletedData, MessageEditedData, MessagesSeenData, NewMessageData } from "../types";
-import ChannelMessageTypeEnum from "../../../data/ChannelMessageTypeEnum";
+import ChannelMessageTypeEnum from "@shared/data/ChannelMessageTypeEnum";
 
 const useChannels = (
     count: number,

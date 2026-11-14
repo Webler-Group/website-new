@@ -1,7 +1,7 @@
 import { PostAttachmentDetails } from "../../components/post-attachment-select/types";
-import ChannelMessageTypeEnum from "../../data/ChannelMessageTypeEnum";
-import ChannelRolesEnum from "../../data/ChannelRolesEnum";
-import ChannelTypeEnum from "../../data/ChannelTypeEnum";
+import ChannelMessageTypeEnum from "@shared/data/ChannelMessageTypeEnum";
+import ChannelRolesEnum from "@shared/data/ChannelRolesEnum";
+import ChannelTypeEnum from "@shared/data/ChannelTypeEnum";
 import { UserMinimal } from "../profile/types";
 
 export interface InviteDetails<T = UserMinimal, U = undefined> {

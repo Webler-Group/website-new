@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
 import crypto from "crypto";
 import { config } from "../confg";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import HttpError from "../exceptions/HttpError";
 import type { AwardedXp } from "../helpers/xpHelper";
 import type { RunVerdict, SandboxProgress } from "../utils/sandbox";

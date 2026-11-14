@@ -1,6 +1,6 @@
 import { prop, getModelForClass, modelOptions, index } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import ReactionsEnum from "../data/ReactionsEnum";
+import ReactionsEnum from "../shared/data/ReactionsEnum";
 
 @modelOptions({ schemaOptions: { collection: "upvotes" } })
 @index({ parentId: 1, user: 1 }, { unique: true })

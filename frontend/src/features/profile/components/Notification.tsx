@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { NotificationDetails } from "../types";
-import NotificationTypeEnum from "../../../data/NotificationTypeEnum";
+import NotificationTypeEnum from "@shared/data/NotificationTypeEnum";
 import "./Notifications.css";
 
 interface NotificationProps {

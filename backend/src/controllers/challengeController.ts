@@ -7,11 +7,11 @@ import { createChallengeCollectionSchema, createChallengeJobSchema, createChalle
 import { parseWithZod } from "../utils/zodUtils";
 import mongoose, { Types } from "mongoose";
 import CodeModel from "../models/Code";
-import CompilerLanguagesEnum from "../data/CompilerLanguagesEnum";
+import CompilerLanguagesEnum from "../shared/data/CompilerLanguagesEnum";
 import { addEvaluationJob, getEvaluationJob } from "../queues/evaluationQueue";
 import ChallengeSubmissionModel, { ChallengeSubmission, TestResult } from "../models/ChallengeSubmission";
 import ChallengeUnlockModel from "../models/ChallengeUnlock";
-import RolesEnum from "../data/RolesEnum";
+import RolesEnum from "../shared/data/RolesEnum";
 import { deleteChallengesAndCleanup } from "../helpers/challengeHelper";
 import { withTransaction } from "../utils/transaction";
 import HttpError from "../exceptions/HttpError";

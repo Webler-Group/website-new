@@ -6,7 +6,7 @@ import ProfileAvatar from "../../../components/ProfileAvatar";
 import { useAuth } from "../../auth/context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import { AdminUser, BanUserData, DeleteUserFilesData, GetAdminUserData, IpRecord, ToggleBanIpData, UpdateRolesData } from "../types";
-import RolesEnum from "../../../data/RolesEnum";
+import RolesEnum from "@shared/data/RolesEnum";
 import { useSeo } from "../../../components/Seo";
 
 const ModViewPage = () => {

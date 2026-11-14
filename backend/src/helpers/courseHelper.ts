@@ -2,14 +2,14 @@ import mongoose, { Types } from "mongoose";
 import CourseLessonModel, { CourseLesson } from "../models/CourseLesson";
 import LessonNodeModel, { LessonNode, LessonNodeMinimal } from "../models/LessonNode";
 import QuizAnswerModel, { QuizAnswer } from "../models/QuizAnswer";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
 import CourseModel, { Course } from "../models/Course";
 import CourseProgressModel, { CourseProgress } from "../models/CourseProgress";
 import { deleteEntry } from "./fileHelper";
 import { File } from "../models/File";
 import { deletePostsAndCleanup } from "./postsHelper";
 import HttpError from "../exceptions/HttpError";
-import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
+import LessonNodeModeEnum from "../shared/data/LessonNodeModeEnum";
 import { getImageUrl } from "../controllers/mediaController";
 
 export interface LessonNodeMinimalResponse {
@@ -329,4 +329,17 @@ export const isCourseCompleted = async (
 
     if (!lesson) return false;
     return lastNodeIndex === lesson.nodes && lastLessonIndex === totalLessons;
+}
+
+/** Courses a user has started, most recently active first */
+export const getUserCourses = async (userId: Types.ObjectId | string) => {
+    const progress = await CourseProgressModel.find({ userId })
+        .sort({ updatedAt: "desc" })
+        .populate<{ course: (Course & { _id: Types.ObjectId }) | null }>("course")
+        .lean();
+
+    // Progress records can outlive a deleted course
+    return progress
+        .filter(x => x.course)
+        .map(x => formatCourseMinimal(x.course!, x.completed));
 }

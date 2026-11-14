@@ -1,7 +1,7 @@
 import { prop, getModelForClass, modelOptions } from "@typegoose/typegoose";
 import { Types } from "mongoose";
-import LessonNodeTypeEnum from "../data/LessonNodeTypeEnum";
-import LessonNodeModeEnum from "../data/LessonNodeModeEnum";
+import LessonNodeTypeEnum from "../shared/data/LessonNodeTypeEnum";
+import LessonNodeModeEnum from "../shared/data/LessonNodeModeEnum";
 
 @modelOptions({ schemaOptions: { collection: "lessonnodes" } })
 export class LessonNode {

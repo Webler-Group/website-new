@@ -9,7 +9,7 @@ import DiscussPostPage from "./pages/DiscussPostPage"
 import DiscussEditPage from "./pages/DiscussEditPage"
 import RequireAuth from "../auth/components/RequireAuth"
 import "./discuss.css"
-import RolesEnum from "../../data/RolesEnum"
+import RolesEnum from "@shared/data/RolesEnum";
 
 const DiscussRoutes = () => {
     return (

@@ -18,7 +18,7 @@ import ToolsHomePage from './pages/ToolsHome';
 import RequireAuth from './features/auth/components/RequireAuth';
 import TagHomePage from './features/tags/pages/TagHome';
 import LoadingPage from './pages/LoadingPage';
-import RolesEnum from './data/RolesEnum';
+import RolesEnum from '@shared/data/RolesEnum';
 
 const ChallengeRoutes = React.lazy(() => import('./features/challenges/ChallengeRoutes'));
 const ChannelsRoutes = React.lazy(() => import("./features/channels/ChannelsRoutes"));
