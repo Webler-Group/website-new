@@ -4,6 +4,7 @@ import { useApi } from "../../../context/apiCommunication";
 import RolesEnum from "../../../data/RolesEnum";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { AdminUser, AdminUserListData } from "../types";
+import { useSeo } from "../../../components/Seo";
 
 const rolesOptions = ["All", ...Object.values(RolesEnum)];
 
@@ -15,6 +16,7 @@ const sortOptions = [
 ];
 
 const AdminUserListPage = () => {
+    useSeo({ title: "User Search", noIndex: true });
     const { sendJsonRequest } = useApi();
     const [searchParams, setSearchParams] = useSearchParams();
 

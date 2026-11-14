@@ -14,6 +14,7 @@ import ChallengeTags from "../components/ChallengeTags";
 import ChallengeCollectionNavigator from "../components/ChallengeCollectionNavigator";
 import CompilerLanguagesEnum from "../../../data/CompilerLanguagesEnum";
 import { ChallengeCollectionDetails, ChallengeCollectionItem, ChallengeDetails, GetChallengeCollectionData, GetChallengeData } from "../types";
+import { useSeo } from "../../../components/Seo";
 
 const NAVIGATOR_KEY = "wb-challenges-navigator-hidden";
 
@@ -33,6 +34,7 @@ const ChallengeDetailsPage = () => {
 
     const [loading, setLoading] = useState(false);
     const [challenge, setChallenge] = useState<ChallengeDetails | null>(null);
+    useSeo({ title: challenge?.title ?? "Challenge", noIndex: true });
     const [languageChoice, setLanguageChoice] = useState("");
     const [selectedLanguage, setSelectedLanguage] = useState<CompilerLanguagesEnum | null>(null);
     const [activeTab, setActiveTab] = useState("description");

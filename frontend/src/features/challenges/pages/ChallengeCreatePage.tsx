@@ -1,10 +1,10 @@
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { Container } from "../../../components/ui";
 import ChallengeCreateForm from "../components/ChallengeCreateForm";
 
 
 const ChallengeCreate = () => {
-    PageTitle("Create Challenge");
+    useSeo({ title: "Create Challenge", noIndex: true });
 
     return (
         <Container className="py-4">

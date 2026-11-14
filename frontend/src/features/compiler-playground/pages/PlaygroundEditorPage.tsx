@@ -15,7 +15,7 @@ import ToggleSwitch from "../../../components/ToggleSwitch";
 import { useApi } from "../../../context/apiCommunication";
 import DateUtils from "../../../utils/DateUtils";
 import ProfileAvatar from "../../../components/ProfileAvatar";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { languagesInfo } from "../../../data/compilerLanguages";
 import CommentList from "../../../components/comments/CommentList";
 import ReactionsList from "../../../components/reactions/ReactionsList";
@@ -101,7 +101,6 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
     const [findPost, setFindPost] = useState<{ id: string, isReply: boolean } | null>(null);
     const [commentListOptions, setCommentListOptions] = useState({ section: "Codes", params: { codeId } });
     const [message, setMessage] = useState<{ success: boolean; message?: string; errors?: any[]; }>({ success: true });
-    const [pageTitle, setPageTitle] = useState("");
     const [consoleVisible, setConsoleVisible] = useState(false);
     const [logsCount, setLogsCount] = useState(0);
     const [baseline, setBaseline] = useState<CodeBaseline | null>(null);
@@ -134,15 +133,16 @@ const PlaygroundEditorPage = ({ language }: PlaygroundEditorPageProps) => {
         });
     }, []);
 
-    PageTitle(pageTitle);
-
-    useEffect(() => {
-        if (isCodeSaved(code!)) {
-            setPageTitle(`${languagesInfo[code.language].displayName} Playground - ${code.name} | Webler Codes`);
-        } else if (language) {
-            setPageTitle(`${languagesInfo[language].displayName} Playground | Webler Codes`);
-        }
-    }, [language, code]);
+    const seoCode = code && isCodeSaved(code) ? code : null;
+    useSeo(seoCode ? {
+        title: `${seoCode.name} - ${languagesInfo[seoCode.language].displayName} Playground`,
+        description: `${seoCode.name} — ${languagesInfo[seoCode.language].displayName} code on Webler Codes. Run it, fork it and edit it online in your browser.`,
+        type: "article",
+        noIndex: !seoCode.isPublic
+    } : language ? {
+        title: `Online ${languagesInfo[language].displayName} Compiler & Playground`,
+        description: `Write, run and share ${languagesInfo[language].displayName} code online in your browser with the free Webler Codes playground — no setup required.`
+    } : {});
 
     useEffect(() => {
         if (location.state?.postId) {

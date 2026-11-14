@@ -1,8 +1,8 @@
 import { Container } from "../components/ui";
-import PageTitle from "../layouts/PageTitle";
+import { useSeo } from "../components/Seo";
 
 const ContactPage = () => {
-  PageTitle("Contact", false);
+  useSeo({ title: "Contact", description: "Get in touch with the Webler Codes team — questions, feedback, bug reports and collaboration." });
 
   return (
     <div className="bg-body-tertiary py-4 min-vh-100">

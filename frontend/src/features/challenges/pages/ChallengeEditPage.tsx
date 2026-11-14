@@ -1,11 +1,11 @@
 import { useParams } from "react-router-dom";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { Container } from "../../../components/ui";
 import ChallengeCreateForm from "../components/ChallengeCreateForm";
 
 const ChallengeEdit = () => {
 
-    PageTitle("Update Challenge");
+    useSeo({ title: "Update Challenge", noIndex: true });
     
     const { challengeId } = useParams();
 

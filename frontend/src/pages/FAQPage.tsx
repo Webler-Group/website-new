@@ -1,8 +1,8 @@
 import { Container } from "../components/ui";
-import PageTitle from "../layouts/PageTitle";
+import { useSeo } from "../components/Seo";
 
 const FAQPage = () => {
-    PageTitle("Frequently Asked Questions", false);
+    useSeo({ title: "Frequently Asked Questions", description: "Answers to the most common questions about Webler Codes — accounts, the code playground, courses, challenges, XP and the community." });
 
     return (
         <div className="bg-body-tertiary py-4 min-vh-100">

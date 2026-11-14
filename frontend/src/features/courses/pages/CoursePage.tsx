@@ -5,7 +5,7 @@ import { useApi } from "../../../context/apiCommunication";
 import { FaCircle, FaCirclePlay, FaLock } from "react-icons/fa6";
 import { FaCheckCircle } from "react-icons/fa";
 import { truncate } from "../../../utils/StringUtils";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { CourseDetails, GetCourseData } from "../types";
 import Loader from "../../../components/Loader";
 
@@ -15,9 +15,9 @@ const CoursePage = () => {
 
     const [course, setCourse] = useState<CourseDetails | null>(null);
     const [loading, setLoading] = useState(true);
-    const [pageTitle, setPageTitle] = useState("Webler Codes");
 
-    PageTitle(pageTitle);
+    // Course pages require login, so keep them out of the index
+    useSeo({ title: course ? `${course.title} - Courses` : "Courses", noIndex: true });
 
     useEffect(() => {
         getCourse();
@@ -32,7 +32,6 @@ const CoursePage = () => {
 
         if (result.data) {
             setCourse(result.data.course);
-            setPageTitle("Courses - " + result.data.course.title + " | Webler Codes");
         }
         setLoading(false);
     };

@@ -10,7 +10,6 @@ import WSProvider from './context/wsCommunication';
 import ConnectionStatusProvider from './context/connectionStatus';
 import ConnectionStatusIndicator from './components/ConnectionStatusIndicator';
 import ScrollToTop from './components/ScrollToTop';
-import { HelmetProvider } from 'react-helmet-async';
 import App from './App';
 import UserInfoProvider from './context/userInfoContext';
 import { patchDomForTranslators } from './utils/patchDomForTranslators';
@@ -42,8 +41,6 @@ const router = createBrowserRouter([
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <AuthProvider>
-    <HelmetProvider>
-      <RouterProvider router={router} />
-    </HelmetProvider>
+    <RouterProvider router={router} />
   </AuthProvider>
 );

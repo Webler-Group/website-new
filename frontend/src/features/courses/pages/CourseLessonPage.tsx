@@ -9,10 +9,12 @@ import CommentList from "../../../components/comments/CommentList";
 import { GetLessonData, LessonDetails, LessonNodeMinimal } from "../types";
 import LessonNodeTypeEnum from "../../../data/LessonNodeTypeEnum";
 import Loader from "../../../components/Loader";
+import { useSeo } from "../../../components/Seo";
 
 const CourseLessonPage = () => {
     const { lessonId, courseCode } = useParams();
     const [lesson, setLesson] = useState<LessonDetails | null>(null);
+    useSeo({ title: lesson?.title ?? "Lesson", noIndex: true });
     const [css, setCss] = useState("");
     const [currentNodeIndex, setCurrentNodeIndex] = useState(0);
     const { sendJsonRequest } = useApi();

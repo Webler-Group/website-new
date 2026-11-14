@@ -2,8 +2,10 @@ import { Button, Container } from "../../../components/ui";
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
+import { useSeo } from "../../../components/Seo";
 
 const ActivateEmailPage = () => {
+    useSeo({ title: "Activate Account", noIndex: true });
     const [searchParams, _] = useSearchParams();
     const { sendJsonRequest } = useApi();
     const [submitState, setSubmitState] = useState(0);

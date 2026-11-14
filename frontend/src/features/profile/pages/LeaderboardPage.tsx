@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { FaTrophy } from "react-icons/fa";
 import { Alert, Card, Container, Nav } from "../../../components/ui";
 import Loader from "../../../components/Loader";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import useLeaderboard from "../hooks/useLeaderboard";
@@ -28,7 +28,7 @@ const LeaderboardPage = () => {
     // Highlight the given user, or the logged in user when none is given
     const userId = searchParams.get("userId") ?? userInfo?.id ?? null;
 
-    PageTitle("Leaderboard");
+    useSeo({ title: "Leaderboard", description: "See the top Webler Codes programmers ranked by XP earned from courses, challenges, codes and community activity." });
 
     const { isLoading, error, entries, hasNextPage, loadNextPage } = useLeaderboard(period, COUNT_PER_PAGE);
 

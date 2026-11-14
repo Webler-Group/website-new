@@ -5,8 +5,10 @@ import { useApi } from "../../../context/apiCommunication";
 import PasswordFormControl from "../../../components/PasswordFormControl";
 import { useAuth } from "../context/authContext";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { useSeo } from "../../../components/Seo";
 
 const ForgotPasswordPage = () => {
+    useSeo({ title: "Reset Password", noIndex: true });
     const [searchParams, _] = useSearchParams();
     const { sendJsonRequest } = useApi();
     const { logout } = useAuth();

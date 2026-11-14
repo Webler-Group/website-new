@@ -1,10 +1,10 @@
 import { Container } from "../components/ui";
-import PageTitle from "../layouts/PageTitle";
+import { useSeo } from "../components/Seo";
 
 
 const TermsOfUsePage = () => {
 
-    PageTitle("Terms of Use", false);
+    useSeo({ title: "Terms of Use", description: "Read the Terms of Use for Webler Codes — the rules and conditions for using our coding community, courses, code playground and challenges." });
 
     return (
         <div className="bg-body-tertiary py-4 min-vh-100">

@@ -1,7 +1,7 @@
 import { Container } from "../components/ui";
 import { Link } from "react-router-dom";
 import { useAuth } from "../features/auth/context/authContext";
-import PageTitle from "../layouts/PageTitle";
+import { useSeo } from "../components/Seo";
 import RolesEnum from "../data/RolesEnum";
 
 export interface IPriviledgeInfo {
@@ -17,7 +17,7 @@ const tools = [
 ];
 
 const ToolsHomePage = () => {
-    PageTitle("Tools");
+    useSeo({ title: "Tools", description: "Handy developer tools from Webler Codes." });
 
     const { userInfo } = useAuth();
 

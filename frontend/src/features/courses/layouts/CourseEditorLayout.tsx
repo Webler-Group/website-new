@@ -1,6 +1,6 @@
 import { Container } from "../../../components/ui";
 import { ReactNode } from "react"
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 
 interface CoursesEditorLayoutProps {
     MainPage: ReactNode;
@@ -8,7 +8,7 @@ interface CoursesEditorLayoutProps {
 
 const CoursesEditorLayout = ({ MainPage }: CoursesEditorLayoutProps) => {
 
-    PageTitle("Course Editor", false);
+    useSeo({ title: "Course Editor", noIndex: true });
 
     return (
         <Container>

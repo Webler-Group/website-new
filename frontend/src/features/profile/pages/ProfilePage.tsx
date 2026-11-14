@@ -14,7 +14,7 @@ import EllipsisDropdownToggle from "../../../components/EllipsisDropdownToggle";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import Question from "../../discuss/components/Question";
 import QuestionsSection from "../components/QuestionsSection";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo, toExcerpt } from "../../../components/Seo";
 import Loader from "../../../components/Loader";
 import NotificationToast from "../../../components/NotificationToast";
 import ChallengesSection from "../components/ChallengesSection";
@@ -56,12 +56,17 @@ const ProfilePage = () => {
     const [feedPosts, setFeedPosts] = useState<FeedDetails[]>([]);
     const [courses, setCourses] = useState<CourseMinimal[]>([]);
 
-    const [pageTitle, setPageTitle] = useState("Webler Codes");
     const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
     const navigate = useNavigate();
 
-    PageTitle(pageTitle);
+    useSeo({
+        title: userDetails?.name,
+        description: userDetails ? (toExcerpt(userDetails.bio) ?? `${userDetails.name}'s profile on Webler Codes — codes, questions and activity.`) : undefined,
+        type: userDetails ? "profile" : undefined,
+        // Own profile at /Profile is a duplicate of /Profile/:userId
+        path: userDetails ? `/Profile/${userDetails.id}` : undefined
+    });
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -73,7 +78,6 @@ const ProfilePage = () => {
                 setFollowersCount(result.data.userDetails.followers);
                 setCodes(result.data.userDetails.codes.slice(0, 3));
                 setQuestions(result.data.userDetails.questions.slice(0, 3));
-                setPageTitle(result.data.userDetails.name);
             } else {
                 setUserDetails(null);
             }

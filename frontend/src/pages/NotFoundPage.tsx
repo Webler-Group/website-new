@@ -1,8 +1,8 @@
 import { Container } from "../components/ui";
-import PageTitle from "../layouts/PageTitle";
+import { useSeo } from "../components/Seo";
 
 const NotFoundPage = () => {
-    PageTitle("Webler Codes")
+    useSeo({ title: "Page Not Found", noIndex: true })
     return (
         <Container>
             <div className="min-vh-100">

@@ -1,7 +1,9 @@
 import { Container } from "../../../components/ui";
 import { Link } from "react-router-dom";
+import { useSeo } from "../../../components/Seo";
 
 const AdminHomePage = () => {
+    useSeo({ title: "Admin", noIndex: true });
     return (
         <Container className="mt-4">
             <h2>Admin Dashboard</h2>

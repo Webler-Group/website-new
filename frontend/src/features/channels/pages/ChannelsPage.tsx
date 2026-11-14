@@ -2,13 +2,13 @@ import { Container, Modal } from "../../../components/ui";
 import { useParams, useNavigate } from "react-router-dom";
 import ChannelsList2 from "../components/ChannelsList2";
 import ChannelRoom2 from "../components/ChannelRoom2";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 
 const ChannelsPage = () => {
     const { channelId } = useParams<{ channelId?: string }>();
     const navigate = useNavigate();
 
-    PageTitle("Channels | Webler Codes");
+    useSeo({ title: "Channels", noIndex: true });
 
     const onChannelSelect = (id: string) => {
         navigate(`/Channels/${id}`);

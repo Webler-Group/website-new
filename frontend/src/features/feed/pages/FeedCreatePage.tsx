@@ -5,12 +5,14 @@ import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
 import MdEditorField from "../../../components/MdEditorField";
 import { CreateFeedData, EditFeedData, GetFeedData } from "../types";
+import { useSeo } from "../../../components/Seo";
 
 interface FeedCreatePageProps {
     feedId: string | null;
 }
 
 const FeedCreatePage = ({ feedId }: FeedCreatePageProps) => {
+    useSeo({ title: feedId ? "Edit Post" : "New Post", noIndex: true });
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<{ message: string }[] | undefined>();

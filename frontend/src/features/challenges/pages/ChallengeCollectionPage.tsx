@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaCheck, FaChevronRight, FaLayerGroup, FaLock, FaPen, FaSearch, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo, toExcerpt } from "../../../components/Seo";
 import Loader from "../../../components/Loader";
 import MarkdownRenderer from "../../../components/MarkdownRenderer";
 import ChallengeTags from "../components/ChallengeTags";
@@ -20,7 +20,11 @@ const ChallengeCollectionPage = () => {
     const [showDelete, setShowDelete] = useState(false);
     const [activeSection, setActiveSection] = useState(0);
 
-    PageTitle(collection?.title ?? "Collection");
+    useSeo({
+        title: collection?.title ?? "Challenge Collection",
+        description: toExcerpt(collection?.description),
+        noIndex: collection ? !collection.isPublic : undefined
+    });
 
     useEffect(() => {
         getCollection();

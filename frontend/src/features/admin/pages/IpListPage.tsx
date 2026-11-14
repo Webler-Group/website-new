@@ -4,8 +4,10 @@ import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
 import { IpRecord, IpListData, ToggleBanIpData, CreateIpData } from "../types";
 import RolesEnum from "../../../data/RolesEnum";
+import { useSeo } from "../../../components/Seo";
 
 const IpListPage = () => {
+    useSeo({ title: "IP List", noIndex: true });
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
 

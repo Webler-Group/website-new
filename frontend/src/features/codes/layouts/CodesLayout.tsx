@@ -2,7 +2,7 @@ import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import Code from "../components/Code";
-import { Helmet } from "react-helmet-async";
+import { useSeo } from "../../../components/Seo";
 import { CodeMinimal, CodesListData } from "../types";
 import { UserMinimal } from "../../profile/types";
 import { FaFire } from "react-icons/fa";
@@ -12,6 +12,11 @@ interface CodesLayoutProps {
 }
 
 const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
+
+    useSeo({
+        title: "Codes",
+        description: "Experiment with code in multiple programming languages using Webler’s browser-based IDE. No setup required — just create, edit, and run instantly."
+    });
 
     const { sendJsonRequest } = useApi();
     const [codes, setCodes] = useState<CodeMinimal<UserMinimal>[]>([]);
@@ -35,7 +40,6 @@ const CodesLayout = ({ MainPage }: CodesLayoutProps) => {
 
     return (
         <>
-            <Helmet> <title>Code Playground | Webler Codes</title> <meta name="description" content="Experiment with code in multiple programming languages using Webler’s browser-based IDE. No setup required — just create, edit, and run instantly." /> </Helmet>
             <Container>
                 <div className="row mt-2 min-vh-100">
                     <div className="col-12 col-md-8">{MainPage}</div>

@@ -10,8 +10,10 @@ import NotificationToast from "../../../components/NotificationToast.tsx";
 import { copyToClipboard } from "../../../utils/ClipboardUtils";
 import FollowListProfile from "../../profile/components/FollowListProfile.tsx";
 import Loader from "../../../components/Loader.tsx";
+import { useSeo } from "../../../components/Seo";
 
 const FeedSuggestedUserListPage = () => {
+    useSeo({ title: "Suggested Users", noIndex: true });
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();
     const navigate = useNavigate();

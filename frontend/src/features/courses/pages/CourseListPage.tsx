@@ -3,11 +3,16 @@ import Course from "../components/Course";
 import { useEffect, useState } from "react";
 import { useApi } from "../../../context/apiCommunication";
 import { useAuth } from "../../auth/context/authContext";
-import { Helmet } from "react-helmet-async";
+import { useSeo } from "../../../components/Seo";
 import { CourseMinimal, CoursesListData, UserCoursesListData } from "../types";
 import Loader from "../../../components/Loader";
 
 const CourseListPage = () => {
+
+    useSeo({
+        title: "Courses",
+        description: "Learn by doing with Webler’s interactive coding courses. Practice with hands-on lessons, quizzes, and real-world projects at your own pace."
+    });
     const { sendJsonRequest } = useApi();
     const [courses, setCourses] = useState<CourseMinimal[]>([]);
     const [myCourses, setMyCourses] = useState<CourseMinimal[]>([]);
@@ -63,7 +68,6 @@ const CourseListPage = () => {
 
     return (
         <>
-            <Helmet> <title>Courses | Webler Codes</title> <meta name="description" content="Learn by doing with Webler’s interactive coding courses. Practice with hands-on lessons, quizzes, and real-world projects at your own pace." /> </Helmet>
             <Modal show={resetModalVisible} onHide={closeResetModal} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Are you sure?</Modal.Title>

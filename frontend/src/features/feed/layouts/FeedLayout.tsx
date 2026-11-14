@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { Helmet } from 'react-helmet-async';
+import { useSeo } from "../../../components/Seo";
 
 interface FeedLayoutProps {
   MainPage: ReactNode;
@@ -7,10 +7,14 @@ interface FeedLayoutProps {
 
 const FeedLayout = ({ MainPage }: FeedLayoutProps) => {
 
+    useSeo({
+        title: "Feed",
+        description: "Stay up to date with the Webler community! Explore the latest project updates, shared snippets, and highlights from developers worldwide."
+    });
+
 
   return (
     <>
-      <Helmet> <title>Feed | Webler Codes</title> <meta name="description" content="Stay up to date with the Webler community! Explore the latest project updates, shared snippets, and highlights from developers worldwide." /> </Helmet>
       <div className="wb-feed-layout-container">{MainPage}</div>
     </>
   );

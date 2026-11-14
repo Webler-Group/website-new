@@ -1,13 +1,13 @@
 import { Container } from "../../../components/ui";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import RegisterForm from "../components/RegisterForm";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 
 const RegisterPage = () => {
 
     const [searchParams, _] = useSearchParams();
     const navigate = useNavigate();
-    PageTitle("Webler Codes", false);
+    useSeo({ title: "Sign Up", description: "Create your free Webler Codes account and join a community of programmers — write code in the browser, take courses, solve challenges and ask questions." });
 
     const toggle = () => {
         navigate("/Users/Login" + (searchParams.has("returnUrl") ? `?returnUrl=${searchParams.get("returnUrl")!}` : ""));

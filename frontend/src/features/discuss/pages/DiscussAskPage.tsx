@@ -6,12 +6,14 @@ import { useApi } from '../../../context/apiCommunication';
 import RequestResultAlert from '../../../components/RequestResultAlert';
 import MdEditorField from '../../../components/MdEditorField';
 import { CreateQuestionData, GetQuestionData } from '../types';
+import { useSeo } from "../../../components/Seo";
 
 interface DiscussAskPageProps {
     questionId: string | null;
 }
 
 const DiscussAskPage = ({ questionId }: DiscussAskPageProps) => {
+    useSeo({ title: questionId ? "Edit Question" : "Ask a Question", noIndex: true });
     const { sendJsonRequest } = useApi();
     const navigate = useNavigate();
     const [title, setTitle] = useState("");

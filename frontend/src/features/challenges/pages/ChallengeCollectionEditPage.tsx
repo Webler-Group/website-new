@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { FaArrowDown, FaArrowUp, FaChevronRight, FaLock, FaPlus, FaSearch, FaTimes, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import Loader from "../../../components/Loader";
 import MdEditorField from "../../../components/MdEditorField";
 import ChallengeSearchBox from "../components/ChallengeSearchBox";
@@ -52,7 +52,7 @@ const ChallengeCollectionEditPage = () => {
     const [addingTo, setAddingTo] = useState<number | null>(null);
     const [showDelete, setShowDelete] = useState(false);
 
-    PageTitle(isNew ? "New Collection" : "Edit Collection");
+    useSeo({ title: isNew ? "New Collection" : "Edit Collection", noIndex: true });
 
     useEffect(() => {
         if (!isNew) {

@@ -14,7 +14,7 @@ import { useApi } from "../../../context/apiCommunication";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import { WeblerBadge } from "../../../components/InputTags";
 import { truncate } from "../../../utils/StringUtils";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo, toExcerpt } from "../../../components/Seo";
 import ReactionsList from "../../../components/reactions/ReactionsList";
 import NotificationToast from "../../../components/NotificationToast";
 import { copyToClipboard } from "../../../utils/ClipboardUtils";
@@ -50,25 +50,22 @@ const DiscussPostPage = () => {
     const [postId, setPostId] = useState<string | null>(null);
     const findPostRef = useRef<HTMLDivElement>(null);
     const formInputRef = useRef<HTMLTextAreaElement>(null);
-    const [pageTitle, setPageTitle] = useState("");
     const [votesModalVisible, setVotesModalVisible] = useState(false);
     const [votesModalOptions, setVotesModalOptions] = useState({ parentId: "" });
     const [isPriviledged, setIsPriviledged] = useState(false);
     const [shouldDeletePost, setShouldDeletePost] = useState(false);
 
-    PageTitle(pageTitle);
+    useSeo({
+        title: question?.title,
+        description: toExcerpt(question?.message),
+        type: question ? "article" : undefined
+    });
 
     useEffect(() => {
         const hasPriviledge = userInfo?.roles.some(i => ["Admin", "Moderator"].includes(i)) || false;
         setIsPriviledged(hasPriviledge);
     }, [userInfo]);
 
-
-    useEffect(() => {
-        if (question) {
-            setPageTitle(question.title + " | Webler Codes");
-        }
-    }, [question]);
 
     useEffect(() => {
         if (location.state && location.state.postId) {

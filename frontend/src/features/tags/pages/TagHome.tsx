@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { FaTag, FaTrash } from "react-icons/fa";
 import { useApi } from "../../../context/apiCommunication";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 
 const TagHomePage = () => {
     const [tagJobEntry, setTagJobEntry] = useState<string>("");
@@ -9,7 +9,7 @@ const TagHomePage = () => {
 
     const { sendJsonRequest } = useApi();
 
-    PageTitle("Tag Executor");
+    useSeo({ title: "Tag Executor", noIndex: true });
 
     const getJobEntry = () => tagJobEntry.replace("\n", "")
         .split(",")

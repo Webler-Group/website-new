@@ -1,10 +1,10 @@
 import { Container } from "../../../components/ui";
 import { Link } from "react-router-dom"
 import { languagesInfo } from "../../../data/compilerLanguages"
-import PageTitle from "../../../layouts/PageTitle"
+import { useSeo } from "../../../components/Seo";
 
 const PlaygroundMenuPage = () => {
-    PageTitle("Online Code Editors, Compilers & Playground | Webler Codes");
+    useSeo({ title: "Online Code Editors, Compilers & Playground", description: "Write, compile and run code online in many programming languages right in your browser — free online compilers and editors with no setup required." });
 
     return (
         <div className="wb-compiler-playground-wrapper">

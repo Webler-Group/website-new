@@ -2,7 +2,7 @@ import { Container } from "../../../components/ui";
 import { ReactNode, useEffect, useState } from "react";
 import Question from "../components/Question";
 import { useApi } from "../../../context/apiCommunication";
-import { Helmet } from "react-helmet-async";
+import { useSeo } from "../../../components/Seo";
 import { QuestionListData, QuestionMinimal } from "../types";
 import { UserMinimal } from "../../profile/types";
 import { FaFire } from "react-icons/fa6";
@@ -12,6 +12,11 @@ interface DiscussLayoutProps {
 }
 
 const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
+
+    useSeo({
+        title: "Q&A Discussions",
+        description: "Join Webler’s programming forum to ask questions, share knowledge, and solve real-world coding challenges with a global community of developers."
+    });
     const { sendJsonRequest } = useApi();
     const [questions, setQuestions] = useState<QuestionMinimal<UserMinimal>[]>([]);
 
@@ -34,7 +39,6 @@ const DiscussLayout = ({ MainPage }: DiscussLayoutProps) => {
 
     return (
         <>
-            <Helmet> <title>Q&A Discussions | Webler Codes</title> <meta name="description" content="Join Webler’s programming forum to ask questions, share knowledge, and solve real-world coding challenges with a global community of developers." /> </Helmet>
             <div className="bg-body">
                 <Container>
                     <div className="row pt-2 min-vh-100">

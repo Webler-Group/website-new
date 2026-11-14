@@ -3,8 +3,10 @@ import { SubmitEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useApi } from "../../../context/apiCommunication";
 import RequestResultAlert from "../../../components/RequestResultAlert";
+import { useSeo } from "../../../components/Seo";
 
 const ForgotPasswordPage = () => {
+    useSeo({ title: "Forgot Password", noIndex: true });
     const { sendJsonRequest } = useApi();
     const [email, setEmail] = useState("");
     const [error, setError] = useState<{ message: string }[] | undefined>([]);

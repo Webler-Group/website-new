@@ -1,7 +1,7 @@
 import { Button, Col, Container, Form, FormControl, InputGroup, Modal, Pagination, ProgressBar, Row, Table, Toast, ToastContainer } from "../../../components/ui";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import Loader from "../../../components/Loader";
-import PageTitle from "../../../layouts/PageTitle";
+import { useSeo } from "../../../components/Seo";
 import { useApi } from "../../../context/apiCommunication";
 import { ChangeEvent, useEffect, useState } from "react";
 import { useAuth } from "../../auth/context/authContext";
@@ -12,7 +12,7 @@ import ChallengeTagFilter from "../components/ChallengeTagFilter";
 
 
 const ChallengeList = () => {
-    PageTitle("Challenges");
+    useSeo({ title: "Coding Challenges", description: "Solve coding challenges of varying difficulty in the language of your choice, test your solution against test cases and earn XP." });
 
     const { sendJsonRequest } = useApi();
     const { userInfo } = useAuth();

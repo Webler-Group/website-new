@@ -5,7 +5,7 @@ import { useAuth } from "../features/auth/context/authContext";
 import { useState } from "react";
 import LoginForm from "../features/auth/components/LoginForm";
 import { useNavigate } from "react-router-dom";
-import { Helmet } from 'react-helmet-async'; 
+import { useSeo } from "../components/Seo";
 
 interface Feature {
   title: string;
@@ -49,16 +49,17 @@ const features: Feature[] = [
 
 const HomePage = () => {
 
+    useSeo({
+        title: "Webler Codes",
+        description: "Welcome to Webler! We're a global team of independent developers passionate about building high-quality, accessible software."
+    });
+
   const { userInfo } = useAuth();
   const [isRegisterForm, toggleForm] = useState(true);
   const navigate = useNavigate();
 
   return (
     <>
-      <Helmet>
-        <title>Webler Codes</title>
-        <meta name="description" content="Welcome to Webler! We're a global team of independent developers passionate about building high-quality, accessible software." />
-      </Helmet>
 
       <div className="wb-home-page">
 
@@ -126,4 +127,4 @@ const HomePage = () => {
   );
 }
 
-export default HomePage;
+export default HomePage;
