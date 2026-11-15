@@ -28,6 +28,11 @@ async function main() {
     console.log("Environment:", config.nodeEnv);
 
     const app = express();
+    // nginx runs on the same host and is the only proxy we trust. It sets X-Forwarded-For to the
+    // real client IP (resolved from Cloudflare's CF-Connecting-IP by the realip module), so req.ip
+    // is that IP. Requests that don't come from loopback (e.g. hitting :5500 directly) get the socket
+    // address, and any forwarding headers they send are ignored.
+    app.set("trust proxy", "loopback");
     const server = http.createServer(app);
 
     init(server, (socket) => {

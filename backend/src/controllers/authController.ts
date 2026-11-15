@@ -3,42 +3,37 @@ import UserModel from "../models/User";
 import { EmailTokenPayload, RefreshTokenPayload, clearRefreshToken, generateRefreshToken, signAccessToken, signEmailToken } from "../utils/tokenUtils";
 import { Request, Response } from "express";
 import asyncHandler from "express-async-handler";
-import { sendActivationEmail, sendPasswordResetEmail } from "../services/email";
+import { sendActivationEmail, sendLoginVerificationEmail, sendPasswordResetEmail } from "../services/email";
 import { getCaptcha, verifyCaptcha } from "../utils/captcha";
 import CaptchaRecordModel from "../models/CaptchaRecord";
 import { config } from "../confg";
 import { parseWithZod } from "../utils/zodUtils";
-import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema } from "../validation/authSchema";
+import { loginSchema, refreshSchema, registerSchema, resetPasswordSchema, sendPasswordResetCodeSchema, verifyEmailSchema, verifyLoginSchema } from "../validation/authSchema";
 import UserFollowingModel from "../models/UserFollowing";
-import { formatAuthUser, getRequestIp, updateUserIp } from "../helpers/userHelper";
+import { addTrustedDevice, formatAuthUser, generateVerificationCode, getRequestIp, hashDeviceId, hashVerificationCode, touchTrustedDevice, updateUserIp } from "../helpers/userHelper";
 import HttpError from "../exceptions/HttpError";
 import IpModel from "../models/Ip";
+import LoginVerificationRecordModel, { LOGIN_VERIFICATION_MAX_ATTEMPTS, LOGIN_VERIFICATION_TTL_MS } from "../models/LoginVerificationRecord";
+import { DocumentType } from "@typegoose/typegoose";
+import { User } from "../models/User";
+import crypto from "crypto";
 
-const login = asyncHandler(async (req, res) => {
-    const {
-        body,
-        headers
-    } = parseWithZod(loginSchema, req);
-    const { email, password } = body;
+// Minimum delay before a new verification code is emailed for the same user and device
+const LOGIN_VERIFICATION_RESEND_MS = 60 * 1000;
 
-    const ip = getRequestIp(req);
-    if (ip) {
-        const ipDoc = await IpModel.findOne({ value: ip }).lean();
-        if (ipDoc?.banned) {
-            throw new HttpError("Access denied", 403);
-        }
+const assertIpNotBanned = async (ip: string | undefined) => {
+    if (!ip) return;
+    const ipDoc = await IpModel.findOne({ value: ip }).lean();
+    if (ipDoc?.banned) {
+        throw new HttpError("Access denied", 403);
     }
+};
 
-    const user = await UserModel.findOne({ email });
-
-    if (!user || !(await user.matchPassword(password))) {
-        throw new HttpError("Invalid email or password", 401);
-    }
-
-    if (!user.active) {
-        throw new HttpError("Account is deactivated", 403);
-    }
-
+/**
+ * Marks the user as logged in from the given ip and responds with access + refresh tokens.
+ * Saves the user document (including any trusted device changes made by the caller).
+ */
+const completeLogin = async (res: Response, user: DocumentType<User>, deviceId: string, ip: string | undefined) => {
     user.lastLoginAt = new Date();
     await user.save();
 
@@ -49,7 +44,7 @@ const login = asyncHandler(async (req, res) => {
     const { accessToken, data: tokenInfo } = await signAccessToken({
         userId: user._id.toString(),
         roles: user.roles
-    }, headers["x-device-id"]);
+    }, deviceId);
 
     const expiresIn = typeof (tokenInfo as JwtPayload).exp == "number" ?
         (tokenInfo as JwtPayload).exp! * 1000 : 0;
@@ -59,12 +54,143 @@ const login = asyncHandler(async (req, res) => {
     res.json({
         success: true,
         data: {
+            verificationRequired: false,
             accessToken,
             expiresIn,
             user: formatAuthUser(user)
         }
     });
+};
 
+const login = asyncHandler(async (req, res) => {
+    const {
+        body,
+        headers
+    } = parseWithZod(loginSchema, req);
+    const { email, password } = body;
+    const deviceId = headers["x-device-id"];
+
+    const ip = getRequestIp(req);
+    await assertIpNotBanned(ip);
+
+    const user = await UserModel.findOne({ email }).select("+trustedDevices");
+
+    if (!user || !(await user.matchPassword(password))) {
+        throw new HttpError("Invalid email or password", 401);
+    }
+
+    if (!user.active) {
+        throw new HttpError("Account is deactivated", 403);
+    }
+
+    const deviceHash = hashDeviceId(deviceId);
+
+    if (touchTrustedDevice(user, deviceHash)) {
+        await completeLogin(res, user, deviceId, ip);
+        return;
+    }
+
+    // Unknown device -> require verification code sent to the user's email
+    const existing = await LoginVerificationRecordModel.findOne({ userId: user._id, deviceHash });
+    const now = Date.now();
+    if (
+        existing &&
+        now - existing.createdAt.getTime() < LOGIN_VERIFICATION_RESEND_MS &&
+        existing.attempts < LOGIN_VERIFICATION_MAX_ATTEMPTS
+    ) {
+        // A code was sent moments ago, don't spam the mailbox
+        res.json({
+            success: true,
+            data: {
+                verificationRequired: true,
+                verificationId: existing._id.toString(),
+                expiresAt: existing.createdAt.getTime() + LOGIN_VERIFICATION_TTL_MS
+            }
+        });
+        return;
+    }
+
+    const code = generateVerificationCode();
+
+    await LoginVerificationRecordModel.deleteMany({ userId: user._id, deviceHash });
+    const record = await LoginVerificationRecordModel.create({
+        userId: user._id,
+        deviceHash,
+        codeHash: hashVerificationCode(code)
+    });
+
+    if (config.nodeEnv === "development") {
+        console.log(`Login verification code for ${user.email}: ${code}`);
+    } else {
+        try {
+            await sendLoginVerificationEmail(user.name, user.email, code, ip);
+        } catch (err) {
+            await LoginVerificationRecordModel.deleteOne({ _id: record._id });
+            console.log("Login verification email error:", err);
+            throw new HttpError("Failed to send verification email. Please try again later.", 502);
+        }
+    }
+
+    res.json({
+        success: true,
+        data: {
+            verificationRequired: true,
+            verificationId: record._id.toString(),
+            expiresAt: record.createdAt.getTime() + LOGIN_VERIFICATION_TTL_MS
+        }
+    });
+});
+
+const verifyLogin = asyncHandler(async (req: Request, res: Response) => {
+    const { body, headers } = parseWithZod(verifyLoginSchema, req);
+    const { verificationId, code } = body;
+    const deviceId = headers["x-device-id"];
+    const deviceHash = hashDeviceId(deviceId);
+
+    const ip = getRequestIp(req);
+    await assertIpNotBanned(ip);
+
+    // Count the attempt atomically before checking the code, so parallel guesses can't exceed the limit
+    const record = await LoginVerificationRecordModel.findOneAndUpdate(
+        { _id: verificationId, deviceHash, attempts: { $lt: LOGIN_VERIFICATION_MAX_ATTEMPTS } },
+        { $inc: { attempts: 1 } },
+        { returnDocument: "after" }
+    ).lean();
+
+    if (!record) {
+        throw new HttpError("Invalid or expired code, please sign in again", 400);
+    }
+
+    if (Date.now() - record.createdAt.getTime() > LOGIN_VERIFICATION_TTL_MS) {
+        await LoginVerificationRecordModel.deleteOne({ _id: record._id });
+        throw new HttpError("Code has expired, please sign in again", 403);
+    }
+
+    const codeMatches = crypto.timingSafeEqual(
+        Buffer.from(hashVerificationCode(code), "hex"),
+        Buffer.from(record.codeHash, "hex")
+    );
+    if (!codeMatches) {
+        const attemptsLeft = LOGIN_VERIFICATION_MAX_ATTEMPTS - record.attempts;
+        if (attemptsLeft <= 0) {
+            await LoginVerificationRecordModel.deleteOne({ _id: record._id });
+            throw new HttpError("Too many invalid attempts, please sign in again", 403);
+        }
+        throw new HttpError(`Invalid code, ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} left`, 400);
+    }
+
+    await LoginVerificationRecordModel.deleteOne({ _id: record._id });
+
+    const user = await UserModel.findById(record.userId).select("+trustedDevices");
+    if (!user) {
+        throw new HttpError("User not found", 404);
+    }
+    if (!user.active) {
+        throw new HttpError("Account is deactivated", 403);
+    }
+
+    addTrustedDevice(user, deviceHash);
+    await completeLogin(res, user, deviceId, ip);
 });
 
 const register = asyncHandler(async (req: Request, res: Response) => {
@@ -72,12 +198,7 @@ const register = asyncHandler(async (req: Request, res: Response) => {
     const { email, name, password, solution, captchaId } = body;
 
     const ip = getRequestIp(req);
-    if (ip) {
-        const ipDoc = await IpModel.findOne({ value: ip }).lean();
-        if (ipDoc?.banned) {
-            throw new HttpError("Access denied", 403);
-        }
-    }
+    await assertIpNotBanned(ip);
 
     const record = await CaptchaRecordModel.findById(captchaId).lean();
 
@@ -100,7 +221,8 @@ const register = asyncHandler(async (req: Request, res: Response) => {
         name,
         password,
         emailVerified: config.nodeEnv == "development",
-        lastLoginAt: new Date()
+        lastLoginAt: new Date(),
+        trustedDevices: [{ hash: hashDeviceId(headers["x-device-id"]), lastUsedAt: new Date() }]
     });
 
     const weblercodesUser = await UserModel.exists({ email: config.adminEmail });
@@ -168,10 +290,18 @@ const refresh = asyncHandler(async (req: Request, res: Response) => {
         throw new HttpError("Please Login First", 401);
     }
 
-    const user = await UserModel.findById(decoded.userId, { roles: 1, active: 1, tokenVersion: 1 });
+    const user = await UserModel.findById(decoded.userId, { roles: 1, active: 1, tokenVersion: 1, trustedDevices: 1 });
 
     if (!user || !user.active || decoded.tokenVersion !== user.tokenVersion) {
         throw new HttpError("Unauthorized", 401);
+    }
+
+    // Migration for sessions created before device verification existed:
+    // a user with a valid session but no trusted devices gets the current device trusted,
+    // so they aren't asked for an email code on their next sign-in from this browser.
+    if (!user.trustedDevices || user.trustedDevices.length === 0) {
+        addTrustedDevice(user, hashDeviceId(headers["x-device-id"]));
+        await user.save();
     }
 
     const { accessToken, data: tokenInfo } = await signAccessToken({
@@ -243,8 +373,12 @@ const resetPassword = asyncHandler(async (req: Request, res: Response) => {
 
     user.password = password;
     user.tokenVersion = (user.tokenVersion || 0) + 1;
+    // Whoever reset the password must verify every device again, including ones an attacker may have added
+    user.trustedDevices = [];
+    user.markModified("trustedDevices");
 
     await user.save();
+    await LoginVerificationRecordModel.deleteMany({ userId: user._id });
 
     const cookies = req.cookies;
 
@@ -308,6 +442,7 @@ const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
 
 const controller = {
     login,
+    verifyLogin,
     register,
     logout,
     refresh,

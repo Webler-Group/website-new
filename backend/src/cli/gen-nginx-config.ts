@@ -11,6 +11,58 @@ if (args.length !== 1) {
 
 const projectDir = path.resolve(args[0]);
 
+// Fallback copy of https://www.cloudflare.com/ips-v4 and https://www.cloudflare.com/ips-v6,
+// used only when the live lists can't be downloaded while generating the config.
+const FALLBACK_CLOUDFLARE_RANGES = [
+  "173.245.48.0/20",
+  "103.21.244.0/22",
+  "103.22.200.0/22",
+  "103.31.4.0/22",
+  "141.101.64.0/18",
+  "108.162.192.0/18",
+  "190.93.240.0/20",
+  "188.114.96.0/20",
+  "197.234.240.0/22",
+  "198.41.128.0/17",
+  "162.158.0.0/15",
+  "104.16.0.0/13",
+  "104.24.0.0/14",
+  "172.64.0.0/13",
+  "131.0.72.0/22",
+  "2400:cb00::/32",
+  "2606:4700::/32",
+  "2803:f800::/32",
+  "2405:b500::/32",
+  "2405:8100::/32",
+  "2a06:98c0::/29",
+  "2c0f:f248::/32"
+];
+
+const CIDR_REGEX = /^[0-9a-fA-F:.]+\/\d{1,3}$/;
+
+const fetchCloudflareRanges = async (): Promise<string[]> => {
+  try {
+    const lists = await Promise.all(
+      ["https://www.cloudflare.com/ips-v4", "https://www.cloudflare.com/ips-v6"].map(async (url) => {
+        const res = await fetch(url, { signal: AbortSignal.timeout(10000) });
+        if (!res.ok) throw new Error(`${url} responded ${res.status}`);
+        return (await res.text()).split(/\s+/).filter(Boolean);
+      })
+    );
+    const ranges = lists.flat();
+    if (ranges.length === 0 || !ranges.every(r => CIDR_REGEX.test(r))) {
+      throw new Error("unexpected response format");
+    }
+    return ranges;
+  } catch (err) {
+    console.warn(`Could not download Cloudflare IP ranges (${err instanceof Error ? err.message : err}), using built-in fallback list`);
+    return FALLBACK_CLOUDFLARE_RANGES;
+  }
+};
+
+const main = async () => {
+const cloudflareRanges = await fetchCloudflareRanges();
+
 const nginxConfig = `
 # Redirect non-www → www (for HTTPS)
 server {
@@ -41,6 +93,13 @@ server {
     # Root directory and index file
     root ${path.join(projectDir, "frontend", "dist")};
     index index.html index.htm;
+
+    # --- REAL CLIENT IP ---
+    # Only trust CF-Connecting-IP when the request really comes from Cloudflare.
+    # For anyone connecting to the origin directly, $remote_addr stays their own address,
+    # so a spoofed CF-Connecting-IP header is ignored.
+${cloudflareRanges.map(r => `    set_real_ip_from ${r};`).join("\n")}
+    real_ip_header CF-Connecting-IP;
 
     # Increase the maximum request size if needed
     client_max_body_size 10M;
@@ -81,8 +140,10 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
-        proxy_set_header CF-Connecting-IP $http_cf_connecting_ip;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # Overwrite (not append) so the backend only ever sees the verified client IP
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header CF-Connecting-IP "";
     }
 
     # Only cache frontend build assets
@@ -116,3 +177,6 @@ const outputPath = path.resolve("website-new-nginx.conf");
 fs.writeFileSync(outputPath, nginxConfig, "utf-8");
 
 console.log(`nginx config generated successfully at ${outputPath}`);
+};
+
+main();

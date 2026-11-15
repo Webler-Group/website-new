@@ -1,4 +1,6 @@
 import {Request} from "express";
+import crypto from "crypto";
+import { DocumentType } from "@typegoose/typegoose";
 import mongoose, {Types} from "mongoose";
 import UserModel, {User, USER_MINIMAL_FIELDS, UserAdminMinimal, UserMinimal} from "../models/User";
 import IpModel from "../models/Ip";
@@ -12,13 +14,49 @@ import RolesEnum from "../shared/data/RolesEnum";
 import ChallengeDifficultyEnum from "../shared/data/ChallengeDifficultyEnum";
 
 const MAX_IPS = 50;
+const MAX_TRUSTED_DEVICES = 10;
 
+export const hashDeviceId = (deviceId: string) =>
+    crypto.createHash("sha256").update(deviceId).digest("hex");
+
+export const generateVerificationCode = () =>
+    crypto.randomInt(0, 1000000).toString().padStart(6, "0");
+
+export const hashVerificationCode = (code: string) =>
+    crypto.createHash("sha256").update(code).digest("hex");
+
+/**
+ * Checks whether the device is trusted for the user and refreshes its lastUsedAt.
+ * The user document must be loaded with "+trustedDevices". Does not save the document.
+ */
+export const touchTrustedDevice = (user: DocumentType<User>, deviceHash: string) => {
+    const device = user.trustedDevices?.find(d => d.hash === deviceHash);
+    if (!device) return false;
+    device.lastUsedAt = new Date();
+    user.markModified("trustedDevices");
+    return true;
+};
+
+/**
+ * Adds the device to the user's trusted devices, evicting the least recently used ones over the limit.
+ * The user document must be loaded with "+trustedDevices". Does not save the document.
+ */
+export const addTrustedDevice = (user: DocumentType<User>, deviceHash: string) => {
+    if (touchTrustedDevice(user, deviceHash)) return;
+    const devices = [...(user.trustedDevices ?? []), { hash: deviceHash, lastUsedAt: new Date() }];
+    devices.sort((a, b) => b.lastUsedAt.getTime() - a.lastUsedAt.getTime());
+    user.trustedDevices = devices.slice(0, MAX_TRUSTED_DEVICES);
+    user.markModified("trustedDevices");
+};
+
+/**
+ * Real client IP. Relies on Express "trust proxy" (see server.ts): client-supplied headers such as
+ * CF-Connecting-IP or X-Forwarded-For are never read directly, because anyone can send them.
+ */
 export const getRequestIp = (req: Request) => {
-    return (
-        (req.headers["cf-connecting-ip"] as string) ||
-        (req.headers["x-forwarded-for"] as string)?.split(",")[0].trim() ||
-        req.ip
-    );
+    const ip = req.ip;
+    // Normalize IPv4-mapped IPv6 addresses (::ffff:1.2.3.4) so the same client is stored once
+    return ip?.startsWith("::ffff:") ? ip.slice(7) : ip;
 };
 
 export const updateUserIp = async (userId: Types.ObjectId, ip: string, session?: mongoose.ClientSession) => {

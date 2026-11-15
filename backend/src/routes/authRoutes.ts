@@ -5,6 +5,7 @@ import requestLimiter from "../middleware/requestLimiter";
 const router = express.Router();
 
 router.route("/Login").post(requestLimiter(60, 5, "Too many login attempts, try again later"), authController.login);
+router.route("/VerifyLogin").post(requestLimiter(60, 10, "Too many verification attempts, try again later"), authController.verifyLogin);
 router.route("/Register").post(authController.register);
 router.route("/Logout").post(authController.logout);
 router.route("/Refresh").post(authController.refresh);

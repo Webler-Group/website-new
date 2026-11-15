@@ -14,11 +14,20 @@ export interface AuthUser {
     xp: number;
 }
 
-export interface LoginData {
+export interface LoginSuccessData {
+    verificationRequired: false;
     accessToken: string;
     expiresIn: number;
     user: AuthUser;
 }
+
+export interface LoginVerificationData {
+    verificationRequired: true;
+    verificationId: string;
+    expiresAt: number;
+}
+
+export type LoginData = LoginSuccessData | LoginVerificationData;
 
 export interface RegisterData {
     accessToken: string;

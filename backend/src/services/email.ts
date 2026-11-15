@@ -117,8 +117,35 @@ const sendEmailChangeVerification = async (
     await sendMail(userEmail, "Verify Your Email Change", html);
 };
 
+const sendLoginVerificationEmail = async (
+    userName: string,
+    userEmail: string,
+    verificationCode: string,
+    ip?: string
+): Promise<void> => {
+    const html = `
+        <html>
+            <body style="font-family: Arial, sans-serif; color: #333;">
+                <h2>New Device Sign-In</h2>
+                <p>Hello ${escapeHtml(userName)},</p>
+                <p>Someone is trying to sign in to your Webler Codes account from a new device${ip ? ` (IP address ${escapeHtml(ip)})` : ""}.</p>
+                <p>If this was you, enter the following verification code to finish signing in. The code is valid for 15 minutes:</p>
+                <p style="font-size: 24px; font-weight: bold;">${verificationCode}</p>
+                <p>If this wasn't you, do not share this code with anyone and change your password immediately, because someone else knows it.</p>
+                <p>Keep Coding,</p>
+                <p>Your Webler Codes team</p>
+                <hr />
+                ${footer}
+            </body>
+        </html>
+    `;
+
+    await sendMail(userEmail, "Your Webler Codes sign-in verification code", html);
+};
+
 export {
     sendMail,
+    sendLoginVerificationEmail,
     sendPasswordResetEmail,
     sendActivationEmail,
     sendEmailChangeVerification

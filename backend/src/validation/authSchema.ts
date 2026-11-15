@@ -53,3 +53,13 @@ export const verifyEmailSchema = z.object({
     userId: idSchema("userId"),
   })
 })
+
+export const verifyLoginSchema = z.object({
+  body: z.object({
+    verificationId: idSchema("verificationId"),
+    code: z.string().trim().regex(/^\d{6}$/, "Code must be 6 digits"),
+  }),
+  headers: z.object({
+    "x-device-id": deviceIdSchema
+  })
+});

@@ -69,6 +69,16 @@ export class FeedSettings {
     filter?: number;
 }
 
+@modelOptions({ schemaOptions: { _id: false } })
+export class TrustedDevice {
+    // SHA-256 hash of the client-generated device id
+    @prop({ required: true })
+    hash!: string;
+
+    @prop({ required: true })
+    lastUsedAt!: Date;
+}
+
 @pre<User>("save", async function () {
     if (this.isModified("password")) {
         if (this.password.length < 6) {
@@ -145,6 +155,9 @@ export class User {
 
     @prop({ ref: "Ip" })
     lastIp?: Types.ObjectId;
+
+    @prop({ type: () => [TrustedDevice], default: [], _id: false, select: false })
+    trustedDevices!: TrustedDevice[];
 
     async matchPassword(this: DocumentType<User>, inputPassword: string): Promise<boolean> {
         return bcrypt.compare(inputPassword, this.password);
