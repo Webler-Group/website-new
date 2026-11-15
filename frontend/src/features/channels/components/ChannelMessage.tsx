@@ -1,5 +1,7 @@
 import { cx } from "../../../components/ui";
-import React, { JSX, useRef } from "react";
+import React, { JSX, useRef, useState } from "react";
+import { FaCircleExclamation, FaRotateRight, FaXmark } from "react-icons/fa6";
+import FloatingMenu from "./FloatingMenu";
 import ProfileAvatar from "../../../components/ProfileAvatar";
 import ProfileName from "../../../components/ProfileName";
 import DateUtils from "../../../utils/DateUtils";
@@ -26,6 +28,55 @@ interface ChannelMessageProps {
 }
 
 const AVATAR_SIZE = 42;
+
+interface FailedMessageStatusProps {
+    error?: string;
+    onRetry: () => void;
+    onCancel: () => void;
+}
+
+/** Red "!" next to a message that failed to send; opens a menu to resend or discard it */
+const FailedMessageStatus = ({ error, onRetry, onCancel }: FailedMessageStatusProps) => {
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const [open, setOpen] = useState(false);
+    const label = `Not sent${error ? `: ${error}` : ""}`;
+
+    const choose = (action: () => void) => {
+        setOpen(false);
+        action();
+    };
+
+    return (
+        <>
+            <button
+                ref={buttonRef}
+                type="button"
+                className="btn btn-link p-0 text-danger lh-1 wb-channels-message-status"
+                title={label}
+                aria-label={label}
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => setOpen(o => !o)}
+            >
+                <FaCircleExclamation size={18} />
+            </button>
+            <FloatingMenu visible={open} onClose={() => setOpen(false)} anchorRef={buttonRef} ignoreAnchorClicks>
+                <button type="button" role="menuitem"
+                    className="w-100 text-start d-flex align-items-center px-2 py-1 btn btn-link text-decoration-none"
+                    onClick={() => choose(onRetry)}
+                >
+                    <FaRotateRight className="me-1 text-muted" /> Resend
+                </button>
+                <button type="button" role="menuitem"
+                    className="w-100 text-start d-flex align-items-center px-2 py-1 btn btn-link text-decoration-none text-danger"
+                    onClick={() => choose(onCancel)}
+                >
+                    <FaXmark className="me-1" /> Cancel
+                </button>
+            </FloatingMenu>
+        </>
+    );
+};
 
 const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, onImagePreview, pending }: ChannelMessageProps, ref: React.ForwardedRef<HTMLDivElement>) => {
     const bodyRef = useRef<HTMLDivElement>(null);
@@ -153,47 +204,37 @@ const ChannelMessage = React.forwardRef(({ message, showHeader, onContextMenu, o
                         </div>
                     )}
 
-                    <div
-                        ref={bodyRef}
-                        className={cx(
-                            "p-2 rounded wb-channels-message-body",
-                            !showHeader && "ms-5 wb-channels-message-body--indented",
-                            pending && `wb-channels-message-body--${pending.status}`
-                        )}
-                        onContextMenu={handleContextMenu}
-                        onTouchStart={handleTouchStart}
-                        onTouchMove={handleTouchMove}
-                        onTouchEnd={handleTouchEnd}
-                    >
-                        {message.deleted ? <i className="text-muted">Message was deleted</i> : parseMessage(message.content)}
-                        {(!message.deleted && new Date(message.createdAt) < new Date(message.updatedAt)) && (
-                            <small className="text-muted"> (edited)</small>
-                        )}
-                        {!message.deleted && (
-                            <div>
-                                {message.attachments.map((attachment) => (
-                                    <div key={attachment.id} className="mt-2">
-                                        <PostAttachment data={attachment} />
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                    {pending && (
-                        <div className={`small mt-1 ${!showHeader ? "ms-5" : ""}`}>
-                            {pending.status === "sending" ? (
-                                <span className="text-muted">Sending…</span>
-                            ) : (
-                                <span className="d-inline-flex flex-wrap align-items-center gap-2">
-                                    <span className="text-danger">
-                                        Not sent{pending.error ? ` (${pending.error})` : ""}
-                                    </span>
-                                    <button type="button" className="btn btn-link btn-sm p-0" onClick={pending.onRetry}>Resend</button>
-                                    <button type="button" className="btn btn-link btn-sm p-0 text-muted" onClick={pending.onCancel}>Cancel</button>
-                                </span>
+                    {/* Failed status sits next to the bubble (not below) so the message height never changes */}
+                    <div className={cx("wb-channels-message-row", !showHeader && "ms-5 wb-channels-message-row--indented")}>
+                        <div
+                            ref={bodyRef}
+                            className={cx(
+                                "p-2 rounded wb-channels-message-body",
+                                pending && `wb-channels-message-body--${pending.status}`
+                            )}
+                            onContextMenu={handleContextMenu}
+                            onTouchStart={handleTouchStart}
+                            onTouchMove={handleTouchMove}
+                            onTouchEnd={handleTouchEnd}
+                        >
+                            {message.deleted ? <i className="text-muted">Message was deleted</i> : parseMessage(message.content)}
+                            {(!message.deleted && new Date(message.createdAt) < new Date(message.updatedAt)) && (
+                                <small className="text-muted"> (edited)</small>
+                            )}
+                            {!message.deleted && (
+                                <div>
+                                    {message.attachments.map((attachment) => (
+                                        <div key={attachment.id} className="mt-2">
+                                            <PostAttachment data={attachment} />
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
-                    )}
+                        {pending?.status === "failed" && (
+                            <FailedMessageStatus error={pending.error} onRetry={pending.onRetry} onCancel={pending.onCancel} />
+                        )}
+                    </div>
                 </div>
             </div>
         );

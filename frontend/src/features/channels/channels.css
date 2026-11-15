@@ -38,12 +38,31 @@
 }
 
 .wb-channels-message-body--failed {
-    outline: 1px solid var(--bs-danger);
+    opacity: 0.6;
 }
 
-.wb-channels-message-body--indented {
+/* Message bubble + failed-send indicator side by side; the bubble shrinks to leave room for it */
+.wb-channels-message-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 0.5rem;
+    min-width: 0;
+}
+
+.wb-channels-message-row > .wb-channels-message-body {
+    flex: 0 1 auto;
+    min-width: 0;
+}
+
+.wb-channels-message-row--indented {
+    /* Accounts for the ms-5 margin so indented messages don't overflow (Safari iPhone width issue) */
     max-width: calc(100% - 3rem);
-    /* Updated: Added to prevent overflow on indented messages (e.g., consecutive messages without header) by accounting for ms-5 margin, fixing Safari iPhone width issue */
+}
+
+.wb-channels-message-status {
+    flex: 0 0 auto;
+    /* Vertically centred on a single-line bubble */
+    margin-bottom: 0.55rem;
 }
 
 /* Enter animation of messages arriving after the room loaded (see MessageEnter) */
