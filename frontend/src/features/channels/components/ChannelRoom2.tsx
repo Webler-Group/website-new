@@ -1,5 +1,5 @@
-import { Badge, Button, cx, Form, Modal } from "../../../components/ui";
-import { useState, useEffect, useRef, KeyboardEvent, useCallback } from "react";
+import { Badge, Button, Form, Modal } from "../../../components/ui";
+import { useState, useEffect, useLayoutEffect, useRef, KeyboardEvent, useCallback } from "react";
 import ChannelMessage from "./ChannelMessage";
 import { FaArrowCircleDown, FaCog, FaPlus, FaTimes } from "react-icons/fa";
 import ChannelRoomSettings from "./ChannelRoomSettings";
@@ -68,13 +68,48 @@ const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => 
     );
 };
 
+const ENTER_DURATION_MS = 320;
+const ENTER_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // easeOutQuint - quick start, soft landing
+
 /**
- * Wraps a chat message; messages that appear after the room finished loading play a short
- * enter animation. Whether to animate is decided once, at mount, so re-renders never replay it.
+ * Wraps a chat message; messages that appear after the room finished loading play an enter animation:
+ * the wrapper grows from 0 to its real height, so in the bottom-anchored (column-reverse) list the new
+ * bubble rises from the bottom and smoothly pushes the history upwards (Telegram-like).
+ * Whether to animate is decided once, at mount, so re-renders never replay it.
  */
 const MessageEnter = ({ animate, children }: { animate: boolean; children: React.ReactNode }) => {
     const [entering] = useState(animate);
-    return <div className={cx("mt-2", entering && "wb-channels-message-enter")}>{children}</div>;
+    const outerRef = useRef<HTMLDivElement>(null);
+    const innerRef = useRef<HTMLDivElement>(null);
+
+    useLayoutEffect(() => {
+        const outer = outerRef.current;
+        const inner = innerRef.current;
+        if (!entering || !outer || !inner || typeof outer.animate !== "function") return;
+        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+        const height = inner.offsetHeight;
+        const options: KeyframeAnimationOptions = { duration: ENTER_DURATION_MS, easing: ENTER_EASING };
+        outer.style.overflow = "hidden";
+        const grow = outer.animate([{ height: "0px" }, { height: height + "px" }], options);
+        const appear = inner.animate([
+            { opacity: 0, transform: "translateY(12px) scale(0.96)" },
+            { opacity: 1, transform: "none" }
+        ], options);
+        const cleanup = () => { outer.style.overflow = ""; };
+        grow.onfinish = cleanup;
+        grow.oncancel = cleanup;
+        return () => {
+            grow.cancel();
+            appear.cancel();
+        };
+    }, []);
+
+    return (
+        <div ref={outerRef}>
+            <div ref={innerRef} className="pt-2 wb-channels-message-enter-inner">{children}</div>
+        </div>
+    );
 };
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
@@ -109,6 +144,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         })
     }
     const messages = useMessages(50, channelId, messagesFromDate, onChannelJoin, onChannelLeave, onMessagesSeen);
+    const latestMessageId = messages.results[0]?.id;
     const [newMessage, setNewMessage] = useState("");
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [settingsVisible, setSettingsVisible] = useState(false);
@@ -125,6 +161,8 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const anchorRef = useRef<HTMLElement | null>(null);
     const [deleteMessageId, setDeleteMessageId] = useState<string | null>(null);
     const [skipTransition, setSkipTransition] = useState(true);
+    // Only messages newer than this (newest message when the room finished loading) play the enter animation
+    const animateAfterRef = useRef(0);
     const [loading, setLoading] = useState(false);
     const [repliedMessage, setRepliedMessage] = useState<ChannelMessageDetails | null>(null);
     const [preview, setPreview] = useState<null | { src: string; alt?: string; }>(null);
@@ -200,7 +238,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         handleScroll();
         container.addEventListener("scroll", handleScroll);
         return () => container.removeEventListener("scroll", handleScroll);
-    }, [messages.results.length, channel?.id, unreadCount]);
+    }, [messages.results.length, latestMessageId, channel?.id, unreadCount]);
 
     useEffect(() => {
         if (messages.results.length > 0) {
@@ -215,13 +253,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
             }
             prevLatest.current = currentLatestDate;
         }
-    }, [messages.results.length]);
+    }, [messages.results.length, latestMessageId]);
 
     useEffect(() => {
         if (messages.results.length > 0 && messages.results[0].user.id == userInfo?.id) {
             setAllMessagesVisible(channel?.lastActiveAt != null && new Date(channel.lastActiveAt) < new Date(messages.results[0].createdAt));
         }
-    }, [messages.results.length, channel?.id, userInfo]);
+    }, [messages.results.length, latestMessageId, channel?.id, userInfo]);
 
     useEffect(() => {
         if (allMessagesVisible) {
@@ -233,6 +271,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     useEffect(() => {
         if (justChangedChannel && !messages.isLoading && messages.results.length > 0) {
             scrollToBottom('auto');
+            animateAfterRef.current = new Date(messages.results[0].createdAt).getTime();
             setJustChangedChannel(false);
             setSkipTransition(false);
         }
@@ -559,7 +598,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         }
 
                                         return (
-                                            <MessageEnter key={getMessageKey(message)} animate={!skipTransition}>
+                                            <MessageEnter key={getMessageKey(message)} animate={!skipTransition && new Date(message.createdAt).getTime() > animateAfterRef.current}>
                                                     <ChannelMessage
                                                         ref={i === renderMessages.length - 1 ? lastMessageRef : undefined}
                                                         message={message}

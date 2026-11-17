@@ -31,6 +31,8 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
     const { socket } = useWS();
     const channelIdRef = useRef(channelId);
     channelIdRef.current = channelId;
+    const resultsRef = useRef(results);
+    resultsRef.current = results;
 
     const fetchMessages = async (date: Date | null, replace: boolean) => {
         setIsLoading(true);
@@ -54,11 +56,89 @@ const useMessages = (count: number, channelId: string | null, fromDate: Date | n
         setIsLoading(false);
     };
 
+    /**
+     * Re-fetches the newest page and merges it into the current list, so messages (and edits/deletes)
+     * emitted while the socket was disconnected are not lost. Doesn't toggle isLoading to avoid UI flicker.
+     */
+    const resyncLatest = async () => {
+        const targetChannelId = channelIdRef.current;
+        if (!targetChannelId) return;
+
+        const result = await sendJsonRequest<ChannelMessagesListData>(`/Channels/Messages`, "POST", {
+            fromDate: null,
+            count,
+            channelId: targetChannelId
+        });
+        if (!result.data || channelIdRef.current !== targetChannelId) return;
+
+        const fetched = result.data.messages;
+        if (fetched.length === 0) return;
+
+        const current = resultsRef.current;
+        const gapTooBig = current.length === 0 || (
+            fetched.length === count &&
+            new Date(fetched[fetched.length - 1].createdAt).getTime() > new Date(current[0].createdAt).getTime()
+        );
+        if (gapTooBig) {
+            // Missed more than one page (or nothing loaded) - start over from the newest page
+            setResults(fetched);
+            setHasNextPage(fetched.length === count);
+            return;
+        }
+
+        setResults(prev => {
+            const fetchedById = new Map(fetched.map(x => [x.id, x]));
+            let merged = prev.map(x => {
+                const fresh = fetchedById.get(x.id);
+                return fresh ? { ...x, ...fresh, clientId: x.clientId } : x;
+            });
+            for (const message of fetched) {
+                merged = insertMessage(merged, message);
+            }
+            return merged;
+        });
+    };
+    const resyncRef = useRef(resyncLatest);
+    resyncRef.current = resyncLatest;
+    const loadedChannelRef = useRef<string | null>(null);
+
     useEffect(() => {
         setPending([]);
+        loadedChannelRef.current = null;
         if (!channelId) return;
-        fetchMessages(null, true);
+        fetchMessages(null, true).then(() => {
+            if (channelIdRef.current === channelId) loadedChannelRef.current = channelId;
+        });
     }, [channelId]);
+
+    // Catch up after reconnecting (or after the tab/app was in background for a while)
+    useEffect(() => {
+        if (!socket) return;
+
+        const resync = () => {
+            if (loadedChannelRef.current && loadedChannelRef.current === channelIdRef.current) {
+                resyncRef.current();
+            }
+        };
+
+        let hiddenAt: number | null = null;
+        const handleVisibility = () => {
+            if (document.visibilityState === "hidden") {
+                hiddenAt = Date.now();
+            } else if (hiddenAt !== null) {
+                // Mobile browsers may freeze the page without the socket noticing it was dropped
+                if (Date.now() - hiddenAt > 5_000) resync();
+                hiddenAt = null;
+            }
+        };
+
+        socket.on("connect", resync);
+        document.addEventListener("visibilitychange", handleVisibility);
+        return () => {
+            socket.off("connect", resync);
+            document.removeEventListener("visibilitychange", handleVisibility);
+        };
+    }, [socket]);
 
     useEffect(() => {
         if (!channelId || fromDate === null) return;

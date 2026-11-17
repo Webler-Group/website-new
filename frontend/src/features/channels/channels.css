@@ -66,20 +66,8 @@
 }
 
 /* Enter animation of messages arriving after the room loaded (see MessageEnter) */
-.wb-channels-message-enter {
-    animation: wb-channels-message-enter 0.3s ease-out;
-}
-
-@keyframes wb-channels-message-enter {
-    from {
-        opacity: 0;
-        max-height: 0;
-    }
-
-    to {
-        opacity: 1;
-        max-height: 500px;
-    }
+.wb-channels-message-enter-inner {
+    transform-origin: 50% 100%;
 }
 
 .wb-channels-reply-text {
