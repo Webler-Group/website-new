@@ -71,45 +71,28 @@ const AttachDropdown = ({ onCode, onFile }: { onCode: () => void; onFile: () => 
 const ENTER_DURATION_MS = 320;
 const ENTER_EASING = "cubic-bezier(0.22, 1, 0.36, 1)"; // easeOutQuint - quick start, soft landing
 
+const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
 /**
- * Wraps a chat message; messages that appear after the room finished loading play an enter animation:
- * the wrapper grows from 0 to its real height, so in the bottom-anchored (column-reverse) list the new
- * bubble rises from the bottom and smoothly pushes the history upwards (Telegram-like).
+ * Wraps a chat message; messages that appear after the room finished loading fade/scale in.
+ * The upward slide of the whole list is done by the room (see slide effect in ChannelRoom2).
  * Whether to animate is decided once, at mount, so re-renders never replay it.
  */
-const MessageEnter = ({ animate, children }: { animate: boolean; children: React.ReactNode }) => {
+const MessageEnter = ({ animate, msgKey, children }: { animate: boolean; msgKey: string; children: React.ReactNode }) => {
     const [entering] = useState(animate);
-    const outerRef = useRef<HTMLDivElement>(null);
-    const innerRef = useRef<HTMLDivElement>(null);
+    const ref = useRef<HTMLDivElement>(null);
 
     useLayoutEffect(() => {
-        const outer = outerRef.current;
-        const inner = innerRef.current;
-        if (!entering || !outer || !inner || typeof outer.animate !== "function") return;
-        if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-
-        const height = inner.offsetHeight;
-        const options: KeyframeAnimationOptions = { duration: ENTER_DURATION_MS, easing: ENTER_EASING };
-        outer.style.overflow = "hidden";
-        const grow = outer.animate([{ height: "0px" }, { height: height + "px" }], options);
-        const appear = inner.animate([
-            { opacity: 0, transform: "translateY(12px) scale(0.96)" },
+        const el = ref.current;
+        if (!entering || !el || typeof el.animate !== "function" || prefersReducedMotion()) return;
+        const anim = el.animate([
+            { opacity: 0, transform: "scale(0.96)" },
             { opacity: 1, transform: "none" }
-        ], options);
-        const cleanup = () => { outer.style.overflow = ""; };
-        grow.onfinish = cleanup;
-        grow.oncancel = cleanup;
-        return () => {
-            grow.cancel();
-            appear.cancel();
-        };
+        ], { duration: ENTER_DURATION_MS, easing: ENTER_EASING });
+        return () => anim.cancel();
     }, []);
 
-    return (
-        <div ref={outerRef}>
-            <div ref={innerRef} className="pt-2 wb-channels-message-enter-inner">{children}</div>
-        </div>
-    );
+    return <div ref={ref} data-msg-key={msgKey} className="pt-2 wb-channels-message-enter-inner">{children}</div>;
 };
 
 const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
@@ -150,6 +133,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
     const [settingsVisible, setSettingsVisible] = useState(false);
     const { sendJsonRequest } = useApi();
     const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const messagesContentRef = useRef<HTMLDivElement>(null);
     const [allMessagesVisible, setAllMessagesVisible] = useState(false);
     const [justChangedChannel, setJustChangedChannel] = useState(false);
     const [showJumpButton, setShowJumpButton] = useState(false);
@@ -500,6 +484,40 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
         attachments: []
     });
 
+    // Telegram-like send/receive: when a new message lands at the bottom, snap to the bottom and slide the
+    // whole list up from where it was, so the new bubble rises from below and pushes the history upwards.
+    // Done with a transform on the list (not by animating the message height) so it works the same whether
+    // or not the list overflows - browsers keep the scroll position stable on content growth.
+    const bottomKey = messages.pending[0]?.clientId ?? (renderMessages[0] ? getMessageKey(renderMessages[0]) : undefined);
+    const bottomIsOwn = messages.pending.length > 0 || renderMessages[0]?.user.id === userInfo?.id;
+    const prevBottomKeyRef = useRef<string | undefined>(undefined);
+    useLayoutEffect(() => {
+        const prevKey = prevBottomKeyRef.current;
+        prevBottomKeyRef.current = bottomKey;
+        const content = messagesContentRef.current;
+        const container = messagesContainerRef.current;
+        if (!content || !container || skipTransition || !prevKey || !bottomKey || prevKey === bottomKey) return;
+        if (!isAtBottomRef.current && !bottomIsOwn) return; // reading history - leave the view alone
+
+        const prevEl = content.querySelector<HTMLElement>(`[data-msg-key="${CSS.escape(prevKey)}"]`);
+        container.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+        isAtBottomRef.current = true;
+        if (!prevEl || typeof content.animate !== "function" || prefersReducedMotion()) return;
+
+        // Height added below the previous bottom message (both measured inside the transformed list, so an
+        // in-flight slide doesn't skew it); capped so a big catch-up batch doesn't fly across the screen
+        const added = content.getBoundingClientRect().bottom - prevEl.getBoundingClientRect().bottom;
+        if (added <= 0) return;
+        // Continue from where a still-running slide currently is, so quick consecutive messages don't jump
+        const running = new DOMMatrixReadOnly(getComputedStyle(content).transform).m42;
+        content.getAnimations().forEach(a => a.cancel());
+        const from = Math.min(added + running, container.clientHeight);
+        content.animate([
+            { transform: `translateY(${from}px)` },
+            { transform: "translateY(0)" }
+        ], { duration: ENTER_DURATION_MS, easing: ENTER_EASING });
+    }, [bottomKey]);
+
     const latestRendered = renderMessages[0];
     const pendingStartsGroup = !latestRendered || latestRendered.user.id !== userInfo?.id || latestRendered.type !== ChannelMessageTypeEnum.MESSAGE;
 
@@ -554,12 +572,13 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                 <ChannelRoomSettings channel={channel} onUserRemove={onUserRemove} onUserInvite={onUserInvite} onCancelInvite={onCancelInvite} onTitleChange={onTitleChange} onRoleChange={onRoleChange} onToggleNotifications={onToggleNotifications} />
                             </div>
                             <div className="d-flex flex-column-reverse flex-grow-1 overflow-y-auto p-3 ms-lg-5" ref={messagesContainerRef}>
+                                <div ref={messagesContentRef} className="d-flex flex-column-reverse">
                                     {/* single array so a pending message and its confirmed version share the key space */}
                                     {[...(userInfo ? messages.pending.map((pending, i) => {
                                         const message = toPendingDetails(pending);
                                         const isOldestPending = i === messages.pending.length - 1;
                                         return (
-                                            <MessageEnter key={pending.clientId} animate>
+                                            <MessageEnter key={pending.clientId} msgKey={pending.clientId} animate>
                                                     <ChannelMessage
                                                         message={message}
                                                         showHeader={(isOldestPending && pendingStartsGroup) || message.repliedTo != null}
@@ -598,7 +617,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                         }
 
                                         return (
-                                            <MessageEnter key={getMessageKey(message)} animate={!skipTransition && new Date(message.createdAt).getTime() > animateAfterRef.current}>
+                                            <MessageEnter key={getMessageKey(message)} msgKey={getMessageKey(message)} animate={!skipTransition && new Date(message.createdAt).getTime() > animateAfterRef.current}>
                                                     <ChannelMessage
                                                         ref={i === renderMessages.length - 1 ? lastMessageRef : undefined}
                                                         message={message}
@@ -609,6 +628,7 @@ const ChannelRoom2 = ({ channelId, onExit }: ChannelRoomProps) => {
                                             </MessageEnter>
                                         );
                                     })]}
+                                </div>
                             </div>
                             <div className="position-relative p-2 border-top">
                                 {editedMessage && (
